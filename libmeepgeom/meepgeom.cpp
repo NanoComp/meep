@@ -1535,6 +1535,7 @@ void set_materials_from_geometry(meep::structure *s,
   /***************************************************************/
   /***************************************************************/
   s->set_materials(geps, use_anisotropic_averaging, tol, maxeval);
+  s->remove_susceptibilities();
   geps.add_susceptibilities(s);
 
   master_printf("-----------\n");

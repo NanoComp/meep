@@ -171,7 +171,7 @@ Computing the Casimir force involves running several independent Meep simulation
  (define n-list (if (eq? n-max 0) (list 0) (interpolate (- n-max 1) (list 0 n-max))))    ;number of terms in source sum
 ```
 
-For each value of n, side number, and polarization, we run a short meep simulation. For convenience, the source construction, simulation, and field integration are all taken care of by the Scheme function `casimir-force-contrib`, defined in "/libctl/casimir.scm" (included in the Meep-1.1 release):
+For each value of n, side number, and polarization, we run a short meep simulation. For convenience, the source construction, simulation, and field integration are all taken care of by the Scheme function `casimir-force-contrib`, defined in [/scheme/casimir.scm](https://github.com/stevengj/meep/blob/master/scheme/casimir.scm):
 
 ```scm
  (casimir-force-contrib force-direction integration-vol N Sigma T source-component gt)

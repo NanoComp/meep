@@ -615,8 +615,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
   double resolution    = a;
   double eig_tol       = 1.0e-4;
 
-  char *LogFile=getenv("MEEP_EIGENMODE_LOGFILE");
-
   // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
    for(int nf=0; nf<num_freqs; nf++)
@@ -627,6 +625,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
       vec kpoint(0.0,0.0,0.0);
+      //if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
       void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
@@ -645,22 +644,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
        = (mode_flux[0] + mode_flux[1]) / normfac;
       coeffs[ 2*nb*num_freqs + 2*nf + 1 ]
        = (mode_flux[0] - mode_flux[1]) / normfac;
-
-      if (LogFile && am_master())
-       { FILE *ff=fopen(LogFile,( (nb==0 && nf==0) ? "w" : "a") );
-         fprintf(ff,"(nb,nf)=(%i,%i) ",nb,nf);
-         fprintf(ff,"vgrp=%e\n",vgrp[nb*num_freqs+nf]);
-         fprintf(ff," mf = %+f,%+f {%+.2e,%+.2e},{%+.2e,%+.2e}\n",
-                     abs(mode_flux[0]),abs(mode_flux[1]),
-                     real(mode_flux[0]),imag(mode_flux[0]),
-                     real(mode_flux[1]),imag(mode_flux[1]));
-         fprintf(ff," mm = %+f,%+f {%+.2e,%+.2e},{%+.2e,%+.2e}\n",
-                     abs(mode_mode[0]),abs(mode_mode[1]),
-                     real(mode_mode[0]),imag(mode_mode[0]),
-                     real(mode_mode[1]),imag(mode_mode[1]));
-         fclose(ff);
-       };
-       
     };
 }
 /**************************************************************/
@@ -699,14 +682,13 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
-void fields::get_eigenmode_coefficients(dft_flux flux,
-                                        direction d,
+void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
                                         const volume &where,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
                                         double *vgrp)
                                         
-{ (void) flux;   (void) d;    (void) where;  (void) bands; (void) num_bands;
+{ (void) flux; (void) d; (void) where; (void) bands; (void)num_bands;
   (void) coeffs; (void) vgrp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }

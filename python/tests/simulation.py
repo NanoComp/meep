@@ -215,5 +215,53 @@ class TestSimulation(unittest.TestCase):
 
         self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
+    def test_set_materials(self):
+
+        def change_geom(sim):
+            t = sim.meep_time()
+            fn = t * 0.02
+            geom = [mp.Cylinder(radius=3, material=mp.Medium(index=3.5), center=mp.Vector3(fn, fn)),
+                    mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf), center=mp.Vector3(fn, fn))]
+
+            sim.set_materials(geometry=geom)
+
+        c = mp.Cylinder(radius=3, material=mp.Medium(index=3.5))
+        e = mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf))
+
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.1), component=mp.Hz, center=mp.Vector3())
+        symmetries = [mp.Mirror(mp.X, -1), mp.Mirror(mp.Y, -1)]
+
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10),
+                            geometry=[c, e],
+                            boundary_layers=[mp.PML(1.0)],
+                            sources=[sources],
+                            symmetries=symmetries,
+                            resolution=16)
+
+        eps = {'arr1': None, 'arr2': None}
+
+        def get_arr1(sim):
+            eps['arr1'] = sim.get_array(mp.Vector3(), mp.Vector3(10, 10), mp.Dielectric)
+
+        def get_arr2(sim):
+            eps['arr2'] = sim.get_array(mp.Vector3(), mp.Vector3(10, 10), mp.Dielectric)
+
+        sim.run(mp.at_time(50, get_arr1), mp.at_time(100, change_geom),
+                mp.at_end(get_arr2), until=200)
+
+        self.assertFalse(np.array_equal(eps['arr1'], eps['arr2']))
+
+    def test_modal_volume_in_box(self):
+        sim = self.init_simple_simulation()
+        sim.run(until=200)
+        vol = sim.fields.total_volume()
+        self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol),
+                               sim.modal_volume_in_box())
+
+        vol = mp.Volume(mp.Vector3(), size=mp.Vector3(1, 1, 1))
+        self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol.swigobj),
+                               sim.modal_volume_in_box(vol))
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -29,6 +29,18 @@
           int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
 #  endif /* HAVE_MPI */
 
+#ifdef CASSIGN_MULT
+  #undef CASSIGN_MULT
+#endif
+
+/* a = b * c */
+#define CASSIGN_MULT(a, b, c) { \
+  mpb_real bbbb_re = (b).re, bbbb_im = (b).im; \
+  mpb_real cccc_re = (c).re, cccc_im = (c).im; \
+  CASSIGN_SCALAR(a, bbbb_re * cccc_re - bbbb_im * cccc_im, \
+                 bbbb_re * cccc_im + bbbb_im * cccc_re); \
+}
+
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
      CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");\
@@ -71,7 +83,7 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
   // p = shift_to_unit_cell(p);
 
   ms->get_material_pt(mat, p);
-  ms->material_epsmu(mat, eps, eps_inv);
+  ms->material_epsmu(mat, eps, eps_inv, eps);
 }
 
 static int mean_epsilon_func(symmetric_matrix* meps, symmetric_matrix *meps_inv,
@@ -87,18 +99,20 @@ static int mean_epsilon_func(symmetric_matrix* meps, symmetric_matrix *meps_inv,
 /* a couple of utilities to convert libctl data types to the data
    types of the eigensolver & maxwell routines: */
 
-void vector3_to_arr(mpb_real arr[3], vector3 v)
-{
-     arr[0] = v.x;
-     arr[1] = v.y;
-     arr[2] = v.z;
+void vector3_to_arr(mpb_real arr[3], vector3 v) {
+  arr[0] = v.x;
+  arr[1] = v.y;
+  arr[2] = v.z;
 }
 
-void matrix3x3_to_arr(mpb_real arr[3][3], matrix3x3 m)
-{
-     vector3_to_arr(arr[0], m.c0);
-     vector3_to_arr(arr[1], m.c1);
-     vector3_to_arr(arr[2], m.c2);
+void matrix3x3_to_arr(mpb_real arr[3][3], matrix3x3 m) {
+  vector3_to_arr(arr[0], m.c0);
+  vector3_to_arr(arr[1], m.c1);
+  vector3_to_arr(arr[2], m.c2);
+}
+
+cnumber cscalar2cnumber(scalar_complex cs) {
+  return make_cnumber(CSCALAR_RE(cs), CSCALAR_IM(cs));
 }
 
 // Return a string describing the current parity, used for frequency and filename
@@ -195,13 +209,19 @@ mode_solver::mode_solver(int num_bands,
                          bool verbose,
                          bool periodicity,
                          double flops,
-                         bool negative_epsilon_ok):
+                         bool negative_epsilon_ok,
+                         std::string epsilon_input_file,
+                         std::string mu_input_file,
+                         bool force_mu):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
   negative_epsilon_ok(negative_epsilon_ok),
+  epsilon_input_file(epsilon_input_file),
+  mu_input_file(mu_input_file),
+  force_mu(force_mu),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
   last_parity(-2),
@@ -216,7 +236,8 @@ mode_solver::mode_solver(int num_bands,
   deterministic(deterministic),
   kpoint_index(0),
   curfield(NULL),
-  curfield_type('-') {
+  curfield_type('-'),
+  eps(true) {
 
   this->lat = lat;
 
@@ -379,8 +400,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     return 0; /* arbitrary material functions are non-analyzable */
   }
 
-  // TODO: How do I know if it's eps or mu?
-  material_epsmu(mat1, meps, meps_inv);
+  material_epsmu(mat1, meps, meps_inv, eps);
 
   /* check for trivial case of only one object/material */
   if (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)) {
@@ -422,8 +442,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     symmetric_matrix eps2, epsinv2;
     symmetric_matrix eps1, delta;
     double Rot[3][3], norm, n0, n1, n2;
-    // TODO: Eps or mu?
-    material_epsmu(mat2, &eps2, &epsinv2);
+    material_epsmu(mat2, &eps2, &epsinv2, eps);
     eps1 = *meps;
 
     /* make Cartesian orthonormal frame relative to interface */
@@ -831,18 +850,51 @@ void mode_solver::reset_epsilon() {
   // TODO: Support epsilon_input_file
   // get_epsilon_file_func(epsilon_input_file, &d.epsilon_file_func, &d.epsilon_file_func_data);
   // get_epsilon_file_func(mu_input_file, &d.mu_file_func, &d.mu_file_func_data);
+
   meep::master_printf("Initializing epsilon function...\n");
   set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
                          static_cast<void *>(this));
 
-  // TODO
-  // if (has_mu(&d)) {
-  //   mpi_one_printf("Initializing mu function...\n");
-  //   set_maxwell_mu(mdata, mesh, R, G, mu_func, mean_mu_func, &d);
-  // }
-
+  if (has_mu()) {
+    meep::master_printf("Initializing mu function...\n");
+    eps = false;
+    set_maxwell_mu(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
+                   static_cast<void *>(this));
+    eps = true;
+  }
   // destroy_epsilon_file_func_data(d.epsilon_file_func_data);
   // destroy_epsilon_file_func_data(d.mu_file_func_data);
+}
+
+bool mode_solver::has_mu() {
+  // TODO: mu_file_func
+  if (material_has_mu(default_material) || force_mu) {
+    return true;
+  }
+
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (material_has_mu(geometry.items[i].material)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool mode_solver::material_has_mu(void *mt) {
+  meep_geom::material_type mat = (meep_geom::material_type)mt;
+  meep_geom::medium_struct *m = &mat->medium;
+
+  if (mat->which_subclass != meep_geom::material_data::PERFECT_METAL) {
+    if (m->mu_diag.x != 1 ||
+        m->mu_diag.y != 1 ||
+        m->mu_diag.z != 1 ||
+        m->mu_offdiag.x != 0 ||
+        m->mu_offdiag.y != 0 ||
+        m->mu_offdiag.z != 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void mode_solver::set_parity(integer p) {
@@ -1164,6 +1216,69 @@ void mode_solver::get_epsilon() {
                       eps_high == eps_low ? 100.0 : 100.0 * (eps_mean-eps_low) / (eps_high-eps_low));
 }
 
+/* get the mu function, and compute some statistics */
+void mode_solver::get_mu() {
+  mpb_real eps_mean = 0;
+  mpb_real mu_inv_mean = 0;
+  mpb_real eps_high = -1e20;
+  mpb_real eps_low = 1e20;
+  int fill_count = 0;
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "mode_solver.init must be called before get-mu!\n");
+    return;
+  }
+
+  curfield = (scalar_complex *) mdata->fft_data;
+  mpb_real *mu = (mpb_real *) curfield;
+  curfield_band = 0;
+  curfield_type = mu_CURFIELD_TYPE;
+
+  /* get mu.  Recall that we actually have an inverse
+     dielectric tensor at each point; define an average index by
+     the inverse of the average eigenvalue of the 1/eps tensor.
+     i.e. 3/(trace 1/eps). */
+
+  int N = mdata->fft_output_size;
+
+  for (int i = 0; i < N; ++i) {
+    if (mdata->mu_inv == NULL) {
+      mu[i] = 1.0;
+    }
+    else {
+      mu[i] = mean_medium_from_matrix(mdata->mu_inv + i);
+    }
+
+    if (mu[i] < eps_low) {
+      eps_low = mu[i];
+    }
+    if (mu[i] > eps_high) {
+      eps_high = mu[i];
+    }
+
+    eps_mean += mu[i];
+    mu_inv_mean += 1/mu[i];
+    if (mu[i] > 1.0001) {
+      ++fill_count;
+    }
+  }
+
+  mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  mpi_allreduce_1(&mu_inv_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  mpi_allreduce_1(&eps_low, mpb_real, SCALAR_MPI_TYPE, MPI_MIN, mpb_comm);
+  mpi_allreduce_1(&eps_high, mpb_real, SCALAR_MPI_TYPE, MPI_MAX, mpb_comm);
+  mpi_allreduce_1(&fill_count, int, MPI_INT, MPI_SUM, mpb_comm);
+
+  N = mdata->nx * mdata->ny * mdata->nz;
+  eps_mean /= N;
+  mu_inv_mean = N/mu_inv_mean;
+
+  meep::master_printf("mu: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n",
+                      eps_low, eps_high, eps_mean, mu_inv_mean, (100.0 * fill_count) / N,
+                      eps_high == eps_low ? 100.0 : 100.0 *
+                      (eps_mean-eps_low) / (eps_high-eps_low));
+}
+
 void mode_solver::curfield_reset() {
   curfield = NULL;
   curfield_type = '-';
@@ -1228,13 +1343,6 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
     if (conj)
       epsilon[i] = -epsilon[i];
   }
-}
-
-void mode_solver::load_eigenvectors(char *filename) {
-  meep::master_printf("Loading eigenvectors from \"%s\"...\n", filename);
-  // TODO: Write in python
-  // evectmatrixio_readall_raw(filename, H);
-  curfield_reset();
 }
 
 std::vector<mpb_real> mode_solver::get_freqs() {
@@ -1557,6 +1665,168 @@ std::vector<mpb_real> mode_solver::get_output_k() {
   return output_k;
 }
 
+mpb_real mode_solver::get_val(int ix, int iy, int iz, int nx, int ny, int nz,
+                              int last_dim_size, mpb_real *data, int stride, int conjugate) {
+// #ifdef HAVE_MPI
+//      CHECK(0, "get-*-point not yet implemented for MPI!");
+// #else
+  (void)nx;
+  (void)last_dim_size;
+  (void)conjugate;
+  return data[(((ix * ny) + iy) * nz + iz) * stride];
+// #endif
+}
+
+mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
+                                 mpb_real *data, int stride, int conjugate) {
+  double ipart;
+  mpb_real rx, ry, rz, dx, dy, dz;
+  int x, y, z, x2, y2, z2;
+
+  mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
+  mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
+  mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
+
+  rx = modf(p.x/latx + 0.5, &ipart); if (rx < 0) rx += 1;
+  ry = modf(p.y/laty + 0.5, &ipart); if (ry < 0) ry += 1;
+  rz = modf(p.z/latz + 0.5, &ipart); if (rz < 0) rz += 1;
+
+  /* get the point corresponding to r in the grid: */
+  x = rx * nx;
+  y = ry * ny;
+  z = rz * nz;
+
+  /* get the difference between (x,y,z) and the actual point */
+  dx = rx * nx - x;
+  dy = ry * ny - y;
+  dz = rz * nz - z;
+
+  /* get the other closest point in the grid, with periodic boundaries: */
+  x2 = (nx + (dx >= 0.0 ? x + 1 : x - 1)) % nx;
+  y2 = (ny + (dy >= 0.0 ? y + 1 : y - 1)) % ny;
+  z2 = (nz + (dz >= 0.0 ? z + 1 : z - 1)) % nz;
+
+  /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
+  dx = fabs(dx);
+  dy = fabs(dy);
+  dz = fabs(dz);
+
+#define D(x,y,z) (get_val(x,y,z,nx,ny,nz,last_dim_size, data,stride,conjugate))
+
+  return(((D(x,y,z)*(1.0-dx) + D(x2,y,z)*dx) * (1.0-dy) +
+          (D(x,y2,z)*(1.0-dx) + D(x2,y2,z)*dx) * dy) * (1.0-dz) +
+         ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
+          (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
+
+#undef D
+}
+
+scalar_complex mode_solver::interp_cval(vector3 p, int nx, int ny, int nz,
+                                        int last_dim_size, mpb_real *data, int stride) {
+  scalar_complex cval;
+  cval.re = interp_val(p, nx,ny,nz,last_dim_size, data, stride, 0);
+  cval.im = interp_val(p, nx,ny,nz,last_dim_size,data + 1, stride, 1);
+  return cval;
+}
+
+#define f_interp_val(p,f,data,stride,conj) interp_val(p,f->nx,f->ny,f->nz,f->last_dim_size,data,stride,conj)
+#define f_interp_cval(p,f,data,stride) interp_cval(p,f->nx,f->ny,f->nz,f->last_dim_size,data,stride)
+
+symmetric_matrix mode_solver::interp_eps_inv(vector3 p) {
+  int stride = sizeof(symmetric_matrix) / sizeof(mpb_real);
+  symmetric_matrix eps_inv;
+
+  eps_inv.m00 = f_interp_val(p, mdata, &mdata->eps_inv->m00, stride, 0);
+  eps_inv.m11 = f_interp_val(p, mdata, &mdata->eps_inv->m11, stride, 0);
+  eps_inv.m22 = f_interp_val(p, mdata, &mdata->eps_inv->m22, stride, 0);
+#ifdef WITH_HERMITIAN_EPSILON
+  eps_inv.m01 = f_interp_cval(p, mdata, &mdata->eps_inv->m01.re, stride);
+  eps_inv.m02 = f_interp_cval(p, mdata, &mdata->eps_inv->m02.re, stride);
+  eps_inv.m12 = f_interp_cval(p, mdata, &mdata->eps_inv->m12.re, stride);
+#else
+  eps_inv.m01 = f_interp_val(p, mdata, &mdata->eps_inv->m01, stride, 0);
+  eps_inv.m02 = f_interp_val(p, mdata, &mdata->eps_inv->m02, stride, 0);
+  eps_inv.m12 = f_interp_val(p, mdata, &mdata->eps_inv->m12, stride, 0);
+#endif
+  return eps_inv;
+}
+
+mpb_real mode_solver::get_epsilon_point(vector3 p) {
+  symmetric_matrix eps_inv;
+  eps_inv = interp_eps_inv(p);
+  return mean_medium_from_matrix(&eps_inv);
+}
+
+cmatrix3x3 mode_solver::get_epsilon_inverse_tensor_point(vector3 p) {
+  symmetric_matrix eps_inv;
+  eps_inv = interp_eps_inv(p);
+
+#ifdef WITH_HERMITIAN_EPSILON
+  return make_hermitian_cmatrix3x3(eps_inv.m00,eps_inv.m11,eps_inv.m22,
+                                   cscalar2cnumber(eps_inv.m01),
+                                   cscalar2cnumber(eps_inv.m02),
+                                   cscalar2cnumber(eps_inv.m12));
+#else
+  return make_hermitian_cmatrix3x3(eps_inv.m00,eps_inv.m11,eps_inv.m22,
+                                   make_cnumber(eps_inv.m01,0),
+                                   make_cnumber(eps_inv.m02,0),
+                                   make_cnumber(eps_inv.m12,0));
+#endif
+}
+
+mpb_real mode_solver::get_energy_point(vector3 p) {
+  CHECK(curfield && strchr("DHBR", curfield_type),
+        "compute-field-energy must be called before get-energy-point");
+  return f_interp_val(p, mdata, (mpb_real *) curfield, 1, 0);
+}
+
+cvector3 mode_solver::get_bloch_field_point(vector3 p) {
+  scalar_complex field[3];
+  cvector3 F;
+
+  CHECK(curfield && strchr("dhbecv", curfield_type),
+        "field must be must be loaded before get-*field*-point");
+  field[0] = f_interp_cval(p, mdata, &curfield[0].re, 6);
+  field[1] = f_interp_cval(p, mdata, &curfield[1].re, 6);
+  field[2] = f_interp_cval(p, mdata, &curfield[2].re, 6);
+  F.x = cscalar2cnumber(field[0]);
+  F.y = cscalar2cnumber(field[1]);
+  F.z = cscalar2cnumber(field[2]);
+  return F;
+}
+
+cvector3 mode_solver::get_field_point(vector3 p) {
+  scalar_complex field[3], phase;
+  cvector3 F;
+
+  CHECK(curfield && strchr("dhbecv", curfield_type),
+       "field must be must be loaded before get-*field*-point");
+  field[0] = f_interp_cval(p, mdata, &curfield[0].re, 6);
+  field[1] = f_interp_cval(p, mdata, &curfield[1].re, 6);
+  field[2] = f_interp_cval(p, mdata, &curfield[2].re, 6);
+
+  if (curfield_type != 'v') {
+    mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
+    mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
+    mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
+
+    double phase_phi = TWOPI * (cur_kvector.x * (p.x / latx) +
+                                cur_kvector.y * (p.y / laty) +
+                                cur_kvector.z * (p.z / latz));
+
+    CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
+    CASSIGN_MULT(field[0], field[0], phase);
+    CASSIGN_MULT(field[1], field[1], phase);
+    CASSIGN_MULT(field[2], field[2], phase);
+  }
+
+  F.x = cscalar2cnumber(field[0]);
+  F.y = cscalar2cnumber(field[1]);
+  F.z = cscalar2cnumber(field[2]);
+
+  return F;
+}
+
 void mode_solver::multiply_bloch_phase() {
 
   std::vector<mpb_real> kvector = get_output_k();
@@ -1797,6 +2067,36 @@ void mode_solver::get_lattice(double data[3][3]) {
   matrix3x3_to_arr(data, Rm);
 }
 
+std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {
+  std::vector<int> res(3);
+  res[0] = H.localN;
+  res[1] = H.c;
+  res[2] = num_bands;
+
+  return res;
+}
+
+void mode_solver::get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size) {
+
+  for (int i = 0, j = p_start; i < size; i += p, j += H.p) {
+    for (int k = 0; k < p; ++k) {
+      cdata[i + k] = std::complex<mpb_real>(H.data[j + k].re, H.data[j + k].im);
+    }
+  }
+}
+
+void mode_solver::set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, int size) {
+  int columns = size / H.n;
+
+  for (int i = 0, j = b_start; i < size; i += columns, j += H.p) {
+    for (int k = 0; k < columns; ++k) {
+      H.data[j + k].re = cdata[i + k].real();
+      H.data[j + k].im = cdata[i + k].imag();
+    }
+  }
+  curfield_reset();
+}
+
 double mode_solver::get_eigensolver_flops() {
   return eigensolver_flops;
 }
@@ -1897,6 +2197,108 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
 
   return group_v;
 }
+
+/* as above, but only computes for given band */
+mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
+  mpb_real u[3];
+  int ib = b - 1;
+  mpb_real group_v;
+  mpb_real scratch;
+
+  curfield_reset();
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "mode_solver.init must be called first!\n");
+    return group_v;
+  }
+
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "mode_solver.solve_kpoint must be called first!\n");
+    return group_v;
+  }
+
+  /* convert d to unit vector in Cartesian coords: */
+  d = unit_vector3(matrix3x3_vector3_mult(Gm, d));
+  u[0] = d.x;
+  u[1] = d.y;
+  u[2] = d.z;
+
+  evectmatrix_resize(&W[0], 1, 0);
+  CHECK(nwork_alloc > 1, "eigensolver-nwork is too small");
+  evectmatrix_resize(&W[1], 1, 0);
+
+  maxwell_compute_H_from_B(mdata, H, W[1], (scalar_complex *) mdata->fft_data, ib, 0, 1);
+  maxwell_ucross_op(W[1], W[0], mdata, u);
+  evectmatrix_XtY_diag_real(W[1], W[0], &group_v, &scratch);
+
+  /* Reset scratch matrix sizes: */
+  evectmatrix_resize(&W[1], W[1].alloc_p, 0);
+  evectmatrix_resize(&W[0], W[0].alloc_p, 0);
+
+  if (freqs[ib] == 0) {  /* v is undefined in this case */
+    group_v = 0.0;  /* just set to zero */
+  }
+  else {
+    group_v /= negative_epsilon_ok ? sqrt(fabs(freqs[ib])) : freqs[ib];
+  }
+  return group_v;
+}
+
+/* returns group velocity for band b, in Cartesian coordinates */
+vector3 mode_solver::compute_1_group_velocity(int b) {
+  vector3 v;
+  vector3 d;
+  matrix3x3 RmT = matrix3x3_transpose(Rm);
+  d.x = 1;
+  d.y = 0;
+  d.z = 0;
+  v.x = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  d.y = 1;
+  d.x = 0;
+  d.z = 0;
+  v.y = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  d.z = 1;
+  d.y = 0;
+  d.x = 0;
+  v.z = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+
+  return v;
+}
+
+/* as above, but returns "group velocity" given by gradient of
+   frequency with respect to k in reciprocal coords ... this is useful
+   for band optimization. */
+vector3 mode_solver::compute_1_group_velocity_reciprocal(int b) {
+  return matrix3x3_vector3_mult(matrix3x3_transpose(Gm),
+                                compute_1_group_velocity(b));
+}
+
+/* compute the fraction of the field energy that is located in the
+   given range of dielectric constants: */
+mpb_real mode_solver::compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high) {
+  mpb_real *energy = (mpb_real *) curfield;
+  mpb_real epsilon = 0.0;
+  mpb_real energy_sum = 0.0;
+
+  if (!curfield || !strchr("DHBR", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
+    return 0.0;
+  }
+
+  int N = mdata->fft_output_size;
+
+  for (int i = 0; i < N; ++i) {
+    epsilon = mean_medium_from_matrix(mdata->eps_inv +i);
+    if (epsilon >= eps_low && epsilon <= eps_high) {
+      energy_sum += energy[i];
+    }
+  }
+  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  energy_sum *= vol / H.N;
+  return energy_sum;
+}
+
+
 
 bool mode_solver::with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON

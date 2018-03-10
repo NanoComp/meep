@@ -121,8 +121,8 @@ If you are installing on your personal Linux or BSD machine, then precompiled bi
 
 One thing to watch out for is that libraries like LAPACK, Guile, HDF5, etcetera, will often come split up into two or more packages: e.g. a `guile` package and a `guile-devel` package. You need to install **both** of these to compile software using the library.
 
-BLAS and LAPACK (recommended)
------------------------------
+BLAS and LAPACK
+---------------
 
 BLAS and LAPACK libraries are required in order to install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
@@ -156,15 +156,15 @@ Note that Meep looks for LAPACK by linking with `-llapack`. This means that the 
 
 We currently recommend installing OpenBLAS which includes LAPACK so you do not need to install it separately.
 
-Harminv (recommended)
----------------------
+Harminv
+-------
 
 To use Meep to extract resonant frequencies and decay rates, you must install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) which requires BLAS and LAPACK.
 
 See the [Harminv installation](https://github.com/stevengj/harminv/blob/master/doc/installation.md) instructions.
 
-Python (recommended)
---------------------
+Python
+------
 
 If you have Python on your system, then the Meep compilation scripts
 automatically build and install the `meep` Python module, which works
@@ -176,8 +176,8 @@ program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the
 Meep `configure` script.   An Anaconda (`conda`) package for Meep
 is also available on some systems.
 
-Guile (recommended)
------------------------
+Guile
+-----
 
 Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
 
@@ -185,17 +185,19 @@ Guile is an extension/scripting language implementation based on Scheme, and we 
 
 - **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312). However, Meep contains a workaround for newer versions of Guile.
 
-libctl (recommended)
---------------------
+libctl
+------
 
-[libctl](https://libctl.readthedocs.io), which requires Guile, is required to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
+[libctl](https://libctl.readthedocs.io) is required to use the Scheme or the Python interfaces, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
 
-Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
+(If you only want the Python interface, it is possible to install libctl without having Scheme/Guile by configuring libctl with `--without-guile`.)
+
+Instead of using Guile directly in our Scheme interface, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
 If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
 
-MPI (parallel machines)
------------------------
+MPI
+---
 
 Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). Most supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
 
@@ -205,8 +207,8 @@ If you use Meep with MPI, you should compile HDF5 with MPI support as well (see 
 
 As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep` (for the Scheme interface), so it overwrites any serial installation. There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun -np 6 meep`).
 
-HDF5 (recommended)
-------------------
+HDF5
+----
 
 Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields.
 

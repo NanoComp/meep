@@ -5,6 +5,7 @@ import math
 import os
 import re
 import sys
+import time
 import unittest
 
 import h5py
@@ -25,6 +26,8 @@ class TestModeSolver(unittest.TestCase):
         """Store the test name and register a function to clean up all the
         generated h5 files."""
 
+        self.start = time.time()
+
         self.filename_prefix = self.id().split('.')[-1]
         print()
         print(self.filename_prefix)
@@ -37,6 +40,10 @@ class TestModeSolver(unittest.TestCase):
                     os.remove(f)
 
         self.addCleanup(rm_h5)
+
+    def tearDown(self):
+        end = time.time() - self.start
+        print("{}: {:.2f}s".format(self.filename_prefix, end))
 
     def init_solver(self, geom=True):
         num_bands = 8
@@ -108,6 +115,35 @@ class TestModeSolver(unittest.TestCase):
 
         for res, exp in zip(k_split[1], expected_list):
             self.assertTrue(res.close(exp))
+
+    def test_first_brillouin_zone(self):
+        ms = self.init_solver()
+
+        res = []
+        for k in ms.k_points:
+            res.append(ms.first_brillouin_zone(k))
+
+        expected = [
+            mp.Vector3(0.0, 0.0, 0.0),
+            mp.Vector3(0.10000000000000003, 0.0, 0.0),
+            mp.Vector3(0.20000000000000004, 0.0, 0.0),
+            mp.Vector3(0.30000000000000004, 0.0, 0.0),
+            mp.Vector3(0.4, 0.0, 0.0),
+            mp.Vector3(0.5, 0.0, 0.0),
+            mp.Vector3(0.5, 0.10000000000000003, 0.0),
+            mp.Vector3(0.5, 0.20000000000000004, 0.0),
+            mp.Vector3(0.5, 0.30000000000000004, 0.0),
+            mp.Vector3(0.5, 0.4, 0.0),
+            mp.Vector3(0.5, 0.5, 0.0),
+            mp.Vector3(0.4, 0.4, 0.0),
+            mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0),
+            mp.Vector3(0.2, 0.2, 0.0),
+            mp.Vector3(0.1, 0.1, 0.0),
+            mp.Vector3(0.0, 0.0, 0.0),
+        ]
+
+        for e, r in zip(expected, res):
+            self.assertTrue(e.close(r))
 
     def check_band_range_data(self, expected_brd, result, places=3, tol=1e-3):
         for exp, res in zip(expected_brd, result):
@@ -233,8 +269,6 @@ class TestModeSolver(unittest.TestCase):
                           0.9229965195855876, 1.0001711176882833, 1.0001720032257042,
                           1.092820931747826]
 
-        # Obtained by passing NULL to set_maxwell_dielectric for epsilon_mean_func
-        # in mpb/mpb/medium.c.
         expected_brd = [
             ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
              (0.49683586474489877, mp.Vector3(0.5, 0.5, 0.0))),
@@ -252,7 +286,6 @@ class TestModeSolver(unittest.TestCase):
              (1.086072932359415, mp.Vector3(0.5, 0.0, 0.0))),
             ((1.0878689635052692, mp.Vector3(0.5, 0.0, 0.0)),
              (1.1119173707556929, mp.Vector3(0.5, 0.5, 0.0))),
-
         ]
 
         expected_gap_list = [
@@ -269,6 +302,9 @@ class TestModeSolver(unittest.TestCase):
             self.assertAlmostEqual(e, r, places=3)
 
         self.check_gap_list(expected_gap_list, ms.gap_list)
+
+        pt = ms.get_epsilon_point(mp.Vector3(0.5, 0.5))
+        self.assertEqual(pt, 1.0)
 
     def test_run_tm(self):
         expected_brd = [
@@ -334,12 +370,70 @@ class TestModeSolver(unittest.TestCase):
         ms = self.init_solver()
         ms.run_te()
         ms.get_dfield(8)
-        res = ms.compute_field_energy()
+        field_pt = ms.get_field_point(mp.Vector3(0.5, 0.5))
+        bloch_field_pt = ms.get_bloch_field_point(mp.Vector3(0.5, 0.5))
+        eps_inv_tensor = ms.get_epsilon_inverse_tensor_point(mp.Vector3(0.5, 0.5))
 
-        expected = [1.0000000000000002, 1.726755206037815e-5, 0.4999827324479414,
-                    1.7267552060375955e-5, 0.4999827324479377, 0.0, 0.0]
+        energy = ms.compute_field_energy()
+        pt = ms.get_energy_point(mp.Vector3(0.5, 0.5))
 
-        self.compare_arrays(np.array(expected), np.array(res))
+        self.assertAlmostEqual(pt, 1.330368347216153e-9)
+
+        expected_fp = mp.Vector3(
+            2.5823356723958247e-5 + 6.713243287584132e-12j,
+            -2.575955745071957e-5 - 6.696552990958943e-12j,
+            0.0 - 0.0j
+        )
+
+        expected_bloch_fp = mp.Vector3(
+            2.5823356723958247e-5 + 6.713243287584132e-12j,
+            -2.575955745071957e-5 - 6.696552990958943e-12j,
+            -0.0 - 0.0j
+        )
+
+        expected_eps_inv_tensor = mp.Matrix(
+            mp.Vector3(1.0 + 0.0j, 0.0 - 0.0j, 0.0 - 0.0j),
+            mp.Vector3(0.0 + 0.0j, 1.0 + 0.0j, 0.0 - 0.0j),
+            mp.Vector3(0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j)
+        )
+
+        self.assertTrue(expected_fp.close(field_pt))
+        self.assertTrue(expected_bloch_fp.close(bloch_field_pt))
+        self.assertEqual(expected_eps_inv_tensor.c1, eps_inv_tensor.c1)
+        self.assertEqual(expected_eps_inv_tensor.c2, eps_inv_tensor.c2)
+        self.assertEqual(expected_eps_inv_tensor.c3, eps_inv_tensor.c3)
+
+        energy_in_dielectric = ms.compute_energy_in_dielectric(0, 1)
+
+        expected_energy = [1.0000000000000002, 1.726755206037815e-5, 0.4999827324479414,
+                           1.7267552060375955e-5, 0.4999827324479377, 0.0, 0.0]
+
+        expected_energy_in_dielectric = 0.6990769686037558
+
+        self.compare_arrays(np.array(expected_energy), np.array(energy))
+        self.assertAlmostEqual(expected_energy_in_dielectric, energy_in_dielectric, places=3)
+
+    def test_compute_group_velocity(self):
+        ms = self.init_solver()
+        ms.run_te()
+        res1 = ms.compute_group_velocity_component(mp.Vector3(0.5, 0.5))
+        res2 = ms.compute_one_group_velocity(8)
+        res3 = ms.compute_one_group_velocity_component(mp.Vector3(0.5, 0.5), 8)
+
+        expected1 = [
+            0.0, 1.470762578355642e-4, -1.4378185933055663e-4, 1.1897503996483383e-4,
+            -4.892687048681629e-4, 1.1240346140784176e-4, 1.5842474585356007e-4,
+            4.496945573323881e-5,
+        ]
+
+        expected2 = mp.Vector3(3.180010979062989e-5, 3.179611968757397e-5)
+        expected3 = 4.496932512216992e-5
+
+        for e, r in zip(expected1, res1):
+            self.assertAlmostEqual(e, r, places=4)
+
+        self.assertTrue(expected2.close(res2, tol=3))
+        self.assertAlmostEqual(expected3, res3, places=3)
 
     def test_output_efield_z(self):
         ms = self.init_solver()
@@ -351,6 +445,22 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fname)
         res_path = re.sub('tutorial', ms.filename_prefix, ref_fname)
         self.compare_h5_files(ref_path, res_path)
+
+    def test_output_dpwr_in_objects(self):
+        ms = self.init_solver()
+        ms.run_te(mpb.output_dpwr_in_objects(mpb.output_dfield, 0.85, ms.geometry))
+
+        ref_fname1 = 'tutorial-d.k01.b02.te.h5'
+        ref_fname2 = 'tutorial-d.k16.b02.te.h5'
+
+        ref_path1 = os.path.join(self.data_dir, ref_fname1)
+        ref_path2 = os.path.join(self.data_dir, ref_fname2)
+
+        res_path1 = re.sub('tutorial', ms.filename_prefix, ref_fname1)
+        res_path2 = re.sub('tutorial', ms.filename_prefix, ref_fname2)
+
+        self.compare_h5_files(ref_path1, res_path1)
+        self.compare_h5_files(ref_path2, res_path2)
 
     def test_triangular_lattice(self):
 
@@ -843,7 +953,6 @@ class TestModeSolver(unittest.TestCase):
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()
-        ms.tolerance = 1e-12
         ms.run_te()
 
         expected_brd = [
@@ -878,6 +987,95 @@ class TestModeSolver(unittest.TestCase):
         self.compare_h5_files(ref_path, res_path)
         self.check_band_range_data(expected_brd, ms.band_range_data)
         self.check_gap_list(expected_gap_list, ms.gap_list)
+
+    def test_run_te_with_mu_material(self):
+        ms = self.init_solver(geom=False)
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(mu=5))]
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.4165291233037574, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.47328232348733695, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.6699867281290507, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6301802646818523, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8037365323032135, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.7017932556977557, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8863448167711359, mp.Vector3(0.5, 0.10000000000000003, 0.0))),
+            ((0.9047498485809726, mp.Vector3(0.5, 0.10000000000000003, 0.0)),
+             (1.0557468193007016, mp.Vector3(0.5, 0.5, 0.0))),
+            ((1.0077925606103986, mp.Vector3(0.2, 0.2, 0.0)),
+             (1.1815403744341757, mp.Vector3(0.0, 0.0, 0.0))),
+            ((1.122424251973878, mp.Vector3(0.20000000000000004, 0.0, 0.0)),
+             (1.2351567679231688, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((1.2059728636717586, mp.Vector3(0.0, 0.0, 0.0)),
+             (1.3135062523646421, mp.Vector3(0.30000000000000004, 0.0, 0.0))),
+        ]
+
+        ms.run_te()
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+
+    def test_output_tot_pwr(self):
+        ms = self.init_solver()
+        ms.run_te()
+        mpb.output_tot_pwr(ms, 8)
+
+        ref_fname = 'tutorial-tot.rpwr.k16.b08.te.h5'
+        ref_path = os.path.join(self.data_dir, ref_fname)
+        res_path = re.sub('tutorial', self.filename_prefix, ref_fname)
+
+        self.compare_h5_files(ref_path, res_path)
+
+    def test_get_eigenvectors(self):
+        ms = self.init_solver()
+        ms.run_te(mpb.fix_hfield_phase)
+
+        def compare_eigenvectors(ref_fn, start, cols):
+            with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
+                expected = f['rawdata'].value
+                # Reshape the last dimension of 2 reals into one complex
+                expected = np.vectorize(complex)(expected[..., 0], expected[..., 1])
+                ev = ms.get_eigenvectors(start, cols)
+                np.testing.assert_allclose(expected, ev, rtol=1e-3)
+
+        # Get all columns
+        compare_eigenvectors('tutorial-te-eigenvectors.h5', 1, 8)
+        # Get last column
+        compare_eigenvectors('tutorial-te-eigenvectors-8-1.h5', 8, 1)
+        # Get columns 3,4, and 5
+        compare_eigenvectors('tutorial-te-eigenvectors-3-3.h5', 3, 3)
+
+    def test_set_eigenvectors(self):
+        ms = self.init_solver()
+
+        def set_H_to_zero_and_check(start, num_bands):
+            ev = ms.get_eigenvectors(start, num_bands)
+            self.assertNotEqual(np.count_nonzero(ev), 0)
+            zeros = np.zeros(ev.shape, dtype=np.complex128)
+            ms.set_eigenvectors(zeros, start)
+            new_ev = ms.get_eigenvectors(start, num_bands)
+            self.assertEqual(np.count_nonzero(new_ev), 0)
+
+        ms.run_te()
+        set_H_to_zero_and_check(8, 1)
+        ms.run_te()
+        set_H_to_zero_and_check(1, 8)
+        ms.run_te()
+        set_H_to_zero_and_check(3, 3)
+
+    def test_load_and_save_eigenvectors(self):
+        ms = self.init_solver()
+        ms.run_te()
+        fn = self.filename_prefix + '.h5'
+
+        ev = ms.get_eigenvectors(8, 1)
+        zeros = np.zeros(ev.shape, dtype=np.complex128)
+        ms.set_eigenvectors(zeros, 8)
+        ms.save_eigenvectors(fn)
+
+        ms.run_te()
+        ms.load_eigenvectors(fn)
+        new_ev = ms.get_eigenvectors(8, 1)
+        self.assertEqual(np.count_nonzero(new_ev), 0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -66,7 +66,7 @@ If `true` (the default) *and* if the boundary conditions are periodic (`k-point`
 
 **`eps-averaging?` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If `true` (the default), then subpixel averaging is used when initializing the dielectric function. See the [technical reference](Acknowledgements/#referencing) for details. The input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average $\varepsilon$ with diminishing returns for the actual FDTD error.
+If `true` (the default), then subpixel averaging is used when initializing the dielectric function. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). The input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average $\varepsilon$ with diminishing returns for the actual FDTD error.
 
 **`force-complex-fields?` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -720,7 +720,7 @@ Note that if you are at a fixed frequency and you use complex fields (Bloch-peri
 
 Often, you want the integration box to be the entire computational cell. A useful function to return this box, which you can then use for the `box` arguments above, is `(meep-fields-total-volume fields)`, where `fields` is the global variable (above) holding the current `meep::fields` object.
 
-One powerful feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output-field-function`, described later). This is done via the functions:
+One versatile feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output-field-function`, described later). This is done via the functions:
 
 **`(integrate-field-function cs func [where] [fields-var])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1106,7 +1106,7 @@ Return the imaginary part of the frequency $\omega$.
 
 **`(harminv-Q result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return dimensionless lifetime, or "quality factor", $Q$, defined as $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
+Return dimensionless lifetime, or quality factor, $Q$, defined as $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
 
 **`(harminv-amp result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

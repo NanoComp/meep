@@ -31,6 +31,7 @@ fields::fields(structure *s, double m, double beta,
 	       bool zero_fields_near_cylorigin) :
   S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta)
 {
+  shared_chunks = s->shared_chunks;
   verbosity = 0;
   components_allocated = false;
   synchronized_magnetic_fields = 0;
@@ -83,6 +84,7 @@ fields::fields(structure *s, double m, double beta,
 fields::fields(const fields &thef) :
   S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v)
 {
+  shared_chunks = thef.shared_chunks;
   verbosity = 0;
   components_allocated = thef.components_allocated;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
@@ -504,7 +506,7 @@ void fields::remove_sources() {
     chunks[i]->remove_sources();
 }
 
-void fields_chunk::remove_susceptibilities() {
+void fields_chunk::remove_susceptibilities(bool shared_chunks) {
   FOR_FIELD_TYPES(ft) {
     for (polarization_state *cur = pol[ft]; cur; ) {
       polarization_state *p = cur;
@@ -515,13 +517,15 @@ void fields_chunk::remove_susceptibilities() {
     pol[ft] = NULL;
   }
 
-  changing_structure();
+  if (!shared_chunks) {
+    changing_structure();
+  }
   s->remove_susceptibilities();
 }
 
 void fields::remove_susceptibilities() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->remove_susceptibilities();
+    chunks[i]->remove_susceptibilities(shared_chunks);
 }
 
 void fields::remove_fluxes() {

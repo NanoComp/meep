@@ -380,6 +380,25 @@ class Simulation(object):
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
                                        absorbers, self.extra_materials)
 
+    def set_materials(self, geometry=None, default_material=None):
+        if self.fields:
+            self.fields.remove_susceptibilities()
+
+        have_absorbers = self.boundary_layers and type(self.boundary_layers[0]) is Absorber
+
+        mp.set_materials_from_geometry(
+            self.structure,
+            geometry if geometry is not None else self.geometry,
+            self.eps_averaging,
+            self.subpixel_tol,
+            self.subpixel_maxeval,
+            self.ensure_periodicity,
+            False,
+            default_material if default_material else self.default_material,
+            self.boundary_layers if have_absorbers else None,
+            self.extra_materials
+        )
+
     def init_fields(self):
 
         if self.structure is None:
@@ -745,6 +764,22 @@ class Simulation(object):
         box = self._fit_volume_to_simulation(box)
 
         return self.fields.field_energy_in_box(d, box.swigobj)
+
+    def modal_volume_in_box(self, vol=None):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using modal_volume_in_box')
+
+        if vol is None:
+            vol = self.fields.total_volume()
+        else:
+            vol = self._fit_volume_to_simulation(vol).swigobj
+
+        return self.fields.modal_volume_in_box(vol)
+
+    def solve_cw(self):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using solve_cw')
+        return self.fields.solve_cw()
 
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
         vol_list = None
