@@ -928,6 +928,23 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_h5_files(ref_path, res_path)
 
+        # Test MPBData
+        with h5py.File(ref_path, 'r') as f:
+            efield = f['z.r'].value
+
+        # rectangularize
+        md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3, verbose=True)
+        new_efield = md.convert(efield)
+        # check with ref file
+
+        ref_fn = 'tri-rods-e.k11.b08.z.tm-r-m3-n32.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+
+        # TODO: This test is failing
+        # with h5py.File(ref_path, 'r') as f:
+        #     expected = f['z.r-new'].value
+        #     self.compare_arrays(expected, new_efield)
+
         ms.run_te()
 
         expected_brd = [
@@ -950,6 +967,17 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
+
+        # Test MPBData
+        eps = ms.get_epsilon()
+        md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3)
+        new_eps = md.convert(eps)
+        ref_fn = 'tri-rods-epsilon-r-m3-n32.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+
+        with h5py.File(ref_path, 'r') as f:
+            ref = f['data-new'].value
+            self.compare_arrays(ref, new_eps, tol=1e-3)
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()

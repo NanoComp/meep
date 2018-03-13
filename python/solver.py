@@ -150,6 +150,12 @@ class ModeSolver(object):
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
 
+        dims = self.mode_solver.get_dims()
+        eps = np.empty(np.prod(dims))
+        self.mode_solver.get_curfield(eps)
+
+        return np.reshape(eps, dims)
+
     def get_bfield(self, which_band):
         return self._get_field('b', which_band)
 
@@ -708,8 +714,8 @@ class ModeSolver(object):
         kpoints_save = self.k_points
         nb = band_max - band_min + 1
         kdir = korig_and_kdir[1] if type(korig_and_kdir) is list else korig_and_kdir
-        l = self.geometry_lattice
-        kdir1 = mp.cartesian_to_reciprocal(mp.reciprocal_to_cartesian(kdir, l).unit(), l)
+        lat = self.geometry_lattice
+        kdir1 = mp.cartesian_to_reciprocal(mp.reciprocal_to_cartesian(kdir, lat).unit(), lat)
 
         if type(korig_and_kdir) is list:
             korig = korig_and_kdir[0]
