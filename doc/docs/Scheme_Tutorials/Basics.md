@@ -4,7 +4,7 @@
 
 In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects_scheme.html).
 
-In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses the free [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) programs. You could also use any other program, such as [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html), that supports reading HDF5 files.
+In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses the [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
 [TOC]
 
@@ -94,7 +94,7 @@ Now, we are ready to run the simulation. We do this by calling the `run-until` f
 
 We are outputting the dielectric function $\epsilon$ and the electric-field component $E_z$, but have wrapped the output functions which would otherwise run at *every* time step in `at-beginning` and `at-end`, which do just what they say. There are several other such functions to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
 
-It should complete in a few seconds. If you are running interactively, the two output files will be called `eps-000000.00.h5` and `ez-000200.00.h5` (notice that the file names include the time at which they were output). If we were running a `tutorial.ctl` file, then the outputs will be `tutorial-eps-000000.00.h5` and `tutorial-ez-000200.00.h5`. In any case, we can now analyze and visualize these files with a wide variety of programs that support the [HDF5](https://en.wikipedia.org/wiki/HDF5) format, including our own [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md), and in particular the `h5topng` program to convert them to [PNG](https://en.wikipedia.org/wiki/PNG) images.
+It should complete in a few seconds. If you are running interactively, the two output files will be called `eps-000000.00.h5` and `ez-000200.00.h5` (notice that the file names include the time at which they were output). If we were running a `tutorial.ctl` file, then the outputs will be `tutorial-eps-000000.00.h5` and `tutorial-ez-000200.00.h5`. In any case, we can now analyze and visualize these files with a wide variety of packages that support the [HDF5](https://en.wikipedia.org/wiki/HDF5) format, including our own [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md), and in particular the `h5topng` program to convert them to [PNG](https://en.wikipedia.org/wiki/PNG) images.
 
 ```sh
 unix% h5topng -S3 eps-000000.00.h5
@@ -230,7 +230,7 @@ Transmission Spectrum around a Waveguide Bend
 
 Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra); please re-read that section if you have forgotten. Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $\omega$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
+The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $\omega$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
 
 This control file will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.ctl](https://github.com/stevengj/meep/blob/master/examples/bend-flux.ctl).
 
