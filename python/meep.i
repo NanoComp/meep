@@ -607,6 +607,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // end typemaps for get_eigenmode_coefficients
 //--------------------------------------------------
 
+//--------------------------------------------------
+// typemaps needed for add_dft_fields
+//--------------------------------------------------
+%apply (int *IN_ARRAY1, int DIM1) {(int *components, int num_components)};
+//--------------------------------------------------
+// end typemaps for add_dft_fields
+//--------------------------------------------------
+
 // typemap suite for field functions
 
 %typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components,

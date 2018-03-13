@@ -1043,6 +1043,20 @@ public:
   int Nomega;
 };
 
+// dft.cpp (normally created with fields::add_dft_fields)
+class dft_fields{
+public:
+  dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq);
+
+  void scale_dfts(std::complex<double> scale);
+
+  void remove();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *chunks;
+};
+
 enum in_or_out { Incoming=0, Outgoing };
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
@@ -1508,6 +1522,14 @@ class fields {
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
 
+  dft_fields add_dft_fields(component *components, int num_components,
+                            const volume where,
+                            double freq_min, double freq_max, int Nfreq);
+  dft_fields add_dft_fields(int *components, int num_components,
+                            const volume where,
+                            double freq_min, double freq_max, int Nfreq);
+
+
   /********************************************************/
   /* process_dft_component is an intermediate-level       */
   /* routine that serves as a common back end for several */
@@ -1515,22 +1537,24 @@ class fields {
   /* writing DFT fields to HDF5 files and evaluating      */
   /* overlap integrals between flux and mode fields.)     */
   /********************************************************/
-  std::complex<double> process_dft_component(dft_chunk **chunklists, 
+  std::complex<double> process_dft_component(dft_chunk **chunklists,
                                              int num_chunklists,
                                              int num_freq, component c,
                                              const char *HDF5FileName,
-                                             void *mode1_data=0, 
+                                             void *mode1_data=0,
                                              void *mode2_data=0,
                                              component c_conjugate=Ex,
-                                             const volume *where=0);
+                                             const volume *where=0,
+                                             bool *first_component=0);
   
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists,
                              const char *HDF5FileName, const volume *where=0);
 
-  void output_dft_flux(dft_flux flux, const char *HDF5FileName, const volume *where=0);
-  void output_dft_force(dft_force force, const char *HDF5FileName, const volume *where=0);
-  void output_dft_near2far(dft_near2far n2f, const char *HDF5FileName, const volume *where=0);
+  void output_dft(dft_flux flux, const char *HDF5FileName, const volume *where=0);
+  void output_dft(dft_force force, const char *HDF5FileName, const volume *where=0);
+  void output_dft(dft_near2far n2f, const char *HDF5FileName, const volume *where=0);
+  void output_dft(dft_fields fields, const char *HDF5FileName, const volume *where=0);
   void output_mode_fields(void *mode_data, dft_flux flux,
                           const char *HDF5FileName, const volume *where=0);
   

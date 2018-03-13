@@ -501,6 +501,53 @@ dft_flux fields::add_dft_flux_plane(const volume &where,
   return add_dft_flux(NO_DIRECTION, where, freq_min, freq_max, Nfreq);
 }
 
+
+dft_fields::dft_fields(dft_chunk *chunks_,
+                       double freq_min_, double freq_max_, int Nfreq_)
+{
+  chunks   = chunks_;
+  freq_min = freq_min_;
+  dfreq    = Nfreq_ <= 1 ? 0.0 : (freq_max_ - freq_min_) / (Nfreq_ - 1);
+  Nfreq    = Nfreq_;
+}
+
+void dft_fields::scale_dfts(cdouble scale)
+{ chunks->scale_dft(scale);
+}
+
+void dft_fields::remove()
+{
+  while(chunks)
+   { dft_chunk *nxt=chunks->next_in_dft;
+     delete chunks;
+     chunks = nxt;
+   }
+}
+
+dft_fields fields::add_dft_fields(component *components, int num_components,
+                                  const volume where,
+                                  double freq_min, double freq_max, int Nfreq) 
+{
+  bool include_dV_and_interp_weights=false;
+  cdouble stored_weight=1.0;
+  dft_chunk *chunks=0;
+  for(int nc=0; nc<num_components; nc++)
+   chunks = add_dft(components[nc], where, freq_min, freq_max, Nfreq,
+                    include_dV_and_interp_weights, stored_weight, chunks);
+
+  return dft_fields(chunks, freq_min, freq_max, Nfreq);
+}
+
+dft_fields fields::add_dft_fields(int *components, int num_components,
+                                  const volume where,
+                                  double freq_min, double freq_max, int Nfreq) 
+{
+  component *cs = new component[num_components];
+  for(int nc=0; nc<num_components; nc++)
+   cs[nc]=(component)(Ex + components[nc]);
+  return add_dft_fields(cs,num_components,where,freq_min,freq_max,Nfreq);
+}
+
 /***************************************************************/
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
@@ -638,7 +685,8 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
                                       const char *HDF5FileName,
                                       void *mode1_data, void *mode2_data,
                                       component c_conjugate,
-                                      const volume *where)
+                                      const volume *where,
+                                      bool *first_component)
 { 
   /***************************************************************/
   /* get statistics on the volume slice **************************/
@@ -676,7 +724,8 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       ds[rank] = d;
       dims[rank++] = n;
     }
-  };
+  }
+  if (rank==0) return 0.0; // no chunks with the specified component on this processor
 
   /***************************************************************/
   /* buffer for process-local contributions to HDF5 output files,*/
@@ -686,8 +735,6 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   int reim_max = 0;
   if(HDF5FileName)
    { buffer   = new realnum[bufsz];
-if (buffer==0) 
- abort("out of memory (%lu)",bufsz);
      reim_max = 1;
    };
 
@@ -698,9 +745,8 @@ if (buffer==0)
    { 
      h5file *file=0;
      if (HDF5FileName)
-      { file = open_h5file(HDF5FileName, h5file::READWRITE);
-if(file==0)
- abort("could not open file %s\n",HDF5FileName);
+      { file = open_h5file(HDF5FileName, (*first_component) ? h5file::WRITE : h5file::READWRITE);
+        *first_component = false;
         char dataname[100];
         snprintf(dataname,100,"%s_%i.%c",component_name(c),num_freq, reim ? 'i' : 'r');
         file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
@@ -718,8 +764,8 @@ if(file==0)
       { file->done_writing_chunks();
         file->prevent_deadlock(); // hackery
         delete file;
-      };
-   };
+      }
+   }
 
   if (HDF5FileName)
    delete[] buffer;
@@ -737,18 +783,19 @@ if(file==0)
 void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
                                    const char *HDF5FileName, const volume *where)
 {
-  // alternatively, could do unlink(HDF5FileName)
-  h5file *file = open_h5file(HDF5FileName, h5file::WRITE);
-  file->prevent_deadlock();
-  delete file;
+  int NumFreqs=0;
+  for(int nc=0; nc<num_chunklists && NumFreqs==0; nc++)
+   if (chunklists[nc])
+    NumFreqs = chunklists[nc]->Nomega;
 
-  for(int num_freq=0; num_freq<chunklists[0]->Nomega; num_freq++)
+  bool first_component=true;
+  for(int num_freq=0; num_freq<NumFreqs; num_freq++)
    FOR_E_AND_H(c)
     process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
-                          0, 0, Ex, where);
+                          0, 0, Ex, where, &first_component);
 }
 
-void fields::output_dft_flux(dft_flux flux, const char *HDF5FileName, const volume *where)
+void fields::output_dft(dft_flux flux, const char *HDF5FileName, const volume *where)
 { 
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
@@ -756,7 +803,7 @@ void fields::output_dft_flux(dft_flux flux, const char *HDF5FileName, const volu
   output_dft_components(chunklists, 2, HDF5FileName, where);
 }
 
-void fields::output_dft_force(dft_force force, const char *HDF5FileName, const volume *where)
+void fields::output_dft(dft_force force, const char *HDF5FileName, const volume *where)
 {
   dft_chunk *chunklists[3];
   chunklists[0] = force.offdiag1;
@@ -765,9 +812,16 @@ void fields::output_dft_force(dft_force force, const char *HDF5FileName, const v
   output_dft_components(chunklists, 3, HDF5FileName, where);
 }
 
-void fields::output_dft_near2far(dft_near2far n2f, const char *HDF5FileName, const volume *where)
+void fields::output_dft(dft_near2far n2f, const char *HDF5FileName, const volume *where)
 { dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
+  output_dft_components(chunklists, 1, HDF5FileName, where);
+}
+
+void fields::output_dft(dft_fields fields, const char *HDF5FileName, const volume *where)
+{
+  dft_chunk *chunklists[1];
+  chunklists[0] = fields.chunks;
   output_dft_components(chunklists, 1, HDF5FileName, where);
 }
 

@@ -34,10 +34,13 @@ TESTS           = cyl-ellipsoid-ll array-slice-ll
 
 #LOG_COMPILER = $(RUNCODE)
 
-noinst_PROGRAMS = bend-flux-ll wvg-taper
+noinst_PROGRAMS = bend-flux-ll wvg-taper dft-fields
 
 wvg_taper_SOURCES = wvg-taper.cpp
 wvg_taper_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+dft_fields_SOURCES = dft-fields.cpp
+dft_fields_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)

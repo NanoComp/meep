@@ -450,9 +450,9 @@ int main(int argc, char *argv[])
   if (plot_flux)
    { char filename[100];
      snprintf(filename,100,"%s_fluxA",filebase);
-     f.output_dft_flux(fluxA, filename);
+     f.output_dft(fluxA, filename);
      snprintf(filename,100,"%s_fluxB",filebase);
-     f.output_dft_flux(fluxB, filename);
+     f.output_dft(fluxB, filename);
      snprintf(filename,100,"%s.fluxData",filebase);
      if (am_master())
       { FILE *ff=fopen(filename,"a");
