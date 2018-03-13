@@ -534,7 +534,7 @@ AC_CONFIG_FILES([
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
-	examples/Makefile
+	scheme/examples/Makefile
 	scheme/Makefile
 	scheme/meep.scm
 	libmeepgeom/Makefile
