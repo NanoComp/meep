@@ -1,5 +1,5 @@
 bin_PROGRAMS = meep
-EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch
+EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch examples
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
