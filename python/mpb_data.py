@@ -316,13 +316,13 @@ class MPBData(object):
         out_dims2 = [1, 1, 1]
 
         if self.transpose:
-            out_dims2[0] = out_dims[1]
-            out_dims2[1] = out_dims[0]
-            out_dims2[2] = out_dims[2]
+            out_dims2[0] = int(out_dims[1])
+            out_dims2[1] = int(out_dims[0])
+            out_dims2[2] = int(out_dims[2])
         else:
-            out_dims2[0] = out_dims[0]
-            out_dims2[1] = out_dims[1]
-            out_dims2[2] = out_dims[2]
+            out_dims2[0] = int(out_dims[0])
+            out_dims2[1] = int(out_dims[1])
+            out_dims2[2] = int(out_dims[2])
 
         if self.verbose:
             print("Output data {}x{}x{}".format(out_dims2[0], out_dims2[1], out_dims2[2]))
