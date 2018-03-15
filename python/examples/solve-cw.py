@@ -39,22 +39,20 @@ err_dat = np.zeros(num_tols-1)
 for i in range(num_tols-1):
     err_dat[i] = LA.norm(ez_dat[:,:,i]-ez_dat[:,:,num_tols-1])
 
-plt.figure()    
+plt.figure(dpi=100)
 plt.loglog(tols[:num_tols-1], err_dat, 'bo-');
 plt.xlabel("frequency-domain solver tolerance");
 plt.ylabel("L2 norm of error in fields");
-plt.savefig("CWsolver_error.eps");
-# plt.show()
+plt.show()
 
-plt.figure()
 eps_data = sim.get_array(mp.Vector3(), mp.Vector3(sxy-2*dpml,sxy-2*dpml), mp.Dielectric)
-ez_data = ez_dat[:,:,num_tols-1].imag
+ez_data = np.absolute(ez_dat[:,:,num_tols-1])
+
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
-plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)
+plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='Reds', alpha=0.9)
 plt.axis('off')
-plt.savefig("CWsolver_fields2.png")
-# plt.show()
+plt.show()
 
 if np.all(np.diff(err_dat) < 0):
     print("PASSED solve_cw test: error in the fields is decreasing with increasing resolution")

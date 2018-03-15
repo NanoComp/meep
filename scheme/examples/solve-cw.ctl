@@ -33,10 +33,12 @@
 (define-param solve-cw-maxiters 10000)
 (define-param solve-cw-L 10)
 
+(define (ez-mag r ez) (magnitude ez))
+
 (init-fields)
 (meep-fields-solve-cw fields solve-cw-tol solve-cw-maxiters solve-cw-L)
 (in-volume (volume (center 0 0) (size (- sxy (* 2 dpml)) (- sxy (* 2 dpml))))
 	   (output-epsilon)
-	   (output-efield-z))
+	   (output-real-field-function "ez-mag" (list Ez) ez-mag))
 
 (exit)

@@ -17,7 +17,7 @@
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
 -   Arbitrary current sources including a guided-mode launcher.
 -   Frequency-domain solver for finding the response to a continuous-wave source.
--   Field analysis tools involving flux spectra, modal decomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions, near to far field transformations; completely programmable.
+-   Field analyses including flux spectra, modal decomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions, near to far field transformations; completely programmable.
 
 # Documentation
 

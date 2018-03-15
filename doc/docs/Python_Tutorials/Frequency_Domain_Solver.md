@@ -2,9 +2,9 @@
 # Frequency Domain Solver
 ---
 
-This tutorial demonstrates Meep's [frequency-domain solver](../Python_User_Interface/#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [constant-frequency source](https://en.wikipedia.org/wiki/Continuous_wave). For more details regarding what this feature is and how it works, refer to this [FAQ](../FAQ/#what-is-meeps-frequency-domain-solver-and-how-does-it-work). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in a [separate tutorial](Basics/#modes-of-a-ring-resonator). We will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver.
+This tutorial demonstrates Meep's [frequency-domain solver](../Python_User_Interface/#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For more details regarding what this feature is and how it works, refer to this [FAQ](../FAQ/#what-is-meeps-frequency-domain-solver-and-how-does-it-work). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in a [separate tutorial](Basics/#modes-of-a-ring-resonator). We will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver.
 
-Only two changes are necessary to the [original simulation](https://github.com/stevengj/meep/blob/master/python/examples/ring.py) which involved time-stepping the fields in response to a broadband source: (1) replace the Gaussian-pulse source with a [continuous-wave (CW) source](../Python_User_Interface/#continuoussource), and (2) turn on complex fields since, by default, real fields are used. Everything else remains unchanged.
+Only two changes are necessary to the [original simulation](https://github.com/stevengj/meep/blob/master/python/examples/ring.py) which involved time-stepping the fields in response to a broadband source: (1) replace the Gaussian-pulse source with a [continuous source](../Python_User_Interface/#continuoussource), and (2) turn on complex fields since, by default, real fields are used. Everything else remains unchanged.
 
 Since the frequency-domain solver uses an [iterative method](https://en.wikipedia.org/wiki/Iterative_method), there are two things we can do to improve its convergence: (1) use a non-zero smoothing width (default is 0) for the CW source to reduce the high-frequency oscillations produced by its abrupt turn on (which have slow group velocities and are absorbed poorly by [PML](../Perfectly_Matched_Layer/)), and (2) increase the value of $L$ (default is 2) which is one of the parameters used in the [BiCGSTAB-L](https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method) iterative solver.
 
@@ -52,18 +52,18 @@ err_dat = np.zeros(num_tols-1)
 for i in range(num_tols-1):
     err_dat[i] = LA.norm(ez_dat[:,:,i]-ez_dat[:,:,num_tols-1])
 
-plt.figure()    
+plt.figure(dpi=100)
 plt.loglog(tols[:num_tols-1], err_dat, 'bo-');
 plt.xlabel("frequency-domain solver tolerance");
 plt.ylabel("L2 norm of error in fields");
 plt.show()
 
-plt.figure()
 eps_data = sim.get_array(mp.Vector3(), mp.Vector3(sxy-2*dpml,sxy-2*dpml), mp.Dielectric)
-ez_data = ez_dat[:,:,num_tols-1].imag
+ez_data = np.absolute(ez_dat[:,:,num_tols-1])
+
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
-plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)
+plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='Reds', alpha=0.9)
 plt.axis('off')
 plt.show()
 
@@ -73,7 +73,7 @@ else:
     print("FAILED solve_cw test: error in the fields is NOT decreasing with increasing resolution")
 ```
 
-The inset of the figure below shows the scalar E$_z$ field (imaginary part), computed using a tolerance of 10$^{-12}$, overlapping the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern and presence of the point source. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver.
+The inset of the figure below shows the magnitude of the E$_z$ field, computed using a tolerance of 10$^{-12}$, overlapping the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern and presence of the point source. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver.
 
 <center>
 ![](../images/CWsolver-python.png)

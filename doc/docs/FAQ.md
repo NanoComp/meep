@@ -114,6 +114,8 @@ Meep contains a [frequency-domain solver](Python_User_Interface/#frequency-domai
 
 This means that all of the features from the time-domain solver (e.g., arbitrary materials, symmetries, subpixel averaging, parallelization, etc.) are also available as a frequency-domain solver. For certain problems, such as cavities (e.g., ring resonators) with long-lived resonant modes, the frequency-domain solver converges much faster than the straightforward approach of simply running a long simulation until transients have disappeared. Another benefit is that an arbitrary complex refractive index can be specified directly using the [electric conductivity](Materials/#conductivity-and-complex) without having to fit the data to a sum of [Lorentzian-Drude susceptibility terms](Materials/#material-dispersion).
 
+Examples are provided in [Tutorials/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver/).
+
 ### Is there a materials library?
 
 A materials library is available containing 11 commonly used metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. Additional information is provided in [Materials](Materials/#materials-library).
