@@ -41,6 +41,12 @@
                  bbbb_re * cccc_im + bbbb_im * cccc_re); \
 }
 
+#ifdef WITH_HERMITIAN_EPSILON
+  typedef meep_geom::hermitian_medium medium_struct;
+#else
+  typedef meep_geom::medium_struct medium_struct;
+#endif
+
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
      CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");\
@@ -71,7 +77,7 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
                                 const mpb_real r[3], void *epsilon_data) {
 
   mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
-  meep_geom::material_type mat;
+  material_type mat;
   vector3 p;
 
   // p needs to be in the lattice *unit* vector basis, while r is in the lattice
@@ -200,7 +206,7 @@ mode_solver::mode_solver(int num_bands,
                          lattice lat,
                          double tolerance,
                          int mesh_size,
-                         meep_geom::material_data *_default_material,
+                         material_data *_default_material,
                          geometric_object_list geom,
                          bool reset_fields,
                          bool deterministic,
@@ -289,8 +295,8 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
   const geometric_object *o2 = 0;
   geom_box pixel;
   double fill;
-  meep_geom::material_type mat1;
-  meep_geom::material_type mat2;
+  material_type mat1;
+  material_type mat2;
 
   int id1 = -1;
   int id2 = -1;
@@ -352,10 +358,10 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
       continue;
     }
 
-    meep_geom::material_type mat = (meep_geom::material_type)default_material;
+    material_type mat = (material_type)default_material;
     if (o) {
-      meep_geom::material_data *md = (meep_geom::material_data*)o->material;
-      if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
+      material_data *md = (material_data*)o->material;
+      if (md->which_subclass != material_data::MATERIAL_FILE) {
         mat = md;
       }
     }
@@ -367,14 +373,14 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
       mat1 = mat;
     }
     else if (id2 == -1 || ((id >= id1 && id >= id2) &&
-            (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
+            (id1 == id2 || *mat1 == *mat2))) {
       o2 = o;
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
     }
-    else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
-             !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
+    else if (!(id1 < id2 && (id1 == id || *mat1 == *mat)) &&
+             !(id2 < id1 && (id2 == id || *mat2 == *mat))) {
       return 0; /* too many nearby objects for analysis */
     }
   }
@@ -403,7 +409,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
   material_epsmu(mat1, meps, meps_inv, eps);
 
   /* check for trivial case of only one object/material */
-  if (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)) {
+  if (id1 == id2 || *mat1 == *mat2) {
     n[0] = n[1] = n[2] = 0;
     return 1;
   }
@@ -549,37 +555,62 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
   return 1;
 }
 
-void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
+void mode_solver::material_epsmu(material_type material, symmetric_matrix *epsmu,
                                  symmetric_matrix *epsmu_inv, bool eps) {
 
-  meep_geom::material_data *md = material;
+  material_data *md = material;
 
   if (eps) {
     switch (md->which_subclass) {
-      case meep_geom::material_data::MEDIUM:
-      case meep_geom::material_data::MATERIAL_FILE:
-      case meep_geom::material_data::MATERIAL_USER:
+      case material_data::MEDIUM:
+      case material_data::MATERIAL_FILE:
+      case material_data::MATERIAL_USER:
         epsmu->m00 = md->medium.epsilon_diag.x;
         epsmu->m11 = md->medium.epsilon_diag.y;
         epsmu->m22 = md->medium.epsilon_diag.z;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = md->medium.epsilon_offdiag.x.re;
+        epsmu->m01.im = md->medium.epsilon_offdiag.x.im;
+        epsmu->m02.re = md->medium.epsilon_offdiag.y.re;
+        epsmu->m02.im = md->medium.epsilon_offdiag.y.im;
+        epsmu->m12.re = md->medium.epsilon_offdiag.z.re;
+        epsmu->m12.im = md->medium.epsilon_offdiag.z.im;
+#else
         epsmu->m01 = md->medium.epsilon_offdiag.x;
         epsmu->m02 = md->medium.epsilon_offdiag.y;
         epsmu->m12 = md->medium.epsilon_offdiag.z;
+#endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
-      case meep_geom::material_data::PERFECT_METAL:
+      case material_data::PERFECT_METAL:
         epsmu->m00 = -inf;
         epsmu->m11 = -inf;
         epsmu->m22 = -inf;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = 0.0;
+        epsmu->m01.im = 0.0;
+        epsmu->m02.re = 0.0;
+        epsmu->m02.im = 0.0;
+        epsmu->m12.re = 0.0;
+        epsmu->m12.im = 0.0;
+
+        epsmu_inv->m01.re = 0.0;
+        epsmu_inv->m01.im = 0.0;
+        epsmu_inv->m02.re = 0.0;
+        epsmu_inv->m02.im = 0.0;
+        epsmu_inv->m12.re = 0.0;
+        epsmu_inv->m12.im = 0.0;
+#else
         epsmu->m01 = 0.0;
         epsmu->m02 = 0.0;
         epsmu->m12 = 0.0;
-        epsmu_inv->m00 = -0.0;
-        epsmu_inv->m11 = -0.0;
-        epsmu_inv->m22 = -0.0;
         epsmu_inv->m01 = 0.0;
         epsmu_inv->m02 = 0.0;
         epsmu_inv->m12 = 0.0;
+#endif
+        epsmu_inv->m00 = -0.0;
+        epsmu_inv->m11 = -0.0;
+        epsmu_inv->m22 = -0.0;
         break;
       default:
         meep::abort("Unknown material type");
@@ -587,26 +618,55 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
   }
   else {
     switch (md->which_subclass) {
-      case meep_geom::material_data::MEDIUM:
-      case meep_geom::material_data::MATERIAL_FILE:
-      case meep_geom::material_data::MATERIAL_USER:
+      case material_data::MEDIUM:
+      case material_data::MATERIAL_FILE:
+      case material_data::MATERIAL_USER:
         epsmu->m00 = md->medium.mu_diag.x;
         epsmu->m11 = md->medium.mu_diag.y;
         epsmu->m22 = md->medium.mu_diag.z;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = md->medium.mu_offdiag.x.re;
+        epsmu->m01.im = md->medium.mu_offdiag.x.im;
+        epsmu->m02.re = md->medium.mu_offdiag.y.re;
+        epsmu->m02.im = md->medium.mu_offdiag.y.im;
+        epsmu->m12.re = md->medium.mu_offdiag.z.re;
+        epsmu->m12.im = md->medium.mu_offdiag.z.im;
+#else
         epsmu->m01 = md->medium.mu_offdiag.x;
         epsmu->m02 = md->medium.mu_offdiag.y;
         epsmu->m12 = md->medium.mu_offdiag.z;
+#endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
-      case meep_geom::material_data::PERFECT_METAL:
+      case material_data::PERFECT_METAL:
         epsmu->m00 = 1.0;
         epsmu->m11 = 1.0;
         epsmu->m22 = 1.0;
         epsmu_inv->m00 = 1.0;
         epsmu_inv->m11 = 1.0;
         epsmu_inv->m22 = 1.0;
-        epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-        epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = 0.0;
+        epsmu->m01.im = 0.0;
+        epsmu->m02.re = 0.0;
+        epsmu->m02.im = 0.0;
+        epsmu->m12.re = 0.0;
+        epsmu->m12.im = 0.0;
+
+        epsmu_inv->m01.re = 0.0;
+        epsmu_inv->m01.im = 0.0;
+        epsmu_inv->m02.re = 0.0;
+        epsmu_inv->m02.im = 0.0;
+        epsmu_inv->m12.re = 0.0;
+        epsmu_inv->m12.im = 0.0;
+#else
+        epsmu->m01 = 0.0;
+        epsmu->m02 = 0.0;
+        epsmu->m12 = 0.0;
+        epsmu_inv->m01 = 0.0;
+        epsmu_inv->m02 = 0.0;
+        epsmu_inv->m12 = 0.0;
+#endif
         break;
       default:
         meep::abort("unknown material type");
@@ -614,19 +674,19 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
   }
 }
 
-void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
+void mode_solver::get_material_pt(material_type &material, vector3 p) {
   boolean inobject;
-  material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(p, geometry_tree, &inobject);
-  meep_geom::material_data *md = material;
+  material = (material_type)material_of_unshifted_point_in_tree_inobject(p, geometry_tree, &inobject);
+  material_data *md = material;
 
   switch(md->which_subclass) {
     // material read from file: interpolate to get properties at r
-    case meep_geom::material_data::MATERIAL_FILE:
+    case material_data::MATERIAL_FILE:
       if (md->epsilon_data) {
-        meep_geom::epsilon_file_material(md, p);
+        md->epsilon_file_material(p);
       }
       else {
-        material = (meep_geom::material_type) default_material;
+        material = (material_type) default_material;
       }
       return;
 
@@ -635,22 +695,16 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
     // Note that we initialize the medium to vacuum, so that
     // the user's function only needs to fill in whatever is
     // different from vacuum.
-    case meep_geom::material_data::MATERIAL_USER:
-      md->medium = meep_geom::medium_struct();
-      md->user_func(p, md->user_data, &(md->medium));
-      // TODO: update this to allow user's function to set
-      //       position-dependent susceptibilities. For now
-      //       it's an error if the user's function creates
-      //       any.
-      if ((md->medium.E_susceptibilities.num_items>0) ||
-          (md->medium.H_susceptibilities.num_items>0)) {
-        meep::abort("susceptibilities in user-defined-materials not yet supported");
-      }
+    case material_data::MATERIAL_USER:
+      // TODO: Need a user_func that accepts a hermitian_medium
+      // md->medium = medium_struct(1);
+      // md->user_func(p, md->user_data, &(md->medium));
+      meep::abort("user-defined-materials in pympb not yet supported");
       return;
 
     // position-independent material or metal: there is nothing to do
-    case meep_geom::material_data::MEDIUM:
-    case meep_geom::material_data::PERFECT_METAL:
+    case material_data::MEDIUM:
+    case material_data::PERFECT_METAL:
       return;
     default:
       meep::abort("unknown material type");
@@ -796,8 +850,8 @@ void mode_solver::init_epsilon() {
     for (int i = 0; i < geometry.num_items; ++i) {
       display_geometric_object_info(5, geometry.items[i]);
 
-      // meep_geom::medium_struct *mm;
-      // if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
+      // medium_struct *mm;
+      // if (is_medium(geometry.items[i].material, &mm)) {
       //   printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n", 5 + 5, "",
       //          mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       // }
@@ -881,16 +935,33 @@ bool mode_solver::has_mu() {
 }
 
 bool mode_solver::material_has_mu(void *mt) {
-  meep_geom::material_type mat = (meep_geom::material_type)mt;
-  meep_geom::medium_struct *m = &mat->medium;
+  material_type mat = (material_type)mt;
+  medium_struct *m = &mat->medium;
 
-  if (mat->which_subclass != meep_geom::material_data::PERFECT_METAL) {
+  if (mat->which_subclass != material_data::PERFECT_METAL) {
+    bool has_nonzero_mu_offdiag = false;
+
+#ifdef WITH_HERMITIAN_EPSILON
+    if (m->mu_offdiag.x.re != 0 ||
+        m->mu_offdiag.x.im != 0 ||
+        m->mu_offdiag.y.re != 0 ||
+        m->mu_offdiag.y.im != 0 ||
+        m->mu_offdiag.z.re != 0 ||
+        m->mu_offdiag.z.im != 0) {
+      has_nonzero_mu_offdiag = true;
+    }
+#else
+    if (m->mu_offdiag.x != 0 ||
+        m->mu_offdiag.y != 0 ||
+        m->mu_offdiag.z != 0) {
+      has_nonzero_mu_offdiag = true;
+    }
+#endif
+
     if (m->mu_diag.x != 1 ||
         m->mu_diag.y != 1 ||
         m->mu_diag.z != 1 ||
-        m->mu_offdiag.x != 0 ||
-        m->mu_offdiag.y != 0 ||
-        m->mu_offdiag.z != 0) {
+        has_nonzero_mu_offdiag) {
       return true;
     }
   }
@@ -2344,7 +2415,7 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
     for (n = objects.num_items - 1; n >= 0; --n) {
       if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
         // TODO:
-        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
+        // if (((material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
         //   break; /* treat as a "nothing" object */
         // }
         energy_sum += energy[xyz_index];

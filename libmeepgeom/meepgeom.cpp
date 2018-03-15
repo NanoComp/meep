@@ -91,6 +91,73 @@ bool material_type_equal(const material_type m1, const material_type m2)
     }
 }
 
+bool hermitian_material_data::operator==(const hermitian_material_data &m2) {
+    if (which_subclass != m2.which_subclass) {
+        return false;
+    }
+
+    switch (which_subclass) {
+      case material_data::MATERIAL_FILE:
+      case material_data::PERFECT_METAL:
+        return true;
+      case material_data::MATERIAL_USER:
+          return user_func == m2.user_func && user_data == m2.user_data;
+      case material_data::MEDIUM:
+          return m1->medium == m2->medium;
+      default:
+        return false;
+    }
+}
+
+bool hermitian_material_data::operator==(const hermitian_medium &m2) {
+    return (vector3_equal(epsilon_diag, m2.epsilon_diag) &&
+            cvector3_equal(epsilon_offdiag, m2.epsilon_offdiag) &&
+            vector3_equal(mu_diag, m2.mu_diag) &&
+            cvector3_equal(mu_offdiag, m2.mu_offdiag) &&
+            vector3_equal(E_chi2_diag, m2.E_chi2_diag) &&
+            vector3_equal(E_chi3_diag, m2.E_chi3_diag) &&
+            vector3_equal(H_chi2_diag, m2.H_chi2_diag) &&
+            vector3_equal(D_conductivity_diag, m2.D_conductivity_diag) &&
+            vector3_equal(B_conductivity_diag, m2.B_conductivity_diag) &&
+            susceptibility_list_equal(E_susceptibilities, m2.E_susceptibilities) &&
+            susceptibility_list_equal(H_susceptibilities, m2.H_susceptibilities));
+}
+
+void hermitian_material_data::epsilon_file_material(vector3 p)
+{
+    default_material = (void*)this;
+
+    if (which_subclass != material_data::MATERIAL_FILE) {
+        meep::abort("epsilon-input-file only works with a type=file default-material");
+    }
+
+    if (!(md->epsilon_data)) {
+        return;
+    }
+
+    double rx = geometry_lattice.size.x == 0
+        ? 0 : 0.5 + (p.x-geometry_center.x) / geometry_lattice.size.x;
+    double ry = geometry_lattice.size.y == 0
+        ? 0 : 0.5 + (p.y-geometry_center.y) / geometry_lattice.size.y;
+    double rz = geometry_lattice.size.z == 0
+        ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
+
+    double interp_result = linear_interpolate(rx, ry, rz, epsilon_data,
+                                              epsilon_dims[0],
+                                              epsilon_dims[1],
+                                              epsilon_dims[2], 1);
+    medium.epsilon_diag.x = interp_result;
+    medium.epsilon_diag.y = interp_result;
+    medium.epsilon_diag.z = interp_result;
+
+    medium.epsilon_offdiag.x.re = 0;
+    medium.epsilon_offdiag.x.im = 0;
+    medium.epsilon_offdiag.y.re = 0;
+    medium.epsilon_offdiag.y.im = 0;
+    medium.epsilon_offdiag.z.re = 0;
+    medium.epsilon_offdiag.z.im = 0;
+}
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
