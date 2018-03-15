@@ -562,24 +562,49 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu->m00 = md->medium.epsilon_diag.x;
         epsmu->m11 = md->medium.epsilon_diag.y;
         epsmu->m22 = md->medium.epsilon_diag.z;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = md->medium.epsilon_offdiag.x.re;
+        epsmu->m01.im = md->medium.epsilon_offdiag.x.im;
+        epsmu->m02.re = md->medium.epsilon_offdiag.y.re;
+        epsmu->m02.im = md->medium.epsilon_offdiag.y.im;
+        epsmu->m12.re = md->medium.epsilon_offdiag.z.re;
+        epsmu->m12.im = md->medium.epsilon_offdiag.z.im;
+#else
         epsmu->m01 = md->medium.epsilon_offdiag.x;
         epsmu->m02 = md->medium.epsilon_offdiag.y;
         epsmu->m12 = md->medium.epsilon_offdiag.z;
+#endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
       case meep_geom::material_data::PERFECT_METAL:
         epsmu->m00 = -inf;
         epsmu->m11 = -inf;
         epsmu->m22 = -inf;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = 0.0;
+        epsmu->m01.im = 0.0;
+        epsmu->m02.re = 0.0;
+        epsmu->m02.im = 0.0;
+        epsmu->m12.re = 0.0;
+        epsmu->m12.im = 0.0;
+
+        epsmu_inv->m01.re = 0.0;
+        epsmu_inv->m01.im = 0.0;
+        epsmu_inv->m02.re = 0.0;
+        epsmu_inv->m02.im = 0.0;
+        epsmu_inv->m12.re = 0.0;
+        epsmu_inv->m12.im = 0.0;
+#else
         epsmu->m01 = 0.0;
         epsmu->m02 = 0.0;
         epsmu->m12 = 0.0;
-        epsmu_inv->m00 = -0.0;
-        epsmu_inv->m11 = -0.0;
-        epsmu_inv->m22 = -0.0;
         epsmu_inv->m01 = 0.0;
         epsmu_inv->m02 = 0.0;
         epsmu_inv->m12 = 0.0;
+#endif
+        epsmu_inv->m00 = -0.0;
+        epsmu_inv->m11 = -0.0;
+        epsmu_inv->m22 = -0.0;
         break;
       default:
         meep::abort("Unknown material type");
@@ -593,9 +618,18 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu->m00 = md->medium.mu_diag.x;
         epsmu->m11 = md->medium.mu_diag.y;
         epsmu->m22 = md->medium.mu_diag.z;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = md->medium.mu_offdiag.x.re;
+        epsmu->m01.im = md->medium.mu_offdiag.x.im;
+        epsmu->m02.re = md->medium.mu_offdiag.y.re;
+        epsmu->m02.im = md->medium.mu_offdiag.y.im;
+        epsmu->m12.re = md->medium.mu_offdiag.z.re;
+        epsmu->m12.im = md->medium.mu_offdiag.z.im;
+#else
         epsmu->m01 = md->medium.mu_offdiag.x;
         epsmu->m02 = md->medium.mu_offdiag.y;
         epsmu->m12 = md->medium.mu_offdiag.z;
+#endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
       case meep_geom::material_data::PERFECT_METAL:
@@ -605,8 +639,28 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu_inv->m00 = 1.0;
         epsmu_inv->m11 = 1.0;
         epsmu_inv->m22 = 1.0;
-        epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-        epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+#ifdef WITH_HERMITIAN_EPSILON
+        epsmu->m01.re = 0.0;
+        epsmu->m01.im = 0.0;
+        epsmu->m02.re = 0.0;
+        epsmu->m02.im = 0.0;
+        epsmu->m12.re = 0.0;
+        epsmu->m12.im = 0.0;
+
+        epsmu_inv->m01.re = 0.0;
+        epsmu_inv->m01.im = 0.0;
+        epsmu_inv->m02.re = 0.0;
+        epsmu_inv->m02.im = 0.0;
+        epsmu_inv->m12.re = 0.0;
+        epsmu_inv->m12.im = 0.0;
+#else
+        epsmu->m01 = 0.0;
+        epsmu->m02 = 0.0;
+        epsmu->m12 = 0.0;
+        epsmu_inv->m01 = 0.0;
+        epsmu_inv->m02 = 0.0;
+        epsmu_inv->m12 = 0.0;
+#endif
         break;
       default:
         meep::abort("unknown material type");
@@ -638,14 +692,6 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
     case meep_geom::material_data::MATERIAL_USER:
       md->medium = meep_geom::medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
-      // TODO: update this to allow user's function to set
-      //       position-dependent susceptibilities. For now
-      //       it's an error if the user's function creates
-      //       any.
-      if ((md->medium.E_susceptibilities.num_items>0) ||
-          (md->medium.H_susceptibilities.num_items>0)) {
-        meep::abort("susceptibilities in user-defined-materials not yet supported");
-      }
       return;
 
     // position-independent material or metal: there is nothing to do
@@ -885,12 +931,29 @@ bool mode_solver::material_has_mu(void *mt) {
   meep_geom::medium_struct *m = &mat->medium;
 
   if (mat->which_subclass != meep_geom::material_data::PERFECT_METAL) {
+    bool has_nonzero_mu_offdiag = false;
+
+#ifdef WITH_HERMITIAN_EPSILON
+    if (m->mu_offdiag.x.re != 0 ||
+        m->mu_offdiag.x.im != 0 ||
+        m->mu_offdiag.y.re != 0 ||
+        m->mu_offdiag.y.im != 0 ||
+        m->mu_offdiag.z.re != 0 ||
+        m->mu_offdiag.z.im != 0) {
+      has_nonzero_mu_offdiag = true;
+    }
+#else
+    if (m->mu_offdiag.x != 0 ||
+        m->mu_offdiag.y != 0 ||
+        m->mu_offdiag.z != 0) {
+      has_nonzero_mu_offdiag = true;
+    }
+#endif
+
     if (m->mu_diag.x != 1 ||
         m->mu_diag.y != 1 ||
         m->mu_diag.z != 1 ||
-        m->mu_offdiag.x != 0 ||
-        m->mu_offdiag.y != 0 ||
-        m->mu_offdiag.z != 0) {
+        has_nonzero_mu_offdiag) {
       return true;
     }
   }
@@ -2298,16 +2361,6 @@ mpb_real mode_solver::compute_energy_in_dielectric(mpb_real eps_low, mpb_real ep
   return energy_sum;
 }
 
-
-
-bool mode_solver::with_hermitian_epsilon() {
-#ifdef WITH_HERMITIAN_EPSILON
-  return true;
-#else
-  return false;
-#endif
-}
-
 /* For curfield and energy density, compute the fraction of the energy
    that resides inside the given list of geometric objects.   Later
    objects in the list have precedence, just like the ordinary
@@ -2356,5 +2409,13 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
   energy_sum *= vol / H.N;
   return energy_sum;
+}
+
+bool with_hermitian_epsilon() {
+#ifdef WITH_HERMITIAN_EPSILON
+    return true;
+#else
+    return false;
+#endif
 }
 } // namespace meep_mpb

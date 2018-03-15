@@ -56,9 +56,9 @@ struct susceptibility_list {
 
 struct medium_struct {
   vector3 epsilon_diag;
-  vector3 epsilon_offdiag;
+  cvector3 epsilon_offdiag;
   vector3 mu_diag;
-  vector3 mu_offdiag;
+  cvector3 mu_offdiag;
   susceptibility_list E_susceptibilities;
   susceptibility_list H_susceptibilities;
   vector3 E_chi2_diag;
@@ -73,17 +73,23 @@ struct medium_struct {
     epsilon_diag.y = epsilon;
     epsilon_diag.z = epsilon;
 
-    epsilon_offdiag.x = 0;
-    epsilon_offdiag.y = 0;
-    epsilon_offdiag.z = 0;
-
     mu_diag.x = 1;
     mu_diag.y = 1;
     mu_diag.z = 1;
 
-    mu_offdiag.x = 0;
-    mu_offdiag.y = 0;
-    mu_offdiag.z = 0;
+    epsilon_offdiag.x.re = 0;
+    epsilon_offdiag.x.im = 0;
+    epsilon_offdiag.y.re = 0;
+    epsilon_offdiag.y.im = 0;
+    epsilon_offdiag.z.re = 0;
+    epsilon_offdiag.z.im = 0;
+
+    mu_offdiag.x.re = 0;
+    mu_offdiag.x.im = 0;
+    mu_offdiag.y.re = 0;
+    mu_offdiag.y.im = 0;
+    mu_offdiag.z.re = 0;
+    mu_offdiag.z.im = 0;
 
     E_chi2_diag.x = 0;
     E_chi2_diag.y = 0;
@@ -120,15 +126,15 @@ typedef void (*user_material_func)(vector3 x, void *user_data,
 // the various types of materials are as follows:
 //  MEDIUM:        material properties independent of position. In
 //                 this case the 'medium' field below is
-//                 initialized once and doesn't change. 
+//                 initialized once and doesn't change.
 //  MATERIAL_FILE: material properties position-dependent, described
-//                 by user-supplied data file. In this case the 
-//                 'medium' field is filled in appropriately at 
+//                 by user-supplied data file. In this case the
+//                 'medium' field is filled in appropriately at
 //                 each evaluation point by interpolating file data.
 //  MATERIAL_USER: material properties position-dependent, described
-//                 by user-supplied function. In this case the 
-//                 'medium' field is filled in appropriately at 
-//                 each evaluation point by calling the user's  
+//                 by user-supplied function. In this case the
+//                 'medium' field is filled in appropriately at
+//                 each evaluation point by calling the user's
 //                 routine.
 //  PERFECT_METAL: the 'medium' field is never referenced in this case.
 struct material_data
@@ -136,7 +142,7 @@ struct material_data
    enum { MEDIUM,
           MATERIAL_FILE,      // formerly MATERIAL_TYPE_SELF
           MATERIAL_USER,      // formerly MATERIAL_FUNCTION
-          PERFECT_METAL 
+          PERFECT_METAL
         } which_subclass;
 
    // this field is used for all material types except PERFECT_METAL
@@ -166,7 +172,7 @@ struct material_type_list {
   material_type_list(): items(NULL), num_items(0) {}
 };
 
-// global variables 
+// global variables
 extern material_type vacuum;
 
 // exported functions for creating particular material types
