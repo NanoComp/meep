@@ -424,7 +424,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
         }
         if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
-        delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
+            delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
         free((material_data *)$1.items[i].material);
         geometric_object_destroy($1.items[i]);

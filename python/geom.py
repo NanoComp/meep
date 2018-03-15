@@ -117,9 +117,9 @@ class Vector3(object):
 class Medium(object):
 
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(),
+                 epsilon_offdiag=Vector3(0j, 0j, 0j),
                  mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(),
+                 mu_offdiag=Vector3(0j, 0j, 0j),
                  E_susceptibilities=[],
                  H_susceptibilities=[],
                  E_chi2_diag=Vector3(),
