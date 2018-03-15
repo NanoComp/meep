@@ -35,8 +35,8 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
-static int pymedium_to_medium(PyObject *po, medium_struct *m);
-static int pymaterial_to_material(PyObject *po, material_type *mt);
+static int pymedium_to_medium(PyObject *po, meep_geom::medium_struct *m);
+static int pymaterial_to_material(PyObject *po, meep_geom::material_type *mt);
 
 static PyObject *py_material_object() {
     static PyObject *material_object = NULL;
@@ -199,7 +199,7 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
-static int get_attr_material(PyObject *po, material_type *m) {
+static int get_attr_material(PyObject *po, meep_geom::material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
     if (!py_material) {
@@ -274,8 +274,8 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
     return 1;
 }
 
-static int pymaterial_to_material(PyObject *po, material_type *mt) {
-    material_data *md;
+static int pymaterial_to_material(PyObject *po, meep_geom::material_type *mt) {
+    meep_geom::material_data *md;
 
     if (PyObject_IsInstance(po, py_material_object())) {
         md = make_dielectric(1);
@@ -346,7 +346,7 @@ static int pymedium_to_medium(PyObject *po, medium_struct *m) {
 
 static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
 
-    material_type material;
+    meep_geom::material_type material;
     vector3 center;
     double radius;
 
@@ -364,7 +364,7 @@ static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
 }
 
 static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
-    material_type material;
+    meep_geom::material_type material;
     vector3 center, axis;
     double radius, height;
 
@@ -436,7 +436,7 @@ static int pycone_to_cone(PyObject *py_cone, geometric_object *cone) {
 }
 
 static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
-    material_type material;
+    meep_geom::material_type material;
     vector3 center, e1, e2, e3, size;
 
     if (!get_attr_material(py_blk, &material) ||
@@ -460,7 +460,7 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
         return 0;
     }
 
-    material_type material = (material_type) blk.material;
+    meep_geom::material_type material = (meep_geom::material_type) blk.material;
     vector3 center = blk.center;
     vector3 e1 = blk.subclass.block_data->e1;
     vector3 e2 = blk.subclass.block_data->e2;

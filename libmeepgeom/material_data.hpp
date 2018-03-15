@@ -144,6 +144,8 @@ struct hermitian_medium : public medium {
 // describe the material properties at point x
 typedef void (*user_material_func)(vector3 x, void *user_data,
                                    medium_struct *medium);
+typedef void (*herm_user_material_func)(vector3, void *user_data,
+                                        hermitian_medium *medium);
 
 // the various types of materials are as follows:
 //  MEDIUM:        material properties independent of position. In
@@ -167,15 +169,11 @@ struct material_base
           PERFECT_METAL
         } which_subclass;
 
-   // these fields used only if which_subclass==MATERIAL_USER
-   user_material_func user_func;
-   void *             user_data;
-
    // these fields used only if which_subclass==MATERIAL_FILE
    meep::realnum *epsilon_data;
    int epsilon_dims[3];
 
-   material_base(): which_subclass(MEDIUM), user_data(NULL), epsilon_data(NULL) {
+   material_base(): which_subclass(MEDIUM), epsilon_data(NULL) {
      epsilon_dims[0] = 0;
      epsilon_dims[1] = 0;
      epsilon_dims[2] = 0;
@@ -186,14 +184,22 @@ struct material_data : public material_base {
   // this field is used for all material types except PERFECT_METAL
   medium_struct medium;
 
-  material_data(double epsilon=1): material_base(), medium(epsilon) {}
+  // these fields used only if which_subclass==MATERIAL_USER
+  user_material_func user_func;
+  void *user_data;
+
+  material_data(double epsilon=1): material_base(), medium(epsilon), user_data(NULL) {}
 };
 
 struct hermitian_material_data : public material_base {
   // this field is used for all material types except PERFECT_METAL
   hermitian_medium medium;
 
-  hermitian_material_data(double epsilon=1): material_base(), medium(epsilon) {}
+  // these fields used only if which_subclass==MATERIAL_USER
+  herm_user_material_func user_func;
+  void *user_data;
+
+  hermitian_material_data(double epsilon=1): material_base(), medium(epsilon), user_data(NULL) {}
   bool operator==(const hermitian_material_data &m2);
   void epsilon_file_material(vector3 p);
 };

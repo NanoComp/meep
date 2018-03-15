@@ -300,7 +300,7 @@ static int pyhermmaterial_to_material(PyObject *po, hermitian_material_data **md
 
 // Typemap suite for hermitian_material_data
 
-%typecheck(SWIG_TYPECHECK_POINTER) hermitian_material_data* = material_type;
+/* %typecheck(SWIG_TYPECHECK_POINTER) hermitian_material_data* = material_type; */
 
 %typemap(in) hermitian_material_data* {
     if (!pyhermmaterial_to_material($input, &$1)) {
@@ -308,7 +308,16 @@ static int pyhermmaterial_to_material(PyObject *po, hermitian_material_data **md
     }
 }
 
-%typemap(freearg) hermitian_material_data* = material_type;
+%typemap(freearg) hermitian_material_data* {
+
+    if ($1->medium.E_susceptibilities.items) {
+        delete[] $1->medium.E_susceptibilities.items;
+    }
+    if ($1->medium.H_susceptibilities.items) {
+        delete[] $1->medium.H_susceptibilities.items;
+    }
+    free($1);
+}
 
 %typemap(in) lattice {
     if (!pylattice_to_lattice($input, &$1)) {

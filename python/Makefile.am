@@ -32,7 +32,7 @@ _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 _mpb_la_SOURCES = mpb-python.cpp
 _mpb_la_LIBADD = $(LIBMEEPGEOM) $(PYTHON_LIBS) $(LIBPYMPB) @LIBCTLGEOM_LIBS@
 _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-_mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+_mpb_la_CPPFLAGS = -Wfatal-errors $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 # material_dispersion.py test must be excluded from test suite for MPI build
 if WITH_MPI

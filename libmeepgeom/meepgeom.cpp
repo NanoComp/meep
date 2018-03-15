@@ -91,25 +91,7 @@ bool material_type_equal(const material_type m1, const material_type m2)
     }
 }
 
-bool hermitian_material_data::operator==(const hermitian_material_data &m2) {
-    if (which_subclass != m2.which_subclass) {
-        return false;
-    }
-
-    switch (which_subclass) {
-      case material_data::MATERIAL_FILE:
-      case material_data::PERFECT_METAL:
-        return true;
-      case material_data::MATERIAL_USER:
-          return user_func == m2.user_func && user_data == m2.user_data;
-      case material_data::MEDIUM:
-          return m1->medium == m2->medium;
-      default:
-        return false;
-    }
-}
-
-bool hermitian_material_data::operator==(const hermitian_medium &m2) {
+bool hermitian_medium::operator==(const hermitian_medium &m2) {
     return (vector3_equal(epsilon_diag, m2.epsilon_diag) &&
             cvector3_equal(epsilon_offdiag, m2.epsilon_offdiag) &&
             vector3_equal(mu_diag, m2.mu_diag) &&
@@ -123,15 +105,32 @@ bool hermitian_material_data::operator==(const hermitian_medium &m2) {
             susceptibility_list_equal(H_susceptibilities, m2.H_susceptibilities));
 }
 
-void hermitian_material_data::epsilon_file_material(vector3 p)
-{
+bool hermitian_material_data::operator==(const hermitian_material_data &m2) {
+    if (which_subclass != m2.which_subclass) {
+        return false;
+    }
+
+    switch (which_subclass) {
+      case material_data::MATERIAL_FILE:
+      case material_data::PERFECT_METAL:
+        return true;
+      case material_data::MATERIAL_USER:
+          return user_func == m2.user_func && user_data == m2.user_data;
+      case material_data::MEDIUM:
+          return medium == m2.medium;
+      default:
+        return false;
+    }
+}
+
+void hermitian_material_data::epsilon_file_material(vector3 p) {
     default_material = (void*)this;
 
     if (which_subclass != material_data::MATERIAL_FILE) {
         meep::abort("epsilon-input-file only works with a type=file default-material");
     }
 
-    if (!(md->epsilon_data)) {
+    if (!(epsilon_data)) {
         return;
     }
 

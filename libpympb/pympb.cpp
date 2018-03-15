@@ -696,9 +696,8 @@ void mode_solver::get_material_pt(material_type &material, vector3 p) {
     // the user's function only needs to fill in whatever is
     // different from vacuum.
     case material_data::MATERIAL_USER:
-      // TODO: Need a user_func that accepts a hermitian_medium
-      // md->medium = medium_struct(1);
-      // md->user_func(p, md->user_data, &(md->medium));
+      md->medium = medium_struct(1);
+      md->user_func(p, md->user_data, &(md->medium));
       meep::abort("user-defined-materials in pympb not yet supported");
       return;
 
