@@ -18,7 +18,7 @@
 (set! pml-layers (list (make pml (thickness dpml))))
 (set-param! resolution 10)
 
-(define-param fcen 0.15)
+(define-param fcen 0.118)
 (define-param df 0.08)
 (set! sources (list
                (make source

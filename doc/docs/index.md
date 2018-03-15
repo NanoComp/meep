@@ -12,9 +12,9 @@
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
--   Arbitrary material and source distributions.
--   Frequency-domain solver.
--   Field analyses including flux spectra, Maxwell stress tensor, frequency extraction, local density of states, modal volume, arbitrary functions, near to far field transformations; completely programmable.
+-   Arbitrary current sources including a guided-mode launcher.
+-   Frequency-domain solver for finding the response to a continuous-wave source.
+-   Field analysis tools involving flux spectra, modal depcomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions, near to far field transformations; completely programmable.
 
 Time-Domain Simulation
 ----------------------
