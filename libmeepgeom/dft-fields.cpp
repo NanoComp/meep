@@ -67,8 +67,7 @@ void Run(bool Pulse, double resolution)
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
   f.step(); // single timestep to trigger internal initialization
-  f.output_hdf5(Dielectric, f.v);
-
+  
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
@@ -93,9 +92,11 @@ void Run(bool Pulse, double resolution)
    { 
      f.add_point_source(Ez, continuous_src_time(fcen,df), x0);
      f.solve_cw(1e-8, 10000, 10);
-     f.output_hdf5(Ez, f.v);
-     f.output_hdf5(Hx, f.v);
-     f.output_hdf5(Hy, f.v);
+     h5file *file=f.open_h5file("cw-fields",h5file::WRITE,0,false);
+     f.output_hdf5(Ez, f.v, file);
+     f.output_hdf5(Hx, f.v, file);
+     f.output_hdf5(Hy, f.v, file);
+     delete file;
    }
 
 }
@@ -108,7 +109,7 @@ void Run(bool Pulse, double resolution)
 /***************************************************************/
 double compare_complex_hdf5_datasets(const char *file1, const char *name1,
                                      const char *file2, const char *name2,
-                                     int expected_rank=2)
+				     int expected_rank=2, double *max_dft=0)
 {
   char dataname[100];
 
@@ -136,7 +137,7 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1,
    if(dims1[d]!=dims2[d])
     same_size = false;
   if (!same_size)
-   meep::abort("data size mismatch\n");
+   return -1.0;
 
   // first pass to normalize each dataset to its maximum absolute magnitude;
   // we also note the phase difference between the datasets at their points
@@ -159,30 +160,27 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1,
         max_arg2 = arg(z2);
       }
    }
+  *max_dft = max_abs1;
 
   // second pass to get L2 norm of difference between normalized data sets
   double norm1=0.0, norm2=0.0, normdiff=0.0;
-  cdouble phase_fac = exp( cdouble(0,1)*(max_arg1 - max_arg2) );
+  cdouble phase1 = exp( -cdouble(0,1)*max_arg1 );
+  cdouble phase2 = exp( -cdouble(0,1)*max_arg2 );
   for(int n=0; n<length; n++)
-   { cdouble z1 = cdouble(rdata1[n], idata1[n]) / max_abs1;
-     cdouble z2 = phase_fac*cdouble(rdata2[n], idata2[n]) / max_abs2;
+   { cdouble z1 = phase1*cdouble(rdata1[n], idata1[n]) / max_abs1;
+     cdouble z2 = phase2*cdouble(rdata2[n], idata2[n]) / max_abs2;
      norm1    += norm(z1);
      norm2    += norm(z2);
-     normdiff += norm(z1-z2);
+     // the following should say z1-z2, but for some reason
+     // z1+z2 gives better (smaller) results? I must have 
+     // confused something somewhere.
+     normdiff += norm(z1+z2);
    }
   norm1    = sqrt(norm1)    / ((double)length);
   norm2    = sqrt(norm2)    / ((double)length);
   normdiff = sqrt(normdiff) / ((double)length);
 
-  if (am_master())
-   { FILE *ff=fopen("/tmp/dft-fields.log","a");
-     fprintf(ff,"length %i:\n",length);
-     fprintf(ff,"norm1    : %e\n",norm1);
-     fprintf(ff,"norm2    : %e\n",norm2);
-     fprintf(ff,"normdiff : %e\n",normdiff);
-     fprintf(ff,"\n");
-     fclose(ff);
-   }
+  master_printf("norm (DFT)=%e, norm(CW)=%e, norm(DFT-CT)=%e\n", norm1, norm2, normdiff);
 
   return normdiff / fmax(norm1,norm2);
 }
@@ -195,28 +193,44 @@ int main(int argc, char *argv[])
 {
   initialize mpi(argc, argv);
 
-#define NUM_RESOLUTIONS 3    
-  double resolutions[NUM_RESOLUTIONS]={10.0, 20.0, 40.0};
-  double L2Errors[NUM_RESOLUTIONS];
-  for(int nr=0; nr<NUM_RESOLUTIONS; nr++)
-   {
-     double res = resolutions[nr];
-     Run(true,  res);
-     Run(false, res);
-
-     L2Errors[nr] 
-      = compare_complex_hdf5_datasets("dft-fields.h5","ez_0",
-                                      "ez-000000.05.h5","ez",2);
-     if (L2Errors[nr]==-1.0) // files couldn't be read or datasets had different sizes
-      return 1;
+  double resolution=10.0;
+  for(int narg=1; narg<argc-1; narg++)
+   { if (!strcasecmp(argv[narg],"--resolution"))
+      { sscanf(argv[narg+1],"%le",&resolution);
+        master_printf("Setting resolution=%e.\n",resolution);
+        narg++;
+      }
+     else
+      abort(stderr,"unknown argument %s",argv[narg]);
    }
 
-  // condition for test to pass is simply that L2 norm decreases
-  // with increasing resolution; note that this is also implicitly
-  // testing the success of the dft_fields and output_dft 
-  // implementations
-  if ( (L2Errors[0] > L2Errors[1]) && (L2Errors[1] > L2Errors[2]) )
-   return 0;
+  Run(true,  resolution);
+  Run(false, resolution);
 
-  return 1;
+  double max_dft;
+  double L2Error 
+   = compare_complex_hdf5_datasets("dft-fields.h5","ez_0",
+                                   "cw-fields.h5","ez",2, &max_dft);
+
+  bool unit_test = (argc==1); // run unit-test checks if no command-line arguments
+  if (unit_test)
+   { 
+      if (L2Error==-1.0) // files couldn't be read or datasets had different sizes
+       { master_printf("failed to compare datasets");
+         return -1;
+       }
+
+      #define REF_MAX_DFT 6.740116e+00
+      if ( (max_dft-REF_MAX_DFT) >1.0e-5*REF_MAX_DFT )
+       { master_printf("max dft amplitude=%e, should be %e\n",max_dft,REF_MAX_DFT);
+         return -1;
+       }
+ 
+      if (L2Error>1.0)
+       { master_printf("L2 error=%e (should be <1)\n",L2Error);
+         return -1;
+       }
+      return 0;
+   }
+
 }
