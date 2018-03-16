@@ -130,7 +130,7 @@ A string prepended to all output filenames. If empty (the default), then Meep us
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the Courant factor $S$ which relates the time step size to the spatial discretization: $c\Delta t = S\Delta x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
 
-**`output_volume` [`Volume` class]**  
+**`output_volume` [`Volume` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the default region of space that is output by the HDF5 output functions (below); see also the `Volume` class which manages `meep::volume*` objects. Default is `None`, which means that the whole computational cell is output. Normally, you should use the `in_volume(...)` function to modify the output volume instead of setting `output_volume` directly.
 
@@ -788,9 +788,9 @@ Given a `meep::volume*`, returns the integral of the electric- and magnetic-fiel
 
 **`modal_volume_in_box(box)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `meep::volume`, returns the modal volume according to the Purcell-effect definition: integral of $\varepsilon$|E|^2 divided by max $\varepsilon$*|E|. If no volume argument is provided, the entire computational cell is used by default.
+Given a `meep::volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral ($\varepsilon$|E|^2) / maximum ($\varepsilon$|E|^2). If no volume argument is provided, the entire computational cell is used by default.
 
-Note that if you are at a fixed frequency and you use complex fields (Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
+Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
 Often, you want the integration box to be the entire computational cell. A useful function to return this box, which you can then use for the `box` arguments above, is `total_volume()`.
 
@@ -1037,7 +1037,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that directly computes the fields produced in a geometry in response to a constant-frequency source, using an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. Preliminary tests have shown that in many instances, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_fields()`:
+Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [constant-frequency source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_fields()`:
 
 ```py
 sim = meep.Simulation(...)
@@ -1045,7 +1045,7 @@ sim.init_fields()
 sim.solve_cw(tol, maxiters, L)
 ```
 
-The first two parameters to the frequency-domain solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter $L$ that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm [biCGSTAB-(L)](http://www.math.uu.nl/people/sleijpen/CGSTAB_software/CGSTAB.html) that is used; larger values of $L$ will often lead to faster convergence at the expense of more memory and more work per iteration. Default is $L=2$, and normally a value ≥ 2 should be used.
+The first two parameters to the frequency-domain solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter $L$ that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm, biconjugate gradient stabilized ([BiCGSTAB-L](https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method)), that is used; larger values of $L$ will often lead to faster convergence at the expense of more memory and more work per iteration. Default is $L=2$, and normally a value ≥ 2 should be used.
 
 The frequency-domain solver supports arbitrary geometries, PML, boundary conditions, symmetries, parallelism, conductors, and arbitrary nondispersive materials. Lorentz-Drude dispersive materials are not currently supported in the frequency-domain solver, but since you are solving at a known fixed frequency rather than timestepping, you should be able to pick conductivities etcetera in order to obtain any desired complex $\varepsilon$ and $\mu$ at that frequency.
 

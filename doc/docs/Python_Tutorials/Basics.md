@@ -11,7 +11,7 @@ The Meep Python Library
 
 Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality and will also be demonstrated. Much of the functionality of the low-level C++ interface has been abstracted in Python which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available where necessary.
 
-Executing Meep programs is normally done at the Unix command line as follows:
+Executing Meep simulations is normally done at the Unix command line as follows:
 
 ```sh
  unix% python foo.py >& foo.out
@@ -258,7 +258,7 @@ Transmission Spectrum around a Waveguide Bend
 
 Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra); please re-read that section if you have forgotten. Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $\omega$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
+The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $\omega$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
 
 ```py
 import meep as mp
