@@ -54,9 +54,11 @@ struct susceptibility_list {
   susceptibility_list(): num_items(0), items(NULL) {}
 };
 
-struct medium {
+struct medium_struct {
   vector3 epsilon_diag;
+  cvector3 epsilon_offdiag;
   vector3 mu_diag;
+  cvector3 mu_offdiag;
   susceptibility_list E_susceptibilities;
   susceptibility_list H_susceptibilities;
   vector3 E_chi2_diag;
@@ -66,7 +68,7 @@ struct medium {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 
-  medium(double epsilon): E_susceptibilities(), H_susceptibilities() {
+  medium_struct(double epsilon=1): E_susceptibilities(), H_susceptibilities() {
     epsilon_diag.x = epsilon;
     epsilon_diag.y = epsilon;
     epsilon_diag.z = epsilon;
@@ -74,6 +76,20 @@ struct medium {
     mu_diag.x = 1;
     mu_diag.y = 1;
     mu_diag.z = 1;
+
+    epsilon_offdiag.x.re = 0;
+    epsilon_offdiag.x.im = 0;
+    epsilon_offdiag.y.re = 0;
+    epsilon_offdiag.y.im = 0;
+    epsilon_offdiag.z.re = 0;
+    epsilon_offdiag.z.im = 0;
+
+    mu_offdiag.x.re = 0;
+    mu_offdiag.x.im = 0;
+    mu_offdiag.y.re = 0;
+    mu_offdiag.y.im = 0;
+    mu_offdiag.z.re = 0;
+    mu_offdiag.z.im = 0;
 
     E_chi2_diag.x = 0;
     E_chi2_diag.y = 0;
@@ -101,51 +117,11 @@ struct medium {
   }
 };
 
-struct medium_struct : public medium {
-  vector3 epsilon_offdiag;
-  vector3 mu_offdiag;
-
-  medium_struct(double epsilon=1): medium(epsilon) {
-    epsilon_offdiag.x = 0;
-    epsilon_offdiag.y = 0;
-    epsilon_offdiag.z = 0;
-
-    mu_offdiag.x = 0;
-    mu_offdiag.y = 0;
-    mu_offdiag.z = 0;
-  }
-};
-
-struct hermitian_medium : public medium {
-  cvector3 epsilon_offdiag;
-  cvector3 mu_offdiag;
-
-  hermitian_medium(double epsilon): medium(epsilon) {
-    epsilon_offdiag.x.re = 0;
-    epsilon_offdiag.x.im = 0;
-    epsilon_offdiag.y.re = 0;
-    epsilon_offdiag.y.im = 0;
-    epsilon_offdiag.z.re = 0;
-    epsilon_offdiag.z.im = 0;
-
-    mu_offdiag.x.re = 0;
-    mu_offdiag.x.im = 0;
-    mu_offdiag.y.re = 0;
-    mu_offdiag.y.im = 0;
-    mu_offdiag.z.re = 0;
-    mu_offdiag.z.im = 0;
-  }
-
-  bool operator==(const hermitian_medium &m2);
-};
-
 // prototype for user-defined material function,
 // which should fill in medium as appropriate to
 // describe the material properties at point x
 typedef void (*user_material_func)(vector3 x, void *user_data,
                                    medium_struct *medium);
-typedef void (*herm_user_material_func)(vector3, void *user_data,
-                                        hermitian_medium *medium);
 
 // the various types of materials are as follows:
 //  MEDIUM:        material properties independent of position. In
@@ -161,7 +137,7 @@ typedef void (*herm_user_material_func)(vector3, void *user_data,
 //                 each evaluation point by calling the user's
 //                 routine.
 //  PERFECT_METAL: the 'medium' field is never referenced in this case.
-struct material_base
+struct material_data
  {
    enum { MEDIUM,
           MATERIAL_FILE,      // formerly MATERIAL_TYPE_SELF
@@ -169,39 +145,22 @@ struct material_base
           PERFECT_METAL
         } which_subclass;
 
+   // this field is used for all material types except PERFECT_METAL
+   medium_struct medium;
+
+   // these fields used only if which_subclass==MATERIAL_USER
+   user_material_func user_func;
+   void *             user_data;
+
    // these fields used only if which_subclass==MATERIAL_FILE
    meep::realnum *epsilon_data;
    int epsilon_dims[3];
 
-   material_base(): which_subclass(MEDIUM), epsilon_data(NULL) {
+   material_data(): which_subclass(MEDIUM), medium(), user_data(NULL), epsilon_data(NULL) {
      epsilon_dims[0] = 0;
      epsilon_dims[1] = 0;
      epsilon_dims[2] = 0;
    }
- };
-
-struct material_data : public material_base {
-  // this field is used for all material types except PERFECT_METAL
-  medium_struct medium;
-
-  // these fields used only if which_subclass==MATERIAL_USER
-  user_material_func user_func;
-  void *user_data;
-
-  material_data(double epsilon=1): material_base(), medium(epsilon), user_data(NULL) {}
-};
-
-struct hermitian_material_data : public material_base {
-  // this field is used for all material types except PERFECT_METAL
-  hermitian_medium medium;
-
-  // these fields used only if which_subclass==MATERIAL_USER
-  herm_user_material_func user_func;
-  void *user_data;
-
-  hermitian_material_data(double epsilon=1): material_base(), medium(epsilon), user_data(NULL) {}
-  bool operator==(const hermitian_material_data &m2);
-  void epsilon_file_material(vector3 p);
 };
 
 typedef material_data *material_type;
@@ -221,7 +180,7 @@ material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func,
                                  void *user_data);
 material_type make_file_material(char *epsilon_input_file);
-
+void epsilon_file_material(vector3 p);
 void read_epsilon_file(const char *eps_input_file);
 
 

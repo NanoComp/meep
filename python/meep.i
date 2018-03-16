@@ -389,13 +389,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
-        if (((meep_geom::material_data *)$1.material)->medium.E_susceptibilities.items) {
-            delete[] ((meep_geom::material_data *)$1.material)->medium.E_susceptibilities.items;
+        if (((material_data *)$1.material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
         }
-        if (((meep_geom::material_data *)$1.material)->medium.H_susceptibilities.items) {
-            delete[] ((meep_geom::material_data *)$1.material)->medium.H_susceptibilities.items;
+        if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
-        free((meep_geom::material_data *)$1.material);
+        free((material_data *)$1.material);
         geometric_object_destroy($1);
     }
 }
@@ -420,13 +420,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
-        if (((meep_geom::material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
-            delete[] ((meep_geom::material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        if (((material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
         }
-        if (((meep_geom::material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
-            delete[] ((meep_geom::material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
+        if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
+            delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
-        free((meep_geom::material_data *)$1.items[i].material);
+        free((material_data *)$1.items[i].material);
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
@@ -518,7 +518,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 // Typemap suite for material_type
 
-%typecheck(SWIG_TYPECHECK_POINTER) meep_geom::material_type {
+%typecheck(SWIG_TYPECHECK_POINTER) material_type {
     int py_material = PyObject_IsInstance($input, py_material_object());
     int user_material = PyFunction_Check($input);
     int file_material = IsPyString($input);
@@ -526,13 +526,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = py_material || user_material || file_material;
 }
 
-%typemap(in) meep_geom::material_type {
+%typemap(in) material_type {
     if(!pymaterial_to_material($input, &$1)) {
         SWIG_fail;
     }
 }
 
-%typemap(freearg) meep_geom::material_type {
+%typemap(freearg) material_type {
     if ($1->medium.E_susceptibilities.items) {
         delete[] $1->medium.E_susceptibilities.items;
     }

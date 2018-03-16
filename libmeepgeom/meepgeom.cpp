@@ -48,9 +48,9 @@ bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibili
 bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2)
 {
   return (vector3_equal(m1->epsilon_diag, m2->epsilon_diag) &&
-          vector3_equal(m1->epsilon_offdiag, m2->epsilon_offdiag) &&
+          cvector3_equal(m1->epsilon_offdiag, m2->epsilon_offdiag) &&
           vector3_equal(m1->mu_diag, m2->mu_diag) &&
-          vector3_equal(m1->mu_offdiag, m2->mu_offdiag) &&
+          cvector3_equal(m1->mu_offdiag, m2->mu_offdiag) &&
           vector3_equal(m1->E_chi2_diag, m2->E_chi2_diag) &&
           vector3_equal(m1->E_chi3_diag, m2->E_chi3_diag) &&
           vector3_equal(m1->H_chi2_diag, m2->H_chi2_diag) &&
@@ -89,72 +89,6 @@ bool material_type_equal(const material_type m1, const material_type m2)
       case material_data::MEDIUM: return medium_struct_equal( &(m1->medium), &(m2->medium));
       default: return false;
     }
-}
-
-bool hermitian_medium::operator==(const hermitian_medium &m2) {
-    return (vector3_equal(epsilon_diag, m2.epsilon_diag) &&
-            cvector3_equal(epsilon_offdiag, m2.epsilon_offdiag) &&
-            vector3_equal(mu_diag, m2.mu_diag) &&
-            cvector3_equal(mu_offdiag, m2.mu_offdiag) &&
-            vector3_equal(E_chi2_diag, m2.E_chi2_diag) &&
-            vector3_equal(E_chi3_diag, m2.E_chi3_diag) &&
-            vector3_equal(H_chi2_diag, m2.H_chi2_diag) &&
-            vector3_equal(D_conductivity_diag, m2.D_conductivity_diag) &&
-            vector3_equal(B_conductivity_diag, m2.B_conductivity_diag) &&
-            susceptibility_list_equal(E_susceptibilities, m2.E_susceptibilities) &&
-            susceptibility_list_equal(H_susceptibilities, m2.H_susceptibilities));
-}
-
-bool hermitian_material_data::operator==(const hermitian_material_data &m2) {
-    if (which_subclass != m2.which_subclass) {
-        return false;
-    }
-
-    switch (which_subclass) {
-      case material_data::MATERIAL_FILE:
-      case material_data::PERFECT_METAL:
-        return true;
-      case material_data::MATERIAL_USER:
-          return user_func == m2.user_func && user_data == m2.user_data;
-      case material_data::MEDIUM:
-          return medium == m2.medium;
-      default:
-        return false;
-    }
-}
-
-void hermitian_material_data::epsilon_file_material(vector3 p) {
-    default_material = (void*)this;
-
-    if (which_subclass != material_data::MATERIAL_FILE) {
-        meep::abort("epsilon-input-file only works with a type=file default-material");
-    }
-
-    if (!(epsilon_data)) {
-        return;
-    }
-
-    double rx = geometry_lattice.size.x == 0
-        ? 0 : 0.5 + (p.x-geometry_center.x) / geometry_lattice.size.x;
-    double ry = geometry_lattice.size.y == 0
-        ? 0 : 0.5 + (p.y-geometry_center.y) / geometry_lattice.size.y;
-    double rz = geometry_lattice.size.z == 0
-        ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
-
-    double interp_result = linear_interpolate(rx, ry, rz, epsilon_data,
-                                              epsilon_dims[0],
-                                              epsilon_dims[1],
-                                              epsilon_dims[2], 1);
-    medium.epsilon_diag.x = interp_result;
-    medium.epsilon_diag.y = interp_result;
-    medium.epsilon_diag.z = interp_result;
-
-    medium.epsilon_offdiag.x.re = 0;
-    medium.epsilon_offdiag.x.im = 0;
-    medium.epsilon_offdiag.y.re = 0;
-    medium.epsilon_offdiag.y.im = 0;
-    medium.epsilon_offdiag.z.re = 0;
-    medium.epsilon_offdiag.z.im = 0;
 }
 
 /***************************************************************/
@@ -442,7 +376,7 @@ void epsilon_file_material(material_data *md, vector3 p)
 		       md->epsilon_dims[0],
                        md->epsilon_dims[1],
                        md->epsilon_dims[2], 1);
-  mm->epsilon_offdiag.x = mm->epsilon_offdiag.y = mm->epsilon_offdiag.z = 0;
+  mm->epsilon_offdiag.x.re = mm->epsilon_offdiag.y.re = mm->epsilon_offdiag.z.re = 0;
 }
 
 struct pol {
@@ -626,9 +560,9 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m00 = md->medium.epsilon_diag.x;
       epsmu->m11 = md->medium.epsilon_diag.y;
       epsmu->m22 = md->medium.epsilon_diag.z;
-      epsmu->m01 = md->medium.epsilon_offdiag.x;
-      epsmu->m02 = md->medium.epsilon_offdiag.y;
-      epsmu->m12 = md->medium.epsilon_offdiag.z;
+      epsmu->m01 = md->medium.epsilon_offdiag.x.re;
+      epsmu->m02 = md->medium.epsilon_offdiag.y.re;
+      epsmu->m12 = md->medium.epsilon_offdiag.z.re;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
 
@@ -654,9 +588,9 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m00 = md->medium.mu_diag.x;
       epsmu->m11 = md->medium.mu_diag.y;
       epsmu->m22 = md->medium.mu_diag.z;
-      epsmu->m01 = md->medium.mu_offdiag.x;
-      epsmu->m02 = md->medium.mu_offdiag.y;
-      epsmu->m12 = md->medium.mu_offdiag.z;
+      epsmu->m01 = md->medium.mu_offdiag.x.re;
+      epsmu->m02 = md->medium.mu_offdiag.y.re;
+      epsmu->m12 = md->medium.mu_offdiag.z.re;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
 
@@ -1220,9 +1154,9 @@ static bool mu_not_1(material_type m)
            && (     mm->mu_diag.x!=1
                 ||  mm->mu_diag.y!=1
                 ||  mm->mu_diag.z!=1
-                ||  mm->mu_offdiag.x!=0
-                ||  mm->mu_offdiag.y!=0
-                ||  mm->mu_offdiag.z!=0
+                ||  mm->mu_offdiag.x.re!=0
+                ||  mm->mu_offdiag.y.re!=0
+                ||  mm->mu_offdiag.z.re!=0
               )
         );
 }

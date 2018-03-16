@@ -35,8 +35,8 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
-static int pymedium_to_medium(PyObject *po, meep_geom::medium_struct *m);
-static int pymaterial_to_material(PyObject *po, meep_geom::material_type *mt);
+static int pymedium_to_medium(PyObject *po, medium_struct *m);
+static int pymaterial_to_material(PyObject *po, material_type *mt);
 
 static PyObject *py_material_object() {
     static PyObject *material_object = NULL;
@@ -170,6 +170,36 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
     return 1;
 }
 
+static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
+    PyObject *py_x = PyObject_GetAttrString(po, "x");
+    PyObject *py_y = PyObject_GetAttrString(po, "y");
+    PyObject *py_z = PyObject_GetAttrString(po, "z");
+
+    if (!py_x || !py_y || !py_z) {
+        PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
+        return 0;
+    }
+
+    std::complex<double> x = std::complex<double>(PyComplex_RealAsDouble(py_x),
+                                                  PyComplex_ImagAsDouble(py_x));
+    std::complex<double> y = std::complex<double>(PyComplex_RealAsDouble(py_y),
+                                                  PyComplex_ImagAsDouble(py_y));
+    std::complex<double> z = std::complex<double>(PyComplex_RealAsDouble(py_z),
+                                                  PyComplex_ImagAsDouble(py_z));
+    Py_DECREF(py_x);
+    Py_DECREF(py_y);
+    Py_DECREF(py_z);
+
+    v->x.re = x.real();
+    v->x.im = x.imag();
+    v->y.re = y.real();
+    v->y.im = y.imag();
+    v->z.re = z.real();
+    v->z.im = z.imag();
+
+    return 1;
+}
+
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
@@ -179,6 +209,23 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     }
 
     if (!pyv3_to_v3(py_attr, v)) {
+        return 0;
+    }
+
+    Py_XDECREF(py_attr);
+    return 1;
+}
+
+static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
+
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    if (!pyv3_to_cv3(py_attr, v)) {
         return 0;
     }
 
@@ -199,7 +246,7 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
-static int get_attr_material(PyObject *po, meep_geom::material_type *m) {
+static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
     if (!py_material) {
@@ -274,8 +321,8 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
     return 1;
 }
 
-static int pymaterial_to_material(PyObject *po, meep_geom::material_type *mt) {
-    meep_geom::material_data *md;
+static int pymaterial_to_material(PyObject *po, material_type *mt) {
+    material_data *md;
 
     if (PyObject_IsInstance(po, py_material_object())) {
         md = make_dielectric(1);
@@ -308,9 +355,12 @@ static int pymaterial_to_material(PyObject *po, meep_geom::material_type *mt) {
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m) {
     if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
-        !get_attr_v3(po, &m->epsilon_offdiag, "epsilon_offdiag") ||
-        !get_attr_v3(po, &m->mu_diag, "mu_diag") ||
-        !get_attr_v3(po, &m->mu_offdiag, "mu_offdiag")) {
+        !get_attr_v3(po, &m->mu_diag, "mu_diag")) {
+
+        return 0;
+    }
+    if (!get_attr_v3_cmplx(po, &m->mu_offdiag, "mu_offdiag") ||
+        !get_attr_v3_cmplx(po, &m->epsilon_offdiag, "epsilon_offdiag")) {
 
         return 0;
     }
@@ -346,7 +396,7 @@ static int pymedium_to_medium(PyObject *po, medium_struct *m) {
 
 static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
 
-    meep_geom::material_type material;
+    material_type material;
     vector3 center;
     double radius;
 
@@ -364,7 +414,7 @@ static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
 }
 
 static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
-    meep_geom::material_type material;
+    material_type material;
     vector3 center, axis;
     double radius, height;
 
@@ -436,7 +486,7 @@ static int pycone_to_cone(PyObject *py_cone, geometric_object *cone) {
 }
 
 static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
-    meep_geom::material_type material;
+    material_type material;
     vector3 center, e1, e2, e3, size;
 
     if (!get_attr_material(py_blk, &material) ||
@@ -460,7 +510,7 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
         return 0;
     }
 
-    meep_geom::material_type material = (meep_geom::material_type) blk.material;
+    material_type material = (material_type) blk.material;
     vector3 center = blk.center;
     vector3 e1 = blk.subclass.block_data->e1;
     vector3 e2 = blk.subclass.block_data->e2;

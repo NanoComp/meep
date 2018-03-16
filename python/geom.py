@@ -176,17 +176,6 @@ class Medium(object):
         self.D_conductivity_diag = D_conductivity_diag
         self.B_conductivity_diag = B_conductivity_diag
 
-        if (isinstance(self.epsilon_offdiag.x, complex) or
-            isinstance(self.epsilon_offdiag.y, complex) or
-            isinstance(self.epsilon_offdiag.z, complex) or
-            isinstance(self.mu_offdiag.x, complex) or
-            isinstance(self.mu_offdiag.y, complex) or
-            isinstance(self.mu_offdiag.z, complex)):
-
-            self.hermitian_eps = True
-        else:
-            self.hermitian_eps = False
-
 
 class Susceptibility(object):
 

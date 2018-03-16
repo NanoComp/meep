@@ -163,111 +163,6 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
 
     return res;
 }
-static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
-    PyObject *py_x = PyObject_GetAttrString(po, "x");
-    PyObject *py_y = PyObject_GetAttrString(po, "y");
-    PyObject *py_z = PyObject_GetAttrString(po, "z");
-
-    if (!py_x || !py_y || !py_z) {
-        PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
-        return 0;
-    }
-
-    std::complex<double> x = std::complex<double>(PyComplex_RealAsDouble(py_x),
-                                                  PyComplex_ImagAsDouble(py_x));
-    std::complex<double> y = std::complex<double>(PyComplex_RealAsDouble(py_y),
-                                                  PyComplex_ImagAsDouble(py_y));
-    std::complex<double> z = std::complex<double>(PyComplex_RealAsDouble(py_z),
-                                                  PyComplex_ImagAsDouble(py_z));
-    Py_DECREF(py_x);
-    Py_DECREF(py_y);
-    Py_DECREF(py_z);
-
-    v->x.re = x.real();
-    v->x.im = x.imag();
-    v->y.re = y.real();
-    v->y.im = y.imag();
-    v->z.re = z.real();
-    v->z.im = z.imag();
-
-    return 1;
-}
-
-static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
-
-    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
-
-    if (!py_attr) {
-        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-        return 0;
-    }
-
-    if (!pyv3_to_cv3(py_attr, v)) {
-        return 0;
-    }
-
-    Py_XDECREF(py_attr);
-    return 1;
-}
-
-static int pyhermmedium_to_medium(PyObject *po, hermitian_medium *m) {
-
-    if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
-        !get_attr_v3(po, &m->mu_diag, "mu_diag")) {
-
-        return 0;
-    }
-    if (!get_attr_v3_cmplx(po, &m->mu_offdiag, "mu_offdiag") ||
-        !get_attr_v3_cmplx(po, &m->epsilon_offdiag, "epsilon_offdiag")) {
-
-        return 0;
-    }
-
-    // TODO: Reuse pymedium_to_medium
-    PyObject *py_e_susceptibilities = PyObject_GetAttrString(po, "E_susceptibilities");
-    PyObject *py_h_susceptibilities = PyObject_GetAttrString(po, "H_susceptibilities");
-
-    if (!py_e_susceptibilities || !py_h_susceptibilities) {
-        return 0;
-    }
-
-    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &m->E_susceptibilities) ||
-       !py_list_to_susceptibility_list(py_h_susceptibilities, &m->H_susceptibilities)) {
-
-        return 0;
-    }
-
-    Py_XDECREF(py_e_susceptibilities);
-    Py_XDECREF(py_h_susceptibilities);
-
-    if (!get_attr_v3(po, &m->E_chi2_diag, "E_chi2_diag") ||
-        !get_attr_v3(po, &m->E_chi3_diag, "E_chi3_diag") ||
-        !get_attr_v3(po, &m->H_chi2_diag, "H_chi2_diag") ||
-        !get_attr_v3(po, &m->H_chi3_diag, "H_chi3_diag") ||
-        !get_attr_v3(po, &m->D_conductivity_diag, "D_conductivity_diag") ||
-        !get_attr_v3(po, &m->B_conductivity_diag, "B_conductivity_diag")) {
-
-        return 0;
-    }
-
-    return 1;
-}
-
-static int pyhermmaterial_to_material(PyObject *po, hermitian_material_data **mdp) {
-    hermitian_material_data *md;
-
-    if (PyObject_IsInstance(po, py_material_object())) {
-        md = new hermitian_material_data();
-        if (!pyhermmedium_to_medium(po, &md->medium)) {
-            return 0;
-        }
-    }
-    // TODO: user_material and eps_input_file
-
-    *mdp = md;
-
-    return 1;
-}
 %}
 
 %include "std_string.i"
@@ -297,27 +192,6 @@ static int pyhermmaterial_to_material(PyObject *po, hermitian_material_data **md
 };
 
 %apply double { mpb_real };
-
-// Typemap suite for hermitian_material_data
-
-/* %typecheck(SWIG_TYPECHECK_POINTER) hermitian_material_data* = material_type; */
-
-%typemap(in) hermitian_material_data* {
-    if (!pyhermmaterial_to_material($input, &$1)) {
-        SWIG_fail;
-    }
-}
-
-%typemap(freearg) hermitian_material_data* {
-
-    if ($1->medium.E_susceptibilities.items) {
-        delete[] $1->medium.E_susceptibilities.items;
-    }
-    if ($1->medium.H_susceptibilities.items) {
-        delete[] $1->medium.H_susceptibilities.items;
-    }
-    free($1);
-}
 
 %typemap(in) lattice {
     if (!pylattice_to_lattice($input, &$1)) {
