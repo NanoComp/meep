@@ -71,7 +71,7 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
                                 const mpb_real r[3], void *epsilon_data) {
 
   mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
-        meep_geom::material_type mat;
+  meep_geom::material_type mat;
   vector3 p;
 
   // p needs to be in the lattice *unit* vector basis, while r is in the lattice
@@ -354,7 +354,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
 
     meep_geom::material_type mat = (meep_geom::material_type)default_material;
     if (o) {
-          meep_geom::material_data *md = (meep_geom::material_data*)o->material;
+      meep_geom::material_data *md = (meep_geom::material_data*)o->material;
       if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
         mat = md;
       }
@@ -367,14 +367,14 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
       mat1 = mat;
     }
     else if (id2 == -1 || ((id >= id1 && id >= id2) &&
-                           (id1 == id2 || material_type_equal(mat1, mat2)))) {
+            (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
       o2 = o;
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
     }
-    else if (!(id1 < id2 && (id1 == id || material_type_equal(mat1, mat))) &&
-             !(id2 < id1 && (id2 == id || material_type_equal(mat2, mat)))) {
+    else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
+             !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
       return 0; /* too many nearby objects for analysis */
     }
   }
@@ -387,23 +387,23 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     shiftby2 = shiftby1;
   }
 
-  bool o1_is_var = o1 &&     meep_geom::is_variable(o1->material);
-  bool o2_is_var = o2 &&     meep_geom::is_variable(o2->material);
-  bool default_is_var_or_file =     meep_geom::is_variable(default_material) ||
-                                    meep_geom::is_file(default_material);
+  bool o1_is_var = o1 && meep_geom::is_variable(o1->material);
+  bool o2_is_var = o2 && meep_geom::is_variable(o2->material);
+  bool default_is_var_or_file = meep_geom::is_variable(default_material) ||
+                                meep_geom::is_file(default_material);
 
   if (o1_is_var ||
       o2_is_var ||
       (default_is_var_or_file && (!o1 || !o2 ||
-                                      meep_geom::is_file(o1->material) ||
-                                      meep_geom::is_file(o2->material)))) {
+                                  meep_geom::is_file(o1->material) ||
+                                  meep_geom::is_file(o2->material)))) {
     return 0; /* arbitrary material functions are non-analyzable */
   }
 
   material_epsmu(mat1, meps, meps_inv, eps);
 
   /* check for trivial case of only one object/material */
-  if (id1 == id2 || material_type_equal(mat1, mat2)) {
+  if (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)) {
     n[0] = n[1] = n[2] = 0;
     return 1;
   }
@@ -677,7 +677,7 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
     // material read from file: interpolate to get properties at r
     case meep_geom::material_data::MATERIAL_FILE:
       if (md->epsilon_data) {
-        epsilon_file_material(md, p);
+        meep_geom::epsilon_file_material(md, p);
       }
       else {
         material = (meep_geom::material_type) default_material;
@@ -692,7 +692,6 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
     case meep_geom::material_data::MATERIAL_USER:
       md->medium = meep_geom::medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
-      meep::abort("user-defined-materials in pympb not yet supported");
       return;
 
     // position-independent material or metal: there is nothing to do
@@ -844,7 +843,7 @@ void mode_solver::init_epsilon() {
       display_geometric_object_info(5, geometry.items[i]);
 
       // meep_geom::medium_struct *mm;
-      // if (is_medium(geometry.items[i].material, &mm)) {
+      // if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
       //   printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n", 5 + 5, "",
       //          mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       // }

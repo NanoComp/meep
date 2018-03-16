@@ -161,7 +161,7 @@ struct material_data
      epsilon_dims[1] = 0;
      epsilon_dims[2] = 0;
    }
-};
+ };
 
 typedef material_data *material_type;
 
@@ -180,7 +180,6 @@ material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func,
                                  void *user_data);
 material_type make_file_material(char *epsilon_input_file);
-void epsilon_file_material(vector3 p);
 void read_epsilon_file(const char *eps_input_file);
 
 
