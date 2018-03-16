@@ -2361,16 +2361,6 @@ mpb_real mode_solver::compute_energy_in_dielectric(mpb_real eps_low, mpb_real ep
   return energy_sum;
 }
 
-
-
-bool mode_solver::with_hermitian_epsilon() {
-#ifdef WITH_HERMITIAN_EPSILON
-  return true;
-#else
-  return false;
-#endif
-}
-
 /* For curfield and energy density, compute the fraction of the energy
    that resides inside the given list of geometric objects.   Later
    objects in the list have precedence, just like the ordinary
@@ -2419,5 +2409,13 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
   energy_sum *= vol / H.N;
   return energy_sum;
+}
+
+bool with_hermitian_epsilon() {
+#ifdef WITH_HERMITIAN_EPSILON
+    return true;
+#else
+    return false;
+#endif
 }
 } // namespace meep_mpb

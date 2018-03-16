@@ -180,6 +180,7 @@ material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func,
                                  void *user_data);
 material_type make_file_material(char *epsilon_input_file);
+
 void read_epsilon_file(const char *eps_input_file);
 
 
