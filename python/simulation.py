@@ -776,10 +776,10 @@ class Simulation(object):
 
         return self.fields.modal_volume_in_box(vol)
 
-    def solve_cw(self):
+    def solve_cw(self, tol=1e-8, maxiters=10000, L=2):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using solve_cw')
-        return self.fields.solve_cw()
+        return self.fields.solve_cw(tol, maxiters, L)
 
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
         vol_list = None
