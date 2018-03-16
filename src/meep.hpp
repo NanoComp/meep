@@ -1525,10 +1525,6 @@ class fields {
   dft_fields add_dft_fields(component *components, int num_components,
                             const volume where,
                             double freq_min, double freq_max, int Nfreq);
-  dft_fields add_dft_fields(int *components, int num_components,
-                            const volume where,
-                            double freq_min, double freq_max, int Nfreq);
-
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */

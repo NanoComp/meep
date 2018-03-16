@@ -538,16 +538,6 @@ dft_fields fields::add_dft_fields(component *components, int num_components,
   return dft_fields(chunks, freq_min, freq_max, Nfreq);
 }
 
-dft_fields fields::add_dft_fields(int *components, int num_components,
-                                  const volume where,
-                                  double freq_min, double freq_max, int Nfreq) 
-{
-  component *cs = new component[num_components];
-  for(int nc=0; nc<num_components; nc++)
-   cs[nc]=(component)(Ex + components[nc]);
-  return add_dft_fields(cs,num_components,where,freq_min,freq_max,Nfreq);
-}
-
 /***************************************************************/
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
