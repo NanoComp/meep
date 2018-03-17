@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
         narg++;
       }
      else
-      abort(stderr,"unknown argument %s",argv[narg]);
+      abort("unknown argument %s",argv[narg]);
    }
 
   Run(true,  resolution);
