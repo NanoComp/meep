@@ -208,7 +208,9 @@ void lorentzian_susceptibility::update_P
 	SWAP(const realnum *, s1, s2);
       }
       if (s1 && s2) { // 3x3 anisotropic
-	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	LOOP_OVER_VOL_OWNED(gv, c, i) if(s[i]!=0) {
+		//"if" to avoid instabilities coming from yee-grid shifts of off-diagnal elements
++		//FIXME: this prevents materials with pure off-diagonal sigma from working
 	  realnum pcur = p[i];
 	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom)
 			      - gamma1 * pp[i]
@@ -216,16 +218,20 @@ void lorentzian_susceptibility::update_P
 					       + OFFDIAG(s1,w1,is1,is)
 					       + OFFDIAG(s2,w2,is2,is)));
 	  pp[i] = pcur;
+	}else{
+	  p[i]=0; //seems unnecessary, but no harm is done here
 	}
       }
       else if (s1) { // 2x2 anisotropic
-	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	LOOP_OVER_VOL_OWNED(gv, c, i) if(s[i]!=0) {
 	  realnum pcur = p[i];
 	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom)
 			      - gamma1 * pp[i]
 			      + omega0dtsqr * (s[i] * w[i]
 					       + OFFDIAG(s1,w1,is1,is)));
 	  pp[i] = pcur;
+	}else{
+	  p[i]=0;	
 	}
       }
       else { // isotropic
