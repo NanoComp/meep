@@ -186,10 +186,7 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
 
 %apply (mpb_real* INPLACE_ARRAY1, int DIM1) {
     (mpb_real* d_in_re, int size_in_re),
-    (mpb_real* d_in_im, int size_in_im)
-}
-
-%apply (mpb_real* INPLACE_ARRAY1, int DIM1) {
+    (mpb_real* d_in_im, int size_in_im),
     (mpb_real* d_out_re, int size_out_re),
     (mpb_real* d_out_im, int size_out_im)
 }

@@ -930,20 +930,23 @@ class TestModeSolver(unittest.TestCase):
 
         # Test MPBData
         with h5py.File(ref_path, 'r') as f:
-            efield = f['z.r'].value
+            efield_re = f['z.r'].value
+            efield_im = f['z.i'].value
+            efield = np.vectorize(complex)(efield_re, efield_im)
 
         # rectangularize
-        md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3, verbose=True)
-        new_efield = md.convert(efield)
+        md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
+        new_efield = md.convert(efield, ms.k_points[10])
         # check with ref file
 
         ref_fn = 'tri-rods-e.k11.b08.z.tm-r-m3-n32.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
 
-        # TODO: This test is failing
-        # with h5py.File(ref_path, 'r') as f:
-        #     expected = f['z.r-new'].value
-        #     self.compare_arrays(expected, new_efield)
+        with h5py.File(ref_path, 'r') as f:
+            expected_re = f['z.r-new'].value
+            expected_im = f['z.i-new'].value
+            expected = np.vectorize(complex)(expected_re, expected_im)
+            self.compare_arrays(expected, new_efield)
 
         ms.run_te()
 
@@ -970,7 +973,7 @@ class TestModeSolver(unittest.TestCase):
 
         # Test MPBData
         eps = ms.get_epsilon()
-        md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3, verbose=True)
+        md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
         new_eps = md.convert(eps)
         ref_fn = 'tri-rods-epsilon-r-m3-n32.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)

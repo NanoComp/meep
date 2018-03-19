@@ -24,7 +24,7 @@ def get_efields(ms, band):
 ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
           get_efields))
 
-md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3)
+md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3)
 
 for i, f in enumerate(efields):
     # Get just the z component of the efields
@@ -39,7 +39,7 @@ plt.imshow(data.T, interpolation='spline36', cmap='binary')
 plt.axis('off')
 plt.show()
 
-md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3)
+md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3)
 rectangular_data = md.convert(data)
 plt.imshow(rectangular_data.T, interpolation='spline36', cmap='binary')
 plt.axis('off')

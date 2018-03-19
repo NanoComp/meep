@@ -13,7 +13,7 @@ class MPBData(object):
     TWOPI = 6.2831853071795864769252867665590057683943388
 
     def __init__(self,
-                 mode_solver,
+                 lattice,
                  rectify=False,
                  x=0,
                  y=0,
@@ -26,7 +26,7 @@ class MPBData(object):
                  ve=None,
                  verbose=False):
 
-        self.ms = mode_solver
+        self.lattice = lattice
         self.rectify = rectify
 
         if periods:
@@ -267,7 +267,7 @@ class MPBData(object):
 
     #     return
 
-    def init_output_lattice(self):
+    def init_output_lattice(self, kvector):
 
         cart_map = mp.Matrix(
             mp.Vector3(1, 0, 0),
@@ -275,28 +275,16 @@ class MPBData(object):
             mp.Vector3(0, 0, 1)
         )
 
-        # Get lattice vectors from the ModeSolver
-        lattice = np.zeros((3, 3))
-        self.ms.mode_solver.get_lattice(lattice)
-
         Rin = mp.Matrix(
-            mp.Vector3(*lattice[0]),
-            mp.Vector3(*lattice[1]),
-            mp.Vector3(*lattice[2])
+            mp.Vector3(*self.lattice[0]),
+            mp.Vector3(*self.lattice[1]),
+            mp.Vector3(*self.lattice[2])
         )
 
         if self.verbose:
             print("Read lattice vectors")
-
-        # Get Bloch wavevector from the ModeSolver
-
-        # self.kvector = self.ms.mode_solver.get_output_k()
-
-        # if self.verbose:
-        #     fmt = "Read Bloch wavevector ({}, {}, {})"
-        #     print(fmt.format(self.kvector[0], self.kvector[1], self.kvector[2]))
-
-        if self.verbose:
+            if kvector:
+                print("Read Bloch wavevector ({:.6g}, {:.6g}, {:.6g})".format(kvector.x, kvector.y, kvector.z))
             fmt = "Input lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
             print(fmt.format(Rin.c1.x, Rin.c1.y, Rin.c1.z,
                              Rin.c2.x, Rin.c2.y, Rin.c2.z,
@@ -358,7 +346,7 @@ class MPBData(object):
         self.cart_map = cart_map
 
     def convert(self, arr, kpoint=None):
-        self.init_output_lattice()
+        self.init_output_lattice(kpoint)
 
         return self.handle_dataset(arr, kpoint)
 

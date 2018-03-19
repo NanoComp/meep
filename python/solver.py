@@ -339,6 +339,15 @@ class ModeSolver(object):
             length = min(block_size, (len(l) - index * block_size))
             return (start, list_sub(l, start, length, 0, []))
 
+    def get_lattice(self):
+        if self.mode_solver is None:
+            raise RuntimeError("Must call ModeSolver.run before getting the lattice.")
+
+        lattice = np.zeros((3, 3))
+        self.mode_solver.get_lattice(lattice)
+
+        return lattice
+
     def output_field(self):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
