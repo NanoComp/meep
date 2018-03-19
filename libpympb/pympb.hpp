@@ -12,6 +12,11 @@ namespace py_mpb {
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
+void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
+              int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
+              int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
+              short pick_nearest, int verbose);
+
 struct mode_solver {
   static const int MAX_NWORK = 10;
   static const char epsilon_CURFIELD_TYPE = 'n';

@@ -970,7 +970,7 @@ class TestModeSolver(unittest.TestCase):
 
         # Test MPBData
         eps = ms.get_epsilon()
-        md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3)
+        md = mpb.MPBData(ms, rectify=True, resolution=32, periods=3, verbose=True)
         new_eps = md.convert(eps)
         ref_fn = 'tri-rods-epsilon-r-m3-n32.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)

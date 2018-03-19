@@ -5,55 +5,7 @@ import math
 
 import numpy as np
 import meep as mp
-
-
-def modf_positive(x):
-    f, i = math.modf(x)
-    if f < 0:
-        f += 1.0
-        if f >= 1.0:
-            f = 0
-        else:
-            i -= 1.0
-    return f, i
-
-
-def adj_point(i1, nx, dx, xi):
-    if dx >= 0:
-        i2 = i1 + 1
-        if i2 >= nx:
-            i2 -= nx
-            xi2 = xi + 1
-        else:
-            xi2 = xi
-    else:
-        i2 = i1 - 1
-        if i2 < 0:
-            i2 += nx
-            xi2 = xi - 1
-        else:
-            xi2 = xi
-        dx = -dx
-
-    return i2, dx, xi2
-
-
-def add_cmplx_times_phase(sum_re, sum_im, d_re, d_im, ix, iy, iz, s, scale_by):
-    phase = 0.0
-    p_re = 1.0
-    p_im = 0.0
-
-    new_phase = ix * s[0] + iy * s[1] + iz * s[2]
-
-    if new_phase != phase:
-        phase = new_phase
-        p_re = math.cos(phase)
-        p_im = math.sin(phase)
-
-    sum_re += (d_re * p_re - d_im * p_im) * scale_by
-    sum_im += (d_re * p_im + d_im * p_re) * scale_by
-
-    return sum_re, sum_im
+from . import map_data
 
 
 class MPBData(object):
@@ -106,180 +58,7 @@ class MPBData(object):
                              math.sin(self.TWOPI * self.phase_angle / 360.0))
         self.scaleby *= self.phase
 
-    def map_data(self, in_arr_re, in_arr_im, out_arr_re, out_arr_im, n_out):
-        rank = len(in_arr_re.shape)
-        num_ones = 3 - rank
-        n_in = [x for x in in_arr_re.shape] + [1] * num_ones
-
-        flat_in_arr_re = in_arr_re.ravel()
-        flat_in_arr_im = in_arr_im.ravel() if isinstance(in_arr_im, np.ndarray) else None
-
-        min_out_re = 1e20
-        max_out_re = -1e20
-        min_out_im = 1e20
-        max_out_im = -1e20
-
-        self.coord_map.c1 = self.coord_map.c1.scale(1 / n_out[0])
-        self.coord_map.c2 = self.coord_map.c2.scale(1 / n_out[1])
-        self.coord_map.c3 = self.coord_map.c3.scale(1 / n_out[2])
-
-        if self.kvector:
-            s = [x * self.TWOPI for x in self.kvector]
-        else:
-            s = [0, 0, 0]
-
-        # Compute shift so that the origin of the output cell is mapped to the origin
-        # of the original primitive cell
-        shiftx = 0.5 - (self.coord_map.c1.x * 0.5 * n_out[0] +
-                        self.coord_map.c2.x * 0.5 * n_out[1] +
-                        self.coord_map.c3.x * 0.5 * n_out[2])
-        shifty = 0.5 - (self.coord_map.c1.y * 0.5 * n_out[0] +
-                        self.coord_map.c2.y * 0.5 * n_out[1] +
-                        self.coord_map.c3.y * 0.5 * n_out[2])
-        shiftz = 0.5 - (self.coord_map.c1.z * 0.5 * n_out[0] +
-                        self.coord_map.c2.z * 0.5 * n_out[1] +
-                        self.coord_map.c3.z * 0.5 * n_out[2])
-
-        for i in range(n_out[0]):
-            for j in range(n_out[1]):
-                for k in range(n_out[2]):
-                    if self.transpose:
-                        ijk = (j * n_out[0] + i) * n_out[2] + k
-                    else:
-                        ijk = (i * n_out[1] + j) * n_out[2] + k
-
-                    # find the point corresponding to d_out[i,j,k] in the input array,
-                    # and also find the next-nearest points.
-                    x = (self.coord_map.c1.x * i + self.coord_map.c2.x * j +
-                         self.coord_map.c3.x * k + shiftx)
-                    y = (self.coord_map.c1.y * i + self.coord_map.c2.y * j +
-                         self.coord_map.c3.y * k + shifty)
-                    z = (self.coord_map.c1.z * i + self.coord_map.c2.z * j +
-                         self.coord_map.c3.z * k + shiftz)
-
-                    x, xi = modf_positive(x)
-                    y, yi = modf_positive(y)
-                    z, zi = modf_positive(z)
-
-                    i1 = int(x * n_in[0])
-                    j1 = int(y * n_in[1])
-                    k1 = int(z * n_in[2])
-                    dx = x * n_in[0] - i1
-                    dy = y * n_in[1] - j1
-                    dz = z * n_in[2] - k1
-
-                    i2, dx, xi2 = adj_point(i1, n_in[0], dx, xi)
-                    j2, dy, yi2 = adj_point(j1, n_in[1], dy, yi)
-                    k2, dz, zi2 = adj_point(k1, n_in[2], dz, zi)
-
-                    # dx, mdx, etcetera, are the weights for the various points in
-                    # the input data, which we use for linearly interpolating to get
-                    # the output point.
-                    if self.pick_nearest:
-                        # don't interpolate
-                        dx = 0 if dx <= 0.5 else 1
-                        dy = 0 if dy <= 0.5 else 1
-                        dz = 0 if dz <= 0.5 else 1
-
-                    mdx = 1.0 - dx
-                    mdy = 1.0 - dy
-                    mdz = 1.0 - dz
-
-                    # Now, linearly interpolate the input to get the output. If the
-                    # input/output are complex, we also need to multiply by the
-                    # appropriate phase factor, depending upon which unit cell we
-                    # are in.
-                    def in_index(i, j, k):
-                        return int((i * n_in[1] + j) * n_in[2] + k)
-
-                    if isinstance(out_arr_im, np.ndarray):
-                        out_arr_re[ijk] = 0
-                        out_arr_im[ijk] = 0
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i1, j1, k1)],
-                            flat_in_arr_im[in_index(i1, j1, k1)],
-                            xi, yi, zi, s, mdx * mdy * mdz
-                        )
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i1, j1, k2)],
-                            flat_in_arr_im[in_index(i1, j1, k2)],
-                            xi, yi, zi2, s, mdx * mdy * dz
-                        )
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i1, j2, k1)],
-                            flat_in_arr_im[in_index(i1, j2, k1)],
-                            xi, yi2, zi, s, mdx * dy * mdz
-                        )
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i1, j2, k2)],
-                            flat_in_arr_im[in_index(i1, j2, k2)],
-                            xi, yi2, zi2, s, mdx * dy * dz
-                        )
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i2, j1, k1)],
-                            flat_in_arr_im[in_index(i2, j1, k1)],
-                            xi2, yi, zi, s, dx * mdy * mdz
-                        )
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i2, j1, k2)],
-                            flat_in_arr_im[in_index(i2, j1, k2)],
-                            xi2, yi, zi2, s, dx * mdy * dz
-                        )
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i2, j2, k1)],
-                            flat_in_arr_im[in_index(i2, j2, k1)],
-                            xi2, yi2, zi, s, dx * dy * mdz
-                        )
-
-                        out_arr_re[ijk], out_arr_im[ijk] = add_cmplx_times_phase(
-                            out_arr_re[ijk], out_arr_im[ijk],
-                            flat_in_arr_re[in_index(i2, j2, k2)],
-                            flat_in_arr_im[in_index(i2, j2, k2)],
-                            xi2, yi2, zi2, s, dx * dy * dz
-                        )
-
-                        min_out_im = min(min_out_im, out_arr_im[ijk])
-                        max_out_im = max(max_out_im, out_arr_im[ijk])
-                    else:
-                        out_arr_re[ijk] = (flat_in_arr_re[in_index(i1, j1, k1)] *
-                                           mdx * mdy * mdz +
-                                           flat_in_arr_re[in_index(i1, j1, k2)] *
-                                           mdx * mdy * dz +
-                                           flat_in_arr_re[in_index(i1, j2, k1)] *
-                                           mdx * dy * mdz +
-                                           flat_in_arr_re[in_index(i1, j2, k2)] *
-                                           mdx * dy * dz +
-                                           flat_in_arr_re[in_index(i2, j1, k1)] *
-                                           dx * mdy * mdz +
-                                           flat_in_arr_re[in_index(i2, j1, k2)] *
-                                           dx * mdy * dz +
-                                           flat_in_arr_re[in_index(i2, j2, k1)] *
-                                           dx * dy * mdz +
-                                           flat_in_arr_re[in_index(i2, j2, k2)] *
-                                           dx * dy * dz)
-
-                    min_out_re = min(min_out_re, out_arr_re[ijk])
-                    max_out_re = max(max_out_re, out_arr_re[ijk])
-
-        if self.verbose:
-            print("real part range: {:g} .. {:g}".format(min_out_re, max_out_re))
-            if out_arr_im:
-                print("imag part range: {:g} .. {:g}".format(min_out_im, max_out_im))
-
-    def handle_dataset(self, in_arr):
+    def handle_dataset(self, in_arr, kvector):
 
         out_dims = [1, 1, 1]
         rank = len(in_arr.shape)
@@ -332,9 +111,19 @@ class MPBData(object):
         if isinstance(in_arr_im, np.ndarray):
             out_arr_im = np.zeros(int(N))
         else:
-            out_arr_im = None
+            out_arr_im = np.array([])
 
-        self.map_data(in_arr_re, in_arr_im, out_arr_re, out_arr_im, out_dims2)
+        flat_in_arr_re = in_arr_re.ravel()
+        flat_in_arr_im = in_arr_im.ravel() if isinstance(in_arr_im, np.ndarray) else np.array([])
+
+        if kvector:
+            kvector = [kvector.x, kvector.y, kvector.z]
+        else:
+            kvector = []
+
+        map_data(flat_in_arr_re, flat_in_arr_im, np.array(in_dims, dtype=np.intc),
+                 out_arr_re, out_arr_im, np.array(out_dims2, dtype=np.intc), self.coord_map,
+                 kvector, self.pick_nearest, self.verbose)
 
         if np.iscomplexobj(in_arr):
             # multiply * scaleby for complex data
@@ -501,11 +290,11 @@ class MPBData(object):
 
         # Get Bloch wavevector from the ModeSolver
 
-        self.kvector = self.ms.mode_solver.get_output_k()
+        # self.kvector = self.ms.mode_solver.get_output_k()
 
-        if self.verbose:
-            fmt = "Read Bloch wavevector ({}, {}, {})"
-            print(fmt.format(self.kvector[0], self.kvector[1], self.kvector[2]))
+        # if self.verbose:
+        #     fmt = "Read Bloch wavevector ({}, {}, {})"
+        #     print(fmt.format(self.kvector[0], self.kvector[1], self.kvector[2]))
 
         if self.verbose:
             fmt = "Input lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
@@ -568,10 +357,10 @@ class MPBData(object):
         self.Rout = Rout
         self.cart_map = cart_map
 
-    def convert(self, arr):
+    def convert(self, arr, kpoint=None):
         self.init_output_lattice()
 
-        return self.handle_dataset(arr)
+        return self.handle_dataset(arr, kpoint)
 
         # if cvector:
         #     self.handle_cvector_dataset(arr)
