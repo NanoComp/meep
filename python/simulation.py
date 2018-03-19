@@ -741,29 +741,29 @@ class Simulation(object):
 
         return self.fields.flux_in_box(d, box.swigobj)
 
-    def electric_energy_in_box(self, d, box):
+    def electric_energy_in_box(self, box):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
 
         box = self._fit_volume_to_simulation(box)
 
-        return self.fields.electric_energy_in_box(d, box.swigobj)
+        return self.fields.electric_energy_in_box(box.swigobj)
 
-    def magnetic_energy_in_box(self, d, box):
+    def magnetic_energy_in_box(self, box):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
 
         box = self._fit_volume_to_simulation(box)
 
-        return self.fields.magnetic_energy_in_box(d, box.swigobj)
+        return self.fields.magnetic_energy_in_box(box.swigobj)
 
-    def field_energy_in_box(self, d, box):
+    def field_energy_in_box(self, box):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using field_energy_in_box')
 
         box = self._fit_volume_to_simulation(box)
 
-        return self.fields.field_energy_in_box(d, box.swigobj)
+        return self.fields.field_energy_in_box(box.swigobj)
 
     def modal_volume_in_box(self, vol=None):
         if self.fields is None:
