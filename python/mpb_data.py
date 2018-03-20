@@ -87,7 +87,7 @@ class MPBData(object):
 
         N = 1
         for i in range(3):
-            out_dims[i] = max(out_dims[i], 1)
+            out_dims[i] = int(max(out_dims[i], 1))
             N *= out_dims[i]
 
         if self.verbose:
@@ -203,7 +203,7 @@ class MPBData(object):
 
         N = 1
         for i in range(3):
-            out_dims[i] = max(out_dims[i], 1)
+            out_dims[i] = int(max(out_dims[i], 1))
             N *= out_dims[i]
 
         if self.verbose:
