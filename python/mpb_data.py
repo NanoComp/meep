@@ -22,7 +22,6 @@ class MPBData(object):
                  resolution=0,
                  phase_angle=0,
                  pick_nearest=False,
-                 transpose=False,
                  ve=None,
                  verbose=False):
 
@@ -41,7 +40,6 @@ class MPBData(object):
         self.resolution = resolution
         self.phase_angle = phase_angle
         self.pick_nearest = pick_nearest
-        self.transpose = transpose
         self.ve = ve
 
         if self.ve:
@@ -92,19 +90,8 @@ class MPBData(object):
             out_dims[i] = max(out_dims[i], 1)
             N *= out_dims[i]
 
-        out_dims2 = [1, 1, 1]
-
-        if self.transpose:
-            out_dims2[0] = int(out_dims[1])
-            out_dims2[1] = int(out_dims[0])
-            out_dims2[2] = int(out_dims[2])
-        else:
-            out_dims2[0] = int(out_dims[0])
-            out_dims2[1] = int(out_dims[1])
-            out_dims2[2] = int(out_dims[2])
-
         if self.verbose:
-            print("Output data {}x{}x{}".format(out_dims2[0], out_dims2[1], out_dims2[2]))
+            print("Output data {}x{}x{}".format(out_dims[0], out_dims[1], out_dims[2]))
 
         out_arr_re = np.zeros(int(N))
 
@@ -122,7 +109,7 @@ class MPBData(object):
             kvector = []
 
         map_data(flat_in_arr_re, flat_in_arr_im, np.array(in_dims, dtype=np.intc),
-                 out_arr_re, out_arr_im, np.array(out_dims2, dtype=np.intc), self.coord_map,
+                 out_arr_re, out_arr_im, np.array(out_dims, dtype=np.intc), self.coord_map,
                  kvector, self.pick_nearest, self.verbose)
 
         if np.iscomplexobj(in_arr):
@@ -130,9 +117,9 @@ class MPBData(object):
             complex_out = np.vectorize(complex)(out_arr_re, out_arr_im)
             complex_out *= self.scaleby
 
-            return np.reshape(complex_out, out_dims2[:rank])
+            return np.reshape(complex_out, out_dims[:rank])
 
-        return np.reshape(out_arr_re, out_dims2[:rank])
+        return np.reshape(out_arr_re, out_dims[:rank])
 
     def handle_cvector_dataset(self, in_handle, out_handle, Rout, cart_map, kvector):
         d_in = [[0, 0], [0, 0], [0, 0]]
@@ -219,26 +206,15 @@ class MPBData(object):
             out_dims[i] = max(out_dims[i], 1)
             N *= out_dims[i]
 
-        out_dims2 = [0] * 3
-
-        if self.transpose:
-            out_dims2[0] = out_dims[1]
-            out_dims2[1] = out_dims[0]
-            out_dims2[2] = out_dims[2]
-        else:
-            out_dims2[0] = out_dims[0]
-            out_dims2[1] = out_dims[1]
-            out_dims2[2] = out_dims[2]
-
         if self.verbose:
             fmt = "Output data {}x{}x{}."
-            print(fmt.format(out_dims2[0], out_dims2[1], out_dims2[2]))
+            print(fmt.format(out_dims[0], out_dims[1], out_dims[2]))
 
         for dim in range(3):
             out_arr_re = np.zeros(int(N))
             d_out_im = np.zeros(int(N))
 
-            self.map_data(d_in[dim][0], d_in[dim][1], out_arr_re, d_out_im, out_dims2, kvector)
+            self.map_data(d_in[dim][0], d_in[dim][1], out_arr_re, d_out_im, out_dims, kvector)
 
             # multiply * scaleby
             complex_out = np.vectorize(complex)(out_arr_re, d_out_im)
@@ -323,13 +299,6 @@ class MPBData(object):
             cart_map.c2 = Rout.c2.unit()
             cart_map.c3 = Rout.c3.unit()
             cart_map = cart_map.inverse()
-
-        if self.transpose:
-            cart_map = cart_map.transpose()
-            v = cart_map.c1
-            cart_map.c1 = cart_map.c2
-            cart_map.c2 = v
-            cart_map = cart_map.transpose()
 
         Rout.c1 = Rout.c1.scale(self.multiply_size[0])
         Rout.c2 = Rout.c2.scale(self.multiply_size[1])
