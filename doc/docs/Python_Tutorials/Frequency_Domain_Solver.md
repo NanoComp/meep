@@ -73,7 +73,7 @@ else:
     print("FAILED solve_cw test: error in the fields is NOT decreasing with increasing resolution")
 ```
 
-The inset of the figure below shows the magnitude of the E$_z$ field, computed using a tolerance of 10$^{-12}$, overlapping the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern and presence of the point source. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver.
+The inset of the figure below shows the magnitude of the scalar E$_z$ field, computed using a tolerance of 10$^{-12}$, overlapping the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern and presence of the point source. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver.
 
 <center>
 ![](../images/CWsolver-python.png)

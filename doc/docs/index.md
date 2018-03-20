@@ -2,7 +2,7 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free and open-source, [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD), software package for simulating electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Features include:
+ **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Features include:
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
@@ -14,7 +14,7 @@
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
 -   Arbitrary current sources including a guided-mode launcher.
 -   Frequency-domain solver for finding the response to a continuous-wave source.
--   Field analyses including flux spectra, modal depcomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions, near to far field transformations; completely programmable.
+-   Field analyses including flux spectra, near to far field transformations, modal depcomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
 
 Time-Domain Simulation
 ----------------------
@@ -23,7 +23,7 @@ A time-domain electromagnetic simulation simply takes [Maxwell's equations](http
 
 -   **Transmission and Reflection Spectra** &mdash; by Fourier-transforming the response to a short pulse, a single simulation can yield the scattering amplitudes over a wide spectrum of frequencies.
 -   **Resonant Modes and Frequencies** &mdash; by analyzing the response of the system to a short pulse, one can extract the frequencies, decay rates, and field patterns of the harmonic modes of lossy and lossless systems including waveguide and cavity modes.
--   **Field Patterns** (e.g. Green's functions) &mdash; in response to an arbitrary source, archetypically a [CW](https://en.wikipedia.org/wiki/Continuous_wave) (fixed-$\omega$) input.
+-   **Field Patterns** (e.g. Green's functions) &mdash; in response to an arbitrary source via a [continuous-wave (CW)](https://en.wikipedia.org/wiki/Continuous_wave) (fixed-$\omega$) input.
 
 Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization etcetera in sequence or in parallel.
 
@@ -32,7 +32,7 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The development repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available in [Releases](https://github.com/stevengj/meep/releases). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
+The source repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available in [Releases](https://github.com/stevengj/meep/releases). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------

@@ -2,9 +2,7 @@
 # Scheme User Interface
 ---
 
-This page is a listing of the functions exposed by the Scheme interface. For a gentler introduction, see [Tutorial/Basics](Scheme_Tutorials/Basics.md). We do not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). Also, we note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
-
-See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines.
+This page is a listing of the functions exposed by the Scheme interface. For a gentler introduction, see [Tutorial/Basics](Scheme_Tutorials/Basics.md). This page does not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). Also, note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users. See also the instructions for [parallel Meep](Parallel_Meep.md).
 
 [TOC]
 
@@ -96,7 +94,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep turns off support for material dispersion, nonlinearities, and similar properties if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work however if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the computational cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
 
-The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG wrappers](#swig-wrappers).
+The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
 **`structure` [`meep::structure*`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -453,7 +451,7 @@ The asymptotic reflection in the limit of infinite resolution or infinite PML th
 
 **`pml-profile` [`function`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml-profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `(pml-profile (lambda (u) (* u u u)))`.
+By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml-profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `(pml-profile (lambda (u) (* u u u)))`.
 
 #### `absorber`
 
@@ -463,9 +461,9 @@ The `absorber` class does *not* implement a perfectly matched layer (PML), howev
 
 The main reason to use `absorber` is if you have **a case in which PML fails:**
 
--   No true PML exists for *periodic* media, and a scalar absorber is cheaper and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
--   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can easily happen in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601 (2009)](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
--   PML can fail if you have a waveguide hitting the edge of your computational cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77 (2011)](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
+-   No true PML exists for *periodic* media, and a scalar absorber is cheaper and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+-   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can easily happen in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601, 2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
+-   PML can fail if you have a waveguide hitting the edge of your computational cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
 
 ### source
 
@@ -732,7 +730,7 @@ If any dimension of `where` is zero, that dimension is not integrated over. In t
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `integrate-field-function`, but returns the maximum absolute value of `func` in the volume `where` instead of its integral.
 
-The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Function Examples](Field_Function_Examples.md) for examples of how to call `integrate-field-function` and `max-abs-field-function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Functions](Field_Functions.md) for examples of how to call `integrate-field-function` and `max-abs-field-function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* computational cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
 
@@ -785,7 +783,7 @@ As described in the tutorial, you normally use `add-flux` via statements like:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 to store the flux object in a variable. `add-flux` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many flux objects as you want, e.g. to look at powers flowing in different regions or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the flux region multiplied by the number of electric and magnetic field components required to get the Poynting vector multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
-Once you have called `add-flux`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current flux spectrum via:
+Once you have called `add-flux`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the [run functions](#run-functions). At any time, you can ask for Meep to print out the current flux spectrum via:
 
 **`(display-fluxes fluxes...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -959,7 +957,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [constant-frequency source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `continuous-src` with the desired frequency, [initialize the fields and geometry](#initializing-the-structure-and-fields) via `(init-fields)`, and then:
+Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `continuous-src` with the desired frequency, [initialize the fields and geometry](#initializing-the-structure-and-fields) via `(init-fields)`, and then:
 
 **`(meep-fields-solve-cw fields tol maxiters L)`**
 
@@ -1008,7 +1006,7 @@ Finally, another two run functions, useful for computing $\omega$(**k**) band di
 
 **`(run-k-point T k)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `vector3 k`, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run [`harminv`](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources.
+Given a `vector3 k`, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources.
 
 **`(run-k-points T k-points)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1209,7 +1207,7 @@ This suffices for most purposes. However, sometimes you need a step function tha
 Low-Level Functions
 -------------------
 
-By default, Meep reads input functions like `sources` and `geometry` and creates *global* variables `structure` and `fields` to store the corresponding C++ objects. Given these, you can then call essentially *any* function in the C++ interface, because all of the C++ functions are automatically made accessible to Scheme by a wrapper-generator program called [SWIG](https://en.wikipedia.org/wiki/SWIG).
+By default, Meep reads input functions like `sources` and `geometry` and creates *global* variables `structure` and `fields` to store the corresponding C++ objects. Given these, you can then call essentially *any* function in the C++ interface, because all of the C++ functions are automatically made accessible to Scheme by the wrapper-generator program [SWIG](https://en.wikipedia.org/wiki/SWIG).
 
 ### Initializing the Structure and Fields
 
