@@ -27,6 +27,18 @@ namespace meep_geom {
 material_data vacuum_material_data;
 material_type vacuum = &vacuum_material_data;
 
+void check_offdiag(medium_struct *m) {
+    if (m->epsilon_offdiag.x.im != 0 ||
+        m->epsilon_offdiag.y.im != 0 ||
+        m->epsilon_offdiag.z.im != 0 ||
+        m->mu_offdiag.x.im != 0 ||
+        m->mu_offdiag.y.im != 0 ||
+        m->mu_offdiag.z.im != 0) {
+
+        meep::abort("Found non-zero imaginary part of epsilon or mu offdiag.\n");
+    }
+}
+
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
 {
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
@@ -472,7 +484,8 @@ geom_epsilon::geom_epsilon(geometric_object_list g,
 
       medium_struct *mm;
       if ( is_medium(geometry.items[i].material, &mm) )
-	printf("%*sdielectric constant epsilon diagonal "
+        check_offdiag(mm);
+        printf("%*sdielectric constant epsilon diagonal "
                "= (%g,%g,%g)\n", 5 + 5, "",
                mm->epsilon_diag.x,
                mm->epsilon_diag.y,
@@ -1149,7 +1162,6 @@ double geom_epsilon::chi2(meep::component c, const meep::vec &r)
 static bool mu_not_1(material_type m)
 {
   medium_struct *mm;
-
   return (    is_medium(m, &mm)
            && (     mm->mu_diag.x!=1
                 ||  mm->mu_diag.y!=1
@@ -1473,6 +1485,7 @@ void set_materials_from_geometry(meep::structure *s,
 
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
+  check_offdiag(&_default_material->medium);
   default_material     = _default_material;
   ensure_periodicity   = _ensure_periodicity;
   meep::grid_volume gv = s->gv;
