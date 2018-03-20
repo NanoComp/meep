@@ -13,7 +13,7 @@ libmeepgeom_la_SOURCES = \
 
 libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
-check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material
+check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields
 
 absorber_1d_ll_SOURCES = absorber-1d-ll.cpp
 absorber_1d_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
@@ -29,6 +29,9 @@ ring_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 array_slice_ll_SOURCES = array-slice-ll.cpp
 array_slice_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+dft_fields_SOURCES = dft-fields.cpp
+dft_fields_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 TESTS           = cyl-ellipsoid-ll array-slice-ll
 

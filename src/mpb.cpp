@@ -590,12 +590,16 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
 /*                                                             */
-/* coeffs should be a caller-allocated array of length         */
-/*  2*num_freqs*num_bands (where num_freqs is the number of    */
-/*                         frequencies stored in flux)         */
+/* on input, coeffs must point to a user-allocated array of    */
+/* length 2*num_freqs*num_bands (where num_freqs=flux.Nfreq).  */
+/* on return, the coefficients of the forward/backward traveling*/
+/* eigenmodes for frequency #nf and band index bands[nb] are   */
+/*  coeffs[ 2*nb*num_freqs + 2*nf + 0/1 ].                     */
 /*                                                             */
-/* if vgrp is non-null, it should be a caller-allocated array  */
-/* of length num_freqs*num_bands.                              */
+/* if vgrp is non-null, it should point to a caller-allocated  */
+/* array of size num_bands*num_freqs. then on return the group */
+/* velocity for the mode with frequency #nf and band index     */
+/* bands[nb] is stored in vgrp[nb*num_freqs + nf].             */
 /***************************************************************/
 void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
                                         const volume &where,
@@ -626,22 +630,21 @@ void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
 
-      if (vgrp)
-       vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
+      if (vgrp) vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
       cdouble mode_flux[2], mode_mode[2];
-      get_mode_flux_overlap(mode_data, flux, nf, where, mode_flux);
-      get_mode_mode_overlap(mode_data, mode_data, flux, where, mode_mode);
+      get_mode_flux_overlap(mode_data, flux, nf, d, mode_flux);
+      get_mode_mode_overlap(mode_data, mode_data, flux, d, mode_mode);
       cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
+      if (normfac==0.0) normfac=1.0;
       coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
        = (mode_flux[0] + mode_flux[1]) / normfac;
       coeffs[ 2*nb*num_freqs + 2*nf + 1 ]
        = (mode_flux[0] - mode_flux[1]) / normfac;
     };
-
 }
 /**************************************************************/
 /* dummy versions of class methods for compiling without MPB  */
@@ -684,6 +687,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, direction d,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
                                         double *vgrp)
+                                        
 { (void) flux; (void) d; (void) where; (void) bands; (void)num_bands;
   (void) coeffs; (void) vgrp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");

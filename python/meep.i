@@ -607,6 +607,29 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // end typemaps for get_eigenmode_coefficients
 //--------------------------------------------------
 
+//--------------------------------------------------
+// typemaps needed for add_dft_fields
+//--------------------------------------------------
+%typemap(in) (meep::component *components, int num_components) {
+    if (!PyList_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a list");
+        SWIG_fail;
+    }
+    $2 = PyList_Size($input);
+    $1 = new meep::component[$2];
+
+    for (Py_ssize_t i = 0; i < $2; i++) {
+        $1[i] = (meep::component)PyInteger_AsLong(PyList_GetItem($input, i));
+    }
+}
+
+%typemap(freearg) (meep::component *components, int num_components) {
+    delete[] $1;
+}
+//--------------------------------------------------
+// end typemaps for add_dft_fields
+//--------------------------------------------------
+
 // typemap suite for field functions
 
 %typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components,
