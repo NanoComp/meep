@@ -1,7 +1,7 @@
 from __future__ import division
 
 import math
-# import re
+import re
 
 import numpy as np
 import meep as mp
@@ -134,138 +134,138 @@ class MPBData(object):
 
         return np.reshape(out_arr_re, out_dims2[:rank])
 
-    # def handle_cvector_dataset(self, in_handle, out_handle, Rout, cart_map, kvector):
-    #     d_in = [[0, 0], [0, 0], [0, 0]]
-    #     in_dims = [1, 1, 1]
-    #     out_dims = [1, 1, 1]
-    #     rank = 3
+    def handle_cvector_dataset(self, in_handle, out_handle, Rout, cart_map, kvector):
+        d_in = [[0, 0], [0, 0], [0, 0]]
+        in_dims = [1, 1, 1]
+        out_dims = [1, 1, 1]
+        rank = 3
 
-    #     components = ['x', 'y', 'z']
+        components = ['x', 'y', 'z']
 
-    #     def try_individual_datasets(in_handle, out_handle, Rout, kvector):
-    #         for dim in range(3):
-    #             namr = "{}.r".format(components[dim])
-    #             nami = "{}.i".format(components[dim])
-    #             self.handle_dataset(in_handle, out_handle, namr, nami, Rout, kvector)
+        def try_individual_datasets(in_handle, out_handle, Rout, kvector):
+            for dim in range(3):
+                namr = "{}.r".format(components[dim])
+                nami = "{}.i".format(components[dim])
+                self.handle_dataset(in_handle, out_handle, namr, nami, Rout, kvector)
 
-    #             namr = re.sub(r'\.r', '', namr)
-    #             self.handle_dataset(in_handle, out_handle, namr, None, Rout, kvector)
+                namr = re.sub(r'\.r', '', namr)
+                self.handle_dataset(in_handle, out_handle, namr, None, Rout, kvector)
 
-    #     for dim in range(3):
-    #         for ri in range(2):
-    #             dims = [1, 1, 1]
-    #             rnk = 3
+        for dim in range(3):
+            for ri in range(2):
+                dims = [1, 1, 1]
+                rnk = 3
 
-    #             nam = components[dim]
-    #             nam += '.i' if ri else '.r'
-    #             d_in[dim][ri] = in_handle.get(nam, None)
+                nam = components[dim]
+                nam += '.i' if ri else '.r'
+                d_in[dim][ri] = in_handle.get(nam, None)
 
-    #             if d_in[dim][ri] is None:
-    #                 try_individual_datasets(in_handle, out_handle, Rout, kvector)
-    #                 return
-    #             else:
-    #                 d_in[dim][ri] = d_in[dim][ri].value
+                if d_in[dim][ri] is None:
+                    try_individual_datasets(in_handle, out_handle, Rout, kvector)
+                    return
+                else:
+                    d_in[dim][ri] = d_in[dim][ri].value
 
-    #             if not dim and not ri:
-    #                 rank = rnk
-    #                 for i in range(3):
-    #                     in_dims[i] = dims[i]
-    #             else:
-    #                 dims_not_equal = (in_dims[0] != dims[0] or
-    #                                   in_dims[1] != dims[1] or
-    #                                   in_dims[2] != dims[2])
-    #                 if rank != rnk or dims_not_equal:
-    #                     try_individual_datasets(in_handle, out_handle, Rout, kvector)
-    #                     return
+                if not dim and not ri:
+                    rank = rnk
+                    for i in range(3):
+                        in_dims[i] = dims[i]
+                else:
+                    dims_not_equal = (in_dims[0] != dims[0] or
+                                      in_dims[1] != dims[1] or
+                                      in_dims[2] != dims[2])
+                    if rank != rnk or dims_not_equal:
+                        try_individual_datasets(in_handle, out_handle, Rout, kvector)
+                        return
 
-    #     if self.verbose:
-    #         print("Found complex vector dataset...")
+        if self.verbose:
+            print("Found complex vector dataset...")
 
-    #     if self.verbose:
-    #         fmt = "Input data is rank {}, size {}x{}x{}."
-    #         print(fmt.format(rank, in_dims[0], in_dims[1], in_dims[2]))
+        if self.verbose:
+            fmt = "Input data is rank {}, size {}x{}x{}."
+            print(fmt.format(rank, in_dims[0], in_dims[1], in_dims[2]))
 
-    #     # rotate vector field according to cart_map
-    #     if self.verbose:
-    #         fmt1 = "Rotating vectors by matrix [ {:.10g}, {:.10g}, {:.10g}"
-    #         fmt2 = "                             {:.10g}, {:.10g}, {:.10g}"
-    #         fmt3 = "                             {:.10g}, {:.10g}, {:.10g} ]"
-    #         print(fmt1.format(cart_map.c1.x, cart_map.c2.x, cart_map.c3.x))
-    #         print(fmt2.format(cart_map.c1.y, cart_map.c2.y, cart_map.c3.y))
-    #         print(fmt3.format(cart_map.c1.z, cart_map.c2.z, cart_map.c3.z))
+        # rotate vector field according to cart_map
+        if self.verbose:
+            fmt1 = "Rotating vectors by matrix [ {:.10g}, {:.10g}, {:.10g}"
+            fmt2 = "                             {:.10g}, {:.10g}, {:.10g}"
+            fmt3 = "                             {:.10g}, {:.10g}, {:.10g} ]"
+            print(fmt1.format(cart_map.c1.x, cart_map.c2.x, cart_map.c3.x))
+            print(fmt2.format(cart_map.c1.y, cart_map.c2.y, cart_map.c3.y))
+            print(fmt3.format(cart_map.c1.z, cart_map.c2.z, cart_map.c3.z))
 
-    #     N = in_dims[0] * in_dims[1] * in_dims[2]
-    #     for ri in range(2):
-    #         for i in range(N):
-    #             v = mp.Vector3(d_in[0][ri][i], d_in[1][ri][i], d_in[2][ri][i])
-    #             v = cart_map * v
-    #             d_in[0][ri][i] = v.x
-    #             d_in[1][ri][i] = v.y
-    #             d_in[2][ri][i] = v.z
+        N = in_dims[0] * in_dims[1] * in_dims[2]
+        for ri in range(2):
+            for i in range(N):
+                v = mp.Vector3(d_in[0][ri][i], d_in[1][ri][i], d_in[2][ri][i])
+                v = cart_map * v
+                d_in[0][ri][i] = v.x
+                d_in[1][ri][i] = v.y
+                d_in[2][ri][i] = v.z
 
-    #     if self.resolution > 0:
-    #         out_dims[0] = Rout.c0.norm() * self.resolution + 0.5
-    #         out_dims[1] = Rout.c1.norm() * self.resolution + 0.5
-    #         out_dims[2] = Rout.c2.norm() * self.resolution + 0.5
-    #     else:
-    #         for i in range(3):
-    #             out_dims[i] = in_dims[i] * self.multiply_size[i]
+        if self.resolution > 0:
+            out_dims[0] = Rout.c0.norm() * self.resolution + 0.5
+            out_dims[1] = Rout.c1.norm() * self.resolution + 0.5
+            out_dims[2] = Rout.c2.norm() * self.resolution + 0.5
+        else:
+            for i in range(3):
+                out_dims[i] = in_dims[i] * self.multiply_size[i]
 
-    #     for i in range(rank, 3):
-    #         out_dims[i] = 1
+        for i in range(rank, 3):
+            out_dims[i] = 1
 
-    #     N = 1
-    #     for i in range(3):
-    #         out_dims[i] = max(out_dims[i], 1)
-    #         N *= out_dims[i]
+        N = 1
+        for i in range(3):
+            out_dims[i] = max(out_dims[i], 1)
+            N *= out_dims[i]
 
-    #     out_dims2 = [0] * 3
+        out_dims2 = [0] * 3
 
-    #     if self.transpose:
-    #         out_dims2[0] = out_dims[1]
-    #         out_dims2[1] = out_dims[0]
-    #         out_dims2[2] = out_dims[2]
-    #     else:
-    #         out_dims2[0] = out_dims[0]
-    #         out_dims2[1] = out_dims[1]
-    #         out_dims2[2] = out_dims[2]
+        if self.transpose:
+            out_dims2[0] = out_dims[1]
+            out_dims2[1] = out_dims[0]
+            out_dims2[2] = out_dims[2]
+        else:
+            out_dims2[0] = out_dims[0]
+            out_dims2[1] = out_dims[1]
+            out_dims2[2] = out_dims[2]
 
-    #     if self.verbose:
-    #         fmt = "Output data {}x{}x{}."
-    #         print(fmt.format(out_dims2[0], out_dims2[1], out_dims2[2]))
+        if self.verbose:
+            fmt = "Output data {}x{}x{}."
+            print(fmt.format(out_dims2[0], out_dims2[1], out_dims2[2]))
 
-    #     for dim in range(3):
-    #         out_arr_re = np.zeros(int(N))
-    #         d_out_im = np.zeros(int(N))
+        for dim in range(3):
+            out_arr_re = np.zeros(int(N))
+            d_out_im = np.zeros(int(N))
 
-    #         self.map_data(d_in[dim][0], d_in[dim][1], out_arr_re, d_out_im, out_dims2, kvector)
+            self.map_data(d_in[dim][0], d_in[dim][1], out_arr_re, d_out_im, out_dims2, kvector)
 
-    #         # multiply * scaleby
-    #         complex_out = np.vectorize(complex)(out_arr_re, d_out_im)
-    #         complex_out *= self.scaleby
-    #         out_arr_re = complex_out[0:2]
-    #         d_out_im = complex_out[1:2]
+            # multiply * scaleby
+            complex_out = np.vectorize(complex)(out_arr_re, d_out_im)
+            complex_out *= self.scaleby
+            out_arr_re = complex_out[0:2]
+            d_out_im = complex_out[1:2]
 
-    #         nam = "{}.r-new".format(components[dim])
-    #         if out_handle != in_handle:
-    #             nam = re.sub('-new', '', nam)
+            nam = "{}.r-new".format(components[dim])
+            if out_handle != in_handle:
+                nam = re.sub('-new', '', nam)
 
-    #         if self.verbose:
-    #             print("Writing dataset to {}...".format(nam))
+            if self.verbose:
+                print("Writing dataset to {}...".format(nam))
 
-    #         out_handle[nam] = np.reshape(out_arr_re, out_dims)
+            out_handle[nam] = np.reshape(out_arr_re, out_dims)
 
-    #         nam = re.sub('r', 'i', nam)
+            nam = re.sub('r', 'i', nam)
 
-    #         if self.verbose:
-    #             print("Writing dataset to {}...".format(nam))
+            if self.verbose:
+                print("Writing dataset to {}...".format(nam))
 
-    #         out_handle[nam] = np.reshape(d_out_im, out_dims)
+            out_handle[nam] = np.reshape(d_out_im, out_dims)
 
-    #         if self.verbose:
-    #             print("Successfully wrote out data.")
+            if self.verbose:
+                print("Successfully wrote out data.")
 
-    #     return
+        return
 
     def init_output_lattice(self, kvector):
 
@@ -348,7 +348,7 @@ class MPBData(object):
     def convert(self, arr, kpoint=None):
         self.init_output_lattice(kpoint)
 
-        return self.handle_dataset(arr, kpoint)
-
-        # if cvector:
-        #     self.handle_cvector_dataset(arr)
+        if len(arr.shape) == 3:
+            return self.handle_cvector_dataset(arr, kpoint)
+        else:
+            return self.handle_dataset(arr, kpoint)

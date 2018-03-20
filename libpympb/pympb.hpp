@@ -116,10 +116,10 @@ struct mode_solver {
   std::vector<mpb_real> get_freqs();
   double get_eigensolver_flops();
   int get_iterations();
-  void get_efield(std::complex<mpb_real> *cdata, int size, int band);
-  void get_dfield(std::complex<mpb_real> *cdata, int size, int band);
-  void get_hfield(std::complex<mpb_real> *cdata, int size, int band);
-  void get_bfield(std::complex<mpb_real> *cdata, int size, int band);
+  void get_efield(int band);
+  void get_dfield(int band);
+  void get_hfield(int band);
+  void get_bfield(int band);
   void get_efield_from_dfield();
 
   void get_curfield(double *data, int size);

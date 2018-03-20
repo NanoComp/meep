@@ -170,12 +170,12 @@ class TestModeSolver(unittest.TestCase):
     def check_fields_against_h5(self, ref_path, field):
         with h5py.File(ref_path, 'r') as ref:
             # Reshape the reference data into a component-wise 1d array like
-            # [x1,y1,z1,x2,y2,z2,etc.] to match the layout of `field`
+            # [x1,y1,z1,x2,y2,z2,etc.]
             ref_x = ref['x.r'].value + ref['x.i'].value * 1j
             ref_y = ref['y.r'].value + ref['y.i'].value * 1j
             ref_z = ref['z.r'].value + ref['z.i'].value * 1j
 
-            ref_arr = np.zeros(field.shape[0], dtype=np.complex128)
+            ref_arr = np.zeros(np.prod(field.shape), dtype=np.complex128)
             ref_arr[0::3] = ref_x.ravel()
             ref_arr[1::3] = ref_y.ravel()
             ref_arr[2::3] = ref_z.ravel()

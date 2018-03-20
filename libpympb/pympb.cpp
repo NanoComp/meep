@@ -1353,14 +1353,10 @@ size_t mode_solver::get_field_size() {
   return mdata ? mdata->fft_output_size * 3 : 0;
 }
 
-void mode_solver::get_efield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_efield(int band) {
 
-  get_dfield(cdata, size, band);
+  get_dfield(band);
   get_efield_from_dfield();
-
-  for (int i = 0; i < size; ++i) {
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
-  }
 }
 
 void mode_solver::get_efield_from_dfield() {
@@ -1374,7 +1370,7 @@ void mode_solver::get_efield_from_dfield() {
   curfield_type = 'e';
 }
 
-void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_dfield(int band) {
 
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
@@ -1409,6 +1405,7 @@ void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) 
   // nx*ny*nz.)
 
   double scale;
+  int N = mdata->fft_output_size;
 
   if (freqs[band - 1] != 0.0) {
     scale = -1.0 / freqs[band - 1];
@@ -1418,15 +1415,13 @@ void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) 
 
   scale /= sqrt(vol);
 
-  for (int i = 0; i < size; ++i) {
+  for (int i = 0; i < N * 3; ++i) {
     curfield[i].re *= scale;
     curfield[i].im *= scale;
-    // Copy curfield into our output array for numpy
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
-void mode_solver::get_hfield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_hfield(int band) {
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1457,15 +1452,14 @@ void mode_solver::get_hfield(std::complex<mpb_real> *cdata, int size, int band) 
   double scale;
   scale = 1.0 / sqrt(vol);
 
-  for (int i = 0; i < size; ++i) {
+  int N = mdata->fft_output_size;
+  for (int i = 0; i < N * 3; ++i) {
     curfield[i].re *= scale;
     curfield[i].im *= scale;
-    // Copy curfield to our output array for numpy
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
-void mode_solver::get_bfield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_bfield(int band) {
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1487,11 +1481,10 @@ void mode_solver::get_bfield(std::complex<mpb_real> *cdata, int size, int band) 
   double scale;
   scale = 1.0 / sqrt(vol);
 
-  for (int i = 0; i < size; ++i) {
+  int N = mdata->fft_output_size;
+  for (int i = 0; i < N * 3; ++i) {
     curfield[i].re *= scale;
     curfield[i].im *= scale;
-    // Copy curfield to our output array for numpy
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
