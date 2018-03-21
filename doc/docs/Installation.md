@@ -314,8 +314,9 @@ sudo apt-get -y install     \
     hdf5-tools              \
     libpython3.5-dev        \
     python3-numpy           \
+    python3-scipy           \
+    python3-matplotlib      \
     python3-pip             \
-    python3-scipy
 
 mkdir -p ~/install
 
