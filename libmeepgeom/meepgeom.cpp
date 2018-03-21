@@ -483,7 +483,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g,
       display_geometric_object_info(5, geometry.items[i]);
 
       medium_struct *mm;
-      if ( is_medium(geometry.items[i].material, &mm) )
+      if ( is_medium(geometry.items[i].material, &mm) ) {
         check_offdiag(mm);
         printf("%*sdielectric constant epsilon diagonal "
                "= (%g,%g,%g)\n", 5 + 5, "",
@@ -491,6 +491,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g,
                mm->epsilon_diag.y,
                mm->epsilon_diag.z
               );
+      }
     }
   }
 
@@ -1485,7 +1486,10 @@ void set_materials_from_geometry(meep::structure *s,
 
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
-  check_offdiag(&_default_material->medium);
+  if (_default_material->which_subclass != material_data::MATERIAL_USER &&
+      _default_material->which_subclass != material_data::PERFECT_METAL) {
+      check_offdiag(&_default_material->medium);
+  }
   default_material     = _default_material;
   ensure_periodicity   = _ensure_periodicity;
   meep::grid_volume gv = s->gv;
