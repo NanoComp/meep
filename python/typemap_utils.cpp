@@ -170,6 +170,36 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
     return 1;
 }
 
+static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
+    PyObject *py_x = PyObject_GetAttrString(po, "x");
+    PyObject *py_y = PyObject_GetAttrString(po, "y");
+    PyObject *py_z = PyObject_GetAttrString(po, "z");
+
+    if (!py_x || !py_y || !py_z) {
+        PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
+        return 0;
+    }
+
+    std::complex<double> x = std::complex<double>(PyComplex_RealAsDouble(py_x),
+                                                  PyComplex_ImagAsDouble(py_x));
+    std::complex<double> y = std::complex<double>(PyComplex_RealAsDouble(py_y),
+                                                  PyComplex_ImagAsDouble(py_y));
+    std::complex<double> z = std::complex<double>(PyComplex_RealAsDouble(py_z),
+                                                  PyComplex_ImagAsDouble(py_z));
+    Py_DECREF(py_x);
+    Py_DECREF(py_y);
+    Py_DECREF(py_z);
+
+    v->x.re = x.real();
+    v->x.im = x.imag();
+    v->y.re = y.real();
+    v->y.im = y.imag();
+    v->z.re = z.real();
+    v->z.im = z.imag();
+
+    return 1;
+}
+
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
@@ -179,6 +209,23 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     }
 
     if (!pyv3_to_v3(py_attr, v)) {
+        return 0;
+    }
+
+    Py_XDECREF(py_attr);
+    return 1;
+}
+
+static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
+
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    if (!pyv3_to_cv3(py_attr, v)) {
         return 0;
     }
 
@@ -308,9 +355,12 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m) {
     if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
-        !get_attr_v3(po, &m->epsilon_offdiag, "epsilon_offdiag") ||
-        !get_attr_v3(po, &m->mu_diag, "mu_diag") ||
-        !get_attr_v3(po, &m->mu_offdiag, "mu_offdiag")) {
+        !get_attr_v3(po, &m->mu_diag, "mu_diag")) {
+
+        return 0;
+    }
+    if (!get_attr_v3_cmplx(po, &m->mu_offdiag, "mu_offdiag") ||
+        !get_attr_v3_cmplx(po, &m->epsilon_offdiag, "epsilon_offdiag")) {
 
         return 0;
     }
