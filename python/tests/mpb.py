@@ -1137,16 +1137,17 @@ class TestModeSolver(unittest.TestCase):
 
         ms.run_te()
 
-        expected_freqs = [
-            0.0, 0.55803260041128, 0.7523452803914743, 0.7523460277854179, 0.8741222278369501,
-            0.9994142278034062, 0.999415272438471, 1.0553769662725778
-        ]
+        expected_freqs = np.array([
+            0.0, 0.5543986136451342, 0.7613327775255415, 0.7613339178956054,
+            0.8940893915924257, 0.998342969572652, 0.9983441882455961, 1.0747466061007138
+        ])
 
         expected_gap_list = [
             (3.848610367089048e-5, 0.5781812856814899, 0.5781815082009817),
             (1.4651880980150234, 0.8051999839699242, 0.8170847453549156),
             (0.75255857475812, 1.0580309832489785, 1.0660233597945266),
         ]
+
         expected_brd = [
             ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
              (0.4970977843772992, mp.Vector3(0.5, 0.5, 0.0))),
@@ -1167,8 +1168,7 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
-        for e, r in zip(expected_freqs, ms.all_freqs[-1]):
-            self.assertAlmostEqual(e, r, places=3)
+        self.compare_arrays(expected_freqs, ms.all_freqs[-1])
 
         self.check_gap_list(expected_gap_list, ms.gap_list)
 
