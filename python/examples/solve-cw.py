@@ -32,7 +32,7 @@ ez_dat = np.zeros((122,122,num_tols), dtype=np.complex_)
 
 for i in range(num_tols):
     sim.init_fields()
-    sim.fields.solve_cw(tols[i], 10000, 10)
+    sim.solve_cw(tols[i], 10000, 10)
     ez_dat[:,:,i] = sim.get_array(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml), component=mp.Ez)
 
 err_dat = np.zeros(num_tols-1)
@@ -70,7 +70,6 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     symmetries=[mp.Mirror(mp.Y)],
                     boundary_layers=[mp.PML(dpml)])
 
-sim.init_fields()
 dfts = sim.add_dft_fields([mp.Ez], mp.Volume(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml)), fcen, fcen, 1)
 sim.run(until_after_sources=100)
 sim.output_dft(dfts, "dft_fields")

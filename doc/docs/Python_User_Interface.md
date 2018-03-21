@@ -408,7 +408,7 @@ This class, and its descendants, are used to specify the solid geometric objects
 
 Properties:
 
-**`material` [`Medium` class or function]**  
+**`material` [`Medium` class or function ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The material that the object is made of (usually some sort of dielectric). Uses default `Medium`. If a function is supplied, it must take one argument and return a Python `Medium`.
 
@@ -769,7 +769,7 @@ Equivalent to `get_field_point(meep.Dielectric, pt)`.
 
 **`add_dft_fields(cs, freq_min, freq_max, nfreq, [where])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a list of field components `cs`, compute the Fourier transform of the fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computationall cell).
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computationall cell).
 
 **`flux_in_box(dir, box)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1107,7 +1107,7 @@ Output the relative permeability function $\mu$. Note that this only outputs the
 
 **`output_dft(dft_fields, fname)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the Fourier-transformed fields in `dft_fields` to an HDF5 file with name `fname` (does *not* include the `.h5` suffix).
+Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix).
 
 **`output_hpwr()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
