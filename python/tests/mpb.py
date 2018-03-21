@@ -1130,6 +1130,51 @@ class TestModeSolver(unittest.TestCase):
 
         self.check_fields_against_h5(ref_path, result.ravel(), suffix='-new')
 
+    def test_epsilon_input_file(self):
+        ms = self.init_solver(geom=False)
+        eps_fn = 'eps_input_file_test.h5'
+        ms.epsilon_input_file = os.path.join(self.data_dir, eps_fn)
+
+        ms.run_te()
+
+        expected_freqs = [
+            0.0, 0.55803260041128, 0.7523452803914743, 0.7523460277854179, 0.8741222278369501,
+            0.9994142278034062, 0.999415272438471, 1.0553769662725778
+        ]
+
+        expected_gap_list = [
+            (3.848610367089048e-5, 0.5781812856814899, 0.5781815082009817),
+            (1.4651880980150234, 0.8051999839699242, 0.8170847453549156),
+            (0.75255857475812, 1.0580309832489785, 1.0660233597945266),
+        ]
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.4970977843772992, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4402896410505961, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.5781812856814899, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.5781815082009817, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.761332777525562, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6689126424359774, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8051999839699242, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((0.8170847453549156, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)),
+             (0.8940893915924548, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8826671164993868, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)),
+             (1.0014926328155058, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.8832199143682116, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0580309832489785, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.0660233597945266, mp.Vector3(0.2, 0.2, 0.0)),
+             (1.087345829555555, mp.Vector3(0.5, 0.5, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+        for e, r in zip(expected_freqs, ms.all_freqs[-1]):
+            self.assertAlmostEqual(e, r, places=3)
+
+        self.check_gap_list(expected_gap_list, ms.gap_list)
+
+        pt = ms.get_epsilon_point(mp.Vector3(0.5, 0.5))
+        self.assertEqual(pt, 1.0)
+
 
 if __name__ == '__main__':
     unittest.main()
