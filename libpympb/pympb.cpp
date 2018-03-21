@@ -2406,7 +2406,7 @@ void add_cmplx_times_phase(mpb_real *sum_re, mpb_real *sum_im, mpb_real d_re, mp
 void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
               int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
               int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
-              short pick_nearest, int verbose) {
+              bool pick_nearest, bool verbose) {
   (void)size_in_re;
   (void)size_in_im;
   (void)size_out_re;
