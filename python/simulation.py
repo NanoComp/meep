@@ -866,10 +866,10 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
+    def get_array(self, vol, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.int32)
-        vol = Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
-        self.fields.get_array_slice_dimensions(vol.swigobj, dim_sizes)
+        v = self._fit_volume_to_simulation(vol)
+        self.fields.get_array_slice_dimensions(v.swigobj, dim_sizes)
 
         dims = [s for s in dim_sizes if s != 0]
 

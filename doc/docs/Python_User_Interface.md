@@ -1154,12 +1154,12 @@ See also [Field Function Examples](Field_Function_Examples.md). See also [Synchr
 The output functions described above write the data for the fields and materials for the entire computational volume to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the computational volume and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 ```python
- get_array(center, size, component, cmplx=False, arr=None)
+ get_array(vol, component, cmplx=False, arr=None)
 ```
 
 with the following input parameters:
 
-+ `center`, `size`: `Vector3` properties of the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as `size`.
++ `vol`: `Volume`: the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute.
 
 + `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc).
 
