@@ -653,6 +653,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
      case material_data::MATERIAL_USER:
       md->medium = medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
+      check_offdiag(&md->medium);
       return;
 
      // position-independent material or metal: there is nothing to do
