@@ -83,7 +83,7 @@ class ModeSolver(object):
         self.verbose = verbose
         self.parity = ''
         self.iterations = 0
-        self.all_freqs = []
+        self.all_freqs = None
         self.freqs = []
         self.band_range_data = []
         self.eigensolver_flops = 0
@@ -596,7 +596,7 @@ class ModeSolver(object):
 
         start = time.time()
 
-        self.all_freqs = []
+        self.all_freqs = np.zeros((len(self.k_points), self.num_bands))
         self.band_range_data = []
 
         init_time = time.time()
@@ -651,14 +651,14 @@ class ModeSolver(object):
                 self.output_mu()  # and mu too, if we have it
 
         if self.num_bands > 0:
-            for k in k_split[1]:
+            for i, k in enumerate(k_split[1]):
                 self.current_k = k
                 solve_kpoint_time = time.time()
                 self.mode_solver.solve_kpoint(k)
                 self.iterations = self.mode_solver.get_iterations()
                 print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
                 self.freqs = self.get_freqs()
-                self.all_freqs.append(self.freqs)
+                self.all_freqs[i, :] = np.array(self.freqs)
                 self.band_range_data = self.update_band_range_data(self.band_range_data,
                                                                    self.freqs, k)
                 self.eigensolver_iters += [self.iterations / self.num_bands]

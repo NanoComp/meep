@@ -332,14 +332,12 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     q.y = p.y + neighbors[dimensions - 1][i][1] * d2;
     q.z = p.z + neighbors[dimensions - 1][i][2] * d3;
 
-    // TODO: shift_to_unit_cell runs forever if size has a 0 component
     geometry_lattice.size.x = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
     geometry_lattice.size.y = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
     geometry_lattice.size.z = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
 
     z = shift_to_unit_cell(q);
 
-    // TODO
     geometry_lattice.size.x = geometry_lattice.size.x == 1e-20 ? 0 : geometry_lattice.size.x;
     geometry_lattice.size.y = geometry_lattice.size.y == 1e-20 ? 0 : geometry_lattice.size.y;
     geometry_lattice.size.z = geometry_lattice.size.z == 1e-20 ? 0 : geometry_lattice.size.z;
@@ -847,9 +845,13 @@ void mode_solver::reset_epsilon() {
     (dimensions > 2) ? mesh_size : 1,
   };
 
-  // TODO: Support epsilon_input_file
-  // get_epsilon_file_func(epsilon_input_file, &d.epsilon_file_func, &d.epsilon_file_func_data);
-  // get_epsilon_file_func(mu_input_file, &d.mu_file_func, &d.mu_file_func_data);
+  if (!epsilon_input_file.empty()) {
+      default_material = meep_geom::make_file_material(epsilon_input_file.c_str());
+  }
+
+  // TODO: support mu_input_file
+  // if (!mu_input_file.empty()) {
+  // }
 
   meep::master_printf("Initializing epsilon function...\n");
   set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
@@ -862,8 +864,6 @@ void mode_solver::reset_epsilon() {
                    static_cast<void *>(this));
     eps = true;
   }
-  // destroy_epsilon_file_func_data(d.epsilon_file_func_data);
-  // destroy_epsilon_file_func_data(d.mu_file_func_data);
 }
 
 bool mode_solver::has_mu() {
@@ -1131,12 +1131,6 @@ void mode_solver::solve_kpoint(vector3 kvector) {
     free(deflation.S2);
     free(deflation.S);
   }
-
-  // TODO
-  // if (num_write_output_vars > 0) {
-  //   //  clean up from prev. call
-  //   destroy_output_vars();
-  // }
 
   iterations = total_iters; /* iterations output variable */
 
