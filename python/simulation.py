@@ -657,6 +657,28 @@ class Simulation(object):
                     src.amplitude * 1.0
                 )
 
+    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None):
+        if self.fields is None:
+            self.init_fields()
+
+        if where is None:
+            where = self.fields.total_volume()
+        else:
+            where = self._fit_volume_to_simulation(where).swigobj
+
+        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+
+    def output_dft(self, dft_fields, fname, where=None):
+        if self.fields is None:
+            self.init_fields()
+
+        if where is None:
+            where = self.fields.total_volume()
+        else:
+            where = self._fit_volume_to_simulation(where).swigobj
+
+        self.fields.output_dft(dft_fields, fname, where)
+
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         if self.fields is None:
             self.init_fields()
