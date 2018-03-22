@@ -262,6 +262,22 @@ class TestSimulation(unittest.TestCase):
         self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol.swigobj),
                                sim.modal_volume_in_box(vol))
 
+    def test_in_box_volumes(self):
+        sim = self.init_simple_simulation()
+        sim.run(until=200)
+
+        tv = sim.fields.total_volume()
+        v = mp.Volume(mp.Vector3(), size=mp.Vector3(5, 5))
+
+        sim.electric_energy_in_box(tv)
+        sim.electric_energy_in_box(v)
+        sim.flux_in_box(mp.X, tv)
+        sim.flux_in_box(mp.X, v)
+        sim.magnetic_energy_in_box(tv)
+        sim.magnetic_energy_in_box(v)
+        sim.field_energy_in_box(tv)
+        sim.field_energy_in_box(v)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -759,44 +759,48 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using flux_in_box')
 
-        box = self._fit_volume_to_simulation(box)
+        if isinstance(box, mp.Volume):
+            box = self._fit_volume_to_simulation(box).swigobj
 
-        return self.fields.flux_in_box(d, box.swigobj)
+        return self.fields.flux_in_box(d, box)
 
     def electric_energy_in_box(self, box):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
 
-        box = self._fit_volume_to_simulation(box)
+        if isinstance(box, mp.Volume):
+            box = self._fit_volume_to_simulation(box).swigobj
 
-        return self.fields.electric_energy_in_box(box.swigobj)
+        return self.fields.electric_energy_in_box(box)
 
     def magnetic_energy_in_box(self, box):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
 
-        box = self._fit_volume_to_simulation(box)
+        if isinstance(box, mp.Volume):
+            box = self._fit_volume_to_simulation(box).swigobj
 
-        return self.fields.magnetic_energy_in_box(box.swigobj)
+        return self.fields.magnetic_energy_in_box(box)
 
     def field_energy_in_box(self, box):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using field_energy_in_box')
 
-        box = self._fit_volume_to_simulation(box)
+        if isinstance(box, mp.Volume):
+            box = self._fit_volume_to_simulation(box).swigobj
 
-        return self.fields.field_energy_in_box(box.swigobj)
+        return self.fields.field_energy_in_box(box)
 
-    def modal_volume_in_box(self, vol=None):
+    def modal_volume_in_box(self, box=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using modal_volume_in_box')
 
-        if vol is None:
-            vol = self.fields.total_volume()
+        if box is None:
+            box = self.fields.total_volume()
         else:
-            vol = self._fit_volume_to_simulation(vol).swigobj
+            box = self._fit_volume_to_simulation(box).swigobj
 
-        return self.fields.modal_volume_in_box(vol)
+        return self.fields.modal_volume_in_box(box)
 
     def solve_cw(self, tol=1e-8, maxiters=10000, L=2):
         if self.fields is None:
