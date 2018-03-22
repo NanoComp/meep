@@ -12,6 +12,11 @@ namespace py_mpb {
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
+void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
+              int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
+              int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
+              bool pick_nearest, bool verbose);
+
 struct mode_solver {
   static const int MAX_NWORK = 10;
   static const char epsilon_CURFIELD_TYPE = 'n';
@@ -111,10 +116,10 @@ struct mode_solver {
   std::vector<mpb_real> get_freqs();
   double get_eigensolver_flops();
   int get_iterations();
-  void get_efield(std::complex<mpb_real> *cdata, int size, int band);
-  void get_dfield(std::complex<mpb_real> *cdata, int size, int band);
-  void get_hfield(std::complex<mpb_real> *cdata, int size, int band);
-  void get_bfield(std::complex<mpb_real> *cdata, int size, int band);
+  void get_efield(int band);
+  void get_dfield(int band);
+  void get_hfield(int band);
+  void get_bfield(int band);
   void get_efield_from_dfield();
 
   void get_curfield(double *data, int size);

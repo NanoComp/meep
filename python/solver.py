@@ -123,8 +123,8 @@ class ModeSolver(object):
         return self.mode_solver.get_freqs()
 
     def get_poynting(self, which_band):
-        e = self.get_efield(which_band)
-        h = self.get_hfield(which_band)
+        e = self.get_efield(which_band).ravel()
+        h = self.get_hfield(which_band).ravel()
         # Reshape into rows of vector3s
         e = e.reshape((int(e.shape[0] / 3), 3))
         h = h.reshape((int(h.shape[0] / 3), 3))
@@ -150,39 +150,51 @@ class ModeSolver(object):
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
 
-    def get_bfield(self, which_band):
-        return self._get_field('b', which_band)
+        dims = self.mode_solver.get_dims()
+        eps = np.empty(np.prod(dims))
+        self.mode_solver.get_curfield(eps)
 
-    def get_efield(self, which_band):
-        return self._get_field('e', which_band)
+        return np.reshape(eps, dims)
 
-    def get_dfield(self, which_band):
-        return self._get_field('d', which_band)
+    def get_bfield(self, which_band, output=False):
+        return self._get_field('b', which_band, output)
 
-    def get_hfield(self, which_band):
-        return self._get_field('h', which_band)
+    def get_efield(self, which_band, output=False):
+        return self._get_field('e', which_band, output)
+
+    def get_dfield(self, which_band, output=False):
+        return self._get_field('d', which_band, output)
+
+    def get_hfield(self, which_band, output=False):
+        return self._get_field('h', which_band, output)
 
     def get_charge_density(self, which_band):
         self.get_efield(which_band)
         self.mode_solver.compute_field_divergence()
 
-    def _get_field(self, f, band):
+    def _get_field(self, f, band, output):
         if self.mode_solver is None:
             raise ValueError("Must call a run function before attempting to get a field")
 
-        size = self.mode_solver.get_field_size()
-        field = np.zeros(size, dtype=np.complex128)
-
         if f == 'b':
-            self.mode_solver.get_bfield(field, band)
+            self.mode_solver.get_bfield(band)
         elif f == 'd':
-            self.mode_solver.get_dfield(field, band)
+            self.mode_solver.get_dfield(band)
         elif f == 'e':
-            self.mode_solver.get_efield(field, band)
+            self.mode_solver.get_efield(band)
         elif f == 'h':
-            self.mode_solver.get_hfield(field, band)
+            self.mode_solver.get_hfield(band)
 
-        return field
+        dims = self.mode_solver.get_dims()
+        dims += [3]
+        res = np.zeros(np.prod(dims), np.complex128)
+
+        if output:
+            self.mode_solver.multiply_bloch_phase()
+
+        self.mode_solver.get_curfield_cmplx(res)
+
+        return np.reshape(res, dims)
 
     def get_epsilon_point(self, p):
         return self.mode_solver.get_epsilon_point(p)
@@ -332,6 +344,15 @@ class ModeSolver(object):
             start = index * block_size
             length = min(block_size, (len(l) - index * block_size))
             return (start, list_sub(l, start, length, 0, []))
+
+    def get_lattice(self):
+        if self.mode_solver is None:
+            raise RuntimeError("Must call ModeSolver.run before getting the lattice.")
+
+        lattice = np.zeros((3, 3))
+        self.mode_solver.get_lattice(lattice)
+
+        return lattice
 
     def output_field(self):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
@@ -708,8 +729,8 @@ class ModeSolver(object):
         kpoints_save = self.k_points
         nb = band_max - band_min + 1
         kdir = korig_and_kdir[1] if type(korig_and_kdir) is list else korig_and_kdir
-        l = self.geometry_lattice
-        kdir1 = mp.cartesian_to_reciprocal(mp.reciprocal_to_cartesian(kdir, l).unit(), l)
+        lat = self.geometry_lattice
+        kdir1 = mp.cartesian_to_reciprocal(mp.reciprocal_to_cartesian(kdir, lat).unit(), lat)
 
         if type(korig_and_kdir) is list:
             korig = korig_and_kdir[0]

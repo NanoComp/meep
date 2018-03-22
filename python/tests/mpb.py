@@ -167,15 +167,15 @@ class TestModeSolver(unittest.TestCase):
     def check_gap_list(self, expected_gap_list, result):
         self.check_freqs(expected_gap_list, result)
 
-    def check_fields_against_h5(self, ref_path, field):
+    def check_fields_against_h5(self, ref_path, field, suffix=''):
         with h5py.File(ref_path, 'r') as ref:
             # Reshape the reference data into a component-wise 1d array like
-            # [x1,y1,z1,x2,y2,z2,etc.] to match the layout of `field`
-            ref_x = ref['x.r'].value + ref['x.i'].value * 1j
-            ref_y = ref['y.r'].value + ref['y.i'].value * 1j
-            ref_z = ref['z.r'].value + ref['z.i'].value * 1j
+            # [x1,y1,z1,x2,y2,z2,etc.]
+            ref_x = ref["x.r{}".format(suffix)].value + ref["x.i{}".format(suffix)].value * 1j
+            ref_y = ref["y.r{}".format(suffix)].value + ref["y.i{}".format(suffix)].value * 1j
+            ref_z = ref["z.r{}".format(suffix)].value + ref["z.i{}".format(suffix)].value * 1j
 
-            ref_arr = np.zeros(field.shape[0], dtype=np.complex128)
+            ref_arr = np.zeros(np.prod(field.shape), dtype=np.complex128)
             ref_arr[0::3] = ref_x.ravel()
             ref_arr[1::3] = ref_y.ravel()
             ref_arr[2::3] = ref_z.ravel()
@@ -928,6 +928,26 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_h5_files(ref_path, res_path)
 
+        # Test MPBData
+        with h5py.File(ref_path, 'r') as f:
+            efield_re = f['z.r'].value
+            efield_im = f['z.i'].value
+            efield = np.vectorize(complex)(efield_re, efield_im)
+
+        # rectangularize
+        md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
+        new_efield = md.convert(efield, ms.k_points[10])
+        # check with ref file
+
+        ref_fn = 'tri-rods-e.k11.b08.z.tm-r-m3-n32.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+
+        with h5py.File(ref_path, 'r') as f:
+            expected_re = f['z.r-new'].value
+            expected_im = f['z.i-new'].value
+            expected = np.vectorize(complex)(expected_re, expected_im)
+            self.compare_arrays(expected, new_efield)
+
         ms.run_te()
 
         expected_brd = [
@@ -950,6 +970,17 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
+
+        # Test MPBData
+        eps = ms.get_epsilon()
+        md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
+        new_eps = md.convert(eps)
+        ref_fn = 'tri-rods-epsilon-r-m3-n32.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+
+        with h5py.File(ref_path, 'r') as f:
+            ref = f['data-new'].value
+            self.compare_arrays(ref, new_eps, tol=1e-3)
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()
@@ -1076,6 +1107,29 @@ class TestModeSolver(unittest.TestCase):
         ms.load_eigenvectors(fn)
         new_ev = ms.get_eigenvectors(8, 1)
         self.assertEqual(np.count_nonzero(new_ev), 0)
+
+    def test_handle_cvector(self):
+        from mpb_tri_rods import ms
+        ms.deterministic = True
+        ms.tolerance = 1e-12
+        ms.filename_prefix = self.filename_prefix
+        efields = []
+
+        def get_efields(ms, band):
+            efields.append(ms.get_efield(8, output=True))
+
+        k = mp.Vector3(1 / -3, 1 / 3)
+        ms.run_tm(mpb.output_at_kpoint(k, mpb.fix_efield_phase, get_efields))
+
+        lat = ms.get_lattice()
+        md = mpb.MPBData(lat, rectify=True, periods=3, resolution=32, verbose=True)
+        result = md.convert(efields[-1], ms.k_points[10])
+
+        ref_fn = 'converted-tri-rods-e.k11.b08.tm.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+
+        self.check_fields_against_h5(ref_path, result.ravel(), suffix='-new')
+
 
 if __name__ == '__main__':
     unittest.main()

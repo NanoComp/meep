@@ -174,6 +174,7 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
 %import "meep.i"
 
 %numpy_typemaps(std::complex<mpb_real>, NPY_CDOUBLE, int);
+%numpy_typemaps(mpb_real, NPY_DOUBLE, int);
 
 %apply (std::complex<mpb_real>* INPLACE_ARRAY1, int DIM1) {
     (std::complex<mpb_real>* cdata, int size)
@@ -182,6 +183,18 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
 %apply (double* INPLACE_ARRAY1, int DIM1) {
     (double* data, int size)
 };
+
+%apply (mpb_real* INPLACE_ARRAY1, int DIM1) {
+    (mpb_real* d_in_re, int size_in_re),
+    (mpb_real* d_in_im, int size_in_im),
+    (mpb_real* d_out_re, int size_out_re),
+    (mpb_real* d_out_im, int size_out_im)
+}
+
+%apply int INPLACE_ARRAY1[ANY] {
+    int n_in[3],
+    int n_out[3]
+}
 
 %apply double INPLACE_ARRAY2[ANY][ANY] {
     double data[3][3]
@@ -197,6 +210,26 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
     if (!pylattice_to_lattice($input, &$1)) {
         PyErr_PrintEx(0);
         SWIG_fail;
+    }
+}
+
+%typemap(in) matrix3x3 {
+   if (!pymatrix_to_matrix($input, &$1)) {
+       PyErr_PrintEx(0);
+       SWIG_fail;
+   }
+}
+
+%typemap(in) mpb_real *kvector (mpb_real tmp[3]){
+    if (PyList_Size($input) == 0) {
+        $1 = NULL;
+    }
+    else {
+        for (Py_ssize_t i = 0; i < 3; ++i) {
+            PyObject *pyo = PyList_GetItem($input, i);
+            tmp[i] = (mpb_real)PyFloat_AsDouble(pyo);
+        }
+        $1 = tmp;
     }
 }
 
@@ -292,5 +325,9 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
         fix_bfield_phase,
         fix_dfield_phase,
         fix_efield_phase,
+    )
+
+    from .mpb_data import (
+        MPBData,
     )
 %}

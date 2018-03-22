@@ -1353,14 +1353,10 @@ size_t mode_solver::get_field_size() {
   return mdata ? mdata->fft_output_size * 3 : 0;
 }
 
-void mode_solver::get_efield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_efield(int band) {
 
-  get_dfield(cdata, size, band);
+  get_dfield(band);
   get_efield_from_dfield();
-
-  for (int i = 0; i < size; ++i) {
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
-  }
 }
 
 void mode_solver::get_efield_from_dfield() {
@@ -1374,7 +1370,7 @@ void mode_solver::get_efield_from_dfield() {
   curfield_type = 'e';
 }
 
-void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_dfield(int band) {
 
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
@@ -1409,6 +1405,7 @@ void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) 
   // nx*ny*nz.)
 
   double scale;
+  int N = mdata->fft_output_size;
 
   if (freqs[band - 1] != 0.0) {
     scale = -1.0 / freqs[band - 1];
@@ -1418,15 +1415,13 @@ void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) 
 
   scale /= sqrt(vol);
 
-  for (int i = 0; i < size; ++i) {
+  for (int i = 0; i < N * 3; ++i) {
     curfield[i].re *= scale;
     curfield[i].im *= scale;
-    // Copy curfield into our output array for numpy
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
-void mode_solver::get_hfield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_hfield(int band) {
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1457,15 +1452,14 @@ void mode_solver::get_hfield(std::complex<mpb_real> *cdata, int size, int band) 
   double scale;
   scale = 1.0 / sqrt(vol);
 
-  for (int i = 0; i < size; ++i) {
+  int N = mdata->fft_output_size;
+  for (int i = 0; i < N * 3; ++i) {
     curfield[i].re *= scale;
     curfield[i].im *= scale;
-    // Copy curfield to our output array for numpy
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
-void mode_solver::get_bfield(std::complex<mpb_real> *cdata, int size, int band) {
+void mode_solver::get_bfield(int band) {
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1487,11 +1481,10 @@ void mode_solver::get_bfield(std::complex<mpb_real> *cdata, int size, int band) 
   double scale;
   scale = 1.0 / sqrt(vol);
 
-  for (int i = 0; i < size; ++i) {
+  int N = mdata->fft_output_size;
+  for (int i = 0; i < N * 3; ++i) {
     curfield[i].re *= scale;
     curfield[i].im *= scale;
-    // Copy curfield to our output array for numpy
-    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
@@ -2356,5 +2349,212 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
   energy_sum *= vol / H.N;
   return energy_sum;
+}
+
+// Used in MPBData python class
+
+/* A macro to set x = fractional part of x input, xi = integer part,
+   with 0 <= x < 1.0.   Note that we need the second test (if x >= 1.0)
+   below, because x may start out as -0 or -1e-23 or something so that
+   it is < 0 but x + 1.0 == 1.0, thanks to the wonders of floating point.
+   (This has actually happened, on an Alpha.) */
+#define MODF_POSITIVE(x, xi) { \
+  x=modf(x, &xi); \
+  if (x < 0) { x += 1.0; if (x >= 1.0) x = 0; else xi -= 1.0; } \
+}
+
+#define ADJ_POINT(i1, i2, nx, dx, xi, xi2) { \
+  if (dx >= 0.0) { \
+    i2 = i1 + 1; \
+    if (i2 >= nx) { \
+      i2 -= nx; \
+      xi2 = xi + 1.0; \
+    } \
+    else      \
+      xi2 = xi; \
+    } \
+  else {       \
+    i2 = i1 - 1; \
+    if (i2 < 0) { \
+      i2 += nx; \
+      xi2 = xi - 1.0; \
+    } \
+    else        \
+       xi2 = xi; \
+    dx = -dx; \
+  } \
+}
+
+#define MAX2(a,b) ((a) >= (b) ? (a) : (b))
+#define MIN2(a,b) ((a) < (b) ? (a) : (b))
+
+void add_cmplx_times_phase(mpb_real *sum_re, mpb_real *sum_im, mpb_real d_re, mpb_real d_im,
+                           double ix, double iy, double iz, mpb_real *s, mpb_real scale_by) {
+  static mpb_real phase = 0.0, p_re = 1.0, p_im = 0.0;
+  mpb_real new_phase;
+
+  new_phase = ix * s[0] + iy * s[1] + iz * s[2];
+  if (new_phase != phase) {
+    phase = new_phase;
+    p_re = cos(phase);
+    p_im = sin(phase);
+  }
+  *sum_re += (d_re * p_re - d_im * p_im) * scale_by;
+  *sum_im += (d_re * p_im + d_im * p_re) * scale_by;
+}
+
+void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
+              int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
+              int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
+              bool pick_nearest, bool verbose) {
+  (void)size_in_re;
+  (void)size_in_im;
+  (void)size_out_re;
+
+  mpb_real s[3]; /* phase difference per cell in each lattice direction */
+  mpb_real min_out_re = 1e20, max_out_re = -1e20, min_out_im = 1e20, max_out_im = -1e20;
+  mpb_real shiftx, shifty, shiftz;
+
+  CHECK(d_in_re && d_out_re, "invalid arguments");
+  CHECK((d_out_im && d_in_im) || (!d_out_im && !d_in_im),
+        "both input and output must be real or complex");
+
+  coord_map.c0 = vector3_scale(1.0 / n_out[0], coord_map.c0);
+  coord_map.c1 = vector3_scale(1.0 / n_out[1], coord_map.c1);
+  coord_map.c2 = vector3_scale(1.0 / n_out[2], coord_map.c2);
+
+  for (int i = 0; i < 3; ++i) {
+    if (kvector)
+      s[i] = kvector[i] * TWOPI;
+    else
+      s[i] = 0;
+  }
+
+  /* Compute shift so that the origin of the output cell
+     is mapped to the origin of the original primitive cell: */
+  shiftx = 0.5 - (coord_map.c0.x*0.5*n_out[0] +
+           coord_map.c1.x*0.5*n_out[1] +
+           coord_map.c2.x*0.5*n_out[2]);
+  shifty = 0.5 - (coord_map.c0.y*0.5*n_out[0] +
+           coord_map.c1.y*0.5*n_out[1] +
+           coord_map.c2.y*0.5*n_out[2]);
+  shiftz = 0.5 - (coord_map.c0.z*0.5*n_out[0] +
+           coord_map.c1.z*0.5*n_out[1] +
+           coord_map.c2.z*0.5*n_out[2]);
+
+  for (int i = 0; i < n_out[0]; ++i)
+    for (int j = 0; j < n_out[1]; ++j)
+       for (int k = 0; k < n_out[2]; ++k) {
+         mpb_real x, y, z;
+         double xi, yi, zi, xi2, yi2, zi2;
+         double dx, dy, dz, mdx, mdy, mdz;
+         int i1, j1, k1, i2, j2, k2;
+         int ijk;
+
+         ijk = (i * n_out[1] + j) * n_out[2] + k;
+
+         /* find the point corresponding to d_out[i,j,k] in
+            the input array, and also find the next-nearest
+            points. */
+         x = coord_map.c0.x*i + coord_map.c1.x*j + coord_map.c2.x*k + shiftx;
+         y = coord_map.c0.y*i + coord_map.c1.y*j + coord_map.c2.y*k + shifty;
+         z = coord_map.c0.z*i + coord_map.c1.z*j + coord_map.c2.z*k + shiftz;
+         MODF_POSITIVE(x, xi);
+         MODF_POSITIVE(y, yi);
+         MODF_POSITIVE(z, zi);
+         i1 = x * n_in[0]; j1 = y * n_in[1]; k1 = z * n_in[2];
+         dx = x * n_in[0] - i1;
+         dy = y * n_in[1] - j1;
+         dz = z * n_in[2] - k1;
+         ADJ_POINT(i1, i2, n_in[0], dx, xi, xi2);
+         ADJ_POINT(j1, j2, n_in[1], dy, yi, yi2);
+         ADJ_POINT(k1, k2, n_in[2], dz, zi, zi2);
+
+         /* dx, mdx, etcetera, are the weights for the various
+            points in the input data, which we use for linearly
+            interpolating to get the output point. */
+         if (pick_nearest) {
+           /* don't interpolate */
+           dx = dx <= 0.5 ? 0.0 : 1.0;
+           dy = dy <= 0.5 ? 0.0 : 1.0;
+           dz = dz <= 0.5 ? 0.0 : 1.0;
+         }
+         mdx = 1.0 - dx;
+         mdy = 1.0 - dy;
+         mdz = 1.0 - dz;
+
+         /* Now, linearly interpolate the input to get the
+            output.  If the input/output are complex, we
+            also need to multiply by the appropriate phase
+            factor, depending upon which unit cell we are in. */
+
+#define IN_INDEX(i,j,k) ((i * n_in[1] + j) * n_in[2] + k)
+         if (size_out_im > 0) {
+           d_out_re[ijk] = 0.0;
+           d_out_im[ijk] = 0.0;
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                                 d_in_re[IN_INDEX(i1,j1,k1)],
+                                 d_in_im[IN_INDEX(i1,j1,k1)],
+                                 xi, yi, zi, s,
+                                 mdx * mdy * mdz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                           d_in_re[IN_INDEX(i1,j1,k2)],
+                           d_in_im[IN_INDEX(i1,j1,k2)],
+                           xi, yi, zi2, s,
+                           mdx * mdy * dz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                           d_in_re[IN_INDEX(i1,j2,k1)],
+                           d_in_im[IN_INDEX(i1,j2,k1)],
+                           xi, yi2, zi, s,
+                           mdx * dy * mdz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                          d_in_re[IN_INDEX(i1,j2,k2)],
+                           d_in_im[IN_INDEX(i1,j2,k2)],
+                           xi, yi2, zi2, s,
+                           mdx * dy * dz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                           d_in_re[IN_INDEX(i2,j1,k1)],
+                           d_in_im[IN_INDEX(i2,j1,k1)],
+                           xi2, yi, zi, s,
+                           dx * mdy * mdz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                           d_in_re[IN_INDEX(i2,j1,k2)],
+                           d_in_im[IN_INDEX(i2,j1,k2)],
+                           xi2, yi, zi2, s,
+                           dx * mdy * dz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                           d_in_re[IN_INDEX(i2,j2,k1)],
+                           d_in_im[IN_INDEX(i2,j2,k1)],
+                           xi2, yi2, zi, s,
+                           dx * dy * mdz);
+           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
+                           d_in_re[IN_INDEX(i2,j2,k2)],
+                           d_in_im[IN_INDEX(i2,j2,k2)],
+                           xi2, yi2, zi2, s,
+                           dx * dy * dz);
+           min_out_im = MIN2(min_out_im, d_out_im[ijk]);
+           max_out_im = MAX2(max_out_im, d_out_im[ijk]);
+         }
+         else {
+           d_out_re[ijk] =
+                  d_in_re[IN_INDEX(i1,j1,k1)] * mdx * mdy * mdz +
+                  d_in_re[IN_INDEX(i1,j1,k2)] * mdx * mdy * dz +
+                  d_in_re[IN_INDEX(i1,j2,k1)] * mdx * dy * mdz +
+                  d_in_re[IN_INDEX(i1,j2,k2)] * mdx * dy * dz +
+                  d_in_re[IN_INDEX(i2,j1,k1)] * dx * mdy * mdz +
+                  d_in_re[IN_INDEX(i2,j1,k2)] * dx * mdy * dz +
+                  d_in_re[IN_INDEX(i2,j2,k1)] * dx * dy * mdz +
+                  d_in_re[IN_INDEX(i2,j2,k2)] * dx * dy * dz;
+         }
+         min_out_re = MIN2(min_out_re, d_out_re[ijk]);
+         max_out_re = MAX2(max_out_re, d_out_re[ijk]);
+#undef IN_INDEX
+  }
+
+  if (verbose) {
+    printf("real part range: %g .. %g\n", min_out_re, max_out_re);
+    if (size_out_im > 0)
+      printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
+  }
 }
 } // namespace meep_mpb
