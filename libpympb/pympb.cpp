@@ -2603,6 +2603,7 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
     if (size_out_im > 0)
       printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
   }
+}
 
 bool with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
