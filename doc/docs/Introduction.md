@@ -47,22 +47,22 @@ You may have noticed the lack of annoying constants like $\varepsilon$<sub>0</su
 
 In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units**. See Chapter 2 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
-Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently $\omega$ is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](https://mpb.readthedocs.io).
+Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is specified in units of $c/a$ (or equivalently $\omega$ is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](https://mpb.readthedocs.io).
 
 For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a$ = 1 &#956;m. Then, if we want to specify a source corresponding to $\lambda$ = 1.55 &#956;m, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
 
-A transmission spectrum, for example, would be a ratio of transmitted to incident intensities, so the units of **E** are irrelevant unless there are nonlinearities.
+A transmission spectrum, for example, would be a ratio of transmitted to incident intensities, so the units of **E** are irrelevant unless there are [nonlinearities](Units_and_Nonlinearity/).
 
 The Bloch wavevector (see below) **k** is specified in Cartesian coordinates in units of $2\pi/a$. This is *different* from MPB: it is equivalent to taking MPB's k-points and transforming them with `reciprocal->cartesian`.
 
 Boundary Conditions and Symmetries
 ----------------------------------
 
-On a computer, we can only simulate a finite region of space, which means that we must terminate our simulation with some **boundary conditions**. Three basic types of terminations are supported in Meep: **Bloch-periodic boundaries**, **metallic walls**, and **PML absorbing layers**. Also, one can exploit **symmetries** of a problem to further reduce the computational requirements.
+Since only a finite region of space can be simulated, the simulation must always be terminated with some **boundary conditions**. Three basic types of terminations are supported in Meep: **Bloch-periodic boundaries**, **metallic walls**, and **PML absorbing layers**. Also, one can exploit **symmetries** of a problem to further reduce the computational requirements.
 
-With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](https://mpb.readthedocs.io). See Chapter 3 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book).
+With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of waveguides, gratings, and so on, much like in [MPB](https://mpb.readthedocs.io). See Chapter 3 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book).
 
-An even simpler boundary condition is a metallic wall, where the fields are simply forced to be zero on the boundaries, as if the cell were surrounded by a perfect metal (zero absorption, zero skin depth). More generally, you can place perfect metal materials anywhere you want in the computational cell, e.g. to simulate metallic cavities of an arbitrary shape.
+An even simpler boundary condition is a metallic wall, where the fields are simply forced to be zero on the boundaries, as if the cell were surrounded by a perfect metal (zero absorption, zero skin depth). More generally, you can place perfect metal materials anywhere you want in the computational cell, e.g. to simulate [metallic cavities](Python_Tutorials/Local_Density_of_States/) of an arbitrary shape.
 
 To simulate open boundary conditions, one would like the boundaries to absorb all waves incident on them, with no reflections. This is implemented with something called **perfectly matched layers** (PML). PML is, strictly speaking, not a boundary condition &mdash; rather, it is a special absorbing material placed adjacent to the boundaries. PML is actually a fictitious (non-physical) material, designed to have zero reflections at its interface. Although PML is reflectionless in the theoretical continuous system, in the actual discretized system it has some small reflections which make it imperfect. For this reason, one always gives the PML some finite thickness in which the absorption gradually turns on. For more information, see [Perfectly Matched Layer](Perfectly_Matched_Layer.md).
 
@@ -79,9 +79,9 @@ The second most important thing you should know is that, in order to discretize 
 
 Many references are available on FDTD methods for computational electromagnetics. See, for example:
 
-- A. Taflove and S.C. Hagness, [Computational Electrodynamics: The Finite-Difference Time-Domain Method](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320), Artech: Norwood, MA, (2005).
+- A. Taflove and S.C. Hagness, [Computational Electrodynamics: The Finite-Difference Time-Domain Method](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320), Artech: Norwood, MA, 2005.
 
-- A. Taflove, A. Oskooi, and S.G. Johnson, [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), Artech: Norwood, MA, (2013).
+- A. Taflove, A. Oskooi, and S.G. Johnson, [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), Artech: Norwood, MA, 2013.
 
 ### The Illusion of Continuity
 

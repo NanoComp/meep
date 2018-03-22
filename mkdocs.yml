@@ -41,7 +41,8 @@ pages:
     - Perfectly Matched Layers: 'Perfectly_Matched_Layer.md'
     - Parallel Meep: 'Parallel_Meep.md'
     - Synchronizing the Magnetic and Electric Fields: 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
-    - Field Function Examples: 'Field_Function_Examples.md'
+    - Field Functions: 'Field_Functions.md'
+    - The Run Function is Not a Loop: 'The_Run_Function_Is_Not_A_Loop.md'
     - Yee Lattice: 'Yee_Lattice.md'
     - Units and Nonlinearity: 'Units_and_Nonlinearity.md'
 - Python Interface:
@@ -68,7 +69,6 @@ pages:
     - Tutorial/Frequency-Domain Solver: 'Scheme_Tutorials/Frequency_Domain_Solver.md'
     - Tutorial/Casimir Forces: 'Scheme_Tutorials/Casimir_Forces.md'
     - Tutorial/Multilevel Atomic Susceptibility: 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
-    - The Run Function is Not a Loop: 'The_Run_Function_Is_Not_A_Loop.md'
     - Guile and Scheme Information: 'Guile_and_Scheme_Information.md'
 - C++ Interface:
     - User Interface: 'C++_User_Interface.md'
