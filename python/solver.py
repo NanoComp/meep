@@ -10,7 +10,7 @@ import time
 import h5py
 import numpy as np
 import meep as mp
-from . import mode_solver
+from . import mode_solver, with_hermitian_epsilon
 from meep.simulation import get_num_args
 
 try:
@@ -498,7 +498,7 @@ class ModeSolver(object):
                                                         components[c2])
                             self._create_h5_dataset(f, dataname)
 
-                            if self.mode_solver.with_hermitian_epsilon() and c1 != c2:
+                            if with_hermitian_epsilon() and c1 != c2:
                                 self.mode_solver.get_epsilon_tensor(c1, c2, 1, inv)
                                 dataname += '.i'
                                 self._create_h5_dataset(f, dataname)

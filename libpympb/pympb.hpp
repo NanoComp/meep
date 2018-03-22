@@ -17,6 +17,8 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
               int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
               bool pick_nearest, bool verbose);
 
+bool with_hermitian_epsilon();
+
 struct mode_solver {
   static const int MAX_NWORK = 10;
   static const char epsilon_CURFIELD_TYPE = 'n';
@@ -165,7 +167,6 @@ struct mode_solver {
   vector3 compute_1_group_velocity(int b);
   vector3 compute_1_group_velocity_reciprocal(int b);
   mpb_real compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high);
-  bool with_hermitian_epsilon();
 
 private:
   int kpoint_index;
