@@ -698,6 +698,10 @@ Given a `component` or `derived-component` constant `c` and a `vector3` `pt`, re
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Equivalent to `(get-field-point Dielectric pt)`.
 
+**`(add-dft-fields cs freq-min freq-max nfreq [where])`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire computationall cell).
+
 **`(flux-in-box dir box)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box `X (volume (center 0) (size 0 1 1)))`.
@@ -1031,6 +1035,10 @@ Output the dielectric function (relative permittivity) $\varepsilon$. Note that 
 **`output-mu`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the relative permeability function $\mu$. Note that this only outputs the frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
+
+**`(output-dft dft-fields fname [where])`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Output the Fourier-transformed fields in `dft-fields` (created by `add-dft-fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `volume` `where` defaults to the entire computational cell.
 
 **`output-hpwr`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
