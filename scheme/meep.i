@@ -163,6 +163,10 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
        SCM_NFALSEP(scm_procedure_p(gh_cdr($input)));
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER) (meep::component *components, int num_components) {
+    $1 = SCM_NFALSEP(scm_list_p($input));
+}
+
 %typemap(in) (meep::component *components, int num_components) {
   $2 = list_length($input);
   $1 = new meep::component[$2];
