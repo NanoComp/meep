@@ -41,6 +41,28 @@
                  bbbb_re * cccc_im + bbbb_im * cccc_re); \
 }
 
+#ifdef CASSIGN_MULT_RE
+  #undef CASSIGN_MULT_RE
+#endif
+
+/* a = Re (b * c) */
+#define CASSIGN_MULT_RE(a, b, c) {              \
+  mpb_real bbbb_re = (b).re, bbbb_im = (b).im;  \
+  mpb_real cccc_re = (c).re, cccc_im = (c).im;  \
+  (a) = bbbb_re * cccc_re - bbbb_im * cccc_im;  \
+}
+
+#ifdef CASSIGN_MULT_IM
+  #undef CASSIGN_MULT_IM
+#endif
+
+/* a = Im (b * c) */
+#define CASSIGN_MULT_IM(a, b, c) {              \
+  mpb_real bbbb_re = (b).re, bbbb_im = (b).im;  \
+  mpb_real cccc_re = (c).re, cccc_im = (c).im;  \
+  (a) = bbbb_re * cccc_im + bbbb_im * cccc_re;  \
+}
+
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
      CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");\
@@ -2398,6 +2420,131 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   return energy_sum;
 }
 
+cnumber mode_solver::compute_field_integral(void *func, void *data) {
+  int integrate_energy = strchr("DHBR", curfield_type) != NULL;
+
+  if (integrate_energy) {
+    return compute_field_integral_energy_internal((field_integral_energy_func)func, data);
+  }
+  else {
+    return compute_field_integral_internal((field_integral_func)func, data);
+  }
+}
+
+// Compute the integral of f(energy/field, epsilon, r) over the cell.
+cnumber mode_solver::compute_field_integral_energy_internal(field_integral_energy_func func, void *data) {
+  mpb_real *energy = (mpb_real *) curfield;
+  cnumber integral = {0,0};
+  vector3 kvector = {0,0,0};
+
+  if (!curfield || !strchr("dhbeDHBRcv", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy/field must be loaded first.\n");
+    return integral;
+  }
+  if (curfield_type != 'v') {
+    kvector = cur_kvector;
+  }
+
+  int n1 = mdata->nx;
+  int n2 = mdata->ny;
+  int n3 = mdata->nz;
+  // int n_other = mdata->other_dims;
+  // int n_last = mdata->last_dim_size / (sizeof(scalar_complex)/sizeof(scalar));
+  // int last_dim = mdata->last_dim;
+  // int rank = (n3 == 1) ? (n2 == 1 ? 1 : 2) : 3;
+
+  mpb_real s1 = geometry_lattice.size.x / n1;
+  mpb_real s2 = geometry_lattice.size.y / n2;
+  mpb_real s3 = geometry_lattice.size.z / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+
+  LOOP_XYZ(mdata) {
+    mpb_real epsilon = mean_medium_from_matrix(mdata->eps_inv + xyz_index);
+
+    vector3 p;
+    p.x = i1 * s1 - c1;
+    p.y = i2 * s2 - c2;
+    p.z = i3 * s3 - c3;
+
+    integral.re += func(energy[xyz_index], epsilon, p, data);
+  }}}
+
+  integral.re *= vol / H.N;
+  integral.im *= vol / H.N;
+  {
+    cnumber integral_sum;
+    mpi_allreduce(&integral, &integral_sum, 2, number, MPI_DOUBLE, MPI_SUM, mpb_comm);
+    return integral_sum;
+  }
+}
+
+cnumber mode_solver::compute_field_integral_internal(field_integral_func func, void *data) {
+  cnumber integral = {0,0};
+  vector3 kvector = {0,0,0};
+
+  if (!curfield || !strchr("dhbeDHBRcv", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy/field must be loaded first.\n");
+    return integral;
+  }
+  if (curfield_type != 'v') {
+    kvector = cur_kvector;
+  }
+
+  int n1 = mdata->nx;
+  int n2 = mdata->ny;
+  int n3 = mdata->nz;
+  // int n_other = mdata->other_dims;
+  // int n_last = mdata->last_dim_size / (sizeof(scalar_complex)/sizeof(scalar));
+  // int last_dim = mdata->last_dim;
+  // int rank = (n3 == 1) ? (n2 == 1 ? 1 : 2) : 3;
+
+  mpb_real s1 = geometry_lattice.size.x / n1;
+  mpb_real s2 = geometry_lattice.size.y / n2;
+  mpb_real s3 = geometry_lattice.size.z / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+
+  LOOP_XYZ(mdata) {
+    mpb_real epsilon = mean_medium_from_matrix(mdata->eps_inv + xyz_index);
+
+    vector3 p;
+    p.x = i1 * s1 - c1;
+    p.y = i2 * s2 - c2;
+    p.z = i3 * s3 - c3;
+
+    double phase_phi = TWOPI *
+      (kvector.x * (p.x/geometry_lattice.size.x) +
+       kvector.y * (p.y/geometry_lattice.size.y) +
+       kvector.z * (p.z/geometry_lattice.size.z));
+
+    scalar_complex phase;
+    CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
+
+    cvector3 F;
+    CASSIGN_MULT_RE(F.x.re, curfield[3*xyz_index+0], phase);
+    CASSIGN_MULT_IM(F.x.im, curfield[3*xyz_index+0], phase);
+    CASSIGN_MULT_RE(F.y.re, curfield[3*xyz_index+1], phase);
+    CASSIGN_MULT_IM(F.y.im, curfield[3*xyz_index+1], phase);
+    CASSIGN_MULT_RE(F.z.re, curfield[3*xyz_index+2], phase);
+    CASSIGN_MULT_IM(F.z.im, curfield[3*xyz_index+2], phase);
+
+    cnumber integrand = func(F, epsilon, p, data);
+
+    integral.re += integrand.re;
+    integral.im += integrand.im;
+  }}}
+
+  integral.re *= vol / H.N;
+  integral.im *= vol / H.N;
+  {
+    cnumber integral_sum;
+    mpi_allreduce(&integral, &integral_sum, 2, number, MPI_DOUBLE, MPI_SUM, mpb_comm);
+    return integral_sum;
+  }
+}
 // Used in MPBData python class
 
 /* A macro to set x = fractional part of x input, xi = integer part,
