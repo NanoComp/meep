@@ -170,9 +170,9 @@ struct mode_solver {
   vector3 compute_1_group_velocity(int b);
   vector3 compute_1_group_velocity_reciprocal(int b);
   mpb_real compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high);
-  cnumber compute_field_integral(void *func, void *data);
-  cnumber compute_field_integral_energy_internal(field_integral_energy_func func, void *data);
-  cnumber compute_field_integral_internal(field_integral_func func, void *data);
+  cnumber compute_field_integral(field_integral_func func, void *py_func);
+  number compute_energy_integral(field_integral_energy_func func, void *py_func);
+  cnumber compute_field_integral_energy(field_integral_energy_func func, void *data);
 
 private:
   int kpoint_index;

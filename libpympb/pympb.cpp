@@ -2420,19 +2420,8 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   return energy_sum;
 }
 
-cnumber mode_solver::compute_field_integral(void *func, void *data) {
-  int integrate_energy = strchr("DHBR", curfield_type) != NULL;
-
-  if (integrate_energy) {
-    return compute_field_integral_energy_internal((field_integral_energy_func)func, data);
-  }
-  else {
-    return compute_field_integral_internal((field_integral_func)func, data);
-  }
-}
-
 // Compute the integral of f(energy/field, epsilon, r) over the cell.
-cnumber mode_solver::compute_field_integral_energy_internal(field_integral_energy_func func, void *data) {
+cnumber mode_solver::compute_field_integral_energy(field_integral_energy_func func, void *data) {
   mpb_real *energy = (mpb_real *) curfield;
   cnumber integral = {0,0};
   vector3 kvector = {0,0,0};
@@ -2448,17 +2437,17 @@ cnumber mode_solver::compute_field_integral_energy_internal(field_integral_energ
   int n1 = mdata->nx;
   int n2 = mdata->ny;
   int n3 = mdata->nz;
-  // int n_other = mdata->other_dims;
-  // int n_last = mdata->last_dim_size / (sizeof(scalar_complex)/sizeof(scalar));
-  // int last_dim = mdata->last_dim;
-  // int rank = (n3 == 1) ? (n2 == 1 ? 1 : 2) : 3;
 
-  mpb_real s1 = geometry_lattice.size.x / n1;
-  mpb_real s2 = geometry_lattice.size.y / n2;
-  mpb_real s3 = geometry_lattice.size.z / n3;
-  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
-  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
-  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+  mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
+  mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
+  mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
+
+  mpb_real s1 = latx / n1;
+  mpb_real s2 = laty / n2;
+  mpb_real s3 = latz / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : latx * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : laty * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : latz * 0.5;
 
   LOOP_XYZ(mdata) {
     mpb_real epsilon = mean_medium_from_matrix(mdata->eps_inv + xyz_index);
@@ -2480,7 +2469,7 @@ cnumber mode_solver::compute_field_integral_energy_internal(field_integral_energ
   }
 }
 
-cnumber mode_solver::compute_field_integral_internal(field_integral_func func, void *data) {
+cnumber mode_solver::compute_field_integral(field_integral_func func, void *py_func) {
   cnumber integral = {0,0};
   vector3 kvector = {0,0,0};
 
@@ -2495,17 +2484,17 @@ cnumber mode_solver::compute_field_integral_internal(field_integral_func func, v
   int n1 = mdata->nx;
   int n2 = mdata->ny;
   int n3 = mdata->nz;
-  // int n_other = mdata->other_dims;
-  // int n_last = mdata->last_dim_size / (sizeof(scalar_complex)/sizeof(scalar));
-  // int last_dim = mdata->last_dim;
-  // int rank = (n3 == 1) ? (n2 == 1 ? 1 : 2) : 3;
 
-  mpb_real s1 = geometry_lattice.size.x / n1;
-  mpb_real s2 = geometry_lattice.size.y / n2;
-  mpb_real s3 = geometry_lattice.size.z / n3;
-  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
-  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
-  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+  mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
+  mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
+  mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
+
+  mpb_real s1 = latx / n1;
+  mpb_real s2 = laty / n2;
+  mpb_real s3 = latz / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : latx * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : laty * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : latz * 0.5;
 
   LOOP_XYZ(mdata) {
     mpb_real epsilon = mean_medium_from_matrix(mdata->eps_inv + xyz_index);
@@ -2516,9 +2505,9 @@ cnumber mode_solver::compute_field_integral_internal(field_integral_func func, v
     p.z = i3 * s3 - c3;
 
     double phase_phi = TWOPI *
-      (kvector.x * (p.x/geometry_lattice.size.x) +
-       kvector.y * (p.y/geometry_lattice.size.y) +
-       kvector.z * (p.z/geometry_lattice.size.z));
+      (kvector.x * (p.x / latx) +
+       kvector.y * (p.y / laty) +
+       kvector.z * (p.z / latz));
 
     scalar_complex phase;
     CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
@@ -2531,7 +2520,7 @@ cnumber mode_solver::compute_field_integral_internal(field_integral_func func, v
     CASSIGN_MULT_RE(F.z.re, curfield[3*xyz_index+2], phase);
     CASSIGN_MULT_IM(F.z.im, curfield[3*xyz_index+2], phase);
 
-    cnumber integrand = func(F, epsilon, p, data);
+    cnumber integrand = func(F, epsilon, p, py_func);
 
     integral.re += integrand.re;
     integral.im += integrand.im;
@@ -2545,6 +2534,16 @@ cnumber mode_solver::compute_field_integral_internal(field_integral_func func, v
     return integral_sum;
   }
 }
+
+number mode_solver::compute_energy_integral(field_integral_energy_func func, void *py_func) {
+  if (!curfield || !strchr("DHBR", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
+    return 0.0;
+  }
+
+  return cnumber_re(compute_field_integral_energy(func, py_func));
+}
+
 // Used in MPBData python class
 
 /* A macro to set x = fractional part of x input, xi = integer part,

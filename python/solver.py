@@ -535,6 +535,12 @@ class ModeSolver(object):
     def compute_energy_in_dielectric(self, eps_low, eps_high):
         return self.mode_solver.compute_energy_in_dielectric(eps_low, eps_high)
 
+    def compute_energy_integral(self, f):
+        return self.mode_solver.compute_energy_integral(f)
+
+    def compute_field_integral(self, f):
+        return self.mode_solver.compute_field_integral(f)
+
     def compute_group_velocities(self):
         xarg = mp.cartesian_to_reciprocal(mp.Vector3(1), self.geometry_lattice)
         vx = self.mode_solver.compute_group_velocity_component(xarg)
