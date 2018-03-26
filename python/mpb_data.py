@@ -1,11 +1,11 @@
 from __future__ import division
 
 import math
-import re
 
 import numpy as np
 import meep as mp
 from . import map_data
+from . import MPBArray
 
 
 class MPBData(object):
@@ -13,7 +13,7 @@ class MPBData(object):
     TWOPI = 6.2831853071795864769252867665590057683943388
 
     def __init__(self,
-                 lattice,
+                 lattice=None,
                  rectify=False,
                  x=0,
                  y=0,
@@ -277,6 +277,17 @@ class MPBData(object):
         self.cart_map = cart_map
 
     def convert(self, arr, kpoint=None):
+        if isinstance(arr, MPBArray):
+            self.lattice = arr.lattice
+
+        if self.lattice is None:
+            err = ("Couldn't find 'lattice.' You must do one of the following:\n" +
+                   "  1. Pass the ModeSolver lattice to the MPBData constructor\n" +
+                   "     i.e., MPBData(lattice=ms.get_lattice())\n" +
+                   "  2. Create an MPBArray to pass to MPBData.convert()\n" +
+                   "     i.e., mpb_arr = MPBArray(arr, ms.get_lattice(), ... ); mpb_data.convert(mpb_arr))")
+            raise ValueError(err)
+
         self.init_output_lattice(kpoint)
 
         if len(arr.shape) == 3:

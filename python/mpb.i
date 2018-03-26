@@ -291,6 +291,7 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
 
 %pythoncode %{
     from .solver import (
+        MPBArray,
         ModeSolver,
         output_hfield,
         output_hfield_x,

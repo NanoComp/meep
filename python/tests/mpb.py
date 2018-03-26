@@ -935,7 +935,7 @@ class TestModeSolver(unittest.TestCase):
             efield = np.vectorize(complex)(efield_re, efield_im)
 
         # rectangularize
-        md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
+        md = mpb.MPBData(lattice=ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
         new_efield = md.convert(efield, ms.k_points[10])
         # check with ref file
 
@@ -973,7 +973,7 @@ class TestModeSolver(unittest.TestCase):
 
         # Test MPBData
         eps = ms.get_epsilon()
-        md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3, verbose=True)
+        md = mpb.MPBData(rectify=True, resolution=32, periods=3, verbose=True)
         new_eps = md.convert(eps)
         ref_fn = 'tri-rods-epsilon-r-m3-n32.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
@@ -1121,8 +1121,7 @@ class TestModeSolver(unittest.TestCase):
         k = mp.Vector3(1 / -3, 1 / 3)
         ms.run_tm(mpb.output_at_kpoint(k, mpb.fix_efield_phase, get_efields))
 
-        lat = ms.get_lattice()
-        md = mpb.MPBData(lat, rectify=True, periods=3, resolution=32, verbose=True)
+        md = mpb.MPBData(rectify=True, periods=3, resolution=32, verbose=True)
         result = md.convert(efields[-1], ms.k_points[10])
 
         ref_fn = 'converted-tri-rods-e.k11.b08.tm.h5'
