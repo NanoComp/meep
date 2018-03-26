@@ -105,6 +105,11 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
     return 1;
 }
 
+static PyObject* cnumber_to_pycomplex(cnumber *c) {
+    PyObject *result = PyComplex_FromDoubles(c->re, c->im);
+    return result;
+}
+
 static PyObject* v3_to_pyv3(vector3 *v) {
     PyObject *geom_mod = PyImport_ImportModule("meep.geom");
     PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
@@ -298,6 +303,14 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     for (Py_ssize_t i = 0; i < n; ++i) {
         PyObject *dim = PyInteger_FromLong($1[i]);
         PyList_SetItem($result, i, dim);
+    }
+}
+
+%typemap(out) cnumber {
+    $result = cnumber_to_pycomplex(&$1);
+
+    if (!$result) {
+        SWIG_fail;
     }
 }
 
