@@ -29,39 +29,7 @@
           int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
 #  endif /* HAVE_MPI */
 
-#ifdef CASSIGN_MULT
-  #undef CASSIGN_MULT
-#endif
-
-/* a = b * c */
-#define CASSIGN_MULT(a, b, c) { \
-  mpb_real bbbb_re = (b).re, bbbb_im = (b).im; \
-  mpb_real cccc_re = (c).re, cccc_im = (c).im; \
-  CASSIGN_SCALAR(a, bbbb_re * cccc_re - bbbb_im * cccc_im, \
-                 bbbb_re * cccc_im + bbbb_im * cccc_re); \
-}
-
-#ifdef CASSIGN_MULT_RE
-  #undef CASSIGN_MULT_RE
-#endif
-
-/* a = Re (b * c) */
-#define CASSIGN_MULT_RE(a, b, c) {              \
-  mpb_real bbbb_re = (b).re, bbbb_im = (b).im;  \
-  mpb_real cccc_re = (c).re, cccc_im = (c).im;  \
-  (a) = bbbb_re * cccc_re - bbbb_im * cccc_im;  \
-}
-
-#ifdef CASSIGN_MULT_IM
-  #undef CASSIGN_MULT_IM
-#endif
-
-/* a = Im (b * c) */
-#define CASSIGN_MULT_IM(a, b, c) {              \
-  mpb_real bbbb_re = (b).re, bbbb_im = (b).im;  \
-  mpb_real cccc_re = (c).re, cccc_im = (c).im;  \
-  (a) = bbbb_re * cccc_im + bbbb_im * cccc_re;  \
-}
+typedef  mpb_real real;
 
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
