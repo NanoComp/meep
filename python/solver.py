@@ -156,6 +156,15 @@ class ModeSolver(object):
 
         return np.reshape(eps, dims)
 
+    def get_mu(self):
+        self.mode_solver.get_mu()
+
+        dims = self.mode_solver.get_dims()
+        mu = np.empty(np.prod(dims))
+        self.mode_solver.get_curfield(mu)
+
+        return np.reshape(mu, dims)
+
     def get_bfield(self, which_band, output=False):
         return self._get_field('b', which_band, output)
 

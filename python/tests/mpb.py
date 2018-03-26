@@ -1045,6 +1045,16 @@ class TestModeSolver(unittest.TestCase):
         ms.run_te()
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
+        fname = 'tutorial-mu.h5'
+        data_path = os.path.join(self.data_dir, fname)
+        res_path = re.sub('tutorial', self.filename_prefix, fname)
+        self.compare_h5_files(data_path, res_path)
+
+        mu = ms.get_mu()
+        with h5py.File(data_path, 'r') as f:
+            data = f['data'].value
+            self.compare_arrays(data, mu)
+
     def test_output_tot_pwr(self):
         ms = self.init_solver()
         ms.run_te()
