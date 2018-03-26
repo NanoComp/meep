@@ -338,14 +338,12 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     }
 }
 
-%typemap(in) (py_mpb::field_integral_energy_func func, void *py_func) {
-    $1 = field_integral_energy_callback;
-    $2 = (void*)$input;
-}
-
-%typemap(in) (py_mpb::field_integral_func func, void *py_func) {
+%typemap(in) (py_mpb::field_integral_func field_func,
+              py_mpb::field_integral_energy_func energy_func,
+              void *py_func) {
     $1 = field_integral_callback;
-    $2 = (void*)$input;
+    $2 = field_integral_energy_callback;
+    $3 = (void*)$input;
 }
 
 %apply double { number };

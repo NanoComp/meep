@@ -2388,8 +2388,9 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   return energy_sum;
 }
 
-// Compute the integral of f(energy/field, epsilon, r) over the cell.
-cnumber mode_solver::compute_field_integral_energy(field_integral_energy_func func, void *data) {
+cnumber mode_solver::compute_field_integral(field_integral_func field_func,
+                                            field_integral_energy_func energy_func,
+                                            void *py_func) {
   mpb_real *energy = (mpb_real *) curfield;
   cnumber integral = {0,0};
   vector3 kvector = {0,0,0};
@@ -2398,9 +2399,12 @@ cnumber mode_solver::compute_field_integral_energy(field_integral_energy_func fu
     meep::master_fprintf(stderr, "The D or H energy/field must be loaded first.\n");
     return integral;
   }
+
   if (curfield_type != 'v') {
     kvector = cur_kvector;
   }
+
+  int integrate_energy = strchr("DHBR", curfield_type) != NULL;
 
   int n1 = mdata->nx;
   int n2 = mdata->ny;
@@ -2425,7 +2429,31 @@ cnumber mode_solver::compute_field_integral_energy(field_integral_energy_func fu
     p.y = i2 * s2 - c2;
     p.z = i3 * s3 - c3;
 
-    integral.re += func(energy[xyz_index], epsilon, p, data);
+    if (integrate_energy) {
+        integral.re += energy_func(energy[xyz_index], epsilon, p, py_func);
+    }
+    else {
+      double phase_phi = TWOPI *
+        (kvector.x * (p.x / latx) +
+        kvector.y * (p.y / laty) +
+        kvector.z * (p.z / latz));
+
+      scalar_complex phase;
+      CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
+
+      cvector3 F;
+      CASSIGN_MULT_RE(F.x.re, curfield[3*xyz_index+0], phase);
+      CASSIGN_MULT_IM(F.x.im, curfield[3*xyz_index+0], phase);
+      CASSIGN_MULT_RE(F.y.re, curfield[3*xyz_index+1], phase);
+      CASSIGN_MULT_IM(F.y.im, curfield[3*xyz_index+1], phase);
+      CASSIGN_MULT_RE(F.z.re, curfield[3*xyz_index+2], phase);
+      CASSIGN_MULT_IM(F.z.im, curfield[3*xyz_index+2], phase);
+
+      cnumber integrand = field_func(F, epsilon, p, py_func);
+
+      integral.re += integrand.re;
+      integral.im += integrand.im;
+    }
   }}}
 
   integral.re *= vol / H.N;
@@ -2437,79 +2465,15 @@ cnumber mode_solver::compute_field_integral_energy(field_integral_energy_func fu
   }
 }
 
-cnumber mode_solver::compute_field_integral(field_integral_func func, void *py_func) {
-  cnumber integral = {0,0};
-  vector3 kvector = {0,0,0};
-
-  if (!curfield || !strchr("dhbeDHBRcv", curfield_type)) {
-    meep::master_fprintf(stderr, "The D or H energy/field must be loaded first.\n");
-    return integral;
-  }
-  if (curfield_type != 'v') {
-    kvector = cur_kvector;
-  }
-
-  int n1 = mdata->nx;
-  int n2 = mdata->ny;
-  int n3 = mdata->nz;
-
-  mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
-  mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
-  mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
-
-  mpb_real s1 = latx / n1;
-  mpb_real s2 = laty / n2;
-  mpb_real s3 = latz / n3;
-  mpb_real c1 = n1 <= 1 ? 0 : latx * 0.5;
-  mpb_real c2 = n2 <= 1 ? 0 : laty * 0.5;
-  mpb_real c3 = n3 <= 1 ? 0 : latz * 0.5;
-
-  LOOP_XYZ(mdata) {
-    mpb_real epsilon = mean_medium_from_matrix(mdata->eps_inv + xyz_index);
-
-    vector3 p;
-    p.x = i1 * s1 - c1;
-    p.y = i2 * s2 - c2;
-    p.z = i3 * s3 - c3;
-
-    double phase_phi = TWOPI *
-      (kvector.x * (p.x / latx) +
-       kvector.y * (p.y / laty) +
-       kvector.z * (p.z / latz));
-
-    scalar_complex phase;
-    CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
-
-    cvector3 F;
-    CASSIGN_MULT_RE(F.x.re, curfield[3*xyz_index+0], phase);
-    CASSIGN_MULT_IM(F.x.im, curfield[3*xyz_index+0], phase);
-    CASSIGN_MULT_RE(F.y.re, curfield[3*xyz_index+1], phase);
-    CASSIGN_MULT_IM(F.y.im, curfield[3*xyz_index+1], phase);
-    CASSIGN_MULT_RE(F.z.re, curfield[3*xyz_index+2], phase);
-    CASSIGN_MULT_IM(F.z.im, curfield[3*xyz_index+2], phase);
-
-    cnumber integrand = func(F, epsilon, p, py_func);
-
-    integral.re += integrand.re;
-    integral.im += integrand.im;
-  }}}
-
-  integral.re *= vol / H.N;
-  integral.im *= vol / H.N;
-  {
-    cnumber integral_sum;
-    mpi_allreduce(&integral, &integral_sum, 2, number, MPI_DOUBLE, MPI_SUM, mpb_comm);
-    return integral_sum;
-  }
-}
-
-number mode_solver::compute_energy_integral(field_integral_energy_func func, void *py_func) {
+number mode_solver::compute_energy_integral(field_integral_func field_func,
+                                            field_integral_energy_func energy_func,
+                                            void *py_func) {
   if (!curfield || !strchr("DHBR", curfield_type)) {
     meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
     return 0.0;
   }
 
-  return cnumber_re(compute_field_integral_energy(func, py_func));
+  return cnumber_re(compute_field_integral(field_func, energy_func, py_func));
 }
 
 // Used in MPBData python class
