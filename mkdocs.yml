@@ -41,6 +41,7 @@ pages:
     - Perfectly Matched Layers: 'Perfectly_Matched_Layer.md'
     - Parallel Meep: 'Parallel_Meep.md'
     - Synchronizing the Magnetic and Electric Fields: 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
+    - Mode Decomposition: 'Mode_Decomposition.md'
     - Field Functions: 'Field_Functions.md'
     - The Run Function is Not a Loop: 'The_Run_Function_Is_Not_A_Loop.md'
     - Yee Lattice: 'Yee_Lattice.md'
@@ -56,6 +57,7 @@ pages:
     - Tutorial/Local Density of States: 'Python_Tutorials/Local_Density_of_States.md'
     - Tutorial/Optical Forces: 'Python_Tutorials/Optical_Forces.md'
     - Tutorial/Frequency-Domain Solver: 'Python_Tutorials/Frequency_Domain_Solver.md'
+    - Tutorial/Mode Decomposition: 'Python_Tutorials/Mode_Decomposition.md'
 - Scheme Interface:
     - User Interface: 'Scheme_User_Interface.md'
     - Tutorial/Basics: 'Scheme_Tutorials/Basics.md'
@@ -73,4 +75,3 @@ pages:
 - C++ Interface:
     - User Interface: 'C++_User_Interface.md'
     - Tutorial/Basics: 'C++_Tutorial.md'
-    - Mode Expansion: 'ModeExpansion.md'

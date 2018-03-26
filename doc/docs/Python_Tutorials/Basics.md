@@ -61,7 +61,7 @@ sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
 
 W gave the source a frequency of 0.15, and specified a [`ContinuousSource`](../Python_User_Interface/#continuoussource) which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $\varepsilon=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 &#956;m to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
-Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash;  which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
+As for boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash;  which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
 
 ```py
 pml_layers = [mp.PML(1.0)]
@@ -237,10 +237,10 @@ sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)
 
 will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible, here, because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
 
-The above command outputs zillions of `.png` files, and it is somewhat annoying to have them clutter up our working directory. Instead, we can add the following command to `run`:
+The above command outputs zillions of `.png` files, and it is somewhat annoying to have them clutter up our working directory. Instead, we can add the following command before `run`:
 
 ```py
-mp.use_output_directory()
+sim.use_output_directory()
 ```
 
 This will put *all* of the output files (.h5, .png, etcetera) into a newly-created subdirectory, called by default `filename-out/` if our Python script is `filename.py`.
@@ -419,7 +419,7 @@ Again, we must run *both* simulations in order to get the normalization right. T
 Modes of a Ring Resonator
 -------------------------
 
-As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some electromagnetic cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 

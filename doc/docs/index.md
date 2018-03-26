@@ -2,7 +2,9 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Features include:
+ **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
+
+Features include:
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
@@ -10,17 +12,17 @@
 -   Distributed memory **parallelism** on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
 -   Arbitrary **anisotropic**, electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
--   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
--   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
--   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format.
+-   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as perfect conductor and **Bloch-periodic** boundary conditions.
+-   Exploitation of **symmetries** to reduce the computation size: even/odd mirror planes and 90°/180° rotations.
+-   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   Arbitrary current sources including a guided-mode launcher.
 -   Frequency-domain solver for finding the response to a continuous-wave source.
--   Field analyses including flux spectra, near to far field transformations, modal depcomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
+-   Field analyses including flux spectra, near to far field transformations, modal decomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
 
 Time-Domain Simulation
 ----------------------
 
-A time-domain electromagnetic simulation simply takes [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations) and evolves them over time within some finite computational volume, essentially performing a kind of **numerical experiment**. This can be used to calculate a wide variety of useful quantities. Major applications include:
+A time-domain electromagnetic simulation simply evolves [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations) over time within some finite computational volume, essentially performing a kind of **numerical experiment**. This can be used to calculate a wide variety of useful quantities. Major applications include:
 
 -   **Transmission and Reflection Spectra** &mdash; by Fourier-transforming the response to a short pulse, a single simulation can yield the scattering amplitudes over a wide spectrum of frequencies.
 -   **Resonant Modes and Frequencies** &mdash; by analyzing the response of the system to a short pulse, one can extract the frequencies, decay rates, and field patterns of the harmonic modes of lossy and lossless systems including waveguide and cavity modes.
@@ -38,7 +40,7 @@ The source repository is on [GitHub](https://github.com/stevengj/meep). Gzipped 
 Documentation
 -------------
 
-See the navigation sidebar at left. In particular, the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md) are the most important things to review.
+See the left navigation sidebar. In particular, the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md) are the most important things to review.
 
 ### Mailing Lists
 
