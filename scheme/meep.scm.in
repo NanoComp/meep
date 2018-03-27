@@ -673,6 +673,19 @@
   (meep-dft-near2far-scale-dfts near2far -1.0))
 
 ; ****************************************************************
+; dft fields
+
+(define (add-dft-fields components freq_min freq_max nfreq . where)
+  (if (null? fields) (init-fields))
+  (let ((vol (if (null? where) (meep-fields-total-volume fields) (car where))))
+    (meep-fields-add-dft-fields fields components vol freq_min freq_max nfreq)))
+
+(define (output-dft dft_fields fname . where)
+  (if (null? fields) (init-fields))
+  (let ((vol (if (null? where) (meep-fields-total-volume fields) (car where))))
+    (meep-fields-output-dft fields dft_fields fname vol)))
+
+; ****************************************************************
 ; Generic step functions: these are functions which are called
 ; (potentially) at every time step.  They can either be a thunk
 ; or they can take one argument, to-do.  to-do is either 'step

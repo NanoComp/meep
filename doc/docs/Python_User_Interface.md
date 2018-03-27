@@ -1105,9 +1105,9 @@ Output the dielectric function (relative permittivity) $\varepsilon$. Note that 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the relative permeability function $\mu$. Note that this only outputs the frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
-**`output_dft(dft_fields, fname)`**  
+**`output_dft(dft_fields, fname, [where])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix).
+Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `Volume` `where` defaults to the entire computational cell. 
 
 **`output_hpwr()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
