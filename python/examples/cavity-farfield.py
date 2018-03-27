@@ -52,6 +52,6 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Hz, mp.Vector3(0.
 d2 = 20
 h = 4
 
-sim.output_farfields(nearfield, "spectra-{}-{}-{}".format(d1, d2, h),
-                     mp.Volume(mp.Vector3(0, (0.5 * w) + d2 + (0.5 * h)), size=mp.Vector3(sx - 2 * dpml, h)),
-                     resolution)
+sim.output_farfields(nearfield, "spectra-{}-{}-{}".format(d1, d2, h), resolution,
+                     where=mp.Volume(mp.Vector3(0, (0.5 * w) + d2 + (0.5 * h)),
+                                     size=mp.Vector3(sx - 2 * dpml, h)))

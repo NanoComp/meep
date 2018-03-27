@@ -725,7 +725,7 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 ### Volume
 
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
 
 Miscellaneous Functions
 -----------------------
@@ -767,29 +767,29 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Equivalent to `get_field_point(meep.Dielectric, pt)`.
 
-**`add_dft_fields(cs, freq_min, freq_max, nfreq, [where])`**  
+**`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computationall cell).
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computationall cell). The volume can also be specified via the `center` and `size` arguments.
 
-**`flux_in_box(dir, box)`**  
+**`flux_in_box(dir, box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `direction` constant, and a `meep.Volume`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `flux_in_box(d=meep.X,meep.Volume(center=meep.Vector3(0,0,0),size=meep.Vector3(0,1,1)))`.
+Given a `direction` constant, and a `meep.Volume`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `flux_in_box(d=meep.X,meep.Volume(center=meep.Vector3(0,0,0),size=meep.Vector3(0,1,1)))`. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`electric_energy_in_box(box)`**  
+**`electric_energy_in_box(box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `meep.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`magnetic_energy_in_box(box)`**  
+**`magnetic_energy_in_box(box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `meep.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`field_energy_in_box(box)`**  
+**`field_energy_in_box(box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `meep.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`modal_volume_in_box(box)`**  
+**`modal_volume_in_box(box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral ($\varepsilon$|E|^2) / maximum ($\varepsilon$|E|^2). If no volume argument is provided, the entire computational cell is used by default.
+Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral ($\varepsilon$|E|^2) / maximum ($\varepsilon$|E|^2). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
@@ -797,22 +797,22 @@ Often, you want the integration box to be the entire computational cell. A usefu
 
 One versatile feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output_field_function`, described later). This is done via the functions:
 
-**`integrate_field_function(cs, func, [where])`**  
+**`integrate_field_function(cs, func, where=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Returns the integral of the complex-valued function `func` over the `Volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` contained in the `Simulation` instance that calls this method. `func` is a function of position (a `Vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
+Returns the integral of the complex-valued function `func` over the `Volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` contained in the `Simulation` instance that calls this method. `func` is a function of position (a `Vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued. The volume can optionally be specified via the `center` and `size` arguments.
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
 
-**`max_abs_field_function(cs, func, [where])`**  
+**`max_abs_field_function(cs, func, where=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `integrate_field_function`, but returns the maximum absolute value of `func` in the volume `where` instead of its integral.
 
-The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Functions](Field_Functions.md) for examples of how to call `integrate_field_function` and `max_abs_field_function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Functions](Field_Functions.md) for examples of how to call `integrate_field_function` and `max_abs_field_function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields. The volume can optionally be specified via the `center` and `size` arguments.
 
 Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* computational cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
 
-**`integrate2_field_function(fields2, cs1, cs2, func, [where])`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Similar to `integrate_field_function`, but takes additional parameters `fields2` and `cs2`. `fields2` is a `meep::fields*` object similar to the global `fields` variable (see below) specifying the fields from another simulation. `cs1` is a list of components to integrate with from the `meep::fields` instance in `Simulation.fields`, as for `integrate_field_function`, while `cs2` is a list of components to integrate from `fields2`. Similar to `integrate_field_function`, `func` is a function that returns an number given arguments consisting of: the position vector, followed by the values of the components specified by `cs1` (in order), followed by the values of the components specified by `cs2` (in order).
+**`integrate2_field_function(fields2, cs1, cs2, func, where=None, center=None, size=None)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Similar to `integrate_field_function`, but takes additional parameters `fields2` and `cs2`. `fields2` is a `meep::fields*` object similar to the global `fields` variable (see below) specifying the fields from another simulation. `cs1` is a list of components to integrate with from the `meep::fields` instance in `Simulation.fields`, as for `integrate_field_function`, while `cs2` is a list of components to integrate from `fields2`. Similar to `integrate_field_function`, `func` is a function that returns an number given arguments consisting of: the position vector, followed by the values of the components specified by `cs1` (in order), followed by the values of the components specified by `cs2` (in order). The volume can optionally be specified via the `center` and `size` arguments.
 
 To get two fields in memory at once for `integrate2_field_function`, the easiest way is to run one simulation within a given Python file, then save the results in another fields variable, then run a second simulation. This would look something like:
 
@@ -1012,9 +1012,9 @@ After the simulation run is complete, you can compute the far fields. This is us
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `Vector3` point `x` which can lie anywhere outside the near-field surface, including outside the computational cell and a `near2far` object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (Ex1,Ey1,Ez1,Hx1,Hy1,Hz1,Ex2,Ey2,Ez2,Hx2,Hy2,Hz2,...) for the frequencies 1,2,…,`nfreq`.
 
-**`output_farfields(near2far, fname, where, resolution)`**  
+**`output_farfields(near2far, fname, resolution, where=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted.
+Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted. The volume can optionally be specified via `center` and `size`.
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
@@ -1105,9 +1105,9 @@ Output the dielectric function (relative permittivity) $\varepsilon$. Note that 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the relative permeability function $\mu$. Note that this only outputs the frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
-**`output_dft(dft_fields, fname, [where])`**  
+**`output_dft(dft_fields, fname, where=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `Volume` `where` defaults to the entire computational cell. 
+Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `Volume` `where` defaults to the entire computational cell. The volume can also be specified via the `center` and `size` arguments.
 
 **`output_hpwr()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1154,14 +1154,16 @@ See also [Field Function Examples](Field_Function_Examples.md). See also [Synchr
 The output functions described above write the data for the fields and materials for the entire computational volume to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the computational volume and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 ```python
- get_array(vol, component, cmplx=False, arr=None)
+ get_array(vol=None, center=None, size=None component=meep.Ez, cmplx=False, arr=None)
 ```
 
 with the following input parameters:
 
-+ `vol`: `Volume`: the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute.
++ `vol`: `Volume`: the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If this parameter is `None` (the default), then a `size` and `center` must be specified.
 
-+ `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc).
++ `center`, `size` : `Vector3` : If both are specified, the library will construct an apporpriate `Volume`. This is merely a convenience feature and alternative to supplying a `Volume`.
+
++ `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc). Defaults to `mp.Ez`.
 
 + `cmplx`: If `True`, return complex-valued data otherwise return real-valued data (default).
 

@@ -10,6 +10,7 @@ pad = 4
 dpml = 2
 
 sxy = 2*(r+w+pad+dpml)
+vol = mp.Volume(mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml))
 
 c1 = mp.Cylinder(radius=r+w, material=mp.Medium(index=n))
 c2 = mp.Cylinder(radius=r)
@@ -33,7 +34,7 @@ ez_dat = np.zeros((122,122,num_tols), dtype=np.complex_)
 for i in range(num_tols):
     sim.init_fields()
     sim.solve_cw(tols[i], 10000, 10)
-    ez_dat[:,:,i] = sim.get_array(mp.Volume(mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml)), component=mp.Ez)
+    ez_dat[:,:,i] = sim.get_array(vol, component=mp.Ez)
 
 err_dat = np.zeros(num_tols-1)
 for i in range(num_tols-1):
@@ -45,7 +46,7 @@ plt.xlabel("frequency-domain solver tolerance");
 plt.ylabel("L2 norm of error in fields");
 plt.show()
 
-eps_data = sim.get_array(mp.Volume(Vector3(), mp.Vector3(sxy-2*dpml,sxy-2*dpml)), mp.Dielectric)
+eps_data = sim.get_array(vol, component=mp.Dielectric)
 ez_data = np.absolute(ez_dat[:,:,num_tols-1])
 
 plt.figure(dpi=100)
@@ -70,7 +71,7 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     symmetries=[mp.Mirror(mp.Y)],
                     boundary_layers=[mp.PML(dpml)])
 
-dfts = sim.add_dft_fields([mp.Ez], mp.Volume(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml)), fcen, fcen, 1)
+dfts = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, where=vol)
 sim.run(until_after_sources=100)
 sim.output_dft(dfts, "dft_fields")
 
@@ -81,7 +82,7 @@ ezi = f["ez_0.i"].value
 ezr = f["ez_0.r"].value
 ez_dat = ezr + 1j * ezi
 
-eps_data = sim.get_array(mp.Volume(Vector3(), mp.Vector3(sxy-2*dpml,sxy-2*dpml)), mp.Dielectric)
+eps_data = sim.get_array(vol, component=mp.Dielectric)
 ez_data = np.absolute(ez_dat)
 
 plt.figure(dpi=100)
