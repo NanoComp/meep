@@ -52,7 +52,7 @@ which is equivalent to the Lorentzian model except that the $\omega_n^2$ term ha
 Numerical Stability
 -------------------
 
-If a Lorentzian resonance $\omega_n$ is specified at too high frequency relative to the time discretization $\Delta t$, the simulation becomes unstable. Essentially, the problem is that $\mathbf{P}_n$ oscillates too fast compared with the time discretization for the discretization to work properly. If this happens, there are three workarounds: increase the resolution which increases the resolution in both space and time, decrease the Courant factor which decreases $\Delta t$ compared to $\Delta x$, or use a different model function for your dielectric response.
+If a Lorentzian resonance $\omega_n$ is specified at too high a frequency relative to the time discretization $\Delta t$, the simulation becomes unstable. Essentially, the problem is that $\mathbf{P}_n$ oscillates too fast compared with the time discretization for the discretization to work properly. If this happens, there are three workarounds: increase the resolution which increases the resolution in both space and time, decrease the Courant factor which decreases $\Delta t$ compared to $\Delta x$, or use a different model function for your dielectric response.
 
 Roughly speaking, the $\mathbf{P}_n$ equation becomes unstable for $\omega_n \Delta t / 2 > 1$. Note that, in Meep frequency units, you specify $f_n = \omega_n/2\pi$, so this quantity should be less than $1/\pi \Delta t$. Meep will check a necessary stability criterion automatically and halt with an error message if it is violated.
 
