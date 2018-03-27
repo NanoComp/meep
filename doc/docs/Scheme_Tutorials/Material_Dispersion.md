@@ -2,7 +2,7 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/examples/material-dispersion.ctl). From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
+In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/material-dispersion.ctl). From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 

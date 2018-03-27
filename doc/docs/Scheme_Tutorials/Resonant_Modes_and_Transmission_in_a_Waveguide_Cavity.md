@@ -16,7 +16,7 @@ Third, by combining several structures in sequence &mdash; ordinary waveguide wi
 
 In the following, we will analyze the structure in exactly **the opposite order** of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the Reference Section of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book)), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
-See also [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/examples/holey-wvg-cavity.ctl) and [holey-wvg-bands.ctl](https://github.com/stevengj/meep/blob/master/examples/holey-wvg-bands.ctl) which contain the commands below.
+See also [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/holey-wvg-cavity.ctl) and [holey-wvg-bands.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/holey-wvg-bands.ctl) which contain the commands below.
 
 [TOC]
 
@@ -172,7 +172,7 @@ Resonant Modes
 
 To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them *directly*, placing a source *inside* the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also [Tutorial/Basics/Modes of a Ring Resonator](Basics/#modes-of-a-ring-resonator) and the [Introduction](../Introduction.md#resonant-modes).
 
-The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/examples/holey-wvg-cavity.ctl) input file for *both* calculations, and select between the two with an `if` statement controlled by a `compute-mode?` variable:
+The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/holey-wvg-cavity.ctl) input file for *both* calculations, and select between the two with an `if` statement controlled by a `compute-mode?` variable:
 
 ```scm
 ; false = transmission spectrum, true = resonant modes:                         
