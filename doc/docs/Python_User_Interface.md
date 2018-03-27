@@ -732,9 +732,9 @@ Miscellaneous Functions
 
 ### Output File Names
 
-The output file names used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is empty (the default), however, then Meep constructs a default prefix based on the current Python file name with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
+The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is empty (the default), however, then Meep constructs a default prefix based on the current Python filename with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
 
-**`get_filename_prefix()`**  
+**`Simulation.get_filename_prefix()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return the current prefix string that is prepended, by default, to all file names.
 
@@ -742,7 +742,7 @@ If you don't want to use any prefix, then you should set `filename_prefix` to `F
 
 In addition to the filename prefix, you can also specify that all the output files be written into a newly-created directory (if it does not yet exist). This is done by running:
 
-**`use_output_directory([dirname])`**  
+**`Simulation.use_output_directory([dirname])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Put output in a subdirectory, which is created if necessary. If the optional argument dirname is specified, that is the name of the directory. Otherwise, the directory name is the current Python file name with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of `"test-out"`.
 
