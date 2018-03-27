@@ -1260,6 +1260,29 @@ class TestModeSolver(unittest.TestCase):
         else:
             self.check_freqs(expected_freqs, ms.all_freqs)
 
+    def test_compute_integrals(self):
+        ms = self.init_solver()
+        ms.run_te()
+
+        def f1(u, eps, r):
+            return u * eps * r.dot(r)
+
+        def f2(F, eps, r):
+            return F.x * eps * r.dot(r)
+
+        mpb.fix_hfield_phase(ms, 8)
+        ms.get_hfield(8)
+        ms.compute_field_energy()
+
+        energy_integral = ms.compute_energy_integral(f1)
+        self.assertAlmostEqual(energy_integral, 0.23065363598406974)
+
+        mpb.fix_efield_phase(ms, 8)
+        ms.get_efield(8)
+
+        field_integral = ms.compute_field_integral(f2)
+        self.assertAlmostEqual(field_integral, 02.0735366548785272e-18 - 3.0259168624899837e-6j)
+
 
 if __name__ == '__main__':
     unittest.main()

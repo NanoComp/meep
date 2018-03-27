@@ -105,6 +105,11 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
     return 1;
 }
 
+static PyObject* cnumber_to_pycomplex(cnumber *c) {
+    PyObject *result = PyComplex_FromDoubles(c->re, c->im);
+    return result;
+}
+
 static PyObject* v3_to_pyv3(vector3 *v) {
     PyObject *geom_mod = PyImport_ImportModule("meep.geom");
     PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
@@ -163,6 +168,44 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
 
     return res;
 }
+
+static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon, vector3 p, void *data) {
+    PyObject *py_func = (PyObject*)data;
+    PyObject *py_energy = PyFloat_FromDouble(energy);
+    PyObject *py_epsilon = PyFloat_FromDouble(epsilon);
+    PyObject *py_p = v3_to_pyv3(&p);
+
+    PyObject *result = PyObject_CallFunctionObjArgs(py_func, py_energy, py_epsilon, py_p, NULL);
+    mpb_real res = PyFloat_AsDouble(result);
+
+    Py_DECREF(py_energy);
+    Py_DECREF(py_epsilon);
+    Py_DECREF(py_p);
+    Py_DECREF(result);
+
+    return res;
+}
+
+
+ static cnumber field_integral_callback(cvector3 F, mpb_real epsilon, vector3 p, void *data) {
+     PyObject *py_func = (PyObject*)data;
+     PyObject *py_F = cv3_to_pyv3(&F);
+     PyObject *py_epsilon = PyFloat_FromDouble(epsilon);
+     PyObject *py_p = v3_to_pyv3(&p);
+
+     PyObject *result = PyObject_CallFunctionObjArgs(py_func, py_F, py_epsilon, py_p, NULL);
+
+     cnumber res;
+     res.re = PyComplex_RealAsDouble(result);
+     res.im = PyComplex_ImagAsDouble(result);
+
+     Py_DECREF(py_F);
+     Py_DECREF(py_epsilon);
+     Py_DECREF(py_p);
+     Py_DECREF(result);
+
+     return res;
+ }
 %}
 
 %include "std_string.i"
@@ -263,6 +306,14 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
     }
 }
 
+%typemap(out) cnumber {
+    $result = cnumber_to_pycomplex(&$1);
+
+    if (!$result) {
+        SWIG_fail;
+    }
+}
+
 %typemap(out) vector3 {
     $result = v3_to_pyv3(&$1);
 
@@ -286,6 +337,16 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
         SWIG_fail;
     }
 }
+
+%typemap(in) (py_mpb::field_integral_func field_func,
+              py_mpb::field_integral_energy_func energy_func,
+              void *py_func) {
+    $1 = field_integral_callback;
+    $2 = field_integral_energy_callback;
+    $3 = (void*)$input;
+}
+
+%apply double { number };
 
 %include "pympb.hpp"
 
