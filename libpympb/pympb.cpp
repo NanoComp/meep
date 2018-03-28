@@ -2242,7 +2242,7 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
 mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
   mpb_real u[3];
   int ib = b - 1;
-  mpb_real group_v;
+  mpb_real group_v = 0;
   mpb_real scratch;
 
   curfield_reset();
