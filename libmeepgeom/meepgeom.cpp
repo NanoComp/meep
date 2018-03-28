@@ -1602,7 +1602,7 @@ material_type make_file_material(const char *eps_input_file)
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     md->epsilon_data = eps_file.read(dataname, &rank, md->epsilon_dims, 3);
-    master_printf("read in %dx%dx%d epsilon-input-file \"%s\"\n",
+    master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n",
 		  md->epsilon_dims[0],
                   md->epsilon_dims[1],
                   md->epsilon_dims[2],

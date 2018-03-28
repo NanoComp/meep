@@ -203,6 +203,17 @@ void broadcast(int from, int *data, int size) {
 #endif
 }
 
+void broadcast(int from, size_t *data, int size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, size, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, from, mycomm);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
+#endif
+}
+
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
   MPI_Bcast(&data, 2, MPI_DOUBLE, from, mycomm);
@@ -374,6 +385,22 @@ size_t sum_to_all(size_t in) {
   MPI_Allreduce(&in,&out,1, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, MPI_SUM,mycomm);
 #endif
   return out;
+}
+
+void sum_to_all(const size_t *in, size_t *out, int size) {
+#ifdef HAVE_MPI
+  MPI_Allreduce((void*) in, out, size, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, MPI_SUM,mycomm);
+#else
+  memcpy(out, in, sizeof(size_t) * size);
+#endif
+}
+
+void sum_to_master(const size_t *in, size_t *out, int size) {
+#ifdef HAVE_MPI
+  MPI_Reduce((void*) in, out, size, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, MPI_SUM,0,mycomm);
+#else
+  memcpy(out, in, sizeof(size_t) * size);
+#endif
 }
 
 size_t partial_sum_to_all(size_t in) {

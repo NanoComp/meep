@@ -245,7 +245,7 @@ void h5file::set_cur(const char *dataname, void *data_id) {
   }
 }
 
-void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
+void h5file::read_size(const char *dataname, int *rank, size_t *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
   if (parallel || am_master()) {
@@ -306,10 +306,16 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
 
 #endif
 
-#define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
+#ifdef HAVE_HDF5
+#  define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
+#  define SIZE_T_H5T (sizeof(size_t) == 4 ? H5T_NATIVE_UINT32 : H5T_NATIVE_UINT64)
+#else
+#  define REALNUM_H5T 0
+#  define SIZE_T_H5T 0
+#endif
 
 realnum *h5file::read(const char *dataname,
-	 	     int *rank, int *dims, int maxrank)
+	 	     int *rank, size_t *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
   realnum *data = 0;
@@ -475,7 +481,7 @@ void h5file::remove_data(const char *dataname)
 /* Create a dataset, for writing chunks etc.  Note that, in parallel mode,
    this should be called by *all* processors, even those not writing any
    data. */
-void h5file::create_data(const char *dataname, int rank, const int *dims,
+void h5file::create_data(const char *dataname, int rank, const size_t *dims,
 			 bool append_data, bool single_precision)
 {
 #ifdef HAVE_HDF5
@@ -571,7 +577,7 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
    already open; extends it and increments cur_dindex.  Like
    create_data, this is a collective operation and must be called from
    all processes. */
-void h5file::extend_data(const char *dataname, int rank, const int *dims)
+void h5file::extend_data(const char *dataname, int rank, const size_t *dims)
 {
 #ifdef HAVE_HDF5
   extending_s *cur = get_extending(dataname);
@@ -595,7 +601,7 @@ void h5file::extend_data(const char *dataname, int rank, const int *dims)
 	"file data is missing unlimited dimension for extend_data");
   delete[] maxdims;
   for (int i = 0; i < rank; ++i)
-    CHECK(dims[i] == (int) dims_copy[i],
+    CHECK(dims[i] == dims_copy[i],
 	  "file data is inconsistent size for subsequent extend_data");
 
   H5Sclose(space_id);
@@ -615,7 +621,7 @@ void h5file::extend_data(const char *dataname, int rank, const int *dims)
 /* If append_data is true, dataname is the current dataset, and is
    extensible, then as extend_data; otherwise as create_data. */
 void h5file::create_or_extend_data(const char *dataname, int rank,
-				   const int *dims,
+				   const size_t *dims,
 				   bool append_data, bool single_precision)
 {
   if (get_extending(dataname))
@@ -641,16 +647,15 @@ void h5file::create_or_extend_data(const char *dataname, int rank,
    This function does *not* need to be called on all CPUs (e.g. those
    that have no data can be skipped).
 */
-void h5file::write_chunk(int rank,
-			 const int *chunk_start, const int *chunk_dims,
-			 realnum *data)
+static void _write_chunk(hid_t data_id, h5file::extending_s *cur,
+                         int rank, const size_t *chunk_start, const size_t *chunk_dims,
+                         hid_t datatype, void *data)
 {
 #ifdef HAVE_HDF5
   int i;
   bool do_write = true;
-  hid_t space_id, mem_space_id, data_id = HID(cur_id);
+  hid_t space_id, mem_space_id;
   int rank1;
-  extending_s *cur = get_extending(cur_dataname);
   bool append_data = cur != NULL;
   int dindex = cur ? cur->dindex : 0;
 
@@ -709,7 +714,7 @@ void h5file::write_chunk(int rank,
 
   if (do_write)
     H5Dwrite(data_id,
-	     REALNUM_H5T, mem_space_id, space_id, H5P_DEFAULT,
+	     datatype, mem_space_id, space_id, H5P_DEFAULT,
 	     (void *) data);
 
   H5Sclose(mem_space_id);
@@ -717,6 +722,22 @@ void h5file::write_chunk(int rank,
 #else
   abort("not compiled with HDF5, required for HDF5 output");
 #endif
+}
+
+void h5file::write_chunk(int rank,
+			 const size_t *chunk_start, const size_t *chunk_dims,
+			 realnum *data)
+{
+     _write_chunk(HID(cur_id), get_extending(cur_dataname),
+                  rank, chunk_start, chunk_dims, REALNUM_H5T, (void*) data);
+}
+
+void h5file::write_chunk(int rank,
+			 const size_t *chunk_start, const size_t *chunk_dims,
+			 size_t *data)
+{
+     _write_chunk(HID(cur_id), get_extending(cur_dataname),
+                  rank, chunk_start, chunk_dims, SIZE_T_H5T, (void*) data);
 }
 
 // collective call after completing all write_chunk calls
@@ -731,11 +752,11 @@ void h5file::done_writing_chunks() {
     prevent_deadlock(); // closes id
 }
 
-void h5file::write(const char *dataname, int rank, const int *dims,
+void h5file::write(const char *dataname, int rank, const size_t *dims,
 		   realnum *data, bool single_precision)
 {
   if (parallel || am_master()) {
-    int *start = new int[rank + 1];
+    size_t *start = new size_t[rank + 1];
     for (int i = 0; i < rank; i++) start[i] = 0;
     create_data(dataname, rank, dims, false, single_precision);
     if (am_master())
@@ -779,7 +800,7 @@ void h5file::write(const char *dataname, const char *data)
    total dataset's rank and dims first by calling read_size, above,
    (which also opens the dataset for reading). */
 void h5file::read_chunk(int rank,
-			const int *chunk_start, const int *chunk_dims,
+			const size_t *chunk_start, const size_t *chunk_dims,
 			realnum *data)
 
 {

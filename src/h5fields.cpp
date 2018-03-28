@@ -98,7 +98,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   //-----------------------------------------------------------------------//
   // Find output chunk dimensions and strides, etc.
 
-  int start[3]={0,0,0}, count[3]={1,1,1};
+  size_t start[3]={0,0,0}, count[3]={1,1,1};
   ptrdiff_t offset[3]={0,0,0}, stride[3]={1,1,1};
 
   ivec isS = S.transform(is, sn) + shift;
@@ -235,11 +235,12 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   if (data.num_chunks == 0 || !(data.min_corner <= data.max_corner))
     return; // no data to write;
 
-  int rank = 0, dims[3];
+  int rank = 0;
+  size_t dims[3];
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in output_hdf5");
-    int n = (data.max_corner.in_direction(d)
-	     - data.min_corner.in_direction(d)) / 2 + 1;
+    size_t n = (data.max_corner.in_direction(d)
+	              - data.min_corner.in_direction(d)) / 2 + 1;
     if (n > 1) {
       data.ds[rank] = d;
       dims[rank++] = n;

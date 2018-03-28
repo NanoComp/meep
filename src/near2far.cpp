@@ -287,7 +287,7 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
 void dft_near2far::save_farfields(const char *fname, const char *prefix,
                                   const volume &where, double resolution) {
     /* compute output grid size etc. */
-    int dims[4] = {1,1,1,1};
+    size_t dims[4] = {1,1,1,1};
     double dx[3] = {0,0,0};
     direction dirs[3] = {X,Y,Z};
     int rank = 0;
@@ -314,12 +314,12 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
     std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
 
     vec x(where.dim);
-    for (int i0 = 0; i0 < dims[0]; ++i0) {
+    for (size_t i0 = 0; i0 < dims[0]; ++i0) {
         x.set_direction(dirs[0], where.in_direction_min(dirs[0]) + i0*dx[0]);
-        for (int i1 = 0; i1 < dims[1]; ++i1) {
+        for (size_t i1 = 0; i1 < dims[1]; ++i1) {
             x.set_direction(dirs[1],
                             where.in_direction_min(dirs[1]) + i1*dx[1]);
-            for (int i2 = 0; i2 < dims[2]; ++i2) {
+            for (size_t i2 = 0; i2 < dims[2]; ++i2) {
                 x.set_direction(dirs[2],
                                 where.in_direction_min(dirs[2]) + i2*dx[2]);
                 farfield_lowlevel(EH1, x);
