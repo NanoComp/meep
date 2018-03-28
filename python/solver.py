@@ -156,6 +156,15 @@ class ModeSolver(object):
 
         return np.reshape(eps, dims)
 
+    def get_mu(self):
+        self.mode_solver.get_mu()
+
+        dims = self.mode_solver.get_dims()
+        mu = np.empty(np.prod(dims))
+        self.mode_solver.get_curfield(mu)
+
+        return np.reshape(mu, dims)
+
     def get_bfield(self, which_band, output=False):
         return self._get_field('b', which_band, output)
 
@@ -534,6 +543,12 @@ class ModeSolver(object):
 
     def compute_energy_in_dielectric(self, eps_low, eps_high):
         return self.mode_solver.compute_energy_in_dielectric(eps_low, eps_high)
+
+    def compute_energy_integral(self, f):
+        return self.mode_solver.compute_energy_integral(f)
+
+    def compute_field_integral(self, f):
+        return self.mode_solver.compute_field_integral(f)
 
     def compute_group_velocities(self):
         xarg = mp.cartesian_to_reciprocal(mp.Vector3(1), self.geometry_lattice)

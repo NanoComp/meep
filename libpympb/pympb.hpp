@@ -19,6 +19,9 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
 
 bool with_hermitian_epsilon();
 
+typedef mpb_real (*field_integral_energy_func)(mpb_real, mpb_real, vector3, void*);
+typedef cnumber (*field_integral_func)(cvector3, mpb_real, vector3, void*);
+
 struct mode_solver {
   static const int MAX_NWORK = 10;
   static const char epsilon_CURFIELD_TYPE = 'n';
@@ -167,6 +170,13 @@ struct mode_solver {
   vector3 compute_1_group_velocity(int b);
   vector3 compute_1_group_velocity_reciprocal(int b);
   mpb_real compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high);
+
+  cnumber compute_field_integral(field_integral_func field_func,
+                                 field_integral_energy_func energy_func,
+                                 void *py_func);
+  number compute_energy_integral(field_integral_func field_func,
+                                 field_integral_energy_func energy_func,
+                                 void *py_func);
 
 private:
   int kpoint_index;

@@ -163,6 +163,25 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
        SCM_NFALSEP(scm_procedure_p(gh_cdr($input)));
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER) (meep::component *components, int num_components) {
+    $1 = SCM_NFALSEP(scm_list_p($input));
+}
+
+%typemap(in) (meep::component *components, int num_components) {
+  $2 = list_length($input);
+  $1 = new meep::component[$2];
+
+  for (int i = 0; i < $2; ++i) {
+    $1[i] = meep::component(integer_list_ref($input, i));
+  }
+}
+
+%typemap(freearg) (meep::component *components, int num_components) {
+  if ($1) {
+    delete[] $1;
+  }
+}
+
 // Need to tell SWIG about any method that returns a new object
 // which needs to be garbage-collected.
 %newobject meep::fields::open_h5file;

@@ -341,7 +341,7 @@ make && sudo make install
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make && sudo make install
 
 sudo pip3 install --upgrade pip
