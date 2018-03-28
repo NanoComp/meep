@@ -98,7 +98,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 ```
 
-We will first create an image of the dielectric function $ε$. This involves obtaining a slice of the data using the [`get_array`](../Python_User_Interface/#array-slices) routine which outputs to a NumPy array and then display the results.
+We will first create an image of the dielectric function ε. This involves obtaining a slice of the data using the [`get_array`](../Python_User_Interface/#array-slices) routine which outputs to a NumPy array and then display the results.
 
 ```py
 eps_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric)
@@ -172,7 +172,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
         until=200)
 ```
 
-We are outputting the dielectric function $ε$ but have wrapped its output function which would otherwise run at every time step in `at_beginning`, which does just what it says. There are [several other such functions](../Python_User_Interface/#run-and-step-functions) to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
+We are outputting the dielectric function ε but have wrapped its output function which would otherwise run at every time step in `at_beginning`, which does just what it says. There are [several other such functions](../Python_User_Interface/#run-and-step-functions) to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
 
 Instead of running `output_efield_z` only at the end of the simulation, however, we run it at every 0.6 time units (about 10 times per period) via `mp.at_every(0.6, mp.output_efield_z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature to output to a *single* 3d HDF5 file, where the third dimension is time. `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
@@ -258,7 +258,7 @@ Transmission Spectrum around a Waveguide Bend
 
 Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $ω$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
+The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
 
 ```py
 import meep as mp
@@ -440,7 +440,7 @@ c1 = mp.Cylinder(radius=r + w, material=mp.Medium(index=n))
 c2 = mp.Cylinder(radius=r)
 ```
 
-Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` ($ε$=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
+Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
 
 Now, we don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 
@@ -483,7 +483,7 @@ $Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, an
 
 An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. Here, for example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much &mdash; in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
 
-In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. (As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of $ω$ and ring radius.) Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
+In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. (As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius.) Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `at_end(mp.output-efield_z)` argument to our `run_after_sources` routine, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
@@ -521,7 +521,7 @@ You may have noticed, by the way, that when you run with the narrow-bandwidth so
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $ω$ gives a larger relative error in the small imaginary frequency.
+which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 

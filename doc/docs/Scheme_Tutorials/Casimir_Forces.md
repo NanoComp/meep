@@ -371,7 +371,7 @@ $\epsilon(\xi) = \epsilon_f + \frac{C \xi_0^2}{ω_0^2 - \xi^2}$
 
 </center>
 
-(here we follow the notations of Parts I and II, rather than the rest of the wiki, in which $\xi$ denotes real frequency in FDTD, and $ω$ denotes the more abstract complex frequency mapping).
+(here we follow the notations of Parts I and II, rather than the rest of the wiki, in which $\xi$ denotes real frequency in FDTD, and ω denotes the more abstract complex frequency mapping).
 
 The conductivity mapping $ω^2 = \xi^2 + i σ \xi$ must be applied to all dispersions. Applying this to $\epsilon(\xi)$ above gives the new dispersion function:
 

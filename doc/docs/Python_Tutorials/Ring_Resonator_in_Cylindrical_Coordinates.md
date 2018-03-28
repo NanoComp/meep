@@ -108,7 +108,7 @@ if __name__ == '__main__':
 Results
 -------
 
-Now, we are ready to run our simulation. Recall that, in the 2d calculation, we got three modes in this frequency range: one at $ω$=0.11785 with $Q$=77 and an $m$=3 field pattern, one at $ω$=0.14687 with $Q$=351 and an $m$=4 field pattern, and one at $ω$=0.17501 with $Q$=1630 and an $m$=5 field pattern. We should get the *same* modes here with some differences due to the finite resolution, except now that we will have to run *three* calculations, a separate one for each value of $m$. It will still be much faster than before because the simulations are 1d instead of 2d.
+Now, we are ready to run our simulation. Recall that, in the 2d calculation, we got three modes in this frequency range: one at ω=0.11785 with $Q$=77 and an $m$=3 field pattern, one at ω=0.14687 with $Q$=351 and an $m$=4 field pattern, and one at ω=0.17501 with $Q$=1630 and an $m$=5 field pattern. We should get the *same* modes here with some differences due to the finite resolution, except now that we will have to run *three* calculations, a separate one for each value of $m$. It will still be much faster than before because the simulations are 1d instead of 2d.
 
 In particular, we'll run:
 
@@ -129,13 +129,13 @@ harminv0:, 0.1759448592380757, -4.900590034953583e-05, 1795.1395442502285, 0.045
 
 This is indeed very close to the 2d simulations: the frequencies are within 1% of the previous values. The $Q$ values (lifetimes) differ by a larger amount although they are still reasonably close.
 
-Which is more accurate, the 2d or the cylindrical simulation? We can answer this question by increasing the resolutions in both cases and seeing what they converge towards. In particular, let's focus on the $m$=4 mode. In the cylindrical case, if we double the resolution to 20 we get $ω$=0.14748 and $Q$=384. In the 2d case, if we double the resolution to 20 we get $ω$=0.14733 and $Q$=321. So, it looks like the frequencies are clearly converging together and that the cylindrical simulation is more accurate (as you might expect since it describes the $\phi$ direction analytically). But the $Q$ values seem to be getting *farther* apart &mdash; what's going on?
+Which is more accurate, the 2d or the cylindrical simulation? We can answer this question by increasing the resolutions in both cases and seeing what they converge towards. In particular, let's focus on the $m$=4 mode. In the cylindrical case, if we double the resolution to 20 we get ω=0.14748 and $Q$=384. In the 2d case, if we double the resolution to 20 we get ω=0.14733 and $Q$=321. So, it looks like the frequencies are clearly converging together and that the cylindrical simulation is more accurate (as you might expect since it describes the $\phi$ direction analytically). But the $Q$ values seem to be getting *farther* apart &mdash; what's going on?
 
 The problem is twofold. First, there is some signal-processing error in determining $Q$ in the 2d case, as indicated by the "error" column of the `harminv` output which is only 4e-7 for the 2d simulation vs. 6e-11 for the cylindrical case. We can bring this error down by running with a narrower bandwidth source, which excites just one mode and gives a cleaner signal, or by analyzing over a longer time than 200. Doing the former, we find that the 2d value of $Q$ at a resolution of 20 should really be $Q$=343. Second, [PML](../Perfectly_Matched_Layer.md) absorbing layers are really designed to absorb planewaves incident on flat interfaces, but here we have a *cylindrical* PML layer. Because of this, there are larger numerical reflections from the PML in the cylindrical simulation, which we can rectify by pushing the PML out to a larger radius (i.e. using a larger value of `pad`) and/or increasing the PML thickness (increasing `dpml`) so that it turns on more adiabatically. In the cylindrical simulation for `resolution = 20`, if we increase to `dpml = 16`, we get $Q$=343, which is in much better agreement with the 2d calculation and if we increase to `dpml = 32` we get the same $Q$=343, so it seems to be converged.
 
 This illustrates the general principle that you need to check several parameters to ensure that results are converged in time-domain simulations: the resolution, the run time, the PML thickness, etcetera.
 
-Finally, we can get the field images. Since we only are exciting one mode per `m` here anyway, according to `harminv`, we don't really need to use a narrow-band source. We'll do so anyway just to remind you of the general procedure, however, e.g. for the $ω$=0.118, $m$=3 mode:
+Finally, we can get the field images. Since we only are exciting one mode per `m` here anyway, according to `harminv`, we don't really need to use a narrow-band source. We'll do so anyway just to remind you of the general procedure, however, e.g. for the ω=0.118, $m$=3 mode:
 
 ```sh
 unix% python ring-cyl.py -m 3 -fcen 0.118 -df 0.01
@@ -145,13 +145,13 @@ unix% h5topng -S 2 -Zc dkbluered -C ring-cyl-eps-001200.00.h5 ring-cyl-e
 Note that, because of the `to_appended` command, the `ring-cyl-ez.h5` file is a 160$\times$18 dataset corresponding to an $r \times t$ slice. Repeating this for all three modes results in the images:
 
 <center>
-$E_z$ for $ω$=0.118 $m$=3 mode:  
+$E_z$ for ω=0.118 $m$=3 mode:  
 ![](../images/Ring-cyl-ez-0.118.png)
 
-$E_z$ for $ω$=0.148 $m$=4 mode:  
+$E_z$ for ω=0.148 $m$=4 mode:  
 ![](../images/Ring-cyl-ez-0.148.png)
 
-$E_z$ for $ω$=0.176 $m$=5 mode:  
+$E_z$ for ω=0.176 $m$=5 mode:  
 ![](../images/Ring-cyl-ez-0.176.png)
 </center>
 

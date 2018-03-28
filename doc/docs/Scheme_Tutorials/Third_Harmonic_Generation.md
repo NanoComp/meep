@@ -2,7 +2,7 @@
 # Third Harmonic Generation
 ---
 
-In this example, we consider wave propagation through a simple 1d *nonlinear* medium with a non-zero Kerr susceptibility $χ^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency $ω$, and because of the nonlinearity we also get a signal at a frequency $3ω$. See also [3rd-harm-1d.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/3rd-harm-1d.ctl).
+In this example, we consider wave propagation through a simple 1d *nonlinear* medium with a non-zero Kerr susceptibility $χ^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency ω, and because of the nonlinearity we also get a signal at a frequency $3ω$. See also [3rd-harm-1d.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/3rd-harm-1d.ctl).
 
 Since this is a 1d calculation, we could implement it via a 2d cell of `(size S no-size no-size)`, specifying periodic boundary conditions in the $y$ direction. However, this is slightly inefficient since the $y$ periodic boundaries are implemented internally via extra "ghost pixels" in the $y$ direction. Instead, Meep has special support for 1d simulations in the $z$ direction. To use this, we must explicitly set `dimensions` to `1`, and in that case we can *only* use $E_x$ (and $D_x$) and $H_y$ field components. This involves no loss of generality because of the symmetry of the problem.
 
@@ -72,9 +72,9 @@ In a linear calculation, we normalize the transmission against some reference sp
 ![](../images/3rd-harm-1d-flux.png)
 </center>
 
-For small values of $χ^{(3)}$, we see a peak from our source at $ω$=1/3 and another peak precisely at the third-harmonic frequency 3$ω$=1. As the $χ^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for $χ^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
+For small values of $χ^{(3)}$, we see a peak from our source at ω=1/3 and another peak precisely at the third-harmonic frequency 3ω=1. As the $χ^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for $χ^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
 
-It is also interesting to have a more detailed look at the dependence of the power at $ω$ and 3$ω$ as a function of $χ^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two more flux regions to Meep and request exactly the desired frequency components. That is, we'll add the following before `run-sources+`:
+It is also interesting to have a more detailed look at the dependence of the power at ω and 3ω as a function of $χ^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two more flux regions to Meep and request exactly the desired frequency components. That is, we'll add the following before `run-sources+`:
 
 ```scm
 (define trans1 (add-flux fcen 0 1
@@ -106,13 +106,13 @@ If we run the simulation with `k=0`, i.e. for a linear medium, we get:
 harmonics:, 0, 1.0, 225.25726603587043, 5.026979706160964e-16
 ```
 
-That is, the linear transmission is 225.25726603587043 at $ω$, so we'll divide by this value and plot the fractional transmission at $ω$ and $3ω$ as a function of $χ^{(3)}$ on a log-log scale:
+That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and $3ω$ as a function of $χ^{(3)}$ on a log-log scale:
 
 <center>
 ![](../images/3rd-harm-1d-vs-chi.png)
 </center>
 
-As can be shown from coupled-mode theory or, equivalently, follows from [Fermi's golden rule](https://en.wikipedia.org/wiki/Fermi's_golden_rule), the third-harmonic power must go as the *square* of $χ^{(3)}$ as long as the nonlinearity is weak (i.e. in the first Born approximation limit, where the $ω$ source is not depleted significantly). This is precisely what we see on the above graph, where the slope of the black line indicates an exact quadratic dependence, for comparison. Once the nonlinearity gets strong enough, however, this approximation is no longer valid and the dependence is complicated.
+As can be shown from coupled-mode theory or, equivalently, follows from [Fermi's golden rule](https://en.wikipedia.org/wiki/Fermi's_golden_rule), the third-harmonic power must go as the *square* of $χ^{(3)}$ as long as the nonlinearity is weak (i.e. in the first Born approximation limit, where the ω source is not depleted significantly). This is precisely what we see on the above graph, where the slope of the black line indicates an exact quadratic dependence, for comparison. Once the nonlinearity gets strong enough, however, this approximation is no longer valid and the dependence is complicated.
 
 Finally, we note that increasing the current amplitude by a factor of $F$ or the Kerr susceptibility $χ^{(3)}$ by a factor $F^3$ should generate the *same* third-harmonic power in the *weak* nonlinearity approximation. And indeed, we see:
 

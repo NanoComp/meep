@@ -60,7 +60,7 @@ double eps(const vec &p) {
 }
 ```
 
-which returns the dielectric function $ε(\mathbf{x})$ which is just a 2$\times$3 rectangle of $ε$=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
+which returns the dielectric function $ε(\mathbf{x})$ which is just a 2$\times$3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
 
 Now that you have the basic flavor, we can proceed to some more specific examples.
 
@@ -74,7 +74,7 @@ In this first tutorial, we will write the script to compute the quality factor o
 usingnamespace meep;
 ```
 
-The particular Fabry-Perot cavity we will investigate consists of an air region bounded by two distributed Bragg reflectors which are quarter-wave stacks of $ε$ of 12 and 1. We choose the size of the defect to be twice as large as the air thickness in the quarter-wave stack, so that a defect mode is found near midgap. This structure will include $N$ = 5 periods in the Bragg reflector on either side of the defect. We can use a larger $N$ but the quality factor may then be too large to compute. The parameters are set up as follows:
+The particular Fabry-Perot cavity we will investigate consists of an air region bounded by two distributed Bragg reflectors which are quarter-wave stacks of ε of 12 and 1. We choose the size of the defect to be twice as large as the air thickness in the quarter-wave stack, so that a defect mode is found near midgap. This structure will include $N$ = 5 periods in the Bragg reflector on either side of the defect. We can use a larger $N$ but the quality factor may then be too large to compute. The parameters are set up as follows:
 
 ```c++
 const double eps1 = 12.0; // epsilon of layer1

@@ -2,11 +2,11 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** $ε(ω)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.py](https://github.com/stevengj/meep/blob/master/python/examples/material-dispersion.py). From the dispersion relation $ω(k)$, we will compute the numerical $ε(ω)$ via the formula:
+In this example, we will perform a simulation with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.py](https://github.com/stevengj/meep/blob/master/python/examples/material-dispersion.py). From the dispersion relation $ω(k)$, we will compute the numerical ε(ω) via the formula:
 
 $$ε(ω) = \left( \frac{ck}{ω} \right) ^2$$
 
-We will then compare this with the analytical $ε(ω)$ that we specified.
+We will then compare this with the analytical ε(ω) that we specified.
 
 Since this is a uniform medium, our computational cell can actually be of *zero* size (i.e. one pixel), where we will use Bloch-periodic boundary conditions to specify the wavevector *k*.
 
@@ -28,15 +28,15 @@ corresponding to the dielectric function:
 
 $$ε(ω) = ε(2π f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2π} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2π}$$
 
-The real and imaginary parts of this dielectric function $ε(ω)$ are plotted below:
+The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 
 <center>
 ![](../images/Material-dispersion-eps.png)
 </center>
 
-We can see that the f=1.1 resonance causes a large change in both the real and imaginary parts of $ε$ around that frequency. In fact, there is a range of frequencies from 1.1 to 1.2161 where $ε$ is *negative*. In this range, no propagating modes exist &mdash; it is actually a kind of electromagnetic band gap associated with polariton resonances in a material. For more information on the physics of such materials, see e.g. Chapter 14 of [Introduction to Solid State Physics](http://www.wiley.com/WileyCDA/WileyTitle/productCd-EHEP000803.html) by C. Kittel.
+We can see that the f=1.1 resonance causes a large change in both the real and imaginary parts of ε around that frequency. In fact, there is a range of frequencies from 1.1 to 1.2161 where ε is *negative*. In this range, no propagating modes exist &mdash; it is actually a kind of electromagnetic band gap associated with polariton resonances in a material. For more information on the physics of such materials, see e.g. Chapter 14 of [Introduction to Solid State Physics](http://www.wiley.com/WileyCDA/WileyTitle/productCd-EHEP000803.html) by C. Kittel.
 
-On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of $ε$. Nevertheless, it generates a clear peak in the *imaginary* part of $ε$, corresponding to a resonant absorption peak.
+On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of ε. Nevertheless, it generates a clear peak in the *imaginary* part of ε, corresponding to a resonant absorption peak.
 
 Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $ω(k)$ over, and compute the associated frequencies by using the `k_points` function:
 
@@ -57,7 +57,7 @@ sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources, default_materi
 all_freqs = sim.run(kpts, k_points=200)  # a list of lists of frequencies
 ```
 
-The `k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding $ε$ via the ratio $(ck/ω)^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
+The `k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio $(ck/ω)^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
 
 ```py
 for fs, kx in zip(all_freqs, [v.x for v in kpts]):
@@ -71,13 +71,13 @@ Alternatively we could just read all of the frequencies into Octave/Matlab or a 
 unix% python material-dispersion.py | tee material-dispersion.out
 ```
 
-we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $ω(k)$ for the real part of $ω$:
+we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $ω(k)$ for the real part of ω:
 
 <center>
 ![](../images/Material-dispersion-bands.png)
 </center>
 
-The red circles are the computed points from Meep, whereas the blue line is the analytical band diagram from the specified $ε(ω)$. As you can see, we get *two* bands at each *k*, separated by a polaritonic gap (shaded yellow). This dispersion relation can be thought of as the interaction (anti-crossing) between the light line of the ambient $ε$=2.25 material (dashed black line) and the horizontal line corresponding to the phonon resonance.
+The red circles are the computed points from Meep, whereas the blue line is the analytical band diagram from the specified ε(ω). As you can see, we get *two* bands at each *k*, separated by a polaritonic gap (shaded yellow). This dispersion relation can be thought of as the interaction (anti-crossing) between the light line of the ambient ε=2.25 material (dashed black line) and the horizontal line corresponding to the phonon resonance.
 
 Similarly, the computed and analytical real parts of the dielectric function are given by:
 
@@ -93,6 +93,6 @@ which shows excellent agreement between the analytical (blue line) and numerical
 
 The blue line is the analytical calculation from above and the red circles are the numerical value from Meep &mdash; why is the agreement so poor? There is nothing wrong with Meep, and this is *not* a numerical error. The problem is simply that we are comparing apples and oranges.
 
-The blue line is the analytical calculation of $ε(ω)$ for a *real* frequency $ω$ which corresponds to solutions with a *complex* wavevector *k*, whereas Meep is computing $ε$ at a *complex* $ω$ for a *real* wavevector *k*. So, the correct comparison is to plug Meep's *complex* $ω$ into the analytical formula for $ε(ω)$, which results in the green lines on the graph that fall almost on top of the red circles.
+The blue line is the analytical calculation of ε(ω) for a *real* frequency ω which corresponds to solutions with a *complex* wavevector *k*, whereas Meep is computing ε at a *complex* ω for a *real* wavevector *k*. So, the correct comparison is to plug Meep's *complex* ω into the analytical formula for ε(ω), which results in the green lines on the graph that fall almost on top of the red circles.
 
-Why did our comparison of the *real* part of $ε$ look so good, then? The reason is that $ε(ω)$ at real and complex values of $ω$ are closely related by the analytic properties of $ε$. In particular, because $ε$ is an analytic function on the real-$ω$ axis, adding a *small* imaginary part to $ω$ as we are doing here does not change $ε$ by much. The losses are small for all of the computed *k* points. The change was only significant for the imaginary $ε$ because the imaginary $ε$ was small to begin with.
+Why did our comparison of the *real* part of ε look so good, then? The reason is that ε(ω) at real and complex values of ω are closely related by the analytic properties of ε. In particular, because ε is an analytic function on the real-ω axis, adding a *small* imaginary part to ω as we are doing here does not change ε by much. The losses are small for all of the computed *k* points. The change was only significant for the imaginary ε because the imaginary ε was small to begin with.

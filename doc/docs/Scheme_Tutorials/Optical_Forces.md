@@ -8,7 +8,7 @@ The optical gradient force on each waveguide arising from the evanescent couplin
 
 $$F=-\frac{1}{ω}\frac{dω}{ds}\Bigg\vert_\vec{k}U,$$
 
-where $ω$ is the eigenmode frequency of the coupled-waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, vol. 30, issue 22, pp. 3042-4 (2005)](http://math.mit.edu/~stevenj/papers/PovinelliLo05.pdf). This expression has been shown to be mathematically equivalent to the MST ([Optics Express, vol. 17, issue 20, pp. 18116-135](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116)). We will verify this result in this tutorial.
+where ω is the eigenmode frequency of the coupled-waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, vol. 30, issue 22, pp. 3042-4 (2005)](http://math.mit.edu/~stevenj/papers/PovinelliLo05.pdf). This expression has been shown to be mathematically equivalent to the MST ([Optics Express, vol. 17, issue 20, pp. 18116-135](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116)). We will verify this result in this tutorial.
 
 It is convenient to normalize the force so as to eliminate the tricky units altogether. Since the total power transmitted through the waveguide is $P=v_gU/L$ where $v_g$ is the group velocity, $L$ is the waveguide length and $U$ is defined as before, we focus instead on the force per unit length and power $(F/L)(ac/P)$ where $a$ is an arbitrary unit length and $c$ is the speed of light. This dimensionless quantity enables us to compute both the flux and the force in a single simulation.
 
@@ -44,7 +44,7 @@ Two mirror symmetries can be used to reduce the size of the computational cell b
         (make mirror-sym (direction Y) (phase -1))))
 ```
 
-Next, we set the Bloch-periodic boundary condition for the mode with wavevector $π/a$:
+Next, we set the Bloch-periodic boundary condition for the mode with wavevector π/$a$:
 
 ```scm
  (define-param beta 0.5)

@@ -8,7 +8,7 @@ Meep contains a feature to decompose arbitrary fields into a superposition of th
 
 The analytical theory for waveguide mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
 
-Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vecρ=(y,z)$. For a given angular frequency $ω$ we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-iω t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-iω t}$ can be decomposed into a basis of these eigenmodes:
+Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vecρ=(y,z)$. For a given angular frequency ω we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-iω t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-iω t}$ can be decomposed into a basis of these eigenmodes:
 
 $$
    \mathbf{E}(\mathbf{r}) = 

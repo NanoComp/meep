@@ -54,7 +54,7 @@ Now, we can add the waveguide. Most commonly, the structure is specified by a `l
                       (material (make dielectric (epsilon 12))))))
 ```
 
-The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε$=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air ($ε$=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
+The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
@@ -230,7 +230,7 @@ Transmission Spectrum around a Waveguide Bend
 
 Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $ω$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
+The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
 
 This control file will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/bend-flux.ctl).
 
@@ -467,7 +467,7 @@ $Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, an
 
 An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. Here, for example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much—in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
 
-In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of $ω$ and ring radius. Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
+In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `(at-end output-efield-z)` argument to our `run-sources+` function, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
@@ -504,7 +504,7 @@ You may have noticed, by the way, that when you run with the narrow-bandwidth so
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $ω$ gives a larger relative error in the small imaginary frequency.
+which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 
