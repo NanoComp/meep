@@ -86,7 +86,7 @@ def main(args):
     alpha = np.zeros(2*num_bands,dtype=np.complex128) # preallocate array to store coefficients
     vgrp = np.zeros(num_bands,dtype=np.float64)       # also store mode group velocities
     mvol = mp.volume(mp.vec(xm,-0.5*sy+dpml),mp.vec(xm,+0.5*sy-dpml))
-    sim.get_eigenmode_coefficients(mflux, mp.X, mvol, bands, alpha, vgrp)
+    sim.fields.get_eigenmode_coefficients(mflux, mp.X, mvol, bands, alpha, vgrp)
 
     alpha0Plus  = alpha[2*0 + 0]; # coefficient of forward-traveling fundamental mode
     alpha0Minus = alpha[2*0 + 1]; # coefficient of backward-traveling fundamental mode

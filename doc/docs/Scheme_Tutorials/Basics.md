@@ -34,7 +34,7 @@ which reads `foo.ctl` and executes it, saving the output to the file `foo.out`. 
 Fields in a Waveguide
 ---------------------
 
-For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. Our waveguide will have frequency-independent $\varepsilon=12$ and width 1 &#956;m. Our unit length in this example is 1 &#956;m. See also [Units](Introduction.md#units-in-meep).
+For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. Our waveguide will have frequency-independent $ε=12$ and width 1 &#956;m. Our unit length in this example is 1 &#956;m. See also [Units](Introduction.md#units-in-meep).
 
 ### A Straight Waveguide
 
@@ -54,7 +54,7 @@ Now, we can add the waveguide. Most commonly, the structure is specified by a `l
                       (material (make dielectric (epsilon 12))))))
 ```
 
-The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with $\varepsilon$=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air ($\varepsilon$=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
+The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε$=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air ($ε$=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
@@ -68,7 +68,7 @@ Now that we have the structure, we need to specify the current sources using the
                  (center -7 0))))
 ```
 
-We gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $\varepsilon=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+We gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-iω t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2π c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $ε=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
 As for boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash; which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
 
@@ -230,7 +230,7 @@ Transmission Spectrum around a Waveguide Bend
 
 Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $\omega$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
+The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $ω$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
 
 This control file will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/bend-flux.ctl).
 
@@ -367,7 +367,7 @@ flux1:, 0.103030303030303, 2.63090852112034e-6, -1.11118350510327e-6
 flux1:, ...
 ```
 
-This is comma-delimited data, which can easily be imported into any spreadsheet or plotting program (e.g. Matlab): the first column is the frequency, the second is the transmitted power, and the third is the reflected power.
+This is comma-delimited data, which can easily be imported into any spreadsheet or plotting program (e.g. Octave/Matlab): the first column is the frequency, the second is the transmitted power, and the third is the reflected power.
 
 Now, we need to run the simulation *twice*, once with `no-bend?=true` and once with `no-bend?=false` (the default):
 
@@ -383,7 +383,7 @@ unix% grep flux1: bend0.out > bend0.dat
 unix% grep flux1: bend.out > bend.dat
 ```
 
-Now, we import them to Matlab (using its `dlmread` command), and plot the results:
+Now, we import them to Octave (using its `dlmread` command), and plot the results:
 
 <center>![](../images/Tut-bend-flux.png)</center>
 
@@ -427,7 +427,7 @@ How do we make a circular waveguide? So far, we've only seen `block` objects, bu
 (set-param! resolution 10)
 ```
 
-Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` ($\varepsilon=1$) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
+Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` ($ε=1$) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
 
 Now, we don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 
@@ -459,15 +459,15 @@ harminv0:, 0.175246750722663, -5.22349801171605e-5, 1677.48461212767, 0.0072
 
 There are six columns (in addition to the label), comma-delimited for easy import into other programs. The meaning of these columns is as follows. [Harminv](https://github.com/stevengj/harminv) analyzes the fields $f(t)$ at the given point, and expresses this as a sum of modes (in the specified bandwidth):
 
-$$f(t) = \sum_n a_n e^{-i\omega_n t}$$ for complex amplitudes $a_n$ and complex frequencies $\omega_n$. The six columns relate to these quantities. The first column is the *real* part of $\omega_n$, expressed in our usual $2\pi c$ units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
+$$f(t) = \sum_n a_n e^{-iω_n t}$$ for complex amplitudes $a_n$ and complex frequencies $ω_n$. The six columns relate to these quantities. The first column is the *real* part of $ω_n$, expressed in our usual $2π c$ units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
 
-$$Q = \frac{\mathrm{Re}\,\omega}{-2 \mathrm{Im}\,\omega}.$$
+$$Q = \frac{\mathrm{Re}\,ω}{-2 \mathrm{Im}\,ω}.$$
 
-$Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary)...if the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. **Note**: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
+$Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary)...if the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. **Note**: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
 
 An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. Here, for example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much—in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
 
-In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of $\omega$ and ring radius. Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
+In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of $ω$ and ring radius. Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `(at-end output-efield-z)` argument to our `run-sources+` function, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
@@ -498,13 +498,13 @@ The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are b
 
 Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for $m$ = 3, 4, and 5 in this case.
 
-You may have noticed, by the way, that when you run with the narrow-bandwidth source, `harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $\omega=0.175$ mode gives:
+You may have noticed, by the way, that when you run with the narrow-bandwidth source, `harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $ω=0.175$ mode gives:
 
 ```
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $\omega$ gives a larger relative error in the small imaginary frequency.
+which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $ω$ gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 

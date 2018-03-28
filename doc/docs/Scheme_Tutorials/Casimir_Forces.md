@@ -32,15 +32,15 @@ Classically, the force on the red object due to the electromagnetic field can be
 
 The classical force is then:
 
-$$F_i^{Classical} = \int_S \int_0^\infty M_{ij}(\omega,x) d\omega dS_j$$
+$$F_i^{Classical} = \int_S \int_0^\infty M_{ij}(ω,x) dω dS_j$$
 
 where the Maxwell stress tensor is given by:
 
-$$M_{ij}(\omega,x) \equiv E_i(\omega,x)E_j(\omega,x) + H_i(\omega,x)H_j(\omega,x) - \frac{1}{2}\delta_{ij}\sum_{k=1}^3 \left(E_k^2(\omega,x) + H_k^2(\omega,x) \right)$$
+$$M_{ij}(ω,x) \equiv E_i(ω,x)E_j(ω,x) + H_i(ω,x)H_j(ω,x) - \frac{1}{2}δ_{ij}\sum_{k=1}^3 \left(E_k^2(ω,x) + H_k^2(ω,x) \right)$$
 
 As has been known for several decades (reviewed [here](http://math.mit.edu/~stevenj/papers/RodriguezIb07-pra.pdf)), the the Casimir force can be obtained by a similar integral, except that the stress tensor is replaced with the expectation value of the corresponding operator in the quantum-mechanical ground state of the system:
 
-$$F_i^{Casimir} = \int_S \int_0^\infty < M_{ij}(\omega,x) > d\omega dS_j$$
+$$F_i^{Casimir} = \int_S \int_0^\infty < M_{ij}(ω,x) > dω dS_j$$
 
 In Part I, it is shown how this formulation can be turned into an algorithm for computing Casimir forces in the time domain. The reader is referred there for details. Below we present the basic steps used in our implementation.
 
@@ -50,7 +50,7 @@ Implementation
 The basic steps involved in computing the Casimir force on an object are:
 
 1.  Surround the object for which the force is to be computed with a simple, closed surface $S$. It is often convenient to make $S$ a rectangle in two dimensions or a rectangular prism in three dimensions.
-2.  Add a uniform, frequency-independent conductivity $\sigma$ to the dielectric response of every object (which is easily done Meep). The purpose of this is to rapidly reduces the time required for the simulations below. As discussed in Part I, adding this conductivity in the right way leaves the result for the force unchanged.
+2.  Add a uniform, frequency-independent conductivity $σ$ to the dielectric response of every object (which is easily done Meep). The purpose of this is to rapidly reduces the time required for the simulations below. As discussed in Part I, adding this conductivity in the right way leaves the result for the force unchanged.
 3.  Determine the Green's function along $S$. This is done by measureing the electric **E** and magnetic **H** fields on $S$ in response to a set of different current distributions on $S$ (more on the form of these currents later).
 4.  Integrate these fields over the enclosing surface $S$ at each time step, and then
 
@@ -58,13 +58,13 @@ integrate this result, multiplied by a known function $g(-t)$, over time $t$.
 
 The Casimir force is given by an expression of the form:
 
-$$F_i = \sum_n \mathrm{Im} \int_0^\infty dt \, g(t) \int_S dS_j(\mathbf{x}) f_n(\mathbf{x}) \Gamma_{ij;n}(t,\mathbf{x})$$
+$$F_i = \sum_n \mathrm{Im} \int_0^\infty dt \, g(t) \int_S dS_j(\mathbf{x}) f_n(\mathbf{x}) Γ_{ij;n}(t,\mathbf{x})$$
 
-where the $\Gamma_{ij;n}$ are the fields in response to sources related to the functions $f_n$ (discussed in detail later), $S$ is an arbitrary closed surface enclosing the object for which we want to compute the Casimir force, $g(t)$ is a known function, and the index $n$ ranges over all of the integers.
+where the $Γ_{ij;n}$ are the fields in response to sources related to the functions $f_n$ (discussed in detail later), $S$ is an arbitrary closed surface enclosing the object for which we want to compute the Casimir force, $g(t)$ is a known function, and the index $n$ ranges over all of the integers.
 
-The functions $\Gamma_{ij;n}(t,\mathbf{x})$ are related to the Maxwell stress tensor introduced in the previous section. Here the frequency integration has been turned into an integration over time, which is especially suited for our purposes.
+The functions $Γ_{ij;n}(t,\mathbf{x})$ are related to the Maxwell stress tensor introduced in the previous section. Here the frequency integration has been turned into an integration over time, which is especially suited for our purposes.
 
-Note that the precise implementation of step (3) will greatly affect the efficiency of the method. For example, computing the fields due to each source at each point on the surface separately requires a separate Meep calculation for each source (and polarization). This corresponds to taking $f_n(\mathbf{x}) = \delta(\mathbf{x}-\mathbf{x}_n)$ for each point $\mathbf{x}_n \in S$, and the sum over $n$ becomes an integration over $S$. As described in Part II ([arXiv:0906.5170](http://arxiv.org/abs/arXiv:0906.5170)), we are free to take $f_n$ to be any basis of orthogonal functions. Picking an extended basis (e.g. cosine functions or complex exponentials $e^{ikx}$) greatly reduces the number of simulations required.
+Note that the precise implementation of step (3) will greatly affect the efficiency of the method. For example, computing the fields due to each source at each point on the surface separately requires a separate Meep calculation for each source (and polarization). This corresponds to taking $f_n(\mathbf{x}) = δ(\mathbf{x}-\mathbf{x}_n)$ for each point $\mathbf{x}_n \in S$, and the sum over $n$ becomes an integration over $S$. As described in Part II ([arXiv:0906.5170](http://arxiv.org/abs/arXiv:0906.5170)), we are free to take $f_n$ to be any basis of orthogonal functions. Picking an extended basis (e.g. cosine functions or complex exponentials $e^{ikx}$) greatly reduces the number of simulations required.
 
 Example: Two-Dimensional Blocks
 -------------------------------
@@ -110,7 +110,7 @@ Define the source surface $S$; here we take it to be a square with edges 0.05 aw
 ```
 
 
-As described in Part II, we add a uniform, frequency-independent D-conductivity $\sigma$ everywhere:
+As described in Part II, we add a uniform, frequency-independent D-conductivity $σ$ everywhere:
 
 ```scm
  (define Sigma 1)
@@ -119,7 +119,7 @@ As described in Part II, we add a uniform, frequency-independent D-conductivity 
 
 (note that "sigma" is another built-in Meep parameter, so here we use a capital S).
 
-As discussed in Part I, the optimal value of $\sigma$ depends on the system under consideration. In our case, $\sigma = 1$ is optimal or nearly optimal. With this choice value of `Sigma`, we can use a very short runtime `T` for the simulation:
+As discussed in Part I, the optimal value of $σ$ depends on the system under consideration. In our case, $σ = 1$ is optimal or nearly optimal. With this choice value of `Sigma`, we can use a very short runtime `T` for the simulation:
 
 ```
  (define-param T 20)  
@@ -139,7 +139,7 @@ The user does not have to explicitly construct the $f_n(\mathbf{x})$ source basi
 
 The built-in source basis used in Meep for this type of computation consists of a Cosine basis. For each side of $S$ and each non-negative integer $n$, this defines a source distribution:
 
-$$f_n(x) = \sqrt{\frac{c_n}{L}} \cos \left(\frac{n\pi x}{L}\right), ~n = 0,1,\ldots$$
+$$f_n(x) = \sqrt{\frac{c_n}{L}} \cos \left(\frac{nπ x}{L}\right), ~n = 0,1,\ldots$$
 
 where $c_n = 1$ if $n=0$ and $c_n=2$ otherwise, $L$ is the side length (if each side has a different length, then the functions $f_n(x)$ will differ for each side). An illustration of these functions for the system under consideration, compared to point sources, is shown below:
 
@@ -153,7 +153,7 @@ For the simulation, we must truncate the sum over $n$ to some finite upper limit
  (define-param n-max 10) 
 ```
 
-To illustrate the field profiles, below we show four snapshots at different times for what we term $\Gamma^E_{yy;n=2}(\mathbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
+To illustrate the field profiles, below we show four snapshots at different times for what we term $Γ^E_{yy;n=2}(\mathbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
 
 <center>
 ![](../images/Field-visualization.jpg)
@@ -232,7 +232,7 @@ Although this procedure adds to the computational cost of the problem, it is ver
 
 ### Simulation Time
 
-As discussed in Part I, the time-convergence of a simulation depends on the size of the system. This can generally be optimized by varying the value of the conductivity $\sigma$. The convergence rate also depends on the dielectric function of the medium. This makes sense because a high-dielectric medium has a longer optical thickness than vacuum. The optimal value of $\sigma$ depends on the system, but generally decreases if the dielectric of the medium is increased (for example, for simulations where the dielectric of the medium is ethanol, the optimal value is somewhere around $\sigma \sim 0.2$).
+As discussed in Part I, the time-convergence of a simulation depends on the size of the system. This can generally be optimized by varying the value of the conductivity $σ$. The convergence rate also depends on the dielectric function of the medium. This makes sense because a high-dielectric medium has a longer optical thickness than vacuum. The optimal value of $σ$ depends on the system, but generally decreases if the dielectric of the medium is increased (for example, for simulations where the dielectric of the medium is ethanol, the optimal value is somewhere around $σ \sim 0.2$).
 
 Running a long simulation to determine temporal convergence is not a large numerical task, because the temporal convergence is largely independent of the spatial resolution and harmonic moment $n$, so one can simply run a long low resolution job.
 
@@ -363,21 +363,21 @@ Example: Dispersive Materials
 
 As discussed in Part I, the treatment of dispersive materials is very similar to the normal case of metals or non-dispersive dielectrics. Here we show how to add them in to the computation. We treat only the case of **lossless** dielectrics; the case of loss is more complicated, and the loss terms tend not to greatly affect the Casimir force.
 
-A lossless dielectric material with a single Lorentzian resonance, e.g., Silicon, is defined by a resonant frequency $\omega_0$ (this is the angular frequency in radians), an oscillator strength $C$ and a high frequency dielectric $\epsilon_f$:
+A lossless dielectric material with a single Lorentzian resonance, e.g., Silicon, is defined by a resonant frequency $ω_0$ (this is the angular frequency in radians), an oscillator strength $C$ and a high frequency dielectric $\epsilon_f$:
 
 <center>
 
-$\epsilon(\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2}$
+$\epsilon(\xi) = \epsilon_f + \frac{C \xi_0^2}{ω_0^2 - \xi^2}$
 
 </center>
 
-(here we follow the notations of Parts I and II, rather than the rest of the wiki, in which $\xi$ denotes real frequency in FDTD, and $\omega$ denotes the more abstract complex frequency mapping).
+(here we follow the notations of Parts I and II, rather than the rest of the wiki, in which $\xi$ denotes real frequency in FDTD, and $ω$ denotes the more abstract complex frequency mapping).
 
-The conductivity mapping $\omega^2 = \xi^2 + i \sigma \xi$ must be applied to all dispersions. Applying this to $\epsilon(\xi)$ above gives the new dispersion function:
+The conductivity mapping $ω^2 = \xi^2 + i σ \xi$ must be applied to all dispersions. Applying this to $\epsilon(\xi)$ above gives the new dispersion function:
 
 <center>
 
-$\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \xi}$
+$\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{ω_0^2 - \xi^2 - iσ \xi}$
 
 </center>
 
@@ -397,7 +397,7 @@ It is easy to define a dispersive material in Meep (discussed further in [Materi
                        (gamma (/ Sigma (* 2 pi)))))))
 ```
 
-There are two important things to note about the definitions above. First, "sigma", the oscillator strength variable in the polarizability class, is different from "Sigma", which is our global conductivity (of course "Sigma" is not built in, so it can be renamed). Also, both w0 and Sigma are divided by a factor of $2 \pi$. This is because both the resonant frequency and dissipation passed into Meep must be specified in units of $2 \pi c/a$, whereas both `w0` and `Sigma` are given in units of $c/a$.
+There are two important things to note about the definitions above. First, "sigma", the oscillator strength variable in the polarizability class, is different from "Sigma", which is our global conductivity (of course "Sigma" is not built in, so it can be renamed). Also, both w0 and Sigma are divided by a factor of $2 π$. This is because both the resonant frequency and dissipation passed into Meep must be specified in units of $2 π c/a$, whereas both `w0` and `Sigma` are given in units of $c/a$.
 
 Now the `Silicon` that we have defined can be use in the Casimir calculations like any other material type.
 
@@ -410,7 +410,7 @@ An example geometry in 3d which is $z$-invariant is shown below:
 ![](../images/Extruded-blocks.jpg)
 </center>
 
-This example is also treated in the [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
+This example is also treated in the [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{iπ k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
 
 $$\mathbf{F}^{3D} = \int_0^\infty dk_z F^{2D}(k_z)$$
 
@@ -453,7 +453,7 @@ This new function $g(t)$ is computed in the function `make-casimir-g-kz`; use th
 
 The value of $g(t)$ in this case is given by the formula:
 
-$$g(-t) = \frac{i}{2\pi}\left( \frac{2}{t^3} + \frac{3\sigma}{2t^2} + \frac{\sigma^2}{2t}\right)$$
+$$g(-t) = \frac{i}{2π}\left( \frac{2}{t^3} + \frac{3σ}{2t^2} + \frac{σ^2}{2t}\right)$$
 
 Example: Cylindrical Symmetry
 -----------------------------
@@ -487,7 +487,7 @@ Here the order of $m$ and $n$ are important. Otherwise the code proceeds as befo
 
 ### Stability Considerations
 
-In general, for $m > 1$, the $e^{im\phi}$ field dependence will give rise to short wavelength excitations. The factor of $\Delta x$ that commonly appears in the Courant stability criterion must then be modified, due to the singular nature of cylindrical coordinates at the origin. The effect on a computation is that usually the Courant factor must be increased for $m \geq 2$ (independent of $n$).
+In general, for $m > 1$, the $e^{im\phi}$ field dependence will give rise to short wavelength excitations. The factor of $Δ x$ that commonly appears in the Courant stability criterion must then be modified, due to the singular nature of cylindrical coordinates at the origin. The effect on a computation is that usually the Courant factor must be increased for $m \geq 2$ (independent of $n$).
 
 Example: Three-Dimensional Periodic Systems
 -------------------------------------------
@@ -523,7 +523,7 @@ If you examine periodic-sphere-plate.ctl in the example above, you will notice t
 
 ### Improving Temporal Convergence
 
-As discussed in Part I, the temporal convergence of the force $F(t)$ can be accelerated by picking the right value of the global conductivity $\sigma$. $\sigma$ should be high enough to dampen out oscillations in $F(t)$, but on the other hand a high conductivity reduces the velocity of waves propagating in the medium (see Part I), slowing convergence. We've found that if the characteristic separation between two objects (e.g. the distance between parallel plates) in vacuum is $d$, then picking $\sigma ~\sim~ 0.5/d$. This is illustrated in the function `scale-sigma-T` in periodic-sphere-plate.ctl above. Both the value of $\sigma$ and the total runtime $T$ of the simulation are adjusted depending on the separation between the objects.
+As discussed in Part I, the temporal convergence of the force $F(t)$ can be accelerated by picking the right value of the global conductivity $σ$. $σ$ should be high enough to dampen out oscillations in $F(t)$, but on the other hand a high conductivity reduces the velocity of waves propagating in the medium (see Part I), slowing convergence. We've found that if the characteristic separation between two objects (e.g. the distance between parallel plates) in vacuum is $d$, then picking $σ ~\sim~ 0.5/d$. This is illustrated in the function `scale-sigma-T` in periodic-sphere-plate.ctl above. Both the value of $σ$ and the total runtime $T$ of the simulation are adjusted depending on the separation between the objects.
 
-If the dielectric of the medium is non-zero, then for non-dispersive media the optimal value of $\sigma$ follows from group velocity considerations. For dispersive media, the convergence should be experimented with to determine the best value. Generally, as the dielectric $\epsilon$ of the medium increases, $\sigma$ should decrease.
+If the dielectric of the medium is non-zero, then for non-dispersive media the optimal value of $σ$ follows from group velocity considerations. For dispersive media, the convergence should be experimented with to determine the best value. Generally, as the dielectric $\epsilon$ of the medium increases, $σ$ should decrease.
 

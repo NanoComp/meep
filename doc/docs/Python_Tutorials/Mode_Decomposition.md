@@ -2,13 +2,13 @@
 # Mode Decomposition
 ---
 
-This tutorial demonstrates Meep's mode-decomposition feature which is used to separate a given field profile into a superposition of harmonic basis modes. The example involves computing the reflection coefficient of the fundamental mode of a 2d linear waveguide taper as shown in the schematic below. We will verify that the scaling of the reflection coefficient with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This tutorial demonstrates Meep's mode-decomposition feature which is used to separate a given field profile into a superposition of harmonic basis modes. The example involves computing the reflection coefficient of the fundamental mode of a linear waveguide taper as shown in the schematic below. We will verify that the scaling of the reflection coefficient with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
 </center>
 
-The structure consists of a single-mode waveguide of width 1 μm (w1) with ε=12 in vacuum coupled to a second waveguide of width 2 μm (w2) via a linearly-sloped taper of length Lt. PML absorbing boundaries surround the computational cell. An eigenmode source is used to launch the fundamental mode. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along the line monitor are used to compute the basis coefficients of the harmonic modes which are obtained separately via the eigenmode solver MPB. The details regarding this calculation are provided in [Mode Decomposition](../Mode_Decomposition). An alternative method for computing the reflection coefficient involves [calculating the Poynting flux](Basics/#transmission-spectrum-around-a-waveguide-bend). This approach requires a separate normalization run to compute the incident fields due to the source and does not provide phase information. The mode-decomposition feature uses only a single run to compute the complex reflection coefficient. This enables the computation of [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). The simulation script is shown below.
+The 2d structure consists of a single-mode waveguide of width 1 μm (w1) with ε=12 in vacuum coupled to a second waveguide of width 2 μm (w2) via a linearly-sloped taper of length Lt. PML absorbing boundaries surround the computational cell. An eigenmode source is used to launch the fundamental mode. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along the line monitor are used to compute the basis coefficients of the harmonic modes which are obtained separately via the eigenmode solver MPB. The details of this calculation are provided in [Mode Decomposition](../Mode_Decomposition). An alternative method for computing the reflection coefficient involves [calculating the Poynting flux](Basics/#transmission-spectrum-around-a-waveguide-bend). This approach requires a separate normalization run to compute the incident fields due to the source and does not provide phase information. The mode-decomposition feature uses only a single run to compute the complex reflection coefficient. This enables the computation of [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). The simulation script is shown below.
 
 ```py
 import meep as mp
@@ -98,7 +98,7 @@ def main(args):
     alpha = np.zeros(2*num_bands,dtype=np.complex128) # preallocate array to store coefficients
     vgrp = np.zeros(num_bands,dtype=np.float64)       # also store mode group velocities
     mvol = mp.volume(mp.vec(xm,-0.5*sy+dpml),mp.vec(xm,+0.5*sy-dpml))
-    sim.get_eigenmode_coefficients(mflux, mp.X, mvol, bands, alpha, vgrp)
+    sim.fields.get_eigenmode_coefficients(mflux, mp.X, mvol, bands, alpha, vgrp)
 
     alpha0Plus  = alpha[2*0 + 0]; # coefficient of forward-traveling fundamental mode
     alpha0Minus = alpha[2*0 + 1]; # coefficient of backward-traveling fundamental mode
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     main(args)
 ```
 
-To investigate the scaling, we compute the reflection coefficient for a range of taper lengths chosen on a logarithmic scale (i.e., 1, 2, 4, ..., 64). The results are shown below in blue. For reference, a quadratic scaling is shown in black. The reflection coefficient of the linear waveguide taper decreases quadratically with the taper length, consistent with analytical results.
+To investigate the scaling, we compute the reflection coefficient for a range of taper lengths chosen on a logarithmic scale (i.e., 1, 2, 4, ..., 64). The results are shown below in blue. For reference, a quadratic scaling is shown in black. Consistent with analytical results, the reflection coefficient of the linear waveguide taper decreases quadratically with the taper length.
 
 <center>
 ![](../images/refl_coeff_vs_taper_length.png)

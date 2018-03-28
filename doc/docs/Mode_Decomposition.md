@@ -6,32 +6,32 @@ Meep contains a feature to decompose arbitrary fields into a superposition of th
 
 ## Theoretical Background
 
-A useful reference for waveguide mode decomposition is Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
+The analytical theory for waveguide mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
 
-Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vec\rho=(y,z)$. For a given angular frequency $\omega$ we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-i\omega t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-i\omega t}$ can be decomposed into a basis of these eigenmodes:
+Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vecρ=(y,z)$. For a given angular frequency $ω$ we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-iω t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-iω t}$ can be decomposed into a basis of these eigenmodes:
 
 $$
    \mathbf{E}(\mathbf{r}) = 
-   \mathbf{E}(x,\vec{\rho}) =
-   \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec \rho)e^{+i\beta_n x}
-                    + \alpha^-_n \mathbf E^-_n(\vec \rho)e^{-i\beta_n x}
+   \mathbf{E}(x,\vec{ρ}) =
+   \sum_{n} \left\{   α^+_n \mathbf E^+_n(\vec ρ)e^{+iβ_n x}
+                    + α^-_n \mathbf E^-_n(\vec ρ)e^{-iβ_n x}
             \right\}
 $$
 $$
    \mathbf{H}(\mathbf{r}) = 
-   \mathbf{H}(x,\vec{\rho}) =
-   \sum_{n} \left\{   \alpha^+_n \mathbf H^+_n(\vec \rho)e^{+i\beta_n x}
-                    + \alpha^-_n \mathbf H^-_n(\vec \rho)e^{-i\beta_n x}
+   \mathbf{H}(x,\vec{ρ}) =
+   \sum_{n} \left\{   α^+_n \mathbf H^+_n(\vec ρ)e^{+iβ_n x}
+                    + α^-_n \mathbf H^-_n(\vec ρ)e^{-iβ_n x}
             \right\}
 $$
 
-$\beta_n$ are the propagation wavevectors and $\alpha^{\pm}_n$ are the basis coefficients. Mode decomposition involves solving for these unknown quantities. The following steps are involved in the computation:
+$β_n$ are the propagation wavevectors and $α^{\pm}_n$ are the basis coefficients. Mode decomposition involves solving for these unknown quantities. The following steps are involved in the computation:
 
 1.  In Meep, compute the Fourier-transformed fields $\mathbf{E}(\mathbf{r})$ and $\mathbf{H}(\mathbf{r})$ on a surface that is transverse to the waveguide and stored in a `dft_flux` object.
 
-2.  In MPB, compute the eigenmodes $\mathbf{E}^\pm_n$ and $\mathbf{H}^\pm_n$ as well as the propagation wavevectors $\beta_n$ for the same cross-sectional structure.
+2.  In MPB, compute the eigenmodes $\mathbf{E}^\pm_n$ and $\mathbf{H}^\pm_n$ as well as the propagation wavevectors $β_n$ for the same cross-sectional structure.
 
-3.  Compute the coefficients $\alpha_n^\pm$ for any number of eigenmodes $n=1,2,...$
+3.  Compute the coefficients $α_n^\pm$ for any number of eigenmodes $n=1,2,...$
 
 This is all done automatically in Meep using the `get_eigenmode_coefficients` routine.
 
@@ -64,7 +64,7 @@ The following are the parameters:
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as $\alpha^+$, $\alpha^-$ starting at slot `2*nb*num_freqs+nf` of this array:
+The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as $α^+$, $α^-$ starting at slot `2*nb*num_freqs+nf` of this array:
 
 ````c++
  std::vector<cdouble> coeffs=f.get_eigenmode_coefficient(...)
@@ -164,10 +164,10 @@ These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/
 
 The theoretical basis of the mode-decomposition algorithm is the orthogonality relation satisfied by the normal modes:
 
-$$ \left\langle \mathbf{E}_m^{\sigma} \right|
-   \left.       \mathbf{H}^\tau_n     \right\rangle
-   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
-   \qquad \{\sigma,\tau\}\in\{+,-\}
+$$ \left\langle \mathbf{E}_m^{σ} \right|
+   \left.       \mathbf{H}^τ_n     \right\rangle
+   =C_{m}δ_{mn}δ_{στ} 
+   \qquad \{σ,τ\}\in\{+,-\}
 $$
 
 where the inner product involves an integration over transverse coordinates:
@@ -175,7 +175,7 @@ where the inner product involves an integration over transverse coordinates:
 $$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
    \equiv
    \int_{S}
-    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
+    \Big[ \mathbf{f}^*(\vec ρ) \times \mathbf{g}(\vec ρ)\Big]
     \cdot \hat{\mathbf{n}} \, dA
   \tag{5}
 $$
@@ -185,10 +185,10 @@ where $S$ is any surface transverse to the direction of propagation and $\hat{\m
 Now consider a Meep calculation in which we have accumulated frequency-domain $\mathbf E^{\text{meep}}$ and $\mathbf H^{\text{meep}}$ fields on a `dft-flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane, the tangential components of the frequency-domain Meep fields take the form:
 
 $$ \mathbf E^{\text{meep}}_\parallel
-   = \sum_{n} (\alpha_n^+ + \alpha_n^-)\mathbf{E}_{n\parallel}^+
+   = \sum_{n} (α_n^+ + α_n^-)\mathbf{E}_{n\parallel}^+
 $$
 $$ \mathbf H^{\text{meep}}_\parallel
-   = \sum_{n} (\alpha_n^+ - \alpha_n^-)\mathbf{H}_{n\parallel}^+
+   = \sum_{n} (α_n^+ - α_n^-)\mathbf{H}_{n\parallel}^+
 $$
 
 We have used the well-known relations between the tangential components of the forward-traveling and backward-traveling field modes: 
@@ -202,24 +202,24 @@ Taking the inner product of both equations with the $\mathbf{H}$ and $\mathbf{E}
 
 $$ \left\langle \mathbf{H}_m
    \right|\left. \mathbf{E}^{\text{meep}} \right\rangle
-   =+(\alpha_n^+ + \alpha_n^-) v_m A_S
+   =+(α_n^+ + α_n^-) v_m A_S
 $$
 
 $$ \left\langle \mathbf{E}_m
    \right|\left. \mathbf{H}^{\text{meep}} \right\rangle
-   =-(\alpha_n^+ - \alpha_n^+) v_m A_S
+   =-(α_n^+ - α_n^+) v_m A_S
 $$
 
-Thus, by evaluating the integrals on the LHS of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}, \mathbf{H}\}_m$ and the Meep-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $\alpha^\pm_m$. This calculation is carried out by the routine `meep::fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
+Thus, by evaluating the integrals on the LHS of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}, \mathbf{H}\}_m$ and the Meep-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $α^\pm_m$. This calculation is carried out by the routine `meep::fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
 
 The Poynting flux carried by the Meep fields may be expressed in the form:
 
 $$ S_x = \frac{1}{2}\text{Re }
          \left\langle \mathbf{E}^{\text{meep}}\right|
          \left.       \mathbf{H}^{\text{meep}}\right\rangle
-       = \frac{1}{2}\sum_n \left\{ |\alpha_n^+|^2 - |\alpha_n^-|^2) \right\} v_n A_S
+       = \frac{1}{2}\sum_n \left\{ |α_n^+|^2 - |α_n^-|^2) \right\} v_n A_S
 $$
 
 Thus, the fractional power carried by a given forward- or backward-traveling eigenmode is given by:
 
-$$ \frac{|\alpha_n^\pm|^2 v_n A_S}{2S_x} $$     
+$$ \frac{|α_n^\pm|^2 v_n A_S}{2S_x} $$     

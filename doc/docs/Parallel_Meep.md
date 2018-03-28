@@ -7,7 +7,7 @@ Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.or
 Installing Parallel Meep
 ------------------------
 
-To install the parallel version of Meep, you must have a version of MPI installed on your system. See [Installation](Installation.md#mpi-parallel-machines).
+To install the parallel version of Meep, you must have a version of MPI installed on your system. See [Installation](Installation/#mpi).
 
 We also strongly recommend installing the [HDF5 package](Installation/#hdf5) with parallel I/O support if you are going to run with more than a few processors. HDF5 needs to be configured with the flag `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose to install either the serial or the parallel Meep, but not both.
 

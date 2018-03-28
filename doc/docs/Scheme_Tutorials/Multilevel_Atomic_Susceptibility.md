@@ -16,8 +16,8 @@ The cavity consists of a high-index medium with a perfect-metallic mirror on one
 (set! geometry-lattice (make lattice (size no-size no-size sz)))
 (set! dimensions 1)
 (set! pml-layers (list (make pml (thickness dpml) (side High))))
-(define-param freq-21 (/ 40 (* 2 pi)))           ; emission frequency  (units of 2\pia/c)
-(define-param gamma-21 (/ 4 (* 2 pi)))           ; emission linewidth  (units of 2\pia/c)
+(define-param freq-21 (/ 40 (* 2 pi)))           ; emission frequency  (units of 2πa/c)
+(define-param gamma-21 (/ 4 (* 2 pi)))           ; emission linewidth  (units of 2πa/c)
 (define-param sigma-21 8e-23)                    ; dipole coupling strength
 (set! sigma-21 (/ sigma-21 (sqr freq-21)))
 (define-param rate-21 0.005)                     ; non-radiative rate  (units of c/a)
@@ -48,7 +48,7 @@ The choice of these parameters requires some care. For example, choosing a pumpi
 ![](../images/Multilevel_cavity_spectra.png)
 </center>
 
-There are four modes present: two are lasing while the other two are slightly below threshold. The frequency of the passive cavity modes can be computed analytically using the equation $\omega_{cav}=(m+0.5)\pi/(n_{cav}L_{cav})$ where $n_{cav}$ and $L_{cav}$ are the cavity index and length, and $m$ is an integer. The four modes in the figure correspond to $m$=17-20 which are labelled. In the continuum limit, these modes would appear as Dirac delta functions in the spectra. The discretized model, however, produces peaks with finite width. Thus, we need to integrate a fixed number of points around each peak to smooth out the modal intensity. For this simple two-level cavity, the thresholds can be computed analytically using the steady-state ab-initio laser theory (SALT) developed by Prof. A. Douglas Stone and his group at Yale. Based on the default parameters in the script, two modes, $m$=18 and 19, should begin to lase very close to the relaxation rate. We plot the variation of the modal intensity with pumping rate.
+There are four modes present: two are lasing while the other two are slightly below threshold. The frequency of the passive cavity modes can be computed analytically using the equation $ω_{cav}=(m+0.5)π/(n_{cav}L_{cav})$ where $n_{cav}$ and $L_{cav}$ are the cavity index and length, and $m$ is an integer. The four modes in the figure correspond to $m$=17-20 which are labelled. In the continuum limit, these modes would appear as Dirac delta functions in the spectra. The discretized model, however, produces peaks with finite width. Thus, we need to integrate a fixed number of points around each peak to smooth out the modal intensity. For this simple two-level cavity, the thresholds can be computed analytically using the steady-state ab-initio laser theory (SALT) developed by Prof. A. Douglas Stone and his group at Yale. Based on the default parameters in the script, two modes, $m$=18 and 19, should begin to lase very close to the relaxation rate. We plot the variation of the modal intensity with pumping rate.
 
 <center>
 ![](../images/Multilevel_modal_intensity.png)

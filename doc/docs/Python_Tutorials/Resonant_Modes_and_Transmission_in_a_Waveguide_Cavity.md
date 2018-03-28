@@ -134,7 +134,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.display_fluxes(trans)  # print out the flux spectrum
 ```
 
-Note that we've outputted $\varepsilon$ at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics).
+Note that we've outputted $ε$ at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics).
 
 Finally, we specify all the command-line parameters with default values via [argparse](https://docs.python.org/3/library/argparse.html):
 
@@ -281,7 +281,7 @@ harminv0:, 0.235201161007777, -1.34327185513047e-5, 8754.78631184943, 9.8322
 harminv0:, 0.328227374843021, -4.6405752015136e-4, 353.649451404175, 0.134284355228178, -0.131856646632894-0.0254187489419837i, 4.11557526694386e-7
 ```
 
-What is this extra mode at $\omega=0.32823$? This is right around the **edge of the band gap** (actually, just above the edge). There are two possibilities. First, it could be a *band edge* state: the propagating states in the periodic waveguide go to zero group velocity as they approach the edge of the gap, corresponding to long-lived resonances in a long but finite crystal. Second, it could be a higher-order resonant mode that for a slightly larger defect will be pulled further into the gap, but is currently very delocalized. In this case, it turns out to be the latter. To see the mode, we will simply run the simulation again with a narrow-band source, and we will also increase the $y$ cell size `sy` because it turns out that the mode is fairly spread out in that direction:
+What is this extra mode at $ω=0.32823$? This is right around the **edge of the band gap** (actually, just above the edge). There are two possibilities. First, it could be a *band edge* state: the propagating states in the periodic waveguide go to zero group velocity as they approach the edge of the gap, corresponding to long-lived resonances in a long but finite crystal. Second, it could be a higher-order resonant mode that for a slightly larger defect will be pulled further into the gap, but is currently very delocalized. In this case, it turns out to be the latter. To see the mode, we will simply run the simulation again with a narrow-band source, and we will also increase the $y$ cell size `sy` because it turns out that the mode is fairly spread out in that direction:
 
 ```sh
 unix% python holey-wvg-cavity.py -r -sy 12 -fcen 0.328227374843021 -df 0.01 -N 16
@@ -302,9 +302,9 @@ Finally, we consider a smaller, more abstract calculation that we really should 
 ![](../images/Holey-wvg-bands-eps-000000.00.png)
 </center>
 
-Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-\omega t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $\omega(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
+Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-ω t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $ω(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2π$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=π$.
 
-Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The $\varepsilon$ function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
+Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The $ε$ function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
 Thus, we will define our computational cell as follows.
 
@@ -349,7 +349,7 @@ Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is random, to 
 sym = mp.Mirror(direction=mp.Y, phase=-1)
 ```
 
-Note that, regardless of the source, we don't have an $X$ symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k_point` variable, and then use `until_after_sources` with `Harminv` just as we did to calculate a resonant mode:
+Note that, regardless of the source, we don't have an $X$ symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < π$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k_point` variable, and then use `until_after_sources` with `Harminv` just as we did to calculate a resonant mode:
 
 ```py
 kx = 0.4
@@ -362,7 +362,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `Harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2$\pi$/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2π \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `Harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2$π$/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
 
 ```py
 k_interp = 19
@@ -370,14 +370,14 @@ k_interp = 19
 sim.run(mp.interpolate(k_interp, [mp.Vector3(0), mp.Vector3(0.5)]), k_points=300)
 ```
 
-Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs `Harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `Harminv:` lines, but it also outputs a series of lines like:
+Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2π \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs `Harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `Harminv:` lines, but it also outputs a series of lines like:
 
 ```
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
 freqs-im:, 14, 0.325, 0.0, 0.0, -8.74808991364674e-8, 1.82230861728163e-4, 0.00144227925408331
 ```
 
-where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\mathbf{k}$, and the remaining columns are the real part of $\omega$ (for the `freqs:` lines) or the imaginary part of $\omega$ (for the `freqs-im:` lines). Now we can just do:
+where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\mathbf{k}$, and the remaining columns are the real part of $ω$ (for the `freqs:` lines) or the imaginary part of $ω$ (for the `freqs-im:` lines). Now we can just do:
 
 ```sh
 unix% python holey-wvg-bands.py | tee holey-wvg-bands.out
@@ -385,27 +385,27 @@ unix% grep freqs: holey-wvg-bands.out > fre.dat
 unix% grep freqs-im: holey-wvg-bands.out > fim.dat
 ```
 
-Plotting the real parts of $\omega$, where the light cone $\omega$ &gt; *ck* is shaded gray,  we find: 
+Plotting the real parts of $ω$, where the light cone $ω$ &gt; *ck* is shaded gray,  we find: 
 
 <center>
 ![](../images/Holey-wvg-bands.png)
 </center>
 
-Here, the gray shaded region is the **light cone**, $\omega > ck_x$, which is the region corresponding to modes that are extended in the air surrounding the waveguide. Below the light cone, we see several discrete *guided bands*, which must have field patterns localized to the vicinity of the waveguide. The imaginary part of $\omega$ for bands below the light cone is very small, due to either numerical error or the finite computational cell size. Some tiny portion of the guided mode overlaps the PML. Note the band gap between the first and second guided mode, from about 0.2 to 0.3.
+Here, the gray shaded region is the **light cone**, $ω > ck_x$, which is the region corresponding to modes that are extended in the air surrounding the waveguide. Below the light cone, we see several discrete *guided bands*, which must have field patterns localized to the vicinity of the waveguide. The imaginary part of $ω$ for bands below the light cone is very small, due to either numerical error or the finite computational cell size. Some tiny portion of the guided mode overlaps the PML. Note the band gap between the first and second guided mode, from about 0.2 to 0.3.
 
-Inside the light cone, we also see several discrete bands. These are **leaky modes**, or resonances, which have some intrinsic lifetime/loss because they couple with radiating states inside the light cone, which is reflected in the imaginary parts of their $\omega$. Twice the imaginary part of $\omega$ is the energy loss rate per unit time; for a waveguide, it is more conventional to report loss per unit distance; to get this you would divide the loss per unit time by the *group velocity* $|d\omega/dk_x|$ = |slope|. Harminv only identifies leaky modes that have a substantial lifetime. The default threshold is a lifetime, or $Q$, of 50 periods.
+Inside the light cone, we also see several discrete bands. These are **leaky modes**, or resonances, which have some intrinsic lifetime/loss because they couple with radiating states inside the light cone, which is reflected in the imaginary parts of their $ω$. Twice the imaginary part of $ω$ is the energy loss rate per unit time; for a waveguide, it is more conventional to report loss per unit distance; to get this you would divide the loss per unit time by the *group velocity* $|dω/dk_x|$ = |slope|. Harminv only identifies leaky modes that have a substantial lifetime. The default threshold is a lifetime, or $Q$, of 50 periods.
 
 Computing band diagrams, especially for leaky modes, with a time-domain program like Meep involves several subtleties. For example, the accuracy of harminv will go down if we specify too large a `df` (too narrow a source), because the increased number of modes makes the signal-processing more ill-conditioned. Sometimes, harminv will report a spurious mode, which will appear as an isolated dot on the plot. Second, we sometimes have to be careful with modes and especially the imaginary parts to make sure they aren't an artifact of the cell being too small, or the signal-processing error being too large (either because the run is too short or because the bandwidth being searched is too large). Third, currently Meep doesn't attempt to "connect the dots" for the bands &mdash; the frequencies are printed in increasing order, but since modes disappear when their losses become too large this means that a single band may be split across several columns. On the plot, this is visible as single bands composed of differently colored dots.
 
 For example, there seem to be some bands that run right along the edge of the light cone. These are not leaky modes, but are artifacts of the fact that PML boundaries do not absorb well for light that is travelling parallel to the boundary, corresponding to extended modes at the boundary of the light cone. Below, we will see that these modes are not localized to the waveguide.
 
-It is usually a good idea to examine the field patterns for any modes that you are particularly interested in. That is, re-run the simulation with a narrow-bandwidth source, at the particular $\omega$ and $\mathbf{k}$ you want, and output the field patterns just as we did for the resonant-cavity modes. We have done that for several modes below:
+It is usually a good idea to examine the field patterns for any modes that you are particularly interested in. That is, re-run the simulation with a narrow-bandwidth source, at the particular $ω$ and $\mathbf{k}$ you want, and output the field patterns just as we did for the resonant-cavity modes. We have done that for several modes below:
 
-+ $k_x=0.4$, $\omega=0.1896$ guided mode
-+ $k_x=0.4$, $\omega=0.3175$ guided mode
-+ $k_x=0.1$, $\omega=0.4811-0.0017i$ leaky mode
-+ $k_x=0.3$, $\omega=0.8838-0.0018i$ leaky mode
-+ $k_x=0.25$, $\omega=0.2506$ light-cone (extended) mode
++ $k_x=0.4$, $ω=0.1896$ guided mode
++ $k_x=0.4$, $ω=0.3175$ guided mode
++ $k_x=0.1$, $ω=0.4811-0.0017i$ leaky mode
++ $k_x=0.3$, $ω=0.8838-0.0018i$ leaky mode
++ $k_x=0.25$, $ω=0.2506$ light-cone (extended) mode
 
 <center>
 ![](../images/Holey-wvg-kx=0.4-w=0.1896.gif) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ![](../images/Holey-wvg-kx=0.4-w=0.3175.gif) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ![](../images/Holey-wvg-kx=0.10-w=0.4811.gif) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ![](../images/Holey-wvg-kx=0.30-w=0.8838.gif) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ![](../images/Holey-wvg-kx=0.25-w=0.2506.gif)
@@ -413,5 +413,5 @@ It is usually a good idea to examine the field patterns for any modes that you a
 
 -   From the top, the first two pictures show the first two guided bands underneath the light cone at $k_x=0.4$. Note that the second guided band is propagating to the *left*, which is due to its negative slope (note, however, that there is a corresponding right-propagating mode at $k_x=-0.4$). Note that they are strongly (exponentially) localized to the waveguide, as they should be.
 -   The next mode is the first leaky mode at $k_x=0.1$. As $k_x$ goes to zero, in fact, this mode actually becomes lossless, a peculiarity of symmetry related to an effect demonstrated in Phys. Rev. B. 63, 125107 (2001). However, at this non-zero $k_x$, the radiation loss is clearly visible.
--   The next mode is one of the many higher-order leaky modes visible in the band diagram; we arbitrarily chose the backwards-propagating mode at $k_x=0.3$, $\omega=0.8838-0.0018i$ to plot. As can be seen from the field pattern, this mode has a very short wavelength in the material. This is short enough that it is worth checking how big the error introduced by the finite resolution is. By doubling the resolution to 40 pixels/unit, we found that this mode has shifted to $\omega=0.8996-0.0021i$, or about a 2% error at the lower resolution.
--   Finally, we show one of the modes right along the edge of the light cone, at $k_x=0.25$, $\omega=0.2506$. This mode is clearly not localized to the waveguide, and is just propagating through the air parallel to the waveguide &mdash; i.e. it is really part of the continuum of extended modes and its discreteness is an artifact of the finite cell and imperfect boundary conditions. For light propagating completely parallel to the boundary, PML is not very effective, so the imaginary part of $\omega$ is only -0.0008 for this field.
+-   The next mode is one of the many higher-order leaky modes visible in the band diagram; we arbitrarily chose the backwards-propagating mode at $k_x=0.3$, $ω=0.8838-0.0018i$ to plot. As can be seen from the field pattern, this mode has a very short wavelength in the material. This is short enough that it is worth checking how big the error introduced by the finite resolution is. By doubling the resolution to 40 pixels/unit, we found that this mode has shifted to $ω=0.8996-0.0021i$, or about a 2% error at the lower resolution.
+-   Finally, we show one of the modes right along the edge of the light cone, at $k_x=0.25$, $ω=0.2506$. This mode is clearly not localized to the waveguide, and is just propagating through the air parallel to the waveguide &mdash; i.e. it is really part of the continuum of extended modes and its discreteness is an artifact of the finite cell and imperfect boundary conditions. For light propagating completely parallel to the boundary, PML is not very effective, so the imaginary part of $ω$ is only -0.0008 for this field.
