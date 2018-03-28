@@ -638,6 +638,10 @@ class structure {
   bool equal_layout(const structure &) const;
   void print_layout(void) const;
 
+  // structure_dump.cpp
+  void dump(const char *filename);
+  void load(const char *filename);
+
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &origloc) const;
   double get_chi1inv(component, direction, const vec &loc) const;
