@@ -925,7 +925,8 @@ class dft_flux {
 public:
   dft_flux(const component cE_, const component cH_,
 	   dft_chunk *E_, dft_chunk *H_,
-	   double fmin, double fmax, int Nf);
+	   double fmin, double fmax, int Nf, 
+	   const volume &where_, direction normal_direction_);
   dft_flux(const dft_flux &f);
 
   double *flux();
@@ -948,13 +949,15 @@ public:
   int Nfreq;
   dft_chunk *E, *H;
   component cE, cH;
+  volume *where;
+  direction normal_direction;
 };
 
 // stress.cpp (normally created with fields::add_dft_force)
 class dft_force {
 public:
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
-	    double fmin, double fmax, int Nf);
+	    double fmin, double fmax, int Nf, const volume &where_);
   dft_force(const dft_force &f);
 
   double *force();
@@ -976,6 +979,7 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *offdiag1, *offdiag2, *diag;
+  volume *where;
 };
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
@@ -984,7 +988,8 @@ public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
   dft_near2far(dft_chunk *F,
-               double fmin, double fmax, int Nf, double eps, double mu);
+               double fmin, double fmax, int Nf, 
+               double eps, double mu, const volume &where_);
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
@@ -1018,6 +1023,7 @@ public:
   int Nfreq;
   dft_chunk *F;
   double eps, mu;
+  volume *where;
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1048,7 +1054,7 @@ public:
 // dft.cpp (normally created with fields::add_dft_fields)
 class dft_fields{
 public:
-  dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq);
+  dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
 
   void scale_dfts(std::complex<double> scale);
 
@@ -1057,6 +1063,7 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *chunks;
+  volume *where;
 };
 
 enum in_or_out { Incoming=0, Outgoing };
@@ -1440,8 +1447,7 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
-  void get_eigenmode_coefficients(dft_flux flux, direction d,
-                                  const volume &where,
+  void get_eigenmode_coefficients(dft_flux flux,
                                   int *bands, int num_bands,
                                   std::complex<double> *coeffs,
                                   double *vgrp);
@@ -1540,7 +1546,8 @@ class fields {
                                              int num_chunklists,
                                              int num_freq, component c,
                                              const char *HDF5FileName,
-                                             std::complex<double> **field_array,
+                                             std::complex<double> **field_array=0,
+                                             int *rank=0, int *dims=0,
                                              void *mode1_data=0,
                                              void *mode2_data=0,
                                              component c_conjugate=Ex,
@@ -1553,22 +1560,26 @@ class fields {
   void output_dft(dft_flux flux, const char *HDF5FileName);
   void output_dft(dft_force force, const char *HDF5FileName);
   void output_dft(dft_near2far n2f, const char *HDF5FileName);
-  void output_dft(dft_fields fields, const char *HDF5FileName);
+  void output_dft(dft_fields fdft, const char *HDF5FileName);
   void output_mode_fields(void *mode_data, dft_flux flux,
                           const char *HDF5FileName);
 
   // get array of DFT field values
-  std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq);
+  std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq,
+                                      int *rank, int dims[3]);
+  std::complex<double> *get_dft_array(dft_fields fdft, component c, int num_freq,
+                                      int *rank, int dims[3]);
+  std::complex<double> *get_dft_array(dft_force force, component c, int num_freq,
+                                      int *rank, int dims[3]);
+  std::complex<double> *get_dft_array(dft_near2far n2f, component c, int num_freq,
+                                      int *rank, int dims[3]);
   
   // overlap integrals between eigenmode fields and DFT flux fields
   void get_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
-                   int num_freq, direction normal_dir,
-                   std::complex<double>overlaps[2]);
+                   int num_freq, std::complex<double>overlaps[2]);
   void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
-                             direction normal_dir, std::complex<double>overlaps[2]);
-  void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
-                             direction normal_dir,
                              std::complex<double>overlaps[2]);
+  void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux, std::complex<double>overlaps[2]);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,

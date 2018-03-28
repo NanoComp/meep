@@ -34,7 +34,8 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void Run(bool Pulse, double resolution, cdouble **field_array=0)
+void Run(bool Pulse, double resolution, cdouble **field_array=0,
+         int *array_rank=0, int *array_dims=0)
 {
   /***************************************************************/
   /* initialize geometry                                         */
@@ -88,7 +89,7 @@ void Run(bool Pulse, double resolution, cdouble **field_array=0)
      f.output_dft(dftFlux,   "dft-flux");
      f.output_dft(dftFields, "dft-fields");
 
-     *field_array = f.get_dft_array(dftFlux, Ez, 0);
+     *field_array = f.get_dft_array(dftFlux, Ez, 0, array_rank, array_dims);
    }
   else
    { 
@@ -106,26 +107,32 @@ void Run(bool Pulse, double resolution, cdouble **field_array=0)
 /***************************************************************/
 /* return L2 norm of error normalized by average of L2 norms   */
 /***************************************************************/
-double compare_array_to_dataset(cdouble *field_array, char *file, char *name)
+double compare_array_to_dataset(cdouble *field_array, int array_rank, int *array_dims, 
+                                const char *file, const char *name)
 {
-  int rank, dims[3];
+  int file_rank, file_dims[3];
   h5file f(file, h5file::READONLY, false);
   char dataname[100];
   snprintf(dataname,100,"%s.r",name);
-  double *rdata = f.read(dataname, &rank, dims, 2);
+  double *rdata = f.read(dataname, &file_rank, file_dims, 2);
   snprintf(dataname,100,"%s.i",name);
-  double *idata = f.read(dataname, &rank, dims, 2);
-  if (!rdata || !idata) return -1.0;
+  double *idata = f.read(dataname, &file_rank, file_dims, 2);
+  if (!rdata || !idata) 
+   return -1.0;
+  if (file_rank!=array_rank)
+   return -1.0;
+  for(int n=0; n<file_rank; n++)
+   if (file_dims[n]!=array_dims[n])
+    return -1.0;
 
   double NormArray=0.0, NormFile=0.0, NormDelta=0.0;
-  for(int n=0; n<dims[0]*dims[1]; n++)
+  for(int n=0; n<file_dims[0]*file_dims[1]; n++)
    { cdouble zArray = field_array[n];
      cdouble zFile  = cdouble(rdata[n],idata[n]);
      NormArray += norm(zArray);
      NormFile  += norm(zFile);
      NormDelta += norm(zArray-zFile);
-printf("%i   {%e,%e}   {%e,%e}\n",n,real(zArray),imag(zArray),real(zFile),imag(zFile));
-   };
+   }
   NormArray=sqrt(NormArray);
   NormFile=sqrt(NormFile);
   NormDelta=sqrt(NormDelta);
@@ -203,10 +210,7 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1,
      cdouble z2 = phase2*cdouble(rdata2[n], idata2[n]) / max_abs2;
      norm1    += norm(z1);
      norm2    += norm(z2);
-     // the following should say z1-z2, but for some reason
-     // z1+z2 gives better (smaller) results? I must have 
-     // confused something somewhere.
-     normdiff += norm(z1+z2);
+     normdiff += norm(z1-z2);
    }
   norm1    = sqrt(norm1)    / ((double)length);
   norm2    = sqrt(norm2)    / ((double)length);
@@ -226,36 +230,46 @@ int main(int argc, char *argv[])
   initialize mpi(argc, argv);
 
   double resolution=10.0;
-  for(int narg=1; narg<argc-1; narg++)
-   { if (!strcasecmp(argv[narg],"--resolution"))
-      { sscanf(argv[narg+1],"%le",&resolution);
+  bool verbose=false;
+  for(int narg=1; narg<argc; narg++)
+   { 
+     if (!strcasecmp(argv[narg],"--resolution"))
+      { if (narg+1>=argc) abort("--resolution requires an argument");
+        sscanf(argv[narg+1],"%le",&resolution);
         master_printf("Setting resolution=%e.\n",resolution);
         narg++;
       }
+     else if (!strcasecmp(argv[narg],"--verbose"))
+      verbose=true;
      else
       abort("unknown argument %s",argv[narg]);
    }
  
   cdouble *field_array=0;
-  Run(true,  resolution, &field_array);
+  int array_rank, array_dims[3];
+  Run(true,  resolution, &field_array, &array_rank, array_dims);
   Run(false, resolution);
 
   /* compare DFT field array to DFT HDF5 output */
   double L2ErrorArray
-   = compare_array_to_dataset(field_array, "dft-fields.h5","ez_0");
-  printf("L2ErrorArray=%e\n",L2ErrorArray);
+   = compare_array_to_dataset(field_array, array_rank, array_dims,
+                              "dft-fields.h5","ez_0");
+  if (verbose)
+   master_printf("L2Error (array<-->file) = %e\n", L2ErrorArray);
 
   /* compare DFT fields to CW fields *****************************/
   double max_dft;
   double L2ErrorFile
    = compare_complex_hdf5_datasets("dft-fields.h5","ez_0",
                                    "cw-fields.h5","ez",2, &max_dft);
+  if (verbose)
+   master_printf("L2Error (file<-->file) = %e\n", L2ErrorFile);
 
   bool unit_test = (argc==1); // run unit-test checks if no command-line arguments
   if (unit_test)
    { 
       if (L2ErrorFile==-1.0) // files couldn't be read or datasets had different sizes
-       { master_printf("failed to compare datasets");
+       { master_printf("failed to compare data files");
          return -1;
        }
 
@@ -266,9 +280,20 @@ int main(int argc, char *argv[])
        }
  
       if (L2ErrorFile>1.0)
-       { master_printf("L2 error=%e (should be <1)\n",L2ErrorFile);
+       { master_printf("L2 norm of file-file error=%e (should be <1)\n",L2ErrorFile);
          return -1;
        }
+
+      if (L2ErrorArray==-1.0)
+       { master_printf("failed to compare array to data file");
+         return -1;
+       }
+
+      if (L2ErrorArray>1.0)
+       { master_printf("L2 norm of array-file error=%e (should be <1)\n",L2ErrorArray);
+         return -1;
+       }
+
       return 0;
    }
 

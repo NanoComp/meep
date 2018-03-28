@@ -351,7 +351,9 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
 dft_flux::dft_flux(const component cE_, const component cH_,
 		   dft_chunk *E_, dft_chunk *H_,
-		   double fmin, double fmax, int Nf)
+		   double fmin, double fmax, int Nf,
+		   const volume &where_,
+                   direction normal_direction_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
@@ -359,12 +361,16 @@ dft_flux::dft_flux(const component cE_, const component cH_,
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   E = E_; H = H_;
   cE = cE_; cH = cH_;
+  where = new volume(where_.get_min_corner(), where_.get_max_corner());
+  normal_direction = normal_direction_;
 }
 
 dft_flux::dft_flux(const dft_flux &f) {
   freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
   E = f.E; H = f.H;
   cE = f.cE; cH = f.cH;
+  where = new volume(f.where->get_min_corner(), f.where->get_max_corner());
+  normal_direction = f.normal_direction;
 }
 
 double *dft_flux::flux() {
@@ -420,6 +426,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
 
   volume_list *where = S.reduce(where_);
   volume_list *where_save = where;
+  volume everywhere = where->v;
   while (where) {
     derived_component c = derived_component(where->c);
     if (coordinate_mismatch(gv.dim, component_direction(c)))
@@ -446,11 +453,12 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
 		  false, 1.0, H);
     }
 
+    everywhere = everywhere | where->v;
     where = where->next;
   }
   delete where_save;
 
-  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq);
+  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, everywhere, NO_DIRECTION);
 }
 
 
@@ -475,7 +483,9 @@ dft_flux fields::add_dft_flux(direction d, const volume &where,
   if (d == NO_DIRECTION)
     d = normal_direction(where);
   volume_list vl(where, direction_component(Sx, d));
-  return add_dft_flux(&vl, freq_min, freq_max, Nfreq);
+  dft_flux flux=add_dft_flux(&vl, freq_min, freq_max, Nfreq);
+  flux.normal_direction=d;
+  return flux;
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where,
@@ -504,12 +514,14 @@ dft_flux fields::add_dft_flux_plane(const volume &where,
 
 
 dft_fields::dft_fields(dft_chunk *chunks_,
-                       double freq_min_, double freq_max_, int Nfreq_)
+                       double freq_min_, double freq_max_, int Nfreq_, 
+                       const volume &where_)
 {
   chunks   = chunks_;
   freq_min = freq_min_;
   dfreq    = Nfreq_ <= 1 ? 0.0 : (freq_max_ - freq_min_) / (Nfreq_ - 1);
   Nfreq    = Nfreq_;
+  where    = new volume(where_.get_min_corner(), where_.get_max_corner());
 }
 
 void dft_fields::scale_dfts(cdouble scale)
@@ -527,7 +539,7 @@ void dft_fields::remove()
 
 dft_fields fields::add_dft_fields(component *components, int num_components,
                                   const volume where,
-                                  double freq_min, double freq_max, int Nfreq) 
+                                  double freq_min, double freq_max, int Nfreq)
 {
   bool include_dV_and_interp_weights=false;
   cdouble stored_weight=1.0;
@@ -536,7 +548,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components,
    chunks = add_dft(components[nc], where, freq_min, freq_max, Nfreq,
                     include_dV_and_interp_weights, stored_weight, chunks);
 
-  return dft_fields(chunks, freq_min, freq_max, Nfreq);
+  return dft_fields(chunks, freq_min, freq_max, Nfreq, where);
 }
 
 /***************************************************************/
@@ -702,6 +714,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
                                       int num_freq, component c,
                                       const char *HDF5FileName,
                                       cdouble **pfield_array,
+                                      int *array_rank, int *array_dims,
                                       void *mode1_data, void *mode2_data,
                                       component c_conjugate,
                                       bool *first_component)
@@ -709,7 +722,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   /***************************************************************/
   /* get statistics on the volume slice **************************/
   /***************************************************************/
-  volume where=&v; // use full volume of fields
+  volume *where=&v; // use full volume of fields
   size_t bufsz=0;
   ivec min_corner = gv.round_vec(where->get_max_corner()) + one_ivec(gv.dim);
   ivec max_corner = gv.round_vec(where->get_min_corner()) - one_ivec(gv.dim);
@@ -745,6 +758,10 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       array_size *= n;
     }
   }
+  if (array_rank)
+   { *array_rank=rank;
+     for(int d=0; d<rank; d++) array_dims[d]=dims[d];
+   }
   if (rank==0) return 0.0; // no chunks with the specified component on this processor
 
   /***************************************************************/
@@ -837,7 +854,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
   for(int num_freq=0; num_freq<NumFreqs; num_freq++)
    FOR_E_AND_H(c)
     process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
-                          0, 0, 0, Ex, &first_component);
+                          0, 0, 0, 0, 0, Ex, &first_component);
 }
 
 void fields::output_dft(dft_flux flux, const char *HDF5FileName)
@@ -845,7 +862,7 @@ void fields::output_dft(dft_flux flux, const char *HDF5FileName)
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  output_dft_components(chunklists, 2, HDF5FileName)
+  output_dft_components(chunklists, 2, HDF5FileName);
 }
 
 void fields::output_dft(dft_force force, const char *HDF5FileName)
@@ -854,7 +871,7 @@ void fields::output_dft(dft_force force, const char *HDF5FileName)
   chunklists[0] = force.offdiag1;
   chunklists[1] = force.offdiag2;
   chunklists[2] = force.diag;
-  output_dft_components(chunklists, 3, HDF5FileName)
+  output_dft_components(chunklists, 3, HDF5FileName);
 }
 
 void fields::output_dft(dft_near2far n2f, const char *HDF5FileName)
@@ -863,13 +880,17 @@ void fields::output_dft(dft_near2far n2f, const char *HDF5FileName)
   output_dft_components(chunklists, 1, HDF5FileName);
 }
 
-void fields::output_dft(dft_fields fields, const char *HDF5FileName)
+void fields::output_dft(dft_fields fdft, const char *HDF5FileName)
 {
   dft_chunk *chunklists[1];
-  chunklists[0] = fields.chunks;
+  chunklists[0] = fdft.chunks;
   output_dft_components(chunklists, 1, HDF5FileName);
 }
 
+/***************************************************************/
+/* does the same thing as output_dft(flux ...), but using      */
+/* eigenmode fields instead of dft_flux fields.                */
+/***************************************************************/
 void fields::output_mode_fields(void *mode_data, dft_flux flux,
                                 const char *HDF5FileName)
 {
@@ -880,27 +901,59 @@ void fields::output_mode_fields(void *mode_data, dft_flux flux,
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
   FOR_E_AND_H(c)
-   process_dft_component(chunklists, 2, 0, c, 0, 0, mode_data, 0, c);
+   process_dft_component(chunklists, 2, 0, c, 0, 0, 0, 0, mode_data, 0, c);
 }
 
-cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq)
+/***************************************************************/
+/* routines for fetching arrays of dft fields                  */
+/***************************************************************/
+cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank, int dims[3])
 { 
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
   cdouble *array;
-  process_dft_component(chunklists, 2, num_freq, c, 0, &array);
+  process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims);
+  return array;
+}
+
+cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank, int dims[3])
+{ 
+  dft_chunk *chunklists[3];
+  chunklists[0] = force.offdiag1;
+  chunklists[1] = force.offdiag2;
+  chunklists[2] = force.diag;
+  cdouble *array;
+  process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims);
+  return array;
+}
+
+cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank, int dims[3])
+{ 
+  dft_chunk *chunklists[1];
+  chunklists[0] = n2f.F;
+  cdouble *array;
+  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
+  return array;
+}
+
+cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank, int dims[3])
+{ 
+  dft_chunk *chunklists[1];
+  chunklists[0] = fdft.chunks;
+  cdouble *array;
+  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
+  return array;
 }
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
 void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
-                         int num_freq, direction normal_dir,
-                         cdouble overlaps[2])
+                         int num_freq, cdouble overlaps[2])
 {
   component cE[2], cH[2];
-  switch (normal_dir)
+  switch (flux.normal_direction)
    { case X: cE[0] = Ey; cH[0] = Hz; cE[1] = Ez; cH[1] = Hy; break;
      case Y: cE[0] = Ez; cH[0] = Hx; cE[1] = Ex; cH[1] = Hz; break;
      case R: cE[0] = Ep; cH[0] = Hz; cE[1] = Ez; cH[1] = Hp; break;
@@ -910,40 +963,39 @@ void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
              else
 	      cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
 	     break;
-     default: abort("invalid normal_dir in get_overlap");
+     default: abort("invalid normal_direction in get_overlap");
    };
 
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
   cdouble ExHy = process_dft_component(chunklists, 2, num_freq,
-                                       cE[0], 0, 0, mode1_data, mode2_data,
-                                       cH[0])
+                                       cE[0], 0, 0, 0, 0, mode1_data, mode2_data,
+                                       cH[0]);
   cdouble EyHx = process_dft_component(chunklists, 2, num_freq,
-                                       cE[1], 0, 0, mode1_data, mode2_data,
-                                       cH[1])
+                                       cE[1], 0, 0, 0, 0, mode1_data, mode2_data,
+                                       cH[1]);
   cdouble HyEx = process_dft_component(chunklists, 2, num_freq,
-                                       cH[0], 0, 0, mode1_data, mode2_data,
-                                       cE[0])
+                                       cH[0], 0, 0, 0, 0, mode1_data, mode2_data,
+                                       cE[0]);
   cdouble HxEy = process_dft_component(chunklists, 2, num_freq,
-                                       cH[1], 0, 0, mode1_data, mode2_data,
-                                       cE[1])
+                                       cH[1], 0, 0, 0, 0, mode1_data, mode2_data,
+                                       cE[1]);
   overlaps[0] = ExHy - EyHx;
   overlaps[1] = HyEx - HxEy;
 }
 
 void fields::get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
-                                   direction normal_dir,
                                    std::complex<double>overlaps[2])
 { 
-  get_overlap(mode_data, 0, flux, num_freq, normal_dir, overlaps); 
+  get_overlap(mode_data, 0, flux, num_freq, overlaps);
 }
 
 void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data,
-                                   dft_flux flux, direction normal_dir,
+                                   dft_flux flux, 
                                    std::complex<double>overlaps[2])
 { 
- get_overlap(mode1_data, mode2_data, flux, 0, normal_dir, overlaps); 
+  get_overlap(mode1_data, mode2_data, flux, 0, overlaps); 
 }
 
 } // namespace meep

@@ -25,19 +25,21 @@ using namespace std;
 namespace meep {
 
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_,
-            		     dft_chunk *diag_,
-            		     double fmin, double fmax, int Nf)
+                     dft_chunk *diag_,
+                     double fmin, double fmax, int Nf, const volume &where_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
   Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   offdiag1 = offdiag1_; offdiag2 = offdiag2_; diag = diag_;
+  where = new volume(where_.get_min_corner(), where_.get_max_corner());
 }
 
 dft_force::dft_force(const dft_force &f) {
   freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
   offdiag1 = f.offdiag1; offdiag2 = f.offdiag2; diag = f.diag;
+  where = new volume(f.where->get_min_corner(), f.where->get_max_corner());
 }
 
 void dft_force::remove()
@@ -137,6 +139,7 @@ dft_force fields::add_dft_force(const volume_list *where_,
 
   volume_list *where = S.reduce(where_);
   volume_list *where_save = where;
+  volume everywhere = where->v;
 
   for (; where; where = where->next) {
     direction nd = normal_direction(where->v);
@@ -170,10 +173,11 @@ dft_force fields::add_dft_force(const volume_list *where_,
 		       where->v, freq_min, freq_max, Nfreq,
 		       true, 1.0, diag, true, weight1, false);
       }
+    everywhere = everywhere | where->v;
   }
 
   delete where_save;
-  return dft_force(offdiag1, offdiag2, diag, freq_min, freq_max, Nfreq);
+  return dft_force(offdiag1, offdiag2, diag, freq_min, freq_max, Nfreq, everywhere);
 }
 
 } // namespace meep
