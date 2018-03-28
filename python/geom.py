@@ -113,6 +113,19 @@ class Vector3(object):
         vperp = self - vpar
         return vpar + (vperp.scale(math.cos(theta)) + vcross.scale(math.sin(theta)))
 
+    # rotate vectors in lattice/reciprocal coords (note that the axis
+    # is also given in the corresponding basis):
+
+    def rotate_lattice(self, axis, theta, lat):
+        a = lattice_to_cartesian(axis, lat)
+        v = lattice_to_cartesian(self, lat)
+        return cartesian_to_lattice(v.rotate(a, theta), lat)
+
+    def rotate_reciprocal(self, axis, theta, lat):
+        a = reciprocal_to_cartesian(axis, lat)
+        v = reciprocal_to_cartesian(self, lat)
+        return cartesian_to_reciprocal(v.rotate(a, theta), lat)
+
 
 class Medium(object):
 

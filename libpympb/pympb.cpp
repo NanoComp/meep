@@ -202,7 +202,8 @@ mode_solver::mode_solver(int num_bands,
                          bool negative_epsilon_ok,
                          std::string epsilon_input_file,
                          std::string mu_input_file,
-                         bool force_mu):
+                         bool force_mu,
+                         bool use_simple_preconditioner):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
@@ -212,6 +213,7 @@ mode_solver::mode_solver(int num_bands,
   epsilon_input_file(epsilon_input_file),
   mu_input_file(mu_input_file),
   force_mu(force_mu),
+  use_simple_preconditioner(use_simple_preconditioner),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
   last_parity(-2),
@@ -1113,10 +1115,9 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       // if (eigensolver_davidsonp) {
       // }
       CHECK(mdata->mu_inv==NULL, "targeted solver doesn't handle mu");
-      // TODO: simple_preconditionerp ? maxwell_target_preconditioner : maxwell_target_preconditioner2
-      eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata,
-                  NULL, NULL, maxwell_target_preconditioner2, (void *)mtdata,
-                  evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
+      eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata, NULL, NULL,
+                  use_simple_preconditioner ? maxwell_target_preconditioner : maxwell_target_preconditioner2,
+                  (void *)mtdata, evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
                   tolerance, &num_iters, flags);
 
       // now, diagonalize the real Maxwell operator in the solution subspace to
@@ -1131,9 +1132,9 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
       eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
                   mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
-                  maxwell_preconditioner2, (void *) mdata, evectconstraint_chain_func,
-                  (void *) constraints, W, nwork_alloc, tolerance, &num_iters,
-                  flags);
+                  use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
+                  (void *) mdata, evectconstraint_chain_func, (void *) constraints,
+                  W, nwork_alloc, tolerance, &num_iters, flags);
     }
 
     if (Hblock.data != H.data) {  /* save solutions of current block */
