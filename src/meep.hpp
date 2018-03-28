@@ -838,9 +838,11 @@ public:
   // chunk-by-chunk helper routine called by
   // fields::process_dft_component
   std::complex<double> process_dft_component(int rank, direction *ds,
-                                             ivec min_corner, int num_freq,
+                                             ivec min_corner, ivec max_corner,
+                                             int num_freq,
                                              h5file *file, double *buffer, 
-                                             int reim,
+                                             int reim, 
+                                             std::complex<double> *field_array,
                                              void *mode1_data, void *mode2_data,
                                              component c_conjugate);
 
@@ -1530,40 +1532,43 @@ class fields {
   /* process_dft_component is an intermediate-level       */
   /* routine that serves as a common back end for several */
   /* operations involving DFT fields (specifically,       */
-  /* writing DFT fields to HDF5 files and evaluating      */
-  /* overlap integrals between flux and mode fields.)     */
+  /* writing DFT fields to HDF5 files, fetching arrays    */
+  /* of DFT fields, and  evaluating overlap integrals     */
+  /* flux and mode fields.)                               */
   /********************************************************/
   std::complex<double> process_dft_component(dft_chunk **chunklists,
                                              int num_chunklists,
                                              int num_freq, component c,
                                              const char *HDF5FileName,
+                                             std::complex<double> **field_array,
                                              void *mode1_data=0,
                                              void *mode2_data=0,
                                              component c_conjugate=Ex,
-                                             const volume *where=0,
                                              bool *first_component=0);
   
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists,
-                             const char *HDF5FileName, const volume *where=0);
+                             const char *HDF5FileName);
 
-  void output_dft(dft_flux flux, const char *HDF5FileName, const volume *where=0);
-  void output_dft(dft_force force, const char *HDF5FileName, const volume *where=0);
-  void output_dft(dft_near2far n2f, const char *HDF5FileName, const volume *where=0);
-  void output_dft(dft_fields fields, const char *HDF5FileName, const volume *where=0);
+  void output_dft(dft_flux flux, const char *HDF5FileName);
+  void output_dft(dft_force force, const char *HDF5FileName);
+  void output_dft(dft_near2far n2f, const char *HDF5FileName);
+  void output_dft(dft_fields fields, const char *HDF5FileName);
   void output_mode_fields(void *mode_data, dft_flux flux,
-                          const char *HDF5FileName, const volume *where=0);
+                          const char *HDF5FileName);
+
+  // get array of DFT field values
+  std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq);
   
   // overlap integrals between eigenmode fields and DFT flux fields
   void get_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                    int num_freq, direction normal_dir,
-                   std::complex<double>overlaps[2], volume *where=0);
+                   std::complex<double>overlaps[2]);
   void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
-                             direction normal_dir, 
-                             std::complex<double>overlaps[2], volume *where=0);
+                             direction normal_dir, std::complex<double>overlaps[2]);
   void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                              direction normal_dir,
-                             std::complex<double>overlaps[2], volume *where=0);
+                             std::complex<double>overlaps[2]);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
