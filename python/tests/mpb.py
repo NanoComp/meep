@@ -1122,7 +1122,7 @@ class TestModeSolver(unittest.TestCase):
         ms.run_tm(mpb.output_at_kpoint(k, mpb.fix_efield_phase, get_efields))
 
         md = mpb.MPBData(rectify=True, periods=3, resolution=32, verbose=True)
-        result = md.convert(efields[-1], ms.k_points[10])
+        result = md.convert(efields[-1])
 
         ref_fn = 'converted-tri-rods-e.k11.b08.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)

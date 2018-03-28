@@ -14,6 +14,7 @@ class MPBData(object):
 
     def __init__(self,
                  lattice=None,
+                 kpoint=None,
                  rectify=False,
                  x=0,
                  y=0,
@@ -26,6 +27,7 @@ class MPBData(object):
                  verbose=False):
 
         self.lattice = lattice
+        self.kpoint = kpoint
         self.rectify = rectify
 
         if periods:
@@ -56,7 +58,7 @@ class MPBData(object):
                              math.sin(self.TWOPI * self.phase_angle / 360.0))
         self.scaleby *= self.phase
 
-    def handle_dataset(self, in_arr, kvector):
+    def handle_dataset(self, in_arr):
 
         out_dims = [1, 1, 1]
         rank = len(in_arr.shape)
@@ -103,8 +105,8 @@ class MPBData(object):
         flat_in_arr_re = in_arr_re.ravel()
         flat_in_arr_im = in_arr_im.ravel() if isinstance(in_arr_im, np.ndarray) else np.array([])
 
-        if kvector:
-            kvector = [kvector.x, kvector.y, kvector.z]
+        if self.kpoint:
+            kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z]
         else:
             kvector = []
 
@@ -121,7 +123,7 @@ class MPBData(object):
 
         return np.reshape(out_arr_re, out_dims[:rank])
 
-    def handle_cvector_dataset(self, in_arr, kvector):
+    def handle_cvector_dataset(self, in_arr):
         in_x_re = np.real(in_arr[:, :, 0]).ravel()
         in_x_im = np.imag(in_arr[:, :, 0]).ravel()
         in_y_re = np.real(in_arr[:, :, 1]).ravel()
@@ -179,8 +181,8 @@ class MPBData(object):
             fmt = "Output data {}x{}x{}."
             print(fmt.format(out_dims[0], out_dims[1], out_dims[2]))
 
-        if kvector:
-            kvector = [kvector.x, kvector.y, kvector.z]
+        if self.kpoint:
+            kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z]
         else:
             kvector = []
 
@@ -205,7 +207,7 @@ class MPBData(object):
 
         return np.reshape(result, (out_dims[0], out_dims[1], 3))
 
-    def init_output_lattice(self, kvector):
+    def init_output_lattice(self):
 
         cart_map = mp.Matrix(
             mp.Vector3(1, 0, 0),
@@ -221,8 +223,9 @@ class MPBData(object):
 
         if self.verbose:
             print("Read lattice vectors")
-            if kvector:
-                print("Read Bloch wavevector ({:.6g}, {:.6g}, {:.6g})".format(kvector.x, kvector.y, kvector.z))
+            if self.kpoint:
+                fmt = "Read Bloch wavevector ({:.6g}, {:.6g}, {:.6g})"
+                print(fmt.format(self.kpoint.x, self.kpoint.y, self.kpoint.z))
             fmt = "Input lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
             print(fmt.format(Rin.c1.x, Rin.c1.y, Rin.c1.z,
                              Rin.c2.x, Rin.c2.y, Rin.c2.z,
@@ -279,6 +282,7 @@ class MPBData(object):
     def convert(self, arr, kpoint=None):
         if isinstance(arr, MPBArray):
             self.lattice = arr.lattice
+            self.kpoint = arr.kpoint
 
         if self.lattice is None:
             err = ("Couldn't find 'lattice.' You must do one of the following:\n" +
@@ -288,9 +292,12 @@ class MPBData(object):
                    "     i.e., mpb_arr = MPBArray(arr, ms.get_lattice(), ... ); mpb_data.convert(mpb_arr))")
             raise ValueError(err)
 
-        self.init_output_lattice(kpoint)
+        if kpoint:
+            self.kpoint = kpoint
+
+        self.init_output_lattice()
 
         if len(arr.shape) == 3:
-            return self.handle_cvector_dataset(arr, kpoint)
+            return self.handle_cvector_dataset(arr)
         else:
-            return self.handle_dataset(arr, kpoint)
+            return self.handle_dataset(arr)

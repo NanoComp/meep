@@ -25,12 +25,13 @@ U_SUM = 2
 
 class MPBArray(np.ndarray):
 
-    def __new__(cls, input_array, lattice):
+    def __new__(cls, input_array, lattice, kpoint=None):
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
         obj = np.asarray(input_array).view(cls)
-        # add the lattice to the created instance
+        # add the new properties to the created instance
         obj.lattice = lattice
+        obj.kpoint = kpoint
         # Finally, we must return the newly created object:
         return obj
 
@@ -61,6 +62,7 @@ class MPBArray(np.ndarray):
         # MPBArray.__new__ constructor, but also with
         # arr.view(MPBArray).
         self.lattice = getattr(obj, 'lattice', None)
+        self.kpoint = getattr(obj, 'kpoint', None)
 
 
 class ModeSolver(object):
@@ -185,7 +187,7 @@ class ModeSolver(object):
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
-        return flat_res
+        return MPBArray(res, self.get_lattice, self.get_current_kpoint)
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
@@ -238,7 +240,7 @@ class ModeSolver(object):
         self.mode_solver.get_curfield_cmplx(arr)
 
         arr = np.reshape(arr, dims)
-        res = MPBArray(arr, self.get_lattice())
+        res = MPBArray(arr, self.get_lattice(), self.get_current_kpoint())
 
         return res
 
@@ -278,13 +280,13 @@ class ModeSolver(object):
         self.mode_solver.set_curfield(tot_pwr.ravel())
         self.mode_solver.set_curfield_type('R')
 
-        return tot_pwr
+        return MPBArray(tot_pwr, self.get_lattice(), self.get_current_kpoint())
 
     def get_eigenvectors(self, first_band, num_bands):
         dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
         ev = np.zeros(np.prod(dims), dtype=np.complex128)
         self.mode_solver.get_eigenvectors(first_band - 1, num_bands, ev)
-        return ev.reshape(dims)
+        return MPBArray(ev.reshape(dims), self.get_lattice(), self.get_current_kpoint())
 
     def set_eigenvectors(self, ev, first_band):
         self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
@@ -399,6 +401,9 @@ class ModeSolver(object):
         self.mode_solver.get_lattice(lattice)
 
         return lattice
+
+    def get_current_kpoint(self):
+        return self.mode_solver.get_cur_kvector()
 
     def output_field(self):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())

@@ -25,13 +25,13 @@ def main():
               get_efields))
 
     # Create an MPBData instance to transform the efields
-    md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3)
+    md = mpb.MPBData(rectify=True, resolution=32, periods=3)
 
     converted = []
     for f in efields:
         # Get just the z component of the efields
         f = f[:, :, 2]
-        converted.append(md.convert(f, ms.k_points[10]))
+        converted.append(md.convert(f))
 
     ms.run_te()
 
@@ -40,7 +40,7 @@ def main():
     plt.axis('off')
     plt.show()
 
-    md = mpb.MPBData(ms.get_lattice(), rectify=True, resolution=32, periods=3)
+    md = mpb.MPBData(rectify=True, resolution=32, periods=3)
     rectangular_data = md.convert(eps)
     plt.imshow(rectangular_data.T, interpolation='spline36', cmap='binary')
     plt.axis('off')
