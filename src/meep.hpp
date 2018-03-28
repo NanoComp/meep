@@ -316,6 +316,8 @@ public:
   void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
 		  realnum *data);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+		  size_t *data);
 
   void remove();
   void remove_data(const char *dataname);

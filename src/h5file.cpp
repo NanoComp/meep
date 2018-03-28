@@ -799,15 +799,14 @@ void h5file::write(const char *dataname, const char *data)
 /* Inverse of write_chunk, above.  The caller must first get the
    total dataset's rank and dims first by calling read_size, above,
    (which also opens the dataset for reading). */
-void h5file::read_chunk(int rank,
-			const size_t *chunk_start, const size_t *chunk_dims,
-			realnum *data)
-
+static void _read_chunk(hid_t data_id,
+                        int rank, const size_t *chunk_start, const size_t *chunk_dims,
+                        hid_t datatype, void *data)
 {
 #ifdef HAVE_HDF5
   bool do_read = true;
   int rank1;
-  hid_t space_id, mem_space_id, data_id = HID(cur_id);
+  hid_t space_id, mem_space_id;
 
   CHECK(data_id >= 0, "read_size must be called before read_chunk");
 
@@ -859,7 +858,7 @@ void h5file::read_chunk(int rank,
   /* Read the data, then free all the stuff we've allocated. */
 
   if (do_read)
-    H5Dread(data_id, REALNUM_H5T, mem_space_id, space_id, H5P_DEFAULT,
+    H5Dread(data_id, datatype, mem_space_id, space_id, H5P_DEFAULT,
 	    (void *) data);
 
   H5Sclose(mem_space_id);
@@ -867,6 +866,22 @@ void h5file::read_chunk(int rank,
 #else
   abort("not compiled with HDF5, required for HDF5 input");
 #endif
+}
+
+void h5file::read_chunk(int rank,
+			const size_t *chunk_start, const size_t *chunk_dims,
+			realnum *data)
+{
+     _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, REALNUM_H5T, (void*) data);
+}
+
+
+
+void h5file::read_chunk(int rank,
+			const size_t *chunk_start, const size_t *chunk_dims,
+			size_t *data)
+{
+     _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, SIZE_T_H5T, (void*) data);
 }
 
 } // namespace meep
