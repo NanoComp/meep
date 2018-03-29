@@ -34,10 +34,8 @@ class TestModeSolver(unittest.TestCase):
         print('=' * 24)
 
         def rm_h5():
-            mp.all_wait()
-            if mp.am_master():
-                for f in glob.glob("{}*.h5".format(self.filename_prefix)):
-                    os.remove(f)
+            for f in glob.glob("{}*.h5".format(self.filename_prefix)):
+                os.remove(f)
 
         self.addCleanup(rm_h5)
 
@@ -196,7 +194,6 @@ class TestModeSolver(unittest.TestCase):
             self.assertLess(diff, tol)
 
     def compare_h5_files(self, ref_path, res_path, tol=1e-3):
-        mp.all_wait()
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, 'r') as res:
                 for k in ref.keys():
@@ -1294,4 +1291,5 @@ class TestModeSolver(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    if mp.am_master():
+        unittest.main()
