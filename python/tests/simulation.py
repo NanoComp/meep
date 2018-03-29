@@ -241,10 +241,12 @@ class TestSimulation(unittest.TestCase):
         eps = {'arr1': None, 'arr2': None}
 
         def get_arr1(sim):
-            eps['arr1'] = sim.get_array(mp.Vector3(), mp.Vector3(10, 10), mp.Dielectric)
+            eps['arr1'] = sim.get_array(mp.Volume(mp.Vector3(), mp.Vector3(10, 10)),
+                                        component=mp.Dielectric)
 
         def get_arr2(sim):
-            eps['arr2'] = sim.get_array(mp.Vector3(), mp.Vector3(10, 10), mp.Dielectric)
+            eps['arr2'] = sim.get_array(mp.Volume(mp.Vector3(), mp.Vector3(10, 10)),
+                                        component=mp.Dielectric)
 
         sim.run(mp.at_time(50, get_arr1), mp.at_time(100, change_geom),
                 mp.at_end(get_arr2), until=200)

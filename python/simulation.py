@@ -305,6 +305,21 @@ class Simulation(object):
     def _fit_volume_to_simulation(self, vol):
         return Volume(vol.center, vol.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
 
+    # Every function that takes a user volume can be specified either by a volume
+    # (a Python Volume or a SWIG-wrapped meep::volume), or a center and a size
+    def _volume_from_kwargs(self, vol=None, center=None, size=None):
+        if vol:
+            if isinstance(vol, Volume):
+                # A pure Python Volume
+                return self._fit_volume_to_simulation(vol).swigobj
+            else:
+                # A SWIG-wrapped meep::volume
+                return vol
+        elif size and center:
+            return Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical).swigobj
+        else:
+            raise ValueError("Need either a Volume, or a size and center")
+
     def _infer_dimensions(self, k):
         if self.dimensions == 3:
 
@@ -657,25 +672,25 @@ class Simulation(object):
                     src.amplitude * 1.0
                 )
 
-    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None):
+    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None):
         if self.fields is None:
             self.init_fields()
 
-        if where is None:
+        try:
+            where = self._volume_from_kwargs(where, center, size)
+        except ValueError:
             where = self.fields.total_volume()
-        else:
-            where = self._fit_volume_to_simulation(where).swigobj
 
         return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
 
-    def output_dft(self, dft_fields, fname, where=None):
+    def output_dft(self, dft_fields, fname, where=None, center=None, size=None):
         if self.fields is None:
             self.init_fields()
 
-        if where is None:
+        try:
+            where = self._volume_from_kwargs(where, center, size)
+        except ValueError:
             where = self.fields.total_volume()
-        else:
-            where = self._fit_volume_to_simulation(where).swigobj
 
         self.fields.output_dft(dft_fields, fname, where)
 
@@ -688,9 +703,9 @@ class Simulation(object):
     def get_farfield(self, f, v):
         return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
-    def output_farfields(self, near2far, fname, where, resolution):
-        vol = self._fit_volume_to_simulation(where)
-        near2far.save_farfields(fname, self.get_filename_prefix(), vol.swigobj, resolution)
+    def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
+        vol = self._volume_from_kwargs(where, center, size)
+        near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
 
     def load_near2far(self, fname, n2f):
         if self.fields is None:
@@ -755,50 +770,46 @@ class Simulation(object):
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
-    def flux_in_box(self, d, box):
+    def flux_in_box(self, d, box=None, center=None, size=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using flux_in_box')
 
-        if isinstance(box, mp.Volume):
-            box = self._fit_volume_to_simulation(box).swigobj
+        box = self._volume_from_kwargs(box, center, size)
 
         return self.fields.flux_in_box(d, box)
 
-    def electric_energy_in_box(self, box):
+    def electric_energy_in_box(self, box=None, center=None, size=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
 
-        if isinstance(box, mp.Volume):
-            box = self._fit_volume_to_simulation(box).swigobj
+        box = self._volume_from_kwargs(box, center, size)
 
         return self.fields.electric_energy_in_box(box)
 
-    def magnetic_energy_in_box(self, box):
+    def magnetic_energy_in_box(self, box=None, center=None, size=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
 
-        if isinstance(box, mp.Volume):
-            box = self._fit_volume_to_simulation(box).swigobj
+        box = self._volume_from_kwargs(box, center, size)
 
         return self.fields.magnetic_energy_in_box(box)
 
-    def field_energy_in_box(self, box):
+    def field_energy_in_box(self, box=None, center=None, size=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using field_energy_in_box')
 
-        if isinstance(box, mp.Volume):
-            box = self._fit_volume_to_simulation(box).swigobj
+        box = self._volume_from_kwargs(box, center, size)
 
         return self.fields.field_energy_in_box(box)
 
-    def modal_volume_in_box(self, box=None):
+    def modal_volume_in_box(self, box=None, center=None, size=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using modal_volume_in_box')
 
-        if box is None:
+        try:
+            box = self._volume_from_kwargs(box, center, size)
+        except ValueError:
             box = self.fields.total_volume()
-        else:
-            box = self._fit_volume_to_simulation(box).swigobj
 
         return self.fields.modal_volume_in_box(box)
 
@@ -866,10 +877,10 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
+    def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.int32)
-        vol = Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
-        self.fields.get_array_slice_dimensions(vol.swigobj, dim_sizes)
+        v = self._volume_from_kwargs(vol, center, size)
+        self.fields.get_array_slice_dimensions(v, dim_sizes)
 
         dims = [s for s in dim_sizes if s != 0]
 
@@ -891,9 +902,9 @@ class Simulation(object):
             arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
         if np.iscomplexobj(arr):
-            self.fields.get_complex_array_slice(vol.swigobj, component, arr)
+            self.fields.get_complex_array_slice(v, component, arr)
         else:
-            self.fields.get_array_slice(vol.swigobj, component, arr)
+            self.fields.get_array_slice(v, component, arr)
 
         return arr
 
@@ -910,23 +921,24 @@ class Simulation(object):
         if h5file is None:
             self.output_h5_hook(self.fields.h5file_name(name, self.get_filename_prefix(), True))
 
-    def _get_field_function_volume(self, where):
-        if where is None:
+    def _get_field_function_volume(self, where=None, center=None, size=None):
+        try:
+            where = self._volume_from_kwargs(where, center, size)
+        except ValueError:
             where = self.fields.total_volume()
-        else:
-            where = self._fit_volume_to_simulation(where).swigobj
+
         return where
 
-    def integrate_field_function(self, cs, func, where=None):
-        where = self._get_field_function_volume(where)
+    def integrate_field_function(self, cs, func, where=None, center=None, size=None):
+        where = self._get_field_function_volume(where, center, size)
         return self.fields.integrate([cs, func], where)
 
-    def integrate2_field_function(self, fields2, cs1, cs2, func, where=None):
-        where = self._get_field_function_volume(where)
+    def integrate2_field_function(self, fields2, cs1, cs2, func, where=None, center=None, size=None):
+        where = self._get_field_function_volume(where, center, size)
         return self.fields.integrate2(fields2, [cs1, cs2, func], where)
 
-    def max_abs_field_function(self, cs, func, where=None):
-        where = self._get_field_function_volume(where)
+    def max_abs_field_function(self, cs, func, where=None, center=None, size=None):
+        where = self._get_field_function_volume(where, center, size)
         return self.fields.max_abs([cs, func], where)
 
     def change_k_point(self, k):

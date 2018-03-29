@@ -101,7 +101,7 @@ import matplotlib.pyplot as plt
 We will first create an image of the dielectric function $\varepsilon$. This involves obtaining a slice of the data using the [`get_array`](../Python_User_Interface/#array-slices) routine which outputs to a NumPy array and then display the results.
 
 ```py
-eps_data = sim.get_array(mp.Vector3(), cell, mp.Dielectric)
+eps_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric)
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.axis('off')
@@ -111,7 +111,7 @@ plt.show()
 Next, we create an image of the scalar electric field $E_z$ by overlaying the dielectric function. We use the "RdBu" [colormap](https://matplotlib.org/examples/color/colormaps_reference.html) which goes from dark red (negative) to white (zero) to dark blue (positive).
 
 ```py
-ez_data = sim.get_array(mp.Vector3(), cell, mp.Ez)
+ez_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Ez)
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)

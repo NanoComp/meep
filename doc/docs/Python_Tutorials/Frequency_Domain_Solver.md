@@ -58,7 +58,7 @@ plt.xlabel("frequency-domain solver tolerance");
 plt.ylabel("L2 norm of error in fields");
 plt.show()
 
-eps_data = sim.get_array(mp.Vector3(), mp.Vector3(sxy-2*dpml,sxy-2*dpml), mp.Dielectric)
+eps_data = sim.get_array(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml), component=mp.Dielectric)
 ez_data = np.absolute(ez_dat[:,:,num_tols-1])
 
 plt.figure(dpi=100)
@@ -104,7 +104,7 @@ ezi = f["ez_0.i"].value
 ezr = f["ez_0.r"].value
 ez_dat = ezr + 1j * ezi
 
-eps_data = sim.get_array(mp.Vector3(), mp.Vector3(sxy-2*dpml,sxy-2*dpml), mp.Dielectric)
+eps_data = sim.get_array(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml), component=mp.Dielectric)
 ez_data = np.absolute(ez_dat)
 
 plt.figure(dpi=100)
