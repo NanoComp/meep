@@ -60,11 +60,11 @@ symmetry make_rotate4z(const grid_volume &gv)
 typedef symmetry (*symfunc)(const grid_volume &);
 
 const double tol = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-8;
-double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
+double compare(double a, double b, const char *nam, size_t i0,size_t i1,size_t i2) {
   if (fabs(a-b) > tol*tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
-    abort("Error in %s at (%d,%d,%d)\n", nam, i0,i1,i2);
+    abort("Error in %s at (%zd,%zd,%zd)\n", nam, i0,i1,i2);
   }
   return fabs(a-b);
 }
@@ -127,7 +127,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
-    int rank, dims[2] = {1, 1};
+    int rank;
+    size_t dims[2] = {1, 1};
 
     char dataname[256];
     snprintf(dataname, 256, "%s%s", component_name(file_c),
@@ -140,14 +141,14 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     if (rank != expected_rank)
 	 abort("incorrect rank (%d instead of %d) in %s:%s\n",
 	       rank, expected_rank, name, dataname);
-    if (expected_rank == 1 && 
+    if (expected_rank == 1 &&
 	file_gv.in_direction_min(X) == file_gv.in_direction_max(X)) {
       dims[1] = dims[0];
       dims[0] = 1;
     }
     vec loc(loc0.dim);
-    for (int i0 = 0; i0 < dims[0]; ++i0) {
-      for (int i1 = 0; i1 < dims[1]; ++i1) {
+    for (size_t i0 = 0; i0 < dims[0]; ++i0) {
+      for (size_t i1 = 0; i1 < dims[1]; ++i1) {
 	loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
 	loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
 	ptrdiff_t idx = i0 * dims[1] + i1;
@@ -244,7 +245,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
-    int rank, dims[3] = {1, 1, 1};
+    int rank;
+    size_t dims[3] = {1, 1, 1};
 
     char dataname[256];
     snprintf(dataname, 256, "%s%s", component_name(file_c),
@@ -258,14 +260,14 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	 abort("incorrect rank (%d instead of %d) in %s:%s\n",
 	       rank, expected_rank, name, dataname);
     vec loc(loc0.dim);
-    for (int i0 = 0; i0 < dims[0]; ++i0) {
-      for (int i1 = 0; i1 < dims[1]; ++i1) {
-	for (int i2 = 0; i2 < dims[2]; ++i2) {
+    for (size_t i0 = 0; i0 < dims[0]; ++i0) {
+      for (size_t i1 = 0; i1 < dims[1]; ++i1) {
+	for (size_t i2 = 0; i2 < dims[2]; ++i2) {
 	  loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
 	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
 	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * gv.inva);
 	  ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
-	  
+
 	  /* Ugh, for rotational symmetries (which mix up components etc.),
 	     we can't guarantee that a component is *exactly* the
 	     same as its rotated version, and we don't know which one
@@ -287,7 +289,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      diff = diff2;
 	    }
 	  }
-	  
+
 	  double err = compare(h5data[idx],
 			       get_reim(f.get_field(cs, loc)*ph,reim),
 			       name, i0,i1,i2);
@@ -358,7 +360,8 @@ bool check_2d_monitor(double eps(const vec &),
   double err_max = 0;
 
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
-    int rank, dims[1] = {1};
+    int rank;
+    size_t dims[1] = {1};
 
     char dataname[256];
     snprintf(dataname, 256, "%s%s", component_name(file_c),
@@ -370,7 +373,7 @@ bool check_2d_monitor(double eps(const vec &),
 	 abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
     if (rank != 1)
       abort("monitor-point data is not one-dimensional");
-    if (dims[0] != f.t)
+    if (dims[0] != size_t(f.t))
       abort("incorrect size of monitor-point data");
 
     for (int i = 0; i < f.t; ++i) {
@@ -427,7 +430,7 @@ int main(int argc, char **argv)
 		1, gv_2d_rank[1], "initial check"))
     return 1;
 #endif
-  
+
   /* this test takes too long, so only do 1/chances of the cases,
      "randomly" selected */
   srand(314159); /* deterministic "rand" */
@@ -461,11 +464,11 @@ int main(int argc, char **argv)
 		     Sf2_name[iS], splitting,
 		     component_name(tm_c[ic]), use_real ? "_r" : "");
 	    master_printf("Checking %s...\n", name);
-	    if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, 
+	    if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez,
 	    			  tm_c[ic], vec(pad1,pad2), use_real, name))
 	      return 1;
 	  }
-  
+
   volume gv_3d[4] = {
        volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,zsize-pad3)),
        volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,pad3)),
