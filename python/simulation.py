@@ -929,14 +929,14 @@ class Simulation(object):
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_obj))
 
-    def get_eigenmode_coefficients(self, flux, direction, vol, bands, alpha, vgrp):
+    def get_eigenmode_coefficients(self, flux, bands, eigvol=None):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
 
-        if isinstance(vol, mp.Volume):
-            vol = self._fit_volume_to_simulation(vol).swigobj
-
-        return self.fields.get_eigenmode_coefficients(flux, direction, vol, alpha, vgrp)
+        num_bands = len(bands)
+        coeffs = np.zeros(2 * num_bands, dtype=np.complex128)
+        self.fields.get_eigenmode_coefficients(flux, np.array(bands, dtype=np.intc), coeffs, None)
+        return coeffs
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
