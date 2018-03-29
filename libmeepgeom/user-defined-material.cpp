@@ -56,13 +56,13 @@ bool compare_hdf5_datasets(const char *file1, const char *name1,
 {
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
-  int *dims1=new int[expected_rank];
+  size_t *dims1=new size_t[expected_rank];
   double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
   if (!data1) return false;
 
   h5file f2(file2, h5file::READONLY, false);
   int rank2;
-  int *dims2=new int[expected_rank];
+  size_t *dims2=new size_t[expected_rank];
   double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
   if (!data2) return false;
 
@@ -77,7 +77,7 @@ bool compare_hdf5_datasets(const char *file1, const char *name1,
 
   double norm1=0.0, norm2=0.0, normDelta=0.0;
   for(size_t n=0; n<size; n++)
-   { double d1=data1[n], d2=data2[n], delta=d1-d2; 
+   { double d1=data1[n], d2=data2[n], delta=d1-d2;
      norm1     += d1*d1;
      norm2     += d2*d2;
      normDelta += delta*delta;
@@ -104,13 +104,13 @@ double dummy_eps(const vec &) { return 1.0; }
 /* configuration of the cyl-ellipsoid sample code              */
 /***************************************************************/
 typedef struct my_material_func_data
-  { 
+  {
     double rxInner, ryInner, rOuter;
-    bool with_susceptibility; 
+    bool with_susceptibility;
   } my_material_func_data;
 
 void my_material_func(vector3 p, void *user_data, meep_geom::medium_struct *m)
-{ 
+{
   my_material_func_data *data=(my_material_func_data *)user_data;
   double rxInner = data->rxInner, rxInner2=rxInner*rxInner;
   double ryInner = data->ryInner, ryInner2=ryInner*ryInner;
@@ -126,10 +126,10 @@ void my_material_func(vector3 p, void *user_data, meep_geom::medium_struct *m)
   // set permittivity
   double nn = in_middle ? 3.5 : 1.0;
   m->epsilon_diag.x = m->epsilon_diag.y = m->epsilon_diag.z = nn*nn;
- 
+
   // add susceptibilities (two-oscillator model for Ag)
   if (in_middle&& data->with_susceptibility)
-   { 
+   {
       m->E_susceptibilities.num_items = 2;
       m->E_susceptibilities.items = new meep_geom::susceptibility[2];
 
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
   data.rxInner = R1X;
   data.ryInner = R1Y;
   data.rOuter  = R2;
-  
+
   meep_geom::material_type my_material
    = meep_geom::make_user_material(my_material_func, (void *)&data);
 
