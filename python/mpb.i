@@ -352,6 +352,7 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
 
 %pythoncode %{
     from .solver import (
+        MPBArray,
         ModeSolver,
         output_hfield,
         output_hfield_x,

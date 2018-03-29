@@ -23,6 +23,48 @@ U_PROD = 1
 U_SUM = 2
 
 
+class MPBArray(np.ndarray):
+
+    def __new__(cls, input_array, lattice, kpoint=None):
+        # Input array is an already formed ndarray instance
+        # We first cast to be our class type
+        obj = np.asarray(input_array).view(cls)
+        # add the new properties to the created instance
+        obj.lattice = lattice
+        obj.kpoint = kpoint
+        # Finally, we must return the newly created object:
+        return obj
+
+    def __array_finalize__(self, obj):
+        # ``self`` is a new object resulting from
+        # ndarray.__new__(MPBArray, ...), therefore it only has
+        # attributes that the ndarray.__new__ constructor gave it -
+        # i.e. those of a standard ndarray.
+
+        # We could have got to the ndarray.__new__ call in 3 ways:
+        # From an explicit constructor - e.g. MPBArray(lattice):
+        #    obj is None
+        #    (we're in the middle of the MPBArray.__new__
+        #    constructor, and self.lattice will be set when we return to
+        #    MPBArray.__new__)
+        if obj is None:
+            return
+
+        # From view casting - e.g arr.view(MPBArray):
+        #    obj is arr
+        #    (type(obj) can be MPBArray)
+        # From new-from-template - e.g mpbarr[:3]
+        #    type(obj) is MPBArray
+        #
+        # Note that it is here, rather than in the __new__ method,
+        # that we set the default value for 'lattice', because this
+        # method sees all creation of default objects - with the
+        # MPBArray.__new__ constructor, but also with
+        # arr.view(MPBArray).
+        self.lattice = getattr(obj, 'lattice', None)
+        self.kpoint = getattr(obj, 'kpoint', None)
+
+
 class ModeSolver(object):
 
     def __init__(self,
@@ -145,7 +187,7 @@ class ModeSolver(object):
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
-        return flat_res
+        return MPBArray(res, self.get_lattice, self.get_current_kpoint)
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
@@ -154,7 +196,10 @@ class ModeSolver(object):
         eps = np.empty(np.prod(dims))
         self.mode_solver.get_curfield(eps)
 
-        return np.reshape(eps, dims)
+        arr = np.reshape(eps, dims)
+        res = MPBArray(arr, self.get_lattice())
+
+        return res
 
     def get_mu(self):
         self.mode_solver.get_mu()
@@ -196,14 +241,17 @@ class ModeSolver(object):
 
         dims = self.mode_solver.get_dims()
         dims += [3]
-        res = np.zeros(np.prod(dims), np.complex128)
+        arr = np.zeros(np.prod(dims), np.complex128)
 
         if output:
             self.mode_solver.multiply_bloch_phase()
 
-        self.mode_solver.get_curfield_cmplx(res)
+        self.mode_solver.get_curfield_cmplx(arr)
 
-        return np.reshape(res, dims)
+        arr = np.reshape(arr, dims)
+        res = MPBArray(arr, self.get_lattice(), self.get_current_kpoint())
+
+        return res
 
     def get_epsilon_point(self, p):
         return self.mode_solver.get_epsilon_point(p)
@@ -241,13 +289,13 @@ class ModeSolver(object):
         self.mode_solver.set_curfield(tot_pwr.ravel())
         self.mode_solver.set_curfield_type('R')
 
-        return tot_pwr
+        return MPBArray(tot_pwr, self.get_lattice(), self.get_current_kpoint())
 
     def get_eigenvectors(self, first_band, num_bands):
         dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
         ev = np.zeros(np.prod(dims), dtype=np.complex128)
         self.mode_solver.get_eigenvectors(first_band - 1, num_bands, ev)
-        return ev.reshape(dims)
+        return MPBArray(ev.reshape(dims), self.get_lattice(), self.get_current_kpoint())
 
     def set_eigenvectors(self, ev, first_band):
         self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
@@ -362,6 +410,9 @@ class ModeSolver(object):
         self.mode_solver.get_lattice(lattice)
 
         return lattice
+
+    def get_current_kpoint(self):
+        return self.mode_solver.get_cur_kvector()
 
     def output_field(self):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())

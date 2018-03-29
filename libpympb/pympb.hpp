@@ -133,6 +133,7 @@ struct mode_solver {
   void set_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   void get_lattice(double data[3][3]);
+  vector3 get_cur_kvector();
   void get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size);
   std::vector<int> get_eigenvectors_slice_dims(int num_bands);
   void set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, int size);
