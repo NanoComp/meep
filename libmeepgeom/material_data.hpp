@@ -154,7 +154,7 @@ struct material_data
 
    // these fields used only if which_subclass==MATERIAL_FILE
    meep::realnum *epsilon_data;
-   int epsilon_dims[3];
+   size_t epsilon_dims[3];
 
    material_data(): which_subclass(MEDIUM), medium(), user_data(NULL), epsilon_data(NULL) {
      epsilon_dims[0] = 0;

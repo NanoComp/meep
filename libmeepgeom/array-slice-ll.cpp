@@ -186,7 +186,8 @@ int main(int argc, char *argv[])
   volume v1d( vec(xMin, 0.0),  vec(xMax, 0.0) );
   volume v2d( vec(xMin, yMin), vec(xMax, yMax) );
 
-  int rank, dims1D[1], dims2D[2];
+  int rank;
+  size_t dims1D[1], dims2D[2];
   cdouble *file_slice1d=0;
   double *file_slice2d=0;
 
@@ -215,7 +216,7 @@ int main(int argc, char *argv[])
      if (rank!=1 || dims1D[0]!=NX)
       abort("failed to read 1D data(hz.i) from file %s.h5",H5FILENAME);
      file_slice1d = new cdouble[dims1D[0]];
-     for(int n=0; n<dims1D[0]; n++)
+     for(size_t n=0; n<dims1D[0]; n++)
       file_slice1d[n] = cdouble(rdata[n], idata[n]);
      delete[] rdata;
      delete[] idata;

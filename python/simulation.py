@@ -878,7 +878,7 @@ class Simulation(object):
         return convert_h5(rm_h5, cmd, *step_funcs)
 
     def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
-        dim_sizes = np.zeros(3, dtype=np.int32)
+        dim_sizes = np.zeros(3, dtype=np.uintp)
         v = self._volume_from_kwargs(vol, center, size)
         self.fields.get_array_slice_dimensions(v, dim_sizes)
 

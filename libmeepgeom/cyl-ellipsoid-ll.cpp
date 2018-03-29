@@ -31,13 +31,13 @@ bool compare_hdf5_datasets(const char *file1, const char *name1,
 {
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
-  int *dims1=new int[expected_rank];
+  size_t *dims1=new size_t[expected_rank];
   double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
   if (!data1) return false;
 
   h5file f2(file2, h5file::READONLY, false);
   int rank2;
-  int *dims2=new int[expected_rank];
+  size_t *dims2=new size_t[expected_rank];
   double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
   if (!data2) return false;
 

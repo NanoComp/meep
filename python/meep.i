@@ -544,6 +544,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 // Typemap suite for array_slice
 
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") size_t dims[3] {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") size_t dims[3] {
+    $1 = (size_t *)array_data($input);
+}
+
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {
     $1 = is_array($input);
 }
