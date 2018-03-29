@@ -75,8 +75,7 @@ class ModeSolver(object):
                  eigensolver_nwork=3,
                  eigensolver_block_size=-11,
                  eigensolver_flags=68,
-                 is_simple_preconditioner=False,
-                 is_deterministic=False,
+                 use_simple_preconditioner=False,
                  force_mu=False,
                  mu_input_file='',
                  epsilon_input_file='',
@@ -103,8 +102,7 @@ class ModeSolver(object):
         self.eigensolver_nwork = eigensolver_nwork
         self.eigensolver_block_size = eigensolver_block_size
         self.eigensolver_flags = eigensolver_flags
-        self.is_simple_preconditioner = is_simple_preconditioner
-        self.is_deterministic = is_deterministic
+        self.use_simple_preconditioner = use_simple_preconditioner
         self.force_mu = force_mu
         self.mu_input_file = mu_input_file
         self.epsilon_input_file = epsilon_input_file
@@ -252,6 +250,9 @@ class ModeSolver(object):
         res = MPBArray(arr, self.get_lattice(), self.get_current_kpoint())
 
         return res
+
+    def fix_field_phase(self):
+        self.mode_solver.fix_field_phase()
 
     def get_epsilon_point(self, p):
         return self.mode_solver.get_epsilon_point(p)
@@ -621,6 +622,12 @@ class ModeSolver(object):
         return self.mode_solver.compute_1_group_velocity_component(direction,
                                                                    which_band)
 
+    def compute_zparities(self):
+        return self.mode_solver.compute_zparities()
+
+    def compute_yparities(self):
+        return self.mode_solver.compute_yparities()
+
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
 
@@ -656,24 +663,7 @@ class ModeSolver(object):
         mean_time = self.total_run_time / (mean_iters * num_runs)
         print("mean time per iteration = {} s".format(mean_time))
 
-    def run_parity(self, p, reset_fields, *band_functions):
-        if self.random_fields and self.randomize_fields not in band_functions:
-            band_functions.append(self.randomize_fields)
-
-        start = time.time()
-
-        self.all_freqs = np.zeros((len(self.k_points), self.num_bands))
-        self.band_range_data = []
-
-        init_time = time.time()
-
-        print("Initializing eigensolver data")
-        print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
-
-        if type(self.default_material) is not mp.Medium and callable(self.default_material):
-            # TODO: Support epsilon_function user materials like meep?
-            self.default_material.eps = False
-
+    def init_params(self, p, reset_fields):
         self.mode_solver = mode_solver(
             self.num_bands,
             p,
@@ -694,7 +684,34 @@ class ModeSolver(object):
             self.epsilon_input_file,
             self.mu_input_file,
             self.force_mu,
+            self.use_simple_preconditioner,
         )
+
+    def set_parity(self, p):
+        self.mode_solver.set_parity(p)
+
+    def solve_kpoint(self, k):
+        self.mode_solver.solve_kpoint(k)
+
+    def run_parity(self, p, reset_fields, *band_functions):
+        if self.random_fields and self.randomize_fields not in band_functions:
+            band_functions.append(self.randomize_fields)
+
+        start = time.time()
+
+        self.all_freqs = np.zeros((len(self.k_points), self.num_bands))
+        self.band_range_data = []
+
+        init_time = time.time()
+
+        print("Initializing eigensolver data")
+        print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
+
+        if type(self.default_material) is not mp.Medium and callable(self.default_material):
+            # TODO: Support epsilon_function user materials like meep?
+            self.default_material.eps = False
+
+        self.init_params(p, reset_fields)
 
         if isinstance(reset_fields, basestring):
             self.load_eigenvectors(reset_fields)

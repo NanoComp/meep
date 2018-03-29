@@ -331,6 +331,20 @@ class TestVector3(unittest.TestCase):
         self.assertEqual(mp.Vector3(1, 1, 1) * mp.Vector3(1, 1, 1), 3)
         self.assertEqual(0.5 * mp.Vector3(2, 2, 2), mp.Vector3(1, 1, 1))
 
+    def test_rotate_lattice(self):
+        axis = mp.Vector3(1)
+        v = mp.Vector3(2, 2, 2)
+        lattice = mp.Lattice(size=mp.Vector3(1, 1))
+        res = v.rotate_lattice(axis, 3, lattice)
+        self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
+
+    def test_rotate_reciprocal(self):
+        axis = mp.Vector3(1)
+        v = mp.Vector3(2, 2, 2)
+        lattice = mp.Lattice(size=mp.Vector3(1, 1))
+        res = v.rotate_reciprocal(axis, 3, lattice)
+        self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
+
 
 class TestLattice(unittest.TestCase):
 
