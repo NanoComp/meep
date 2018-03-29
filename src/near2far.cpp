@@ -30,7 +30,8 @@ namespace meep {
 
 dft_near2far::dft_near2far(dft_chunk *F_,
                            double fmin, double fmax, int Nf,
-                           double eps_, double mu_)
+                           double eps_, double mu_,
+                           const volume &where_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
@@ -38,12 +39,14 @@ dft_near2far::dft_near2far(dft_chunk *F_,
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   F = F_;
   eps = eps_; mu = mu_;
+  where = new volume(where_.get_min_corner(), where_.get_max_corner());
 }
 
 dft_near2far::dft_near2far(const dft_near2far &f) {
   freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
   F = f.F;
   eps = f.eps; mu = f.mu;
+  where = new volume(f.where->get_min_corner(), f.where->get_max_corner());
 }
 
 void dft_near2far::remove()
@@ -370,8 +373,10 @@ dft_near2far fields::add_dft_near2far(const volume_list *where,
 				double freq_min, double freq_max, int Nfreq){
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
+  volume everywhere = where->v;
 
   for (const volume_list *w = where; w; w = w->next) {
+      everywhere = everywhere | where->v;
       direction nd = component_direction(w->c);
       if (nd == NO_DIRECTION) nd = normal_direction(w->v);
       if (nd == NO_DIRECTION) abort("unknown dft_near2far normal");
@@ -415,7 +420,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where,
       }
   }
 
-  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu);
+  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere);
 }
 
 } // namespace meep
