@@ -760,6 +760,8 @@ class Simulation(object):
 
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
+    add_eigenmode = add_flux
+
     def display_fluxes(self, *fluxes):
         display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
 
@@ -934,11 +936,12 @@ class Simulation(object):
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
 
         if eigvol:
-            flux.where_ = self._volume_from_kwargs(eigvol)
+            flux.where = self._volume_from_kwargs(eigvol)
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands, dtype=np.complex128)
         self.fields.get_eigenmode_coefficients(flux, np.array(bands, dtype=np.intc), coeffs, None)
+
         return coeffs
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
