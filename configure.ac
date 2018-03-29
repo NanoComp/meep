@@ -176,15 +176,6 @@ if test $have_mpb = maybe; then
                    [have_mpb=yes; LIBS="-lmpb $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([MPB support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])])
   if test $have_mpb = yes; then
      AC_DEFINE([HAVE_MPB], [1], [Define if you have libmpb])
-     AC_MSG_CHECKING([whether MPB was compiled with --with-hermitian-eps])
-     AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-        #include <mpb.h>
-        #ifndef WITH_HERMITIAN_EPSILON
-        # error no hermitian epsilon
-        #endif
-        ]])], [HERM_EPS="-DWITH_HERMITIAN_EPSILON"; he="yes"], [HERM_EPS=""; he="no"])
-     AC_MSG_RESULT([$he])
-     AC_SUBST(HERM_EPS)
   fi
 fi
 
