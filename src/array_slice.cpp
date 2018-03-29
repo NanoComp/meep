@@ -157,7 +157,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   // slightly confusing: for array_slice, in contrast to
   // h5fields, strides are computed using the dimensions of
   // the full array slice, not the dimensions of the chunk.
-  int dims[3]={1,1,1};
+  size_t dims[3]={1,1,1};
   for (int i = 0; i<data->rank; i++) {
     direction d = data->ds[i];
     dims[i]= (data->max_corner.in_direction(d)
@@ -276,7 +276,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* initialized appopriately for subsequent use in              */
 /* get_array_slice.                                            */
 /***************************************************************/
-int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *caller_data)
+int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], void *caller_data)
 {
   am_now_working_on(FieldOutput);
 
@@ -303,7 +303,7 @@ int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *c
   size_t slice_size=1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in array_slice");
-    int n = (data->max_corner.in_direction(d)
+    size_t n = (data->max_corner.in_direction(d)
 	     - data->min_corner.in_direction(d)) / 2 + 1;
     if (n > 1) {
       data->ds[rank] = d;
@@ -334,7 +334,7 @@ void *fields::do_get_array_slice(const volume &where,
   /* call get_array_slice_dimensions to get slice dimensions and */
   /* partially initialze an array_slice_data struct              */
   /***************************************************************/
-  int dims[3];
+  size_t dims[3];
   array_slice_data data;
   int rank=get_array_slice_dimensions(where, dims, &data);
   size_t slice_size=data.slice_size;

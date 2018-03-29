@@ -1367,7 +1367,7 @@ class fields {
   // needed to store field data for that subvolume.
   // the data parameter is used internally in get_array_slice
   // and should be ignored by external callers.
-  int get_array_slice_dimensions(const volume &where, int dims[3], void *data=0);
+  int get_array_slice_dimensions(const volume &where, size_t dims[3], void *data=0);
 
   // given a subvolume, return a column-major array containing
   // the given function of the field components in that subvolume
