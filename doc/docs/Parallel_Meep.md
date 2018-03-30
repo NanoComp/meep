@@ -55,16 +55,23 @@ Computations that only involve isolated points, such as `get_field_point` (Pytho
 
 Although all processes execute the Python/Scheme file in parallel, print statements are ignored for all process but one (process \#0). In this way, you only get one copy of the output.
 
-If for some reason you need to distinguish different MPI processes in your Scheme file, you can use the following two functions:
+If for some reason you need to distinguish different MPI processes in your Python/Scheme file, you can use the following two functions:
 
 **`(meep-count-processors)`**  
+**`meep.count_processors()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Returns the number of processes that Meep is using in parallel.
 
 **`(meep-my-rank)`**  
+**`meep.my_rank()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Returns the index of the process running the current `.ctl` file, from zero to `(meep-count-processors)`–1.
+Returns the index of the process running the current file, from zero to (meep-count-processors)–1.
 
-**Warning**: do not attempt to perform different Meep commands in different processes by using the `(meep-my-rank)`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.
+**`(meep-all-wait)`**  
+**`meep.all_wait()`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Blocks until all processes execute this statment (MPI_Barrier).
+
+**Warning**: do not attempt to perform different Meep commands in different processes by using the `(meep-my-rank)` or `meep.my_rank()`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.
 
 For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)` as the last line in the Scheme file to ensure that all processors terminate at the same point in the execution. Otherwise, one processor may finish and abruptly terminate the other processors.
