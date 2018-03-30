@@ -586,9 +586,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (std::complex<double> *)array_data($input);
 }
 
-// py_mpb::mode_solver::multiply_bloch_phase
-%apply std::complex<double>* slice {std::complex<double>* cdata};
-
 %typecheck(SWIG_TYPECHECK_POINTER) meep::component {
     $1 = PyInteger_Check($input) && PyInteger_AsLong($input) < 100;
 }
@@ -881,7 +878,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
 
 %feature("python:cdefaultargs") meep::fields::add_eigenmode_source;
-%feature("python:cdefaultargs") py_mpb::mode_solver::multiply_bloch_phase;
 
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;

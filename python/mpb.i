@@ -346,6 +346,19 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     $3 = (void*)$input;
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* cdata {
+    $1 = is_array($input) || $input == Py_None;
+}
+
+%typemap(in) std::complex<double>* cdata {
+    if ($input != Py_None) {
+        $1 = (std::complex<double> *)array_data($input);
+    }
+    else {
+        $1 = NULL;
+    }
+}
+
 %apply double { number };
 
 %include "pympb.hpp"
