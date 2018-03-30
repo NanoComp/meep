@@ -37,8 +37,10 @@ _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 # material_dispersion.py test must be excluded from test suite for MPI build
 if WITH_MPI
   MDPYTEST=
+  MPBPYTEST=
 else
   MDPYTEST=$(TEST_DIR)/material_dispersion.py
+  MPBPYTEST=$(TEST_DIR)/mpb.py
 endif
 
 TEST_DIR = tests
@@ -56,7 +58,7 @@ TESTS =                                   \
     $(TEST_DIR)/holey_wvg_cavity.py       \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
-    $(TEST_DIR)/mpb.py                    \
+    $(MPBPYTEST)                          \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/ring.py                   \

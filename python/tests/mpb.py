@@ -1291,5 +1291,4 @@ class TestModeSolver(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    if mp.am_master():
-        unittest.main()
+    unittest.main()
