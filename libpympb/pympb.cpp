@@ -203,7 +203,8 @@ mode_solver::mode_solver(int num_bands,
                          std::string epsilon_input_file,
                          std::string mu_input_file,
                          bool force_mu,
-                         bool use_simple_preconditioner):
+                         bool use_simple_preconditioner,
+                         vector3 grid_size):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
@@ -214,6 +215,7 @@ mode_solver::mode_solver(int num_bands,
   mu_input_file(mu_input_file),
   force_mu(force_mu),
   use_simple_preconditioner(use_simple_preconditioner),
+  grid_size(grid_size),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
   last_parity(-2),
@@ -715,9 +717,9 @@ bool mode_solver::using_mu() {
 void mode_solver::init(int p, bool reset_fields) {
   int have_old_fields = 0;
 
-  n[0] = std::max(resolution[0] * std::ceil(geometry_lattice.size.x), 1.0);
-  n[1] = std::max(resolution[1] * std::ceil(geometry_lattice.size.y), 1.0);
-  n[2] = std::max(resolution[2] * std::ceil(geometry_lattice.size.z), 1.0);
+  n[0] = grid_size.x;
+  n[1] = grid_size.y;
+  n[2] = grid_size.z;
 
   if (target_freq != 0.0) {
     meep::master_printf("Target frequency is %g\n", target_freq);

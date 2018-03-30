@@ -40,6 +40,7 @@ struct mode_solver {
   std::string mu_input_file;
   bool force_mu;
   bool use_simple_preconditioner;
+  vector3 grid_size;
 
   int n[3];
   int local_N;
@@ -92,7 +93,7 @@ struct mode_solver {
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
               bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
               bool periodicity, double flops, bool negative_epsilon_ok, std::string epsilon_input_file,
-              std::string mu_input_file, bool force_mu, bool use_simple_preconditioner);
+              std::string mu_input_file, bool force_mu, bool use_simple_preconditioner, vector3 grid_size);
   ~mode_solver();
 
   void init(int p, bool reset_fields);

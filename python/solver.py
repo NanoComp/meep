@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 import functools
+import math
 import os
 import numbers
 import re
@@ -93,7 +94,8 @@ class ModeSolver(object):
                  random_fields=False,
                  filename_prefix='',
                  deterministic=False,
-                 verbose=False):
+                 verbose=False,
+                 optimize_grid_size=True):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
@@ -121,6 +123,7 @@ class ModeSolver(object):
         self.filename_prefix = filename_prefix
         self.deterministic = deterministic
         self.verbose = verbose
+        self.optimize_grid_size = optimize_grid_size
         self.parity = ''
         self.iterations = 0
         self.all_freqs = None
@@ -663,7 +666,40 @@ class ModeSolver(object):
         mean_time = self.total_run_time / (mean_iters * num_runs)
         print("mean time per iteration = {} s".format(mean_time))
 
+    def _optimize_grid_size(self):
+        grid_size = mp.Vector3(self.resolution[0] * self.geometry_lattice.size.x,
+                               self.resolution[1] * self.geometry_lattice.size.y,
+                               self.resolution[2] * self.geometry_lattice.size.z)
+
+        grid_size.x = max(math.ceil(grid_size.x), 1)
+        grid_size.y = max(math.ceil(grid_size.y), 1)
+        grid_size.z = max(math.ceil(grid_size.z), 1)
+
+        grid_size.x = self.next_factor2457(grid_size.x)
+        grid_size.y = self.next_factor2457(grid_size.y)
+        grid_size.z = self.next_factor2457(grid_size.z)
+        return grid_size
+
+    def next_factor2457(self, n):
+
+        def is_factor2357(n):
+
+            def divby(n, p):
+                if n % p == 0:
+                    return divby(n // p, p)
+                return n
+            return divby(divby(divby(divby(n, 2), 3), 5), 7) == 1
+
+        if is_factor2357(n):
+            return n
+        return self.next_factor2357(n + 1)
+
     def init_params(self, p, reset_fields):
+        if self.optimize_grid_size:
+            self.grid_size = self._optimize_grid_size()
+        else:
+            self.grid_size = mp.resolution
+
         self.mode_solver = mode_solver(
             self.num_bands,
             p,
@@ -685,6 +721,7 @@ class ModeSolver(object):
             self.mu_input_file,
             self.force_mu,
             self.use_simple_preconditioner,
+            self.grid_size,
         )
 
     def set_parity(self, p):
