@@ -162,7 +162,7 @@ struct mode_solver {
   cvector3 get_field_point(vector3 p);
   cvector3 get_bloch_field_point(vector3 p);
 
-  void multiply_bloch_phase();
+  void multiply_bloch_phase(std::complex<double> *cdata=NULL);
   void fix_field_phase();
   void compute_field_divergence();
   std::vector<mpb_real> compute_zparities();

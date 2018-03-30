@@ -298,6 +298,13 @@ class MPBData(object):
         self.init_output_lattice()
 
         if len(arr.shape) == 3:
+            if not arr.bloch_phase:
+                err = ('The input array has not been multiplied by the Bloch phase. You can get ' +
+                       'appropriate field data by passing bloch_phase=True to any get_*field function. ' +
+                       'Alternatively, ModeSolver.multiply_bloch_phase(array) will return an array ' +
+                       'that has been muliplied by the Bloch phase.')
+                raise ValueError(err)
+
             return self.handle_cvector_dataset(arr)
         else:
             return self.handle_dataset(arr)

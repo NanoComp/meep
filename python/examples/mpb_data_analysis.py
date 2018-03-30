@@ -19,7 +19,7 @@ def main():
 
     # Band function to collect the efields
     def get_efields(ms, band):
-        efields.append(ms.get_efield(band, output=True))
+        efields.append(ms.get_efield(band, bloch_phase=True))
 
     ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
               get_efields))

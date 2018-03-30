@@ -26,13 +26,14 @@ U_SUM = 2
 
 class MPBArray(np.ndarray):
 
-    def __new__(cls, input_array, lattice, kpoint=None):
+    def __new__(cls, input_array, lattice, kpoint=None, bloch_phase=False):
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
         obj = np.asarray(input_array).view(cls)
         # add the new properties to the created instance
         obj.lattice = lattice
         obj.kpoint = kpoint
+        obj.bloch_phase = bloch_phase
         # Finally, we must return the newly created object:
         return obj
 
@@ -64,6 +65,7 @@ class MPBArray(np.ndarray):
         # arr.view(MPBArray).
         self.lattice = getattr(obj, 'lattice', None)
         self.kpoint = getattr(obj, 'kpoint', None)
+        self.bloch_phase = getattr(obj, 'bloch_phase', False)
 
 
 class ModeSolver(object):
@@ -169,6 +171,12 @@ class ModeSolver(object):
     def get_freqs(self):
         return self.mode_solver.get_freqs()
 
+    def multiply_bloch_phase(self, arr):
+        dims = arr.shape
+        arr = arr.ravel()
+        self.mode_solver.multiply_bloch_phase(arr)
+        return np.reshape(arr, dims)
+
     def get_poynting(self, which_band):
         e = self.get_efield(which_band).ravel()
         h = self.get_hfield(which_band).ravel()
@@ -215,23 +223,23 @@ class ModeSolver(object):
 
         return np.reshape(mu, dims)
 
-    def get_bfield(self, which_band, output=False):
-        return self._get_field('b', which_band, output)
+    def get_bfield(self, which_band, bloch_phase=False):
+        return self._get_field('b', which_band, bloch_phase)
 
-    def get_efield(self, which_band, output=False):
-        return self._get_field('e', which_band, output)
+    def get_efield(self, which_band, bloch_phase=False):
+        return self._get_field('e', which_band, bloch_phase)
 
-    def get_dfield(self, which_band, output=False):
-        return self._get_field('d', which_band, output)
+    def get_dfield(self, which_band, bloch_phase=False):
+        return self._get_field('d', which_band, bloch_phase)
 
-    def get_hfield(self, which_band, output=False):
-        return self._get_field('h', which_band, output)
+    def get_hfield(self, which_band, bloch_phase=False):
+        return self._get_field('h', which_band, bloch_phase)
 
     def get_charge_density(self, which_band):
         self.get_efield(which_band)
         self.mode_solver.compute_field_divergence()
 
-    def _get_field(self, f, band, output):
+    def _get_field(self, f, band, bloch_phase):
         if self.mode_solver is None:
             raise ValueError("Must call a run function before attempting to get a field")
 
@@ -248,13 +256,13 @@ class ModeSolver(object):
         dims += [3]
         arr = np.zeros(np.prod(dims), np.complex128)
 
-        if output:
+        if bloch_phase:
             self.mode_solver.multiply_bloch_phase()
 
         self.mode_solver.get_curfield_cmplx(arr)
 
         arr = np.reshape(arr, dims)
-        res = MPBArray(arr, self.get_lattice(), self.current_k)
+        res = MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
 
         return res
 

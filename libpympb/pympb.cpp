@@ -1889,9 +1889,11 @@ cvector3 mode_solver::get_field_point(vector3 p) {
   return F;
 }
 
-void mode_solver::multiply_bloch_phase() {
+void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
 
   std::vector<mpb_real> kvector = get_output_k();
+
+  scalar_complex *data = cdata ? (scalar_complex*)cdata : (scalar_complex*)curfield;
 
   int dims[] = {mdata->nx, mdata->ny, mdata->nz};
   int local_dims[] = {mdata->local_nx, mdata->ny, mdata->nz};
@@ -1944,9 +1946,9 @@ void mode_solver::multiply_bloch_phase() {
 
         for (int component = 0; component < 3; ++component) {
           int ijkc = ijk + component;
-          re = curfield[ijkc].re; im = curfield[ijkc].im;
-          curfield[ijkc].re = re * p_re - im * p_im;
-          curfield[ijkc].im = im * p_re + re * p_im;
+          re = data[ijkc].re; im = data[ijkc].im;
+          data[ijkc].re = re * p_re - im * p_im;
+          data[ijkc].im = im * p_re + re * p_im;
         }
       }
     }
