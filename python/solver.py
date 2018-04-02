@@ -151,6 +151,10 @@ class ModeSolver(object):
             t = type(val)
             raise TypeError("resolution must be a number or a Vector3: Got {}".format(t))
 
+    def allow_negative_epsilon(self):
+        self.is_negative_epsilon_ok = True
+        self.target_freq = 1 / mp.inf
+
     def get_filename_prefix(self):
         if self.filename_prefix:
             return self.filename_prefix + '-'
