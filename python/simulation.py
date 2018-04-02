@@ -255,7 +255,8 @@ class Simulation(object):
                  accurate_fields_near_cylorigin=False,
                  filename_prefix='',
                  output_volume=None,
-                 output_single_precision=False):
+                 output_single_precision=False,
+                 load_structure=''):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -297,6 +298,7 @@ class Simulation(object):
         self.is_cylindrical = False
         self.material_function = material_function
         self.epsilon_func = epsilon_func
+        self.load_structure_file = load_structure
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -394,6 +396,8 @@ class Simulation(object):
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
                                        absorbers, self.extra_materials)
+        if self.load_structure_file:
+            self.load_structure(self.load_structure_file)
 
     def set_materials(self, geometry=None, default_material=None):
         if self.fields:
@@ -413,6 +417,16 @@ class Simulation(object):
             self.boundary_layers if have_absorbers else None,
             self.extra_materials
         )
+
+    def load_structure(self, fname):
+        if self.structure is None:
+            raise ValueError("Fields must be initialized before calling load_structure")
+        self.structure.load(fname)
+
+    def dump_structure(self, fname):
+        if self.structure is None:
+            raise ValueError("Fields must be initialized before calling dump_structure")
+        self.structure.dump(fname)
 
     def init_fields(self):
 
