@@ -683,16 +683,11 @@ class Simulation(object):
 
         return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
 
-    def output_dft(self, dft_fields, fname, where=None, center=None, size=None):
+    def output_dft(self, dft_fields, fname, center=None, size=None):
         if self.fields is None:
             self.init_fields()
 
-        try:
-            where = self._volume_from_kwargs(where, center, size)
-        except ValueError:
-            where = self.fields.total_volume()
-
-        self.fields.output_dft(dft_fields, fname, where)
+        self.fields.output_dft(dft_fields, fname)
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         if self.fields is None:
