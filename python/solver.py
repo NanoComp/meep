@@ -72,9 +72,6 @@ class ModeSolver(object):
                  resolution=10,
                  is_negative_epsilon_ok=False,
                  eigensolver_flops=0,
-                 is_eigensolver_davidson=False,
-                 eigensolver_nwork=3,
-                 eigensolver_block_size=-11,
                  eigensolver_flags=68,
                  use_simple_preconditioner=False,
                  force_mu=False,
@@ -95,12 +92,14 @@ class ModeSolver(object):
                  filename_prefix='',
                  deterministic=False,
                  verbose=False,
-                 optimize_grid_size=True):
+                 optimize_grid_size=True,
+                 use_eigensolver_davidson=False,
+                 eigensolver_nwork=3,
+                 eigensolver_block_size=-11):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
         self.eigensolver_flops = eigensolver_flops
-        self.is_eigensolver_davidson = is_eigensolver_davidson
         self.eigensolver_nwork = eigensolver_nwork
         self.eigensolver_block_size = eigensolver_block_size
         self.eigensolver_flags = eigensolver_flags
@@ -124,6 +123,9 @@ class ModeSolver(object):
         self.deterministic = deterministic
         self.verbose = verbose
         self.optimize_grid_size = optimize_grid_size
+        self.use_eigensolver_davidson = use_eigensolver_davidson
+        self.eigensolver_nwork = eigensolver_nwork
+        self.eigensolver_block_size = eigensolver_block_size
         self.parity = ''
         self.iterations = 0
         self.all_freqs = None
@@ -725,6 +727,9 @@ class ModeSolver(object):
             self.force_mu,
             self.use_simple_preconditioner,
             self.grid_size,
+            self.use_eigensolver_davidson,
+            self.eigensolver_nwork,
+            self.eigensolver_block_size,
         )
 
     def set_parity(self, p):

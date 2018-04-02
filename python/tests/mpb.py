@@ -1287,6 +1287,33 @@ class TestModeSolver(unittest.TestCase):
         field_integral = ms.compute_field_integral(f2)
         self.assertAlmostEqual(field_integral, 02.0735366548785272e-18 - 3.0259168624899837e-6j)
 
+    def test_eigensolver_davidson(self):
+        ms = self.init_solver()
+        ms.use_eigensolver_davidson = True
+        ms.eigensolver_nwork = 4
+        ms.run_te()
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.49683586474483926, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4415884497223785, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.5931405141160137, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.5931535863117459, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.7732265593069207, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6791690130756873, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.809689155167664, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((0.8241814443501433, mp.Vector3(0.5, 0.30000000000000004, 0.0)),
+             (0.92299651958537, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8819770916659235, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0291597050646561, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.8819818134421394, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0860729324208933, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.087868963504984, mp.Vector3(0.5, 0.0, 0.0)),
+             (1.1119173707824965, mp.Vector3(0.5, 0.5, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+
 
 if __name__ == '__main__':
     unittest.main()

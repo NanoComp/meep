@@ -204,7 +204,10 @@ mode_solver::mode_solver(int num_bands,
                          std::string mu_input_file,
                          bool force_mu,
                          bool use_simple_preconditioner,
-                         vector3 grid_size):
+                         vector3 grid_size,
+                         bool use_eigensolver_davidson,
+                         int eigensolver_nwork,
+                         int eigensolver_block_size):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
@@ -216,8 +219,9 @@ mode_solver::mode_solver(int num_bands,
   force_mu(force_mu),
   use_simple_preconditioner(use_simple_preconditioner),
   grid_size(grid_size),
-  eigensolver_nwork(3),
-  eigensolver_block_size(-11),
+  use_eigensolver_davidson(use_eigensolver_davidson),
+  eigensolver_nwork(eigensolver_nwork),
+  eigensolver_block_size(eigensolver_block_size),
   last_parity(-2),
   iterations(0),
   eigensolver_flops(flops),
@@ -1136,14 +1140,20 @@ void mode_solver::solve_kpoint(vector3 kvector) {
     }
 
     if (mtdata) {  /* solving for bands near a target frequency */
-      // TODO
-      // if (eigensolver_davidsonp) {
-      // }
       CHECK(mdata->mu_inv==NULL, "targeted solver doesn't handle mu");
-      eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata, NULL, NULL,
-                  use_simple_preconditioner ? maxwell_target_preconditioner : maxwell_target_preconditioner2,
-                  (void *)mtdata, evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
-                  tolerance, &num_iters, flags);
+
+      if (use_eigensolver_davidson) {
+          eigensolver_davidson(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata,
+                               use_simple_preconditioner ? maxwell_target_preconditioner :
+                               maxwell_target_preconditioner2, (void *)mtdata, evectconstraint_chain_func,
+                               (void *)constraints, W, nwork_alloc, tolerance, &num_iters, flags, 0.0);
+      }
+      else {
+          eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata, NULL, NULL,
+                      use_simple_preconditioner ? maxwell_target_preconditioner : maxwell_target_preconditioner2,
+                      (void *)mtdata, evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
+                      tolerance, &num_iters, flags);
+      }
 
       // now, diagonalize the real Maxwell operator in the solution subspace to
       // get the true eigenvalues and eigenvectors
@@ -1151,15 +1161,20 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       eigensolver_get_eigenvals(Hblock, eigvals.data() + ib, maxwell_operator, mdata, W[0], W[1]);
     }
     else {
-      // TODO
-      // if (eigensolver_davidsonp) {
-      // }
-
-      eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
-                  mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
-                  use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
-                  (void *) mdata, evectconstraint_chain_func, (void *) constraints,
-                  W, nwork_alloc, tolerance, &num_iters, flags);
+      if (use_eigensolver_davidson) {
+          CHECK(mdata->mu_inv == NULL, "Davidson doesn't handle mu");
+          eigensolver_davidson(Hblock, eigvals.data() + ib, maxwell_operator, (void *)mdata,
+                               use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
+                               (void *)mdata, evectconstraint_chain_func, (void *)constraints, W,
+                               nwork_alloc, tolerance, &num_iters, flags, 0.0);
+      }
+      else {
+          eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
+                      mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
+                      use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
+                      (void *) mdata, evectconstraint_chain_func, (void *) constraints,
+                      W, nwork_alloc, tolerance, &num_iters, flags);
+      }
     }
 
     if (Hblock.data != H.data) {  /* save solutions of current block */
