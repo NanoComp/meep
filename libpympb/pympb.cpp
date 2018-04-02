@@ -2133,10 +2133,6 @@ void mode_solver::get_lattice(double data[3][3]) {
   matrix3x3_to_arr(data, Rm);
 }
 
-vector3 mode_solver::get_cur_kvector() {
-   return cur_kvector;
-}
-
 std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {
   std::vector<int> res(3);
   res[0] = H.localN;

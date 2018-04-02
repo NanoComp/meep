@@ -188,7 +188,7 @@ class ModeSolver(object):
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
-        return MPBArray(res, self.get_lattice, self.get_current_kpoint)
+        return MPBArray(res, self.get_lattice, self.current_k)
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
@@ -250,7 +250,7 @@ class ModeSolver(object):
         self.mode_solver.get_curfield_cmplx(arr)
 
         arr = np.reshape(arr, dims)
-        res = MPBArray(arr, self.get_lattice(), self.get_current_kpoint())
+        res = MPBArray(arr, self.get_lattice(), self.current_k)
 
         return res
 
@@ -293,13 +293,13 @@ class ModeSolver(object):
         self.mode_solver.set_curfield(tot_pwr.ravel())
         self.mode_solver.set_curfield_type('R')
 
-        return MPBArray(tot_pwr, self.get_lattice(), self.get_current_kpoint())
+        return MPBArray(tot_pwr, self.get_lattice(), self.current_k)
 
     def get_eigenvectors(self, first_band, num_bands):
         dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
         ev = np.zeros(np.prod(dims), dtype=np.complex128)
         self.mode_solver.get_eigenvectors(first_band - 1, num_bands, ev)
-        return MPBArray(ev.reshape(dims), self.get_lattice(), self.get_current_kpoint())
+        return MPBArray(ev.reshape(dims), self.get_lattice(), self.current_k)
 
     def set_eigenvectors(self, ev, first_band):
         self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
@@ -414,9 +414,6 @@ class ModeSolver(object):
         self.mode_solver.get_lattice(lattice)
 
         return lattice
-
-    def get_current_kpoint(self):
-        return self.mode_solver.get_cur_kvector()
 
     def output_field(self):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
