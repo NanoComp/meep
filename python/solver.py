@@ -666,7 +666,7 @@ class ModeSolver(object):
         mean_time = self.total_run_time / (mean_iters * num_runs)
         print("mean time per iteration = {} s".format(mean_time))
 
-    def _optimize_grid_size(self):
+    def _get_grid_size(self):
         grid_size = mp.Vector3(self.resolution[0] * self.geometry_lattice.size.x,
                                self.resolution[1] * self.geometry_lattice.size.y,
                                self.resolution[2] * self.geometry_lattice.size.z)
@@ -675,12 +675,14 @@ class ModeSolver(object):
         grid_size.y = max(math.ceil(grid_size.y), 1)
         grid_size.z = max(math.ceil(grid_size.z), 1)
 
-        grid_size.x = self.next_factor2457(grid_size.x)
-        grid_size.y = self.next_factor2457(grid_size.y)
-        grid_size.z = self.next_factor2457(grid_size.z)
         return grid_size
 
-    def next_factor2457(self, n):
+    def _optimize_grid_size(self):
+        self.grid_size.x = self.next_factor2357(self.grid_size.x)
+        self.grid_size.y = self.next_factor2357(self.grid_size.y)
+        self.grid_size.z = self.next_factor2357(self.grid_size.z)
+
+    def next_factor2357(self, n):
 
         def is_factor2357(n):
 
@@ -695,10 +697,10 @@ class ModeSolver(object):
         return self.next_factor2357(n + 1)
 
     def init_params(self, p, reset_fields):
+        self.grid_size = self._get_grid_size()
+
         if self.optimize_grid_size:
-            self.grid_size = self._optimize_grid_size()
-        else:
-            self.grid_size = mp.resolution
+            self._optimize_grid_size()
 
         self.mode_solver = mode_solver(
             self.num_bands,
