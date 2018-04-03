@@ -33,7 +33,7 @@ Specifies the size of the unit cell which is centered on the origin of the coord
 
 **`default-material` [`material-type` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($ε=1$). See also `epsilon-input-file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon-input-file` below.
 
 **`epsilon-input-file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -117,11 +117,11 @@ Two aliases for a predefined material type with a dielectric constant of 1.
 
 **`perfect-electric-conductor` or `metal` [`material-type` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A predefined material type corresponding to a perfect electric conductor at the boundary of which the parallel electric field is zero. Technically, $ε = -\infty$.
+A predefined material type corresponding to a perfect electric conductor at the boundary of which the parallel electric field is zero. Technically, $\varepsilon = -\infty$.
 
 **`perfect-magnetic-conductor` [`material-type` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A predefined material type corresponding to a perfect magnetic conductor at the boundary of which the parallel magnetic field is zero. Technically, $μ = -\infty$.
+A predefined material type corresponding to a perfect magnetic conductor at the boundary of which the parallel magnetic field is zero. Technically, $\mu = -\infty$.
 
 **`nothing` [`material-type` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -131,7 +131,7 @@ A material that, effectively, punches a hole through other objects to the backgr
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A big number (10$^{20}$) to use for "infinite" dimensions of objects.
 
 **`pi` [`number`]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$π$ (3.14159...).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;π (3.14159...).
 
 Constants (Enumerated Types)
 ----------------------------
@@ -188,7 +188,7 @@ This class is used to specify the materials that geometric objects are made of. 
 An electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). For backwards compatibility, a synonym for `medium` is `dielectric`. It has several properties:
 
 **`epsilon` [`number`]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `(index n)` as a synonym for `(epsilon (* n n))`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{με}$.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `(index n)` as a synonym for `(epsilon (* n n))`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
 
 Using `(epsilon ep)` is actually a synonym for `(epsilon-diag ep ep ep)`.
 
@@ -217,11 +217,11 @@ The frequency-independent magnetic conductivity $σ_B$. Default is 0. You can al
 
 **`chi2` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The nonlinear (Pockels) susceptibility $χ^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear (Pockels) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`chi3` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The nonlinear (Kerr) susceptibility $χ^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`E-susceptibilities` [ list of `susceptibility` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -245,7 +245,7 @@ A function of one argument, the position `vector3`, that returns the material at
 
 Instead of `material-func`, you can use `epsilon-func`: give it a function of position that returns the dielectric constant at that point.
 
-**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* $γ$<sub>*n*</sub> and μ<sub>*n*</sub> values, so you can only have a finite number of these, whereas $σ$<sub>*n*</sub> can vary continuously and a matching $σ$<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of $σ$ or $χ$ returned by your material function, which can vary continuously.
+**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* γ<sub>*n*</sub> and μ<sub>*n*</sub> values, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously and a matching σ<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously.
 
 **Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the [conductivity](Materials.md#conductivity-and-complex). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex ε and/or μ, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `lorentzian-susceptibility` or `drude-susceptibility` classes below.
 
@@ -253,37 +253,37 @@ Dispersive dielectric and magnetic materials, above, are specified via a list of
 
 **`susceptibility`**  
 
-Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude $σ$. See [Material Dispersion](Materials.md#material-dispersion).
+Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
 
 **`sigma` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The scale factor $σ$. You can also specify an anisotropic $σ$ tensor by using the property `sigma-diag` which takes three numbers or a `vector3` to give the $σ_n$ tensor diagonal, and `sigma-offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag a b c)` and `(sigma-offdiag u v w)` corresponds to a $σ$ tensor
+The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma-diag` which takes three numbers or a `vector3` to give the σ$_n$ tensor diagonal, and `sigma-offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag a b c)` and `(sigma-offdiag u v w)` corresponds to a σ tensor
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
 **`lorentzian-susceptibility`**  
 
-Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $σ$):
+Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The resonance frequency $f_n = ω_n / 2π$.
+The resonance frequency $f_n = \omega_n / 2\pi$.
 
 **`gamma` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The resonance loss rate $γ_n / 2π$.
+The resonance loss rate $γ_n / 2\pi$.
 
 **`drude-susceptibility`**  
 
-Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $σ$):
+Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency scale factor $f_n = ω_n / 2π$ which multiplies $σ$ (not a resonance frequency).
+The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a resonance frequency).
 
 **`gamma` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The loss rate $γ_n / 2π$.
+The loss rate $γ_n / 2\pi$.
 
 Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
@@ -293,7 +293,7 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 
 **`noise-amp` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The noise has root-mean square amplitude $σ$ $\times$ `noise-amp`.
+The noise has root-mean square amplitude σ $\times$ `noise-amp`.
 
 ### geometric-object
 
@@ -533,13 +533,13 @@ Once the MPB modes are computed, equivalent electric and magnetic sources are cr
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig-lattice-size` and `eig-lattice-center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
 
-Note that MPB only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities $σ$, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
+Note that MPB only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
 
 The `src-time` object, which specifies the time dependence of the source, can be one of the following three classes.
 
 **`continuous-src`**  
 
-A continuous-wave source proportional to $\exp(-iω t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
+A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -563,7 +563,7 @@ How many `width`s the current decays for before we cut it off and set it to zero
 
 **`gaussian-src`**  
 
-A Gaussian-pulse source roughly proportional to $\exp(-iω t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-iω)^{-1} \frac{\partial}{\partial t} \exp(-iω t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
+A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -911,9 +911,9 @@ The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,
 
 Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
 
-$$\operatorname{LDOS}_{\ell}(\vec{x}_0,ω)=-\frac{2}{π}ε(\vec{x}_0)\frac{\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,ω)\hat{p}(ω)^*]}{|\hat{p}(ω)|^2}$$
+$$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}_0)\frac{\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,\omega)\hat{p}(\omega)^*]}{|\hat{p}(\omega)|^2}$$
 
-where the $|\hat{p}(ω)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole (assuming linear materials), and hats denote Fourier transforms. It is this quantity that is computed by the `dft-ldos` command for a single dipole source. For a volumetric source, the numerator and denominator are both integrated over the current volume, but "LDOS" computation is less meaningful in this case.
+where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole (assuming linear materials), and hats denote Fourier transforms. It is this quantity that is computed by the `dft-ldos` command for a single dipole source. For a volumetric source, the numerator and denominator are both integrated over the current volume, but "LDOS" computation is less meaningful in this case.
 
 ### Near-to-Far-Field Spectra
 
@@ -1030,11 +1030,11 @@ The predefined output functions are:
 
 **`output-epsilon`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $ω\to\infty$ limit).
+Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`output-mu`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $ω\to\infty$ limit).
+Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`(output-dft dft-fields fname [where])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1094,13 +1094,13 @@ Returns a step function that collects data from the field component `c` (e.g. $E
 
 In particular, Harminv takes the time series $f(t)$ corresponding to the given field component as a function of time and decomposes it (within the specified bandwidth) as:
 
-$$f(t) = \sum_n a_n e^{-iω_n t}$$
+$$f(t) = \sum_n a_n e^{-i\omega_n t}$$
 
 The results are stored in the list `harminv-results`, which is a list of tuples holding the frequency, amplitude, and error of the modes. Given one of these tuples, you can extract its various components with one of the accessor functions:
 
 **`(harminv-freq result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return the complex frequency ω (in the usual Meep 2$π c$ units).
+Return the complex frequency ω (in the usual Meep $2\pi c$ units).
 
 **`(harminv-freq-re result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1112,7 +1112,7 @@ Return the imaginary part of the frequency ω.
 
 **`(harminv-Q result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return dimensionless lifetime, or quality factor, $Q$, defined as $-\mathrm{Re}\,ω / 2 \mathrm{Im}\,ω$.
+Return dimensionless lifetime, or quality factor, $Q$, defined as $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
 
 **`(harminv-amp result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

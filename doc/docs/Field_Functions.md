@@ -6,7 +6,7 @@ As described in the [User Interface](Python_User_Interface.md), Meep provides se
 
 Every field-function that can be passed to these routines is of the form *f*(**r**,components...), where **r** is a position vector and "components..." are zero or more field components that the function depends on. The set of desired components is user-specified. As an example, suppose we are interested in the arbitrary function:
 
-$$f(\mathbf{r}, E_x, H_z, ε) = x |\mathbf{r}| + E_x - ε H_z$$
+$$f(\mathbf{r}, E_x, H_z, \varepsilon) = x |\mathbf{r}| + E_x - \varepsilon H_z$$
 
 We would define this function by:
 

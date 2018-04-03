@@ -60,7 +60,7 @@ double eps(const vec &p) {
 }
 ```
 
-which returns the dielectric function $ε(\mathbf{x})$ which is just a 2$\times$3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
+which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2$\times$3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
 
 Now that you have the basic flavor, we can proceed to some more specific examples.
 
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
  fields f(&s);
 ```
 
-Note the constructor for the `grid_volume` class in 1d which takes as parameters the size of the cell and the resolution. The sources in Meep are excitations of the polarization vector in $\mathbf{D}=ε\mathbf{E}+\mathbf{P}$. The polarization can be any one of the six cartesian or cylindrical fields. There are a variety of sources including dipole and current sources, gaussian pulses and a continuous wave sources. For now, we use a gaussian source centered at the midgap frequency with a narrow width, along with the start time and end time of the source.
+Note the constructor for the `grid_volume` class in 1d which takes as parameters the size of the cell and the resolution. The sources in Meep are excitations of the polarization vector in $\mathbf{D}=\varepsilon\mathbf{E}+\mathbf{P}$. The polarization can be any one of the six cartesian or cylindrical fields. There are a variety of sources including dipole and current sources, gaussian pulses and a continuous wave sources. For now, we use a gaussian source centered at the midgap frequency with a narrow width, along with the start time and end time of the source.
 
 ```c++
  const double w_midgap = (sqrt(eps1)+sqrt(eps2))/(4*sqrt(eps1)*sqrt(eps2));
@@ -167,7 +167,7 @@ The `get_field` function does exactly that, obtains the value of the field at a 
  int num = do_harminv(p, ttot, f.dt, 0.8*w_midgap, 1.2*w_midgap, maxbands, amps, freq_re, freq_im);
 ```
 
-The integer returned by `harminv` is the number of mode frequencies obtained from the input data `p`. The particular call to `harminv` included passing the arrays by value and telling `harminv` to look for frequencies within 20% of the mid gap frequency up to a maximum of 5 bands. At this point, the necessary information to compute the quality has been stored in the `freq_re` and `freq_im` arrays and we compute the quality factor using the formula, $Q=-ω_r/2ω_i$. All that is left to do, is to print these results with the quality factor:
+The integer returned by `harminv` is the number of mode frequencies obtained from the input data `p`. The particular call to `harminv` included passing the arrays by value and telling `harminv` to look for frequencies within 20% of the mid gap frequency up to a maximum of 5 bands. At this point, the necessary information to compute the quality has been stored in the `freq_re` and `freq_im` arrays and we compute the quality factor using the formula, $Q=-\omega_r/2\omega_i$. All that is left to do, is to print these results with the quality factor:
 
 ```c++
 master_printf("frequency,amplitude,quality factor\n");
@@ -177,7 +177,7 @@ return 0;
 }
 ```
 
-That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of bragg reflectors ($N$=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the computational cell at each time step:
+That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of Bragg reflectors (N=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the computational cell at each time step:
 
 ```c++
 double curr_time = f.time();
@@ -187,7 +187,7 @@ while (f.time() < curr_time + 1/w_midgap) {
 }
 ```
 
-After we convert the hdf5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
+After we convert the HDF5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
 
 <center>
 ![](images/Fabryperot.gif)
