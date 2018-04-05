@@ -2,9 +2,9 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/material-dispersion.ctl). From the dispersion relation $ω(k)$, we will compute the numerical ε(ω) via the formula:
+In this example, we will perform a simulation with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/material-dispersion.ctl). From the dispersion relation $\omega(k)$, we will compute the numerical ε(ω) via the formula:
 
-$$ε(ω) = \left( \frac{ck}{ω} \right) ^2$$
+$$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
 We will then compare this with the analytical ε(ω) that we specified.
 
@@ -30,7 +30,7 @@ We will then fill all space with a dispersive material:
 
 corresponding to the dielectric function:
 
-$$ε(ω) = ε(2π f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2π} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2π}$$
+$$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2\pi} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2\pi}$$
 
 The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 
@@ -42,7 +42,7 @@ We can see that the f=1.1 resonance causes a large change in both the real and i
 
 On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of ε. Nevertheless, it generates a clear peak in the *imaginary* part of ε, corresponding to a resonant absorption peak.
 
-Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $ω(k)$ over, and compute the associated frequencies by using the `run-k-points` function:
+Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `run-k-points` function:
 
 ```scm
 (define-param fcen 1.0)
@@ -57,7 +57,7 @@ Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-po
 (define all-freqs (run-k-points 200 kpts)) ; a list of lists of frequencies  
 ```
 
-The `run-k-points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all-freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio $(ck/ω)^2$ as described above. To do this, we will use the Scheme `map` function, which applies a given function to every element of a list (or lists), and since we have a list of lists we'll actually nest two `map` functions:
+The `run-k-points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all-freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio $(ck/\omega)^2$ as described above. To do this, we will use the Scheme `map` function, which applies a given function to every element of a list (or lists), and since we have a list of lists we'll actually nest two `map` functions:
 
 ```scm
 (map (lambda (kx fs)
@@ -74,7 +74,7 @@ Alternatively we could just read all of the frequencies into Octave/Matlab or a 
 unix% meep material-dispersion.ctl | tee material-dispersion.out
 ```
 
-we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $ω(k)$ for the real part of ω:
+we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation ω(k) for the real part of ω:
 
 <center>
 ![](../images/Material-dispersion-bands.png)

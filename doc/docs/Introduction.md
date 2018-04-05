@@ -6,7 +6,7 @@ Meep implements the **finite-difference time-domain** (**FDTD**) method for comp
 
 In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
 
-This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in [Tutorial/Basics](Python_Tutorials/Basics).
+This introduction does not describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in [Tutorial/Basics](Python_Tutorials/Basics).
 
 [TOC]
 
@@ -49,11 +49,11 @@ In particular, because Maxwell's equations are scale invariant (multiplying the 
 
 Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is specified in units of $c/a$ (or equivalently ω is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where λ is the vacuum wavelength. A similar scheme is used in [MPB](https://mpb.readthedocs.io).
 
-For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a$ = 1 &#956;m. Then, if we want to specify a source corresponding to λ = 1.55 &#956;m, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
+For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a$ = 1 μm. Then, if we want to specify a source corresponding to λ = 1.55 μm, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
 
 A transmission spectrum, for example, would be a ratio of transmitted to incident intensities, so the units of **E** are irrelevant unless there are [nonlinearities](Units_and_Nonlinearity/).
 
-The Bloch wavevector (see below) **k** is specified in Cartesian coordinates in units of $2π/a$. This is *different* from MPB: it is equivalent to taking MPB's k-points and transforming them with `reciprocal->cartesian`.
+The Bloch wavevector (see below) **k** is specified in Cartesian coordinates in units of $2\pi/a$. This is *different* from MPB: it is equivalent to taking MPB's k-points and transforming them with `reciprocal->cartesian`.
 
 Boundary Conditions and Symmetries
 ----------------------------------
@@ -135,7 +135,7 @@ $$\tilde{f}(\omega) = \frac{1}{\sqrt{2\pi}}  \sum_n e^{i\omega n \Delta t} f(n\D
 
 There are other possible methods of time-series analysis, of course. One method that is sometimes very effective is construct a [Padé approximant](https://en.wikipedia.org/wiki/Padé_approximant) of the time series of field values at some point, from which one can often [extrapolate a very accurate discrete-time Fourier transform](http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=923035), including sharp peaks and other resonant features, from a relatively short time series. Meep does not provide a Padé computation for you, but of course you can output the fields at a point over time, ideally in a single-mode waveguide for transmission spectra via a single point, and compute the Padé approximant yourself by standard methods.
 
-The power $P(ω)$ by itself is not very useful &mdash; one needs to *normalize*, dividing by the incident power at each frequency, to get the transmission spectrum. Typically, this is done by running the simulation *twice*: once with only the incident wave and no scattering structure, and once with the scattering structure, where the first calculation is used for normalization.
+The power $P(\omega)$ by itself is not very useful &mdash; one needs to *normalize*, dividing by the incident power at each frequency, to get the transmission spectrum. Typically, this is done by running the simulation *twice*: once with only the incident wave and no scattering structure, and once with the scattering structure, where the first calculation is used for normalization.
 
 It gets more tricky if one wants to compute the *reflection* spectrum as well as the transmission. You can't simply compute the flux in the backwards direction, because this would give you the sum of the reflected and the incident power. You also can't simply subtract the incident power from backwards flux to get the transmitted power, because in general there will be interference effects (between incident and reflected waves) that are not subtracted. Rather, you have to subtract the Fourier-transformed incident *fields* $\mathbf{E}_\omega^{(0)}(\mathbf{x})$ and $\mathbf{H}_\omega^{(0)}(\mathbf{x})$ to get the reflected/scattered power:
 

@@ -543,7 +543,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency *f* in units of $c$/distance or ω in units of 2πc/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of $c$/distance or ω in units of $2\pi c$/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -567,7 +567,7 @@ A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The center frequency $f$ in units of $c$/distance (or ω in units of 2πc/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The center frequency $f$ in units of $c$/distance (or ω in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`width` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

@@ -6,7 +6,7 @@ This tutorial demonstrates Meep's ability to compute classical forces using the 
 
 The optical gradient force on each waveguide arising from the evanescent coupling of the waveguide modes can also be computed analytically:
 
-$$F=-\frac{1}{ω}\frac{dω}{ds}\Bigg\vert_\vec{k}U,$$
+$$F=-\frac{1}{\omega}\frac{d\omega}{ds}\Bigg\vert_\vec{k}U,$$
 
 where ω is the eigenmode frequency of the coupled-waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, vol. 30, issue 22, pp. 3042-4 (2005)](http://math.mit.edu/~stevenj/papers/PovinelliLo05.pdf). This expression has been shown to be mathematically equivalent to the MST ([Optics Express, vol. 17, issue 20, pp. 18116-135](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116)). We will verify this result in this tutorial.
 

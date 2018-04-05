@@ -36,7 +36,7 @@ dimensions = mp.CYLINDRICAL
 cell = mp.Vector3(sr, 0, 0)
 ```
 
-The key thing is to set the `dimensions` parameter to `CYLINDRICAL`. This means that all vectors will represent ($r$,$\phi$,$z$) coordinates instead of ($x$,$y$,$z$). The computational cell in the $r$ direction is of size `sr = r + w + pad + dpml`, and runs from `0` to `sr` (by default) rather than from `-sr/2` to `sr/2` as it would for any other dimension. Note that our $z$ size is 0 because it is in 2d. The $\phi$ size is also 0, corresponding to the continuous rotational symmetry. A finite $\phi$ size might correspond to discrete rotational symmetry, but this is not currently supported.
+The key thing is to set the `dimensions` parameter to `CYLINDRICAL`. This means that all vectors will represent ($r$,φ,$z$) coordinates instead of ($x$,$y$,$z$). The computational cell in the $r$ direction is of size `sr = r + w + pad + dpml`, and runs from `0` to `sr` (by default) rather than from `-sr/2` to `sr/2` as it would for any other dimension. Note that our $z$ size is 0 because it is in 2d. The φ size is also 0, corresponding to the continuous rotational symmetry. A finite φ size might correspond to discrete rotational symmetry, but this is not currently supported.
 
 In particular, in systems with continuous rotational symmetry, by an analogue of Bloch's theorem, the angular dependence of the fields can always be chosen in the form $\exp(i m \phi)$ for some integer $m$. Meep uses this fact to treat the angular dependence analytically, with $m$ given by the input variable `m` which we'll set to a command-line argument that is 3 by default.
 
@@ -69,7 +69,7 @@ sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
                      center=mp.Vector3(r + 0.1))]
 ```
 
-Note that this isn't really a point source, however, because of the cylindrical symmetry &mdash; it is really a ring source with $\phi$ dependence $\exp(i m \phi)$. Finally, as before, we run until the source has turned off, plus 200 additional time units during which we use [harminv](https://github.com/stevengj/harminv) to analyze the $E_z$ field at a given point to extract the frequencies and decay rates of the modes.
+Note that this isn't really a point source, however, because of the cylindrical symmetry &mdash; it is really a ring source with φ dependence $\exp(i m \phi)$. Finally, as before, we run until the source has turned off, plus 200 additional time units during which we use [harminv](https://github.com/stevengj/harminv) to analyze the $E_z$ field at a given point to extract the frequencies and decay rates of the modes.
 
 ```py
 sim = mp.Simulation(cell_size=cell,
@@ -129,7 +129,7 @@ harminv0:, 0.1759448592380757, -4.900590034953583e-05, 1795.1395442502285, 0.045
 
 This is indeed very close to the 2d simulations: the frequencies are within 1% of the previous values. The $Q$ values (lifetimes) differ by a larger amount although they are still reasonably close.
 
-Which is more accurate, the 2d or the cylindrical simulation? We can answer this question by increasing the resolutions in both cases and seeing what they converge towards. In particular, let's focus on the $m$=4 mode. In the cylindrical case, if we double the resolution to 20 we get ω=0.14748 and $Q$=384. In the 2d case, if we double the resolution to 20 we get ω=0.14733 and $Q$=321. So, it looks like the frequencies are clearly converging together and that the cylindrical simulation is more accurate (as you might expect since it describes the $\phi$ direction analytically). But the $Q$ values seem to be getting *farther* apart &mdash; what's going on?
+Which is more accurate, the 2d or the cylindrical simulation? We can answer this question by increasing the resolutions in both cases and seeing what they converge towards. In particular, let's focus on the $m$=4 mode. In the cylindrical case, if we double the resolution to 20 we get ω=0.14748 and $Q$=384. In the 2d case, if we double the resolution to 20 we get ω=0.14733 and $Q$=321. So, it looks like the frequencies are clearly converging together and that the cylindrical simulation is more accurate (as you might expect since it describes the φ direction analytically). But the $Q$ values seem to be getting *farther* apart &mdash; what's going on?
 
 The problem is twofold. First, there is some signal-processing error in determining $Q$ in the 2d case, as indicated by the "error" column of the `harminv` output which is only 4e-7 for the 2d simulation vs. 6e-11 for the cylindrical case. We can bring this error down by running with a narrower bandwidth source, which excites just one mode and gives a cleaner signal, or by analyzing over a longer time than 200. Doing the former, we find that the 2d value of $Q$ at a resolution of 20 should really be $Q$=343. Second, [PML](../Perfectly_Matched_Layer.md) absorbing layers are really designed to absorb planewaves incident on flat interfaces, but here we have a *cylindrical* PML layer. Because of this, there are larger numerical reflections from the PML in the cylindrical simulation, which we can rectify by pushing the PML out to a larger radius (i.e. using a larger value of `pad`) and/or increasing the PML thickness (increasing `dpml`) so that it turns on more adiabatically. In the cylindrical simulation for `resolution = 20`, if we increase to `dpml = 16`, we get $Q$=343, which is in much better agreement with the 2d calculation and if we increase to `dpml = 32` we get the same $Q$=343, so it seems to be converged.
 
@@ -155,4 +155,4 @@ $E_z$ for ω=0.176 $m$=5 mode:
 ![](../images/Ring-cyl-ez-0.176.png)
 </center>
 
-Because we are looking only at a $\phi$=0 slice, the visual distinction between $m$ values is much less than with the 2d simulation. What is apparent is that, as the frequency increases, the mode becomes more localized in the waveguide and the radiating field (seen in the $r \times t$ slice as curved waves extending outward) becomes less, as expected.
+Because we are looking only at a φ=0 slice, the visual distinction between $m$ values is much less than with the 2d simulation. What is apparent is that, as the frequency increases, the mode becomes more localized in the waveguide and the radiating field (seen in the $r \times t$ slice as curved waves extending outward) becomes less, as expected.

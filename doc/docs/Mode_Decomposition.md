@@ -12,16 +12,16 @@ Consider a waveguide with propagation axis along the $x$ direction and constant 
 
 $$
    \mathbf{E}(\mathbf{r}) = 
-   \mathbf{E}(x,\vec{ρ}) =
-   \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec ρ)e^{+i\beta_n x}
-                    + \alpha^-_n \mathbf E^-_n(\vec ρ)e^{-i\beta_n x}
+   \mathbf{E}(x,\vec{\rho}) =
+   \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec \rho)e^{+i\beta_n x}
+                    + \alpha^-_n \mathbf E^-_n(\vec \rho)e^{-i\beta_n x}
             \right\}
 $$
 $$
    \mathbf{H}(\mathbf{r}) = 
-   \mathbf{H}(x,\vec{ρ}) =
-   \sum_{n} \left\{   \alpha^+_n \mathbf H^+_n(\vec ρ)e^{+i\beta_n x}
-                    + \alpha^-_n \mathbf H^-_n(\vec ρ)e^{-i\beta_n x}
+   \mathbf{H}(x,\vec{\rho}) =
+   \sum_{n} \left\{   \alpha^+_n \mathbf H^+_n(\vec \rho)e^{+i\beta_n x}
+                    + \alpha^-_n \mathbf H^-_n(\vec \rho)e^{-i\beta_n x}
             \right\}
 $$
 
@@ -64,7 +64,7 @@ The following are the parameters:
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as $\alpha^+$, $\alpha^-$ starting at slot `2*nb*num_freqs+nf` of this array:
+The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array:
 
 ````c++
  std::vector<cdouble> coeffs=f.get_eigenmode_coefficient(...)
@@ -175,7 +175,7 @@ where the inner product involves an integration over transverse coordinates:
 $$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
    \equiv
    \int_{S}
-    \Big[ \mathbf{f}^*(\vec ρ) \times \mathbf{g}(\vec ρ)\Big]
+    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
     \cdot \hat{\mathbf{n}} \, dA
   \tag{5}
 $$

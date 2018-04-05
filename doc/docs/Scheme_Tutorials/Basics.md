@@ -242,7 +242,7 @@ Above, we hard-coded all of the parameters like the cell size, the waveguide wid
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 ```
 
-Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could now do `meep` `sx=17` `tut-wvg-bend-trans.ctl` to change the X size to 17, without editing the ctl file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
+Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could now do `meep sx=17 tut-wvg-bend-trans.ctl` to change the X size to 17, without editing the ctl file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
 
 ```scm
 (define-param pad 4) ; padding distance between waveguide and cell edge         
@@ -427,7 +427,7 @@ How do we make a circular waveguide? So far, we've only seen `block` objects, bu
 (set-param! resolution 10)
 ```
 
-Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` ($ε=1$) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
+Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
 
 Now, we don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 

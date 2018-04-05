@@ -4,7 +4,7 @@
 
 In this example, we will perform a simulation with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.py](https://github.com/stevengj/meep/blob/master/python/examples/material-dispersion.py). From the dispersion relation $ω(k)$, we will compute the numerical ε(ω) via the formula:
 
-$$ε(ω) = \left( \frac{ck}{ω} \right) ^2$$
+$$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
 We will then compare this with the analytical ε(ω) that we specified.
 
@@ -26,7 +26,7 @@ default_material = mp.Medium(epsilon=2.25, E_susceptibilities=susceptibilities)
 
 corresponding to the dielectric function:
 
-$$ε(ω) = ε(2π f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2π} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2π}$$
+$$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2\pi} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2\pi}$$
 
 The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 
@@ -71,7 +71,7 @@ Alternatively we could just read all of the frequencies into Octave/Matlab or a 
 unix% python material-dispersion.py | tee material-dispersion.out
 ```
 
-we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $ω(k)$ for the real part of ω:
+we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation ω(k) for the real part of ω:
 
 <center>
 ![](../images/Material-dispersion-bands.png)

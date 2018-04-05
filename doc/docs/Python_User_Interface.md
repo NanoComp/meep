@@ -649,7 +649,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency *f* in units of $c$/distance or ω in units of 2πc/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of $c$/distance or ω in units of $2\pi c$/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`start_time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -673,7 +673,7 @@ A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The center frequency $f$ in units of $c$/distance (or ω in units of 2πc/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The center frequency $f$ in units of $c$/distance (or ω in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`width` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -789,11 +789,7 @@ Given a `meep.Volume`, returns the integral of the electric- and magnetic-field 
 
 **`modal_volume_in_box(box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<<<<<<< 9030211b65f469b2e7ba0b55fb90a05305bba769
-Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral ($\varepsilon$|E|^2) / maximum ($\varepsilon$|E|^2). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
-=======
-Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|^2) / maximum (ε|E|^2). If no volume argument is provided, the entire computational cell is used by default.
->>>>>>> convert latex to unicode
+Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|^2) / maximum (ε|E|^2). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 

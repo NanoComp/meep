@@ -75,7 +75,7 @@ See [Materials](Materials/#material-dispersion) for how to include dispersive ma
 
 If you have negative ε *and* negative μ *everywhere*, the case of a negative-index material, then the simulation is fine. However at the boundary between negative- and positive-index materials, you will encounter instabilities: because of the way Maxwell's equations are discretized in FDTD, the ε and μ are discretized on different spatial grids, so you will get a half-pixel or so of εμ &lt; 0 at the boundary between negative and positive indices, which will cause the simulation to diverge. But of course, any physical negative-index metamaterial also involves dispersion.
 
-Note also that, as a consequence of the above analysis, ε must go to a positive value in the $\omega\to\pm\infty$ limit to get non-diverging solutions of Maxwell's equations. So the $\varepsilon_\infty$ in your [dispersion model](Materials.md) must be positive.
+Note also that, as a consequence of the above analysis, ε must go to a positive value in the ω $\to\pm\infty$ limit to get non-diverging solutions of Maxwell's equations. So the ε$_\infty$ in your [dispersion model](Materials.md) must be positive.
 
 ### Why are there strange peaks in my reflection/transmission spectrum when modeling planar or periodic structures?
 
