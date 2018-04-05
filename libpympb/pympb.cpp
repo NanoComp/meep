@@ -560,9 +560,9 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu->m12.re = md->medium.epsilon_offdiag.z.re;
         epsmu->m12.im = md->medium.epsilon_offdiag.z.im;
 #else
-        epsmu->m01 = md->medium.epsilon_offdiag.x;
-        epsmu->m02 = md->medium.epsilon_offdiag.y;
-        epsmu->m12 = md->medium.epsilon_offdiag.z;
+        epsmu->m01 = md->medium.epsilon_offdiag.x.re;
+        epsmu->m02 = md->medium.epsilon_offdiag.y.re;
+        epsmu->m12 = md->medium.epsilon_offdiag.z.re;
 #endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
@@ -616,9 +616,9 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu->m12.re = md->medium.mu_offdiag.z.re;
         epsmu->m12.im = md->medium.mu_offdiag.z.im;
 #else
-        epsmu->m01 = md->medium.mu_offdiag.x;
-        epsmu->m02 = md->medium.mu_offdiag.y;
-        epsmu->m12 = md->medium.mu_offdiag.z;
+        epsmu->m01 = md->medium.mu_offdiag.x.re;
+        epsmu->m02 = md->medium.mu_offdiag.y.re;
+        epsmu->m12 = md->medium.mu_offdiag.z.re;
 #endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
@@ -935,9 +935,9 @@ bool mode_solver::material_has_mu(void *mt) {
       has_nonzero_mu_offdiag = true;
     }
 #else
-    if (m->mu_offdiag.x != 0 ||
-        m->mu_offdiag.y != 0 ||
-        m->mu_offdiag.z != 0) {
+    if (m->mu_offdiag.x.re != 0 ||
+        m->mu_offdiag.y.re != 0 ||
+        m->mu_offdiag.z.re != 0) {
       has_nonzero_mu_offdiag = true;
     }
 #endif
