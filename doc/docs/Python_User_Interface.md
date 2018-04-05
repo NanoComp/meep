@@ -898,6 +898,10 @@ As `load_flux`, but negates the Fourier-transformed fields after they are loaded
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
 
+**`get_eigenmode_coefficients(flux, direction, volume, bands, alpha, vgrp)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given a flux object, direction, volume object, and list of band indices, return the eigenmode coefficients in `alpha` and group velocities in `vgrp`. [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) provides an example.
+
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor)

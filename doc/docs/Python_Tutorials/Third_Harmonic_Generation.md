@@ -84,9 +84,9 @@ In a linear calculation, we normalize the transmission against some reference sp
 ![](../images/3rd-harm-1d-flux.png)
 </center>
 
-For small values of χ$^{(3)}$, we see a peak from our source at ω=1/3 and another peak precisely at the third-harmonic frequency $3ω$=1. As the χ$^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for χ$^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
+For small values of χ$^{(3)}$, we see a peak from our source at ω=1/3 and another peak precisely at the third-harmonic frequency 3ω=1. As the χ$^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for χ$^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
 
-It is also interesting to have a more detailed look at the dependence of the power at ω and $3ω$ as a function of χ$^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two more flux regions to Meep and request exactly the desired frequency components. That is, we'll add the following before `sim.run`:
+It is also interesting to have a more detailed look at the dependence of the power at ω and 3ω as a function of χ$^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two more flux regions to Meep and request exactly the desired frequency components. That is, we'll add the following before `sim.run`:
 
 ```py
 trans1 = sim.add_flux(fcen, 0, 1,
@@ -129,7 +129,7 @@ If we run the simulation with `-logk -16`, i.e. for a linear medium, we get:
 harmonics:, 1e-16, 1.0, 225.25726603587043, 5.026979706160964e-16
 ```
 
-That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and $3ω$ as a function of χ$^{(3)}$ on a log-log scale:
+That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and 3ω as a function of χ$^{(3)}$ on a log-log scale:
 
 <center>
 ![](../images/3rd-harm-1d-vs-chi.png)

@@ -106,7 +106,7 @@ If we run the simulation with `k=0`, i.e. for a linear medium, we get:
 harmonics:, 0, 1.0, 225.25726603587043, 5.026979706160964e-16
 ```
 
-That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and $3ω$ as a function of χ$^{(3)}$ on a log-log scale:
+That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and 3ω as a function of χ$^{(3)}$ on a log-log scale:
 
 <center>
 ![](../images/3rd-harm-1d-vs-chi.png)
