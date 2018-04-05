@@ -246,6 +246,14 @@ mode_solver::mode_solver(int num_bands,
   }
 
   default_material = _default_material;
+
+#ifndef WITH_HERMITIAN_EPSILON
+  meep_geom::medium_struct *m;
+  if (meep_geom::is_medium(default_material, &m)) {
+    meep_geom::check_offdiag(m);
+  }
+#endif
+
   geometry = geom;
 
   // `init` is called in the constructor to avoid the need to copy the
@@ -544,6 +552,13 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
 
   meep_geom::material_data *md = material;
 
+#ifndef WITH_HERMITIAN_EPSILON
+  if (md->which_subclass == meep_geom::material_data::MATERIAL_USER ||
+      md->which_subclass == meep_geom::material_data::MATERIAL_FILE) {
+      meep_geom::check_offdiag(&md->medium);
+  }
+#endif
+
   if (eps) {
     switch (md->which_subclass) {
       case meep_geom::material_data::MEDIUM:
@@ -830,6 +845,14 @@ void mode_solver::init_epsilon() {
   meep::master_printf("Geometric objects:\n");
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
+
+#ifndef WITH_HERMITIAN_EPSILON
+      meep_geom::medium_struct *mm;
+      if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
+        meep_geom::check_offdiag(mm);
+      }
+#endif
+
       display_geometric_object_info(5, geometry.items[i]);
 
       // meep_geom::medium_struct *mm;
