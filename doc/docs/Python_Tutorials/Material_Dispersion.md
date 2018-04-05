@@ -38,7 +38,7 @@ We can see that the f=1.1 resonance causes a large change in both the real and i
 
 On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of ε. Nevertheless, it generates a clear peak in the *imaginary* part of ε, corresponding to a resonant absorption peak.
 
-Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $ω(k)$ over, and compute the associated frequencies by using the `k_points` function:
+Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `k_points` function:
 
 ```py
 fcen = 1.0
@@ -57,7 +57,7 @@ sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources, default_materi
 all_freqs = sim.run(kpts, k_points=200)  # a list of lists of frequencies
 ```
 
-The `k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio $(ck/ω)^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
+The `k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio $(ck/\omega)^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
 
 ```py
 for fs, kx in zip(all_freqs, [v.x for v in kpts]):
