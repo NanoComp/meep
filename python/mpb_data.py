@@ -112,7 +112,7 @@ class MPBData(object):
 
         map_data(flat_in_arr_re, flat_in_arr_im, np.array(in_dims, dtype=np.intc),
                  out_arr_re, out_arr_im, np.array(out_dims, dtype=np.intc), self.coord_map,
-                 kvector, self.pick_nearest, self.verbose)
+                 kvector, self.pick_nearest, self.verbose, False)
 
         if np.iscomplexobj(in_arr):
             # multiply * scaleby for complex data
@@ -123,7 +123,7 @@ class MPBData(object):
 
         return np.reshape(out_arr_re, out_dims[:rank])
 
-    def handle_cvector_dataset(self, in_arr):
+    def handle_cvector_dataset(self, in_arr, multiply_bloch_phase):
         in_x_re = np.real(in_arr[:, :, 0]).ravel()
         in_x_im = np.imag(in_arr[:, :, 0]).ravel()
         in_y_re = np.real(in_arr[:, :, 1]).ravel()
@@ -193,7 +193,7 @@ class MPBData(object):
 
             map_data(d_in[dim][0].ravel(), d_in[dim][1].ravel(), np.array(in_dims, dtype=np.intc),
                      out_arr_re, out_arr_im, np.array(out_dims, dtype=np.intc), self.coord_map,
-                     kvector, self.pick_nearest, self.verbose)
+                     kvector, self.pick_nearest, self.verbose, multiply_bloch_phase)
 
             # multiply * scaleby
             complex_out = np.vectorize(complex)(out_arr_re, out_arr_im)
@@ -298,13 +298,6 @@ class MPBData(object):
         self.init_output_lattice()
 
         if len(arr.shape) == 3:
-            if not arr.bloch_phase:
-                err = ('The input array has not been multiplied by the Bloch phase. You can get ' +
-                       'appropriate field data by passing bloch_phase=True to any get_*field function. ' +
-                       'Alternatively, ModeSolver.multiply_bloch_phase(array) will return an array ' +
-                       'that has been muliplied by the Bloch phase.')
-                raise ValueError(err)
-
-            return self.handle_cvector_dataset(arr)
+            return self.handle_cvector_dataset(arr, not arr.bloch_phase)
         else:
             return self.handle_dataset(arr)

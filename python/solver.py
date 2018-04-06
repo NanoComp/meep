@@ -223,16 +223,16 @@ class ModeSolver(object):
 
         return np.reshape(mu, dims)
 
-    def get_bfield(self, which_band, bloch_phase=False):
+    def get_bfield(self, which_band, bloch_phase=True):
         return self._get_field('b', which_band, bloch_phase)
 
-    def get_efield(self, which_band, bloch_phase=False):
+    def get_efield(self, which_band, bloch_phase=True):
         return self._get_field('e', which_band, bloch_phase)
 
-    def get_dfield(self, which_band, bloch_phase=False):
+    def get_dfield(self, which_band, bloch_phase=True):
         return self._get_field('d', which_band, bloch_phase)
 
-    def get_hfield(self, which_band, bloch_phase=False):
+    def get_hfield(self, which_band, bloch_phase=True):
         return self._get_field('h', which_band, bloch_phase)
 
     def get_charge_density(self, which_band):
@@ -985,93 +985,93 @@ class ModeSolver(object):
 # Predefined output functions (functions of the band index), for passing to `run`
 
 def output_hfield(ms, which_band):
-    ms.get_hfield(which_band)
+    ms.get_hfield(which_band, False)
     ms.output_field()
 
 
 def output_hfield_x(ms, which_band):
-    ms.get_hfield(which_band)
+    ms.get_hfield(which_band, False)
     ms.output_field_x()
 
 
 def output_hfield_y(ms, which_band):
-    ms.get_hfield(which_band)
+    ms.get_hfield(which_band, False)
     ms.output_field_y()
 
 
 def output_hfield_z(ms, which_band):
-    ms.get_hfield(which_band)
+    ms.get_hfield(which_band, False)
     ms.output_field_z()
 
 
 def output_bfield(ms, which_band):
-    ms.get_bfield(which_band)
+    ms.get_bfield(which_band, False)
     ms.output_field()
 
 
 def output_bfield_x(ms, which_band):
-    ms.get_bfield(which_band)
+    ms.get_bfield(which_band, False)
     ms.output_field_x()
 
 
 def output_bfield_y(ms, which_band):
-    ms.get_bfield(which_band)
+    ms.get_bfield(which_band, False)
     ms.output_field_y()
 
 
 def output_bfield_z(ms, which_band):
-    ms.get_bfield(which_band)
+    ms.get_bfield(which_band, False)
     ms.output_field_z()
 
 
 def output_dfield(ms, which_band):
-    ms.get_dfield(which_band)
+    ms.get_dfield(which_band, False)
     ms.output_field()
 
 
 def output_dfield_x(ms, which_band):
-    ms.get_dfield(which_band)
+    ms.get_dfield(which_band, False)
     ms.output_field_x()
 
 
 def output_dfield_y(ms, which_band):
-    ms.get_dfield(which_band)
+    ms.get_dfield(which_band, False)
     ms.output_field_y()
 
 
 def output_dfield_z(ms, which_band):
-    ms.get_dfield(which_band)
+    ms.get_dfield(which_band, False)
     ms.output_field_z()
 
 
 def output_efield(ms, which_band):
-    ms.get_efield(which_band)
+    ms.get_efield(which_band, False)
     ms.output_field()
 
 
 def output_efield_x(ms, which_band):
-    ms.get_efield(which_band)
+    ms.get_efield(which_band, False)
     ms.output_field_x()
 
 
 def output_efield_y(ms, which_band):
-    ms.get_efield(which_band)
+    ms.get_efield(which_band, False)
     ms.output_field_y()
 
 
 def output_efield_z(ms, which_band):
-    ms.get_efield(which_band)
+    ms.get_efield(which_band, False)
     ms.output_field_z()
 
 
 def output_bpwr(ms, which_band):
-    ms.get_bfield(which_band)
+    ms.get_bfield(which_band, False)
     ms.compute_field_energy()
     ms.output_field()
 
 
 def output_dpwr(ms, which_band):
-    ms.get_dfield(which_band)
+    ms.get_dfield(which_band, False)
     ms.compute_field_energy()
     ms.output_field()
 
@@ -1091,7 +1091,7 @@ def output_dpwr_in_objects(output_func, min_energy, objects=[]):
     """
 
     def _output(ms, which_band):
-        ms.get_dfield(which_band)
+        ms.get_dfield(which_band, False)
         ms.compute_field_energy()
         energy = ms.compute_energy_in_objects(objects)
         fmt = "dpwr:, {}, {}, {} "
@@ -1143,22 +1143,22 @@ def display_group_velocities(ms):
 # given band based upon the spatial representation of the given field
 
 def fix_hfield_phase(ms, which_band):
-    ms.get_hfield(which_band)
+    ms.get_hfield(which_band, False)
     ms.mode_solver.fix_field_phase()
 
 
 def fix_bfield_phase(ms, which_band):
-    ms.get_bfield(which_band)
+    ms.get_bfield(which_band, False)
     ms.mode_solver.fix_field_phase()
 
 
 def fix_dfield_phase(ms, which_band):
-    ms.get_dfield(which_band)
+    ms.get_dfield(which_band, False)
     ms.mode_solver.fix_field_phase()
 
 
 def fix_efield_phase(ms, which_band):
-    ms.get_efield(which_band)
+    ms.get_efield(which_band, False)
     ms.mode_solver.fix_field_phase()
 
 
