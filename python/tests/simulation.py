@@ -280,6 +280,44 @@ class TestSimulation(unittest.TestCase):
         sim.field_energy_in_box(tv)
         sim.field_energy_in_box(v)
 
+    def test_load_dump_structure(self):
+        resolution = 10
+        cell = mp.Vector3(10, 10)
+        pml_layers = mp.PML(1.0)
+        fcen = 1.0
+        df = 1.0
+        sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(),
+                            component=mp.Hz)
+        geometry = mp.Cylinder(0.2, material=mp.Medium(index=3))
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            default_material=mp.Medium(index=1),
+                            geometry=[geometry],
+                            boundary_layers=[pml_layers],
+                            sources=[sources])
+
+        sim.run(until=200)
+        ref_field = sim.get_field_point(mp.Hz, mp.Vector3(z=2))
+        dump_fn = 'test_load_dump_structure.h5'
+        sim.dump_structure(dump_fn)
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            default_material=mp.Medium(index=1),
+                            geometry=[],
+                            boundary_layers=[pml_layers],
+                            sources=[sources],
+                            load_structure=dump_fn)
+        sim.run(until=200)
+        field = sim.get_field_point(mp.Hz, mp.Vector3(z=2))
+
+        self.assertAlmostEqual(ref_field, field)
+
+        mp.all_wait()
+        if mp.am_master():
+            os.remove(dump_fn)
+
 
 if __name__ == '__main__':
     unittest.main()
