@@ -246,6 +246,14 @@ mode_solver::mode_solver(int num_bands,
   }
 
   default_material = _default_material;
+
+#ifndef WITH_HERMITIAN_EPSILON
+  meep_geom::medium_struct *m;
+  if (meep_geom::is_medium(default_material, &m)) {
+    meep_geom::check_offdiag(m);
+  }
+#endif
+
   geometry = geom;
 
   // `init` is called in the constructor to avoid the need to copy the
@@ -544,6 +552,13 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
 
   meep_geom::material_data *md = material;
 
+#ifndef WITH_HERMITIAN_EPSILON
+  if (md->which_subclass == meep_geom::material_data::MATERIAL_USER ||
+      md->which_subclass == meep_geom::material_data::MATERIAL_FILE) {
+      meep_geom::check_offdiag(&md->medium);
+  }
+#endif
+
   if (eps) {
     switch (md->which_subclass) {
       case meep_geom::material_data::MEDIUM:
@@ -560,9 +575,9 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu->m12.re = md->medium.epsilon_offdiag.z.re;
         epsmu->m12.im = md->medium.epsilon_offdiag.z.im;
 #else
-        epsmu->m01 = md->medium.epsilon_offdiag.x;
-        epsmu->m02 = md->medium.epsilon_offdiag.y;
-        epsmu->m12 = md->medium.epsilon_offdiag.z;
+        epsmu->m01 = md->medium.epsilon_offdiag.x.re;
+        epsmu->m02 = md->medium.epsilon_offdiag.y.re;
+        epsmu->m12 = md->medium.epsilon_offdiag.z.re;
 #endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
@@ -616,9 +631,9 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu->m12.re = md->medium.mu_offdiag.z.re;
         epsmu->m12.im = md->medium.mu_offdiag.z.im;
 #else
-        epsmu->m01 = md->medium.mu_offdiag.x;
-        epsmu->m02 = md->medium.mu_offdiag.y;
-        epsmu->m12 = md->medium.mu_offdiag.z;
+        epsmu->m01 = md->medium.mu_offdiag.x.re;
+        epsmu->m02 = md->medium.mu_offdiag.y.re;
+        epsmu->m12 = md->medium.mu_offdiag.z.re;
 #endif
         maxwell_sym_matrix_invert(epsmu_inv, epsmu);
         break;
@@ -830,6 +845,14 @@ void mode_solver::init_epsilon() {
   meep::master_printf("Geometric objects:\n");
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
+
+#ifndef WITH_HERMITIAN_EPSILON
+      meep_geom::medium_struct *mm;
+      if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
+        meep_geom::check_offdiag(mm);
+      }
+#endif
+
       display_geometric_object_info(5, geometry.items[i]);
 
       // meep_geom::medium_struct *mm;
@@ -935,9 +958,9 @@ bool mode_solver::material_has_mu(void *mt) {
       has_nonzero_mu_offdiag = true;
     }
 #else
-    if (m->mu_offdiag.x != 0 ||
-        m->mu_offdiag.y != 0 ||
-        m->mu_offdiag.z != 0) {
+    if (m->mu_offdiag.x.re != 0 ||
+        m->mu_offdiag.y.re != 0 ||
+        m->mu_offdiag.z.re != 0) {
       has_nonzero_mu_offdiag = true;
     }
 #endif
