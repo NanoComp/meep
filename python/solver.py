@@ -93,7 +93,6 @@ class ModeSolver(object):
                  deterministic=False,
                  verbose=False,
                  optimize_grid_size=True,
-                 use_eigensolver_davidson=False,
                  eigensolver_nwork=3,
                  eigensolver_block_size=-11):
 
@@ -123,7 +122,6 @@ class ModeSolver(object):
         self.deterministic = deterministic
         self.verbose = verbose
         self.optimize_grid_size = optimize_grid_size
-        self.use_eigensolver_davidson = use_eigensolver_davidson
         self.eigensolver_nwork = eigensolver_nwork
         self.eigensolver_block_size = eigensolver_block_size
         self.parity = ''
@@ -727,7 +725,6 @@ class ModeSolver(object):
             self.force_mu,
             self.use_simple_preconditioner,
             self.grid_size,
-            self.use_eigensolver_davidson,
             self.eigensolver_nwork,
             self.eigensolver_block_size,
         )

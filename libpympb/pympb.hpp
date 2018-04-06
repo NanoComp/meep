@@ -41,7 +41,6 @@ struct mode_solver {
   bool force_mu;
   bool use_simple_preconditioner;
   vector3 grid_size;
-  bool use_eigensolver_davidson;
 
   int n[3];
   int local_N;
@@ -94,7 +93,7 @@ struct mode_solver {
               bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
               bool periodicity, double flops, bool negative_epsilon_ok, std::string epsilon_input_file,
               std::string mu_input_file, bool force_mu, bool use_simple_preconditioner, vector3 grid_size,
-              bool use_eigensolver_davidson, int eigensolver_nwork, int eigensolver_block_size);
+              int eigensolver_nwork, int eigensolver_block_size);
   ~mode_solver();
 
   void init(int p, bool reset_fields);
