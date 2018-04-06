@@ -40,6 +40,7 @@ struct mode_solver {
   std::string mu_input_file;
   bool force_mu;
   bool use_simple_preconditioner;
+  vector3 grid_size;
 
   int n[3];
   int local_N;
@@ -47,7 +48,6 @@ struct mode_solver {
   int alloc_N;
   int nwork_alloc;
 
-  // TODO: Get from python ?
   int eigensolver_nwork;
   int eigensolver_block_size;
 
@@ -92,7 +92,8 @@ struct mode_solver {
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
               bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
               bool periodicity, double flops, bool negative_epsilon_ok, std::string epsilon_input_file,
-              std::string mu_input_file, bool force_mu, bool use_simple_preconditioner);
+              std::string mu_input_file, bool force_mu, bool use_simple_preconditioner, vector3 grid_size,
+              int eigensolver_nwork, int eigensolver_block_size);
   ~mode_solver();
 
   void init(int p, bool reset_fields);
@@ -134,7 +135,6 @@ struct mode_solver {
   void set_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   void get_lattice(double data[3][3]);
-  vector3 get_cur_kvector();
   void get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size);
   std::vector<int> get_eigenvectors_slice_dims(int num_bands);
   void set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, int size);

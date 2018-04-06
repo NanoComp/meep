@@ -203,7 +203,10 @@ mode_solver::mode_solver(int num_bands,
                          std::string epsilon_input_file,
                          std::string mu_input_file,
                          bool force_mu,
-                         bool use_simple_preconditioner):
+                         bool use_simple_preconditioner,
+                         vector3 grid_size,
+                         int eigensolver_nwork,
+                         int eigensolver_block_size):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
@@ -214,8 +217,9 @@ mode_solver::mode_solver(int num_bands,
   mu_input_file(mu_input_file),
   force_mu(force_mu),
   use_simple_preconditioner(use_simple_preconditioner),
-  eigensolver_nwork(3),
-  eigensolver_block_size(-11),
+  grid_size(grid_size),
+  eigensolver_nwork(eigensolver_nwork),
+  eigensolver_block_size(eigensolver_block_size),
   last_parity(-2),
   iterations(0),
   eigensolver_flops(flops),
@@ -715,9 +719,9 @@ bool mode_solver::using_mu() {
 void mode_solver::init(int p, bool reset_fields) {
   int have_old_fields = 0;
 
-  n[0] = std::max(resolution[0] * std::ceil(geometry_lattice.size.x), 1.0);
-  n[1] = std::max(resolution[1] * std::ceil(geometry_lattice.size.y), 1.0);
-  n[2] = std::max(resolution[2] * std::ceil(geometry_lattice.size.z), 1.0);
+  n[0] = grid_size.x;
+  n[1] = grid_size.y;
+  n[2] = grid_size.z;
 
   if (target_freq != 0.0) {
     meep::master_printf("Target frequency is %g\n", target_freq);
@@ -1134,10 +1138,8 @@ void mode_solver::solve_kpoint(vector3 kvector) {
     }
 
     if (mtdata) {  /* solving for bands near a target frequency */
-      // TODO
-      // if (eigensolver_davidsonp) {
-      // }
       CHECK(mdata->mu_inv==NULL, "targeted solver doesn't handle mu");
+
       eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata, NULL, NULL,
                   use_simple_preconditioner ? maxwell_target_preconditioner : maxwell_target_preconditioner2,
                   (void *)mtdata, evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
@@ -1149,10 +1151,6 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       eigensolver_get_eigenvals(Hblock, eigvals.data() + ib, maxwell_operator, mdata, W[0], W[1]);
     }
     else {
-      // TODO
-      // if (eigensolver_davidsonp) {
-      // }
-
       eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
                   mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
                   use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
@@ -2129,10 +2127,6 @@ void mode_solver::fix_field_phase()
 
 void mode_solver::get_lattice(double data[3][3]) {
   matrix3x3_to_arr(data, Rm);
-}
-
-vector3 mode_solver::get_cur_kvector() {
-   return cur_kvector;
 }
 
 std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {

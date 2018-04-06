@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 import functools
+import math
 import os
 import numbers
 import re
@@ -71,9 +72,6 @@ class ModeSolver(object):
                  resolution=10,
                  is_negative_epsilon_ok=False,
                  eigensolver_flops=0,
-                 is_eigensolver_davidson=False,
-                 eigensolver_nwork=3,
-                 eigensolver_block_size=-11,
                  eigensolver_flags=68,
                  use_simple_preconditioner=False,
                  force_mu=False,
@@ -93,12 +91,14 @@ class ModeSolver(object):
                  random_fields=False,
                  filename_prefix='',
                  deterministic=False,
-                 verbose=False):
+                 verbose=False,
+                 optimize_grid_size=True,
+                 eigensolver_nwork=3,
+                 eigensolver_block_size=-11):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
         self.eigensolver_flops = eigensolver_flops
-        self.is_eigensolver_davidson = is_eigensolver_davidson
         self.eigensolver_nwork = eigensolver_nwork
         self.eigensolver_block_size = eigensolver_block_size
         self.eigensolver_flags = eigensolver_flags
@@ -121,6 +121,9 @@ class ModeSolver(object):
         self.filename_prefix = filename_prefix
         self.deterministic = deterministic
         self.verbose = verbose
+        self.optimize_grid_size = optimize_grid_size
+        self.eigensolver_nwork = eigensolver_nwork
+        self.eigensolver_block_size = eigensolver_block_size
         self.parity = ''
         self.iterations = 0
         self.all_freqs = None
@@ -147,6 +150,10 @@ class ModeSolver(object):
         else:
             t = type(val)
             raise TypeError("resolution must be a number or a Vector3: Got {}".format(t))
+
+    def allow_negative_epsilon(self):
+        self.is_negative_epsilon_ok = True
+        self.target_freq = 1 / mp.inf
 
     def get_filename_prefix(self):
         if self.filename_prefix:
@@ -185,7 +192,7 @@ class ModeSolver(object):
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
-        return MPBArray(res, self.get_lattice, self.get_current_kpoint)
+        return MPBArray(res, self.get_lattice, self.current_k)
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
@@ -247,7 +254,7 @@ class ModeSolver(object):
         self.mode_solver.get_curfield_cmplx(arr)
 
         arr = np.reshape(arr, dims)
-        res = MPBArray(arr, self.get_lattice(), self.get_current_kpoint())
+        res = MPBArray(arr, self.get_lattice(), self.current_k)
 
         return res
 
@@ -290,13 +297,13 @@ class ModeSolver(object):
         self.mode_solver.set_curfield(tot_pwr.ravel())
         self.mode_solver.set_curfield_type('R')
 
-        return MPBArray(tot_pwr, self.get_lattice(), self.get_current_kpoint())
+        return MPBArray(tot_pwr, self.get_lattice(), self.current_k)
 
     def get_eigenvectors(self, first_band, num_bands):
         dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
         ev = np.zeros(np.prod(dims), dtype=np.complex128)
         self.mode_solver.get_eigenvectors(first_band - 1, num_bands, ev)
-        return MPBArray(ev.reshape(dims), self.get_lattice(), self.get_current_kpoint())
+        return MPBArray(ev.reshape(dims), self.get_lattice(), self.current_k)
 
     def set_eigenvectors(self, ev, first_band):
         self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
@@ -411,9 +418,6 @@ class ModeSolver(object):
         self.mode_solver.get_lattice(lattice)
 
         return lattice
-
-    def get_current_kpoint(self):
-        return self.mode_solver.get_cur_kvector()
 
     def output_field(self):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
@@ -663,7 +667,42 @@ class ModeSolver(object):
         mean_time = self.total_run_time / (mean_iters * num_runs)
         print("mean time per iteration = {} s".format(mean_time))
 
+    def _get_grid_size(self):
+        grid_size = mp.Vector3(self.resolution[0] * self.geometry_lattice.size.x,
+                               self.resolution[1] * self.geometry_lattice.size.y,
+                               self.resolution[2] * self.geometry_lattice.size.z)
+
+        grid_size.x = max(math.ceil(grid_size.x), 1)
+        grid_size.y = max(math.ceil(grid_size.y), 1)
+        grid_size.z = max(math.ceil(grid_size.z), 1)
+
+        return grid_size
+
+    def _optimize_grid_size(self):
+        self.grid_size.x = self.next_factor2357(self.grid_size.x)
+        self.grid_size.y = self.next_factor2357(self.grid_size.y)
+        self.grid_size.z = self.next_factor2357(self.grid_size.z)
+
+    def next_factor2357(self, n):
+
+        def is_factor2357(n):
+
+            def divby(n, p):
+                if n % p == 0:
+                    return divby(n // p, p)
+                return n
+            return divby(divby(divby(divby(n, 2), 3), 5), 7) == 1
+
+        if is_factor2357(n):
+            return n
+        return self.next_factor2357(n + 1)
+
     def init_params(self, p, reset_fields):
+        self.grid_size = self._get_grid_size()
+
+        if self.optimize_grid_size:
+            self._optimize_grid_size()
+
         self.mode_solver = mode_solver(
             self.num_bands,
             p,
@@ -685,6 +724,9 @@ class ModeSolver(object):
             self.mu_input_file,
             self.force_mu,
             self.use_simple_preconditioner,
+            self.grid_size,
+            self.eigensolver_nwork,
+            self.eigensolver_block_size,
         )
 
     def set_parity(self, p):
