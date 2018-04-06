@@ -308,6 +308,22 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     return new meep::volume_list(v, c, weight, next);
 }
 
+template<typename dft_type>
+PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
+    int rank;
+    int dims[3];
+    std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
+
+    npy_intp *arr_dims = new npy_intp[rank];
+    for (int i = 0; i < rank; ++i) {
+        arr_dims[i] = dims[i];
+    }
+
+    PyObject *py_arr = PyArray_SimpleNewFromData(rank, arr_dims, NPY_CDOUBLE, dft_arr);
+    delete[] arr_dims;
+
+    return py_arr;
+}
 %}
 
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
@@ -324,6 +340,8 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
 PyObject *_dft_ldos_F(meep::dft_ldos *f);
 PyObject *_dft_ldos_J(meep::dft_ldos *f);
+template<typename dft_type>
+PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -877,6 +895,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %ignore is_medium;
 %ignore is_metal;
 %ignore meep::infinity;
+
+// template instantiations
+%template(get_dft_flux_array) _get_dft_array<meep::dft_flux>;
+%template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
+%template(get_dft_force_array) _get_dft_array<meep::dft_force>;
+%template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
 
 %include "vec.i"
 %include "meep.hpp"

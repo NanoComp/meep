@@ -683,16 +683,11 @@ class Simulation(object):
 
         return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
 
-    def output_dft(self, dft_fields, fname, where=None, center=None, size=None):
+    def output_dft(self, dft_fields, fname):
         if self.fields is None:
             self.init_fields()
 
-        try:
-            where = self._volume_from_kwargs(where, center, size)
-        except ValueError:
-            where = self.fields.total_volume()
-
-        self.fields.output_dft(dft_fields, fname, where)
+        self.fields.output_dft(dft_fields, fname)
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         if self.fields is None:
@@ -907,6 +902,18 @@ class Simulation(object):
             self.fields.get_array_slice(v, component, arr)
 
         return arr
+
+    def get_dft_array(self, dft_obj, component, num_freq):
+        if type(dft_obj) is mp.dft_fields:
+            return mp.get_dft_fields_array(self.fields, dft_obj, component, num_freq)
+        elif type(dft_obj) is mp.dft_flux:
+            return mp.get_dft_flux_array(self.fields, dft_obj, component, num_freq)
+        elif type(dft_obj) is mp.dft_force:
+            return mp.get_dft_force_array(self.fields, dft_obj, component, num_freq)
+        elif type(dft_obj) is mp.dft_near2far:
+            return mp.get_dft_near2far_array(self.fields, dft_obj, component, num_freq)
+        else:
+            raise ValueError("Invalid type of dft object: {}".format(dft_obj))
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:

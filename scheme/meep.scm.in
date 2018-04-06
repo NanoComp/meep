@@ -680,10 +680,9 @@
   (let ((vol (if (null? where) (meep-fields-total-volume fields) (car where))))
     (meep-fields-add-dft-fields fields components vol freq_min freq_max nfreq)))
 
-(define (output-dft dft_fields fname . where)
+(define (output-dft dft_fields fname)
   (if (null? fields) (init-fields))
-  (let ((vol (if (null? where) (meep-fields-total-volume fields) (car where))))
-    (meep-fields-output-dft fields dft_fields fname vol)))
+  (meep-fields-output-dft fields dft_fields fname))
 
 ; ****************************************************************
 ; Generic step functions: these are functions which are called
