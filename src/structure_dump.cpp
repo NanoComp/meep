@@ -31,7 +31,6 @@ using namespace std;
 namespace meep {
 
 void structure::dump(const char *filename) {
-  h5file file(filename, h5file::WRITE, true);
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.
@@ -49,16 +48,18 @@ void structure::dump(const char *filename) {
   size_t *num_chi1inv = new size_t[num_chunks*NUM_FIELD_COMPONENTS*5];
   sum_to_master(num_chi1inv_, num_chi1inv, num_chunks*NUM_FIELD_COMPONENTS*5);
   delete[] num_chi1inv_;
+
+  // determine total dataset size and offset of this process's data
+  size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
+  size_t ntotal = sum_to_all(my_ntot);
+
+  h5file file(filename, h5file::WRITE, true);
   size_t dims[3] = {num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
   if (am_master())
     file.write_chunk(3, start, dims, num_chi1inv);
   delete[] num_chi1inv;
-
-  // determine total dataset size and offset of this process's data
-  size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-  size_t ntotal = sum_to_all(my_ntot);
 
   // write the data
   file.create_data("chi1inv", 1, &ntotal);
@@ -88,6 +89,8 @@ void structure::load(const char *filename) {
     abort("chunk mismatch in structure::load");
   if (am_master())
     file.read_chunk(3, start, dims, num_chi1inv);
+
+  file.prevent_deadlock();
   broadcast(0, num_chi1inv, dims[0]*dims[1]*dims[2]);
 
   changing_chunks();
