@@ -6,25 +6,41 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/meepgeom.hpp      \
  $(top_srcdir)/libmeepgeom/material_data.hpp
 
-BUILT_SOURCES = meep-python.cpp __init__.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp examples tests
+BUILT_SOURCES = meep-python.cpp mpb-python.cpp __init__.py mpb.py
+EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py mpb_data.py examples tests
 
 CLEANFILES = $(BUILT_SOURCES) meep.py
 
+if WITH_MPB
+  PYMPBINCLUDE=-I$(top_srcdir)/libpympb
+  LIBPYMPB=$(top_builddir)/libpympb/libpympb.la
+endif
+
+LIBMEEPGEOM = $(top_builddir)/libmeepgeom/libmeepgeom.la
+LIBMEEP = $(top_builddir)/src/libmeep.la
+
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_srcdir)/libmeepgeom           \
+              $(PYMPBINCLUDE)                       \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
-_meep_la_LIBADD = $(top_builddir)/src/libmeep.la $(top_builddir)/libmeepgeom/libmeepgeom.la $(PYTHON_LIBS) -lctlgeom
+_meep_la_LIBADD = $(LIBMEEP) $(LIBMEEPGEOM) $(PYTHON_LIBS) @LIBCTLGEOM_LIBS@
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+
+_mpb_la_SOURCES = mpb-python.cpp
+_mpb_la_LIBADD = $(LIBMEEPGEOM) $(PYTHON_LIBS) $(LIBPYMPB) @LIBCTLGEOM_LIBS@
+_mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
+_mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 # material_dispersion.py test must be excluded from test suite for MPI build
 if WITH_MPI
   MDPYTEST=
+  MPBPYTEST=
 else
   MDPYTEST=$(TEST_DIR)/material_dispersion.py
+  MPBPYTEST=$(TEST_DIR)/mpb.py
 endif
 
 TEST_DIR = tests
@@ -35,6 +51,7 @@ TESTS =                                   \
     $(TEST_DIR)/bend_flux.py              \
     $(TEST_DIR)/cavity_arrayslice.py      \
     $(TEST_DIR)/cyl_ellipsoid.py          \
+    $(TEST_DIR)/dft_fields.py             \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
     $(TEST_DIR)/geom.py                   \
@@ -42,6 +59,7 @@ TESTS =                                   \
     $(TEST_DIR)/holey_wvg_cavity.py       \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
+    $(MPBPYTEST)                          \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/ring.py                   \
@@ -56,20 +74,36 @@ PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
+  pympbdir = $(pkgpythondir)/mpb
   pkgpython_PYTHON = geom.py __init__.py source.py simulation.py
   pkgpyexec_LTLIBRARIES = _meep.la
+  pympb_DATA = mpb.py solver.py mpb_data.py
+  pympb_LTLIBRARIES = _mpb.la
 endif
+
+install-data-hook:
+	mv $(DESTDIR)$(pkgpythondir)/mpb/mpb.py $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
+
+uninstall-hook:
+	rm -f $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
 
 if MAINTAINER_MODE
 
 SWIG ?= swig
-SWIG_SRC = meep.i numpy.i vec.i
 SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
+MEEP_SWIG_SRC = meep.i numpy.i vec.i
 
-meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
+meep-python.cpp: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
+MPB_SWIG_SRC = mpb.i
+
+mpb-python.cpp: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
+	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
+
 meep.py: meep-python.cpp
+
+mpb.py: mpb-python.cpp
 
 __init__.py: meep.py
 	cp $< $@
@@ -80,10 +114,11 @@ __init__.py: meep.py
 
 
 INIT_PY = __init__.py
-
+MPB_PY = $(builddir)/mpb.py
 else
 
 INIT_PY = $(srcdir)/__init__.py
+MPB_PY = $(srcdir)/mpb.py
 
 endif # MAINTAINER_MODE
 
@@ -94,9 +129,12 @@ PY_PKG_FILES =               \
     $(srcdir)/source.py      \
     .libs/_meep.so
 
-meep: _meep.la __init__.py
-	mkdir -p meep
+meep: _meep.la _mpb.la __init__.py
+	mkdir -p meep/mpb
 	cp $(PY_PKG_FILES) meep
+	cp .libs/_mpb.so meep/mpb
+	cp $(MPB_PY) meep/mpb/__init__.py
+	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py meep/mpb
 
 all-local: meep
 

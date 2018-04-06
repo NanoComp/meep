@@ -30,7 +30,8 @@ namespace meep {
 
 dft_near2far::dft_near2far(dft_chunk *F_,
                            double fmin, double fmax, int Nf,
-                           double eps_, double mu_)
+                           double eps_, double mu_,
+                           const volume &where_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
@@ -38,12 +39,14 @@ dft_near2far::dft_near2far(dft_chunk *F_,
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   F = F_;
   eps = eps_; mu = mu_;
+  where = new volume(where_.get_min_corner(), where_.get_max_corner());
 }
 
 dft_near2far::dft_near2far(const dft_near2far &f) {
   freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
   F = f.F;
   eps = f.eps; mu = f.mu;
+  where = new volume(f.where->get_min_corner(), f.where->get_max_corner());
 }
 
 void dft_near2far::remove()
@@ -284,7 +287,7 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
 void dft_near2far::save_farfields(const char *fname, const char *prefix,
                                   const volume &where, double resolution) {
     /* compute output grid size etc. */
-    int dims[4] = {1,1,1,1};
+    size_t dims[4] = {1,1,1,1};
     double dx[3] = {0,0,0};
     direction dirs[3] = {X,Y,Z};
     int rank = 0;
@@ -311,12 +314,12 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
     std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
 
     vec x(where.dim);
-    for (int i0 = 0; i0 < dims[0]; ++i0) {
+    for (size_t i0 = 0; i0 < dims[0]; ++i0) {
         x.set_direction(dirs[0], where.in_direction_min(dirs[0]) + i0*dx[0]);
-        for (int i1 = 0; i1 < dims[1]; ++i1) {
+        for (size_t i1 = 0; i1 < dims[1]; ++i1) {
             x.set_direction(dirs[1],
                             where.in_direction_min(dirs[1]) + i1*dx[1]);
-            for (int i2 = 0; i2 < dims[2]; ++i2) {
+            for (size_t i2 = 0; i2 < dims[2]; ++i2) {
                 x.set_direction(dirs[2],
                                 where.in_direction_min(dirs[2]) + i2*dx[2]);
                 farfield_lowlevel(EH1, x);
@@ -370,8 +373,10 @@ dft_near2far fields::add_dft_near2far(const volume_list *where,
 				double freq_min, double freq_max, int Nfreq){
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
+  volume everywhere = where->v;
 
   for (const volume_list *w = where; w; w = w->next) {
+      everywhere = everywhere | where->v;
       direction nd = component_direction(w->c);
       if (nd == NO_DIRECTION) nd = normal_direction(w->v);
       if (nd == NO_DIRECTION) abort("unknown dft_near2far normal");
@@ -415,7 +420,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where,
       }
   }
 
-  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu);
+  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere);
 }
 
 } // namespace meep

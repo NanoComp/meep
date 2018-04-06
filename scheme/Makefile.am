@@ -1,5 +1,5 @@
 bin_PROGRAMS = meep
-EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch
+EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch examples
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
@@ -54,7 +54,7 @@ meep-enums.scm: meep_enum_renames.i
 ##############################################################################
 
 # what is printed out when invoking your program with --version:
-VERSION_STRING = "Meep @VERSION@, Copyright (C) 2005-2015 Massachusetts Insitute of Technology."
+VERSION_STRING = "Meep @VERSION@, Copyright (C) 2005-2018 Massachusetts Insitute of Technology."
 
 MY_DEFS = -DHAVE_CTL_HOOKS=1 -DHAVE_CTL_EXPORT_HOOK=1
 

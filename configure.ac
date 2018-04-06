@@ -179,6 +179,8 @@ if test $have_mpb = maybe; then
   fi
 fi
 
+AM_CONDITIONAL(WITH_MPB, test "x$have_mpb" = "xyes")
+
 ##############################################################################
 # GNU Scientific Library
 
@@ -423,6 +425,9 @@ AC_SUBST(LIBCTL_CPPFLAGS)
 AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes], [have_libctlgeom=no])
 AM_CONDITIONAL(WITH_LIBCTLGEOM, test x"$have_libctlgeom" = "xyes")
 
+LIBCTLGEOM_LIBS="-lctlgeom"
+AC_SUBST(LIBCTLGEOM_LIBS)
+
 ##############################################################################
 # The following function is used only for debugging.  Note that
 # we must test for it *after* setting the compiler flags (which
@@ -529,10 +534,10 @@ AC_CONFIG_FILES([
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
-	examples/Makefile
 	scheme/Makefile
 	scheme/meep.scm
 	libmeepgeom/Makefile
+	libpympb/Makefile
 	python/Makefile
 ])
 

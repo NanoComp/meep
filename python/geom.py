@@ -1,6 +1,9 @@
 from __future__ import division
 
+import functools
 import math
+import numbers
+import operator
 from copy import deepcopy
 from numbers import Number
 
@@ -69,6 +72,9 @@ class Vector3(object):
     def __array__(self):
         return np.array([self.x, self.y, self.z])
 
+    def conj(self):
+        return Vector3(self.x.conjugate(), self.y.conjugate(), self.z.conjugate())
+
     def scale(self, s):
         x = self.x * s
         y = self.y * s
@@ -80,10 +86,7 @@ class Vector3(object):
         return self.x * v.x + self.y * v.y + self.z * v.z
 
     def cdot(self, v):
-        conj_vec = Vector3(self.x.conjugate(),
-                           self.y.conjugate(),
-                           self.z.conjugate())
-        return conj_vec.dot(v)
+        return self.conj().dot(v)
 
     def cross(self, v):
         x = self.y * v.z - self.z * v.y
@@ -110,13 +113,26 @@ class Vector3(object):
         vperp = self - vpar
         return vpar + (vperp.scale(math.cos(theta)) + vcross.scale(math.sin(theta)))
 
+    # rotate vectors in lattice/reciprocal coords (note that the axis
+    # is also given in the corresponding basis):
+
+    def rotate_lattice(self, axis, theta, lat):
+        a = lattice_to_cartesian(axis, lat)
+        v = lattice_to_cartesian(self, lat)
+        return cartesian_to_lattice(v.rotate(a, theta), lat)
+
+    def rotate_reciprocal(self, axis, theta, lat):
+        a = reciprocal_to_cartesian(axis, lat)
+        v = reciprocal_to_cartesian(self, lat)
+        return cartesian_to_reciprocal(v.rotate(a, theta), lat)
+
 
 class Medium(object):
 
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(),
+                 epsilon_offdiag=Vector3(0j, 0j, 0j),
                  mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(),
+                 mu_offdiag=Vector3(0j, 0j, 0j),
                  E_susceptibilities=[],
                  H_susceptibilities=[],
                  E_chi2_diag=Vector3(),
@@ -177,7 +193,7 @@ class Medium(object):
 class Susceptibility(object):
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
-        self.sigma_diag = mp.Vector3(sigma, sigma, sigma) if sigma else sigma_diag
+        self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
 
@@ -230,7 +246,9 @@ class GeometricObject(object):
         self.center += vec
 
     def shift(self, vec):
-        self.center += vec
+        c = deepcopy(self)
+        c.center += vec
+        return c
 
     def info(self, indent_by=0):
         mp.display_geometric_object_info(indent_by, self)
@@ -307,12 +325,334 @@ class Ellipsoid(Block):
         super(Ellipsoid, self).__init__(**kwargs)
 
 
-def geometric_object_duplicates(shift_vector, min, max, *objs):
-    dups = []
-    for obj in objs:
-        for i in range(min, max + 1):
-            o = deepcopy(obj)
-            o.shift(shift_vector.scale(i))
-            dups.append(o)
+class Matrix(object):
 
+    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
+        self.c1 = c1
+        self.c2 = c2
+        self.c3 = c3
+
+    def __getitem__(self, i):
+        return self.row(i)
+
+    def __mul__(self, m):
+        if type(m) is Matrix:
+            return self.mm_mult(m)
+        elif type(m) is Vector3:
+            return self.mv_mult(m)
+        elif isinstance(m, Number):
+            return self.scale(m)
+        else:
+            raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
+
+    def __repr__(self):
+        return "<{}\n {}\n {}>".format(self.c1, self.c2, self.c3)
+
+    def row(self, i):
+        return Vector3(self.c1[i], self.c2[i], self.c3[i])
+
+    def mm_mult(self, m):
+        c1 = Vector3(self.row(0).dot(m.c1),
+                     self.row(1).dot(m.c1),
+                     self.row(2).dot(m.c1))
+        c2 = Vector3(self.row(0).dot(m.c2),
+                     self.row(1).dot(m.c2),
+                     self.row(2).dot(m.c2))
+        c3 = Vector3(self.row(0).dot(m.c3),
+                     self.row(1).dot(m.c3),
+                     self.row(2).dot(m.c3))
+
+        return Matrix(c1, c2, c3)
+
+    def mv_mult(self, v):
+        return Vector3(*[self.row(i).dot(v) for i in range(3)])
+
+    def scale(self, s):
+        return Matrix(self.c1.scale(s), self.c2.scale(s), self.c3.scale(s))
+
+    def determinant(self):
+        sum1 = sum([
+            functools.reduce(operator.mul, [self[x][x] for x in range(3)]),
+            functools.reduce(operator.mul, [self[0][1], self[1][2], self[2][0]]),
+            functools.reduce(operator.mul, [self[1][0], self[2][1], self[0][2]])
+        ])
+        sum2 = sum([
+            functools.reduce(operator.mul, [self[0][2], self[1][1], self[2][0]]),
+            functools.reduce(operator.mul, [self[0][1], self[1][0], self[2][2]]),
+            functools.reduce(operator.mul, [self[1][2], self[2][1], self[0][0]])
+        ])
+        return sum1 - sum2
+
+    def transpose(self):
+        return Matrix(self.row(0), self.row(1), self.row(2))
+
+    def inverse(self):
+        v1x = self[1][1] * self[2][2] - self[1][2] * self[2][1]
+        v1y = self[1][2] * self[2][0] - self[1][0] * self[2][2]
+        v1z = self[1][0] * self[2][1] - self[1][1] * self[2][0]
+        v1 = mp.Vector3(v1x, v1y, v1z)
+
+        v2x = self[2][1] * self[0][2] - self[0][1] * self[2][2]
+        v2y = self[0][0] * self[2][2] - self[0][2] * self[2][0]
+        v2z = self[0][1] * self[2][0] - self[0][0] * self[2][1]
+        v2 = mp.Vector3(v2x, v2y, v2z)
+
+        v3x = self[0][1] * self[1][2] - self[1][1] * self[0][2]
+        v3y = self[1][0] * self[0][2] - self[0][0] * self[1][2]
+        v3z = self[1][1] * self[0][0] - self[1][0] * self[0][1]
+        v3 = mp.Vector3(v3x, v3y, v3z)
+
+        m = Matrix(v1, v2, v3)
+
+        return m.scale(1 / self.determinant())
+
+
+class Lattice(object):
+
+    def __init__(self,
+                 size=Vector3(1, 1, 1),
+                 basis_size=Vector3(1, 1, 1),
+                 basis1=Vector3(1, 0, 0),
+                 basis2=Vector3(0, 1, 0),
+                 basis3=Vector3(0, 0, 1)):
+
+        self.size = size
+        self.basis_size = basis_size
+        self.basis1 = basis1
+        self.basis2 = basis2
+        self.basis3 = basis3
+
+    @property
+    def basis1(self):
+        return self._basis1
+
+    @basis1.setter
+    def basis1(self, val):
+        self._basis1 = val.unit()
+
+    @property
+    def basis2(self):
+        return self._basis2
+
+    @basis2.setter
+    def basis2(self, val):
+        self._basis2 = val.unit()
+
+    @property
+    def basis3(self):
+        return self._basis3
+
+    @basis3.setter
+    def basis3(self, val):
+        self._basis3 = val.unit()
+
+    @property
+    def b1(self):
+        return self.basis1.scale(self.basis_size.x)
+
+    @property
+    def b2(self):
+        return self.basis2.scale(self.basis_size.y)
+
+    @property
+    def b3(self):
+        return self.basis3.scale(self.basis_size.z)
+
+    @property
+    def basis(self):
+        B = Matrix(self.b1, self.b2, self.b3)
+
+        if B.determinant() == 0:
+            raise ValueError("Lattice basis vectors must be linearly independent.")
+
+        return B
+
+    @property
+    def metric(self):
+        B = self.basis
+        return B.transpose() * B
+
+
+def lattice_to_cartesian(x, lat):
+    if isinstance(x, Vector3):
+        return lat.basis * x
+
+    return (lat.basis * x) * lat.basis.inverse()
+
+
+def cartesian_to_lattice(x, lat):
+    if isinstance(x, Vector3):
+        return lat.basis.inverse() * x
+
+    return (lat.basis.inverse() * x) * lat.basis
+
+
+def reciprocal_to_cartesian(x, lat):
+    s = Vector3(*[1 if v == 0 else v for v in lat.size])
+
+    m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
+    Rst = (lat.basis * m).transpose()
+
+    if isinstance(x, Vector3):
+        return Rst.inverse() * x
+    else:
+        return (Rst.inverse() * x) * Rst
+
+
+def cartesian_to_reciprocal(x, lat):
+    s = Vector3(*[1 if v == 0 else v for v in lat.size])
+
+    m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
+    Rst = (lat.basis * m).transpose()
+
+    if isinstance(x, Vector3):
+        return Rst * x
+    else:
+        return (Rst * x) * Rst.inverse()
+
+
+def lattice_to_reciprocal(x, lat):
+    return cartesian_to_reciprocal(lattice_to_cartesian(x, lat), lat)
+
+
+def reciprocal_to_lattice(x, lat):
+    return cartesian_to_lattice(reciprocal_to_cartesian(x, lat), lat)
+
+
+def geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go):
+
+    def _dup(min_multiple, lst):
+        if min_multiple <= max_multiple:
+            shifted = go.shift(shift_vector.scale(min_multiple))
+            return _dup(min_multiple + 1, [shifted] + lst)
+        else:
+            return lst
+
+    return _dup(min_multiple, [])
+
+
+def geometric_objects_duplicates(shift_vector, min_multiple, max_multiple, go_list):
+    dups = []
+    for go in go_list:
+        dups += geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go)
     return dups
+
+
+def geometric_objects_lattice_duplicates(lat, go_list, *usize):
+
+    def lat_to_lattice(v):
+        return cartesian_to_lattice(lat.basis * v, lat)
+
+    u1 = usize[0] if usize else 1
+    u2 = usize[1] if len(usize) >= 2 else 1
+    u3 = usize[2] if len(usize) >= 3 else 1
+    s = lat.size
+
+    b1 = lat_to_lattice(mp.Vector3(u1))
+    b2 = lat_to_lattice(mp.Vector3(0, u2, 0))
+    b3 = lat_to_lattice(mp.Vector3(0, 0, u3))
+
+    n1 = math.ceil((s.x if s.x else 1e-20) / u1)
+    n2 = math.ceil((s.y if s.y else 1e-20) / u2)
+    n3 = math.ceil((s.z if s.z else 1e-20) / u3)
+
+    min3 = -math.floor((n3 - 1) / 2)
+    max3 = math.ceil((n3 - 1) / 2)
+    d3 = geometric_objects_duplicates(b3, int(min3), int(max3), go_list)
+
+    min2 = -math.floor((n2 - 1) / 2)
+    max2 = math.ceil((n2 - 1) / 2)
+    d2 = geometric_objects_duplicates(b2, int(min2), int(max2), d3)
+
+    min1 = -math.floor((n1 - 1) / 2)
+    max1 = math.ceil((n1 - 1) / 2)
+
+    return geometric_objects_duplicates(b1, int(min1), int(max1), d2)
+
+
+# Return a 'memoized' version of the function f, which caches its
+# arguments and return values so as never to compute the same thing twice.
+def memoize(f):
+    f_memo_tab = {}
+
+    def _mem(y=None):
+        tab_val = f_memo_tab.get(y, None)
+        if tab_val:
+            return tab_val
+
+        fy = f(y)
+        f_memo_tab[y] = fy
+        return fy
+    return _mem
+
+
+# Find a root by Newton's method with bounds and bisection,
+# given a function f that returns a pair of (value . derivative)
+def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
+    # Some trickiness: we only need to evaluate the function at x_min and
+    # x_max if a Newton step fails, and even then only if we haven't already
+    # bracketed the root, so do this via lazy evaluation.
+    f_memo = memoize(f)
+
+    def lazy(x):
+        if isinstance(x, numbers.Number):
+            return x
+        return x()
+
+    def pick_bound(which):
+        def _pb():
+            fmin_tup = f_memo(x_min)
+            fmax_tup = f_memo(x_max)
+            fmin = fmin_tup[0]
+            fmax = fmax_tup[0]
+
+            if which(fmin):
+                return x_min
+            elif which(fmax):
+                return x_max
+            else:
+                raise ValueError("failed to bracket the root in find_root_deriv")
+        return _pb
+
+    def in_bounds(x, f, df, a, b):
+        return (f - (df * (x - a))) * (f - (df * (x - b))) < 0
+
+    def newton(x, a, b, dx):
+        if abs(dx) < abs(tol * x):
+            return x
+
+        fx_tup = f_memo(x)
+        f = fx_tup[0]
+        df = fx_tup[1]
+
+        if f == 0:
+            return x
+
+        a_prime = x if f < 0 else a
+        b_prime = x if f > 0 else b
+
+        cond = f_memo(lazy(a_prime))[0] * f_memo(lazy(b_prime))[0] > 0
+        if dx != x_max - x_min and dx * (f / df) < 0 and cond:
+            raise ValueError("failed to bracket the root in find_root_deriv")
+
+        if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
+            is_in_bounds = in_bounds(x, f, df, a, b)
+        else:
+            is_in_bounds = in_bounds(x, f, df, x_min, x_max)
+
+        if is_in_bounds:
+            return newton(x - (f / df), a_prime, b_prime, f / df)
+
+        av = lazy(a)
+        bv = lazy(b)
+        dx_prime = 0.5 * (bv - av)
+        a_pp = av if a == a_prime else a_prime
+        b_pp = bv if b == b_prime else b_prime
+
+        return newton((av + bv) * 0.5, a_pp, b_pp, dx_prime)
+
+    if x_guess is None:
+        x_guess = (x_min + x_max) * 0.5
+
+    return newton(x_guess, pick_bound(lambda aa: aa < 0),
+                  pick_bound(lambda aa: aa > 0), x_max - x_min)

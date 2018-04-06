@@ -5,7 +5,7 @@
 Meep Design
 -----------
 
-An overview of Meep's inner workings is summarized in [Computer Physics Communications, vol. 181, issue 3, pp. 687-702 (2010)](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
+An overview of Meep's inner workings is summarized in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
 
 [TOC]
 

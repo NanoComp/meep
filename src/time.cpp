@@ -50,7 +50,7 @@ double fields::time_spent_on(time_sink s) {
 static const char *ts2n(time_sink s) {
   switch (s) {
   case Stepping: return "time stepping";
-  case Connecting: return "connnecting chunks";
+  case Connecting: return "connecting chunks";
   case Boundaries: return "copying borders";
   case MpiTime: return "communicating";
   case FieldOutput: return "outputting fields";

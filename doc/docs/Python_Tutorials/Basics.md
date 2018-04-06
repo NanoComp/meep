@@ -9,24 +9,24 @@ In this page, we'll go through a couple of simple examples using the Python inte
 The Meep Python Library
 -----------------------
 
-Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality which will also be demonstrated. Much of the low-level functionality of the Python interface has been abstracted which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available.
+Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality and will also be demonstrated. Much of the functionality of the low-level C++ interface has been abstracted in Python which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available where necessary.
 
-Executing Meep programs is normally done at the Unix command line as follows:
+Executing Meep simulations is normally done at the Unix command line as follows:
 
 ```sh
  unix% python foo.py >& foo.out
 ```
 
-which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a web browser. If you use one of these approaches now, you can paste in the commands from the tutorial as you follow it and see what they do.
+which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a web browser. If you use one of these approaches now, you can paste in the commands from the tutorial as you follow along and see what they do.
 
 Fields in a Waveguide
 ---------------------
 
-For our first example, let's examine the field pattern excited by a localized CW source in a waveguide &mdash; first straight, then bent. Our waveguide will have non-dispersive $\varepsilon=12$ and width 1 &#956;m. Our unit length in this example is 1 &#956;m. See also [Units](../Introduction.md#units-in-meep).
+For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. Our waveguide will have frequency-independent $ε=12$ and width 1 &#956;m. Our unit length in this example is 1 &#956;m. See also [Units](../Introduction.md#units-in-meep).
 
 ### A Straight Waveguide
 
-The first thing to do in any script is to load the Meep library module:
+The first thing to do always is to load the Meep library module:
 
 ```py
 import meep as mp
@@ -39,7 +39,7 @@ cell = mp.Vector3(16, 8, 0)
 ```
 The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
 
-Next we add the waveguide. Most commonly, the device structure is specified by a set of geometric objects stored in the `geometry` object. Here, we do:
+Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface/#geometricobject) stored in the `geometry` object. Here, we do:
 
 ```py
 geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
@@ -47,7 +47,7 @@ geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
                      material=mp.Medium(epsilon=12))]
 ```
 
-The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $\varepsilon=12$, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air ($\varepsilon=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
+The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε=12$, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air ($ε=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
 
 <center>![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png)</center>
 
@@ -59,23 +59,23 @@ sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
                      center=mp.Vector3(-7,0))]
 ```
 
-Here, we gave the source a frequency of 0.15, and specified a `ContinuousSrc` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $\varepsilon=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 &#956;m to the right of the left edge of the cell—we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+W gave the source a frequency of 0.15, and specified a [`ContinuousSource`](../Python_User_Interface/#continuoussource) which is just a fixed-frequency sinusoid $\exp(-iω t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2π c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $ε=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 &#956;m to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
-Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML)— which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 around all sides of the cell, we do:
+As for boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash;  which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
 
 ```py
 pml_layers = [mp.PML(1.0)]
 ```
 
-`pml_layers` is a set of `pml` objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `mp.PML(thickness=1.0,direction=mp.X,side=mp.high)` specifies a PML layer on only the $+x$ side. An important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections; see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md) for more information.
+`pml_layers` is a set of [`PML`](../Python_User_Interface/#pml) objects &mdash; you may have more than one `PML` object if you want PML layers only on certain sides of the cell, e.g. `mp.PML(thickness=1.0,direction=mp.X,side=mp.high)` specifies a PML layer on only the $+x$ side. An important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
 
-Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
+Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/&#956;m, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
 
 ```py
 resolution = 10
 ```
 
-The final object to specify is `Simulation` which is based on all the previously defined objects.
+The final object to specify is [`Simulation`](../Python_User_Interface/#the-simulation-class) which is based on all the previously defined objects.
 
 ```py
 sim = mp.Simulation(cell_size=cell,
@@ -85,40 +85,33 @@ sim = mp.Simulation(cell_size=cell,
                     resolution=resolution)
 ```
 
-Now, we are ready to run the simulation! The first set of arguments to the `run` routine specify fields to output or other kinds of analyses at each time step. The last argument is the time to run for:
+Now, we are ready to run the simulation. We time step the fields until a time of 200:
 
 ```py
-sim.run(mp.at_beginning(mp.output_epsilon),
-        mp.at_end(mp.output_efield_z),
-        until=200)
+sim.run(until=200)
 ```
 
-Here, we are outputting the dielectric function $\varepsilon$ and the electric-field component $E_z$, but have wrapped the output functions which would otherwise run at *every* time step in `at_beginning` and `at_end`, which do just what they say. There are several other such functions to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
-
-It should finish in a couple of seconds. If you are running interactively, the two output files will be called `eps-000000.00.h5` and `ez-000200.00.h5` (notice that the filenames include the time at which they were output). If we were running a `tutorial.py` file, then the outputs will be `tutorial-eps-000000.00.h5` and `tutorial-ez-000200.00.h5`. In any case, we can now analyze and visualize these [HDF5](https://en.wikipedia.org/wiki/HDF5) files with Python's [h5py](http://www.h5py.org/), [NumPy](http://www.numpy.org/), and [matplotlib](https://matplotlib.org/) libraries:
+It should finish in less than a second. We can now analyze and visualize the fields with Python's [NumPy](http://www.numpy.org/) and [matplotlib](https://matplotlib.org/) libraries:
 
 ```py
-import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 ```
 
-We will first create an image of the dielectric function $\varepsilon$. This involves reading in the data from the output file, assigning the values to a NumPy array (necessary to transpose the image for output), and displaying the results.
+We will first create an image of the dielectric function ε. This involves obtaining a slice of the data using the [`get_array`](../Python_User_Interface/#array-slices) routine which outputs to a NumPy array and then display the results.
 
 ```py
-eps_h5file = h5py.File('eps-000000.00.h5','r')
-eps_data = np.array(eps_h5file['eps'])
+eps_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric)
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.axis('off')
 plt.show()
 ```
 
-Next we create an image of the scalar electric field $E_z$ by overlaying the dielectric function. We use the "seismic" [colormap](https://matplotlib.org/examples/color/colormaps_reference.html) which goes from dark blue (negative) to white (zero) to dark red (positive).
+Next, we create an image of the scalar electric field $E_z$ by overlaying the dielectric function. We use the "RdBu" [colormap](https://matplotlib.org/examples/color/colormaps_reference.html) which goes from dark red (negative) to white (zero) to dark blue (positive).
 
 ```py
-ez_h5file = h5py.File('ez-000200.00.h5','r')
-ez_data = np.array(ez_h5file['ez'])
+ez_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Ez)
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)
@@ -128,17 +121,17 @@ plt.show()
 
 <center>![](../images/Python-Tutorial-wvg-straight-ez-000200.00.png)</center>
 
-Here, we see that the the source has excited the waveguide mode but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML.
+We see that the the source has excited the waveguide mode but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML.
 
 ### A 90° Bend
 
-Now, we'll start a new simulation where we look at the fields in propagating through a waveguide bend, and we'll do a couple of other things differently as well. As usual, the first thing to do is to load the Meep library:
+Now, we'll start a new simulation where we look at the fields propagating through a waveguide bend, and we'll do a couple of other things differently as well. As usual, the first thing to do is to load the Meep library:
 
 ```py
 import meep as mp
 ```
 
-Then let's set up the bent waveguide in a slightly larger computational cell via:
+Then let's set up the bent waveguide in a slightly larger computational cell:
 
 ```py
 cell = mp.Vector3(16, 16, 0)
@@ -152,11 +145,11 @@ pml_layers = [mp.PML(1.0)]
 resolution = 10
 ```
 
-Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in the image generated with `h5py`, and thus the block of size 12$\times$1 is centered at $(-2,-3.5)$. Also shown in green is the source plane at $x=-7$.
+Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5).
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
-We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source with the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface/#eigenmodesource) can also be used which is covered in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function) over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(wavelength=2*(11**0.5), width=20),
@@ -165,7 +158,7 @@ sources = [mp.Source(mp.ContinuousSource(wavelength=2*(11**0.5), width=20),
                      size=mp.Vector3(0,1))]
 ```
 
-Finally, we'll run the simulation. Instead of running `output_efield_z` only at the *end* of the simulation, however, we'll run it at every 0.6 time units (about 10 times per period) via `mp.at_every(0.6, mp.output_efield_z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature to output to a *single* 3d HDF5 file, where the third dimension is *time*:
+Finally, we'll run the simulation. The first set of arguments to the `run` routine specify fields to output or other kinds of analyses at each time step.
 
 ```py
 sim = mp.Simulation(cell_size=cell,
@@ -179,14 +172,16 @@ sim.run(mp.at_beginning(mp.output_epsilon),
         until=200)
 ```
 
-Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
+We are outputting the dielectric function ε but have wrapped its output function which would otherwise run at every time step in `at_beginning`, which does just what it says. There are [several other such functions](../Python_User_Interface/#run-and-step-functions) to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
+
+Instead of running `output_efield_z` only at the end of the simulation, however, we run it at every 0.6 time units (about 10 times per period) via `mp.at_every(0.6, mp.output_efield_z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature to output to a *single* 3d HDF5 file, where the third dimension is time. `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
 ```sh
 unix% h5ls ez.h5
 ez                       Dataset {161, 161, 330/Inf}
 ```
 
-That is, the file contains a single dataset `ez` that is a 162×162×330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
+That is, the file contains a single dataset `ez` that is a 162x162x330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
 ```sh
 unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
@@ -242,13 +237,13 @@ sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)
 
 will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible, here, because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
 
-The above command outputs zillions of `.png` files, and it is somewhat annoying to have them clutter up our working directory. Instead, we can add the following command to `run`:
+The above command outputs zillions of `.png` files, and it is somewhat annoying to have them clutter up our working directory. Instead, we can add the following command before `run`:
 
 ```py
-mp.use_output_directory()
+sim.use_output_directory()
 ```
 
-This will put *all* of the output files (`.h5`, `.png`, etcetera) into a newly-created subdirectory, called by default `filename-out/` if our Python script is `filename.py`.
+This will put *all* of the output files (.h5, .png, etcetera) into a newly-created subdirectory, called by default `filename-out/` if our Python script is `filename.py`.
 
 What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful output feature &mdash; Meep allows us to output only **a subset of the computational cell**. This is done using the `in_volume` function, which like `at_every` and `to_appended` is another function that modifies the behavior of other output functions. In particular, we can do:
 
@@ -256,17 +251,18 @@ What if we want to output an $x \times t$ slice, as above? To do this, we only r
 sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)), until=200)        
 ```
 
-The first argument to `in_volume` is a volume which applies to all of the nested output functions. Note that `to_appended`, `at_every`, and `in_volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162×330 corresponding to the desired $x \times t$ slice.
+The first argument to `in_volume` is a volume which applies to all of the nested output functions. Note that `to_appended`, `at_every`, and `in_volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
 
 Transmission Spectrum around a Waveguide Bend
 ---------------------------------------------
 
 Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra); please re-read that section if you have forgotten. Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of $\omega$. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
+The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
 
 ```py
 import meep as mp
+import argparse
 
 def main(args):
 
@@ -332,7 +328,7 @@ sim = mp.Simulation(cell_size=cell,
 
 nfreq = 100  # number of frequencies at which to compute flux
 
-if no_bend:
+if args.no_bend:
         trans_fr = mp.FluxRegion(center=mp.Vector3(0.5 * sx - 1.5, wvg_ycen), size=mp.Vector3(0, w * 2))
 else:
         trans_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, 0.5 * sy - 1.5), size=mp.Vector3(w * 2, 0))
@@ -406,7 +402,7 @@ unix% grep flux1: bend0.out > bend0.dat
 unix% grep flux1: bend.out > bend.dat
 ```
 
-Now, we import them to Matlab (using its `dlmread` command), and plot the results:
+Now, we import them to Octave (using its `dlmread` command), and plot the results:
 
 <center>![](../images/Tut-bend-flux.png)</center>
 
@@ -424,7 +420,7 @@ Again, we must run *both* simulations in order to get the normalization right. T
 Modes of a Ring Resonator
 -------------------------
 
-As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some electromagnetic cavity structure. You might want to read that introduction again to recall the basic computational strategy. Here, we will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py) included with Meep. In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -444,7 +440,7 @@ c1 = mp.Cylinder(radius=r + w, material=mp.Medium(index=n))
 c2 = mp.Cylinder(radius=r)
 ```
 
-Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` ($\varepsilon$=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
+Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
 
 Now, we don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 
@@ -479,15 +475,15 @@ harminv0:, 0.175246750722663, -5.22349801171605e-5, 1677.48461212767, 0.0072
 
 There are six columns in addition to the label, comma-delimited for easy import into other programs. The meaning of these columns is as follows. `Harminv` analyzes the fields $f(t)$ at the given point, and expresses this as a sum of modes in the specified bandwidth:
 
-$$f(t) = \sum_n a_n e^{-i\omega_n t}$$ for complex amplitudes $a_n$ and complex frequencies $\omega_n$. The six columns relate to these quantities. The first column is the *real* part of $\omega_n$, expressed in our usual $2\pi c$ units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
+$$f(t) = \sum_n a_n e^{-iω_n t}$$ for complex amplitudes $a_n$ and complex frequencies $ω_n$. The six columns relate to these quantities. The first column is the *real* part of $ω_n$, expressed in our usual $2π c$ units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
 
-$$Q = \frac{\mathrm{Re}\,\omega}{-2 \mathrm{Im}\,\omega}.$$
+$$Q = \frac{\mathrm{Re}\,ω}{-2 \mathrm{Im}\,ω}.$$
 
-$Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
+$Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
 
 An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. Here, for example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much &mdash; in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
 
-In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. (As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of $\omega$ and ring radius.) Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
+In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. (As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius.) Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `at_end(mp.output-efield_z)` argument to our `run_after_sources` routine, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
@@ -519,26 +515,26 @@ The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are b
 
 Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for $m$ = 3, 4, and 5 in this case.
 
-You may have noticed, by the way, that when you run with the narrow-bandwidth source, `Harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $\omega=0.175$ mode gives:
+You may have noticed, by the way, that when you run with the narrow-bandwidth source, `Harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $ω=0.175$ mode gives:
 
 ```
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about 0.000001 ($10^{-6}$) from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $\omega$ gives a larger relative error in the small imaginary frequency.
+which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 
-In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves *both* the structure *and* the sources, we can *exploit this mirror symmetry to speed up the computation*. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the script is the same except that we add a single line to the `run` specification:
+In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves both the structure and the sources, we can exploit this mirror symmetry to speed up the computation. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the script is the same except that we specify an additional object for the `Simulation` class:
 
 ```py
 symmetries=[mp.Mirror(mp.Y)]
 ```
 
-This tells Meep to exploit a mirror-symmetry plane through the origin perpendicular to the $y$ direction. Meep does *not check* whether your system really has this symmetry &mdash; you should only specify symmetries that really preserve your structure and your sources.
+This tells Meep to exploit a mirror-symmetry plane through the origin perpendicular to the $y$ direction. Meep does not check whether your system really has this symmetry &mdash; you should only specify symmetries that really preserve your structure and your sources.
 
-Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast ([YMMV](https://en.wikipedia.org/wiki/YMMV)).
+Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast.
 
-In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See the User Interface for more symmetry possibilities.
+In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See the [User Interface](../Python_User_Interface/#symmetry) for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.

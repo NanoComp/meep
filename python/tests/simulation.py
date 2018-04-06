@@ -215,5 +215,109 @@ class TestSimulation(unittest.TestCase):
 
         self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
+    def test_set_materials(self):
+
+        def change_geom(sim):
+            t = sim.meep_time()
+            fn = t * 0.02
+            geom = [mp.Cylinder(radius=3, material=mp.Medium(index=3.5), center=mp.Vector3(fn, fn)),
+                    mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf), center=mp.Vector3(fn, fn))]
+
+            sim.set_materials(geometry=geom)
+
+        c = mp.Cylinder(radius=3, material=mp.Medium(index=3.5))
+        e = mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf))
+
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.1), component=mp.Hz, center=mp.Vector3())
+        symmetries = [mp.Mirror(mp.X, -1), mp.Mirror(mp.Y, -1)]
+
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10),
+                            geometry=[c, e],
+                            boundary_layers=[mp.PML(1.0)],
+                            sources=[sources],
+                            symmetries=symmetries,
+                            resolution=16)
+
+        eps = {'arr1': None, 'arr2': None}
+
+        def get_arr1(sim):
+            eps['arr1'] = sim.get_array(mp.Volume(mp.Vector3(), mp.Vector3(10, 10)),
+                                        component=mp.Dielectric)
+
+        def get_arr2(sim):
+            eps['arr2'] = sim.get_array(mp.Volume(mp.Vector3(), mp.Vector3(10, 10)),
+                                        component=mp.Dielectric)
+
+        sim.run(mp.at_time(50, get_arr1), mp.at_time(100, change_geom),
+                mp.at_end(get_arr2), until=200)
+
+        self.assertFalse(np.array_equal(eps['arr1'], eps['arr2']))
+
+    def test_modal_volume_in_box(self):
+        sim = self.init_simple_simulation()
+        sim.run(until=200)
+        vol = sim.fields.total_volume()
+        self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol),
+                               sim.modal_volume_in_box())
+
+        vol = mp.Volume(mp.Vector3(), size=mp.Vector3(1, 1, 1))
+        self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol.swigobj),
+                               sim.modal_volume_in_box(vol))
+
+    def test_in_box_volumes(self):
+        sim = self.init_simple_simulation()
+        sim.run(until=200)
+
+        tv = sim.fields.total_volume()
+        v = mp.Volume(mp.Vector3(), size=mp.Vector3(5, 5))
+
+        sim.electric_energy_in_box(tv)
+        sim.electric_energy_in_box(v)
+        sim.flux_in_box(mp.X, tv)
+        sim.flux_in_box(mp.X, v)
+        sim.magnetic_energy_in_box(tv)
+        sim.magnetic_energy_in_box(v)
+        sim.field_energy_in_box(tv)
+        sim.field_energy_in_box(v)
+
+    def test_load_dump_structure(self):
+        resolution = 10
+        cell = mp.Vector3(10, 10)
+        pml_layers = mp.PML(1.0)
+        fcen = 1.0
+        df = 1.0
+        sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(),
+                            component=mp.Hz)
+        geometry = mp.Cylinder(0.2, material=mp.Medium(index=3))
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            default_material=mp.Medium(index=1),
+                            geometry=[geometry],
+                            boundary_layers=[pml_layers],
+                            sources=[sources])
+
+        sim.run(until=200)
+        ref_field = sim.get_field_point(mp.Hz, mp.Vector3(z=2))
+        dump_fn = 'test_load_dump_structure.h5'
+        sim.dump_structure(dump_fn)
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            default_material=mp.Medium(index=1),
+                            geometry=[],
+                            boundary_layers=[pml_layers],
+                            sources=[sources],
+                            load_structure=dump_fn)
+        sim.run(until=200)
+        field = sim.get_field_point(mp.Hz, mp.Vector3(z=2))
+
+        self.assertAlmostEqual(ref_field, field)
+
+        mp.all_wait()
+        if mp.am_master():
+            os.remove(dump_fn)
+
+
 if __name__ == '__main__':
     unittest.main()

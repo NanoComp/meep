@@ -37,6 +37,7 @@ structure::structure()
   outdir = ".";
   S = identity();
   a = 1; dt = Courant/a;
+  shared_chunks = false;
 }
 
 typedef structure_chunk *structure_chunk_ptr;
@@ -49,6 +50,7 @@ structure::structure(const grid_volume &thegv, material_function &eps,
   Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
+  shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thegv, num, br, s);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
@@ -62,6 +64,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &),
   Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
+  shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thegv, num, br, s);
   if (eps) {
@@ -284,6 +287,7 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume,
 }
 
 structure::structure(const structure *s) : v(s->v) {
+  shared_chunks = false;
   num_chunks = s->num_chunks;
   outdir = s->outdir;
   gv = s->gv;
@@ -305,6 +309,7 @@ structure::structure(const structure *s) : v(s->v) {
 }
 
 structure::structure(const structure &s) : v(s.v) {
+  shared_chunks = false;
   num_chunks = s.num_chunks;
   outdir = s.outdir;
   gv = s.gv;
@@ -341,6 +346,7 @@ structure::~structure() {
    preserve the illusion that the structure and fields are
    independent objects, we implement copy-on-write semantics. */
 void structure::changing_chunks() { // call this whenever chunks are modified
+  if (shared_chunks) return; // shared view of chunks with fields, no COW
   for (int i=0; i<num_chunks; i++)
     if (chunks[i]->refcount > 1) { // this chunk is shared, so make a copy
       chunks[i]->refcount--;
@@ -683,6 +689,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   FOR_FIELD_TYPES(ft) {
     {
       susceptibility *cur = NULL;
+      chiP[ft] = NULL;
       for (const susceptibility *ocur = o->chiP[ft]; ocur; ocur = ocur->next) {
 	if (cur) { cur->next = ocur->clone(); cur = cur->next; }
 	else { chiP[ft] = cur = ocur->clone(); }

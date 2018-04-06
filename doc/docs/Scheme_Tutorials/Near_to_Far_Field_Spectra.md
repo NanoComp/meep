@@ -10,7 +10,7 @@ There are three steps to using the near-to-far-field feature. First, we need to 
 
 ### Radiation Pattern of an Antenna
 
-In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. See [antenna-radiation.ctl](https://github.com/stevengj/meep/blob/master/examples/antenna-radiation.ctl). This involves an electric-current point source as the emitter in 2d vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
+In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. See [antenna-radiation.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/antenna-radiation.ctl). This involves an electric-current point source as the emitter in 2d vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
@@ -63,11 +63,11 @@ We plot the in-plane flux normalized by its maximum value over the entire interv
 
 ### Far-Field Intensity of a Cavity
 
-For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). See [cavity-farfield.ctl](https://github.com/stevengj/meep/blob/master/examples/cavity-farfield.ctl). The structure is shown at the bottom of the left image below.
+For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). See [cavity-farfield.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/cavity-farfield.ctl). The structure is shown at the bottom of the left image below.
 
 ![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
-To do this, we simply remove the last portion of [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/examples/holey-wvg-cavity.ctl), beginning right after the line:
+To do this, we simply remove the last portion of [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/holey-wvg-cavity.ctl), beginning right after the line:
 
 ```scm
 (set! symmetries

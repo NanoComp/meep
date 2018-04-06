@@ -293,27 +293,31 @@ public:
 
   bool ok();
 
-  realnum *read(const char *dataname, int *rank, int *dims, int maxrank);
-  void write(const char *dataname, int rank, const int *dims, realnum *data,
+  realnum *read(const char *dataname, int *rank, size_t *dims, int maxrank);
+  void write(const char *dataname, int rank, const size_t *dims, realnum *data,
 	     bool single_precision = true);
 
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
 
-  void create_data(const char *dataname, int rank, const int *dims,
+  void create_data(const char *dataname, int rank, const size_t *dims,
 		   bool append_data = false,
 		   bool single_precision = true);
-  void extend_data(const char *dataname, int rank, const int *dims);
+  void extend_data(const char *dataname, int rank, const size_t *dims);
   void create_or_extend_data(const char *dataname, int rank,
-			     const int *dims,
+			     const size_t *dims,
 			     bool append_data, bool single_precision);
-  void write_chunk(int rank, const int *chunk_start, const int *chunk_dims,
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
 		   realnum *data);
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+       size_t *data);
   void done_writing_chunks();
 
-  void read_size(const char *dataname, int *rank, int *dims, int maxrank);
-  void read_chunk(int rank, const int *chunk_start, const int *chunk_dims,
+  void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
 		  realnum *data);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+		  size_t *data);
 
   void remove();
   void remove_data(const char *dataname);
@@ -331,6 +335,15 @@ private:
   void set_cur(const char *dataname, void *data_id);
   char *cur_dataname;
 
+  /* store hid_t values as hid_t* cast to void*, so that
+     files including meep.h don't need hdf5.h */
+  void *id; /* file */
+  void *cur_id; /* dataset, if any */
+
+  void *get_id(); // get current (file) id, opening/creating file if needed
+  void close_id();
+
+public:
   /* linked list to keep track of which datasets we are extending...
      this is necessary so that create_or_extend_data can know whether
      to create (overwrite) a dataset or extend it. */
@@ -340,14 +353,6 @@ private:
     struct extending_s *next;
   } *extending;
   extending_s *get_extending(const char *dataname) const;
-
-  /* store hid_t values as hid_t* cast to void*, so that
-     files including meep.h don't need hdf5.h */
-  void *id; /* file */
-  void *cur_id; /* dataset, if any */
-
-  void *get_id(); // get current (file) id, opening/creating file if needed
-  void close_id();
 };
 
 typedef double (*pml_profile_func)(double u, void *func_data);
@@ -560,6 +565,7 @@ class structure {
  public:
   structure_chunk **chunks;
   int num_chunks;
+  bool shared_chunks; // whether modifications to chunks will be visible to fields objects
   grid_volume gv, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume v;
@@ -631,6 +637,10 @@ class structure {
 
   bool equal_layout(const structure &) const;
   void print_layout(void) const;
+
+  // structure_dump.cpp
+  void dump(const char *filename);
+  void load(const char *filename);
 
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &origloc) const;
@@ -824,11 +834,9 @@ public:
 	    ivec is_, ivec ie_,
 	    vec s0_, vec s1_, vec e0_, vec e1_,
 	    double dV0_, double dV1_,
-	    std::complex<double> scale_,
-	    std::complex<double> extra_weight_,
-	    component c_,
-	    bool use_centered_grid,
-            ivec shift_, const symmetry &S_, int sn_, int vc,
+	    component c_, bool use_centered_grid,
+            std::complex<double> phase_factor,
+            ivec shift_, const symmetry &S_, int sn_,
 	    const void *data_);
   ~dft_chunk();
 
@@ -837,15 +845,15 @@ public:
   void scale_dft(std::complex<double> scale);
 
   // chunk-by-chunk helper routine called by
-  // fields::do_flux_operation
-  std::complex<double> do_flux_operation(int rank, direction *ds,
-                            ivec min_corner, h5file *file,
-                            double *buffer, int reim,
-                            void *mode1_data,
-                            component mode1_c,
-                            void *mode2_data,
-                            component mode2_c,
-                            int num_freq, double flux_sign);
+  // fields::process_dft_component
+  std::complex<double> process_dft_component(int rank, direction *ds,
+                                             ivec min_corner, ivec max_corner,
+                                             int num_freq,
+                                             h5file *file, double *buffer,
+                                             int reim,
+                                             std::complex<double> *field_array,
+                                             void *mode1_data, void *mode2_data,
+                                             component c_conjugate);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -861,13 +869,38 @@ public:
   class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   class dft_chunk *next_in_dft; // next for this particular DFT vol./component
 
-  /* When computing things like -0.5*|E|^2 for the stress tensor,
-     we cannot incorporate the minus sign into the scale factor
-     because we only ever compute |scale|^2.  Thus, it is necessary
-     to store an additional weight factor with the dft_chunk to record
-     any additional negative or complex weight factor to be used
-     in computations involving the fourier-transformed fields.  Because
-     it is used in computations involving dft[...], it needs to be public. */
+  /* There are several types of weight factors associated with DFT fields: */
+  /*  (a) To accelerate the computation of things like Poynting flux, it   */
+  /*      is convenient to store certain DFT field components with built-in*/
+  /*      constant prefactors (usually just \pm 1). For example, in a      */
+  /*      dft_flux_plane normal to the Z direction the Ey component is     */
+  /*      stored with a built-in minus sign, while the other components    */
+  /*      (Ex, Hx, Hy) are not. This factor is already included in the     */
+  /*      `scale` field, but we also need to keep track of it separately   */
+  /*      so we can divide it out when looking up the values of individual */
+  /*      DFT field components. So we store it as `stored_weight.`         */
+  /*                                                                       */
+  /*  (b) For similar reasons, it is convenient to store certain DFT field */
+  /*      components with built-in volume factors to accelerate numerical  */
+  /*      integrations. In this case the prefactor is not constant (it     */
+  /*      varies from grid point to grid point) so we can't store it in    */
+  /*      the dft_chunk structure like stored_weight; instead we store a   */
+  /*      flag to indicate that it is present in the stored field          */
+  /*      components. This is the include_dV_and_interp_weights flag.      */
+  /*      (The sqrt_dV_and_interp_weights flag indicates that the sqrt of  */
+  /*      the volume factor is stored instead.)                            */
+  /*                                                                       */
+  /*  (c) When computing things like -0.5*|E|^2 for the stress tensor, we  */
+  /*      we cannot incorporate the minus sign into the scale factor       */
+  /*      because we only ever compute |scale|^2. Thus, it is necessary    */
+  /*      to store an additional weight factor with the dft_chunk to record*/
+  /*      any additional negative or complex weight factor to be used in   */
+  /*      in computations involving the fourier-transformed fields. This   */
+  /*      is the extra_weight field. Because it is used in computations    */
+  /*       involving dft[...], it needs to be public.                      */
+  std::complex<double > stored_weight;
+  bool include_dV_and_interp_weights;
+  bool sqrt_dV_and_interp_weights;
   std::complex<double> extra_weight;
 
   // parameters passed from field_integrate:
@@ -875,8 +908,6 @@ public:
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
-  bool include_dV_and_interp_weights;
-  bool sqrt_dV_and_interp_weights;
   std::complex<double> scale; // scale factor * phase from shift and symmetry
   ivec shift;
   symmetry S; int sn;
@@ -903,7 +934,8 @@ class dft_flux {
 public:
   dft_flux(const component cE_, const component cH_,
 	   dft_chunk *E_, dft_chunk *H_,
-	   double fmin, double fmax, int Nf);
+	   double fmin, double fmax, int Nf,
+	   const volume &where_, direction normal_direction_);
   dft_flux(const dft_flux &f);
 
   double *flux();
@@ -926,13 +958,15 @@ public:
   int Nfreq;
   dft_chunk *E, *H;
   component cE, cH;
+  volume *where;
+  direction normal_direction;
 };
 
 // stress.cpp (normally created with fields::add_dft_force)
 class dft_force {
 public:
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
-	    double fmin, double fmax, int Nf);
+	    double fmin, double fmax, int Nf, const volume &where_);
   dft_force(const dft_force &f);
 
   double *force();
@@ -954,6 +988,7 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *offdiag1, *offdiag2, *diag;
+  volume *where;
 };
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
@@ -962,7 +997,8 @@ public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
   dft_near2far(dft_chunk *F,
-               double fmin, double fmax, int Nf, double eps, double mu);
+               double fmin, double fmax, int Nf,
+               double eps, double mu, const volume &where_);
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
@@ -996,6 +1032,7 @@ public:
   int Nfreq;
   dft_chunk *F;
   double eps, mu;
+  volume *where;
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1021,6 +1058,21 @@ private:
 public:
   double omega_min, domega;
   int Nomega;
+};
+
+// dft.cpp (normally created with fields::add_dft_fields)
+class dft_fields{
+public:
+  dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
+
+  void scale_dfts(std::complex<double> scale);
+
+  void remove();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *chunks;
+  volume *where;
 };
 
 enum in_or_out { Incoming=0, Outgoing };
@@ -1127,7 +1179,7 @@ class fields_chunk {
   bool needs_W_notowned(component c);
   // fields.cpp
   void remove_sources();
-  void remove_susceptibilities();
+  void remove_susceptibilities(bool shared_chunks);
   void zero_fields();
 
   // update_eh.cpp
@@ -1209,6 +1261,7 @@ typedef vec (*kpoint_func)(void *user_data, double freq, int band);
 class fields {
  public:
   int num_chunks;
+  bool shared_chunks;
   fields_chunk **chunks;
   src_time *sources;
   flux_vol *fluxes;
@@ -1314,7 +1367,7 @@ class fields {
   // needed to store field data for that subvolume.
   // the data parameter is used internally in get_array_slice
   // and should be ignored by external callers.
-  int get_array_slice_dimensions(const volume &where, int dims[3], void *data=0);
+  int get_array_slice_dimensions(const volume &where, size_t dims[3], void *data=0);
 
   // given a subvolume, return a column-major array containing
   // the given function of the field components in that subvolume
@@ -1382,7 +1435,7 @@ class fields {
   void require_component(component c);
 
   // mpb.cpp
-  
+
   // the return value of get_eigenmode is an opaque pointer
   // that can be passed to eigenmode_amplitude() to get
   // values of field components at arbitrary points in space.
@@ -1403,13 +1456,10 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
-  std::vector< std::complex<double> >
-   get_eigenmode_coefficients(dft_flux flux, direction d,
-                              const volume &where,
-                              std::vector<int> bands,
-                              std::vector<double> &vgrp,
-                              kpoint_func k_func=0,
-                              void *k_func_data=0);
+  void get_eigenmode_coefficients(dft_flux flux,
+                                  int *bands, int num_bands,
+                                  std::complex<double> *coeffs,
+                                  double *vgrp);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
@@ -1469,7 +1519,8 @@ class fields {
   dft_chunk *add_dft(component c, const volume &where,
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV_and_interp_weights = true,
-		     std::complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
+		     std::complex<double> stored_weight = 1.0,
+                     dft_chunk *chunk_next = 0,
 		     bool sqrt_dV_and_interp_weights = false,
 		     std::complex<double> extra_weight = 1.0,
 		     bool use_centered_grid = true, int vc = 0);
@@ -1488,31 +1539,56 @@ class fields {
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
 
+  dft_fields add_dft_fields(component *components, int num_components,
+                            const volume where,
+                            double freq_min, double freq_max, int Nfreq);
+
   /********************************************************/
-  /* "flux operations" include things like                */
-  /*   (1) exporting dft_flux fields to HDF5 files        */
-  /*   (2) computing eigenmode decomposition coefficients */
-  /*       of dft_flux fields                             */
-  /* these are calculations that involve similar loops    */
-  /* over chunks, etc, so we consolidate them into a      */
-  /* single omnibus routine (do_flux_operation) with      */
-  /* multiple entry points for particular calculations.   */
+  /* process_dft_component is an intermediate-level       */
+  /* routine that serves as a common back end for several */
+  /* operations involving DFT fields (specifically,       */
+  /* writing DFT fields to HDF5 files, fetching arrays    */
+  /* of DFT fields, and  evaluating overlap integrals     */
+  /* flux and mode fields.)                               */
   /********************************************************/
-  void do_flux_operation(dft_flux flux, int num_freq, const volume where,
-                         const char *HDF5FileName,
-                         void *mode1_data=0, void *mode2_data=0,
-                         std::complex<double> *integrals=0);
-  void output_flux_fields(dft_flux flux, const volume where,
-                          const char *HDF5FileName);
+  std::complex<double> process_dft_component(dft_chunk **chunklists,
+                                             int num_chunklists,
+                                             int num_freq, component c,
+                                             const char *HDF5FileName,
+                                             std::complex<double> **field_array=0,
+                                             int *rank=0, int *dims=0,
+                                             void *mode1_data=0,
+                                             void *mode2_data=0,
+                                             component c_conjugate=Ex,
+                                             bool *first_component=0);
+
+  // output DFT fields to HDF5 file
+  void output_dft_components(dft_chunk **chunklists, int num_chunklists,
+                             const char *HDF5FileName);
+
+  void output_dft(dft_flux flux, const char *HDF5FileName);
+  void output_dft(dft_force force, const char *HDF5FileName);
+  void output_dft(dft_near2far n2f, const char *HDF5FileName);
+  void output_dft(dft_fields fdft, const char *HDF5FileName);
   void output_mode_fields(void *mode_data, dft_flux flux,
-                          const volume where,
                           const char *HDF5FileName);
+
+  // get array of DFT field values
+  std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq,
+                                      int *rank, int dims[3]);
+  std::complex<double> *get_dft_array(dft_fields fdft, component c, int num_freq,
+                                      int *rank, int dims[3]);
+  std::complex<double> *get_dft_array(dft_force force, component c, int num_freq,
+                                      int *rank, int dims[3]);
+  std::complex<double> *get_dft_array(dft_near2far n2f, component c, int num_freq,
+                                      int *rank, int dims[3]);
+
+  // overlap integrals between eigenmode fields and DFT flux fields
+  void get_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
+                   int num_freq, std::complex<double>overlaps[2]);
   void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
-                             const volume where, 
                              std::complex<double>overlaps[2]);
-  void get_mode_mode_overlap(void *mode_data, void *mode2_data, dft_flux flux,
-                             const volume where,
-                             std::complex<double>overlaps[2]);
+  void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux, std::complex<double>overlaps[2]);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
@@ -1699,7 +1775,7 @@ void green3d(std::complex<double> *EH, const vec &x,
              const vec &x0, component c0, std::complex<double> f0);
 
 // non-class methods for working with mpb eigenmode data
-// 
+//
 void destroy_eigenmode_data(void *vedata);
 std::complex<double> eigenmode_amplitude(void *vedata,
                                          const vec &p,

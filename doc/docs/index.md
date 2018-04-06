@@ -2,43 +2,45 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free/open-source, finite-difference time-domain (FDTD), software package for simulating electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Its features include:
+ **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
+
+**Features**
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
--   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial).
+-   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/macOS).
--   Arbitrary, **anisotropic**, electric permittivity $\varepsilon$ and magnetic permeability $\mu$, along with **dispersive** $\varepsilon(\omega)$ and $\mu(\omega)$ including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** $\sigma$.
--   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
--   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
--   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
--   Arbitrary material and source distributions.
--   Field analyses including flux spectra, Maxwell stress tensor, frequency extraction, local density of states, arbitrary functions, near to far field transformations; completely programmable.
+-   Distributed memory **parallelism** on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
+-   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
+-   Arbitrary **anisotropic**, electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
+-   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as perfect conductor and **Bloch-periodic** boundary conditions.
+-   Exploitation of **symmetries** to reduce the computation size: even/odd mirror planes and 90°/180° rotations.
+-   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
+-   Arbitrary current sources including a guided-mode launcher.
+-   Frequency-domain solver for finding the response to a continuous-wave source.
+-   Field analyses including flux spectra, near to far field transformations, modal decomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
 
 Time-Domain Simulation
 ----------------------
 
-A time-domain electromagnetic simulation simply takes [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations) and evolves them over time within some finite computational region, essentially performing a kind of **numerical experiment**. This can be used to calculate a wide variety of useful quantities. Major applications include:
+A time-domain electromagnetic simulation simply evolves [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations) over time within some finite computational volume, essentially performing a kind of **numerical experiment**. This can be used to calculate a wide variety of useful quantities. Major applications include:
 
 -   **Transmission and Reflection Spectra** &mdash; by Fourier-transforming the response to a short pulse, a single simulation can yield the scattering amplitudes over a wide spectrum of frequencies.
 -   **Resonant Modes and Frequencies** &mdash; by analyzing the response of the system to a short pulse, one can extract the frequencies, decay rates, and field patterns of the harmonic modes of lossy and lossless systems including waveguide and cavity modes.
--   **Field Patterns** (e.g. Green's functions) &mdash; in response to an arbitrary source, archetypically a [CW](https://en.wikipedia.org/wiki/Continuous_wave) (fixed-$\omega$) input.
+-   **Field Patterns** (e.g. Green's functions) &mdash; in response to an arbitrary source via a [continuous-wave (CW)](https://en.wikipedia.org/wiki/Continuous_wave) input (fixed-ω).
 
 Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization etcetera in sequence or in parallel.
 
-[Tutorial/Basics](Python_Tutorials/Basics.md) gives examples of all of these kinds of computations.
+[Tutorial/Basics](Python_Tutorials/Basics.md) provides examples of all these kinds of computations.
 
 Download
 --------
 
-The development repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available in [Download](Download.md). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
+The source repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available in [Releases](https://github.com/stevengj/meep/releases). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------
 
-See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial/Basics](Python_Tutorials/Basics.md) are the most important things to review. There is also an [FAQ](FAQ.md).
-
-Please [cite the reference publication](Acknowledgements.md#referencing) in any work for which you found Meep useful.
+See the left navigation sidebar. In particular, the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md) are the most important things to review.
 
 ### Mailing Lists
 

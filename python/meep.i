@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2018 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,43 +51,125 @@ typedef struct {
     int num_components;
 } py_field_func_data;
 
-PyObject *py_callback = NULL;
-PyObject *py_callback_v3 = NULL;
-PyObject *py_amp_func = NULL;
+#include "typemap_utils.cpp"
 
-static PyObject *py_source_time_object();
-static PyObject *py_material_object();
-static PyObject *vec2py(const meep::vec &v);
-static double py_callback_wrap(const meep::vec &v);
-static std::complex<double> py_amp_func_wrap(const meep::vec &v);
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_DECREF(py_attr);
+    return 1;
+}
+
+static PyObject *py_source_time_object() {
+    static PyObject *source_time_object = NULL;
+    if (source_time_object == NULL) {
+        PyObject *source_mod = PyImport_ImportModule("meep.source");
+        source_time_object = PyObject_GetAttrString(source_mod, "SourceTime");
+        Py_XDECREF(source_mod);
+    }
+    return source_time_object;
+}
+
+static PyObject *py_meep_src_time_object() {
+    static PyObject *src_time = NULL;
+    if (src_time == NULL) {
+        PyObject *meep_mod = PyImport_ImportModule("meep");
+        src_time = PyObject_GetAttrString(meep_mod, "src_time");
+        Py_XDECREF(meep_mod);
+    }
+    return src_time;
+}
+
+static double py_callback_wrap(const meep::vec &v) {
+    PyObject *pyv = vec2py(v);
+    PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
+    double ret = PyFloat_AsDouble(pyret);
+    Py_XDECREF(pyret);
+    return ret;
+}
+
+static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
+    PyObject *pyv = vec2py(v);
+    PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
+    double real = PyComplex_RealAsDouble(pyret);
+    double imag = PyComplex_ImagAsDouble(pyret);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(pyret);
+    return ret;
+}
+
 static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
                                                const meep::vec &loc,
-                                               void *data_);
-static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium);
-static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium);
-static int pyv3_to_v3(PyObject *po, vector3 *v);
+                                               void *data_) {
+    PyObject *pyv = vec2py(loc);
 
-static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
-static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
-static int get_attr_int(PyObject *py_obj, int *result, const char *name);
-static int get_attr_material(PyObject *po, material_type *m);
-static int pymaterial_to_material(PyObject *po, material_type *mt);
-static int pymedium_to_medium(PyObject *po, medium_struct *m);
-static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a);
-static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
-static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
+    py_field_func_data *data = (py_field_func_data *)data_;
+    int len = data->num_components;
 
-static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go);
-static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *o);
-static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
-static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
-static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
-static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
-static std::string py_class_name_as_string(PyObject *po);
-static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
-static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
+    PyObject *py_args = PyTuple_New(len + 1);
+    // Increment here because PyTuple_SetItem steals a reference
+    Py_INCREF(pyv);
+    PyTuple_SetItem(py_args, 0, pyv);
 
-#include "typemap_utils.cpp"
+    for (Py_ssize_t i = 1; i < len + 1; i++) {
+        PyObject *cmplx = PyComplex_FromDoubles(fields[i - 1].real(), fields[i - 1].imag());
+        PyTuple_SetItem(py_args, i, cmplx);
+    }
+
+    PyObject *pyret = PyObject_CallObject(data->func, py_args);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
+    }
+
+    double real = PyComplex_RealAsDouble(pyret);
+    double imag = PyComplex_ImagAsDouble(pyret);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(pyret);
+    Py_DECREF(py_args);
+    return ret;
+}
+
+static std::complex<double> py_src_func_wrap(double t, void *f) {
+    PyObject *py_t = PyFloat_FromDouble(t);
+    PyObject *pyres = PyObject_CallFunctionObjArgs((PyObject *)f, py_t, NULL);
+    double real = PyComplex_RealAsDouble(pyres);
+    double imag = PyComplex_ImagAsDouble(pyres);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(py_t);
+    Py_DECREF(pyres);
+
+    return ret;
+}
+
+static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
+
+    if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
+        !get_attr_int(py_absorber, &a->direction, "direction") ||
+        !get_attr_int(py_absorber, &a->side, "side") ||
+        !get_attr_dbl(py_absorber, &a->R_asymptotic, "R_asymptotic") ||
+        !get_attr_dbl(py_absorber, &a->mean_stretch, "mean_stretch")) {
+
+        return 0;
+    }
+
+    PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
+
+    if (!py_pml_profile_func) {
+        PyErr_Format(PyExc_ValueError, "Class attribute 'pml_profile' is None\n");
+        return 0;
+    }
+
+    a->pml_profile_data = py_pml_profile_func;
+
+    return 1;
+}
 
 // Wrapper for Python PML profile function
 double py_pml_profile(double u, void *f) {
@@ -226,6 +308,22 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     return new meep::volume_list(v, c, weight, next);
 }
 
+template<typename dft_type>
+PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
+    int rank;
+    int dims[3];
+    std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
+
+    npy_intp *arr_dims = new npy_intp[rank];
+    for (int i = 0; i < rank; ++i) {
+        arr_dims[i] = dims[i];
+    }
+
+    PyObject *py_arr = PyArray_SimpleNewFromData(rank, arr_dims, NPY_CDOUBLE, dft_arr);
+    delete[] arr_dims;
+
+    return py_arr;
+}
 %}
 
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
@@ -242,6 +340,8 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
 PyObject *_dft_ldos_F(meep::dft_ldos *f);
 PyObject *_dft_ldos_J(meep::dft_ldos *f);
+template<typename dft_type>
+PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -313,7 +413,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
-        delete (material_data *)$1.material;
+        free((material_data *)$1.material);
         geometric_object_destroy($1);
     }
 }
@@ -342,9 +442,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
         }
         if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
-        delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
+            delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
-        delete (material_data *)$1.items[i].material;
+        free((material_data *)$1.items[i].material);
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
@@ -457,10 +557,18 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if ($1->medium.H_susceptibilities.items) {
         delete[] $1->medium.H_susceptibilities.items;
     }
-    delete $1;
+    free($1);
 }
 
 // Typemap suite for array_slice
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") size_t dims[3] {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") size_t dims[3] {
+    $1 = (size_t *)array_data($input);
+}
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {
     $1 = is_array($input);
@@ -500,6 +608,53 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
+
+//--------------------------------------------------
+// typemaps needed for get_eigenmode_coefficients
+//--------------------------------------------------
+%apply (int *IN_ARRAY1, int DIM1) {(int *bands, int num_bands)};
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* coeffs {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") std::complex<double>* coeffs {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* vgrp {
+    $1 = (double *)array_data($input);
+}
+//--------------------------------------------------
+// end typemaps for get_eigenmode_coefficients
+//--------------------------------------------------
+
+//--------------------------------------------------
+// typemaps needed for add_dft_fields
+//--------------------------------------------------
+%typemap(in) (meep::component *components, int num_components) {
+    if (!PyList_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a list");
+        SWIG_fail;
+    }
+    $2 = PyList_Size($input);
+    $1 = new meep::component[$2];
+
+    for (Py_ssize_t i = 0; i < $2; i++) {
+        $1[i] = (meep::component)PyInteger_AsLong(PyList_GetItem($input, i));
+    }
+}
+
+%typemap(freearg) (meep::component *components, int num_components) {
+    delete[] $1;
+}
+//--------------------------------------------------
+// end typemaps for add_dft_fields
+//--------------------------------------------------
 
 // typemap suite for field functions
 
@@ -693,7 +848,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             if ($1.items[i]->medium.H_susceptibilities.items) {
                 delete[] $1.items[i]->medium.H_susceptibilities.items;
             }
-            delete $1.items[i];
+            free($1.items[i]);
         }
         delete[] $1.items;
     }
@@ -727,6 +882,26 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
 
+%ignore susceptibility_equal;
+%ignore susceptibility_list_equal;
+%ignore medium_struct_equal;
+%ignore material_gc;
+%ignore material_type_equal;
+%ignore is_variable;
+%ignore is_variable;
+%ignore is_file;
+%ignore is_file;
+%ignore is_medium;
+%ignore is_medium;
+%ignore is_metal;
+%ignore meep::infinity;
+
+// template instantiations
+%template(get_dft_flux_array) _get_dft_array<meep::dft_flux>;
+%template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
+%template(get_dft_force_array) _get_dft_array<meep::dft_force>;
+%template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
+
 %include "vec.i"
 %include "meep.hpp"
 %include "meep/mympi.hpp"
@@ -756,6 +931,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
     ODD_Y = 8
     TE = EVEN_Z
     TM = ODD_Z
+    PREV_PARITY = -1
 
     inf = 1.0e20
 
@@ -766,7 +942,9 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         DrudeSusceptibility,
         Ellipsoid,
         GeometricObject,
+        Lattice,
         LorentzianSusceptibility,
+        Matrix,
         Medium,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,
@@ -775,7 +953,16 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         Vector3,
         Wedge,
         check_nonnegative,
-        geometric_object_duplicates
+        geometric_object_duplicates,
+        geometric_objects_duplicates,
+        geometric_objects_lattice_duplicates,
+        cartesian_to_lattice,
+        lattice_to_cartesian,
+        lattice_to_reciprocal,
+        reciprocal_to_lattice,
+        cartesian_to_reciprocal,
+        reciprocal_to_cartesian,
+        find_root_deriv,
     )
     from .simulation import (
         Absorber,

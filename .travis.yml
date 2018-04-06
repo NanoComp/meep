@@ -19,7 +19,7 @@ addons:
     - mpi-default-bin
     - openmpi-bin
 install:
-  - pip install numpy mpi4py
+  - pip install numpy mpi4py h5py scipy
 
 ##################################################
 # environment variables applied to all build cases
@@ -39,7 +39,7 @@ before_script:
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
   - git clone https://github.com/stevengj/mpb
-  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl && make -j 2 && make install)
+  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
 
 ##################################################
 # build matrix:
@@ -75,4 +75,3 @@ after_script:
   - if [[ -e ${PYMPB_LOG} ]]; then cat ${PYMPB_LOG}; fi
   - PYTHON_LOG=${BUILD_PREFIX}/python/test-suite.log
   - if [[ -e ${PYTHON_LOG} ]]; then cat ${PYTHON_LOG}; fi
-

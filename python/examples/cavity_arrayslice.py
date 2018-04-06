@@ -51,12 +51,12 @@ yMax = +0.15 * sy
 # 1D slice of Hz data
 size_1d = mp.Vector3(xMax - xMin)
 center_1d = mp.Vector3((xMin + xMax) / 2)
-slice1d = sim.get_array(center=center_1d, size=size_1d, component=mp.Hz)
+slice1d = sim.get_array(mp.Volume(center_1d, size=size_1d), component=mp.Hz)
 
 # 2D slice of Hz data
 size_2d = mp.Vector3(xMax - xMin, yMax - yMin)
 center_2d = mp.Vector3((xMin + xMax) / 2, (yMin + yMax) / 2)
-slice2d = sim.get_array(center=center_2d, size=size_2d, component=mp.Hz)
+slice2d = sim.get_array(mp.Volume(center_2d, size=size_2d), component=mp.Hz)
 
 # plot 1D slice
 plt.subplot(1, 2, 1)

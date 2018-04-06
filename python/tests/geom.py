@@ -1,5 +1,5 @@
+import math
 import unittest
-from math import pi
 import numpy as np
 import meep as mp
 import meep.geom as gm
@@ -21,11 +21,11 @@ class TestGeom(unittest.TestCase):
         res = mp.geometric_object_duplicates(mp.Vector3(x=1), 1, 5, s)
 
         expected = [
-            mp.Sphere(rad, center=mp.Vector3(x=1)),
-            mp.Sphere(rad, center=mp.Vector3(x=2)),
-            mp.Sphere(rad, center=mp.Vector3(x=3)),
+            mp.Sphere(rad, center=mp.Vector3(x=5)),
             mp.Sphere(rad, center=mp.Vector3(x=4)),
-            mp.Sphere(rad, center=mp.Vector3(x=5))
+            mp.Sphere(rad, center=mp.Vector3(x=3)),
+            mp.Sphere(rad, center=mp.Vector3(x=2)),
+            mp.Sphere(rad, center=mp.Vector3(x=1))
         ]
 
         for r, e in zip(res, expected):
@@ -37,38 +37,70 @@ class TestGeom(unittest.TestCase):
         res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s)
 
         expected = [
-            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
-            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
-            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5)),
             mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
-            mp.Sphere(rad, center=mp.Vector3(5, 5, 5))
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
         ]
 
         for r, e in zip(res, expected):
             self.assertEqual(r.center, e.center)
 
-    def test_geometric_object_duplicates_multiple_objs(self):
+    def test_geometric_objects_duplicates(self):
         rad = 1
         s = mp.Sphere(rad)
         c = mp.Cylinder(rad)
 
-        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s, c)
+        res = mp.geometric_objects_duplicates(mp.Vector3(1, 1, 1), 1, 5, [s, c])
 
         expected = [
-            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
-            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
-            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
-            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
             mp.Sphere(rad, center=mp.Vector3(5, 5, 5)),
-            mp.Cylinder(rad, center=mp.Vector3(1, 1, 1)),
-            mp.Cylinder(rad, center=mp.Vector3(2, 2, 2)),
-            mp.Cylinder(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Cylinder(rad, center=mp.Vector3(5, 5, 5)),
             mp.Cylinder(rad, center=mp.Vector3(4, 4, 4)),
-            mp.Cylinder(rad, center=mp.Vector3(5, 5, 5))
+            mp.Cylinder(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Cylinder(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Cylinder(rad, center=mp.Vector3(1, 1, 1)),
         ]
-
         for r, e in zip(res, expected):
             self.assertEqual(r.center, e.center)
+
+    def test_geometric_objects_lattice_duplicates(self):
+        geometry_lattice = mp.Lattice(size=mp.Vector3(1, 7),
+                                      basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+                                      basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        eps = 12
+        r = 0.2
+
+        geometry = [mp.Cylinder(r, material=mp.Medium(epsilon=eps))]
+        geometry = mp.geometric_objects_lattice_duplicates(geometry_lattice, geometry)
+
+        med = mp.Medium(epsilon=12)
+
+        expected = [
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=3.0)),
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=2.0)),
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=1.0)),
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=0.0)),
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=-1.0)),
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=-2.0)),
+            mp.Cylinder(0.2, material=med, center=mp.Vector3(y=-3.0)),
+        ]
+
+        for exp, res in zip(expected, geometry):
+            self.assertEqual(exp.center, res.center)
+            self.assertEqual(exp.radius, res.radius)
+
+    def test_cartesian_to_lattice(self):
+        lattice = mp.Lattice(size=mp.Vector3(1, 7),
+                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        res = mp.cartesian_to_lattice(lattice.basis * mp.Vector3(1), lattice)
+        self.assertEqual(res, mp.Vector3(1))
 
 
 class TestSphere(unittest.TestCase):
@@ -123,12 +155,13 @@ class TestSphere(unittest.TestCase):
         s = gm.Sphere(center=zeros(), radius=2.0)
         self.assertEqual(s.center, gm.Vector3())
 
-        s.shift(gm.Vector3(10))
-        self.assertEqual(s.center, gm.Vector3(10, 0, 0))
+        shifted = s.shift(gm.Vector3(10))
+        self.assertEqual(shifted.center, gm.Vector3(10, 0, 0))
+        self.assertEqual(shifted.radius, 2.0)
 
         s = gm.Sphere(center=gm.Vector3(10, 10), radius=2.0)
-        s.shift(gm.Vector3(-10, -10))
-        self.assertEqual(s.center, gm.Vector3())
+        shifted = s.shift(gm.Vector3(-10, -10))
+        self.assertEqual(shifted.center, gm.Vector3())
 
     def test_info(self):
         # Sanity test to ensure that display_geometric_object_info is callable
@@ -171,6 +204,11 @@ class TestCylinder(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             self.assertIn(zeros(), c)
             self.assertIn("Vector3 is not initialized", ctx.exception)
+
+    def test_wrong_type_exception(self):
+        """Test for Issue 180"""
+        with self.assertRaises(TypeError):
+            gm.Cylinder(radius=mp.Vector3())
 
 
 class TestWedge(unittest.TestCase):
@@ -272,7 +310,7 @@ class TestVector3(unittest.TestCase):
     def test_rotate(self):
         axis = mp.Vector3(z=1)
         v = mp.Vector3(x=1)
-        res = v.rotate(axis, pi)
+        res = v.rotate(axis, math.pi)
         self.assertTrue(res.close(mp.Vector3(x=-1)))
 
     def test_close(self):
@@ -289,10 +327,131 @@ class TestVector3(unittest.TestCase):
         self.assertTrue(v1.close(v2, tol=1e-10))
 
     def test_mul_operator(self):
-
         self.assertEqual(mp.Vector3(2, 2, 2) * 0.5, mp.Vector3(1, 1, 1))
         self.assertEqual(mp.Vector3(1, 1, 1) * mp.Vector3(1, 1, 1), 3)
         self.assertEqual(0.5 * mp.Vector3(2, 2, 2), mp.Vector3(1, 1, 1))
+
+    def test_rotate_lattice(self):
+        axis = mp.Vector3(1)
+        v = mp.Vector3(2, 2, 2)
+        lattice = mp.Lattice(size=mp.Vector3(1, 1))
+        res = v.rotate_lattice(axis, 3, lattice)
+        self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
+
+    def test_rotate_reciprocal(self):
+        axis = mp.Vector3(1)
+        v = mp.Vector3(2, 2, 2)
+        lattice = mp.Lattice(size=mp.Vector3(1, 1))
+        res = v.rotate_reciprocal(axis, 3, lattice)
+        self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
+
+
+class TestLattice(unittest.TestCase):
+
+    def test_basis(self):
+        lattice = mp.Lattice(size=mp.Vector3(1, 7),
+                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        b = lattice.basis
+        exp = mp.Matrix(mp.Vector3(0.8660254037844388, 0.5000000000000001),
+                        mp.Vector3(0.8660254037844388, -0.5000000000000001),
+                        mp.Vector3(z=1.0))
+
+        for e, r in zip([exp.c1, exp.c2, exp.c3], [b.c1, b.c2, b.c3]):
+            self.assertTrue(e.close(r))
+
+
+class TestMatrix(unittest.TestCase):
+
+    identity = mp.Matrix(mp.Vector3(1), mp.Vector3(y=1), mp.Vector3(z=1))
+
+    def matrix_eq(self, exp, res):
+        for e, r in zip([exp.c1, exp.c2, exp.c3], [res.c1, res.c2, res.c3]):
+            self.assertEqual(e, r)
+
+    def matrix_close(self, exp, res):
+        for e, r in zip([exp.c1, exp.c2, exp.c3], [res.c1, res.c2, res.c3]):
+            self.assertTrue(e.close(r))
+
+    def test_indexing(self):
+        self.assertEqual(self.identity[0][0], 1)
+        self.assertEqual(self.identity[1][1], 1)
+        self.assertEqual(self.identity[2][2], 1)
+        self.assertEqual(self.identity[0][1], 0)
+
+    def test_row(self):
+        self.assertEqual(self.identity.row(0), self.identity.c1)
+        self.assertEqual(self.identity.row(1), self.identity.c2)
+        self.assertEqual(self.identity.row(2), self.identity.c3)
+
+    def test_mm_mult(self):
+        m1 = mp.Matrix(mp.Vector3(1, 2, 3),
+                       mp.Vector3(4, 5, 6),
+                       mp.Vector3(7, 8, 9))
+        m2 = mp.Matrix(mp.Vector3(9, 8, 7),
+                       mp.Vector3(6, 5, 4),
+                       mp.Vector3(3, 2, 1))
+        res = m1 * m2
+        exp = mp.Matrix(mp.Vector3(90.0, 114.0, 138.0),
+                        mp.Vector3(54.0, 69.0, 84.0),
+                        mp.Vector3(18.0, 24.0, 30.0))
+
+        self.matrix_eq(exp, res)
+
+    def test_mv_mult(self):
+        lattice = mp.Lattice(size=mp.Vector3(1, 7),
+                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        res = lattice.basis * mp.Vector3(1)
+        exp = mp.Vector3(0.8660254037844388, 0.5000000000000001)
+        self.assertTrue(res.close(exp))
+
+    def test_scale(self):
+        m = mp.Matrix(mp.Vector3(90.0, 114.0, 138.0),
+                      mp.Vector3(54.0, 69.0, 84.0),
+                      mp.Vector3(18.0, 24.0, 30.0))
+        res = m.scale(0.5)
+        exp = mp.Matrix(mp.Vector3(45.0, 57.0, 69.0),
+                        mp.Vector3(27.0, 34.5, 42.0),
+                        mp.Vector3(9.0, 12.0, 15.0))
+        self.matrix_eq(exp, res)
+
+    def test_determinant(self):
+        m = mp.Matrix(mp.Vector3(2),
+                      mp.Vector3(y=2),
+                      mp.Vector3(z=2))
+
+        m1 = mp.Matrix(mp.Vector3(1, 2, 3),
+                       mp.Vector3(4, 5, 6),
+                       mp.Vector3(7, 8, 9))
+
+        self.assertEqual(8, m.determinant())
+        self.assertEqual(0, m1.determinant())
+
+    def test_transpose(self):
+        m = mp.Matrix(mp.Vector3(1, 2, 3),
+                      mp.Vector3(4, 5, 6),
+                      mp.Vector3(7, 8, 9))
+        exp = mp.Matrix(mp.Vector3(1, 4, 7),
+                        mp.Vector3(2, 5, 8),
+                        mp.Vector3(3, 6, 9))
+
+        self.matrix_eq(exp, m.transpose())
+
+    def test_inverse(self):
+        self.matrix_eq(self.identity, self.identity.inverse())
+
+        lattice = mp.Lattice(size=mp.Vector3(1, 7),
+                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+
+        res = lattice.basis.inverse()
+        exp = mp.Matrix(mp.Vector3(0.5773502691896256, 0.5773502691896256, -0.0),
+                        mp.Vector3(0.9999999999999998, -0.9999999999999998, -0.0),
+                        mp.Vector3(-0.0, -0.0, 1.0))
+
+        self.matrix_close(exp, res)
+
 
 if __name__ == '__main__':
     unittest.main()

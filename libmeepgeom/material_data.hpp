@@ -47,16 +47,18 @@ typedef struct susceptibility_struct {
   bool is_file;
 } susceptibility;
 
-typedef struct {
+struct susceptibility_list {
   int num_items;
   susceptibility *items;
-} susceptibility_list;
 
-typedef struct medium_struct {
+  susceptibility_list(): num_items(0), items(NULL) {}
+};
+
+struct medium_struct {
   vector3 epsilon_diag;
-  vector3 epsilon_offdiag;
+  cvector3 epsilon_offdiag;
   vector3 mu_diag;
-  vector3 mu_offdiag;
+  cvector3 mu_offdiag;
   susceptibility_list E_susceptibilities;
   susceptibility_list H_susceptibilities;
   vector3 E_chi2_diag;
@@ -65,7 +67,55 @@ typedef struct medium_struct {
   vector3 H_chi3_diag;
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
-} medium_struct;
+
+  medium_struct(double epsilon=1): E_susceptibilities(), H_susceptibilities() {
+    epsilon_diag.x = epsilon;
+    epsilon_diag.y = epsilon;
+    epsilon_diag.z = epsilon;
+
+    mu_diag.x = 1;
+    mu_diag.y = 1;
+    mu_diag.z = 1;
+
+    epsilon_offdiag.x.re = 0;
+    epsilon_offdiag.x.im = 0;
+    epsilon_offdiag.y.re = 0;
+    epsilon_offdiag.y.im = 0;
+    epsilon_offdiag.z.re = 0;
+    epsilon_offdiag.z.im = 0;
+
+    mu_offdiag.x.re = 0;
+    mu_offdiag.x.im = 0;
+    mu_offdiag.y.re = 0;
+    mu_offdiag.y.im = 0;
+    mu_offdiag.z.re = 0;
+    mu_offdiag.z.im = 0;
+
+    E_chi2_diag.x = 0;
+    E_chi2_diag.y = 0;
+    E_chi2_diag.z = 0;
+
+    E_chi3_diag.x = 0;
+    E_chi3_diag.y = 0;
+    E_chi3_diag.z = 0;
+
+    H_chi2_diag.x = 0;
+    H_chi2_diag.y = 0;
+    H_chi2_diag.z = 0;
+
+    H_chi3_diag.x = 0;
+    H_chi3_diag.y = 0;
+    H_chi3_diag.z = 0;
+
+    D_conductivity_diag.x = 0;
+    D_conductivity_diag.y = 0;
+    D_conductivity_diag.z = 0;
+
+    B_conductivity_diag.x = 0;
+    B_conductivity_diag.y = 0;
+    B_conductivity_diag.z = 0;
+  }
+};
 
 // prototype for user-defined material function,
 // which should fill in medium as appropriate to
@@ -76,23 +126,23 @@ typedef void (*user_material_func)(vector3 x, void *user_data,
 // the various types of materials are as follows:
 //  MEDIUM:        material properties independent of position. In
 //                 this case the 'medium' field below is
-//                 initialized once and doesn't change. 
+//                 initialized once and doesn't change.
 //  MATERIAL_FILE: material properties position-dependent, described
-//                 by user-supplied data file. In this case the 
-//                 'medium' field is filled in appropriately at 
+//                 by user-supplied data file. In this case the
+//                 'medium' field is filled in appropriately at
 //                 each evaluation point by interpolating file data.
 //  MATERIAL_USER: material properties position-dependent, described
-//                 by user-supplied function. In this case the 
-//                 'medium' field is filled in appropriately at 
-//                 each evaluation point by calling the user's  
+//                 by user-supplied function. In this case the
+//                 'medium' field is filled in appropriately at
+//                 each evaluation point by calling the user's
 //                 routine.
 //  PERFECT_METAL: the 'medium' field is never referenced in this case.
-typedef struct material_data_struct
+struct material_data
  {
    enum { MEDIUM,
           MATERIAL_FILE,      // formerly MATERIAL_TYPE_SELF
           MATERIAL_USER,      // formerly MATERIAL_FUNCTION
-          PERFECT_METAL 
+          PERFECT_METAL
         } which_subclass;
 
    // this field is used for all material types except PERFECT_METAL
@@ -104,9 +154,14 @@ typedef struct material_data_struct
 
    // these fields used only if which_subclass==MATERIAL_FILE
    meep::realnum *epsilon_data;
-   int epsilon_dims[3];
+   size_t epsilon_dims[3];
 
- } material_data;
+   material_data(): which_subclass(MEDIUM), medium(), user_data(NULL), epsilon_data(NULL) {
+     epsilon_dims[0] = 0;
+     epsilon_dims[1] = 0;
+     epsilon_dims[2] = 0;
+   }
+ };
 
 typedef material_data *material_type;
 
@@ -117,7 +172,7 @@ struct material_type_list {
   material_type_list(): items(NULL), num_items(0) {}
 };
 
-// global variables 
+// global variables
 extern material_type vacuum;
 
 // exported functions for creating particular material types
