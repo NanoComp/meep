@@ -8,7 +8,7 @@ $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}
 
 where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole assuming linear materials. In FDTD, computing the LDOS is straightforward: excite a point dipole source and accumulate the Fourier transforms of the field at a given point in space to obtain the entire LDOS spectrum in a single calculation. This is implemented in the `dft-ldos` feature which is the subject of this tutorial.
 
-A lossless localized mode yields a $\delta$-function spike in the LDOS, whereas a <i>lossy</i>, arising from either small absorption or radiation, localized mode &mdash; a resonant cavity mode &mdash; leads to a Lorentzian peak. The large enhancement in the LDOS at the resonant peak is known as a [Purcell effect](https://en.wikipedia.org/wiki/Purcell_effect), named after Purcell's proposal for enhancing spontaneous emission of an atom in a cavity. This is analogous to a microwave antenna resonating in a metal box. In this case, the resonant mode's contribution to the LDOS at $\omega^{(n)}$ can be shown to be:
+A lossless localized mode yields a δ-function spike in the LDOS, whereas a <i>lossy</i>, arising from either small absorption or radiation, localized mode &mdash; a resonant cavity mode &mdash; leads to a Lorentzian peak. The large enhancement in the LDOS at the resonant peak is known as a [Purcell effect](https://en.wikipedia.org/wiki/Purcell_effect), named after Purcell's proposal for enhancing spontaneous emission of an atom in a cavity. This is analogous to a microwave antenna resonating in a metal box. In this case, the resonant mode's contribution to the LDOS at $\omega^{(n)}$ can be shown to be:
 
 $$\operatorname{resonant\ LDOS} \approx \frac{2}{\pi\omega^{(n)}} \frac{Q^{(n)}}{V^{(n)}}$$
 
@@ -45,7 +45,7 @@ Next we'll create a notch opening in the cavity so that the field can radiate aw
                         (material air))))))
 ```
 
-We can now set up the $E_z$-polarized source in the middle of the cavity where we will also compute the LDOS as they are co-located. We know the mode frequency of the closed cavity analytically. Of course, the frequency will shift with the size of the notch which necessitates a Gaussian pulse. Also note that in Meep, frequency is specified in units of $2\pi$.
+We can now set up the $E_z$-polarized source in the middle of the cavity where we will also compute the LDOS as they are co-located. We know the mode frequency of the closed cavity analytically. Of course, the frequency will shift with the size of the notch which necessitates a Gaussian pulse. Also note that in Meep, frequency is specified in units of 2π.
 
 ```scm
  (define-param fcen (/ (sqrt 0.5) a))

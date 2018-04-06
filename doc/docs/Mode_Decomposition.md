@@ -6,9 +6,9 @@ Meep contains a feature to decompose arbitrary fields into a superposition of th
 
 ## Theoretical Background
 
-A useful reference for waveguide mode decomposition is Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
+The analytical theory for waveguide mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
 
-Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vec\rho=(y,z)$. For a given angular frequency $\omega$ we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-i\omega t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-i\omega t}$ can be decomposed into a basis of these eigenmodes:
+Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vec\rho=(y,z)$. For a given angular frequency ω we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-i\omega t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-i\omega t}$ can be decomposed into a basis of these eigenmodes:
 
 $$
    \mathbf{E}(\mathbf{r}) = 
@@ -25,13 +25,13 @@ $$
             \right\}
 $$
 
-$\beta_n$ are the propagation wavevectors and $\alpha^{\pm}_n$ are the basis coefficients. Mode decomposition involves solving for these unknown quantities. The following steps are involved in the computation:
+β$_n$ are the propagation wavevectors and α$^{\pm}_n$ are the basis coefficients. Mode decomposition involves solving for these unknown quantities. The following steps are involved in the computation:
 
 1.  In Meep, compute the Fourier-transformed fields $\mathbf{E}(\mathbf{r})$ and $\mathbf{H}(\mathbf{r})$ on a surface that is transverse to the waveguide and stored in a `dft_flux` object.
 
-2.  In MPB, compute the eigenmodes $\mathbf{E}^\pm_n$ and $\mathbf{H}^\pm_n$ as well as the propagation wavevectors $\beta_n$ for the same cross-sectional structure.
+2.  In MPB, compute the eigenmodes $\mathbf{E}^\pm_n$ and $\mathbf{H}^\pm_n$ as well as the propagation wavevectors β$_n$ for the same cross-sectional structure.
 
-3.  Compute the coefficients $\alpha_n^\pm$ for any number of eigenmodes $n=1,2,...$
+3.  Compute the coefficients α$_n^\pm$ for any number of eigenmodes $n=1,2,...$
 
 This is all done automatically in Meep using the `get_eigenmode_coefficients` routine.
 
@@ -64,7 +64,7 @@ The following are the parameters:
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as $\alpha^+$, $\alpha^-$ starting at slot `2*nb*num_freqs+nf` of this array:
+The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array:
 
 ````c++
  std::vector<cdouble> coeffs=f.get_eigenmode_coefficient(...)

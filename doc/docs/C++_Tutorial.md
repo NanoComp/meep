@@ -60,7 +60,7 @@ double eps(const vec &p) {
 }
 ```
 
-which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2$\times$3 rectangle of $\varepsilon$=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
+which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2$\times$3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
 
 Now that you have the basic flavor, we can proceed to some more specific examples.
 
@@ -74,7 +74,7 @@ In this first tutorial, we will write the script to compute the quality factor o
 usingnamespace meep;
 ```
 
-The particular Fabry-Perot cavity we will investigate consists of an air region bounded by two distributed Bragg reflectors which are quarter-wave stacks of $\varepsilon$ of 12 and 1. We choose the size of the defect to be twice as large as the air thickness in the quarter-wave stack, so that a defect mode is found near midgap. This structure will include $N$ = 5 periods in the Bragg reflector on either side of the defect. We can use a larger $N$ but the quality factor may then be too large to compute. The parameters are set up as follows:
+The particular Fabry-Perot cavity we will investigate consists of an air region bounded by two distributed Bragg reflectors which are quarter-wave stacks of ε of 12 and 1. We choose the size of the defect to be twice as large as the air thickness in the quarter-wave stack, so that a defect mode is found near midgap. This structure will include $N$=5 periods of the Bragg reflector on either side of the defect. We can use a larger $N$ but the quality factor may then be too large to compute. The parameters are set up as follows:
 
 ```c++
 const double eps1 = 12.0; // epsilon of layer1
@@ -177,7 +177,7 @@ return 0;
 }
 ```
 
-That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of bragg reflectors ($N$=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the computational cell at each time step:
+That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of Bragg reflectors ($N$=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the computational cell at each time step:
 
 ```c++
 double curr_time = f.time();
@@ -187,7 +187,7 @@ while (f.time() < curr_time + 1/w_midgap) {
 }
 ```
 
-After we convert the hdf5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
+After we convert the HDF5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
 
 <center>
 ![](images/Fabryperot.gif)
