@@ -194,7 +194,7 @@ class Harminv(object):
         return _collect1
 
     def _analyze_harminv(self, sim, maxbands):
-        harminv_cols = ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error']
+        harminv_cols = ['frequency', 'imag. freq.', 'Q', '|amp|', 'amplitude', 'error']
         display_run_data(sim, 'harminv', harminv_cols)
 
         dt = self.data_dt if self.data_dt is not None else sim.fields.dt
