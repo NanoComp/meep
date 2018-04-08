@@ -117,7 +117,7 @@ static bool invert(realnum *S, int p)
 typedef realnum *realnumP;
 typedef struct {
   size_t sz_data;
-  int ntot;
+  size_t ntot;
   realnum *GammaInv; // inv(1 + Gamma * dt / 2)
   realnumP *P[NUM_FIELD_COMPONENTS][2]; // P[c][cmp][transition][i]
   realnumP *P_prev[NUM_FIELD_COMPONENTS][2];
@@ -129,7 +129,7 @@ typedef struct {
 void *multilevel_susceptibility::new_internal_data(
 				    realnum *W[NUM_FIELD_COMPONENTS][2],
 				    const grid_volume &gv) const {
-  int num = 0; // number of P components
+  size_t num = 0; // number of P components
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
   size_t sz = sizeof(multilevel_data)
     + sizeof(realnum) * (L*L + L + gv.ntot()*L + num*T - 1);
@@ -146,7 +146,7 @@ void multilevel_susceptibility::init_internal_data(
   size_t sz_data = d->sz_data;
   memset(d, 0, sz_data);
   d->sz_data = sz_data;
-  int ntot = d->ntot = gv.ntot();
+  size_t ntot = d->ntot = gv.ntot();
 
   /* d->data points to a big block of data that holds GammaInv, P,
      P_prev, Ntmp, and N.  We also initialize a bunch of convenience
@@ -178,7 +178,7 @@ void multilevel_susceptibility::init_internal_data(
   d->N = P + L; // the last L*ntot block of the data
 
   // initial populations
-  for (int i = 0; i < ntot; ++i)
+  for (size_t i = 0; i < ntot; ++i)
     for (int l = 0; l < L; ++l)
       d->N[i*L + l] = N0[l];
 }
@@ -199,7 +199,7 @@ void *multilevel_susceptibility::copy_internal_data(void *data) const {
   if (!d) return 0;
   multilevel_data *dnew = (multilevel_data *) malloc(d->sz_data);
   memcpy(dnew, d, d->sz_data);
-  int ntot = d->ntot;
+  size_t ntot = d->ntot;
   dnew->GammaInv = dnew->data;
   realnum *P = dnew->data + L*L;
   realnum *P_prev = P + ntot;
@@ -243,7 +243,7 @@ void multilevel_susceptibility::update_P
 
   // field directions and offsets for E * dP dot product.
   component cdot[3] = {Dielectric,Dielectric,Dielectric};
-  int o1[3], o2[3];
+  ptrdiff_t o1[3], o2[3];
   int idot = 0;
   FOR_COMPONENTS(c) if (d->P[c][0]) {
     if (idot == 3) abort("bug in meep: too many polarization components");
@@ -326,7 +326,7 @@ void multilevel_susceptibility::update_P
       if (w && s) {
 	realnum *p = d->P[c][cmp][t], *pp = d->P_prev[c][cmp][t];
 
-	int o1, o2;
+	ptrdiff_t o1, o2;
 	gv.cent2yee_offsets(c, o1, o2);
 	o1 *= L; o2 *= L;
 	const realnum *N = d->N;
@@ -367,14 +367,14 @@ void multilevel_susceptibility::subtract_P(field_type ft,
 					   void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *) P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
-  int ntot = d->ntot;
+  size_t ntot = d->ntot;
   for (int t = 0; t < T; ++t) {
     FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
       component dc = field_type_component(ft2, ec);
       if (f_minus_p[dc][cmp]) {
 	realnum *p = d->P[ec][cmp][t];
 	realnum *fmp = f_minus_p[dc][cmp];
-	for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
+	for (size_t i = 0; i < ntot; ++i) fmp[i] -= p[i];
       }
     }
   }
