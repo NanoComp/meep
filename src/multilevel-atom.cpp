@@ -117,7 +117,7 @@ static bool invert(realnum *S, int p)
 typedef realnum *realnumP;
 typedef struct {
   size_t sz_data;
-  size_t ntot;
+  int ntot;
   realnum *GammaInv; // inv(1 + Gamma * dt / 2)
   realnumP *P[NUM_FIELD_COMPONENTS][2]; // P[c][cmp][transition][i]
   realnumP *P_prev[NUM_FIELD_COMPONENTS][2];
@@ -129,7 +129,7 @@ typedef struct {
 void *multilevel_susceptibility::new_internal_data(
 				    realnum *W[NUM_FIELD_COMPONENTS][2],
 				    const grid_volume &gv) const {
-  size_t num = 0; // number of P components
+  int num = 0; // number of P components
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
   size_t sz = sizeof(multilevel_data)
     + sizeof(realnum) * (L*L + L + gv.ntot()*L + num*T - 1);
@@ -146,7 +146,7 @@ void multilevel_susceptibility::init_internal_data(
   size_t sz_data = d->sz_data;
   memset(d, 0, sz_data);
   d->sz_data = sz_data;
-  size_t ntot = d->ntot = gv.ntot();
+  int ntot = d->ntot = gv.ntot();
 
   /* d->data points to a big block of data that holds GammaInv, P,
      P_prev, Ntmp, and N.  We also initialize a bunch of convenience
@@ -178,7 +178,7 @@ void multilevel_susceptibility::init_internal_data(
   d->N = P + L; // the last L*ntot block of the data
 
   // initial populations
-  for (size_t i = 0; i < ntot; ++i)
+  for (int i = 0; i < ntot; ++i)
     for (int l = 0; l < L; ++l)
       d->N[i*L + l] = N0[l];
 }
@@ -199,7 +199,7 @@ void *multilevel_susceptibility::copy_internal_data(void *data) const {
   if (!d) return 0;
   multilevel_data *dnew = (multilevel_data *) malloc(d->sz_data);
   memcpy(dnew, d, d->sz_data);
-  size_t ntot = d->ntot;
+  int ntot = d->ntot;
   dnew->GammaInv = dnew->data;
   realnum *P = dnew->data + L*L;
   realnum *P_prev = P + ntot;
@@ -243,7 +243,7 @@ void multilevel_susceptibility::update_P
 
   // field directions and offsets for E * dP dot product.
   component cdot[3] = {Dielectric,Dielectric,Dielectric};
-  ptrdiff_t o1[3], o2[3];
+  int o1[3], o2[3];
   int idot = 0;
   FOR_COMPONENTS(c) if (d->P[c][0]) {
     if (idot == 3) abort("bug in meep: too many polarization components");
@@ -259,9 +259,9 @@ void multilevel_susceptibility::update_P
 
     // Ntmp = (I - Gamma * dt/2) * N
     for (int l1 = 0; l1 < L; ++l1) {
-      Ntmp[l1] = (1.0 - Gamma[l1*L + l1]*dt2) * N[l1]; // diagonal term
-      for (int l2 = 0; l2 < l1; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
-      for (int l2 = l1+1; l2 < L; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
+      Ntmp[l1] = 0;
+      for (int l2 = 0; l2 < L; ++l2)
+	Ntmp[l1] += ((l1 == l2) - Gamma[l1*L+l2]*dt2) * N[l2];
     }
 
     // compute E*8 at point i
@@ -291,7 +291,7 @@ void multilevel_susceptibility::update_P
 	if (d->P[cdot[idot]][1]) {
 	  p = d->P[cdot[idot]][1][t]; pp = d->P_prev[cdot[idot]][1][t];
 	  dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
-	    + (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
+	    - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
 	  EdP32 += dP * E8[idot][1];
 	}
       }
@@ -308,9 +308,9 @@ void multilevel_susceptibility::update_P
 
   // each P is updated as a damped harmonic oscillator
   for (int t = 0; t < T; ++t) {
-    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi;
-    const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
-    const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
+    const double omega2pi = omega[t]*2*pi, g2pi = gamma[t]*2*pi;
+    const double omega0dtsqr = omega2pi*omega2pi*dt*dt;
+    const double gamma1inv = 1 / (1 + g2pi*dt2), gamma1 = (1 - g2pi*dt2);
 
     // figure out which levels this transition couples
     int lp = -1, lm = -1;
@@ -326,7 +326,7 @@ void multilevel_susceptibility::update_P
       if (w && s) {
 	realnum *p = d->P[c][cmp][t], *pp = d->P_prev[c][cmp][t];
 
-	ptrdiff_t o1, o2;
+	int o1, o2;
 	gv.cent2yee_offsets(c, o1, o2);
 	o1 *= L; o2 *= L;
 	const realnum *N = d->N;
@@ -342,19 +342,18 @@ void multilevel_susceptibility::update_P
 	const realnum *w2 = W[c2][cmp];
 	const realnum *s2 = w2 ? sigma[c][d2] : NULL;
 
-	if (s1 || s2) {
+	if (s1 || s2)
 	  abort("nondiagonal saturable gain is not yet supported");
-	}
 	else { // isotropic
 	  LOOP_OVER_VOL_OWNED(gv, c, i) {
 	    realnum pcur = p[i];
 	    const realnum *Ni = N + i*L;
 	    // dNi is population inversion for this transition
-	    double dNi = -0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
-				  -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
+	    double dNi = 0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
+				 -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
 	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqr)
 				- gamma1 * pp[i]
-				+ omega0dtsqr * (st * s[i] * w[i])) * dNi;
+				- omega0dtsqr * st * s[i] * w[i] * dNi);
 	    pp[i] = pcur;
 	  }
 	}
@@ -368,14 +367,14 @@ void multilevel_susceptibility::subtract_P(field_type ft,
 					   void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *) P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
-  size_t ntot = d->ntot;
+  int ntot = d->ntot;
   for (int t = 0; t < T; ++t) {
     FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
       component dc = field_type_component(ft2, ec);
       if (f_minus_p[dc][cmp]) {
 	realnum *p = d->P[ec][cmp][t];
 	realnum *fmp = f_minus_p[dc][cmp];
-	for (size_t i = 0; i < ntot; ++i) fmp[i] -= p[i];
+	for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
       }
     }
   }
