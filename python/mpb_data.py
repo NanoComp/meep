@@ -124,12 +124,12 @@ class MPBData(object):
         return np.reshape(out_arr_re, out_dims[:rank])
 
     def handle_cvector_dataset(self, in_arr, multiply_bloch_phase):
-        in_x_re = np.real(in_arr[:, :, 0]).ravel()
-        in_x_im = np.imag(in_arr[:, :, 0]).ravel()
-        in_y_re = np.real(in_arr[:, :, 1]).ravel()
-        in_y_im = np.imag(in_arr[:, :, 1]).ravel()
-        in_z_re = np.real(in_arr[:, :, 2]).ravel()
-        in_z_im = np.imag(in_arr[:, :, 2]).ravel()
+        in_x_re = np.real(in_arr[:, :, :, 0]).ravel()
+        in_x_im = np.imag(in_arr[:, :, :, 0]).ravel()
+        in_y_re = np.real(in_arr[:, :, :, 1]).ravel()
+        in_y_im = np.imag(in_arr[:, :, :, 1]).ravel()
+        in_z_re = np.real(in_arr[:, :, :, 2]).ravel()
+        in_z_im = np.imag(in_arr[:, :, :, 2]).ravel()
 
         d_in = [[in_x_re, in_x_im], [in_y_re, in_y_im], [in_z_re, in_z_im]]
         in_dims = [in_arr.shape[0], in_arr.shape[1], 1]
@@ -297,7 +297,7 @@ class MPBData(object):
 
         self.init_output_lattice()
 
-        if len(arr.shape) == 3:
+        if len(arr.shape) == 4:
             return self.handle_cvector_dataset(arr, not arr.bloch_phase)
         else:
             return self.handle_dataset(arr)

@@ -253,6 +253,10 @@ class ModeSolver(object):
             self.mode_solver.get_hfield(band)
 
         dims = self.mode_solver.get_dims()
+
+        while len(dims) < 3:
+            dims += [1]
+
         dims += [3]
         arr = np.zeros(np.prod(dims), np.complex128)
 
@@ -265,6 +269,16 @@ class ModeSolver(object):
         res = MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
 
         return res
+
+    def get_dpwr(self, band):
+        self.get_dfield(band)
+        self.compute_field_energy()
+        dims = self.mode_solver.get_dims()
+        arr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(arr)
+        arr = np.reshape(arr, dims)
+
+        return MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=True)
 
     def fix_field_phase(self):
         self.mode_solver.fix_field_phase()
