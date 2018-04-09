@@ -1078,6 +1078,13 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_h5_files(ref_path, res_path)
 
+        # Test get_tot_pwr
+        arr = ms.get_tot_pwr(8)
+        with h5py.File(ref_path, 'r') as f:
+            expected = f['data'].value
+
+        self.compare_arrays(expected, arr)
+
     def test_get_eigenvectors(self):
         ms = self.init_solver()
         ms.run_te(mpb.fix_hfield_phase)
