@@ -1123,7 +1123,7 @@ class TestModeSolver(unittest.TestCase):
         efields = []
 
         def get_efields(ms, band):
-            efields.append(ms.get_efield(8, output=True))
+            efields.append(ms.get_efield(8))
 
         k = mp.Vector3(1 / -3, 1 / 3)
         ms.run_tm(mpb.output_at_kpoint(k, mpb.fix_efield_phase, get_efields))
@@ -1286,6 +1286,39 @@ class TestModeSolver(unittest.TestCase):
 
         field_integral = ms.compute_field_integral(f2)
         self.assertAlmostEqual(field_integral, 02.0735366548785272e-18 - 3.0259168624899837e-6j)
+
+    def test_multiply_bloch_phase(self):
+        ms = self.init_solver()
+        ms.run_te()
+
+        mpb.fix_efield_phase(ms, 8)
+        efield = ms.get_efield(8, False)
+        bloch_efield = ms.multiply_bloch_phase(efield)
+
+        ref_fn = 'tutorial-e.k16.b08.te.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        self.check_fields_against_h5(ref_path, bloch_efield)
+
+    def test_multiply_bloch_in_map_data(self):
+        ms = self.init_solver()
+
+        # multilpy_bloch_phase happens in get_efield
+        ms.run_te()
+        mpb.fix_efield_phase(ms, 8)
+        efield = ms.get_efield(8)
+        self.assertTrue(efield.bloch_phase)
+        md = mpb.MPBData(rectify=True, resolution=32, periods=3)
+        result1 = md.convert(efield)
+
+        # multiply_bloch_phase happens in map_data
+        ms.run_te()
+        mpb.fix_efield_phase(ms, 8)
+        efield_no_bloch = ms.get_efield(8, False)
+        self.assertFalse(efield_no_bloch.bloch_phase)
+        md = mpb.MPBData(rectify=True, resolution=32, periods=3)
+        result2 = md.convert(efield_no_bloch)
+
+        self.compare_arrays(result1, result2, tol=1e-7)
 
 
 if __name__ == '__main__':

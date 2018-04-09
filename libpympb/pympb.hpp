@@ -15,7 +15,7 @@ namespace py_mpb {
 void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
               int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
               int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
-              bool pick_nearest, bool verbose);
+              bool pick_nearest, bool verbose, bool multiply_bloch_phase);
 
 bool with_hermitian_epsilon();
 
@@ -162,7 +162,7 @@ struct mode_solver {
   cvector3 get_field_point(vector3 p);
   cvector3 get_bloch_field_point(vector3 p);
 
-  void multiply_bloch_phase();
+  void multiply_bloch_phase(std::complex<double> *cdata=NULL);
   void fix_field_phase();
   void compute_field_divergence();
   std::vector<mpb_real> compute_zparities();

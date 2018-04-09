@@ -1889,9 +1889,11 @@ cvector3 mode_solver::get_field_point(vector3 p) {
   return F;
 }
 
-void mode_solver::multiply_bloch_phase() {
+void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
 
   std::vector<mpb_real> kvector = get_output_k();
+
+  scalar_complex *data = cdata ? (scalar_complex*)cdata : (scalar_complex*)curfield;
 
   int dims[] = {mdata->nx, mdata->ny, mdata->nz};
   int local_dims[] = {mdata->local_nx, mdata->ny, mdata->nz};
@@ -1944,9 +1946,9 @@ void mode_solver::multiply_bloch_phase() {
 
         for (int component = 0; component < 3; ++component) {
           int ijkc = ijk + component;
-          re = curfield[ijkc].re; im = curfield[ijkc].im;
-          curfield[ijkc].re = re * p_re - im * p_im;
-          curfield[ijkc].im = im * p_re + re * p_im;
+          re = data[ijkc].re; im = data[ijkc].im;
+          data[ijkc].re = re * p_re - im * p_im;
+          data[ijkc].im = im * p_re + re * p_im;
         }
       }
     }
@@ -2553,7 +2555,7 @@ void add_cmplx_times_phase(mpb_real *sum_re, mpb_real *sum_im, mpb_real d_re, mp
 void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
               int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
               int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
-              bool pick_nearest, bool verbose) {
+              bool pick_nearest, bool verbose, bool multiply_bloch_phase) {
   (void)size_in_re;
   (void)size_in_im;
   (void)size_out_re;
@@ -2609,6 +2611,13 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
          MODF_POSITIVE(x, xi);
          MODF_POSITIVE(y, yi);
          MODF_POSITIVE(z, zi);
+
+         if (multiply_bloch_phase) {
+           xi += x;
+           yi += y;
+           zi += z;
+         }
+
          i1 = x * n_in[0]; j1 = y * n_in[1]; k1 = z * n_in[2];
          dx = x * n_in[0] - i1;
          dy = y * n_in[1] - j1;
