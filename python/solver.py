@@ -266,14 +266,14 @@ class ModeSolver(object):
         return MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
 
     def get_dpwr(self, band):
-        self.get_dfield(band)
+        self.get_dfield(band, False)
         self.compute_field_energy()
-        return self.get_curfield_as_array()
+        return self.get_curfield_as_array(False)
 
     def get_bpwr(self, band):
-        self.get_bfield(band)
+        self.get_bfield(band, False)
         self.compute_field_energy()
-        return self.get_curfield_as_array()
+        return self.get_curfield_as_array(False)
 
     def fix_field_phase(self):
         self.mode_solver.fix_field_phase()
