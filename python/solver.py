@@ -294,20 +294,15 @@ class ModeSolver(object):
         return self.mode_solver.get_bloch_field_point(p)
 
     def get_tot_pwr(self, which_band):
-        self.get_dfield(which_band)
-        self.compute_field_energy()
-        epwr = self.get_curfield_as_array()
-
-        self.get_bfield(which_band)
-        self.compute_field_energy()
-        hpwr = self.get_curfield_as_array()
+        epwr = self.get_dpwr(which_band)
+        hpwr = self.get_bpwr(which_band)
 
         tot_pwr = epwr + hpwr
 
         self.mode_solver.set_curfield(tot_pwr.ravel())
         self.mode_solver.set_curfield_type('R')
 
-        return MPBArray(tot_pwr, self.get_lattice(), self.current_k)
+        return MPBArray(tot_pwr, self.get_lattice(), self.current_k, bloch_phase=False)
 
     def get_eigenvectors(self, first_band, num_bands):
         dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
