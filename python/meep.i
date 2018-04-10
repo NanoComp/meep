@@ -836,6 +836,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
                 SWIG_fail;
             }
         }
+        $1 = mtl;
     }
 }
 
