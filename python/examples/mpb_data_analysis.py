@@ -11,18 +11,19 @@ examples_dir = os.path.realpath(os.path.dirname(__file__))
 sys.path.insert(0, examples_dir)
 
 # Import the ModeSolver from the mpb_tri_rods.py example
-from mpb_tri_rods import ms
+from mpb_tri_rods import ms as tr_ms
+from mpb_diamond import ms as d_ms
 
 
-def main():
+def tri_rods():
     efields = []
 
     # Band function to collect the efields
-    def get_efields(ms, band):
-        efields.append(ms.get_efield(band))
+    def get_efields(tr_ms, band):
+        efields.append(tr_ms.get_efield(band))
 
-    ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
-              get_efields))
+    tr_ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
+                                      get_efields))
 
     # Create an MPBData instance to transform the efields
     md = mpb.MPBData(rectify=True, resolution=32, periods=3)
@@ -33,9 +34,9 @@ def main():
         f = f[:, :, 2]
         converted.append(md.convert(f))
 
-    ms.run_te()
+    tr_ms.run_te()
 
-    eps = ms.get_epsilon()
+    eps = tr_ms.get_epsilon()
     plt.imshow(eps.T, interpolation='spline36', cmap='binary')
     plt.axis('off')
     plt.show()
@@ -55,5 +56,20 @@ def main():
     plt.show()
 
 
+def diamond():
+    dpwr = []
+
+    def get_dpwr(ms, band):
+        dpwr.append(ms.get_dpwr(band))
+
+    d_ms.run(mpb.output_at_kpoint(mp.Vector3(0, 0.625, 0.375), get_dpwr))
+
+    md = mpb.MPBData(rectify=True, periods=2, resolution=32)
+    converted_dpwr = [md.convert(d) for d in dpwr]
+
+    # TODO: Plot
+
+
 if __name__ == '__main__':
-    main()
+    tri_rods()
+    diamond()

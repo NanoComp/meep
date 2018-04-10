@@ -654,9 +654,13 @@ class TestModeSolver(unittest.TestCase):
         ms.deterministic = True
         ms.filename_prefix = self.filename_prefix
         ms.tolerance = 1e-12
+        dpwr = []
+
+        def get_dpwr(ms, band):
+            dpwr.append(ms.get_dpwr(band))
 
         ms.run(mpb.output_at_kpoint(mp.Vector3(0, 0.625, 0.375), mpb.fix_dfield_phase,
-                                    mpb.output_dpwr))
+                                    mpb.output_dpwr, get_dpwr))
 
         expected_brd = [
             ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
@@ -679,6 +683,17 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('diamond', self.filename_prefix, ref_fn)
         self.compare_h5_files(ref_path, res_path)
+
+        # Test MPBData.convert()
+        md = mpb.MPBData(rectify=True, periods=2, resolution=32)
+        converted_dpwr = [md.convert(d) for d in dpwr]
+
+        ref_fn = 'converted-diamond-dpwr.k06.b05.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        with h5py.File(ref_path, 'r') as f:
+            expected = f['data-new'].value
+
+        self.compare_arrays(expected, converted_dpwr[-1])
 
     def test_hole_slab(self):
         from mpb_hole_slab import ms
@@ -1062,6 +1077,13 @@ class TestModeSolver(unittest.TestCase):
         res_path = re.sub('tutorial', self.filename_prefix, ref_fname)
 
         self.compare_h5_files(ref_path, res_path)
+
+        # Test get_tot_pwr
+        arr = ms.get_tot_pwr(8)
+        with h5py.File(ref_path, 'r') as f:
+            expected = f['data'].value
+
+        self.compare_arrays(expected, arr)
 
     def test_get_eigenvectors(self):
         ms = self.init_solver()

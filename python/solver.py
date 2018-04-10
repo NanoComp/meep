@@ -202,24 +202,11 @@ class ModeSolver(object):
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
-
-        dims = self.mode_solver.get_dims()
-        eps = np.empty(np.prod(dims))
-        self.mode_solver.get_curfield(eps)
-
-        arr = np.reshape(eps, dims)
-        res = MPBArray(arr, self.get_lattice())
-
-        return res
+        return self.get_curfield_as_array(False)
 
     def get_mu(self):
         self.mode_solver.get_mu()
-
-        dims = self.mode_solver.get_dims()
-        mu = np.empty(np.prod(dims))
-        self.mode_solver.get_curfield(mu)
-
-        return np.reshape(mu, dims)
+        return self.get_curfield_as_array(False)
 
     def get_bfield(self, which_band, bloch_phase=True):
         return self._get_field('b', which_band, bloch_phase)
@@ -251,6 +238,10 @@ class ModeSolver(object):
             self.mode_solver.get_hfield(band)
 
         dims = self.mode_solver.get_dims()
+
+        while len(dims) < 3:
+            dims += [1]
+
         dims += [3]
         arr = np.zeros(np.prod(dims), np.complex128)
 
@@ -263,6 +254,24 @@ class ModeSolver(object):
         res = MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
 
         return res
+
+    def get_curfield_as_array(self, bloch_phase=True):
+        dims = self.mode_solver.get_dims()
+        arr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(arr)
+        arr = np.reshape(arr, dims)
+
+        return MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
+
+    def get_dpwr(self, band):
+        self.get_dfield(band, False)
+        self.compute_field_energy()
+        return self.get_curfield_as_array(False)
+
+    def get_bpwr(self, band):
+        self.get_bfield(band, False)
+        self.compute_field_energy()
+        return self.get_curfield_as_array(False)
 
     def fix_field_phase(self):
         self.mode_solver.fix_field_phase()
@@ -283,27 +292,15 @@ class ModeSolver(object):
         return self.mode_solver.get_bloch_field_point(p)
 
     def get_tot_pwr(self, which_band):
-        self.get_dfield(which_band)
-        self.compute_field_energy()
-
-        dims = self.mode_solver.get_dims()
-        epwr = np.zeros(np.prod(dims))
-        self.mode_solver.get_curfield(epwr)
-        epwr = np.reshape(epwr, dims)
-
-        self.get_bfield(which_band)
-        self.compute_field_energy()
-
-        hpwr = np.zeros(np.prod(dims))
-        self.mode_solver.get_curfield(hpwr)
-        hpwr = np.reshape(hpwr, dims)
+        epwr = self.get_dpwr(which_band)
+        hpwr = self.get_bpwr(which_band)
 
         tot_pwr = epwr + hpwr
 
         self.mode_solver.set_curfield(tot_pwr.ravel())
         self.mode_solver.set_curfield_type('R')
 
-        return MPBArray(tot_pwr, self.get_lattice(), self.current_k)
+        return MPBArray(tot_pwr, self.get_lattice(), self.current_k, bloch_phase=False)
 
     def get_eigenvectors(self, first_band, num_bands):
         dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
@@ -581,10 +578,7 @@ class ModeSolver(object):
         h5file['lattice vectors'] = lattice
 
     def _create_h5_dataset(self, h5file, key):
-        dims = self.mode_solver.get_dims()
-        arr = np.zeros(np.prod(dims))
-        self.mode_solver.get_curfield(arr)
-        h5file[key] = np.reshape(arr, dims)
+        h5file[key] = self.get_curfield_as_array(False)
 
     def _create_fname(self, fname, prefix, parity_suffix):
         parity_str = self.mode_solver.get_parity_string()
