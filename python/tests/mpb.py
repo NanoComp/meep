@@ -1320,6 +1320,17 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_arrays(result1, result2, tol=1e-7)
 
+    def test_poynting(self):
+        ms = self.init_solver()
+
+        ms.run_te(mpb.output_at_kpoint(mp.Vector3(0.5, 0.5), mpb.output_poynting))
+
+        ref_fn = 'tutorial-flux.v.k11.b08.te.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('tutorial', self.filename_prefix, ref_fn)
+
+        self.compare_h5_files(ref_path, res_path)
+
 
 if __name__ == '__main__':
     unittest.main()

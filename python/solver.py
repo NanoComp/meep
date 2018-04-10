@@ -178,8 +178,8 @@ class ModeSolver(object):
         return np.reshape(arr, dims)
 
     def get_poynting(self, which_band):
-        e = self.get_efield(which_band).ravel()
-        h = self.get_hfield(which_band).ravel()
+        e = self.get_efield(which_band, False).ravel()
+        h = self.get_hfield(which_band, False).ravel()
         # Reshape into rows of vector3s
         e = e.reshape((int(e.shape[0] / 3), 3))
         h = h.reshape((int(h.shape[0] / 3), 3))
@@ -195,8 +195,6 @@ class ModeSolver(object):
             res[i] = np.array(ExH(e[i], h[i]))
 
         flat_res = res.ravel()
-        # We only have to set curfield here to do `multiply_bloch_phase` in
-        # _output_vector_field.
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
@@ -518,7 +516,8 @@ class ModeSolver(object):
             f['Bloch wavevector'] = np.array(output_k)
             self._write_lattice_vectors(f)
 
-            self.mode_solver.multiply_bloch_phase()
+            if curfield_type != 'v':
+                self.mode_solver.multiply_bloch_phase()
 
             for c_idx, c in enumerate(components):
                 if component >= 0 and c_idx != component:
