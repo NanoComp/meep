@@ -25,7 +25,7 @@
     #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
-    #define IsPyString(n) PyString_Check(n)
+    #define IsPyString(n) PyString_Check(n) || PyUnicode_Check(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
     #define PyInteger_FromLong(n) PyInt_FromLong(n)

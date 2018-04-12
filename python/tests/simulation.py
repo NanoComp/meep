@@ -1,8 +1,15 @@
 import os
 import shutil
+import sys
 import unittest
 import numpy as np
 import meep as mp
+
+
+try:
+    unicode
+except NameError:
+    unicode = str
 
 
 class TestSimulation(unittest.TestCase):
@@ -214,6 +221,13 @@ class TestSimulation(unittest.TestCase):
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
         self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+
+        # Test unicode file name for Python 2
+        if sys.version_info[0] == 2:
+            sim = self.init_simple_simulation(epsilon_input_file=unicode(eps_input_path))
+            sim.run(until=200)
+            fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+            self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
     def test_set_materials(self):
 
