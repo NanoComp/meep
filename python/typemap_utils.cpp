@@ -24,8 +24,8 @@
     #define PyInteger_AsLong(n) PyLong_AsLong(n)
     #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
-    #define PyObject_ToCharPtr(n) PyString_AsString(n)
-    #define IsPyString(n) PyString_Check(n)
+    #define PyObject_ToCharPtr(n) py2_string_as_utf8(n)
+    #define IsPyString(n) PyString_Check(n) || PyUnicode_Check(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
@@ -37,6 +37,21 @@ PyObject *py_amp_func = NULL;
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
+
+static char *py2_string_as_utf8(PyObject *po) {
+    if (PyString_Check(po)) {
+        return PyString_AsString(po);
+    }
+    else if (PyUnicode_Check(po)) {
+        PyObject *s = PyUnicode_AsUTF8String(po);
+        char *result = PyString_AsString(s);
+        Py_DECREF(s);
+        return result;
+    }
+    else {
+        return NULL;
+    }
+}
 
 static PyObject *py_material_object() {
     static PyObject *material_object = NULL;
