@@ -1,0 +1,76 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "Meep",
+  "description": "Meep is a software package for simulating electromagnetic systems via the finite-difference time-domain (FDTD) method.",
+  "url": "https://github.com/stevengj/meep",
+  "codeRepository": "https://github.com/stevengj/meep",
+  "issueTracker": "https://github.com/stevengj/meep/issues",
+  "license": "https://spdx.org/licenses/GPL-2.0-or-later.html",
+  "citation": "http://dx.doi.org/10.1016/j.cpc.2009.11.008",
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "David",
+      "familyName": "Roundy",
+      "email": "roundyd@physics.oregonstate.edu"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Peter",
+      "familyName": "Bermel",
+      "email": "pbermel@purdue.edu",
+      "@id": "http://orcid.org/0000-0001-7140-0667"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Mihai",
+      "familyName": "Ibanescu",
+      "email": "michel@alum.mit.edu"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Steven G.",
+      "familyName": "Johnson",
+      "email": "stevenj@alum.mit.edu",
+      "@id": "http://orcid.org/0000-0001-7327-4967"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Ardavan",
+      "familyName": "Oskooi",
+      "email": "ardavan.oskooi@gmail.com"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Alejandro",
+      "familyName": "Rodriguez",
+      "email": "arod@princeton.edu"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Alexander",
+      "familyName": "McCauley",
+      "email": "mccauley@alum.mit.edu"
+    },
+    {
+      "@type": "Person",
+      "givenName": "M. T. Homer",
+      "familyName": "Reid",
+      "email": "homer@homerreid.com",
+      "@id": "http://orcid.org/0000-0002-2466-0420"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Christopher",
+      "familyName": "Hogan",
+      "email": "c096h800@gmail.com"
+    }
+  ],
+  "developmentStatus": "active",
+  "downloadUrl": "https://github.com/stevengj/meep/releases",
+  "version":"1.4.3",
+  "dateCreated":"2003-02-12",
+  "datePublished":"2006-04-01",
+  "programmingLanguage": ["C++", "Python", "Scheme"]
+}
