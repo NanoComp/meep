@@ -80,6 +80,7 @@ bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2)
 static void susceptibility_list_gc(susceptibility_list *sl)
 { if ( !sl || !(sl->num_items) ) return;
   delete[] sl->items;
+  sl->items = NULL;
   sl->num_items=0;
 }
 
@@ -1582,6 +1583,7 @@ material_type make_user_material(user_material_func user_func,
   md->which_subclass=material_data::MATERIAL_USER;
   md->user_func=user_func;
   md->user_data=user_data;
+  md->medium = medium_struct();
   return md;
 }
 
