@@ -33,7 +33,7 @@ Specifies the size of the unit cell which is centered on the origin of the coord
 
 **`default-material` [`material-type` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon-input-file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). See also `epsilon-input-file` below.
 
 **`epsilon-input-file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

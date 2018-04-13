@@ -75,7 +75,7 @@ Specifies the size of the computational cell which is centered on the origin of 
 
 **`default_material` [`Medium` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon_input_file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). See also `epsilon_input_file` below.
 
 **`material_function` [ function ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1180,21 +1180,21 @@ The output functions described above write the data for the fields and materials
 
 with the following input parameters:
 
-+ `vol`: `Volume`: the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If this parameter is `None` (the default), then a `size` and `center` must be specified.
++ `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If `None` (default), then a `size` and `center` must be specified.
 
-+ `center`, `size` : `Vector3` : If both are specified, the library will construct an apporpriate `Volume`. This is merely a convenience feature and alternative to supplying a `Volume`.
++ `center`, `size` : `Vector3`; if both are specified, the library will construct an apporpriate `Volume`. This is a convenience feature and alternative to supplying a `Volume`.
 
 + `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc). Defaults to `mp.Ez`.
 
-+ `cmplx`: If `True`, return complex-valued data otherwise return real-valued data (default).
++ `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return real-valued data (default).
 
 + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
 **`get_dft_array(dft_obj, component, num_freq)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-TODO: Description
+Returns the Fourier-transformed fields as a NumPy array.
 
-+ `dft_obj`: A `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `meep.add_flux`).
++ `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `meep.add_flux`).
 
 + `component`: A field component (e.g., `meep.Ez`)
 
