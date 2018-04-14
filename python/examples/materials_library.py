@@ -296,35 +296,35 @@ Pt = mp.Medium(epsilon=1.0, E_susceptibilities=Pt_susc)
 
 #------------------------------------------------------------------
 
-Pt_plasma_frq = 7.29*eV_um_scale
-Pt_f0 = 0.148
-Pt_frq0 = 1e-10
-Pt_gam0 = 0.082*eV_um_scale
-Pt_sig0 = Pt_f0*Pt_plasma_frq**2/Pt_frq0**2
-Pt_f1 = 0.899
-Pt_frq1 = 0.777*eV_um_scale      # 1.596 um
-Pt_gam1 = 2.276*eV_um_scale
-Pt_sig1 = Pt_f1*Pt_plasma_frq**2/Pt_frq1**2
-Pt_f2 = 0.393
-Pt_frq2 = 1.545*eV_um_scale      # 0.802 um
-Pt_gam2 = 2.518*eV_um_scale
-Pt_sig2 = Pt_f2*Pt_plasma_frq**2/Pt_frq2**2
-Pt_f3 = 0.187
-Pt_frq3 = 2.509*eV_um_scale      # 0.494 um
-Pt_gam3 = 1.663*eV_um_scale
-Pt_sig3 = Pt_f3*Pt_plasma_frq**2/Pt_frq3**2
-Pt_f4 = 0.001
-Pt_frq4 = 19.43*eV_um_scale      # 0.064 um
-Pt_gam4 = 1.762*eV_um_scale
-Pt_sig4 = Pt_f4*Pt_plasma_frq**2/Pt_frq4**2
+Ti_plasma_frq = 7.29*eV_um_scale
+Ti_f0 = 0.148
+Ti_frq0 = 1e-10
+Ti_gam0 = 0.082*eV_um_scale
+Ti_sig0 = Ti_f0*Ti_plasma_frq**2/Ti_frq0**2
+Ti_f1 = 0.899
+Ti_frq1 = 0.777*eV_um_scale      # 1.596 um
+Ti_gam1 = 2.276*eV_um_scale
+Ti_sig1 = Ti_f1*Ti_plasma_frq**2/Ti_frq1**2
+Ti_f2 = 0.393
+Ti_frq2 = 1.545*eV_um_scale      # 0.802 um
+Ti_gam2 = 2.518*eV_um_scale
+Ti_sig2 = Ti_f2*Ti_plasma_frq**2/Ti_frq2**2
+Ti_f3 = 0.187
+Ti_frq3 = 2.509*eV_um_scale      # 0.494 um
+Ti_gam3 = 1.663*eV_um_scale
+Ti_sig3 = Ti_f3*Ti_plasma_frq**2/Ti_frq3**2
+Ti_f4 = 0.001
+Ti_frq4 = 19.43*eV_um_scale      # 0.064 um
+Ti_gam4 = 1.762*eV_um_scale
+Ti_sig4 = Ti_f4*Ti_plasma_frq**2/Ti_frq4**2
 
-Pt_susc = [ mp.DrudeSusceptibility(frequency=Pt_frq0, gamma=Pt_gam0, sigma=Pt_sig0),
-            mp.LorentzianSusceptibility(frequency=Pt_frq1, gamma=Pt_gam1, sigma=Pt_sig1),
-            mp.LorentzianSusceptibility(frequency=Pt_frq2, gamma=Pt_gam2, sigma=Pt_sig2),
-            mp.LorentzianSusceptibility(frequency=Pt_frq3, gamma=Pt_gam3, sigma=Pt_sig3),
-            mp.LorentzianSusceptibility(frequency=Pt_frq4, gamma=Pt_gam4, sigma=Pt_sig4) ]
+Ti_susc = [ mp.DrudeSusceptibility(frequency=Ti_frq0, gamma=Ti_gam0, sigma=Ti_sig0),
+            mp.LorentzianSusceptibility(frequency=Ti_frq1, gamma=Ti_gam1, sigma=Ti_sig1),
+            mp.LorentzianSusceptibility(frequency=Ti_frq2, gamma=Ti_gam2, sigma=Ti_sig2),
+            mp.LorentzianSusceptibility(frequency=Ti_frq3, gamma=Ti_gam3, sigma=Ti_sig3),
+            mp.LorentzianSusceptibility(frequency=Ti_frq4, gamma=Ti_gam4, sigma=Ti_sig4) ]
 
-Pt = mp.Medium(epsilon=1.0, E_susceptibilities=Pt_susc)
+Ti = mp.Medium(epsilon=1.0, E_susceptibilities=Ti_susc)
 
 #------------------------------------------------------------------
 
