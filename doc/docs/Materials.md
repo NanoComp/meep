@@ -8,7 +8,7 @@ However, ε is not only a function of position. In general, it also depends on f
 
 Similarly for the relative permeability μ(**r**), for which dispersion, nonlinearity, and anisotropy are all supported as well.
 
-In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified in the simulation is described in the [User Interface](Python_User_Interface.md). 
+In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified in the simulation is described in [Python User Interface](Python_User_Interface.md). 
 
 [TOC]
 
