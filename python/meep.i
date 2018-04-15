@@ -243,7 +243,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
     }
 
-    delete ff_arr;
+    delete[] ff_arr;
 
     return res;
 }
@@ -520,7 +520,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
     }
 
-    delete $1;
+    delete[] $1;
 }
 
 // Typemap suite for dft_force
