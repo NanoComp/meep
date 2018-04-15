@@ -931,12 +931,9 @@ class Simulation(object):
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_obj))
 
-    def get_eigenmode_coefficients(self, flux, bands, eigvol=None):
+    def get_eigenmode_coefficients(self, flux, bands):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
-
-        if eigvol:
-            flux.where = self._volume_from_kwargs(eigvol)
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands, dtype=np.complex128)
