@@ -623,13 +623,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (std::complex<double> *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* vgrp {
-    $1 = (double *)array_data($input);
-}
 //--------------------------------------------------
 // end typemaps for get_eigenmode_coefficients
 //--------------------------------------------------

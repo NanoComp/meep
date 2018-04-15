@@ -760,7 +760,17 @@ class Simulation(object):
 
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
-    add_eigenmode = add_flux
+    def add_eigenmode(self, fcen, df, nfreq, flux_region):
+        if self.fields is None:
+            self.init_fields()
+
+        v = Volume(center=flux_region.center, size=flux_region.size, dims=self.dimensions,
+                   is_cylindrical=self.is_cylindrical).swigobj
+        d0 = flux_region.direction
+        d = self.fields.normal_direction(v) if d0 < 0 else d0
+        eigenmode = self.fields.add_dft_flux(d, v, fcen - df / 2, fcen + df / 2, nfreq)
+
+        return eigenmode
 
     def display_fluxes(self, *fluxes):
         display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
