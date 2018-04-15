@@ -456,7 +456,10 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
   }
   delete where_save;
 
-  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, everywhere, NO_DIRECTION);
+  // if the volume list has only one entry, store its component.
+  // if the volume list has >1 entry, store NO_COMPONENT.
+  component flux_component = (where_->next ? NO_COMPONENT : where_->c);
+  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, everywhere, flux_component);
 }
 
 
