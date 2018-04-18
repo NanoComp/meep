@@ -582,6 +582,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   destroy_eigenmode_data( (void *)global_eigenmode_data);
 }
 
+bool equal_float(double d1, double d2)
+{ return ((float)d1)==((float)d2); }
+
 /***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
@@ -620,8 +623,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   // k-vector to be the (real part of the) bloch vector in that direction. otherwise just 
   // set the initial-guess k component to zero.
   vec kpoint(0.0,0.0,0.0);
-  if ( where == this->v )
-   FOR_DIRECTIONS(d)
+  FOR_DIRECTIONS(d)
+   if ( equal_float(where.in_direction(d), this->v.in_direction(d) ) )
     if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
      kpoint.set_direction(d, real(this->k[d]));
 
