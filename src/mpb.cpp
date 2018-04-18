@@ -585,6 +585,14 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 bool equal_float(double d1, double d2)
 { return ((float)d1)==((float)d2); }
 
+double flux_volume(dft_flux flux)
+{ double vol=1.0;
+  LOOP_OVER_DIRECTIONS(flux.where->dim, d)
+    if (flux.where->in_direction(d) != 0.0) vol *= flux.where->in_direction(d);
+  if (flux.where->dim== Dcyl) vol *= pi * (flux.where->in_direction_max(R) + flux.where->in_direction_min(R));
+  return vol;
+}
+
 /***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
@@ -623,7 +631,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   // k-vector to be the (real part of the) bloch vector in that direction. otherwise just 
   // set the initial-guess k component to zero.
   vec kpoint(0.0,0.0,0.0);
-  FOR_DIRECTIONS(d)
+  LOOP_OVER_DIRECTIONS(this->v.dim, d)
    if ( equal_float(where.in_direction(d), this->v.in_direction(d) ) )
     if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
      kpoint.set_direction(d, real(this->k[d]));
@@ -651,14 +659,12 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       cdouble mode_flux[2], mode_mode[2];
       get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
-      cdouble cplus   = coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ];
-      cdouble cminus  = coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ];
-      cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
-printf("c={%e,%e} mode=%e sqrt=%e vg=%e\n",
-abs(cplus),abs(cminus),abs(normfac),sqrt(abs(normfac)),vg);
+      cdouble cplus   = 0.5*(mode_flux[0] + mode_flux[1]);
+      cdouble cminus  = 0.5*(mode_flux[0] - mode_flux[1]);
+      cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
       if (normfac==0.0) normfac=1.0;
-      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] = cplus/normfac;
-      coeffs[ 2*nb*num_freqs + 2*nf + 1 ] = cminus/normfac;
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(normfac);
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(normfac);
     }
 }
 
