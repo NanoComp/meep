@@ -642,7 +642,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
        = get_eigenmode(freq, d, where, where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
 
-      if (vgrp) vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
+      double vg=get_group_velocity(mode_data);
+      if (vgrp) vgrp[nb*num_freqs + nf]=vg;
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -650,14 +651,17 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       cdouble mode_flux[2], mode_mode[2];
       get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
+      cdouble cplus   = coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ];
+      cdouble cminus  = coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ];
       cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
+printf("c={%e,%e} mode=%e sqrt=%e vg=%e\n",
+abs(cplus),abs(cminus),abs(normfac),sqrt(abs(normfac)),vg);
       if (normfac==0.0) normfac=1.0;
-      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
-       = (mode_flux[0] + mode_flux[1]) / normfac;
-      coeffs[ 2*nb*num_freqs + 2*nf + 1 ]
-       = (mode_flux[0] - mode_flux[1]) / normfac;
-    };
+      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] = cplus/normfac;
+      coeffs[ 2*nb*num_freqs + 2*nf + 1 ] = cminus/normfac;
+    }
 }
+
 /**************************************************************/
 /* dummy versions of class methods for compiling without MPB  */
 /**************************************************************/
