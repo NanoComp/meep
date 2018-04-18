@@ -582,6 +582,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   destroy_eigenmode_data( (void *)global_eigenmode_data);
 }
 
+bool equal_float(double d1, double d2)
+{ return ((float)d1)==((float)d2); }
+
 /***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
@@ -615,6 +618,16 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
+  // if the flux region extends over the full computational grid and we are bloch-periodic 
+  // in any direction, set the corresponding component of the eigenmode initial-guess 
+  // k-vector to be the (real part of the) bloch vector in that direction. otherwise just 
+  // set the initial-guess k component to zero.
+  vec kpoint(0.0,0.0,0.0);
+  FOR_DIRECTIONS(d)
+   if ( equal_float(where.in_direction(d), this->v.in_direction(d) ) )
+    if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
+     kpoint.set_direction(d, real(this->k[d]));
+
   // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
    for(int nf=0; nf<num_freqs; nf++)
@@ -624,7 +637,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
-      vec kpoint(0.0,0.0,0.0);
       //if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
       void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint,
