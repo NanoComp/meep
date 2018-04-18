@@ -760,6 +760,8 @@ class Simulation(object):
 
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
+    add_eigenmode = add_flux
+
     def display_fluxes(self, *fluxes):
         display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
 
@@ -928,6 +930,16 @@ class Simulation(object):
             return mp.get_dft_near2far_array(self.fields, dft_obj, component, num_freq)
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_obj))
+
+    def get_eigenmode_coefficients(self, flux, bands):
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
+
+        num_bands = len(bands)
+        coeffs = np.zeros(2 * num_bands, dtype=np.complex128)
+        self.fields.get_eigenmode_coefficients(flux, np.array(bands, dtype=np.intc), coeffs, None)
+
+        return coeffs
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
