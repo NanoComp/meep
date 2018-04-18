@@ -61,6 +61,7 @@ TESTS =                                   \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
     $(MPBPYTEST)                          \
+    $(TEST_DIR)/mode_coeffs.py            \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/ring.py                   \
