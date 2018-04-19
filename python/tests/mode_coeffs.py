@@ -56,6 +56,12 @@ class ModeCoeffs(unittest.TestCase):
         alpha = sim.get_eigenmode_coefficients(mflux, modes_to_check)
 
         mode_power = mp.get_fluxes(mode_flux)[0]
+##################################################
+#        if mp.am_master():
+#            print("power: {:e}".format(mode_power))
+#            print("mode1: {:e}, {:e}".format(np.abs(alpha[0]**2),np.abs(alpha[1]**2)))
+#            print("mode2: {:e}, {:e}".format(np.abs(alpha[2]**2),np.abs(alpha[3]**2)))
+##################################################
 
         TestPassed=True
         TOLERANCE=1.0e-3
