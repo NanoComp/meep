@@ -35,9 +35,18 @@ The `grid_volume` class declared in `meep/vec.hpp` is a box of pixels. It stores
 
 ### File Organization
 
-The Meep C++ source code is organized into the following files in the `src/` directory. For the Scheme interface and how it communicates with the back-end C++, look up the source code in the `libctl/` directory under the Meep package root directory.
+The core Meep C++ simulation code (all of the physics) is located in the `src/` directory, with C++
+tests in the `tests/` directory.  The `libmeepgeom/` directory provides a C++ library to specify Meep
+geometries in terms of a list of geometric objects (spheres, cylinders, boxes) with various
+material properties (via [libctl](https://github.com/stevengj/libctl)'s geometry library), and is
+also used by the Python interface.
 
-The following table briefly describes what is in each .cpp file:
+The Scheme and Python interfaces are found in the `scheme/` and `python/` directories, respectively;
+both of them use [SWIG](http://www.swig.org/) to generate wrapper code from the C++ header files,
+but also have hand-written Scheme/Python code to provide a higher-level interface.  The `libpympb/`
+directory contains a Python interface to MPB, which will eventually be moved to the MPB repository.
+
+The following table briefly describes the purpose of some of the source files:
 
 | Header File         | Description                                                                                                                                                                                                                                                                                                           |
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -54,19 +63,18 @@ The following table briefly describes what is in each .cpp file:
 | polarization.cpp | Implement member functions for the polarization and polarizability classes declared in meep_internals.hpp |
 | bicgstab.cpp     | Implements the solver described against bicgstab.hpp (see above)                                           |
 
-### Functionality Organization
+#### Functionality Organization
 
 | Functionality                                                                                                  | Location                                                                                                                     |
 |----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | Material dispersion                                                                                            | polarization.cpp, update_from_e.cpp, and friends.                                                                          |
 | Vectors, volumes etc.                                                                                          | meep/vec.hpp, vec.cpp                                                                                                        |
-| Geometric objects                                                                                              | handled by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) functions in libctl's geom.c, called from the Scheme front-end (not handled by Meep) |
+| Geometric objects                                                                                              | handled by [libctl](https://github.com/stevengj/libctl) functions in libctl's geom.c, called from the Scheme front-end (not handled by Meep) |
 | Fields: initialization, cleanup, chunking, stepping-plan, (dis)affiliation with sources, polarizabilities etc. | fields.cpp                                                                                                                   |
 | Structure: initialization, cleanup, chunking, material parameters, boundary conditions etc.                    | structure.cpp                                                                                                                |
 | MPI interface                                                                                                  | meep/mympi.hpp, mympi.cpp                                                                                                    |
 
-Deprecated Interfaces
----------------------
+### Deprecated Interfaces
 
 Beware that some of the interfaces in the source code and in the old manual are now deprecated, as they have been superseded by newer features and may be removed at some point.
 
