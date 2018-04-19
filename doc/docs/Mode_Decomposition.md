@@ -87,6 +87,17 @@ The return value of `get_mode_coefficients` is an array of type `std::complex<do
      ...
 ````
 
+## Normalization
+
+The $\alpha$ coefficients computed by `get_eigenmode_coefficients`
+are normalized to ensure that their squared magnitude equals the
+power carried by the corresponding eigenmode, i.e.
+
+$$|\alpha_n^\pm|^2 = P_n^\pm$$
+
+where $P_n^\pm$ is the power carried by $\pm$-traveling eigenmode $n$.
+This is discussed in more detail [below](#HowItWorks).
+
 ## Related Computational Routines
 
 Besides `get_eigenmode_coefficients,` there are a few
@@ -160,6 +171,7 @@ These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/
 
 These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp).
 
+<a name="HowItWorks"></a>
 ## How Mode Decomposition Works
 
 The theoretical basis of the mode-decomposition algorithm is the orthogonality relation satisfied by the normal modes:
@@ -185,10 +197,10 @@ where $S$ is any surface transverse to the direction of propagation and $\hat{\m
 Now consider a Meep calculation in which we have accumulated frequency-domain $\mathbf E^{\text{meep}}$ and $\mathbf H^{\text{meep}}$ fields on a `dft-flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane, the tangential components of the frequency-domain Meep fields take the form:
 
 $$ \mathbf E^{\text{meep}}_\parallel
-   = \sum_{n} (\alpha_n^+ + \alpha_n^-)\mathbf{E}_{n\parallel}^+
+   = \sum_{n} (a_n^+ + a_n^-)\mathbf{E}_{n\parallel}^+
 $$
 $$ \mathbf H^{\text{meep}}_\parallel
-   = \sum_{n} (\alpha_n^+ - \alpha_n^-)\mathbf{H}_{n\parallel}^+
+   = \sum_{n} (a_n^+ - a_n^-)\mathbf{H}_{n\parallel}^+
 $$
 
 We have used the well-known relations between the tangential components of the forward-traveling and backward-traveling field modes: 
@@ -202,12 +214,12 @@ Taking the inner product of both equations with the $\mathbf{H}$ and $\mathbf{E}
 
 $$ \left\langle \mathbf{H}_m
    \right|\left. \mathbf{E}^{\text{meep}} \right\rangle
-   =+(\alpha_n^+ + \alpha_n^-) v_m A_S
+   =+(a_n^+ + a_n^-) v_m A_S
 $$
 
 $$ \left\langle \mathbf{E}_m
    \right|\left. \mathbf{H}^{\text{meep}} \right\rangle
-   =-(\alpha_n^+ - \alpha_n^+) v_m A_S
+   =-(a_n^+ - a_n^+) v_m A_S
 $$
 
 Thus, by evaluating the integrals on the LHS of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}, \mathbf{H}\}_m$ and the Meep-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $\alpha^\pm_m$. This calculation is carried out by the routine `meep::fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
@@ -217,9 +229,19 @@ The Poynting flux carried by the Meep fields may be expressed in the form:
 $$ S_x = \frac{1}{2}\text{Re }
          \left\langle \mathbf{E}^{\text{meep}}\right|
          \left.       \mathbf{H}^{\text{meep}}\right\rangle
-       = \frac{1}{2}\sum_n \left\{ |\alpha_n^+|^2 - |\alpha_n^-|^2) \right\} v_n A_S
+       = \frac{1}{2}\sum_n \left\{ |a_n^+|^2 - |a_n^-|^2) \right\} v_n A_S
 $$
 
-Thus, the fractional power carried by a given forward- or backward-traveling eigenmode is given by:
+Thus, the power carried by a given forward- or backward-traveling eigenmode is given by:
 
-$$ \frac{|\alpha_n^\pm|^2 v_n A_S}{2S_x} $$     
+$$ \textit{power} = \frac{|a_n^\pm|^2 v_n A_S}{2S_x} $$
+
+or
+
+$$ \textit{power} = |\alpha_n^\pm|^2
+
+where we have defined $\alpha_n^\pm \equiv \left(\sqrt{v_n A_S}{2S_x}\right)a_n^\pm$.
+These $\{\alpha_n^\pm\}$ coefficients are the quantities reported by
+`get_eigenmode_coefficients.`
+
+
