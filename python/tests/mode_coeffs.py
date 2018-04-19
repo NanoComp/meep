@@ -58,7 +58,7 @@ class ModeCoeffs(unittest.TestCase):
         mode_power = mp.get_fluxes(mode_flux)[0]
 
         TestPassed=True
-        TOLERANCE=1.0e-3
+        TOLERANCE=5.0e-3
         c0 = alpha[2*(mode_num-1) + 0] # coefficient of forward-traveling wave for mode #mode_num
         for nm in range(1,len(modes_to_check)+1):
             if nm != mode_num:
