@@ -351,7 +351,7 @@ dft_flux::dft_flux(const component cE_, const component cH_,
 		   dft_chunk *E_, dft_chunk *H_,
 		   double fmin, double fmax, int Nf,
 		   const volume &where_,
-                   direction normal_direction_)
+                   direction normal_direction_) : where(where_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
@@ -359,15 +359,13 @@ dft_flux::dft_flux(const component cE_, const component cH_,
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   E = E_; H = H_;
   cE = cE_; cH = cH_;
-  where = new volume(where_.get_min_corner(), where_.get_max_corner());
   normal_direction = normal_direction_;
 }
 
-dft_flux::dft_flux(const dft_flux &f) {
+dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
   freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
   E = f.E; H = f.H;
   cE = f.cE; cH = f.cH;
-  where = new volume(f.where->get_min_corner(), f.where->get_max_corner());
   normal_direction = f.normal_direction;
 }
 
@@ -516,13 +514,12 @@ dft_flux fields::add_dft_flux_plane(const volume &where,
 
 dft_fields::dft_fields(dft_chunk *chunks_,
                        double freq_min_, double freq_max_, int Nfreq_,
-                       const volume &where_)
+                       const volume &where_) : where(where_)
 {
   chunks   = chunks_;
   freq_min = freq_min_;
   dfreq    = Nfreq_ <= 1 ? 0.0 : (freq_max_ - freq_min_) / (Nfreq_ - 1);
   Nfreq    = Nfreq_;
-  where    = new volume(where_.get_min_corner(), where_.get_max_corner());
 }
 
 void dft_fields::scale_dfts(cdouble scale)
