@@ -1,5 +1,5 @@
 ---
-# C++ User Interface
+# C++ Developer Information
 ---
 
 Meep Design
