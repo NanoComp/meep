@@ -2,9 +2,16 @@
 # Installation
 ---
 
-**Note**: Installing Meep from source can be challenging for novice users. As a simple workaround, the latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html). For easy access to the Python interface, we provide a binary installation in the form of Conda packages. Details can be found [below](#conda-packages).
-
 [TOC]
+
+Building from Source
+--------------------
+
+Building Meep directly from the source code can be challenging for users unfamiliar with building Unix software, mainly because of the many prerequisites that must be installed combined with the need to tell Meep's build scripts where to find these prerequisites.
+
+Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/wiki/GNU_Build_System) `./configure && make && make install` machinery, but requires a number of prerequisites in order to obtain a full-featured Meep installation: [MPB](http://mpb.readthedocs.io/en/latest/), [Libctl](https://github.com/stevengj/libctl), [Harminv](https://github.com/stevengj/harminv), [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface), [HDF5](https://support.hdfgroup.org/HDF5/), [Python](https://www.python.org/), [GNU Guile](https://www.gnu.org/software/guile/); and MPB and Harminv, in turn, require [LAPACK and BLAS](http://www.netlib.org/lapack/lug/node11.html) and [FFTW](http://fftw.org/) to be installed.
+
+Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases), and you can also do a `git clone` of the bleeding-edge [Meep on Github](https://github.com/stevengj/meep) if you have the GNU Autotools installed. See [Build From Source](Build_From_Source) for more information.
 
 Conda Packages
 ---------------
@@ -64,6 +71,8 @@ Installation on Linux
 
 For most [Linux distributions](https://en.wikipedia.org/wiki/Linux_distribution), there should be precompiled packages for most of Meep's prerequisites below, and we *highly* recommend installing those prerequisites using the available packages for your system whenever possible. Using precompiled packages means that you don't have to worry about how to install things manually. You are using packages which have already been tweaked to work well with your system, and usually your packages will be automatically upgraded when you upgrade the rest of your system.
 
+The latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html). For easy access to the Python interface, we provide a binary installation in the form of Conda packages. Details can be found [below](#conda-packages).
+
 The following precompiled packages are available: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md).
 
 The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(operating_system)) which has precompiled packages for Meep:
@@ -71,8 +80,6 @@ The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(op
 ```sh
 apt-get install meep h5utils
 ```
-
-Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases). See [Build From Source](Build_From_Source) for more information.
 
 Installation on macOS 
 -----------------------
