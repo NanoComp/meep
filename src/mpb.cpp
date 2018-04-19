@@ -585,14 +585,6 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 bool equal_float(double d1, double d2)
 { return ((float)d1)==((float)d2); }
 
-double flux_volume(dft_flux flux)
-{ double vol=1.0;
-  LOOP_OVER_DIRECTIONS(flux.where->dim, d)
-    if (flux.where->in_direction(d) != 0.0) vol *= flux.where->in_direction(d);
-  if (flux.where->dim== Dcyl) vol *= pi * (flux.where->in_direction_max(R) + flux.where->in_direction_min(R));
-  return vol;
-}
-
 /***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
