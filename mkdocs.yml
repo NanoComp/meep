@@ -73,5 +73,5 @@ pages:
     - Tutorial/Multilevel Atomic Susceptibility: 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
     - Guile and Scheme Information: 'Guile_and_Scheme_Information.md'
 - C++ Interface:
-    - Code Organization: 'C++_Developer_Information.md'
+    - Developer Information: 'C++_Developer_Information.md'
     - Tutorial/Basics: 'C++_Tutorial.md'
