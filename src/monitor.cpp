@@ -30,7 +30,11 @@
 #elif defined(HAVE_LIBFFTW)
 #  include <fftw.h>
 #endif
-#define HAVE_SOME_FFTW (defined(HAVE_LIBFFTW3) || defined(HAVE_LIBFFTW) || defined(HAVE_LIBDFFTW))
+#if defined(HAVE_LIBFFTW3) || defined(HAVE_LIBFFTW) || defined(HAVE_LIBDFFTW)
+#  define HAVE_SOME_FFTW 1
+#else
+#  define HAVE_SOME_FFTW 0
+#endif
 
 /* Below are the monitor point routines. */
 

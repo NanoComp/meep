@@ -32,6 +32,7 @@ pages:
 - Download: 'Download.md'
 - FAQ: 'FAQ.md'
 - Installation: 'Installation.md'
+- Build From Source: 'Build_From_Source.md'
 - Acknowledgements: 'Acknowledgements.md'
 - License and Copyright: 'License_and_Copyright.md'
 - Features:
@@ -73,5 +74,5 @@ pages:
     - Tutorial/Multilevel Atomic Susceptibility: 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
     - Guile and Scheme Information: 'Guile_and_Scheme_Information.md'
 - C++ Interface:
-    - User Interface: 'C++_User_Interface.md'
+    - Developer Information: 'C++_Developer_Information.md'
     - Tutorial/Basics: 'C++_Tutorial.md'
