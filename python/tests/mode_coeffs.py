@@ -29,7 +29,7 @@ class ModeCoeffs(unittest.TestCase):
         boundary_layers = [ mp.PML(dpml) ]
 
         # mode frequency
-        fcen = 0.15
+        fcen = 0.20 # > 0.5/sqrt(11) to have at least 2 modes
 
         sources = [ mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.5*fcen),
                                        eig_band=mode_num,
