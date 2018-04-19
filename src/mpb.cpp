@@ -623,7 +623,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   // k-vector to be the (real part of the) bloch vector in that direction. otherwise just 
   // set the initial-guess k component to zero.
   vec kpoint(0.0,0.0,0.0);
-  FOR_DIRECTIONS(d)
+  LOOP_OVER_DIRECTIONS(this->v.dim, d)
    if ( equal_float(where.in_direction(d), this->v.in_direction(d) ) )
     if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
      kpoint.set_direction(d, real(this->k[d]));
@@ -642,7 +642,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
        = get_eigenmode(freq, d, where, where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
 
-      if (vgrp) vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
+      double vg=get_group_velocity(mode_data);
+      if (vgrp) vgrp[nb*num_freqs + nf]=vg;
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -650,14 +651,15 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       cdouble mode_flux[2], mode_mode[2];
       get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
-      cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
+      cdouble cplus   = 0.5*(mode_flux[0] + mode_flux[1]);
+      cdouble cminus  = 0.5*(mode_flux[0] - mode_flux[1]);
+      cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
       if (normfac==0.0) normfac=1.0;
-      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
-       = (mode_flux[0] + mode_flux[1]) / normfac;
-      coeffs[ 2*nb*num_freqs + 2*nf + 1 ]
-       = (mode_flux[0] - mode_flux[1]) / normfac;
-    };
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(abs(normfac));
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(abs(normfac));
+    }
 }
+
 /**************************************************************/
 /* dummy versions of class methods for compiling without MPB  */
 /**************************************************************/
