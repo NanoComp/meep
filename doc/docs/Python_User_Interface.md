@@ -43,7 +43,7 @@ class Simulation(object):
                  subpixel_maxeval=100000,
                  ensure_periodicity=False,
                  num_chunks=0,
-                 courant=0.5,
+                 Courant=0.5,
                  accurate_fields_near_cylorigin=False,
                  filename_prefix='',
                  output_volume=None,
