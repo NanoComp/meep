@@ -817,9 +817,9 @@ void mode_solver::init(int p, bool reset_fields) {
 }
 
 void mode_solver::init_epsilon() {
-  int no_size_x = geometry_lattice.size.x == 0 ? 1 : geometry_lattice.size.x;
-  int no_size_y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
-  int no_size_z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
+  mpb_real no_size_x = geometry_lattice.size.x == 0 ? 1 : geometry_lattice.size.x;
+  mpb_real no_size_y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
+  mpb_real no_size_z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
 
   meep::master_printf("Mesh size is %d.\n", mesh_size);
 
