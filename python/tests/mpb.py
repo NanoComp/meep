@@ -1353,6 +1353,25 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_h5_files(ref_path, res_path)
 
+    def test_fractional_lattice(self):
+
+        ms = self.init_solver()
+        ms.geometry_lattice.size = mp.Vector3(0.1, 0.1)
+        ms.run_te()
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)), (2.041241452319313, mp.Vector3(0.5, 0.5, 0.0))),
+            ((1.4433756729740665, mp.Vector3(0.5, 0.0, 0.0)), (2.886751345948131, mp.Vector3(0.0, 0.0, 0.0))),
+            ((2.041241452319316, mp.Vector3(0.5, 0.5, 0.0)), (3.2274861218395094, mp.Vector3(0.5, 0.0, 0.0))),
+            ((2.0412414523193187, mp.Vector3(0.5, 0.5, 0.0)), (3.2659863237109055, mp.Vector3(0.2, 0.2, 0.0))),
+            ((2.88675134594813, mp.Vector3(0.0, 0.0, 0.0)), (4.564354645876381, mp.Vector3(0.5, 0.5, 0.0))),
+            ((3.227486121839514, mp.Vector3(0.5, 0.0, 0.0)), (4.564354645876382, mp.Vector3(0.5, 0.5, 0.0))),
+            ((3.6968455021364752, mp.Vector3(0.20000000000000004, 0.0, 0.0)), (4.564354645876384, mp.Vector3(0.5, 0.5, 0.0))),
+            ((4.0824829046386295, mp.Vector3(0.0, 0.0, 0.0)), (5.204164998665332, mp.Vector3(0.5, 0.0, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+
 
 if __name__ == '__main__':
     unittest.main()
