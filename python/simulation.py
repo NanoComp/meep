@@ -890,7 +890,12 @@ class Simulation(object):
 
     def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        v = self._volume_from_kwargs(vol, center, size)
+
+        if vol is None and center is None and size is None:
+            v = self.fields.total_volume()
+        else:
+            v = self._volume_from_kwargs(vol, center, size)
+
         self.fields.get_array_slice_dimensions(v, dim_sizes)
 
         dims = [s for s in dim_sizes if s != 0]
@@ -1018,6 +1023,130 @@ class Simulation(object):
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
+
+    def get_epsilon(self):
+        return self.get_array(component=mp.Dielectric)
+
+    def get_mu(self):
+        return self.get_array(component=mp.Permeability)
+
+    def get_hpwr(self):
+        return self.get_array(component=mp.H_EnergyDensity)
+
+    def get_dpwr(self):
+        return self.get_array(component=mp.D_EnergyDensity)
+
+    def get_tot_pwr(self):
+        return self.get_array(component=mp.EnergyDensity)
+
+    # def get_hfield(self):
+    #     self.get_components('h', mp.Hx, mp.Hy, mp.Hz, mp.Hr, mp.Hp)
+
+    def get_hfield_x(self):
+        return self.get_array(component=mp.Hx)
+
+    def get_hfield_y(self):
+        return self.get_array(component=mp.Hy)
+
+    def get_hfield_z(self):
+        return self.get_array(component=mp.get_array)
+
+    def get_hfield_r(self):
+        return self.get_array(component=mp.Hr)
+
+    def get_hfield_p(self):
+        return self.get_array(component=mp.Hp)
+
+    # def get_bfield(self):
+    #     self.get_components('b', mp.Bx, mp.By, mp.Bz, mp.Br, mp.Bp)
+
+    def get_bfield_x(self):
+        return self.get_array(component=mp.Bx)
+
+    def get_bfield_y(self):
+        return self.get_array(component=mp.By)
+
+    def get_bfield_z(self):
+        return self.get_array(component=mp.Bz)
+
+    def get_bfield_r(self):
+        return self.get_array(component=mp.Br)
+
+    def get_bfield_p(self):
+        return self.get_array(component=mp.Bp)
+
+    # def get_efield(self):
+    #     self.get_components('e', mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep)
+
+    def get_efield_x(self):
+        return self.get_array(component=mp.Ex)
+
+    def get_efield_y(self):
+        return self.get_array(component=mp.Ey)
+
+    def get_efield_z(self):
+        return self.get_array(component=mp.Ez)
+
+    def get_efield_r(self):
+        return self.get_array(component=mp.Er)
+
+    def get_efield_p(self):
+        return self.get_array(component=mp.Ep)
+
+    # def get_dfield(self):
+    #     self.get_components('d', mp.Dx, mp.Dy, mp.Dz, mp.Dr, mp.Dp)
+
+    def get_dfield_x(self):
+        return self.get_array(component=mp.Dx)
+
+    def get_dfield_y(self):
+        return self.get_array(component=mp.Dy)
+
+    def get_dfield_z(self):
+        return self.get_array(component=mp.Dz)
+
+    def get_dfield_r(self):
+        return self.get_array(component=mp.Dr)
+
+    def get_dfield_p(self):
+        return self.get_array(component=mp.Dp)
+
+    # MPB compatibility
+    # def get_poynting(self):
+    #     get_array.get_componencomponent=ts('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
+
+    def get_poynting_x(self):
+        return self.get_array(component=mp.Sx)
+
+    def get_poynting_y(self):
+        return self.get_array(component=mp.Sy)
+
+    def get_poynting_z(self):
+        return self.get_array(component=mp.Sz)
+
+    def get_poynting_r(self):
+        return self.get_array(component=mp.Sr)
+
+    def get_poynting_p(self):
+        return self.get_array(component=mp.Sp)
+
+    # def get_sfield(self):
+    #     self.get_components('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
+
+    def get_sfield_x(self):
+        return self.get_array(component=mp.Sx)
+
+    def get_sfield_y(self):
+        return self.get_array(component=mp.Sy)
+
+    def get_sfield_z(self):
+        return self.get_array(component=mp.Sz)
+
+    def get_sfield_r(self):
+        return self.get_array(component=mp.Sr)
+
+    def get_sfield_p(self):
+        return self.get_array(component=mp.Sp)
 
 
 def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
