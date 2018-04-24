@@ -259,7 +259,7 @@ PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
         PyList_SetItem(res, i, PyFloat_FromDouble(tmp[i]));
     }
 
-    delete tmp;
+    delete[] tmp;
 
     return res;
 }
@@ -275,7 +275,7 @@ PyObject *_dft_ldos_F(meep::dft_ldos *f) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(tmp[i].real(), tmp[i].imag()));
     }
 
-    delete tmp;
+    delete[] tmp;
 
     return res;
 }
@@ -291,7 +291,7 @@ PyObject *_dft_ldos_J(meep::dft_ldos *f) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(tmp[i].real(), tmp[i].imag()));
     }
 
-    delete tmp;
+    delete[] tmp;
 
     return res;
 }
