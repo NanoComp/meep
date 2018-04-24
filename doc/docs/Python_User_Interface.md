@@ -905,7 +905,10 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 **`get_eigenmode_coefficients(flux, direction, volume, bands, alpha, vgrp)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a flux object, direction, volume object, and list of band indices, return the eigenmode coefficients in `alpha` and group velocities in `vgrp`. The flux object must be created using `add_flux`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example.
+Given a flux object, direction, volume object, and list of band indices, return the eigenmode coefficients in `alpha` and group velocities in `vgrp`. The flux object must be created using `add_eigenmode` (an alias for `add_flux`). See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example.
+
+**`add_eigenmode(fcen, df, nfreq, FluxRegions...)`**  
+An alias for `add_flux`.
 
 ### Force Spectra
 
