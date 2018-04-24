@@ -249,7 +249,7 @@ class Simulation(object):
                  progress_interval=4,
                  subpixel_tol=1e-4,
                  subpixel_maxeval=100000,
-                 ensure_periodicity=False,
+                 ensure_periodicity=True,
                  num_chunks=0,
                  Courant=0.5,
                  accurate_fields_near_cylorigin=False,
@@ -394,8 +394,8 @@ class Simulation(object):
             self.default_material = self.epsilon_input_file
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
-                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
-                                       absorbers, self.extra_materials)
+                                       self.subpixel_maxeval, self.ensure_periodicity and not not self.k_point,
+                                       False, self.default_material, absorbers, self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 
