@@ -878,9 +878,6 @@ class Simulation(object):
                 f.prevent_deadlock()
 
         if self.output_append_h5 is None:
-            f = None
-
-        if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self.get_filename_prefix(), True))
 
     def h5topng(self, rm_h5, option, *step_funcs):
@@ -1041,160 +1038,160 @@ class Simulation(object):
 
     def get_hfield(self):
         if self.is_cylindrical:
-            r = self.get_array(component=mp.Hr)
-            p = self.get_array(component=mp.Hp)
+            r = self.get_array(cmplx=True, component=mp.Hr)
+            p = self.get_array(cmplx=True, component=mp.Hp)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(component=mp.Hx)
-            y = self.get_array(component=mp.Hy)
-            z = self.get_array(component=mp.Hz)
+            x = self.get_array(cmplx=True, component=mp.Hx)
+            y = self.get_array(cmplx=True, component=mp.Hy)
+            z = self.get_array(cmplx=True, component=mp.Hz)
             return np.stack([x, y, z], axis=-1)
 
     def get_hfield_x(self):
-        return self.get_array(component=mp.Hx)
+        return self.get_array(cmplx=True, component=mp.Hx)
 
     def get_hfield_y(self):
-        return self.get_array(component=mp.Hy)
+        return self.get_array(cmplx=True, component=mp.Hy)
 
     def get_hfield_z(self):
-        return self.get_array(component=mp.Hz)
+        return self.get_array(cmplx=True, component=mp.Hz)
 
     def get_hfield_r(self):
-        return self.get_array(component=mp.Hr)
+        return self.get_array(cmplx=True, component=mp.Hr)
 
     def get_hfield_p(self):
-        return self.get_array(component=mp.Hp)
+        return self.get_array(cmplx=True, component=mp.Hp)
 
     def get_bfield(self):
         if self.is_cylindrical:
-            r = self.get_array(component=mp.Br)
-            p = self.get_array(component=mp.Bp)
+            r = self.get_array(cmplx=True, component=mp.Br)
+            p = self.get_array(cmplx=True, component=mp.Bp)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(component=mp.Bx)
-            y = self.get_array(component=mp.By)
-            z = self.get_array(component=mp.Bz)
+            x = self.get_array(cmplx=True, component=mp.Bx)
+            y = self.get_array(cmplx=True, component=mp.By)
+            z = self.get_array(cmplx=True, component=mp.Bz)
             return np.stack([x, y, z], axis=-1)
 
     def get_bfield_x(self):
-        return self.get_array(component=mp.Bx)
+        return self.get_array(cmplx=True, component=mp.Bx)
 
     def get_bfield_y(self):
-        return self.get_array(component=mp.By)
+        return self.get_array(cmplx=True, component=mp.By)
 
     def get_bfield_z(self):
-        return self.get_array(component=mp.Bz)
+        return self.get_array(cmplx=True, component=mp.Bz)
 
     def get_bfield_r(self):
-        return self.get_array(component=mp.Br)
+        return self.get_array(cmplx=True, component=mp.Br)
 
     def get_bfield_p(self):
-        return self.get_array(component=mp.Bp)
+        return self.get_array(cmplx=True, component=mp.Bp)
 
     def get_efield(self):
         if self.is_cylindrical:
-            r = self.get_array(component=mp.Er)
-            p = self.get_array(component=mp.Ep)
+            r = self.get_array(cmplx=True, component=mp.Er)
+            p = self.get_array(cmplx=True, component=mp.Ep)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(component=mp.Ex)
-            y = self.get_array(component=mp.Ey)
-            z = self.get_array(component=mp.Ez)
+            x = self.get_array(cmplx=True, component=mp.Ex)
+            y = self.get_array(cmplx=True, component=mp.Ey)
+            z = self.get_array(cmplx=True, component=mp.Ez)
             return np.stack([x, y, z], axis=-1)
 
     def get_efield_x(self):
-        return self.get_array(component=mp.Ex)
+        return self.get_array(cmplx=True, component=mp.Ex)
 
     def get_efield_y(self):
-        return self.get_array(component=mp.Ey)
+        return self.get_array(cmplx=True, component=mp.Ey)
 
     def get_efield_z(self):
-        return self.get_array(component=mp.Ez)
+        return self.get_array(cmplx=True, component=mp.Ez)
 
     def get_efield_r(self):
-        return self.get_array(component=mp.Er)
+        return self.get_array(cmplx=True, component=mp.Er)
 
     def get_efield_p(self):
-        return self.get_array(component=mp.Ep)
+        return self.get_array(cmplx=True, component=mp.Ep)
 
     def get_dfield(self):
         if self.is_cylindrical:
-            r = self.get_array(component=mp.Dr)
-            p = self.get_array(component=mp.Dp)
+            r = self.get_array(cmplx=True, component=mp.Dr)
+            p = self.get_array(cmplx=True, component=mp.Dp)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(component=mp.Dx)
-            y = self.get_array(component=mp.Dy)
-            z = self.get_array(component=mp.Dz)
+            x = self.get_array(cmplx=True, component=mp.Dx)
+            y = self.get_array(cmplx=True, component=mp.Dy)
+            z = self.get_array(cmplx=True, component=mp.Dz)
             return np.stack([x, y, z], axis=-1)
 
     def get_dfield_x(self):
-        return self.get_array(component=mp.Dx)
+        return self.get_array(cmplx=True, component=mp.Dx)
 
     def get_dfield_y(self):
-        return self.get_array(component=mp.Dy)
+        return self.get_array(cmplx=True, component=mp.Dy)
 
     def get_dfield_z(self):
-        return self.get_array(component=mp.Dz)
+        return self.get_array(cmplx=True, component=mp.Dz)
 
     def get_dfield_r(self):
-        return self.get_array(component=mp.Dr)
+        return self.get_array(cmplx=True, component=mp.Dr)
 
     def get_dfield_p(self):
-        return self.get_array(component=mp.Dp)
+        return self.get_array(cmplx=True, component=mp.Dp)
 
     # MPB compatibility
     def get_poynting(self):
         if self.is_cylindrical:
-            r = self.get_array(component=mp.Sr)
-            p = self.get_array(component=mp.Sp)
+            r = self.get_array(cmplx=True, component=mp.Sr)
+            p = self.get_array(cmplx=True, component=mp.Sp)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(component=mp.Sx)
-            y = self.get_array(component=mp.Sy)
-            z = self.get_array(component=mp.Sz)
+            x = self.get_array(cmplx=True, component=mp.Sx)
+            y = self.get_array(cmplx=True, component=mp.Sy)
+            z = self.get_array(cmplx=True, component=mp.Sz)
             return np.stack([x, y, z], axis=-1)
 
     def get_poynting_x(self):
-        return self.get_array(component=mp.Sx)
+        return self.get_array(cmplx=True, component=mp.Sx)
 
     def get_poynting_y(self):
-        return self.get_array(component=mp.Sy)
+        return self.get_array(cmplx=True, component=mp.Sy)
 
     def get_poynting_z(self):
-        return self.get_array(component=mp.Sz)
+        return self.get_array(cmplx=True, component=mp.Sz)
 
     def get_poynting_r(self):
-        return self.get_array(component=mp.Sr)
+        return self.get_array(cmplx=True, component=mp.Sr)
 
     def get_poynting_p(self):
-        return self.get_array(component=mp.Sp)
+        return self.get_array(cmplx=True, component=mp.Sp)
 
     def get_sfield(self):
         if self.is_cylindrical:
-            r = self.get_array(component=mp.Sr)
-            p = self.get_array(component=mp.Sp)
+            r = self.get_array(cmplx=True, component=mp.Sr)
+            p = self.get_array(cmplx=True, component=mp.Sp)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(component=mp.Sx)
-            y = self.get_array(component=mp.Sy)
-            z = self.get_array(component=mp.Sz)
+            x = self.get_array(cmplx=True, component=mp.Sx)
+            y = self.get_array(cmplx=True, component=mp.Sy)
+            z = self.get_array(cmplx=True, component=mp.Sz)
             return np.stack([x, y, z], axis=-1)
 
     def get_sfield_x(self):
-        return self.get_array(component=mp.Sx)
+        return self.get_array(cmplx=True, component=mp.Sx)
 
     def get_sfield_y(self):
-        return self.get_array(component=mp.Sy)
+        return self.get_array(cmplx=True, component=mp.Sy)
 
     def get_sfield_z(self):
-        return self.get_array(component=mp.Sz)
+        return self.get_array(cmplx=True, component=mp.Sz)
 
     def get_sfield_r(self):
-        return self.get_array(component=mp.Sr)
+        return self.get_array(cmplx=True, component=mp.Sr)
 
     def get_sfield_p(self):
-        return self.get_array(component=mp.Sp)
+        return self.get_array(cmplx=True, component=mp.Sp)
 
 
 def _create_boundary_region_from_boundary_layers(boundary_layers, gv):

@@ -860,6 +860,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
   $2 = (void *)$input;
 }
 
+// Tells Python to take ownership of the h5file* this function returns so that
+// it gets garbage collected and the file gets closed.
+%newobject meep::fields::open_h5file;
+
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
 // Rename python builtins
