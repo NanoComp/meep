@@ -1298,38 +1298,49 @@ static bool susceptibility_equiv(const susceptibility *o0,
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
 			     const meep::vec &r) {
 
-  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
-  material_type mat;
-  get_material_pt(mat, r);
-  medium_struct *m;
-  if ( !is_medium(mat, &m) )
-   return;
+  vector3 p = vec_to_vector3(r);
 
-  susceptibility_list slist =
-   type(c) == meep::E_stuff ? m->E_susceptibilities
-                            : m->H_susceptibilities;
-  for (int j = 0; j < slist.num_items; ++j)
-   if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
-	int ic = meep::component_index(c);
-	switch (ic) { // which row of the sigma tensor to return
-	case 0:
-	  sigrow[0] = slist.items[j].sigma_diag.x;
-	  sigrow[1] = slist.items[j].sigma_offdiag.x;
-	  sigrow[2] = slist.items[j].sigma_offdiag.y;
-	  break;
-	case 1:
-	  sigrow[0] = slist.items[j].sigma_offdiag.x;
-	  sigrow[1] = slist.items[j].sigma_diag.y;
-	  sigrow[2] = slist.items[j].sigma_offdiag.z;
-	  break;
-	default: // case 2:
-	  sigrow[0] = slist.items[j].sigma_offdiag.y;
-	  sigrow[1] = slist.items[j].sigma_offdiag.z;
-	  sigrow[2] = slist.items[j].sigma_diag.z;
-	  break;
-	}
-	break;
+  boolean inobject;
+  material_type mat =
+      (material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
+
+  if (mat->which_subclass == material_data::MATERIAL_USER) {
+      mat->medium = medium_struct();
+      mat->user_func(p, mat->user_data, &(mat->medium));
+      check_offdiag(&mat->medium);
+  }
+
+  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
+
+  if (mat->which_subclass == material_data::MATERIAL_USER ||
+      mat->which_subclass == material_data::MEDIUM) {
+
+    susceptibility_list slist =
+      type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
+    for (int j = 0; j < slist.num_items; ++j) {
+      if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
+        int ic = meep::component_index(c);
+        switch (ic) { // which row of the sigma tensor to return
+        case 0:
+          sigrow[0] = slist.items[j].sigma_diag.x;
+          sigrow[1] = slist.items[j].sigma_offdiag.x;
+          sigrow[2] = slist.items[j].sigma_offdiag.y;
+          break;
+        case 1:
+          sigrow[0] = slist.items[j].sigma_offdiag.x;
+          sigrow[1] = slist.items[j].sigma_diag.y;
+          sigrow[2] = slist.items[j].sigma_offdiag.z;
+          break;
+        default: // case 2:
+          sigrow[0] = slist.items[j].sigma_offdiag.y;
+          sigrow[1] = slist.items[j].sigma_offdiag.z;
+          sigrow[2] = slist.items[j].sigma_diag.z;
+          break;
+        }
+        break;
       }
+    }
+  }
   material_gc(mat);
 }
 
