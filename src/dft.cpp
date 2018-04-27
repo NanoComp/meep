@@ -417,12 +417,20 @@ void dft_flux::scale_dfts(complex<double> scale) {
 
 dft_flux fields::add_dft_flux(const volume_list *where_,
 			      double freq_min, double freq_max, int Nfreq) {
+  if (!where_) // handle empty list of volumes
+    return dft_flux(Ex, Hy, NULL, NULL, freq_min, freq_max, Nfreq, v, NO_DIRECTION);
+
   dft_chunk *E = 0, *H = 0;
   component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
 
+  // the dft_flux object needs to store the (unreduced) volume for
+  // mode-coefficient computation in mpb.cpp, but this only works
+  // when the volume_list consists of a single volume, so it suffices
+  // to store the first volume in the list.
+  volume firstvol(where_->v);
+
   volume_list *where = S.reduce(where_);
   volume_list *where_save = where;
-  volume everywhere = where->v;
   while (where) {
     derived_component c = derived_component(where->c);
     if (coordinate_mismatch(gv.dim, component_direction(c)))
@@ -449,7 +457,6 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
 		  false, 1.0, H);
     }
 
-    everywhere = everywhere | where->v;
     where = where->next;
   }
   delete where_save;
@@ -457,7 +464,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
   // if the volume list has only one entry, store its component's direction.
   // if the volume list has > 1 entry, store NO_DIRECTION.
   direction flux_dir = (where_->next ? NO_DIRECTION : component_direction(where_->c));
-  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, everywhere, flux_dir);
+  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, firstvol, flux_dir);
 }
 
 
