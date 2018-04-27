@@ -13,12 +13,17 @@ class TestMaterialDispersion(unittest.TestCase):
             mp.LorentzianSusceptibility(frequency=0.5, gamma=0.1, sigma=2e-5)
         ]
 
-        default_material = mp.Medium(epsilon=2.25, E_susceptibilities=susceptibilities)
+        self.default_material = mp.Medium(epsilon=2.25, E_susceptibilities=susceptibilities)
+
+        def mat_func(p):
+            return mp.Medium(epsilon=2.25, E_susceptibilities=susceptibilities)
+
+        self.mat_func = mat_func
 
         fcen = 1.0
         df = 2.0
 
-        sources = mp.Source(
+        self.sources = mp.Source(
             mp.GaussianSource(fcen, fwidth=df),
             component=mp.Ez,
             center=mp.Vector3()
@@ -30,15 +35,16 @@ class TestMaterialDispersion(unittest.TestCase):
 
         self.kpts = mp.interpolate(k_interp, [mp.Vector3(kmin), mp.Vector3(kmax)])
 
+
+    def test_material_dispersion(self):
         self.sim = mp.Simulation(
             cell_size=mp.Vector3(),
             geometry=[],
-            sources=[sources],
-            default_material=default_material,
+            sources=[self.sources],
+            default_material=self.default_material,
             resolution=20
         )
 
-    def test_material_dispersion(self):
         all_freqs = self.sim.run_k_points(200, self.kpts)
 
         expected = [
@@ -62,6 +68,29 @@ class TestMaterialDispersion(unittest.TestCase):
 
         np.testing.assert_allclose(expected, res, rtol=1e-6)
 
+    def test_user_material(self):
+        self.sim = mp.Simulation(
+            cell_size=mp.Vector3(),
+            geometry=[],
+            sources=[self.sources],
+            material_function=self.mat_func,
+            resolution=20
+        )
+
+        all_freqs = self.sim.run_k_points(200, self.kpts)
+        res = [f.real for fs in all_freqs for f in fs]
+
+        expected = [
+            0.1999342026399106,
+            0.41053963810375294,
+            0.6202409070451909,
+            0.8285737385146619,
+            1.0350739448523063,
+            1.2392775309110078,
+            1.4407208712852109,
+        ]
+
+        np.testing.assert_allclose(expected, res)
 
 if __name__ == '__main__':
     unittest.main()
