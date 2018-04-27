@@ -72,7 +72,7 @@ static void meep_mpb_eps(symmetric_matrix *eps,
 typedef complex<double> (*amplitude_function)(const vec &);
 
 // default implementation of amplitude_function
-static complex<double> default_amp_func(const vec &pt) 
+static complex<double> default_amp_func(const vec &pt)
  {(void) pt; return 1.0;}
 
 /*******************************************************************/
@@ -81,7 +81,7 @@ static complex<double> default_amp_func(const vec &pt)
 /* were formerly global variables)                                 */
 /*******************************************************************/
 typedef struct eigenmode_data
- { 
+ {
    maxwell_data *mdata;
    scalar_complex *fft_data_H, *fft_data_E;
    evectmatrix H;
@@ -105,7 +105,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   eigenmode_data *edata = (eigenmode_data *)vedata;
   if ( !edata || !(edata->mdata) )
    abort("%s:%i: internal error",__FILE__,__LINE__);
-   
+
   int *n                      = edata->n;
   double *s                   = edata->s;
   vec center                  = edata->center;
@@ -114,14 +114,14 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   complex<mpb_real> *cdata = (complex<mpb_real> *)( (c>=Hx) ? edata->fft_data_H : edata->fft_data_E );
   const complex<mpb_real> *data;
   switch(c)
-   { 
+   {
      case Ex: cdata = (complex<mpb_real> *)edata->fft_data_E; data = cdata + 0; break;
      case Ey: cdata = (complex<mpb_real> *)edata->fft_data_E; data = cdata + 1; break;
      case Ez: cdata = (complex<mpb_real> *)edata->fft_data_E; data = cdata + 2; break;
      case Hx: cdata = (complex<mpb_real> *)edata->fft_data_H; data = cdata + 0; break;
      case Hy: cdata = (complex<mpb_real> *)edata->fft_data_H; data = cdata + 1; break;
      case Hz: cdata = (complex<mpb_real> *)edata->fft_data_H; data = cdata + 2; break;
-     default: 
+     default:
       abort("invalid component in eigenmode_amplitude");
    };
 
@@ -208,7 +208,7 @@ void *fields::get_eigenmode(double omega_src,
 	    	            int band_num,
 		            const vec &kpoint, bool match_frequency,
                             int parity,
-                            double resolution, 
+                            double resolution,
                             double eigensolver_tol,
                             bool verbose)
 {
@@ -379,7 +379,7 @@ void *fields::get_eigenmode(double omega_src,
 
       // compute the group velocity in the k direction
       maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
-      mpb_real vscratch; 
+      mpb_real vscratch;
       evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
       vgrp /= sqrt(eigvals[band_num - 1]);
 
@@ -455,7 +455,7 @@ void *fields::get_eigenmode(double omega_src,
   // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
   double scale = -1.0 / omega_src;
   cdouble *efield=(cdouble *)fft_data_E;
-  for (int n = 0; n < NFFT; ++n) 
+  for (int n = 0; n < NFFT; ++n)
    efield[n] *= scale;
 
   maxwell_compute_e_from_d(mdata, fft_data_E, 1);
@@ -486,7 +486,7 @@ void *fields::get_eigenmode(double omega_src,
 }
 
 void destroy_eigenmode_data(void *vedata)
-{ 
+{
   eigenmode_data *edata = (eigenmode_data *)vedata;
   destroy_evectmatrix( edata->H  );
   destroy_maxwell_data( edata->mdata );
@@ -546,11 +546,11 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
    =(eigenmode_data *)get_eigenmode(omega_src, d, where,
                                     eig_vol, band_num,
                                     kpoint, match_frequency,
-                                    parity, resolution, 
+                                    parity, resolution,
                                     eigensolver_tol);
 
   global_eigenmode_data->amp_func = A ? A : default_amp_func;
-  
+
   src_time *src_mpb = src.clone();
   if (!match_frequency)
     src_mpb->set_frequency(omega_src);
@@ -600,11 +600,11 @@ bool equal_float(double d1, double d2)
 /* velocity for the mode with frequency #nf and band index     */
 /* bands[nb] is stored in vgrp[nb*num_freqs + nf].             */
 /***************************************************************/
-void fields::get_eigenmode_coefficients(dft_flux flux, 
+void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
                                         double *vgrp)
-{ 
+{
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
   int num_freqs        = flux.Nfreq;
@@ -618,9 +618,12 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
-  // if the flux region extends over the full computational grid and we are bloch-periodic 
-  // in any direction, set the corresponding component of the eigenmode initial-guess 
-  // k-vector to be the (real part of the) bloch vector in that direction. otherwise just 
+  if (S.multiplicity() > 1)
+   abort("symmetries are not yet supported in get_eigenmode_coefficients");
+
+  // if the flux region extends over the full computational grid and we are bloch-periodic
+  // in any direction, set the corresponding component of the eigenmode initial-guess
+  // k-vector to be the (real part of the) bloch vector in that direction. otherwise just
   // set the initial-guess k component to zero.
   vec kpoint(0.0,0.0,0.0);
   LOOP_OVER_DIRECTIONS(this->v.dim, d)
@@ -637,8 +640,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
-      //if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
-      void *mode_data 
+      //if (k_func) kpoint = k_func(k_func_data, freq, band_num);
+      void *mode_data
        = get_eigenmode(freq, d, where, where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
 
@@ -674,7 +677,7 @@ void *fields::get_eigenmode(double omega_src,
                             double eigensolver_tol, bool verbose) {
 
   (void) omega_src; (void) d; (void) where; (void) eig_vol;
-  (void) band_num;  (void) kpoint; (void) match_frequency; 
+  (void) band_num;  (void) kpoint; (void) match_frequency;
   (void) parity; (void) resolution; (void) eigensolver_tol;
   (void) verbose;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
@@ -689,8 +692,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
-  (void) c0; (void) src; (void) d; (void) where; (void) eig_vol; 
-  (void) band_num;  (void) kpoint; (void) match_frequency; 
+  (void) c0; (void) src; (void) d; (void) where; (void) eig_vol;
+  (void) band_num;  (void) kpoint; (void) match_frequency;
   (void) parity; (void) resolution; (void) eigensolver_tol;
   (void) amp; (void) A;
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
@@ -700,7 +703,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
                                         double *vgrp)
-                                        
+
 { (void) flux; (void) bands; (void)num_bands;
   (void) coeffs; (void) vgrp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
