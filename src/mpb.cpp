@@ -139,9 +139,9 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   double dx, dy, dz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = int(rx * nx);
-  y = int(ry * ny);
-  z = int(rz * nz);
+  x = (nx + int(rx * nx)) % nx;
+  y = (ny + int(ry * ny)) % ny;
+  z = (nz + int(rz * nz)) % nz;
 
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x;
@@ -203,10 +203,10 @@ static complex<double> meep_mpb_A(const vec &p)
 /* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
 void *fields::get_eigenmode(double omega_src,
-	     		    direction d, const volume where,
-			    const volume eig_vol,
-	    	            int band_num,
-		            const vec &kpoint, bool match_frequency,
+                            direction d, const volume where,
+                            const volume eig_vol,
+                            int band_num,
+                            const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution,
                             double eigensolver_tol,
