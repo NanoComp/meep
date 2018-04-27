@@ -43,7 +43,7 @@ class Simulation(object):
                  subpixel_maxeval=100000,
                  ensure_periodicity=False,
                  num_chunks=0,
-                 courant=0.5,
+                 Courant=0.5,
                  accurate_fields_near_cylorigin=False,
                  filename_prefix='',
                  output_volume=None,
@@ -905,7 +905,10 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 **`get_eigenmode_coefficients(flux, direction, volume, bands, alpha, vgrp)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a flux object, direction, volume object, and list of band indices, return the eigenmode coefficients in `alpha` and group velocities in `vgrp`. The flux object must be created using `add_flux`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example.
+Given a flux object, direction, volume object, and list of band indices, return the eigenmode coefficients in `alpha` and group velocities in `vgrp`. The flux object must be created using `add_eigenmode` (an alias for `add_flux`). See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example.
+
+**`add_eigenmode(fcen, df, nfreq, FluxRegions...)`**  
+An alias for `add_flux`.
 
 ### Force Spectra
 
@@ -1160,13 +1163,9 @@ By default, `output_png` deletes the `.h5` file when it is done. To preserve the
 
 More generally, it is possible to output an arbitrary function of position and zero or more field components, similar to the `integrate_field_function` described above. This is done by:
 
-**`output_field_function(name, cs, func)`**  
+**`output_field_function(name, cs, func, real_only=False)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants.
-
-**`output_real_field_function(name, cs, func)`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-As `output_field_function`, but only outputs the real part of `func` to the dataset given by the string `name`.
+Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
 
 See also [Field Function Examples](Field_Function_Examples.md). See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 

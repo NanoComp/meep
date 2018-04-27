@@ -249,9 +249,9 @@ class Simulation(object):
                  progress_interval=4,
                  subpixel_tol=1e-4,
                  subpixel_maxeval=100000,
-                 ensure_periodicity=False,
+                 ensure_periodicity=True,
                  num_chunks=0,
-                 courant=0.5,
+                 Courant=0.5,
                  accurate_fields_near_cylorigin=False,
                  filename_prefix='',
                  output_volume=None,
@@ -274,7 +274,7 @@ class Simulation(object):
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
         self.num_chunks = num_chunks
-        self.courant = courant
+        self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
         self.special_kz = False
@@ -381,7 +381,7 @@ class Simulation(object):
         else:
             absorbers = None
 
-        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.courant,
+        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
         self.structure.shared_chunks = True
         if self.material_function:
@@ -394,8 +394,8 @@ class Simulation(object):
             self.default_material = self.epsilon_input_file
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
-                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
-                                       absorbers, self.extra_materials)
+                                       self.subpixel_maxeval, self.ensure_periodicity and not not self.k_point,
+                                       False, self.default_material, absorbers, self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 

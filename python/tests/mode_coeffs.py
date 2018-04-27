@@ -1,94 +1,79 @@
 from __future__ import division
 
-import unittest
-import meep as mp
-import numpy as np
 import argparse
+import math
+import unittest
+import numpy as np
+import meep as mp
 
 class ModeCoeffs(unittest.TestCase):
 
-    def test_mode_coeffs(self):
-        ##################################################
-        # instantiate structure
-        ##################################################
-        resolution = 20
-        fcen       = 0.15
-        df         = 0.1
-        mode_num   = 1
-        plot       = False
+    def run_mode_coeffs(self, mode_num):
 
-        eps  = 12
-        lx   = 1
-        ly   = 3
-        pad  = 4
-        dpml = 2
-        sx = (lx + pad + dpml)
-        sy = (ly + pad + dpml)
-        nfreq = 1
+        resolution = 15
 
-        x0        = mp.Vector3(0, 0)
-        blk_size  = mp.Vector3(lx, ly)
-        cell_size = mp.Vector3(sx, sy)
+        w = 1   # width of waveguide
+        L = 10  # length of waveguide
 
-        blk = mp.Block(blk_size, center=x0, material=mp.Medium(epsilon=eps))
+        Si = mp.Medium(epsilon=12.0)
 
-        src = mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
-                                size=cell_size, center=x0,
-                                eig_band=mode_num, direction=mp.Z)
+        dair = 3.0
+        dpml = 3.0
 
-        sim = mp.Simulation(cell_size=cell_size, geometry=[blk],
-                            sources=[src], resolution=resolution,
-                            boundary_layers=[mp.PML(dpml)])
+        sx = dpml + L + dpml
+        sy = dpml + dair + w + dair + dpml
+        cell_size = mp.Vector3(sx, sy, 0)
 
-        ##################################################
-        # timestep, then compute mode-expansion coefficients
-        ##################################################
-        fr  = mp.FluxRegion(center=x0, size=cell_size, direction=mp.Z)
-        flx = sim.add_flux(fcen, df, nfreq, fr)
-        sim.run(until_after_sources=200)
-        modes_to_check = [1,2,3,4]
-        coeffs = sim.get_eigenmode_coefficients(flx, modes_to_check)
+        geometry = [ mp.Block(material=Si, center=mp.Vector3(), size=mp.Vector3(mp.inf,w,mp.inf)) ]
 
-        ##################################################
-        # confirm that the eigenmode coefficient for the
-        # mode we excited is at least 3 orders of magnitude
-        # larger than the coefficients of all other modes
-        ##################################################
+        boundary_layers = [ mp.PML(dpml) ]
+
+        # mode frequency
+        fcen = 0.20 # > 0.5/sqrt(11) to have at least 2 modes
+
+        sources = [ mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.5*fcen),
+                                       eig_band=mode_num,
+                                       size=mp.Vector3(0,sy-2*dpml,0),
+                                       center=mp.Vector3(-0.5*sx+dpml,0,0),
+                                       eig_match_freq=True,
+                                       eig_resolution=32) ]
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell_size,
+                            boundary_layers=boundary_layers,
+                            geometry=geometry,
+                            sources=sources,
+                            )
+
+        xm = 0.5*sx - dpml  # x-coordinate of monitor
+        mflux = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
+        mode_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
+
+        #sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(-0.5*sx+dpml,0), 1e-10))
+        sim.run(until_after_sources=100)
+
+        modes_to_check = [1,2]  # indices of modes for which to compute expansion coefficients
+        alpha = sim.get_eigenmode_coefficients(mflux, modes_to_check)
+
+        mode_power = mp.get_fluxes(mode_flux)[0]
+
         TestPassed=True
-        TOLERANCE=1.0e-3
-        c0 = coeffs[2*(mode_num-1) + 0] # coefficient of forward-traveling wave for mode #mode_num
+        TOLERANCE=5.0e-3
+        c0 = alpha[2*(mode_num-1) + 0] # coefficient of forward-traveling wave for mode #mode_num
         for nm in range(1,len(modes_to_check)+1):
             if nm != mode_num:
-                rx = np.abs(coeffs[2*(nm-1)+0]) / np.abs(c0)
-                ix = np.abs(coeffs[2*(nm-1)+0]) / np.abs(c0)
-                if rx > TOLERANCE or ix > TOLERANCE:
-                    TestPassed=False;
+                cfrel = np.abs(alpha[2*(nm-1)+0]) / np.abs(c0)
+                cbrel = np.abs(alpha[2*(nm-1)+1]) / np.abs(c0)
+                if cfrel > TOLERANCE or cbrel > TOLERANCE:
+                    TestPassed=False
+        self.assertTrue(TestPassed) # test 1: coefficient of excited mode >> coeffs of all other modes
 
-        self.assertTrue(TestPassed)
+        self.assertAlmostEqual(mode_power / abs(c0**2), 1.0, places=1) # test 2: |mode coeff|^2 = power
 
-        # generate plots of the structure and the eigenmode fields, useful for interactive use
-        if plot:
-            print(np.abs(coeffs))
-            import matplotlib as mpl
-            mpl.use('Qt4Agg')
-            import matplotlib.pyplot as plt
-            plt.ion()
-            plt.figure()
-            eps_slice = sim.get_array(sim.fields.total_volume(), component=mp.Dielectric)
-            plt.subplot(1,3,1); plt.imshow(eps_slice.transpose())
-            plt.colorbar();
-            ex = sim.get_dft_array(flx, mp.Ex, 0)
-            plt.subplot(1,3,2)
-            plt.imshow(np.abs(ex.transpose()))
-            plt.colorbar()
-            ey = sim.get_dft_array(flx, mp.Ey, 0)
-            plt.subplot(1,3,3)
-            plt.imshow(np.abs(ey.transpose()))
-            plt.colorbar();
-            plt.show(block=True)
+    def test_modes(self):
+        self.run_mode_coeffs(1)
+        self.run_mode_coeffs(2)
 
-        #symmetries=[mp.Mirror(mp.Y)],
-        #        self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
 
 if __name__ == '__main__':
     unittest.main()
