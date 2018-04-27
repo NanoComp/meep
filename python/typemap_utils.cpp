@@ -38,6 +38,7 @@ PyObject *py_amp_func = NULL;
 static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
 
+#if PY_MAJOR_VERSION == 2
 static char *py2_string_as_utf8(PyObject *po) {
     if (PyString_Check(po)) {
         return PyString_AsString(po);
@@ -52,6 +53,7 @@ static char *py2_string_as_utf8(PyObject *po) {
         return NULL;
     }
 }
+#endif
 
 static PyObject *py_material_object() {
     static PyObject *material_object = NULL;
