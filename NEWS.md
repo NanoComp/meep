@@ -2,7 +2,7 @@
 
 ## Meep 1.5 alpha
 
- * Python interfact to MPB (#191 etc.).
+ * Python interface to MPB (#191 etc.).
 
  * Mode decomposition: given a DFT flux plane, decompose the fields
    at each frequency into the power in each mode of a waveguide
