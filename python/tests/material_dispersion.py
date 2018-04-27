@@ -74,6 +74,7 @@ class TestMaterialDispersion(unittest.TestCase):
             geometry=[],
             sources=[self.sources],
             material_function=self.mat_func,
+            default_material=mp.air,
             resolution=20
         )
 
