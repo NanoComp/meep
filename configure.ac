@@ -527,6 +527,9 @@ fi # with_python
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
 
+# Copy/symlink casimir.scm to builddir for out-of-tree builds
+AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)
+
 ##############################################################################
 
 AC_CONFIG_FILES([
