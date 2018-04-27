@@ -878,9 +878,6 @@ class Simulation(object):
                 f.prevent_deadlock()
 
         if self.output_append_h5 is None:
-            f = None
-
-        if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self.get_filename_prefix(), True))
 
     def h5topng(self, rm_h5, option, *step_funcs):
@@ -890,7 +887,12 @@ class Simulation(object):
 
     def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        v = self._volume_from_kwargs(vol, center, size)
+
+        if vol is None and center is None and size is None:
+            v = self.fields.total_volume()
+        else:
+            v = self._volume_from_kwargs(vol, center, size)
+
         self.fields.get_array_slice_dimensions(v, dim_sizes)
 
         dims = [s for s in dim_sizes if s != 0]
@@ -1018,6 +1020,151 @@ class Simulation(object):
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
+
+    def get_epsilon(self):
+        return self.get_array(component=mp.Dielectric)
+
+    def get_mu(self):
+        return self.get_array(component=mp.Permeability)
+
+    def get_hpwr(self):
+        return self.get_array(component=mp.H_EnergyDensity)
+
+    def get_dpwr(self):
+        return self.get_array(component=mp.D_EnergyDensity)
+
+    def get_tot_pwr(self):
+        return self.get_array(component=mp.EnergyDensity)
+
+    def get_hfield(self):
+        if self.is_cylindrical:
+            r = self.get_array(cmplx=True, component=mp.Hr)
+            p = self.get_array(cmplx=True, component=mp.Hp)
+            return np.stack([r, p], axis=-1)
+        else:
+            x = self.get_array(cmplx=True, component=mp.Hx)
+            y = self.get_array(cmplx=True, component=mp.Hy)
+            z = self.get_array(cmplx=True, component=mp.Hz)
+            return np.stack([x, y, z], axis=-1)
+
+    def get_hfield_x(self):
+        return self.get_array(cmplx=True, component=mp.Hx)
+
+    def get_hfield_y(self):
+        return self.get_array(cmplx=True, component=mp.Hy)
+
+    def get_hfield_z(self):
+        return self.get_array(cmplx=True, component=mp.Hz)
+
+    def get_hfield_r(self):
+        return self.get_array(cmplx=True, component=mp.Hr)
+
+    def get_hfield_p(self):
+        return self.get_array(cmplx=True, component=mp.Hp)
+
+    def get_bfield(self):
+        if self.is_cylindrical:
+            r = self.get_array(cmplx=True, component=mp.Br)
+            p = self.get_array(cmplx=True, component=mp.Bp)
+            return np.stack([r, p], axis=-1)
+        else:
+            x = self.get_array(cmplx=True, component=mp.Bx)
+            y = self.get_array(cmplx=True, component=mp.By)
+            z = self.get_array(cmplx=True, component=mp.Bz)
+            return np.stack([x, y, z], axis=-1)
+
+    def get_bfield_x(self):
+        return self.get_array(cmplx=True, component=mp.Bx)
+
+    def get_bfield_y(self):
+        return self.get_array(cmplx=True, component=mp.By)
+
+    def get_bfield_z(self):
+        return self.get_array(cmplx=True, component=mp.Bz)
+
+    def get_bfield_r(self):
+        return self.get_array(cmplx=True, component=mp.Br)
+
+    def get_bfield_p(self):
+        return self.get_array(cmplx=True, component=mp.Bp)
+
+    def get_efield(self):
+        if self.is_cylindrical:
+            r = self.get_array(cmplx=True, component=mp.Er)
+            p = self.get_array(cmplx=True, component=mp.Ep)
+            return np.stack([r, p], axis=-1)
+        else:
+            x = self.get_array(cmplx=True, component=mp.Ex)
+            y = self.get_array(cmplx=True, component=mp.Ey)
+            z = self.get_array(cmplx=True, component=mp.Ez)
+            return np.stack([x, y, z], axis=-1)
+
+    def get_efield_x(self):
+        return self.get_array(cmplx=True, component=mp.Ex)
+
+    def get_efield_y(self):
+        return self.get_array(cmplx=True, component=mp.Ey)
+
+    def get_efield_z(self):
+        return self.get_array(cmplx=True, component=mp.Ez)
+
+    def get_efield_r(self):
+        return self.get_array(cmplx=True, component=mp.Er)
+
+    def get_efield_p(self):
+        return self.get_array(cmplx=True, component=mp.Ep)
+
+    def get_dfield(self):
+        if self.is_cylindrical:
+            r = self.get_array(cmplx=True, component=mp.Dr)
+            p = self.get_array(cmplx=True, component=mp.Dp)
+            return np.stack([r, p], axis=-1)
+        else:
+            x = self.get_array(cmplx=True, component=mp.Dx)
+            y = self.get_array(cmplx=True, component=mp.Dy)
+            z = self.get_array(cmplx=True, component=mp.Dz)
+            return np.stack([x, y, z], axis=-1)
+
+    def get_dfield_x(self):
+        return self.get_array(cmplx=True, component=mp.Dx)
+
+    def get_dfield_y(self):
+        return self.get_array(cmplx=True, component=mp.Dy)
+
+    def get_dfield_z(self):
+        return self.get_array(cmplx=True, component=mp.Dz)
+
+    def get_dfield_r(self):
+        return self.get_array(cmplx=True, component=mp.Dr)
+
+    def get_dfield_p(self):
+        return self.get_array(cmplx=True, component=mp.Dp)
+
+    def get_sfield(self):
+        if self.is_cylindrical:
+            r = self.get_array(cmplx=True, component=mp.Sr)
+            p = self.get_array(cmplx=True, component=mp.Sp)
+            return np.stack([r, p], axis=-1)
+        else:
+            x = self.get_array(cmplx=True, component=mp.Sx)
+            y = self.get_array(cmplx=True, component=mp.Sy)
+            z = self.get_array(cmplx=True, component=mp.Sz)
+            return np.stack([x, y, z], axis=-1)
+
+    def get_sfield_x(self):
+        return self.get_array(cmplx=True, component=mp.Sx)
+
+    def get_sfield_y(self):
+        return self.get_array(cmplx=True, component=mp.Sy)
+
+    def get_sfield_z(self):
+        return self.get_array(cmplx=True, component=mp.Sz)
+
+    def get_sfield_r(self):
+        return self.get_array(cmplx=True, component=mp.Sr)
+
+    def get_sfield_p(self):
+        return self.get_array(cmplx=True, component=mp.Sp)
 
 
 def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
