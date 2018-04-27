@@ -1140,33 +1140,6 @@ class Simulation(object):
     def get_dfield_p(self):
         return self.get_array(cmplx=True, component=mp.Dp)
 
-    # MPB compatibility
-    def get_poynting(self):
-        if self.is_cylindrical:
-            r = self.get_array(cmplx=True, component=mp.Sr)
-            p = self.get_array(cmplx=True, component=mp.Sp)
-            return np.stack([r, p], axis=-1)
-        else:
-            x = self.get_array(cmplx=True, component=mp.Sx)
-            y = self.get_array(cmplx=True, component=mp.Sy)
-            z = self.get_array(cmplx=True, component=mp.Sz)
-            return np.stack([x, y, z], axis=-1)
-
-    def get_poynting_x(self):
-        return self.get_array(cmplx=True, component=mp.Sx)
-
-    def get_poynting_y(self):
-        return self.get_array(cmplx=True, component=mp.Sy)
-
-    def get_poynting_z(self):
-        return self.get_array(cmplx=True, component=mp.Sz)
-
-    def get_poynting_r(self):
-        return self.get_array(cmplx=True, component=mp.Sr)
-
-    def get_poynting_p(self):
-        return self.get_array(cmplx=True, component=mp.Sp)
-
     def get_sfield(self):
         if self.is_cylindrical:
             r = self.get_array(cmplx=True, component=mp.Sr)
