@@ -12,6 +12,7 @@ libmeepgeom_la_SOURCES = \
  meepgeom.cpp meepgeom.hpp material_data.hpp
 
 libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+libmeepgeom_la_LIBADD = $(LIBMEEP)
 
 check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields
 
@@ -34,6 +35,7 @@ dft_fields_SOURCES = dft-fields.cpp
 dft_fields_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 TESTS           = cyl-ellipsoid-ll array-slice-ll
+TESTS_ENVIRONMENT = export LD_PRELOAD=$(abs_top_builddir)/src/.libs/libmeep.so;
 
 #LOG_COMPILER = $(RUNCODE)
 

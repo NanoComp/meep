@@ -1,5 +1,26 @@
 # Meep Release Notes
 
+## Meep 1.5 alpha
+
+ * Python interface to MPB (#191 etc.).
+
+ * Mode decomposition: given a DFT flux plane, decompose the fields
+   at each frequency into the power in each mode of a waveguide
+   or similar (#192, #248, etc.).
+
+ * DFT slices: output Fourier-transformed fields in any given
+   region of space (#259).
+
+ * Structure dump/load feature to rapidly load in a geometry
+   from a previous calculation (#261, #266).
+
+ * Susceptibilities are now supported in user-defined materials
+   in Python (#203, #305).
+
+ * 64-bit support for extremely large computations (#193).
+
+ * Various bug fixes, documentation improvements, etc.
+
 ## Meep 1.4.3
 
 2/1/2018
