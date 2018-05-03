@@ -239,8 +239,12 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   size_t dims[3];
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in output_hdf5");
-    size_t n = (data.max_corner.in_direction(d)
-	              - data.min_corner.in_direction(d)) / 2 + 1;
+
+    size_t n = 0;
+    if ((data.max_corner.in_direction(d) - data.min_corner.in_direction(d)) / 2 + 1 > 0) {
+        n = (data.max_corner.in_direction(d) - data.min_corner.in_direction(d)) / 2 + 1;
+    }
+
     if (n > 1) {
       data.ds[rank] = d;
       dims[rank++] = n;
