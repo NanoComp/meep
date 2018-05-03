@@ -227,7 +227,7 @@ The following are available directly via the `meep` package.
 
 ### Medium
 
-This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [predefined variables](#predefined-variables) `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor` above.
+This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
 
 **`epsilon` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
@@ -912,7 +912,7 @@ An alias for `add_flux`.
 
 ### Force Spectra
 
-Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor)
+Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
 
 $$\sigma_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} δ_{ij} \left( |\mathbf{E}|^2 + |\mathbf{H}|^2 \right)$$
 
@@ -1085,7 +1085,7 @@ The actual work in Meep is performed by *run* functions, which time-step the sim
 
 The run functions, in turn, can be modified by use of *step functions*: these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many *modifier functions*, like *at_beginning*, *during_sources*, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
 
-A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Please read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
+A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
 
 ### Run Functions
 
@@ -1167,7 +1167,7 @@ More generally, it is possible to output an arbitrary function of position and z
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
 
-See also [Field Function Examples](Field_Function_Examples.md). See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+See also [Field Function Examples](Field_Function_Examples.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 #### Array Slices
 

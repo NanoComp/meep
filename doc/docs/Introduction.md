@@ -2,18 +2,18 @@
 # Introduction
 ---
 
-Meep implements the **finite-difference time-domain** (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and then the fields are evolved in time using discrete time steps &mdash; as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
+Meep implements the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and then the fields are evolved in time using discrete time steps &mdash; as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
 
 In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
 
-This introduction does not describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in [Tutorial/Basics](Python_Tutorials/Basics).
+This introduction does not describe the user interface with which you set up simulations. Instead, we focus here on the concepts that are being simulated. The user interface is described in [User Interface](Python_User_Interface) and is demonstrated with several examples beginning in [Tutorial/Basics](Python_Tutorials/Basics).
 
 [TOC]
 
 Maxwell's Equations
 -------------------
 
-Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations), which describe the interactions of electric (**E**) and magnetic (**H**) fields with one another and with matter and sources. In particular, the equations for the evolution of the fields are:
+Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations), which describe the interactions of electric (**E**) and magnetic (**H**) fields with one another and with matter and sources. In particular, the equations for the time evolution of the fields are:
 
 <center>
 
@@ -27,7 +27,7 @@ $\mathbf{D} = \varepsilon \mathbf{E}$
 
 </center>
 
-Where **D** is the displacement field, ε is the dielectric constant, **J** is the current density (of electric charge), and **J**<sub>*B*</sub> is the *magnetic-charge* current density. Magnetic currents are a convenient computational fiction in some situations. **B** is the magnetic flux density (often called the magnetic field), μ is the magnetic permeability, and **H** is the magnetic field. The σ$_B$ and σ$_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
+where **D** is the displacement field, ε is the dielectric constant, **J** is the current density (of electric charge), and **J**<sub>*B*</sub> is the *magnetic-charge* current density. Magnetic currents are a convenient computational fiction in some situations. **B** is the magnetic flux density (often called the magnetic field), μ is the magnetic permeability, and **H** is the magnetic field. The σ$_B$ and σ$_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
 
 <center>
 
@@ -37,9 +37,9 @@ $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mat
 
 </center>
 
-Most generally, ε depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
+Generally, ε depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
 
-Meep supports simulation in [Cylindrical Coordinates](Cylindrical_Coordinates.md).
+For rotationally symmetric geometries, Meep also supports simulation in [Cylindrical Coordinates](Cylindrical_Coordinates.md).
 
 ### Units in Meep
 
@@ -47,7 +47,7 @@ You may have noticed the lack of annoying constants like ε<sub>0</sub>, μ<sub>
 
 In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units**. See Chapter 2 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
-Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is specified in units of $c/a$ (or equivalently ω is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where λ is the vacuum wavelength. A similar scheme is used in [MPB](https://mpb.readthedocs.io).
+Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is specified in units of $c/a$ (or equivalently ω is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where λ is the vacuum wavelength. A similar scheme is used in the mode solver [MPB](https://mpb.readthedocs.io).
 
 For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a$ = 1 μm. Then, if we want to specify a source corresponding to λ = 1.55 μm, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
 
