@@ -127,9 +127,9 @@ void fields_chunk::backup_component(component c) {
 }
 
 void fields_chunk::restore_component(component c) {
-  DOCMP if (f_backup[c][cmp]) {
-#define RESTORE(f)							\
-    if (f[c][cmp])							\
+  DOCMP  {
+#define RESTORE(f)                                                      \
+    if (f##_backup[c][cmp] && f[c][cmp])                                \
       memcpy(f[c][cmp], f##_backup[c][cmp], gv.ntot()*sizeof(realnum));
 
     RESTORE(f);

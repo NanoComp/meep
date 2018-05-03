@@ -372,6 +372,31 @@ class TestSimulation(unittest.TestCase):
         np.testing.assert_allclose(energy, energy_arr)
         np.testing.assert_allclose(efield, efield_arr)
 
+    def test_synchronized_magnetic(self):
+        # Issue 309
+        cell = mp.Vector3(16, 8, 0)
+
+        geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
+                             center=mp.Vector3(0, 0),
+                             material=mp.Medium(epsilon=12))]
+
+        sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
+                             component=mp.Ez,
+                             center=mp.Vector3(-7, 0))]
+
+        pml_layers = [mp.PML(1.0)]
+        resolution = 10
+
+        sim = mp.Simulation(
+            cell_size=cell,
+            boundary_layers=pml_layers,
+            geometry=geometry,
+            sources=sources,
+            resolution=resolution
+        )
+
+        sim.run(mp.synchronized_magnetic(mp.output_bfield_y), until=10)
+
 
 if __name__ == '__main__':
     unittest.main()
