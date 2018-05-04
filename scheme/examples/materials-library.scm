@@ -1,10 +1,40 @@
-; materials library for metallic optoelectronic materials
-; from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83 (1998)
+; Materials Library
 
-; conversion factor for eV to 1/um [=1/hc]
-(define eV-um-scale (/ 1.23984193))
+; silicon (intrinsic, T=300K) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+; - based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
+; wavelength range: 0.4 - 1.0 um
+
+; default unit length is 1 um
+(define um-scale 1.0)
+
+(define Si-frq1 (/ 3.64 um-scale))
+(define Si-gam1 0)
+(define Si-sig1 8)
+
+(define Si-frq2 (/ 2.76 um-scale))
+(define Si-gam2 (/ (* 2 0.063) um-scale))
+(define Si-sig2 2.85)
+
+(define Si-frq3 (/ 1.73 um-scale))
+(define Si-gam3 (/ (* 2 2.5) um-scale))
+(define Si-sig3 -0.107)
+
+(define Si (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Si-frq1) (gamma Si-gam1) (sigma Si-sig1))
+  (make lorentzian-susceptibility
+    (frequency Si-frq2) (gamma Si-gam2) (sigma Si-sig2))
+  (make lorentzian-susceptibility
+    (frequency Si-frq3) (gamma Si-gam3) (sigma Si-sig3)))))
 
 ;------------------------------------------------------------------
+
+; elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
+; wavelength range: 0.2 - 12.4 um
+
+; conversion factor for eV to 1/um [=1/hc]
+(define eV-um-scale (/ um-scale 1.23984193))
 
 (define Ag-plasma-frq (* 9.01 eV-um-scale))
 

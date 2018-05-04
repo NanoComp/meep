@@ -1,12 +1,37 @@
-# materials library for metallic optoelectronic materials
-# from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83 (1998)
+# Materials Library
 
 import meep as mp
 
-# conversion factor for eV to 1/um [=1/hc]
-eV_um_scale = 1/1.23984193
+# silicon from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+# - based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
+# wavelength range: 0.4 - 1.0 um
+
+# default unit length is 1 um
+um_scale = 1.0
+
+Si_frq1 = 3.64/um_scale
+Si_gam1 = 0
+Si_sig1 = 8
+Si_frq2 = 2.76/um_scale
+Si_gam2 = 2*0.063/um_scale
+Si_sig2 = 2.85
+Si_frq3 = 1.73/um_scale
+Si_gam3 = 2*2.5/um_scale
+Si_sig3 = -0.107
+
+Si_susc = [ mp.LorentzianSusceptibility(frequency=Si_frq1, gamma=Si_gam1, sigma=Si_sig1),
+            mp.LorentzianSusceptibility(frequency=Si_frq2, gamma=Si_gam2, sigma=Si_sig2),
+            mp.LorentzianSusceptibility(frequency=Si_frq3, gamma=Si_gam3, sigma=Si_sig3) ]
+
+Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc)
 
 #------------------------------------------------------------------
+
+# metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
+# wavelength range: 0.2 - 12.4 um
+
+# conversion factor for eV to 1/um [=1/hc]
+eV_um_scale = um_scale/1.23984193
 
 Ag_plasma_frq = 9.01*eV_um_scale
 Ag_f0 = 0.845
@@ -357,5 +382,3 @@ W_susc = [ mp.DrudeSusceptibility(frequency=W_frq0, gamma=W_gam0, sigma=W_sig0),
             mp.LorentzianSusceptibility(frequency=W_frq4, gamma=W_gam4, sigma=W_sig4) ]
 
 W = mp.Medium(epsilon=1.0, E_susceptibilities=W_susc)
-
-

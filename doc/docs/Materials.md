@@ -117,14 +117,16 @@ All of the above features that are supported for the electric permittivity ε ar
 Materials Library
 -----------------
 
-A materials library containing commonly used metals in optoelectronic devices is available for [Python](https://github.com/stevengj/meep/tree/master/python/examples/materials_library.py) and [Scheme](https://github.com/stevengj/meep/tree/master/scheme/examples/materials-library.scm). The data is based on results published in [Applied Optics, Vol. 37, pp. 5271-83, 1998](https://www.osapublishing.org/ao/abstract.cfm?uri=ao-37-22-5271) [[pdf](http://faculty.kfupm.edu.sa/EE/msunaidi/EE635%20stuff/project%202/p3.pdf)]. Experimental values of the complex refractive index of 11 metals &mdash; Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W &mdash; are fit to a [Drude-Lorentzian susceptibility profile](#material-dispersion) over the broadband spectrum of approximately 0.2 to 12.4 µm. Fitting parameters for the materials are defined for a unit distance of 1 µm. For simulation models which use a *different* value for the unit distance, the predefined variable `eV_um_scale` (Python) or `eV-um-scale` (Scheme) must be scaled by *multiplying* by whatever the unit distance is, in units of µm. For example, if the unit distance is 100 nm, this would require adding the line `eV_um_scale = 0.1*eV_um_scale` after the line where [`eV_um_scale` is defined](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L7). This change must be made directly to the materials library file.
+A materials library containing silicon as well as several commonly used metals is available for [Python](https://github.com/stevengj/meep/tree/master/python/examples/materials_library.py) and [Scheme](https://github.com/stevengj/meep/tree/master/scheme/examples/materials-library.scm). The metals data is based on [Applied Optics, Vol. 37, pp. 5271-83, 1998](https://www.osapublishing.org/ao/abstract.cfm?uri=ao-37-22-5271) ([pdf](http://www.academia.edu/download/31300981/ao-37-22-5271.pdf)). Experimental values of the complex refractive index of 11 elemental metals &mdash; Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W &mdash; are fit to a [Drude-Lorentzian susceptibility profile](#material-dispersion) over the wavelength range of 0.2 to 12.4 µm. The fit for silicon is from [J. Optical Society of America A, Vol. 28, pp. 770-77, 2011](https://www.osapublishing.org/josaa/abstract.cfm?uri=josaa-28-5-770) for the wavelength range of 0.4 to 1.0 µm. This is based on experimental data for intrinsic silicon at T=300K from [Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995](https://onlinelibrary.wiley.com/doi/full/10.1002/pip.4670030303).
+
+Fitting parameters for all materials are defined for a unit distance of 1 µm. For simulations which use a different value for the unit distance, the predefined variable `um_scale` (Python) or `um-scale` (Scheme) must be scaled by *multiplying* by whatever the unit distance is, in units of µm. For example, if the unit distance is 100 nm, this would require adding the line `um_scale = 0.1*um_scale` after the line where [`um_scale` is defined](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L9). This change must be made directly to the materials library file.
 
 
 To import the library into a Python script requires adding the following lines:
 
 ```python
 import sys
-sys.path.insert(0, '/path/to/materials_library.py')
+sys.path.insert(0, '/path/to/materials_library/')
 from materials_library import *
 ```
 Then, the materials can be simply used as `geometry = [ meep.Cylinder(material=Al, ... ]`.
