@@ -21,7 +21,7 @@ class TestWvgSrc(unittest.TestCase):
         sources = [
             mp.EigenModeSource(src=mp.ContinuousSource(0.15), size=mp.Vector3(y=6),
                                center=mp.Vector3(x=-5), component=mp.Dielectric,
-                               eig_parity=mp.TM)
+                               eig_parity=mp.ODD_Z)
         ]
 
         pml_layers = [mp.PML(1.0)]
@@ -41,8 +41,8 @@ class TestWvgSrc(unittest.TestCase):
         flux1 = self.sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(-6.0), size=mp.Vector3(1.8, 6)))
         flux2 = self.sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(6.0), size=mp.Vector3(1.8, 6)))
 
-        self.assertAlmostEqual(flux1 / -1.8, 4.030461600737128e-5)
-        self.assertAlmostEqual(flux2 / 1.8, 1.724793043274007)
+        self.assertAlmostEqual(flux1 / -1.8, 3.823251619670293e-5)
+        self.assertAlmostEqual(flux2 / 1.8, 1.724792740529718)
 
 if __name__ == '__main__':
     unittest.main()
