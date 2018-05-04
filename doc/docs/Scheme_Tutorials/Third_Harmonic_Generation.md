@@ -2,7 +2,7 @@
 # Third Harmonic Generation
 ---
 
-In this example, we consider wave propagation through a simple 1d *nonlinear* medium with a non-zero Kerr susceptibility χ$^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency ω, and because of the nonlinearity we also get a signal at a frequency 3ω. See also [3rd-harm-1d.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/3rd-harm-1d.ctl).
+In this example, we consider wave propagation through a simple 1d nonlinear medium with a non-zero Kerr susceptibility χ$^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency ω, and because of the nonlinearity we also get a signal at a frequency 3ω. See also [3rd-harm-1d.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/3rd-harm-1d.ctl).
 
 Since this is a 1d calculation, we could implement it via a 2d cell of `(size S no-size no-size)`, specifying periodic boundary conditions in the $y$ direction. However, this is slightly inefficient since the $y$ periodic boundaries are implemented internally via extra "ghost pixels" in the $y$ direction. Instead, Meep has special support for 1d simulations in the $z$ direction. To use this, we must explicitly set `dimensions` to `1`, and in that case we can *only* use $E_x$ (and $D_x$) and $H_y$ field components. This involves no loss of generality because of the symmetry of the problem.
 
@@ -92,7 +92,7 @@ We could print these with more `display-fluxes` lines, but it is nice to print t
 
 Notice how we separated everything with commas, and prefixed the line with `"harmonics:"` for easy grepping later.
 
-We want to run this for a bunch of values of χ$^{(3)}$. We could write a [loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme), but it is often more convenient just to use the Unix shell when we want to wrap the *entire* simulation in a loop. In particular, for the [bash shell](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), we'll just do:
+We want to run this for a bunch of values of χ$^{(3)}$. We could write a [loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme), but it is often more convenient just to use the Unix shell when we want to wrap the *entire* simulation in a loop. In particular, for the [Bash shell](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), we'll just do:
 
 ```sh
  unix% (for logk in `seq -6 0.2 0`; do meep k="(expt 10 $logk)" 3rd-harm-1d.ctl |grep harmonics:; done) | tee harmonics.dat

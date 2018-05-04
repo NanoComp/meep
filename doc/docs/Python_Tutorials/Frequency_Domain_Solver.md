@@ -93,7 +93,8 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     symmetries=[mp.Mirror(mp.Y)],
                     boundary_layers=[mp.PML(dpml)])
 
-dfts = sim.add_dft_fields([mp.Ez], mp.Volume(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml)), fcen, fcen, 1)
+where = mp.Volume(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml))
+dfts = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, where=where)
 sim.run(until_after_sources=100)
 sim.output_dft(dfts, "dft_fields")
 

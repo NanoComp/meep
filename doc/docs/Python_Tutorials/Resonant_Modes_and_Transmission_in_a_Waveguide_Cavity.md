@@ -231,7 +231,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-Just as in [Tutorial/Basics/Modes of a Ring Resonator](Basics/#modes-of-a-ring-resonator), we use the `Harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
+Just as in [Tutorial/Basics/Modes of a Ring Resonator](Basics/#modes-of-a-ring-resonator), we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
 
 We can now launch the simulation, setting the `-r` command-line parameter to do the resonant-mode calculation:
 
@@ -273,7 +273,7 @@ unix% python holey-wvg-cavity.py -r -N 5 |grep harminv
 ![](../images/Holey-wvg-cavity-Q.png)
 </center>
 
-The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the `Harminv` output for larger `N`, something strange happens &mdash; it starts to find *more modes*! For example, at `N=16`, the output is:
+The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the Harminv output for larger `N`, something strange happens &mdash; it starts to find *more modes*! For example, at `N=16`, the output is:
 
 ```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
@@ -304,7 +304,7 @@ Finally, we consider a smaller, more abstract calculation that we really should 
 
 Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-ω t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $ω(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
-Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
+Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [Harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
 Thus, we will define our computational cell as follows.
 
@@ -362,7 +362,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `Harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the Harminv calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
 
 ```py
 k_interp = 19
@@ -370,7 +370,7 @@ k_interp = 19
 sim.run(mp.interpolate(k_interp, [mp.Vector3(0), mp.Vector3(0.5)]), k_points=300)
 ```
 
-Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2π \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs `Harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `Harminv:` lines, but it also outputs a series of lines like:
+Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2π \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs Harminv, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
 
 ```
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
@@ -395,7 +395,7 @@ Here, the gray shaded region is the **light cone**, $ω > ck_x$, which is the re
 
 Inside the light cone, we also see several discrete bands. These are **leaky modes**, or resonances, which have some intrinsic lifetime/loss because they couple with radiating states inside the light cone, which is reflected in the imaginary parts of their ω. Twice the imaginary part of ω is the energy loss rate per unit time; for a waveguide, it is more conventional to report loss per unit distance; to get this you would divide the loss per unit time by the *group velocity* $|dω/dk_x|$ = |slope|. Harminv only identifies leaky modes that have a substantial lifetime. The default threshold is a lifetime, or $Q$, of 50 periods.
 
-Computing band diagrams, especially for leaky modes, with a time-domain program like Meep involves several subtleties. For example, the accuracy of harminv will go down if we specify too large a `df` (too narrow a source), because the increased number of modes makes the signal-processing more ill-conditioned. Sometimes, harminv will report a spurious mode, which will appear as an isolated dot on the plot. Second, we sometimes have to be careful with modes and especially the imaginary parts to make sure they aren't an artifact of the cell being too small, or the signal-processing error being too large (either because the run is too short or because the bandwidth being searched is too large). Third, currently Meep doesn't attempt to "connect the dots" for the bands &mdash; the frequencies are printed in increasing order, but since modes disappear when their losses become too large this means that a single band may be split across several columns. On the plot, this is visible as single bands composed of differently colored dots.
+Computing band diagrams, especially for leaky modes, with a time-domain program like Meep involves several subtleties. For example, the accuracy of Harminv will go down if we specify too large a `df` (too narrow a source), because the increased number of modes makes the signal-processing more ill-conditioned. Sometimes, Harminv will report a spurious mode, which will appear as an isolated dot on the plot. Second, we sometimes have to be careful with modes and especially the imaginary parts to make sure they aren't an artifact of the cell being too small, or the signal-processing error being too large (either because the run is too short or because the bandwidth being searched is too large). Third, currently Meep doesn't attempt to "connect the dots" for the bands &mdash; the frequencies are printed in increasing order, but since modes disappear when their losses become too large this means that a single band may be split across several columns. On the plot, this is visible as single bands composed of differently colored dots.
 
 For example, there seem to be some bands that run right along the edge of the light cone. These are not leaky modes, but are artifacts of the fact that PML boundaries do not absorb well for light that is travelling parallel to the boundary, corresponding to extended modes at the boundary of the light cone. Below, we will see that these modes are not localized to the waveguide.
 

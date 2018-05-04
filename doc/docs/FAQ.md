@@ -29,7 +29,11 @@ There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listin
 
 ### Is there a technical reference on Meep?
 
-The technical details of Meep's inner workings are described in the peer-reviewed publication [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)). Additional information is provided in the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707) in Chapters 4 ("Electromagnetic Wave Source Conditions"), 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media"), 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing"), and 20 ("MEEP: A Flexible Free FDTD Software Package"). A [video presentation](https://www.youtube.com/watch?v=9CA949csYvM) and [slides](http://ab-initio.mit.edu/~ardavan/stuff/IEEE_Photonics_Society_SCV3.pdf) are also available.
+The technical details of Meep's inner workings are described in the peer-reviewed publication [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)). Additional information is provided in the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707) in Chapters 4 ("Electromagnetic Wave Source Conditions"), 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media"), 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing"), and 20 ("MEEP: A Flexible Free FDTD Software Package"). A [video presentation](https://www.youtube.com/watch?v=9CA949csYvM) and [slides](http://ab-initio.mit.edu/~ardavan/stuff/IEEE_Photonics_Society_SCV3.pdf) as well as a [podcast](http://www.rce-cast.com/Podcast/rce-118-meep.html) are also available.
+
+### Where can I find a list of projects which have used Meep?
+
+For a list of published works which have used Meep, see the [citation page](https://scholar.google.com/scholar?cites=17712807607104508775) for Meep's technical reference on Google Scholar.
 
 Installation
 ------------
@@ -118,7 +122,7 @@ Examples are provided in [Tutorials/Frequency-Domain Solver](Python_Tutorials/Fr
 
 ### Is there a materials library?
 
-A materials library is available containing 11 commonly used metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. Additional information is provided in [Materials](Materials/#materials-library).
+A materials library is available containing silicon as well as 11 commonly used elemental metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. Additional information is provided in [Materials](Materials/#materials-library).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
@@ -139,7 +143,7 @@ Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be us
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
-Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, any of the metals included in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry using visualization tools, etc., you may have to adjust the `epsilon` value.
+Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, any of the disperive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to visually verify the material geometry, etc., you may have to adjust the `epsilon` value.
 
 ### Does Meep support a non-uniform grid?
 

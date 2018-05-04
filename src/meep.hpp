@@ -958,7 +958,7 @@ public:
   int Nfreq;
   dft_chunk *E, *H;
   component cE, cH;
-  volume *where;
+  volume where;
   direction normal_direction;
 };
 
@@ -1072,7 +1072,7 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *chunks;
-  volume *where;
+  volume where;
 };
 
 enum in_or_out { Incoming=0, Outgoing };

@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 import unittest
+import h5py
 import numpy as np
 import meep as mp
 
@@ -331,6 +332,70 @@ class TestSimulation(unittest.TestCase):
         mp.all_wait()
         if mp.am_master():
             os.remove(dump_fn)
+
+    def test_get_array_output(self):
+        sim = self.init_simple_simulation()
+        sim.symmetries = []
+        sim.geometry = [mp.Cylinder(0.2, material=mp.Medium(index=3))]
+        sim.filename_prefix = 'test_get_array_output'
+        sim.run(until=20)
+
+        mp.output_epsilon(sim)
+        mp.output_efield_z(sim)
+        mp.output_tot_pwr(sim)
+        mp.output_efield(sim)
+
+        eps_arr = sim.get_epsilon()
+        efield_z_arr = sim.get_efield_z()
+        energy_arr = sim.get_tot_pwr()
+        efield_arr = sim.get_efield()
+
+        fname_fmt = "test_get_array_output-{}-000020.00.h5"
+
+        with h5py.File(fname_fmt.format('eps'), 'r') as f:
+            eps = f['eps'].value
+
+        with h5py.File(fname_fmt.format('ez'), 'r') as f:
+            efield_z = f['ez'].value
+
+        with h5py.File(fname_fmt.format('energy'), 'r') as f:
+            energy = f['energy'].value
+
+        with h5py.File(fname_fmt.format('e'), 'r') as f:
+            ex = f['ex'].value
+            ey = f['ey'].value
+            ez = f['ez'].value
+            efield = np.stack([ex, ey, ez], axis=-1)
+
+        np.testing.assert_allclose(eps, eps_arr)
+        np.testing.assert_allclose(efield_z, efield_z_arr)
+        np.testing.assert_allclose(energy, energy_arr)
+        np.testing.assert_allclose(efield, efield_arr)
+
+    def test_synchronized_magnetic(self):
+        # Issue 309
+        cell = mp.Vector3(16, 8, 0)
+
+        geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
+                             center=mp.Vector3(0, 0),
+                             material=mp.Medium(epsilon=12))]
+
+        sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
+                             component=mp.Ez,
+                             center=mp.Vector3(-7, 0))]
+
+        pml_layers = [mp.PML(1.0)]
+        resolution = 10
+
+        sim = mp.Simulation(
+            cell_size=cell,
+            boundary_layers=pml_layers,
+            geometry=geometry,
+            sources=sources,
+            resolution=resolution
+        )
+
+        sim.run(mp.synchronized_magnetic(mp.output_bfield_y), until=10)
 
 
 if __name__ == '__main__':

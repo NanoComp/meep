@@ -1,4 +1,4 @@
-# This example creates an approximate TM planewave in vacuum
+# This example creates an approximate Ez-polarized planewave in vacuum
 # propagating at a 45-degree angle, by using a couple of current sources
 # with amplitude exp(ikx) corresponding to the desired planewave.
 from __future__ import division

@@ -107,11 +107,13 @@ meep.py: meep-python.cpp
 
 mpb.py: mpb-python.cpp
 
-__init__.py: meep.py
+__init__.py: meep.py mpb.py
 	cp $< $@
 	if [[ "${SWIG_VERSION}" = 3.0.12 ]]; then \
 		sed -i.bak '/^if _swig_python_version_info >= (2, 7, 0):/,/^else:/d' $@; \
 		sed -i.bak 's/    import _meep/from . import _meep/' $@; \
+		sed -i.bak '/^if _swig_python_version_info >= (2, 7, 0):/,/^else:/d' mpb.py; \
+		sed -i.bak 's/    import _mpb/from . import _mpb/' mpb.py; \
 	fi
 
 

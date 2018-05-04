@@ -139,9 +139,9 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   double dx, dy, dz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = int(rx * nx);
-  y = int(ry * ny);
-  z = int(rz * nz);
+  x = (nx + int(rx * nx)) % nx;
+  y = (ny + int(ry * ny)) % ny;
+  z = (nz + int(rz * nz)) % nz;
 
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x;
@@ -203,10 +203,10 @@ static complex<double> meep_mpb_A(const vec &p)
 /* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
 void *fields::get_eigenmode(double omega_src,
-	     		    direction d, const volume where,
-			    const volume eig_vol,
-	    	            int band_num,
-		            const vec &kpoint, bool match_frequency,
+                            direction d, const volume where,
+                            const volume eig_vol,
+                            int band_num,
+                            const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution,
                             double eigensolver_tol,
@@ -609,7 +609,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   double dfreq         = flux.dfreq;
   int num_freqs        = flux.Nfreq;
   direction d          = flux.normal_direction;
-  volume where         = *(flux.where);
   bool match_frequency = true;
   int parity           = 0; // NO_PARITY
   double resolution    = a;
@@ -627,7 +626,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   // set the initial-guess k component to zero.
   vec kpoint(0.0,0.0,0.0);
   LOOP_OVER_DIRECTIONS(this->v.dim, d)
-   if ( equal_float(where.in_direction(d), this->v.in_direction(d) ) )
+   if ( equal_float(flux.where.in_direction(d), this->v.in_direction(d) ) )
     if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
      kpoint.set_direction(d, real(this->k[d]));
 
@@ -642,7 +641,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       double freq  = freq_min + nf*dfreq;
       //if (k_func) kpoint = k_func(k_func_data, freq, band_num);
       void *mode_data
-       = get_eigenmode(freq, d, where, where, band_num, kpoint,
+       = get_eigenmode(freq, d, flux.where, flux.where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
 
       double vg=get_group_velocity(mode_data);

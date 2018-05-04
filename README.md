@@ -11,7 +11,7 @@
 **Features**
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
--   Complete **scriptability** via [Python](http://meep.readthedocs.io/en/latest/Python_Tutorials/Basics/), [Scheme](http://meep.readthedocs.io/en/latest/Scheme_Tutorials/Basics), or [C++](C++) APIs.
+-   Complete **scriptability** via [Python](https://meep.readthedocs.io/en/latest/Python_Tutorials/Basics/), [Scheme](https://meep.readthedocs.io/en/latest/Scheme_Tutorials/Basics), or [C++](https://meep.readthedocs.io/en/master/C++_Tutorial/) APIs.
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
 -   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard.
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
@@ -25,6 +25,6 @@
 
 # Documentation
 
-See the [manual on readthedocs](http://meep.readthedocs.io/en/latest) for the latest documentation.
+See the [manual on readthedocs](https://meep.readthedocs.io/en/latest) for the latest documentation.
 
 
