@@ -67,14 +67,11 @@ def main(args):
                                    eig_kpoint=mp.Vector3(0.4,0,0),
                                    eig_resolution=32) ]
 
-    symmetries = [ mp.Mirror(mp.Y,+1) ]
-
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
                         geometry=geometry,
-                        sources=sources,
-                        symmetries=symmetries)
+                        sources=sources)
 
     xm = -0.5*sx + dpml + 0.5*Lw  # x-coordinate of monitor
     mflux = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
