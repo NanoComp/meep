@@ -603,7 +603,8 @@ bool equal_float(double d1, double d2)
 void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
-                                        double *vgrp)
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data)
 {
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -639,7 +640,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
-      //if (k_func) kpoint = k_func(k_func_data, freq, band_num);
+      if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       void *mode_data
        = get_eigenmode(freq, d, flux.where, flux.where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
@@ -701,10 +702,11 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
-                                        double *vgrp)
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data)
 
 { (void) flux; (void) bands; (void)num_bands;
-  (void) coeffs; (void) vgrp;
+  (void) coeffs; (void) vgrp; (void) user_kpoint_func; (void) user_kpoint_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
