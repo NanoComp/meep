@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <algorithm>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -752,11 +753,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   size_t array_size=1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in process_dft_component");
-
-    size_t n = 0;
-    if ((max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1 > 0) {
-      n = (max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1;
-    }
+    size_t n = std::max(0, (max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1);
 
     if (n > 1) {
       ds[rank] = d;
