@@ -1,6 +1,6 @@
 # Mode Decomposition
 
-Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. A tutorial example is provided in [Tutorials/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. A tutorial example is provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
 
 [TOC]
 
@@ -236,12 +236,10 @@ Thus, the power carried by a given forward- or backward-traveling eigenmode is g
 
 $$ \textit{power} = \frac{|a_n^\pm|^2 v_n A_S}{2S_x} $$
 
-or
+or alternatively,
 
-$$ \textit{power} = |\alpha_n^\pm|^2
+$$ \textit{power} = |\alpha_n^\pm|^2 $$
 
-where we have defined $\alpha_n^\pm \equiv \left(\sqrt{v_n A_S}{2S_x}\right)a_n^\pm$.
-These $\{\alpha_n^\pm\}$ coefficients are the quantities reported by
-`get_eigenmode_coefficients.`
+where we have defined $\alpha_n^\pm \equiv \left(\sqrt{v_n A_S}{2S_x}\right)a_n^\pm$. These coefficients $\alpha_n^\pm$ are the quantities computed by `get_eigenmode_coefficients.`
 
 

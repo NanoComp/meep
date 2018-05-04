@@ -450,7 +450,7 @@ df = 0.1     # pulse width (in frequency)
 src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1))
 ```
 
-Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal-processing on the fields at some point with [harminv](https://github.com/stevengj/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
+Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal-processing on the fields at some point with [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
 
 ```py
 sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
@@ -535,6 +535,6 @@ This tells Meep to exploit a mirror-symmetry plane through the origin perpendicu
 
 Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast.
 
-In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [Python User Interface](../Python_User_Interface/#symmetry) for more symmetry possibilities.
+In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface](../Python_User_Interface/#symmetry) for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.

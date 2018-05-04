@@ -1,4 +1,4 @@
-; Meep Tutorial: TE transmission and reflection through a cavity
+; Meep Tutorial: Hz-polarized transmission and reflection through a cavity
 ; formed by a periodic sequence of holes in a dielectric waveguide,
 ; with a defect formed by a larger spacing between one pair of holes.
 

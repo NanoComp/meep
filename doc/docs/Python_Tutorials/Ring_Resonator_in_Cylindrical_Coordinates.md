@@ -69,7 +69,7 @@ sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
                      center=mp.Vector3(r + 0.1))]
 ```
 
-Note that this isn't really a point source, however, because of the cylindrical symmetry &mdash; it is really a ring source with φ dependence $\exp(i m \phi)$. Finally, as before, we run until the source has turned off, plus 200 additional time units during which we use [harminv](https://github.com/stevengj/harminv) to analyze the $E_z$ field at a given point to extract the frequencies and decay rates of the modes.
+Note that this isn't really a point source, however, because of the cylindrical symmetry &mdash; it is really a ring source with φ dependence $\exp(i m \phi)$. Finally, as before, we run until the source has turned off, plus 200 additional time units during which we use [Harminv](https://github.com/stevengj/harminv) to analyze the $E_z$ field at a given point to extract the frequencies and decay rates of the modes.
 
 ```py
 sim = mp.Simulation(cell_size=cell,

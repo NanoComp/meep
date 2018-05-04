@@ -2,7 +2,7 @@
 # C++ Tutorial
 ---
 
-Instead of using the [Python interface](Python_User_Interface/), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
+Instead of using the [Python interface](Python_User_Interface/), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are 19 examples in the [tests/](https://github.com/stevengj/meep/tree/master/tests) subdirectory of the source repository which cover a wide range of functionality. We should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
 
 [TOC]
 
@@ -16,7 +16,7 @@ The most notable difference is that, while the libctl interface puts the origin 
 Overview
 --------
 
-We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ interface](C++_User_Interface.md). The C++ program should begin with:
+We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below. The C++ program should begin with:
 
 ```c++
 #include <meep.hpp>

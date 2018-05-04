@@ -21,7 +21,7 @@ def main():
 
     # If we don't want to excite a specific mode symmetry, we can just
     # put a single point source at some arbitrary place, pointing in some
-    # arbitrary direction.  We will only look for TM modes (E out of the plane).
+    # arbitrary direction.  We will only look for Ez-polarized modes.
 
     fcen = 0.15  # pulse center frequency
     df = 0.1  # pulse width (in frequency)

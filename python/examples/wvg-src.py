@@ -20,7 +20,7 @@ geometry = [
 sources = [
     mp.EigenModeSource(src=mp.ContinuousSource(0.15), size=mp.Vector3(y=6),
                        center=mp.Vector3(x=-5), component=mp.Dielectric,
-                       eig_parity=mp.TM)
+                       eig_parity=mp.ODD_Z)
 ]
 
 pml_layers = [mp.PML(1.0)]

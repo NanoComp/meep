@@ -233,7 +233,7 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 
 **`perfect-metal`**  
 
-A perfectly-conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [predefined variables](#predefined-variables) `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor` above.
+A perfectly-conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor`.
 
 **`material-function`**  
 
@@ -823,7 +823,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 ### Force Spectra
 
-Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor)
+Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
 
 $$σ_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} δ_{ij} \left( |\mathbf{E}|^2 + |\mathbf{H}|^2 \right)$$
 
@@ -981,7 +981,7 @@ Meep contains a frequency-domain solver that computes the fields produced in a g
 
 **`(meep-fields-solve-cw fields tol maxiters L)`**
 
-After the `fields` variable (a global variable pointing to the `meep::fields*` object initialized by `init-fields`, [see above](Scheme_User_Interface.md#input-variables)), the next two parameters to the frequency-domain solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter $L$ that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm, biconjugate gradient stabilized ([BiCGSTAB-L](https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method)), that is used; larger values of $L$ will often lead to faster convergence at the expense of more memory and more work per iteration. Default is $L=2$, and normally a value ≥ 2 should be used.
+After the `fields` variable (a global variable pointing to the `meep::fields*` object initialized by `init-fields`, see [Input Variables](Scheme_User_Interface.md#input-variables)), the next two parameters to the frequency-domain solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter $L$ that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm, biconjugate gradient stabilized ([BiCGSTAB-L](https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method)), that is used; larger values of $L$ will often lead to faster convergence at the expense of more memory and more work per iteration. Default is $L=2$, and normally a value ≥ 2 should be used.
 
 The frequency-domain solver supports arbitrary geometries, PML, boundary conditions, symmetries, parallelism, conductors, and arbitrary nondispersive materials. Lorentz-Drude dispersive materials are not currently supported in the frequency-domain solver, but since you are solving at a known fixed frequency rather than timestepping, you should be able to pick conductivities etcetera in order to obtain any desired complex ε and μ at that frequency.
 
@@ -996,7 +996,7 @@ The actual work in Meep is performed by *run* functions, which time-step the sim
 
 The run functions, in turn, can be modified by use of *step functions*: these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many *modifier functions*, like *at-beginning*, *during-sources*, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
 
-A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Please read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
+A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
 
 ### Run Functions
 
@@ -1096,7 +1096,7 @@ Output the field function `func` to an HDF5 file in the datasets named *`name`*`
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `output-field-function`, but only outputs the real part of `func` to the dataset given by the string `name`.
 
-See also [Field Function Examples](Field_Function_Examples.md). See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+See also [Field Function Examples](Field_Function_Examples.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 #### Harminv
 
