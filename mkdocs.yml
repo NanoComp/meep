@@ -5,8 +5,12 @@ repo_url: https://github.com/stevengj/meep/
 docs_dir: 'doc/docs'
 site_dir: 'doc/site'
 
-theme_dir: 'doc/meep-mkdocs-theme'
-theme: readthedocs
+#theme_dir: 'doc/meep-mkdocs-theme'
+#theme: readthedocs
+
+theme: 
+  name: readthedocs
+  custom_dir: doc/meep-mkdocs-theme'
 
 python:
    version: 2 # for unicode

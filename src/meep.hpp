@@ -355,6 +355,9 @@ public:
   extending_s *get_extending(const char *dataname) const;
 };
 
+// prototype for user-supplied function to supply initial kpoint guesses to MPB
+typedef vec kpoint_function(double freq, int band_num, void *user_data);
+
 typedef double (*pml_profile_func)(double u, void *func_data);
 
 #define DEFAULT_SUBPIXEL_TOL 1e-4
@@ -1457,7 +1460,7 @@ class fields {
 			    std::complex<double> A(const vec &) = 0);
 
   void get_eigenmode_coefficients(dft_flux flux,
-                                  int *bands, int num_bands,
+                                  int *modes, int num_modes,
                                   std::complex<double> *coeffs,
                                   double *vgrp);
 
