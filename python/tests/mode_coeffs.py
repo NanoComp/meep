@@ -6,9 +6,9 @@ import unittest
 import numpy as np
 import meep as mp
 
-class ModeCoeffs(unittest.TestCase):
+class TestModeCoeffs(unittest.TestCase):
 
-    def run_mode_coeffs(self, mode_num):
+    def run_mode_coeffs(self, mode_num, kpoint_func):
 
         resolution = 15
 
@@ -53,7 +53,7 @@ class ModeCoeffs(unittest.TestCase):
         sim.run(until_after_sources=100)
 
         modes_to_check = [1,2]  # indices of modes for which to compute expansion coefficients
-        alpha = sim.get_eigenmode_coefficients(mflux, modes_to_check)
+        alpha = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
 
         mode_power = mp.get_fluxes(mode_flux)[0]
 
@@ -71,8 +71,15 @@ class ModeCoeffs(unittest.TestCase):
         self.assertAlmostEqual(mode_power / abs(c0**2), 1.0, places=1) # test 2: |mode coeff|^2 = power
 
     def test_modes(self):
-        self.run_mode_coeffs(1)
-        self.run_mode_coeffs(2)
+        self.run_mode_coeffs(1, None)
+        self.run_mode_coeffs(2, None)
+
+    def test_kpoint_func(self):
+
+        def kpoint_func(freq, mode):
+            return mp.Vector3()
+
+        self.run_mode_coeffs(1, kpoint_func)
 
 
 if __name__ == '__main__':
