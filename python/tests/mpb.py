@@ -856,10 +856,10 @@ class TestModeSolver(unittest.TestCase):
                           mpb.display_yparities, mpb.display_group_velocities)
 
         expected_kvals = [
-            1.066321795284513,
-            1.0186792189943261,
-            0.8398943502679427,
-            0.7990426389486213
+            1.03584503595498,
+            0.9776221778906993,
+            0.8358057689930384,
+            0.788801145849691
         ]
 
         for e, r in zip(expected_kvals, kvals):
