@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 #include "meep.hpp"
 #include "config.h"
 
@@ -585,78 +586,160 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 bool equal_float(double d1, double d2)
 { return ((float)d1)==((float)d2); }
 
+
+/*************************************************************************/
+/*************************************************************************/
+/*************************************************************************/
+vector<int> get_propagating_modes(double k0, vec kpoint, vec lambda, vector<double> &kprop, int num_modes)
+{
+  int nMax[2]={0,0};
+  double k_transverse[2]={0.0, 0.0}, g_transverse[2]={0.0, 0.0};
+  int NTD=0; // number of nonzero components of in-plane wavevector (either 1 or 2)
+  LOOP_OVER_DIRECTIONS(lambda.dim,d)
+   { if ( lambda.in_direction(d)!=0.0 )
+      if (NTD==2) abort("%s:%i: internal error",__FILE__,__LINE__);
+     g_transverse[NTD] = 2.0*M_PI / lambda.in_direction(d);
+     k_transverse[NTD] = kpoint.in_direction(d);
+     nMax[NTD]         = (int)floor( (k0 - k_transverse[NTD]) / g_transverse[NTD] );
+     NTD++;
+   }
+
+  vector<int> propagating_modes;
+  int nm=0;
+  int n[2];
+  for(n[0]=0; nm<num_modes && n[0]<=nMax[0]; n[0]++)
+   for(n[1]=0; nm<num_modes && n[1]<=nMax[1]; n[1]++)
+    { double kpg[2];
+      kpg[0] = (k_transverse[0] + n[0]*g_transverse[0]);
+      kpg[1] = (k_transverse[1] + n[1]*g_transverse[1]);
+      double kprop2 = k0*k0 - kpg[0]*kpg[0] - kpg[1]*kpg[1];
+      if (kprop2<0.0) continue; // mode is not propagating
+      kprop.push_back(sqrt(kprop2));
+      propagating_modes.push_back( ++nm );
+    }
+  return propagating_modes;
+}
+
+/*************************************************************************/
+/*************************************************************************/
+/*************************************************************************/
+bool is_homogeneous(fields *f, const volume where, double *refractive_index)
+{ 
+  size_t dims[3]; 
+  int rank = f->get_array_slice_dimensions(where, dims);
+  if (rank==0) return false;
+  size_t ngrid=dims[0]; for(int d=1; d<rank; d++) ngrid*=dims[d];
+
+  double *EpsGrid = f->get_array_slice(where, Dielectric);
+  double *MuGrid  = f->get_array_slice(where, Permeability);
+
+  bool homogeneous=true;
+  for(size_t n=1; homogeneous && n<ngrid; n++)
+   if ( !equal_float(EpsGrid[0], EpsGrid[n]) || !equal_float(MuGrid[0],  MuGrid[n]) )
+    homogeneous=false;
+
+  if (homogeneous) *refractive_index = sqrt(EpsGrid[0]*MuGrid[0]);
+
+  delete[] EpsGrid;
+  delete[]  MuGrid;
+  return homogeneous;
+}
+
 /***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
-/* and all band indices in the caller-populated bands array.   */
+/* and all mode indices in the caller-populated modes array.   */
 /*                                                             */
 /* on input, coeffs must point to a user-allocated array of    */
-/* length 2*num_freqs*num_bands (where num_freqs=flux.Nfreq).  */
+/* length 2*num_freqs*num_modes (where num_freqs=flux.Nfreq).  */
 /* on return, the coefficients of the forward/backward traveling*/
-/* eigenmodes for frequency #nf and band index bands[nb] are   */
-/*  coeffs[ 2*nb*num_freqs + 2*nf + 0/1 ].                     */
+/* eigenmodes for frequency #nf and mode index modes[nm] are   */
+/*  coeffs[ 2*nm*num_freqs + 2*nf + 0/1 ].                     */
 /*                                                             */
 /* if vgrp is non-null, it should point to a caller-allocated  */
-/* array of size num_bands*num_freqs. then on return the group */
-/* velocity for the mode with frequency #nf and band index     */
-/* bands[nb] is stored in vgrp[nb*num_freqs + nf].             */
+/* array of size num_modes*num_freqs. then on return the group */
+/* velocity for the mode with frequency #nf and mode index     */
+/* modes[nm] is stored in vgrp[nm*num_freqs + nf].             */
 /***************************************************************/
-void fields::get_eigenmode_coefficients(dft_flux flux, 
-                                        int *bands, int num_bands,
+void fields::get_eigenmode_coefficients(dft_flux flux,
+                                        int *modes, int num_modes,
                                         std::complex<double> *coeffs,
                                         double *vgrp)
+                                        
 { 
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
   int num_freqs        = flux.Nfreq;
-  direction d          = flux.normal_direction;
+  direction dflux      = flux.normal_direction;
   volume where         = *(flux.where);
+  int parity           = 0;
   bool match_frequency = true;
-  int parity           = 0; // NO_PARITY
   double resolution    = a;
   double eig_tol       = 1.0e-4;
 
-  if (d==NO_DIRECTION)
+  if (dflux==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
-  // if the flux region extends over the full computational grid and we are bloch-periodic 
-  // in any direction, set the corresponding component of the eigenmode initial-guess 
-  // k-vector to be the (real part of the) bloch vector in that direction. otherwise just 
-  // set the initial-guess k component to zero.
-  vec kpoint(0.0,0.0,0.0);
-  LOOP_OVER_DIRECTIONS(this->v.dim, d)
-   if ( equal_float(where.in_direction(d), this->v.in_direction(d) ) )
-    if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
-     kpoint.set_direction(d, real(this->k[d]));
+  // if the flux region extends over the full computational grid in any direction
+  // if we are bloch_periodic in that direction, set the corresponding component
+  // of the eigenmode initial-guess k-vector to be the (real part of the) bloch
+  // vector in that direction.
+  vec kpoint(0.0, 0.0, 0.0), lambda(0.0, 0.0, 0.0);
+  bool transverse_directions_full_periodic = true;
+  LOOP_OVER_DIRECTIONS(where.dim,d)
+   { bool direction_is_periodic  = (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic);
+     bool flux_region_spans_cell = equal_float(where.in_direction(d), this->v.in_direction(d) );
+     if (direction_is_periodic && flux_region_spans_cell)
+      { kpoint.set_direction(d, real(this->k[d]));
+        lambda.set_direction(d, where.in_direction(d));
+      }
+     else
+      transverse_directions_full_periodic = false;
+   }
 
-  // loop over all bands and all frequencies
-  for(int nb=0; nb<num_bands; nb++)
-   for(int nf=0; nf<num_freqs; nf++)
-    {
-      /*--------------------------------------------------------------*/
-      /*- call mpb to compute the eigenmode --------------------------*/
-      /*--------------------------------------------------------------*/
-      int band_num = bands[nb];
-      double freq  = freq_min + nf*dfreq;
-      //if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
-      void *mode_data 
-       = get_eigenmode(freq, d, where, where, band_num, kpoint,
-                       match_frequency, parity, resolution, eig_tol);
+  // autodetect the planewave-diffraction scenario
+  double nflux=0.0; // refractive index on flux region
+  bool pw_diffraction = transverse_directions_full_periodic && is_homogeneous(this, where, &nflux);
 
-      double vg=get_group_velocity(mode_data);
-      if (vgrp) vgrp[nb*num_freqs + nf]=vg;
+  vector<int> requested_modes(modes, modes+num_modes);
 
-      /*--------------------------------------------------------------*/
-      /*--------------------------------------------------------------*/
-      /*--------------------------------------------------------------*/
-      cdouble mode_flux[2], mode_mode[2];
-      get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
-      get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
-      cdouble cplus   = 0.5*(mode_flux[0] + mode_flux[1]);
-      cdouble cminus  = 0.5*(mode_flux[0] - mode_flux[1]);
-      cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
-      if (normfac==0.0) normfac=1.0;
-      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(abs(normfac));
-      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(abs(normfac));
+  // loop over all frequencies and modes
+  for(int nf=0; nf<num_freqs; nf++)
+   { 
+     double freq  = freq_min + nf*dfreq;
+     
+     vector<double> kprop;
+     vector<int> modes_to_compute
+      = pw_diffraction ? get_propagating_modes(nflux*freq, kpoint, lambda, kprop, num_modes)
+                       : requested_modes;
+
+     for(size_t nm=0; nm<modes_to_compute.size(); nm++)
+      {
+        /*--------------------------------------------------------------*/
+        /*- call mpb to compute the eigenmode --------------------------*/
+        /*--------------------------------------------------------------*/
+        int mode_num = modes_to_compute[nm];
+        if (pw_diffraction)
+         kpoint.set_direction(dflux, kprop[nm]);
+        void *mode_data 
+         = get_eigenmode(freq, dflux, where, where, mode_num, kpoint,
+                         match_frequency, parity, resolution, eig_tol);
+
+        double vg=get_group_velocity(mode_data);
+        if (vgrp) vgrp[nm*num_freqs + nf]=vg;
+
+        /*--------------------------------------------------------------*/
+        /*--------------------------------------------------------------*/
+        /*--------------------------------------------------------------*/
+        cdouble mode_flux[2], mode_mode[2];
+        get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
+        get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
+        cdouble cplus   = 0.5*(mode_flux[0] + mode_flux[1]);
+        cdouble cminus  = 0.5*(mode_flux[0] - mode_flux[1]);
+        cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
+        if (normfac==0.0) normfac=1.0;
+        coeffs[ 2*nm*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(abs(normfac));
+        coeffs[ 2*nm*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(abs(normfac));
+      }
     }
 }
 
@@ -697,12 +780,12 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 }
 
 void fields::get_eigenmode_coefficients(dft_flux flux,
-                                        int *bands, int num_bands,
+                                        int *modes, int num_modes,
                                         std::complex<double> *coeffs,
-                                        double *vgrp)
+                                        double *vgrp);
                                         
-{ (void) flux; (void) bands; (void)num_bands;
-  (void) coeffs; (void) vgrp;
+{ (void) flux;   (void) modes; (void)num_modes; (void) coeffs; (void) vgrp;
+  //(void) parity; (void) user_kpoint_func; (void) user_kpoint_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
