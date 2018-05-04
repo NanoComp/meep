@@ -655,6 +655,7 @@ class volume {
   volume(ndim di) { dim = di; min_corner.dim = di; max_corner.dim = di; };
   volume(const vec &vec1, const vec &vec2);
   volume(const vec &pt);
+  volume(const volume &vol);
   void set_direction_min(direction d, double val) { min_corner.set_direction(d, val); };
   void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };

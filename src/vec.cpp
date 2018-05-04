@@ -168,6 +168,8 @@ volume::volume(const vec &pt) {
   max_corner = pt;
 }
 
+volume::volume(const volume &vol) : dim(vol.dim), min_corner(vol.min_corner), max_corner(vol.max_corner) {}
+
 double volume::computational_volume() const {
   double vol = 1.0;
   LOOP_OVER_DIRECTIONS(dim,d) vol *= in_direction(d);
