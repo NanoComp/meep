@@ -46,6 +46,7 @@
 %warnfilter(509) meep::symmetry::transform;
 %warnfilter(509) meep::symmetry::phase_shift;
 %warnfilter(509) meep::structure::structure;
+%warnfilter(509) meep::fields::get_eigenmode_coefficients;
 %warnfilter(451) meep::structure::outdir;
 %warnfilter(451) meep::fields_chunk::outdir;
 %warnfilter(325) meep::h5file::extending_s;

@@ -335,6 +335,34 @@ class Simulation(object):
                 return 3
         return self.dimensions
 
+    def _check_material_frequencies(self):
+
+        # TODO: CustomSource? EigenmodeSource?
+        source_freqs = [s.frequency for s in self.sources if hasattr(s, 'frequency')]
+        # TODO: Where do these come from?
+        dft_freqs = []
+
+        materials_with_freq_range = []
+        for mat in [go.material for go in self.geometry] + self.extra_materials:
+            if isinstance(mat, mp.Medium) and mat.valid_freq_range:
+                materials_with_freq_range.append(mat)
+
+        warn_src_fmt = "Warning: source frequency {} is out of material's range: {}:{}"
+        warn_dft_fmt = "Warning: DFT frequency {} is out of material's range: {}:{}"
+
+        for m in materials_with_freq_range:
+            min_freq = m.valid_freq_range.min
+            max_freq = m.valid_freq_range.max
+
+            for sf in source_freqs:
+                # TODO: +/- bandwith
+                if sf > max_freq or sf < min_freq:
+                    print(warn_src_fmt.format(sf, min_freq, max_freq))
+
+            for dftf in dft_freqs:
+                if dftf > max_freq or dftf < min_freq:
+                    print(warn_dft_fmt.format(dftf, min_freq, max_freq))
+
     def _init_structure(self, k=False):
         print('-' * 11)
         print('Initializing structure...')
@@ -398,6 +426,8 @@ class Simulation(object):
                                        False, self.default_material, absorbers, self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
+
+        self._check_material_frequencies()
 
     def set_materials(self, geometry=None, default_material=None):
         if self.fields:

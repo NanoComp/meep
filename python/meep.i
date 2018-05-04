@@ -988,6 +988,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         Cylinder,
         DrudeSusceptibility,
         Ellipsoid,
+        FreqRange,
         GeometricObject,
         Lattice,
         LorentzianSusceptibility,
