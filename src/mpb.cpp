@@ -617,6 +617,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
+  if (S.multiplicity() > 1)
+   abort("symmetries are not yet supported in get_eigenmode_coefficients");
+
   // if the flux region extends over the full computational grid and we are bloch-periodic
   // in any direction, set the corresponding component of the eigenmode initial-guess
   // k-vector to be the (real part of the) bloch vector in that direction. otherwise just
