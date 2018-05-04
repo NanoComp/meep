@@ -18,6 +18,7 @@
 /* HDF5 output of fields and arbitrary functions thereof.  Works
    very similarly to integrate.cpp (using fields::loop_in_chunks). */
 
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -239,8 +240,8 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   size_t dims[3];
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in output_hdf5");
-    size_t n = (data.max_corner.in_direction(d)
-	              - data.min_corner.in_direction(d)) / 2 + 1;
+    size_t n = std::max(0, (data.max_corner.in_direction(d) - data.min_corner.in_direction(d)) / 2 + 1);
+
     if (n > 1) {
       data.ds[rank] = d;
       dims[rank++] = n;

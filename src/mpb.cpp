@@ -603,7 +603,8 @@ bool equal_float(double d1, double d2)
 void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
-                                        double *vgrp)
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data)
 {
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -616,6 +617,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
 
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
+
+  if (S.multiplicity() > 1)
+   abort("symmetries are not yet supported in get_eigenmode_coefficients");
 
   // if the flux region extends over the full computational grid and we are bloch-periodic
   // in any direction, set the corresponding component of the eigenmode initial-guess
@@ -636,7 +640,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
-      //if (k_func) kpoint = k_func(k_func_data, freq, band_num);
+      if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       void *mode_data
        = get_eigenmode(freq, d, flux.where, flux.where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
@@ -698,10 +702,11 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands,
                                         std::complex<double> *coeffs,
-                                        double *vgrp)
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data)
 
 { (void) flux; (void) bands; (void)num_bands;
-  (void) coeffs; (void) vgrp;
+  (void) coeffs; (void) vgrp; (void) user_kpoint_func; (void) user_kpoint_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 

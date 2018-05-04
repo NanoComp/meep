@@ -926,7 +926,7 @@ class ModeSolver(object):
 
         self.num_bands = num_bands_save
         self.k_points = kpoints_save
-        ks = reversed(ks)
+        ks = list(reversed(ks))
         print("{}kvals:, {}, {}, {}".format(self.parity, omega, band_min, band_max), end='')
         for k in korig:
             print(", {}".format(k), end='')

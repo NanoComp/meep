@@ -1253,10 +1253,10 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
 
 /***************************************************************/
 /* prototype for optional user-supplied function to provide an */
-/* initial estimate of the wavevector of band #band at         */
+/* initial estimate of the wavevector of mode #mode at         */
 /* frequency freq for eigenmode calculations                   */
 /***************************************************************/
-typedef vec (*kpoint_func)(void *user_data, double freq, int band);
+typedef vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 class fields {
  public:
@@ -1459,7 +1459,8 @@ class fields {
   void get_eigenmode_coefficients(dft_flux flux,
                                   int *bands, int num_bands,
                                   std::complex<double> *coeffs,
-                                  double *vgrp);
+                                  double *vgrp, kpoint_func user_kpoint_func=0,
+                                  void *user_kpoint_data=0);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
