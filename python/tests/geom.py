@@ -1,5 +1,6 @@
 import math
 import unittest
+import warnings
 import numpy as np
 import meep as mp
 import meep.geom as gm
@@ -281,6 +282,39 @@ class TestMedium(unittest.TestCase):
         self.assertEqual(m.H_chi3_diag.x, 2)
         self.assertEqual(m.H_chi3_diag.y, 2)
         self.assertEqual(m.H_chi3_diag.z, 2)
+
+    def test_check_material_frequencies(self):
+        mat = mp.Medium(valid_freq_range=mp.FreqRange(min=10, max=20))
+        invalid_sources = [
+            [mp.Source(mp.GaussianSource(5, fwidth=1), mp.Ez, mp.Vector3())],
+            [mp.Source(mp.ContinuousSource(10, fwidth=1), mp.Ez, mp.Vector3())],
+            [mp.Source(mp.GaussianSource(10, width=1), mp.Ez, mp.Vector3())],
+            [mp.Source(mp.GaussianSource(20, width=1), mp.Ez, mp.Vector3())],
+        ]
+
+        for s in invalid_sources:
+            sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=20, sources=s, extra_materials=[mat])
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                sim.init_fields()
+
+                self.assertEqual(len(w), 1)
+                self.assertIn('source frequency', str(w[-1].message))
+
+        valid_sources = [
+            [mp.Source(mp.GaussianSource(15, fwidth=1), mp.Ez, mp.Vector3())],
+            [mp.Source(mp.ContinuousSource(15, width=5), mp.Ez, mp.Vector3())]
+        ]
+
+        for s in valid_sources:
+            sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=20, sources=s, extra_materials=[mat])
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                sim.init_fields()
+
+                self.assertEqual(len(w), 0)
 
 
 class TestVector3(unittest.TestCase):

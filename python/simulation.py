@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import warnings
 from collections import namedtuple
 from collections import Sequence
 
@@ -337,8 +338,11 @@ class Simulation(object):
 
     def _check_material_frequencies(self):
 
-        # TODO: CustomSource? EigenmodeSource?
-        source_freqs = [s.frequency for s in self.sources if hasattr(s, 'frequency')]
+        # TODO: Need to handle CustomSource?
+        # TODO: s.src.width is 1 / s.src.width if fwidth kwarg was given
+        source_freqs = [(s.src.frequency, s.src.width) for s in self.sources
+                        if hasattr(s.src, 'frequency')]
+
         # TODO: Where do these come from?
         dft_freqs = []
 
@@ -347,21 +351,20 @@ class Simulation(object):
             if isinstance(mat, mp.Medium) and mat.valid_freq_range:
                 materials_with_freq_range.append(mat)
 
-        warn_src_fmt = "Warning: source frequency {} is out of material's range: {}:{}"
-        warn_dft_fmt = "Warning: DFT frequency {} is out of material's range: {}:{}"
+        warn_src_fmt = "source frequency {} is out of material's range of {}-{}"
+        warn_dft_fmt = "DFT frequency {} is out of material's range of {}-{}"
 
         for m in materials_with_freq_range:
             min_freq = m.valid_freq_range.min
             max_freq = m.valid_freq_range.max
 
             for sf in source_freqs:
-                # TODO: +/- bandwith
-                if sf > max_freq or sf < min_freq:
-                    print(warn_src_fmt.format(sf, min_freq, max_freq))
+                if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
+                    warnings.warn(warn_src_fmt.format(sf, min_freq, max_freq), RuntimeWarning)
 
             for dftf in dft_freqs:
                 if dftf > max_freq or dftf < min_freq:
-                    print(warn_dft_fmt.format(dftf, min_freq, max_freq))
+                    warnings.warn(warn_dft_fmt.format(dftf, min_freq, max_freq), RuntimeWarning)
 
     def _init_structure(self, k=False):
         print('-' * 11)
