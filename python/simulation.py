@@ -781,6 +781,18 @@ class Simulation(object):
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
+    def get_flux_array_E(self, flux):
+        n = flux.get_flux_array_size(flux.E)
+        arr = np.zeros(n, np.complex128)
+        flux.get_flux_array(flux.E, arr)
+        return arr
+
+    def get_flux_array_H(self, flux):
+        n = flux.get_flux_array_size(flux.H)
+        arr = np.zeros(n, np.complex128)
+        flux.get_flux_array(flux.H, arr)
+        return arr
+
     def flux_in_box(self, d, box=None, center=None, size=None):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using flux_in_box')

@@ -59,7 +59,16 @@ class TestBendFlux(unittest.TestCase):
     def run_with_straight_waveguide(self):
         self.init(no_bend=True)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
+
         self.sim.save_flux('refl-flux', self.refl)
+
+        arr = self.sim.get_dft_array(self.refl, mp.Ey, 100)
+
+        import h5py
+        with h5py.File('bend_flux-refl-flux.h5', 'r') as f:
+            ref = f['ey_dft'].value
+            np.testing.assert_allclose(ref, arr)
+
 
         expected = [
             (0.1, 3.65231563251e-05, 3.68932495077e-05),
@@ -96,7 +105,7 @@ class TestBendFlux(unittest.TestCase):
         self.run_with_straight_waveguide()
         self.sim = None
         self.init()
-        self.sim.load_minus_flux('refl-flux', self.refl)
+        # self.sim.load_minus_flux('refl-flux', self.refl)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
 
         expected = [

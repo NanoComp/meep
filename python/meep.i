@@ -908,6 +908,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%apply (std::complex<realnum> *INPLACE_ARRAY1, int DIM1) {(std::complex<realnum> *cdata, int size)};
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
@@ -956,6 +958,33 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
+
+%extend meep::dft_flux {
+    size_t meep::dft_flux::get_flux_array_size(meep::dft_chunk *dc) {
+        size_t n = 0;
+        for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
+            n += cur->N * cur->Nomega;
+        size_t istart = partial_sum_to_all(n) - n; // sum(n) for processes before this
+        return sum_to_all(n);
+    }
+
+    void meep::dft_flux::get_flux_array(meep::dft_chunk dc, std::complex<realnum> *cdata, int size) {
+        (void)size;
+        size_t n = 0;
+        for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
+            n += cur->N * cur->Nomega;
+        size_t istart = partial_sum_to_all(n) - n; // sum(n) for processes before this
+        n = sum_to_all(n);
+
+        for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
+            size_t Nchunk = cur->N * cur->Nomega;
+            for (size_t i = istart; i < Nchunk; ++i) {
+                cdata[i] = cur->dft[i];
+            }
+            istart += Nchunk;
+        }
+    }
+};
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
