@@ -33,6 +33,20 @@
 
 namespace meep_geom {
 
+struct analysis_fragment {
+  meep::grid_volume *gv;
+  size_t num_anisotropic_eps_pixels;
+  size_t num_anisotropic_mu_pixels;
+  size_t num_nonlinear_pixels;
+  size_t num_lorenztians_per_pixel;
+  size_t num_susceptibility_pixels;
+  size_t num_dft_fields;
+  size_t num_fourier_pixels;
+  size_t num_fourier_freqs;
+  size_t num_flux_plan_intersects;
+};
+
+
 /* FIXME: we don't have to emulate the Scheme/libctl code here, which was
   limited to C functionality.  These types, especially the material types,
   should be proper C++ classes */
@@ -183,8 +197,9 @@ material_type make_file_material(char *epsilon_input_file);
 
 void read_epsilon_file(const char *eps_input_file);
 
-
-
+void compute_fragment_statistics(std::vector<analysis_fragment> fragments);
+void compute_fragment_statistics(analysis_fragment *fragment);
+void update_fragment_stats_from_material(analysis_fragment *fragment, material_type mat);
 
 }; // namespace meep_geom
 

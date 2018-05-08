@@ -1568,6 +1568,15 @@ void set_materials_from_geometry(meep::structure *s,
   s->remove_susceptibilities();
   geps.add_susceptibilities(s);
 
+  // TODO: Only do this if asked to compute fragment statistics.
+  analysis_fragment fragment = {};
+
+  // TODO: break up the cell into multiple fragments.
+  // For testing we just use the whole grid_volume.
+  fragment.gv = &s->gv;
+  compute_fragment_statistics(&fragment);
+  master_printf("num_nonlinear_pixels: %zu\n", fragment.num_nonlinear_pixels);
+
   master_printf("-----------\n");
 }
 
@@ -1627,4 +1636,62 @@ material_type make_file_material(const char *eps_input_file)
   return md;
 }
 
+/******************************************************************************/
+/******************************************************************************/
+/******************************************************************************/
+
+void compute_fragment_statistics(std::vector<analysis_fragment> fragments) {
+  for (size_t i = 0; i < fragments.size(); ++i) {
+    compute_fragment_statistics(&fragments[i]);
+  }
+}
+
+void compute_fragment_statistics(analysis_fragment *fragment) {
+  switch(fragment->gv->dim) {
+  case meep::D1:
+    for (int x = 0; x < fragment->gv->nx(); ++x) {
+      vector3 v3 = {(double)x, 0, 0};
+      const material_type mat = (material_type)material_of_point(v3);
+      update_fragment_stats_from_material(fragment, mat);
+    }
+    break;
+  case meep::D2:
+    for (int x = 0; x < fragment->gv->nx(); ++x) {
+      for (int y = 0; y < fragment->gv->ny(); ++y) {
+        vector3 v3 = {(double)x, (double)y, 0};
+        material_type mat = (material_type)material_of_point(v3);
+        update_fragment_stats_from_material(fragment, mat);
+      }
+    }
+    break;
+  case meep::D3:
+    for (int x = 0; x < fragment->gv->nx(); ++x) {
+      for (int y = 0; y < fragment->gv->ny(); ++y) {
+        for (int z = 0; z < fragment->gv->nz(); ++z) {
+          vector3 v3 = {(double)x, (double)y, (double)z};
+          const material_type mat = (material_type)material_of_point(v3);
+          update_fragment_stats_from_material(fragment, mat);
+        }
+      }
+    }
+    break;
+  case meep::Dcyl:
+      // TODO
+      break;
+  default:
+    return;
+  }
+}
+
+void update_fragment_stats_from_material(analysis_fragment *fragment, material_type mat) {
+    medium_struct *med = &mat->medium;
+    for (meep::component c = meep::Ex; c <= meep::Hz; c = (meep::component)(c + 1)) {
+    if (get_chi(c, med, 2) != 0) {
+      fragment->num_nonlinear_pixels++;
+    }
+    if (get_chi(c, med, 3) != 0) {
+      fragment->num_nonlinear_pixels++;
+    }
+  }
+}
 } // namespace meep_geom

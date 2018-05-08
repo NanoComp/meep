@@ -14,7 +14,7 @@ libmeepgeom_la_SOURCES = \
 libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 libmeepgeom_la_LIBADD = $(LIBMEEP)
 
-check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields
+check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields test_analysis_fragment
 
 absorber_1d_ll_SOURCES = absorber-1d-ll.cpp
 absorber_1d_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
@@ -34,7 +34,7 @@ array_slice_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 dft_fields_SOURCES = dft-fields.cpp
 dft_fields_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
-TESTS           = cyl-ellipsoid-ll array-slice-ll
+TESTS           = cyl-ellipsoid-ll array-slice-ll test_analysis_fragment
 TESTS_ENVIRONMENT = export LD_PRELOAD=$(abs_top_builddir)/src/.libs/libmeep.so;
 
 #LOG_COMPILER = $(RUNCODE)
@@ -46,6 +46,9 @@ bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 user_defined_material_SOURCES = user-defined-material.cpp
 user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+test_analysis_fragment_SOURCES = test_analysis_fragment.cpp
+test_analysis_fragment_LDADD = libmeepgeom.la $(MEEPLIBS)
 
 dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
 
