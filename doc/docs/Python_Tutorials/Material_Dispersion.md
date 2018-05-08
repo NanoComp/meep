@@ -2,7 +2,7 @@
 # Material Dispersion
 ---
 
-In these examples, we will perform simulations with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported.
+In these two examples, we will perform simulations with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported.
 
 [TOC]
 
@@ -14,9 +14,9 @@ The wavelength-dependent, lossless permittivity of fused quartz, measured experi
 
 $$\varepsilon(\lambda) = 1 + \frac{0.6961663\lambda^2}{\lambda^2-0.0684043^2} + \frac{0.4079426\lambda^2}{\lambda^2-0.1162414^2} + \frac{0.8974794\lambda^2}{\lambda^2-9.896161^2}$$
 
-The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be directly imported into Meep via the [Lorentzian susceptibility profile](Materials/#material-dispersion) using a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L39-L53).
+The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be directly imported into Meep via the [Lorentzian susceptibility profile](Materials/#material-dispersion) using a slight reorganization to convert from the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L39-L53).
 
-The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: an empty cell to obtain the incident power and another with the fused quartz to obtain the reflected power, as demonstrated in a [separate tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities. The simulation script is shown below and is also available in [refl-quartz.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-quartz.py).
+The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the fused quartz to obtain the reflected power, as demonstrated in a [separate tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities. The simulation script below is in [refl-quartz.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-quartz.py).
 
 ```py
 import meep as mp
@@ -87,10 +87,10 @@ The following Bash shell script runs the two simulations, pipes the output to a 
 ```sh
 #!/bin/bash
 
-python refl_quartz.py -empty |tee flux0.out
+python refl-quartz.py -empty |tee flux0.out
 grep flux1: flux0.out |cut -d , -f2- > flux0.dat
 
-python refl_quartz.py |tee flux.out
+python refl-quartz.py |tee flux.out
 grep flux1: flux.out |cut -d , -f2- > flux.dat
 ```
 
@@ -107,14 +107,14 @@ f = np.genfromtxt("flux.dat", delimiter=",")
 lambdas = 1/f[:,0]
 R_meep = -f[:,1]/f0[:,1]
 
-eps_fused_quartz = lambda l: 1+0.696166300*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.407942600*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.897479400*pow(l,2)/(pow(l,2)-pow(9.896161,2))
+eps_fused_quartz = lambda l: 1+0.6961663*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.4079426*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.8974794*pow(l,2)/(pow(l,2)-pow(9.896161,2))
 R_fresnel = lambda l: math.pow(math.fabs(1-math.sqrt(eps_fused_quartz(l)))/(1+math.sqrt(eps_fused_quartz(l))),2)
 R_analytic = [ R_fresnel(i) for i in lambdas ]
 
 plt.plot(lambdas,R_meep,'bo-',label='meep')
 plt.plot(lambdas,R_analytic,'rs-',label='analytic')
 plt.xlabel("wavelength (um)")
-plt.ylabel("reflection coefficient")
+plt.ylabel("reflectance")
 plt.axis([0.4, 0.8, 0.0340, 0.0365])
 plt.xticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.legend(loc='upper right')

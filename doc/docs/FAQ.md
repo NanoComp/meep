@@ -122,7 +122,7 @@ Examples are provided in [Tutorials/Frequency-Domain Solver](Python_Tutorials/Fr
 
 ### Is there a materials library?
 
-A materials library is available containing silicon as well as 11 commonly used elemental metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. Additional information is provided in [Materials](Materials/#materials-library).
+A materials library is available containing silicon, gallium arsenide (GaAs), borosilicate glass ([BK7](https://en.wikipedia.org/wiki/Borosilicate_glass)), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), as well as 11 commonly used elemental metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. Additional information is provided in [Materials](Materials/#materials-library).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
