@@ -45,6 +45,7 @@ class ContinuousSource(SourceTime):
         self.swigobj = mp.continuous_src_time(self.frequency, self.width, self.start_time,
                                               self.end_time, self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
+        self._using_fwidth = 1 / fwidth > width
 
 
 class GaussianSource(SourceTime):
@@ -61,6 +62,7 @@ class GaussianSource(SourceTime):
         self.swigobj = mp.gaussian_src_time(self.frequency, self.width, self.start_time,
                                             self.start_time + 2 * self.width * self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
+        self._using_fwidth = 1 / fwidth > width
 
 
 class CustomSource(SourceTime):

@@ -292,15 +292,29 @@ class TestMedium(unittest.TestCase):
             [mp.Source(mp.GaussianSource(20, width=1), mp.Ez, mp.Vector3())],
         ]
 
-        for s in invalid_sources:
-            sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=20, sources=s, extra_materials=[mat])
+        cell_size = mp.Vector3(5, 5)
+        resolution = 5
 
+        def check_warnings(sim, should_warn=True):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
-                sim.init_fields()
+                sim.run(until=5)
 
-                self.assertEqual(len(w), 1)
-                self.assertIn('source frequency', str(w[-1].message))
+                if should_warn:
+                    self.assertEqual(len(w), 1)
+                    self.assertIn("out of material's range", str(w[-1].message))
+                else:
+                    self.assertEqual(len(w), 0)
+
+        for s in invalid_sources:
+            # Check for invalid extra_materials
+            sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, extra_materials=[mat])
+            check_warnings(sim)
+
+            # Check for invalid geometry materials
+            geom = [mp.Sphere(0.2, material=mat)]
+            sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, geometry=geom)
+            check_warnings(sim)
 
         valid_sources = [
             [mp.Source(mp.GaussianSource(15, fwidth=1), mp.Ez, mp.Vector3())],
@@ -308,13 +322,14 @@ class TestMedium(unittest.TestCase):
         ]
 
         for s in valid_sources:
-            sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=20, sources=s, extra_materials=[mat])
+            sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, extra_materials=[mat])
+            check_warnings(sim, False)
 
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                sim.init_fields()
-
-                self.assertEqual(len(w), 0)
+        # Check DFT frequencies
+        # sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s)
+        # fregion = mp.FluxRegion(center=mp.Vector3(), size=mp.Vector3(2, 2))
+        # sim.add_flux(15, 5, 1, fregion)
+        # check_warnings(sim)
 
 
 class TestVector3(unittest.TestCase):

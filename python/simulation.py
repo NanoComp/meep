@@ -300,6 +300,7 @@ class Simulation(object):
         self.material_function = material_function
         self.epsilon_func = epsilon_func
         self.load_structure_file = load_structure
+        self.dft_objects = []
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -336,35 +337,41 @@ class Simulation(object):
                 return 3
         return self.dimensions
 
-    def _check_material_frequencies(self):
+    def _get_valid_material_frequencies(self):
+        fmin = 0
+        fmax = float('inf')
 
-        # TODO: Need to handle CustomSource?
-        # TODO: s.src.width is 1 / s.src.width if fwidth kwarg was given
-        source_freqs = [(s.src.frequency, s.src.width) for s in self.sources
-                        if hasattr(s.src, 'frequency')]
-
-        # TODO: Where do these come from?
-        dft_freqs = []
-
-        materials_with_freq_range = []
         for mat in [go.material for go in self.geometry] + self.extra_materials:
             if isinstance(mat, mp.Medium) and mat.valid_freq_range:
-                materials_with_freq_range.append(mat)
+                if mat.valid_freq_range.min > fmin:
+                    fmin = mat.valid_freq_range.min
+                if mat.valid_freq_range.max < fmax:
+                    fmax = mat.valid_freq_range.max
 
-        warn_src_fmt = "source frequency {} is out of material's range of {}-{}"
-        warn_dft_fmt = "DFT frequency {} is out of material's range of {}-{}"
+        return fmin, fmax
 
-        for m in materials_with_freq_range:
-            min_freq = m.valid_freq_range.min
-            max_freq = m.valid_freq_range.max
+    def _check_material_frequencies(self):
 
-            for sf in source_freqs:
-                if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
-                    warnings.warn(warn_src_fmt.format(sf, min_freq, max_freq), RuntimeWarning)
+        min_freq, max_freq = self._get_valid_material_frequencies()
 
-            for dftf in dft_freqs:
-                if dftf > max_freq or dftf < min_freq:
-                    warnings.warn(warn_dft_fmt.format(dftf, min_freq, max_freq), RuntimeWarning)
+        source_freqs = [(s.src.frequency, s.src.width if s.src._using_fwidth else 1 / s.src.width)
+                        for s in self.sources
+                        if hasattr(s.src, 'frequency')]
+
+        dft_freqs = []
+        for dftf in self.dft_objects:
+            dft_freqs.append(dftf.freq_min)
+            dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
+
+        warn_fmt = "{} frequency {} is out of material's range of {}-{}"
+
+        for sf in source_freqs:
+            if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
+                warnings.warn(warn_fmt.format('source', sf, min_freq, max_freq), RuntimeWarning)
+
+        for dftf in dft_freqs:
+            if dftf > max_freq or dftf < min_freq:
+                warnings.warn(warn_fmt.format('DFT', dftf, min_freq, max_freq), RuntimeWarning)
 
     def _init_structure(self, k=False):
         print('-' * 11)
@@ -429,8 +436,6 @@ class Simulation(object):
                                        False, self.default_material, absorbers, self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
-
-        self._check_material_frequencies()
 
     def set_materials(self, geometry=None, default_material=None):
         if self.fields:
@@ -728,7 +733,10 @@ class Simulation(object):
         except ValueError:
             where = self.fields.total_volume()
 
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        dftf = self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        self.dft_objects.append(dftf)
+
+        return dftf
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
@@ -876,6 +884,7 @@ class Simulation(object):
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        self.dft_objects.append(stuff)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -1041,6 +1050,8 @@ class Simulation(object):
             self.init_fields()
 
     def run(self, *step_funcs, **kwargs):
+        self._check_material_frequencies()
+
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
 
