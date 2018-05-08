@@ -1,11 +1,89 @@
 ; Materials Library
 
-; silicon (intrinsic, T=300K) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
-; - based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
-; wavelength range: 0.4 - 1.0 um
-
 ; default unit length is 1 um
 (define um-scale 1.0)
+
+; conversion factor for eV to 1/um [=1/hc]
+(define eV-um-scale (/ um-scale 1.23984193))
+
+;------------------------------------------------------------------
+
+; BK7 from SCHOTT Zemax catalog 2017-01-20b
+; fit from https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
+; wavelength range: 0.3 - 2.5 um
+
+(define BK7-frq1 (/ (* 0.07746417668832478 um-scale)))
+(define BK7-gam1 0)
+(define BK7-sig1 1.03961212)
+(define BK7-frq2 (/ (* 0.14148467902921502 um-scale)))
+(define BK7-gam2 0)
+(define BK7-sig2 0.231792344)
+(define BK7-frq3 (/ (* 10.176475470417055 um-scale)))
+(define BK7-gam3 0)
+(define BK7-sig3 1.01046945)
+
+(define BK7 (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency BK7-frq1) (gamma BK7-gam1) (sigma BK7-sig1))
+  (make lorentzian-susceptibility
+    (frequency BK7-frq2) (gamma BK7-gam2) (sigma BK7-sig2))
+  (make lorentzian-susceptibility
+    (frequency BK7-frq3) (gamma BK7-gam3) (sigma BK7-sig3)))))
+
+;------------------------------------------------------------------
+
+; fused quartz from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
+; wavelength range: 0.21 - 6.7 um
+
+(define fused-quartz-frq1 (/ (* 0.0684043 um-scale)))
+(define fused-quartz-gam1 0)
+(define fused-quartz-sig1 0.696166300)
+(define fused-quartz-frq2 (/ (* 0.1162414 um-scale)))
+(define fused-quartz-gam2 0)
+(define fused-quartz-sig2 0.407942600)
+(define fused-quartz-frq3 (/ (* 9.896161 um-scale)))
+(define fused-quartz-gam3 0)
+(define fused-quartz-sig3 0.897479400)
+
+(define fused-quartz (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency fused-quartz-frq1) (gamma fused-quartz-gam1) (sigma fused-quartz-sig1))
+  (make lorentzian-susceptibility
+    (frequency fused-quartz-frq2) (gamma fused-quartz-gam2) (sigma fused-quartz-sig2))
+  (make lorentzian-susceptibility
+    (frequency fused-quartz-frq3) (gamma fused-quartz-gam3) (sigma fused-quartz-sig3)))))
+
+;------------------------------------------------------------------
+
+; GaAs from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
+; wavelength range: 0.97 - 17 um
+
+(define GaAs-frq1 (/ (* 0.4431307 um-scale)))
+(define GaAs-gam1 0)
+(define GaAs-sig1 5.466742)
+(define GaAs-frq2 (/ (* 0.8746453 um-scale)))
+(define GaAs-gam2 0)
+(define GaAs-sig2 0.02429960)
+(define GaAs-frq3 (/ (* 36.9166 um-scale)))
+(define GaAs-gam3 0)
+(define GaAs-sig3 1.957522)
+
+(define GaAs (make medium (epsilon 5.372514)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency GaAs-frq1) (gamma GaAs-gam1) (sigma GaAs-sig1))
+  (make lorentzian-susceptibility
+    (frequency GaAs-frq2) (gamma GaAs-gam2) (sigma GaAs-sig2))
+  (make lorentzian-susceptibility
+    (frequency GaAs-frq3) (gamma GaAs-gam3) (sigma GaAs-sig3)))))
+
+;------------------------------------------------------------------
+
+; silicon (intrinsic, T=300K) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+; [based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995]
+; wavelength range: 0.4 - 1.0 um
 
 (define Si-frq1 (/ 3.64 um-scale))
 (define Si-gam1 0)
@@ -32,9 +110,6 @@
 
 ; elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 ; wavelength range: 0.2 - 12.4 um
-
-; conversion factor for eV to 1/um [=1/hc]
-(define eV-um-scale (/ um-scale 1.23984193))
 
 (define Ag-plasma-frq (* 9.01 eV-um-scale))
 

@@ -2,11 +2,136 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.py](https://github.com/stevengj/meep/blob/master/python/examples/material-dispersion.py). From the dispersion relation $ω(k)$, we will compute the numerical ε(ω) via the formula:
+In these examples, we will perform simulations with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported.
+
+[TOC]
+
+### Reflectance of Air-Fused Quartz Interface
+
+We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz) (or fused silica). As a validation, a comparison of the simulated result will be made with the reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations#Normal_incidence).
+
+The wavelength-dependent, lossless permittivity of fused quartz, measured experimentally at 20$^\circ$, can be approximated by the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation):
+
+$$\varepsilon(\lambda) = 1 + \frac{0.6961663\lambda^2}{\lambda^2-0.0684043^2} + \frac{0.4079426\lambda^2}{\lambda^2-0.1162414^2} + \frac{0.8974794\lambda^2}{\lambda^2-9.896161^2}$$
+
+The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be directly imported into Meep via the [Lorentzian susceptibility profile](Materials/#material-dispersion) using a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L39-L53).
+
+The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: an empty cell to obtain the incident power and another with the fused quartz to obtain the reflected power, as demonstrated in a [separate tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities. The simulation script is shown below and is also available in [refl-quartz.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-quartz.py).
+
+```py
+import meep as mp
+import argparse
+
+import sys
+sys.path.insert(0, '/path/to/materials_library/')
+from materials_library import *
+
+def main(args):
+
+    resolution = args.res
+
+    sz = args.sz
+    cell_size = mp.Vector3(0,0,sz)
+
+    lambda_min = 0.4
+    lambda_max = 0.8
+    fmax = 1/lambda_min
+    fmin = 1/lambda_max
+    fcen = 0.5*(fmax+fmin)
+    df = fmax-fmin
+    
+    dpml = 1.0
+    pml_layers = [ mp.PML(dpml) ]
+    
+    sources = [ mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ex, center=mp.Vector3(0,0,-0.5*sz+dpml)) ]
+
+    if args.empty:
+        geometry = []
+    else:
+        geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=fused_quartz) ]
+
+    sim = mp.Simulation(cell_size=cell_size,
+                        boundary_layers=pml_layers,
+                        geometry=geometry,
+                        sources=sources,
+                        dimensions=1,
+                        k_point=mp.Vector3(0,0,0),
+                        resolution=resolution)
+
+    refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
+
+    nfreq = 50
+    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+
+    if not args.empty:
+        sim.load_minus_flux('refl-flux', refl)
+
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
+
+    if args.empty:
+        sim.save_flux('refl-flux', refl)
+
+    sim.display_fluxes(refl)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-empty', action='store_true', default=False, help="empty? (default: False)")
+    parser.add_argument('-res', type=int, default=400, help='resolution (default: 400 pixels/um)')
+    parser.add_argument('-sz', type=float, default=10, help='cell size (default: 10 um)')
+    args = parser.parse_args()
+    main(args)
+```
+
+The following Bash shell script runs the two simulations, pipes the output to a file, and extracts the flux data into a separate file.
+
+```sh
+#!/bin/bash
+
+python refl_quartz.py -empty |tee flux0.out
+grep flux1: flux0.out |cut -d , -f2- > flux0.dat
+
+python refl_quartz.py |tee flux.out
+grep flux1: flux.out |cut -d , -f2- > flux.dat
+```
+
+A plot of the reflectance spectrum for the two approaches is generated using the Python script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
+
+```py
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+f0 = np.genfromtxt("flux0.dat", delimiter=",")
+f = np.genfromtxt("flux.dat", delimiter=",")
+
+lambdas = 1/f[:,0]
+R_meep = -f[:,1]/f0[:,1]
+
+eps_fused_quartz = lambda l: 1+0.696166300*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.407942600*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.897479400*pow(l,2)/(pow(l,2)-pow(9.896161,2))
+R_fresnel = lambda l: math.pow(math.fabs(1-math.sqrt(eps_fused_quartz(l)))/(1+math.sqrt(eps_fused_quartz(l))),2)
+R_analytic = [ R_fresnel(i) for i in lambdas ]
+
+plt.plot(lambdas,R_meep,'bo-',label='meep')
+plt.plot(lambdas,R_analytic,'rs-',label='analytic')
+plt.xlabel("wavelength (um)")
+plt.ylabel("reflection coefficient")
+plt.axis([0.4, 0.8, 0.0340, 0.0365])
+plt.xticks([t for t in np.arange(0.4,0.9,0.1)])
+plt.legend(loc='upper right')
+plt.show()
+```
+
+<center>
+![](../images/fused_quartz_reflectance_spectrum.png)
+</center>
+
+### Permittivity Function of an Artificial Dispersive Material
+
+We will model a *uniform medium* of an artificial dispersive material. From the dispersion relation $ω(k)$, we will compute the numerical ε(ω) via the formula:
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
-We will then compare this with the analytical ε(ω) that we specified.
+We will then compare this with the analytical ε(ω) that we specified. The simulation script is in [material-dispersion.py](https://github.com/stevengj/meep/blob/master/python/examples/material-dispersion.py).
 
 Since this is a uniform medium, our computational cell can actually be of *zero* size (i.e. one pixel), where we will use Bloch-periodic boundary conditions to specify the wavevector *k*.
 
@@ -15,7 +140,7 @@ cell = mp.Vector3()
 resolution = 20
 ```
 
-We will then fill all space with a dispersive material:
+We will then fill all space with an artificial dispersive material:
 
 ```py
 susceptibilities = [mp.LorentzianSusceptibility(frequency=1.1, gamma=1e-5, sigma=0.5),

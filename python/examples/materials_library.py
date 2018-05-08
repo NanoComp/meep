@@ -2,12 +2,82 @@
 
 import meep as mp
 
-# silicon from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
-# - based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
-# wavelength range: 0.4 - 1.0 um
-
 # default unit length is 1 um
 um_scale = 1.0
+
+# conversion factor for eV to 1/um [=1/hc]
+eV_um_scale = um_scale/1.23984193
+
+#------------------------------------------------------------------
+
+# BK7 from SCHOTT Zemax catalog 2017-01-20b
+# fit from https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
+# wavelength range: 0.3 - 2.5 um
+
+BK7_frq1 = 1/(0.07746417668832478*um_scale)
+BK7_gam1 = 0
+BK7_sig1 = 1.03961212
+BK7_frq2 = 1/(0.14148467902921502*um_scale)
+BK7_gam2 = 0
+BK7_sig2 = 0.231792344
+BK7_frq3 = 1/(10.176475470417055*um_scale)
+BK7_gam3 = 0
+BK7_sig3 = 1.01046945
+
+BK7_susc = [ mp.LorentzianSusceptibility(frequency=BK7_frq1, gamma=BK7_gam1, sigma=BK7_sig1),
+             mp.LorentzianSusceptibility(frequency=BK7_frq2, gamma=BK7_gam2, sigma=BK7_sig2),
+             mp.LorentzianSusceptibility(frequency=BK7_frq3, gamma=BK7_gam3, sigma=BK7_sig3) ]
+
+BK7 = mp.Medium(epsilon=1.0, E_susceptibilities=BK7_susc)
+
+#------------------------------------------------------------------
+
+# fused quartz from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
+# fit from https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
+# wavelength range: 0.21 - 6.7 um
+
+fused_quartz_frq1 = 1/(0.0684043*um_scale)
+fused_quartz_gam1 = 0
+fused_quartz_sig1 = 0.696166300
+fused_quartz_frq2 = 1/(0.1162414*um_scale)
+fused_quartz_gam2 = 0
+fused_quartz_sig2 = 0.407942600
+fused_quartz_frq3 = 1/(9.896161*um_scale)
+fused_quartz_gam3 = 0
+fused_quartz_sig3 = 0.897479400
+
+fused_quartz_susc = [ mp.LorentzianSusceptibility(frequency=fused_quartz_frq1, gamma=fused_quartz_gam1, sigma=fused_quartz_sig1),
+                      mp.LorentzianSusceptibility(frequency=fused_quartz_frq2, gamma=fused_quartz_gam2, sigma=fused_quartz_sig2),
+                      mp.LorentzianSusceptibility(frequency=fused_quartz_frq3, gamma=fused_quartz_gam3, sigma=fused_quartz_sig3) ]
+
+fused_quartz = mp.Medium(epsilon=1.0, E_susceptibilities=fused_quartz_susc)
+
+#------------------------------------------------------------------
+
+# GaAs from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
+# wavelength range: 0.97 - 17 um
+
+GaAs_frq1 = 1/(0.4431307*um_scale)
+GaAs_gam1 = 0
+GaAs_sig1 = 5.466742
+GaAs_frq2 = 1/(0.8746453*um_scale)
+GaAs_gam2 = 0
+GaAs_sig2 = 0.02429960
+GaAs_frq3 = 1/(36.9166*um_scale)
+GaAs_gam3 = 0
+GaAs_sig3 = 1.957522
+
+GaAs_susc = [ mp.LorentzianSusceptibility(frequency=GaAs_frq1, gamma=GaAs_gam1, sigma=GaAs_sig1),
+              mp.LorentzianSusceptibility(frequency=GaAs_frq2, gamma=GaAs_gam2, sigma=GaAs_sig2),
+              mp.LorentzianSusceptibility(frequency=GaAs_frq3, gamma=GaAs_gam3, sigma=GaAs_sig3) ]
+
+GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc)
+
+#------------------------------------------------------------------
+
+# silicon from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+# [based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995]
+# wavelength range: 0.4 - 1.0 um
 
 Si_frq1 = 3.64/um_scale
 Si_gam1 = 0
@@ -29,9 +99,6 @@ Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc)
 
 # metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um
-
-# conversion factor for eV to 1/um [=1/hc]
-eV_um_scale = um_scale/1.23984193
 
 Ag_plasma_frq = 9.01*eV_um_scale
 Ag_f0 = 0.845
