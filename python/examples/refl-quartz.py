@@ -2,7 +2,7 @@ import meep as mp
 import argparse
 
 import sys
-sys.path.insert(0, '/home/oskooi/install/meep5/python/examples')
+sys.path.insert(0, '/path/to/materials_library/')
 from materials_library import *
 
 def main(args):

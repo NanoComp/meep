@@ -1,4 +1,4 @@
-(include "/home/oskooi/install/meep5/scheme/examples/materials-library.scm")
+(include "/path/to/materials_library.scm")
 
 (set-param! resolution 400) ; pixels/um
 
