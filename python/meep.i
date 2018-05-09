@@ -382,11 +382,8 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
 
 void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
     (void)size;
-    size_t n = 0;
-    for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft)
-        n += cur->N * cur->Nomega;
-    size_t istart = partial_sum_to_all(n) - n; // sum(n) for processes before this
-    n = sum_to_all(n);
+    size_t istart;
+    meep::dft_chunks_Ntotal(dc, &istart);
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
         size_t Nchunk = cur->N * cur->Nomega;
