@@ -306,13 +306,14 @@ class TestMedium(unittest.TestCase):
                 else:
                     self.assertEqual(len(w), 0)
 
+        geom = [mp.Sphere(0.2, material=mat)]
+
         for s in invalid_sources:
             # Check for invalid extra_materials
             sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, extra_materials=[mat])
             check_warnings(sim)
 
             # Check for invalid geometry materials
-            geom = [mp.Sphere(0.2, material=mat)]
             sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, geometry=geom)
             check_warnings(sim)
 
@@ -326,10 +327,18 @@ class TestMedium(unittest.TestCase):
             check_warnings(sim, False)
 
         # Check DFT frequencies
-        # sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s)
-        # fregion = mp.FluxRegion(center=mp.Vector3(), size=mp.Vector3(2, 2))
-        # sim.add_flux(15, 5, 1, fregion)
-        # check_warnings(sim)
+
+        # Invalid extra_materials
+        sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=valid_sources[0],
+                            extra_materials=[mat])
+        fregion = mp.FluxRegion(center=mp.Vector3(0, 1), size=mp.Vector3(2, 2), direction=mp.X)
+        sim.add_flux(15, 6, 2, fregion)
+        check_warnings(sim)
+
+        # Invalid geometry material
+        sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=valid_sources[0], geometry=geom)
+        sim.add_flux(15, 6, 2, fregion)
+        check_warnings(sim)
 
 
 class TestVector3(unittest.TestCase):
