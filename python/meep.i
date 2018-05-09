@@ -31,6 +31,10 @@
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
 
+namespace meep {
+    size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
+}
+
 using namespace meep;
 using namespace meep_geom;
 
@@ -356,7 +360,49 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
 
     return py_arr;
 }
+
+size_t _get_dft_data_size(meep::dft_chunk *dc) {
+    size_t istart;
+    return meep::dft_chunks_Ntotal(dc, &istart);
+}
+
+void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
+    (void)size;
+    size_t istart;
+    meep::dft_chunks_Ntotal(dc, &istart);
+
+    for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
+        size_t Nchunk = cur->N * cur->Nomega;
+        for (size_t i = 0; i < Nchunk; ++i) {
+            cdata[i + istart] = cur->dft[i + istart];
+        }
+        istart += Nchunk;
+    }
+    // TODO: Get all of cdata on master when using MPI?
+}
+
+void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
+    (void)size;
+    size_t n = 0;
+    for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft)
+        n += cur->N * cur->Nomega;
+    size_t istart = partial_sum_to_all(n) - n; // sum(n) for processes before this
+    n = sum_to_all(n);
+
+    for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
+        size_t Nchunk = cur->N * cur->Nomega;
+        for (size_t i = 0; i < Nchunk; ++i) {
+            cur->dft[i + istart] = cdata[i + istart];
+        }
+        istart += Nchunk;
+    }
+    // TODO: MPI
+}
+
 %}
+
+%numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
+%apply (std::complex<meep::realnum> *INPLACE_ARRAY1, int DIM1) {(std::complex<meep::realnum> *cdata, int size)};
 
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
 // pointer object instead of as a built-in function
@@ -374,6 +420,9 @@ PyObject *_dft_ldos_F(meep::dft_ldos *f);
 PyObject *_dft_ldos_J(meep::dft_ldos *f);
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq);
+size_t _get_dft_data_size(meep::dft_chunk *dc);
+void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size);
+void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -908,8 +957,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
-%apply (std::complex<realnum> *INPLACE_ARRAY1, int DIM1) {(std::complex<realnum> *cdata, int size)};
-
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
@@ -958,33 +1005,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
-
-%extend meep::dft_flux {
-    size_t meep::dft_flux::get_flux_array_size(meep::dft_chunk *dc) {
-        size_t n = 0;
-        for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
-            n += cur->N * cur->Nomega;
-        size_t istart = partial_sum_to_all(n) - n; // sum(n) for processes before this
-        return sum_to_all(n);
-    }
-
-    void meep::dft_flux::get_flux_array(meep::dft_chunk dc, std::complex<realnum> *cdata, int size) {
-        (void)size;
-        size_t n = 0;
-        for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
-            n += cur->N * cur->Nomega;
-        size_t istart = partial_sum_to_all(n) - n; // sum(n) for processes before this
-        n = sum_to_all(n);
-
-        for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
-            size_t Nchunk = cur->N * cur->Nomega;
-            for (size_t i = istart; i < Nchunk; ++i) {
-                cdata[i] = cur->dft[i];
-            }
-            istart += Nchunk;
-        }
-    }
-};
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
