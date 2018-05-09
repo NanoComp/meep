@@ -378,7 +378,6 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
         }
         istart += Nchunk;
     }
-    // TODO: Get all of cdata on master when using MPI?
 }
 
 void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
@@ -396,7 +395,6 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int
         }
         istart += Nchunk;
     }
-    // TODO: MPI
 }
 
 %}
