@@ -354,7 +354,7 @@ class Simulation(object):
 
         min_freq, max_freq = self._get_valid_material_frequencies()
 
-        source_freqs = [(s.src.frequency, 1 / s.src.width)
+        source_freqs = [(s.src.frequency, 0 if s.src.width == 0 else 1 / s.src.width)
                         for s in self.sources
                         if hasattr(s.src, 'frequency')]
 
