@@ -6,17 +6,17 @@ In these two examples, we will perform simulations with a **frequency-dependent 
 
 [TOC]
 
-### Reflectance of Air-Fused Quartz Interface
+### Reflectance Spectrum of Air-Fused Quartz Interface
 
-We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz) (or fused silica). As a validation, a comparison of the simulated result will be made with the reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations#Normal_incidence).
+We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) spectrum at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz) (or fused silica). As a validation, we will compare the simulated result with the analytic reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations).
 
 The wavelength-dependent, lossless permittivity of fused quartz, measured experimentally at 20$^\circ$, can be approximated by the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation):
 
 $$\varepsilon(\lambda) = 1 + \frac{0.6961663\lambda^2}{\lambda^2-0.0684043^2} + \frac{0.4079426\lambda^2}{\lambda^2-0.1162414^2} + \frac{0.8974794\lambda^2}{\lambda^2-9.896161^2}$$
 
-The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be directly imported into Meep via the [Lorentzian susceptibility profile](Materials/#material-dispersion) using a slight reorganization to convert from the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/scheme/examples/materials-library.scm#L39-L56).
+The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be imported into Meep as a [Lorentzian susceptibility](Materials/#material-dispersion) via a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/scheme/examples/materials-library.scm#L39-L56).
 
-The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the fused quartz to obtain the reflected power, as demonstrated in a [separate tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities. The simulation script below is in [refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
+The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the quartz to obtain the reflected power. This is demonstrated in a [separate tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities. The simulation script is below and in [refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
 
 ```scm
 (include "/path/to/materials-library.scm")
@@ -69,7 +69,7 @@ meep empty?=false refl-quartz.ctl |tee flux.out
 grep flux1: flux.out |cut -d , -f2- > flux.dat
 ```
 
-A plot of the reflectance spectrum for the two approaches is generated using the Octave/Matlab script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
+A plot of the reflectance spectrum based on the simulated data and the analytic Fresnel equations is generated using the Octave/Matlab script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
 
 ```matlab
 f0 = dlmread("flux0.dat",",");
@@ -94,7 +94,7 @@ legend("meep","analytic");
 
 ### Permittivity Function of an Artificial Dispersive Material
 
-We will model a *uniform medium* of the dispersive material. From the dispersion relation $\omega(k)$, we will compute the numerical ε(ω) via the formula:
+We will model a *uniform medium* of an artificial dispersive material. From the dispersion relation ω(k), we will compute the numerical ε(ω) via the formula:
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
@@ -103,8 +103,8 @@ We will then compare this with the analytical ε(ω) that we specified. The simu
 Since this is a uniform medium, our computational cell can actually be of *zero* size (i.e. one pixel), where we will use Bloch-periodic boundary conditions to specify the wavevector *k*.
 
 ```scm
-(set! geometry-lattice (make lattice (size no-size no-size no-size)))
-(set-param! resolution 20)
+(set! geometry-lattice (make lattice (size no-size no-size no-size)))
+(set-param! resolution 20)
 ```
 
 We will then fill all space with a dispersive material:
@@ -134,7 +134,7 @@ We can see that the f=1.1 resonance causes a large change in both the real and i
 
 On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of ε. Nevertheless, it generates a clear peak in the *imaginary* part of ε, corresponding to a resonant absorption peak.
 
-Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `run-k-points` function:
+Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute ω(k) over, and compute the associated frequencies by using the `run-k-points` function:
 
 ```scm
 (define-param fcen 1.0)
@@ -149,7 +149,7 @@ Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-po
 (define all-freqs (run-k-points 200 kpts)) ; a list of lists of frequencies  
 ```
 
-The `run-k-points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all-freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio $(ck/\omega)^2$ as described above. To do this, we will use the Scheme `map` function, which applies a given function to every element of a list (or lists), and since we have a list of lists we'll actually nest two `map` functions:
+The `run-k-points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all-freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio (ck/ω)$^2$ as described above. To do this, we will use the Scheme `map` function, which applies a given function to every element of a list (or lists), and since we have a list of lists we'll actually nest two `map` functions:
 
 ```scm
 (map (lambda (kx fs)
@@ -160,7 +160,7 @@ The `run-k-points` function returns a *list of lists* of frequencies &mdash; one
      (map vector3-x kpts) all-freqs)
 ```
 
-Alternatively we could just read all of the frequencies into Octave/Matlab or a spreadsheet and compute the ratios there. After running the program with
+Alternatively we could just read all of the frequencies into Octave/Matlab and compute the ratios there. After running the program with
 
 ```sh
 unix% meep material-dispersion.ctl | tee material-dispersion.out

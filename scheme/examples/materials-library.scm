@@ -8,7 +8,58 @@
 
 ;------------------------------------------------------------------
 
-; BK7 from SCHOTT Zemax catalog 2017-01-20b
+; a-Si (amorphous silicon) from Horiba Technical Note 08: Lorentz Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+; wavelength range: 0.21 - 0.83 um
+
+(define aSi-frq1 (/ (* 0.315481407124682 um-scale)))
+(define aSi-gam1 (/ (* 0.645751005208333 um-scale)))
+(define aSi-sig1 14.571)
+
+(define aSi (make medium (epsilon 3.109)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency aSi-frq1) (gamma aSi-gam1) (sigma aSi-sig1)))))
+
+;------------------------------------------------------------------
+
+; a-Si:H (hydrogenated amorphous silicon) from Horiba Technical Note 08: Lorentz Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+; wavelength range: 0.21 - 0.83 um
+
+(define aSi-H-frq1 (/ (* 0.334189199460916 um-scale)))
+(define aSi-H-gam1 (/ (* 0.579365387850467 um-scale)))
+(define aSi-H-sig1 12.31)
+
+(define aSi-H (make medium (epsilon 3.22)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency aSi-H-frq1) (gamma aSi-H-gam1) (sigma aSi-H-sig1)))))
+
+;------------------------------------------------------------------
+
+; AlAs (aluminum arsenide) from R.E. Fern and A. Onton, J. Applied Physics, Vol. 42, pp. 3499-500, 1971
+; fit from https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
+; wavelength range: 0.56 - 2.2 um
+
+(define AlAs-frq1 (/ (* 0.2822 um-scale)))
+(define AlAs-gam1 0)
+(define AlAs-sig1 6.0840)
+
+(define AlAs-frq2 (/ (* 27.62 um-scale)))
+(define AlAs-gam2 0)
+(define AlAs-sig2 1.900)
+
+(define AlAs (make medium (epsilon 2.0792)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency AlAs-frq1) (gamma AlAs-gam1) (sigma AlAs-sig1))
+  (make lorentzian-susceptibility
+    (frequency AlAs-frq2) (gamma AlAs-gam2) (sigma AlAs-sig2)))))
+
+;------------------------------------------------------------------
+
+; borosilicate glass, BK7 from SCHOTT Zemax catalog 2017-01-20b
 ; fit from https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
 ; wavelength range: 0.3 - 2.5 um
 
@@ -34,6 +85,7 @@
 ;------------------------------------------------------------------
 
 ; fused quartz from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
+; fit from https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
 ; wavelength range: 0.21 - 6.7 um
 
 (define fused-quartz-frq1 (/ (* 0.0684043 um-scale)))
@@ -57,7 +109,8 @@
 
 ;------------------------------------------------------------------
 
-; GaAs from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
+; GaAs (gallium arsenide) from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
+; fit from https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
 ; wavelength range: 0.97 - 17 um
 
 (define GaAs-frq1 (/ (* 0.4431307 um-scale)))
@@ -82,7 +135,7 @@
 ;------------------------------------------------------------------
 
 ; silicon (intrinsic, T=300K) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
-; [based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995]
+; based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
 ; wavelength range: 0.4 - 1.0 um
 
 (define Si-frq1 (/ 3.64 um-scale))
@@ -570,3 +623,120 @@
        (frequency W-frq3) (gamma W-gam3) (sigma W-sig3))
      (make lorentzian-susceptibility
        (frequency W-frq4) (gamma W-gam4) (sigma W-sig4)))))
+
+;------------------------------------------------------------------
+
+; metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996, 2015
+; wavelength range: 0.4 - 0.8 um
+
+; fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9, 1972
+(define Au-JC-visible-frq0 (/ (* 0.139779231751333 um-scale)))
+(define Au-JC-visible-gam0 (/ (* 26.1269913352870 um-scale)))
+(define Au-JC-visible-sig0 1)
+
+(define Au-JC-visible-frq1 (/ (* 0.404064525036786 um-scale)))
+(define Au-JC-visible-gam1 (/ (* 1.12834046202759 um-scale)))
+(define Au-JC-visible-sig1 2.07118534879440)
+
+(define Au-JC-visible (make medium (epsilon 6.1599)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Au-JC-visible-frq0) (gamma Au-JC-visible-gam0) (sigma Au-JC-visible-sig0))
+   (make lorentzian-susceptibility
+     (frequency Au-JC-visible-frq1) (gamma Au-JC-visible-gam1) (sigma Au-JC-visible-sig1)))))
+
+;------------------------------------------------------------------                       
+
+; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+(define Au-visible-frq0 (/ (* 0.0473629248511456 um-scale)))
+(define Au-visible-gam0 (/ (* 0.255476199605166 um-scale)))
+(define Au-visible-sig0 1)
+
+(define Au-visible-frq1 (/ (* 0.800619321082804 um-scale)))
+(define Au-visible-gam1 (/ (* 0.381870287531951 um-scale)))
+(define Au-visible-sig1 -169.060953137985)
+
+(define Au-visible (make medium (epsilon 0.6888)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Au-visible-frq0) (gamma Au-visible-gam0) (sigma Au-visible-sig0))
+   (make lorentzian-susceptibility
+     (frequency Au-visible-frq1) (gamma Au-visible-gam1) (sigma Au-visible-sig1)))))
+
+;------------------------------------------------------------------                       
+
+;; UNSTABLE: field divergence may occur
+
+; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+(define Ag-visible-frq0 (/ (* 0.142050162130618 um-scale)))
+(define Ag-visible-gam0 (/ (* 18.0357292925015 um-scale)))
+(define Ag-visible-sig0 1)
+
+(define Ag-visible-frq1 (/ (* 0.115692151792108 um-scale)))
+(define Ag-visible-gam1 (/ (* 0.257794324096575 um-scale)))
+(define Ag-visible-sig1 3.74465275944019)
+
+(define Ag-visible (make medium (epsilon 0.0067526)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Ag-visible-frq0) (gamma Ag-visible-gam0) (sigma Ag-visible-sig0))
+   (make lorentzian-susceptibility
+     (frequency Ag-visible-frq1) (gamma Ag-visible-gam1) (sigma Ag-visible-sig1)))))
+
+;------------------------------------------------------------------                       
+
+;; UNSTABLE: field divergence may occur
+
+; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+(define Al-visible-frq0 (/ (* 0.0625841659042985 um-scale)))
+(define Al-visible-gam0 (/ (* 0.606007002962666 um-scale)))
+(define Al-visible-sig0 1)
+
+(define Al-visible-frq1 (/ (* 0.528191199577075 um-scale)))
+(define Al-visible-gam1 (/ (* 0.291862527666814 um-scale)))
+(define Al-visible-sig1 -44.4456675577921)
+
+(define Al-visible (make medium (epsilon 0.13313)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Al-visible-frq0) (gamma Al-visible-gam0) (sigma Al-visible-sig0))
+   (make lorentzian-susceptibility
+     (frequency Al-visible-frq1) (gamma Al-visible-gam1) (sigma Al-visible-sig1)))))
+
+;------------------------------------------------------------------                       
+
+; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+(define Cr-visible-frq0 (/ (* 0.118410119507342 um-scale)))
+(define Cr-visible-gam0 (/ (* 0.628596264869804 um-scale)))
+(define Cr-visible-sig0 1)
+
+(define Cr-visible-frq1 (/ (* 0.565709598452496 um-scale)))
+(define Cr-visible-gam1 (/ (* 0.731117670900812 um-scale)))
+(define Cr-visible-sig1 13.2912419951294)
+
+(define Cr-visible (make medium (epsilon 2.7767)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Cr-visible-frq0) (gamma Cr-visible-gam0) (sigma Cr-visible-sig0))
+   (make lorentzian-susceptibility
+     (frequency Cr-visible-frq1) (gamma Cr-visible-gam1) (sigma Cr-visible-sig1)))))
+
+;------------------------------------------------------------------                       
+
+;; UNSTABLE: field divergence may occur
+
+; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+(define Ti-visible-frq0 (/ (* 0.101331651921602 um-scale)))
+(define Ti-visible-gam0 (/ (* 0.365743382258719 um-scale)))
+(define Ti-visible-sig0 1)
+
+(define Ti-visible-frq1 (/ (* 4.56839173979216e-09 um-scale)))
+(define Ti-visible-gam1 (/ (* 5.86441957443603e-10  um-scale)))
+(define Ti-visible-sig1 54742662.1963414)
+
+(define Ti-visible (make medium (epsilon -5.4742e7)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Ti-visible-frq0) (gamma Ti-visible-gam0) (sigma Ti-visible-sig0))
+   (make lorentzian-susceptibility
+     (frequency Ti-visible-frq1) (gamma Ti-visible-gam1) (sigma Ti-visible-sig1)))))
