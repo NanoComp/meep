@@ -53,8 +53,33 @@ typedef std::complex<double> cdouble;
 // effectively infinite lengths
 #define ENORMOUS 1e20
 
-// tiny floating-point number for effectively zero lengthsh
+// tiny floating-point number for effectively zero lengths
 #define TINY 1e-20
+
+struct fragment_stats {
+  size_t num_anisotropic_eps_pixels;
+  size_t num_anisotropic_mu_pixels;
+  size_t num_nonlinear_pixels;
+  size_t num_susceptibility_pixels;
+  size_t num_dft_fields;
+  size_t num_fourier_pixels;
+  size_t num_fourier_freqs;
+  size_t num_components;
+  meep::grid_volume *gv;
+  meep::volume_list *dft_vols;
+
+  fragment_stats(meep::volume_list *vols, meep::grid_volume *grid_vol);
+  void compute_stats();
+  void finalize_stats();
+  void update_stats_from_material(material_type mat, meep::vec& v);
+  void count_anisotropic_pixels(medium_struct *med);
+  void count_nonlinear_pixels(medium_struct *med);
+  void count_susceptibility_pixels(medium_struct *med);
+  void count_dft_fields(meep::vec& v);
+  void print_stats();
+};
+
+void compute_fragment_stats(std::vector<fragment_stats>& fragments);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */

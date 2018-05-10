@@ -1568,14 +1568,14 @@ void set_materials_from_geometry(meep::structure *s,
   s->remove_susceptibilities();
   geps.add_susceptibilities(s);
 
-  // TODO: Only do this if asked to compute fragment statistics.
-  analysis_fragment fragment = {};
+  // TODO: This needs to happen before creating the structure.
+  meep::volume_list vl(meep::volume(meep::vec(-1, -1), meep::vec(1, 1)), meep::Ex);
+  fragment_stats fragment(&vl, &s->gv);
 
   // TODO: break up the cell into multiple fragments.
   // For testing we just use the whole grid_volume.
   fragment.gv = &s->gv;
-  compute_fragment_statistics(&fragment);
-  master_printf("num_nonlinear_pixels: %zu\n", fragment.num_nonlinear_pixels);
+  fragment.compute_stats();
 
   master_printf("-----------\n");
 }
@@ -1637,40 +1637,58 @@ material_type make_file_material(const char *eps_input_file)
 }
 
 /******************************************************************************/
-/******************************************************************************/
+/* Fragment Statistics                                                        */
 /******************************************************************************/
 
-void compute_fragment_statistics(std::vector<analysis_fragment> fragments) {
+void compute_fragment_stats(std::vector<fragment_stats>& fragments) {
   for (size_t i = 0; i < fragments.size(); ++i) {
-    compute_fragment_statistics(&fragments[i]);
+    fragments[i].compute_stats();
+    fragments[i].finalize_stats();
   }
 }
 
-void compute_fragment_statistics(analysis_fragment *fragment) {
-  switch(fragment->gv->dim) {
+fragment_stats::fragment_stats(meep::volume_list *vols, meep::grid_volume *grid_vol):
+  num_anisotropic_eps_pixels(0),
+  num_anisotropic_mu_pixels(0),
+  num_nonlinear_pixels(0),
+  num_susceptibility_pixels(0),
+  num_dft_fields(0),
+  num_fourier_pixels(0),
+  num_fourier_freqs(0),
+  num_components(0),
+  gv(grid_vol),
+  dft_vols(vols) {
+
+}
+
+void fragment_stats::compute_stats() {
+  switch(gv->dim) {
   case meep::D1:
-    for (int x = 0; x < fragment->gv->nx(); ++x) {
-      vector3 v3 = {(double)x, 0, 0};
+    for (int x = 0; x < gv->nx(); ++x) {
+      meep::vec v((double)x);
+      vector3 v3 = vec_to_vector3(v);
       const material_type mat = (material_type)material_of_point(v3);
-      update_fragment_stats_from_material(fragment, mat);
+      update_stats_from_material(mat, v);
     }
     break;
   case meep::D2:
-    for (int x = 0; x < fragment->gv->nx(); ++x) {
-      for (int y = 0; y < fragment->gv->ny(); ++y) {
-        vector3 v3 = {(double)x, (double)y, 0};
+    for (int x = 0; x < gv->nx(); ++x) {
+      for (int y = 0; y < gv->ny(); ++y) {
+        meep::vec v((double)x, (double)y);
+        vector3 v3 = vec_to_vector3(v);
         material_type mat = (material_type)material_of_point(v3);
-        update_fragment_stats_from_material(fragment, mat);
+        update_stats_from_material(mat, v);
       }
     }
     break;
   case meep::D3:
-    for (int x = 0; x < fragment->gv->nx(); ++x) {
-      for (int y = 0; y < fragment->gv->ny(); ++y) {
-        for (int z = 0; z < fragment->gv->nz(); ++z) {
-          vector3 v3 = {(double)x, (double)y, (double)z};
+    for (int x = 0; x < gv->nx(); ++x) {
+      for (int y = 0; y < gv->ny(); ++y) {
+        for (int z = 0; z < gv->nz(); ++z) {
+          meep::vec v((double)x, (double)y, (double)z);
+          vector3 v3 = vec_to_vector3(v);
           const material_type mat = (material_type)material_of_point(v3);
-          update_fragment_stats_from_material(fragment, mat);
+          update_stats_from_material(mat, v);
         }
       }
     }
@@ -1683,15 +1701,60 @@ void compute_fragment_statistics(analysis_fragment *fragment) {
   }
 }
 
-void update_fragment_stats_from_material(analysis_fragment *fragment, material_type mat) {
-    medium_struct *med = &mat->medium;
-    for (meep::component c = meep::Ex; c <= meep::Hz; c = (meep::component)(c + 1)) {
+void fragment_stats::finalize_stats() {
+  num_dft_fields = num_fourier_pixels * num_fourier_freqs * num_components;
+}
+
+void fragment_stats::count_anisotropic_pixels(medium_struct *med) {
+  // ...
+}
+
+void fragment_stats::count_nonlinear_pixels(medium_struct *med) {
+  for (meep::component c = meep::Ex; c <= meep::Hz; c = (meep::component)(c + 1)) {
     if (get_chi(c, med, 2) != 0) {
-      fragment->num_nonlinear_pixels++;
+      num_nonlinear_pixels++;
     }
     if (get_chi(c, med, 3) != 0) {
-      fragment->num_nonlinear_pixels++;
+      num_nonlinear_pixels++;
     }
   }
+}
+
+void fragment_stats::count_susceptibility_pixels(medium_struct *med) {
+  num_susceptibility_pixels += med->E_susceptibilities.num_items;
+  num_susceptibility_pixels += med->H_susceptibilities.num_items;
+}
+
+// TODO: Can Python get all the volumes ('where' member) from the dft objects
+// and pass them to C++? What about Nfreqs and num_components?
+void fragment_stats::count_dft_fields(meep::vec& v) {
+  meep::volume_list *vl = dft_vols;
+
+  while(vl) {
+    if (vl->v.contains(v)) {
+      num_fourier_pixels++;
+    }
+    vl = vl->next;
+  }
+}
+
+void fragment_stats::update_stats_from_material(material_type mat, meep::vec& v) {
+  medium_struct *med = &mat->medium;
+  count_anisotropic_pixels(med);
+  count_nonlinear_pixels(med);
+  count_susceptibility_pixels(med);
+  count_dft_fields(v);
+}
+
+void fragment_stats::print_stats() {
+  master_printf("Fragment stats\n");
+  master_printf("  num_anisotropic_eps_pixels: %zd\n", num_anisotropic_eps_pixels);
+  master_printf("  num_anisotropic_mu_pixels: %zd\n", num_anisotropic_mu_pixels);
+  master_printf("  num_nonlinear_pixels: %zd\n", num_nonlinear_pixels);
+  master_printf("  num_susceptibility_pixels: %zd\n", num_susceptibility_pixels);
+  master_printf("  num_dft_fields: %zd\n", num_dft_fields);
+  master_printf("  num_fourier_pixels: %zd\n", num_fourier_pixels);
+  master_printf("  num_fourier_freqs: %zd\n", num_fourier_freqs);
+  master_printf("  num_components: %zd\n\n", num_components);
 }
 } // namespace meep_geom
