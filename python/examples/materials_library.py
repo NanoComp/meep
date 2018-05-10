@@ -10,119 +10,7 @@ eV_um_scale = um_scale/1.23984193
 
 #------------------------------------------------------------------
 
-# a-Si (amorphous silicon) from Horiba Technical Note 08: Lorentz Dispersion Model
-# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
-# wavelength range: 0.21 - 0.83 um
-
-aSi_frq1 = 1/(0.315481407124682*um_scale)
-aSi_gam1 = 1/(0.645751005208333*um_scale)
-aSi_sig1 = 14.571
-
-aSi_susc = [ mp.LorentzianSusceptibility(frequency=aSi_frq1, gamma=aSi_gam1, sigma=aSi_sig1) ]
-
-aSi = mp.Medium(epsilon=3.109, E_susceptibilities=aSi_susc)
-
-#------------------------------------------------------------------
-
-# a-Si:H (hydrogenated amorphous silicon) from Horiba Technical Note 08: Lorentz Dispersion Model
-# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
-# wavelength range: 0.21 - 0.83 um
-
-aSi_H_frq1 = 1/(0.334189199460916*um_scale)
-aSi_H_gam1 = 1/(0.579365387850467*um_scale)
-aSi_H_sig1 = 12.31
-
-aSi_H_susc = [ mp.LorentzianSusceptibility(frequency=aSi_H_frq1, gamma=aSi_H_gam1, sigma=aSi_H_sig1) ]
-
-aSi_H = mp.Medium(epsilon=3.22, E_susceptibilities=aSi_H_susc)
-
-#------------------------------------------------------------------
-
-# AlAs (aluminum arsenide) from R.E. Fern and A. Onton, J. Applied Physics, Vol. 42, pp. 3499-500, 1971
-# fit from https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
-# wavelength range: 0.56 - 2.2 um
-
-AlAs_frq1 = 1/(0.2822*um_scale)
-AlAs_gam1 = 0
-AlAs_sig1 = 6.0840
-AlAs_frq2 = 1/(27.62*um_scale)
-AlAs_gam2 = 0
-AlAs_sig2 = 1.900
-
-AlAs_susc = [ mp.LorentzianSusceptibility(frequency=AlAs_frq1, gamma=AlAs_gam1, sigma=AlAs_sig1),
-              mp.LorentzianSusceptibility(frequency=AlAs_frq2, gamma=AlAs_gam2, sigma=AlAs_sig2) ]
-
-AlAs = mp.Medium(epsilon=2.0792, E_susceptibilities=AlAs_susc)
-
-#------------------------------------------------------------------
-
-# borosilicate glass, BK7 from SCHOTT Zemax catalog 2017-01-20b
-# fit from https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
-# wavelength range: 0.3 - 2.5 um
-
-BK7_frq1 = 1/(0.07746417668832478*um_scale)
-BK7_gam1 = 0
-BK7_sig1 = 1.03961212
-BK7_frq2 = 1/(0.14148467902921502*um_scale)
-BK7_gam2 = 0
-BK7_sig2 = 0.231792344
-BK7_frq3 = 1/(10.176475470417055*um_scale)
-BK7_gam3 = 0
-BK7_sig3 = 1.01046945
-
-BK7_susc = [ mp.LorentzianSusceptibility(frequency=BK7_frq1, gamma=BK7_gam1, sigma=BK7_sig1),
-             mp.LorentzianSusceptibility(frequency=BK7_frq2, gamma=BK7_gam2, sigma=BK7_sig2),
-             mp.LorentzianSusceptibility(frequency=BK7_frq3, gamma=BK7_gam3, sigma=BK7_sig3) ]
-
-BK7 = mp.Medium(epsilon=1.0, E_susceptibilities=BK7_susc)
-
-#------------------------------------------------------------------
-
-# fused quartz from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
-# fit from https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
-# wavelength range: 0.21 - 6.7 um
-
-fused_quartz_frq1 = 1/(0.0684043*um_scale)
-fused_quartz_gam1 = 0
-fused_quartz_sig1 = 0.696166300
-fused_quartz_frq2 = 1/(0.1162414*um_scale)
-fused_quartz_gam2 = 0
-fused_quartz_sig2 = 0.407942600
-fused_quartz_frq3 = 1/(9.896161*um_scale)
-fused_quartz_gam3 = 0
-fused_quartz_sig3 = 0.897479400
-
-fused_quartz_susc = [ mp.LorentzianSusceptibility(frequency=fused_quartz_frq1, gamma=fused_quartz_gam1, sigma=fused_quartz_sig1),
-                      mp.LorentzianSusceptibility(frequency=fused_quartz_frq2, gamma=fused_quartz_gam2, sigma=fused_quartz_sig2),
-                      mp.LorentzianSusceptibility(frequency=fused_quartz_frq3, gamma=fused_quartz_gam3, sigma=fused_quartz_sig3) ]
-
-fused_quartz = mp.Medium(epsilon=1.0, E_susceptibilities=fused_quartz_susc)
-
-#------------------------------------------------------------------
-
-# GaAs (gallium arsenide) from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
-# fit from https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
-# wavelength range: 0.97 - 17 um
-
-GaAs_frq1 = 1/(0.4431307*um_scale)
-GaAs_gam1 = 0
-GaAs_sig1 = 5.466742
-GaAs_frq2 = 1/(0.8746453*um_scale)
-GaAs_gam2 = 0
-GaAs_sig2 = 0.02429960
-GaAs_frq3 = 1/(36.9166*um_scale)
-GaAs_gam3 = 0
-GaAs_sig3 = 1.957522
-
-GaAs_susc = [ mp.LorentzianSusceptibility(frequency=GaAs_frq1, gamma=GaAs_gam1, sigma=GaAs_sig1),
-              mp.LorentzianSusceptibility(frequency=GaAs_frq2, gamma=GaAs_gam2, sigma=GaAs_sig2),
-              mp.LorentzianSusceptibility(frequency=GaAs_frq3, gamma=GaAs_gam3, sigma=GaAs_sig3) ]
-
-GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc)
-
-#------------------------------------------------------------------
-
-# cSi (crystalline silicon) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+# crystalline silicon (cSi) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
 # based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
 # wavelength range: 0.4 - 1.0 um
 
@@ -144,7 +32,161 @@ cSi = mp.Medium(epsilon=1.0, E_susceptibilities=cSi_susc)
 
 #------------------------------------------------------------------
 
-# metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
+# amorphous silicon (a-Si) from Horiba Technical Note 08: Lorentz Dispersion Model
+# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+# wavelength range: 0.21 - 0.83 um
+
+aSi_frq1 = 1/(0.315481407124682*um_scale)
+aSi_gam1 = 1/(0.645751005208333*um_scale)
+aSi_sig1 = 14.571
+
+aSi_susc = [ mp.LorentzianSusceptibility(frequency=aSi_frq1, gamma=aSi_gam1, sigma=aSi_sig1) ]
+
+aSi = mp.Medium(epsilon=3.109, E_susceptibilities=aSi_susc)
+
+#------------------------------------------------------------------
+
+# hydrogenated amorphous silicon (a-Si:H) from Horiba Technical Note 08: Lorentz Dispersion Model
+# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+# wavelength range: 0.21 - 0.83 um
+
+aSi_H_frq1 = 1/(0.334189199460916*um_scale)
+aSi_H_gam1 = 1/(0.579365387850467*um_scale)
+aSi_H_sig1 = 12.31
+
+aSi_H_susc = [ mp.LorentzianSusceptibility(frequency=aSi_H_frq1, gamma=aSi_H_gam1, sigma=aSi_H_sig1) ]
+
+aSi_H = mp.Medium(epsilon=3.22, E_susceptibilities=aSi_H_susc)
+
+#------------------------------------------------------------------
+
+# indium tin oxide (ITO) from Horiba Technical Note 08: Lorentz Dispersion Model
+# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+# wavelength range: 0.21 - 0.83 um
+
+ITO_frq1 = 1/(0.182329695588235*um_scale)
+ITO_gam1 = 1/(1.94637665620094*um_scale)
+ITO_sig1 = 2.5
+
+ITO_susc = [ mp.LorentzianSusceptibility(frequency=ITO_frq1, gamma=ITO_gam1, sigma=ITO_sig1) ]
+
+ITO = mp.Medium(epsilon=1.0, E_susceptibilities=ITO_susc)
+
+#------------------------------------------------------------------
+
+# alumina (Al2O3) from Horiba Technical Note 08: Lorentz Dispersion Model
+# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+# wavelength range: 0.21 - 2.07 um
+
+Al2O3_frq1 = 1/(0.101476668030774*um_scale)
+Al2O3_gam1 = 0
+Al2O3_sig1 = 1.52
+
+Al2O3_susc = [ mp.LorentzianSusceptibility(frequency=Al2O3_frq1, gamma=Al2O3_gam1, sigma=Al2O3_sig1) ]
+
+Al2O3 = mp.Medium(epsilon=1.0, E_susceptibilities=Al2O3_susc)
+
+#------------------------------------------------------------------
+
+# aluminum nitride (AlN) from Horiba Technical Note 08: Lorentz Dispersion Model
+# ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+# wavelength range: 0.26 - 1.65 um
+
+AlN_frq1 = 1/(0.139058089950651*um_scale)
+AlN_gam1 = 0
+AlN_sig1 = 3.306
+
+AlN_susc = [ mp.LorentzianSusceptibility(frequency=AlN_frq1, gamma=AlN_gam1, sigma=AlN_sig1) ]
+
+AlN = mp.Medium(epsilon=1.0, E_susceptibilities=AlN_susc)
+
+#------------------------------------------------------------------
+
+# aluminum arsenide (AlAs) from R.E. Fern and A. Onton, J. Applied Physics, Vol. 42, pp. 3499-500, 1971
+# fit from https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
+# wavelength range: 0.56 - 2.2 um
+
+AlAs_frq1 = 1/(0.2822*um_scale)
+AlAs_gam1 = 0
+AlAs_sig1 = 6.0840
+AlAs_frq2 = 1/(27.62*um_scale)
+AlAs_gam2 = 0
+AlAs_sig2 = 1.900
+
+AlAs_susc = [ mp.LorentzianSusceptibility(frequency=AlAs_frq1, gamma=AlAs_gam1, sigma=AlAs_sig1),
+              mp.LorentzianSusceptibility(frequency=AlAs_frq2, gamma=AlAs_gam2, sigma=AlAs_sig2) ]
+
+AlAs = mp.Medium(epsilon=2.0792, E_susceptibilities=AlAs_susc)
+
+#------------------------------------------------------------------
+
+# borosilicate glass (BK7) from SCHOTT Zemax catalog 2017-01-20b
+# fit from https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
+# wavelength range: 0.3 - 2.5 um
+
+BK7_frq1 = 1/(0.07746417668832478*um_scale)
+BK7_gam1 = 0
+BK7_sig1 = 1.03961212
+BK7_frq2 = 1/(0.14148467902921502*um_scale)
+BK7_gam2 = 0
+BK7_sig2 = 0.231792344
+BK7_frq3 = 1/(10.176475470417055*um_scale)
+BK7_gam3 = 0
+BK7_sig3 = 1.01046945
+
+BK7_susc = [ mp.LorentzianSusceptibility(frequency=BK7_frq1, gamma=BK7_gam1, sigma=BK7_sig1),
+             mp.LorentzianSusceptibility(frequency=BK7_frq2, gamma=BK7_gam2, sigma=BK7_sig2),
+             mp.LorentzianSusceptibility(frequency=BK7_frq3, gamma=BK7_gam3, sigma=BK7_sig3) ]
+
+BK7 = mp.Medium(epsilon=1.0, E_susceptibilities=BK7_susc)
+
+#------------------------------------------------------------------
+
+# fused quartz (silica) from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
+# fit from https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
+# wavelength range: 0.21 - 6.7 um
+
+fused_quartz_frq1 = 1/(0.0684043*um_scale)
+fused_quartz_gam1 = 0
+fused_quartz_sig1 = 0.696166300
+fused_quartz_frq2 = 1/(0.1162414*um_scale)
+fused_quartz_gam2 = 0
+fused_quartz_sig2 = 0.407942600
+fused_quartz_frq3 = 1/(9.896161*um_scale)
+fused_quartz_gam3 = 0
+fused_quartz_sig3 = 0.897479400
+
+fused_quartz_susc = [ mp.LorentzianSusceptibility(frequency=fused_quartz_frq1, gamma=fused_quartz_gam1, sigma=fused_quartz_sig1),
+                      mp.LorentzianSusceptibility(frequency=fused_quartz_frq2, gamma=fused_quartz_gam2, sigma=fused_quartz_sig2),
+                      mp.LorentzianSusceptibility(frequency=fused_quartz_frq3, gamma=fused_quartz_gam3, sigma=fused_quartz_sig3) ]
+
+fused_quartz = mp.Medium(epsilon=1.0, E_susceptibilities=fused_quartz_susc)
+
+#------------------------------------------------------------------
+
+# gallium arsenide (GaAs) from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
+# fit from https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
+# wavelength range: 0.97 - 17 um
+
+GaAs_frq1 = 1/(0.4431307*um_scale)
+GaAs_gam1 = 0
+GaAs_sig1 = 5.466742
+GaAs_frq2 = 1/(0.8746453*um_scale)
+GaAs_gam2 = 0
+GaAs_sig2 = 0.02429960
+GaAs_frq3 = 1/(36.9166*um_scale)
+GaAs_gam3 = 0
+GaAs_sig3 = 1.957522
+
+GaAs_susc = [ mp.LorentzianSusceptibility(frequency=GaAs_frq1, gamma=GaAs_gam1, sigma=GaAs_sig1),
+              mp.LorentzianSusceptibility(frequency=GaAs_frq2, gamma=GaAs_gam2, sigma=GaAs_sig2),
+              mp.LorentzianSusceptibility(frequency=GaAs_frq3, gamma=GaAs_gam3, sigma=GaAs_sig3) ]
+
+GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc)
+
+#------------------------------------------------------------------
+
+# elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um
 
 Ag_plasma_frq = 9.01*eV_um_scale
@@ -601,11 +643,3 @@ Ti_visible_susc = [ mp.DrudeSusceptibility(frequency=Ti_visible_frq0, gamma=Ti_v
                     mp.LorentzianSusceptibility(frequency=Ti_visible_frq1, gamma=Ti_visible_gam1, sigma=Ti_visible_sig1) ]
 
 Ti_visible = mp.Medium(epsilon=-5.4742e7, E_susceptibilities=Ti_visible_susc)
-
-#------------------------------------------------------------------
-
-# Horiba Technical Note "Lorentz Dispersion Model"
-# http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
-
-# AlAs
-# wavelength range: 0.4 - infinity um

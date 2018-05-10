@@ -55,7 +55,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-empty', action='store_true', default=False, help="empty? (default: False)")
-    parser.add_argument('-res', type=int, default=500, help='resolution (default: 500 pixels/um)')
+    parser.add_argument('-res', type=int, default=400, help='resolution (default: 400 pixels/um)')
     parser.add_argument('-sz', type=float, default=10, help='cell size (default: 10 um)')
     args = parser.parse_args()
     main(args)
