@@ -1132,4 +1132,11 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
     metal = Medium(epsilon=-inf)
     perfect_electric_conductor = Medium(epsilon=-inf)
     perfect_magnetic_conductor = Medium(mu=-inf)
+    _t_start = wall_time()
+
+    def report_elapsed_time():
+        print("\nElapsed run time = {:.4f} s".format(wall_time() - _t_start))
+
+    import atexit
+    atexit.register(report_elapsed_time)
 %}
