@@ -149,6 +149,37 @@ static std::complex<double> py_src_func_wrap(double t, void *f) {
     return ret;
 }
 
+static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
+    PyObject *py_freq = PyFloat_FromDouble(freq);
+    PyObject *py_mode = PyInteger_FromLong(mode);
+
+    PyObject *py_result = PyObject_CallFunctionObjArgs((PyObject*)user_data, py_freq, py_mode, NULL);
+
+    if (!py_result) {
+        PyErr_PrintEx(0);
+        Py_DECREF(py_freq);
+        Py_DECREF(py_mode);
+        return meep::vec(0, 0, 0);
+    }
+
+    vector3 v3;
+    if (!pyv3_to_v3(py_result, &v3)) {
+        PyErr_PrintEx(0);
+        Py_DECREF(py_freq);
+        Py_DECREF(py_mode);
+        Py_XDECREF(py_result);
+        return meep::vec(0, 0, 0);
+    }
+
+    meep::vec result(v3.x, v3.y, v3.z);
+
+    Py_DECREF(py_freq);
+    Py_DECREF(py_mode);
+    Py_DECREF(py_result);
+
+    return result;
+}
+
 static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
 
     if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
@@ -858,6 +889,23 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(in) (std::complex<double> (*func)(double t, void *), void *data) {
   $1 = py_src_func_wrap;
   $2 = (void *)$input;
+}
+
+// Typemap suite for kpoint_func
+
+%typecheck(SWIG_TYPECHECK_POINTER) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
+    $1 = PyFunction_Check($input) || $input == Py_None;
+}
+
+%typemap(in) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
+    if ($input == Py_None) {
+        $1 = NULL;
+        $2 = NULL;
+    }
+    else {
+        $1 = py_kpoint_func_wrap;
+        $2 = (void*)$input;
+    }
 }
 
 // Tells Python to take ownership of the h5file* this function returns so that
