@@ -564,6 +564,8 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._check_material_frequencies()
+
         if isinstance(cond, numbers.Number):
             stop_time = cond
             t0 = self.round_time()
@@ -597,6 +599,7 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._check_material_frequencies()
         ts = self.fields.last_source_time()
 
         if isinstance(cond, numbers.Number):
@@ -1050,8 +1053,6 @@ class Simulation(object):
             self.init_fields()
 
     def run(self, *step_funcs, **kwargs):
-        self._check_material_frequencies()
-
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
 
