@@ -988,7 +988,7 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *offdiag1, *offdiag2, *diag;
-  volume *where;
+  volume where;
 };
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
@@ -1032,7 +1032,7 @@ public:
   int Nfreq;
   dft_chunk *F;
   double eps, mu;
-  volume *where;
+  volume where;
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1553,7 +1553,7 @@ class fields {
   /* flux and mode fields.)                               */
   /********************************************************/
   std::complex<double> process_dft_component(dft_chunk **chunklists,
-                                             int num_chunklists,
+                                             int num_chunklists, volume dft_volume,
                                              int num_freq, component c,
                                              const char *HDF5FileName,
                                              std::complex<double> **field_array=0,
@@ -1565,7 +1565,7 @@ class fields {
 
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists,
-                             const char *HDF5FileName);
+                             volume dft_volume, const char *HDF5FileName);
 
   void output_dft(dft_flux flux, const char *HDF5FileName);
   void output_dft(dft_force force, const char *HDF5FileName);

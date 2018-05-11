@@ -31,23 +31,18 @@ namespace meep {
 dft_near2far::dft_near2far(dft_chunk *F_,
                            double fmin, double fmax, int Nf,
                            double eps_, double mu_,
-                           const volume &where_)
+                           const volume &where_):
+ Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
-  Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
-  F = F_;
-  eps = eps_; mu = mu_;
-  where = new volume(where_.get_min_corner(), where_.get_max_corner());
 }
 
-dft_near2far::dft_near2far(const dft_near2far &f) {
-  freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
-  F = f.F;
-  eps = f.eps; mu = f.mu;
-  where = new volume(f.where->get_min_corner(), f.where->get_max_corner());
-}
+dft_near2far::dft_near2far(const dft_near2far &f):
+ freq_min(f.freq_min), dfreq(f.dfreq), Nfreq(f.Nfreq), 
+ F(f.F), eps(f.eps), mu(f.mu), where(f.where)
+{ }
 
 void dft_near2far::remove()
 {
