@@ -23,6 +23,11 @@ except NameError:
     basestring = str
 
 
+FluxData = namedtuple('FluxData', ['E', 'H'])
+ForceData = namedtuple('ForceData', ['offdiag1', 'offdiag2', 'diag'])
+NearToFarData = namedtuple('NearToFarData', ['F'])
+
+
 def get_num_args(func):
     if isinstance(func, Harminv):
         return 2
@@ -747,6 +752,12 @@ class Simulation(object):
 
         self.fields.output_dft(dft_fields, fname)
 
+    def get_dft_data(self, dft_chunk):
+        n = mp._get_dft_data_size(dft_chunk)
+        arr = np.zeros(n, np.complex128)
+        mp._get_dft_data(dft_chunk, arr)
+        return arr
+
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         if self.fields is None:
             self.init_fields()
@@ -774,6 +785,16 @@ class Simulation(object):
         self.load_near2far(fname, n2f)
         n2f.scale_dfts(-1.0)
 
+    def get_near2far_data(self, n2f):
+        return NearToFarData(F=self.get_dft_data(n2f.F))
+
+    def load_near2far_data(self, n2f, n2fdata):
+        mp._load_dft_data(n2f.F, n2fdata.F)
+
+    def load_minus_near2far_data(self, n2f, n2fdata):
+        self.load_near2far_data(n2f, n2fdata)
+        n2f.scale_dfts(complex(1.0))
+
     def add_force(self, fcen, df, nfreq, *forces):
         if self.fields is None:
             self.init_fields()
@@ -797,6 +818,20 @@ class Simulation(object):
     def load_minus_force(self, fname, force):
         self.load_force(fname, force)
         force.scale_dfts(-1.0)
+
+    def get_force_data(self, force):
+        return ForceData(offdiag1=self.get_dft_data(force.offdiag1),
+                         offdiag2=self.get_dft_data(force.offdiag2),
+                         diag=self.get_dft_data(force.diag))
+
+    def load_force_data(self, force, fdata):
+        mp._load_dft_data(force.offdiag1, fdata.offdiag1)
+        mp._load_dft_data(force.offdiag2, fdata.offdiag2)
+        mp._load_dft_data(force.diag, fdata.diag)
+
+    def load_minus_force_data(self, force, fdata):
+        self.load_force_data(force, fdata)
+        force.scale_dfts(complex(-1.0))
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
@@ -823,6 +858,17 @@ class Simulation(object):
 
     def load_minus_flux(self, fname, flux):
         self.load_flux(fname, flux)
+        flux.scale_dfts(complex(-1.0))
+
+    def get_flux_data(self, flux):
+        return FluxData(E=self.get_dft_data(flux.E), H=self.get_dft_data(flux.H))
+
+    def load_flux_data(self, flux, fdata):
+        mp._load_dft_data(flux.E, fdata.E)
+        mp._load_dft_data(flux.H, fdata.H)
+
+    def load_minus_flux_data(self, flux, fdata):
+        self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
 
     def flux_in_box(self, d, box=None, center=None, size=None):

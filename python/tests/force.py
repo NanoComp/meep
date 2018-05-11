@@ -27,10 +27,15 @@ class TestForce(unittest.TestCase):
 
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-6))
 
+        # Test store and load of force as numpy array
+        fdata = self.sim.get_force_data(self.myforce)
+        self.sim.load_force_data(self.myforce, fdata)
+
         self.sim.display_forces(self.myforce)
         f = mp.get_forces(self.myforce)
 
         self.assertAlmostEqual(f[0], -0.11039089113393187)
+
 
 if __name__ == '__main__':
     unittest.main()
