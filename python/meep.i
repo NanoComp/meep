@@ -367,28 +367,32 @@ size_t _get_dft_data_size(meep::dft_chunk *dc) {
 }
 
 void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
-    (void)size;
     size_t istart;
-    meep::dft_chunks_Ntotal(dc, &istart);
+    size_t n = meep::dft_chunks_Ntotal(dc, &istart);
+    if (n != size) {
+        meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
+    }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
         size_t Nchunk = cur->N * cur->Nomega;
         for (size_t i = 0; i < Nchunk; ++i) {
-            cdata[i + istart] = cur->dft[i + istart];
+            cdata[i + istart] = cur->dft[i];
         }
         istart += Nchunk;
     }
 }
 
 void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
-    (void)size;
     size_t istart;
-    meep::dft_chunks_Ntotal(dc, &istart);
+    size_t n = meep::dft_chunks_Ntotal(dc, &istart);
+    if (n != size) {
+        meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
+    }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
         size_t Nchunk = cur->N * cur->Nomega;
         for (size_t i = 0; i < Nchunk; ++i) {
-            cur->dft[i + istart] = cdata[i + istart];
+            cur->dft[i] = cdata[i + istart];
         }
         istart += Nchunk;
     }
