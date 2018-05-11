@@ -19,9 +19,9 @@ Physically, material dispersion arises because the polarization of the material 
 
 $$\mathbf{D} = \varepsilon_\infty \mathbf{E} + \mathbf{P}$$
 
-where $\varepsilon_\infty$, which [must be positive](FAQ/#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence $\varepsilon$($\omega$).
+where ε$_\infty$, which [must be positive](FAQ/#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω).
 
-**Note:** Meep's definition of $\omega$ uses a sign convention $\exp(-i\omega t)$ for the time dependence; $\varepsilon$ formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of $\gamma$ and $\omega$ as-is for loss; don't be confused by the difference in $\omega$ sign convention and flip the sign of the parameters.
+**Note:** Meep's definition of ω uses a sign convention $\exp(-i\omega t)$ for the time dependence; ε formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of γ and ω as-is for loss; don't be confused by the difference in ω sign convention and flip the sign of the parameters.
 
 Meep supports a Lorentzian susceptibility profile which consists of a sum of harmonic resonances plus a term for the frequency-independent electric conductivity:
 
@@ -33,7 +33,7 @@ $= \left( 1 + \frac{i \cdot \sigma_D(\mathbf{x})}{2\pi f}  \right) \left[ \varep
 
 </center>
 
-where $\sigma_D$ is the electric conductivity, $\omega_n$ and $\gamma_n$ are user-specified constants. Actually, the numbers that one specifies are $f_n = \omega_n / 2\pi$ and $\gamma_n / 2\pi$. The $\sigma_n(\mathbf{x})$ is a user-specified function of position giving the strength of the *n*-th resonance. The $\sigma$ parameters can be anisotropic (real-symmetric) tensors, while the frequency-independent term $\varepsilon_\infty$ can be an arbitrary real-symmetric tensor as well. This corresponds to evolving **P** via the equations:
+where σ$_D$ is the electric conductivity, ω$_n$ and γ$_n$ are user-specified constants. Actually, the numbers that one specifies are f$_n$ = ω$_n$/2π and γ$_n$/2π. The  σ$_n(\mathbf{x})$ is a user-specified function of position giving the strength of the *n*-th resonance. The σ parameters can be anisotropic (real-symmetric) tensors, while the frequency-independent term ε$_\infty$ can be an arbitrary real-symmetric tensor as well. This corresponds to evolving **P** via the equations:
 
 $$\mathbf{P} = \sum_n \mathbf{P}_n$$
 
@@ -41,7 +41,7 @@ $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} +  \omega_n^2
 
 That is, we must store and evolve a set of auxiliary fields $\mathbf{P}_n$ along with the electric field in order to keep track of the polarization **P**. Essentially any ε(ω) could be modeled by including enough of these polarization fields &mdash; Meep allows you to specify any number of these, limited only by computer memory and time which increases with the number of polarization terms you require.
 
-Note that the conductivity $\sigma_D$ corresponds to an imaginary part of ε given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying *f* without the 2π, so the imaginary part of ε is $i \varepsilon_\infty \sigma_D / 2\pi f$.
+Note that the conductivity σ$_D$ corresponds to an imaginary part of ε given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying *f* without the 2π, so the imaginary part of ε is $i \varepsilon_\infty \sigma_D / 2\pi f$.
 
 Meep also supports polarizations of the [Drude](https://en.wikipedia.org/wiki/Drude_model) form, typically used for metals:
 
@@ -51,7 +51,7 @@ which corresponds to a term of the following form in ε's $\Sigma$<sub>*n*</sub>
 
 $$\frac{i \sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega (\gamma_n - i\omega)}$$
 
-which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, $\omega_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
+which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, ω$_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
 
 Numerical Stability
 -------------------
@@ -117,7 +117,7 @@ All of the above features that are supported for the electric permittivity ε ar
 Materials Library
 -----------------
 
-A materials library containing silicon as well as several commonly used metals is available for [Python](https://github.com/stevengj/meep/tree/master/python/examples/materials_library.py) and [Scheme](https://github.com/stevengj/meep/tree/master/scheme/examples/materials-library.scm). The metals data is based on [Applied Optics, Vol. 37, pp. 5271-83, 1998](https://www.osapublishing.org/ao/abstract.cfm?uri=ao-37-22-5271) ([pdf](http://www.academia.edu/download/31300981/ao-37-22-5271.pdf)). Experimental values of the complex refractive index of 11 elemental metals &mdash; Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W &mdash; are fit to a [Drude-Lorentzian susceptibility profile](#material-dispersion) over the wavelength range of 0.2 to 12.4 µm. The fit for silicon is from [J. Optical Society of America A, Vol. 28, pp. 770-77, 2011](https://www.osapublishing.org/josaa/abstract.cfm?uri=josaa-28-5-770) for the wavelength range of 0.4 to 1.0 µm. This is based on experimental data for intrinsic silicon at T=300K from [Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995](https://onlinelibrary.wiley.com/doi/full/10.1002/pip.4670030303).
+A materials library is available for [Python](https://github.com/stevengj/meep/tree/master/python/examples/materials_library.py) and [Scheme](https://github.com/stevengj/meep/tree/master/scheme/examples/materials-library.scm) containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al$_2$O$_3$), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz) (silica), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Experimental values of the complex refractive index are fit to a [Drude-Lorentzian susceptibility profile](#material-dispersion) over various wavelength ranges. For example, the fit for crystalline silicon at T=300K is based on [Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995](https://onlinelibrary.wiley.com/doi/full/10.1002/pip.4670030303) for the wavelength range of 0.4 to 1.0 µm. The fit for the elemental metals is based on [Applied Optics, Vol. 37, pp. 5271-83, 1998](https://www.osapublishing.org/ao/abstract.cfm?uri=ao-37-22-5271) ([pdf](http://www.academia.edu/download/31300981/ao-37-22-5271.pdf)) over the range of 0.2 to 12.4 μm.
 
 Fitting parameters for all materials are defined for a unit distance of 1 µm. For simulations which use a different value for the unit distance, the predefined variable `um_scale` (Python) or `um-scale` (Scheme) must be scaled by *multiplying* by whatever the unit distance is, in units of µm. For example, if the unit distance is 100 nm, this would require adding the line `um_scale = 0.1*um_scale` after the line where [`um_scale` is defined](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L9). This change must be made directly to the materials library file.
 
