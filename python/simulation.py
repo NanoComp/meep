@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import warnings
 from collections import namedtuple
 from collections import Sequence
 
@@ -299,6 +300,7 @@ class Simulation(object):
         self.material_function = material_function
         self.epsilon_func = epsilon_func
         self.load_structure_file = load_structure
+        self.dft_objects = []
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -334,6 +336,42 @@ class Simulation(object):
             else:
                 return 3
         return self.dimensions
+
+    def _get_valid_material_frequencies(self):
+        fmin = 0
+        fmax = float('inf')
+
+        for mat in [go.material for go in self.geometry] + self.extra_materials:
+            if isinstance(mat, mp.Medium) and mat.valid_freq_range:
+                if mat.valid_freq_range.min > fmin:
+                    fmin = mat.valid_freq_range.min
+                if mat.valid_freq_range.max < fmax:
+                    fmax = mat.valid_freq_range.max
+
+        return fmin, fmax
+
+    def _check_material_frequencies(self):
+
+        min_freq, max_freq = self._get_valid_material_frequencies()
+
+        source_freqs = [(s.src.frequency, 0 if s.src.width == 0 else 1 / s.src.width)
+                        for s in self.sources
+                        if hasattr(s.src, 'frequency')]
+
+        dft_freqs = []
+        for dftf in self.dft_objects:
+            dft_freqs.append(dftf.freq_min)
+            dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
+
+        warn_fmt = "{} frequency {} is out of material's range of {}-{}"
+
+        for sf in source_freqs:
+            if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
+                warnings.warn(warn_fmt.format('source', sf, min_freq, max_freq), RuntimeWarning)
+
+        for dftf in dft_freqs:
+            if dftf > max_freq or dftf < min_freq:
+                warnings.warn(warn_fmt.format('DFT', dftf, min_freq, max_freq), RuntimeWarning)
 
     def _init_structure(self, k=False):
         print('-' * 11)
@@ -526,6 +564,8 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._check_material_frequencies()
+
         if isinstance(cond, numbers.Number):
             stop_time = cond
             t0 = self.round_time()
@@ -559,6 +599,7 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._check_material_frequencies()
         ts = self.fields.last_source_time()
 
         if isinstance(cond, numbers.Number):
@@ -695,7 +736,10 @@ class Simulation(object):
         except ValueError:
             where = self.fields.total_volume()
 
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        dftf = self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        self.dft_objects.append(dftf)
+
+        return dftf
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
@@ -843,6 +887,7 @@ class Simulation(object):
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        self.dft_objects.append(stuff)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
