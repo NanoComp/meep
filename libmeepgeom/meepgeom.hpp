@@ -65,11 +65,14 @@ struct fragment_stats {
   size_t num_fourier_pixels;
   size_t num_fourier_freqs;
   size_t num_components;
-  meep::grid_volume *gv;
+  double tol;
+  int maxeval;
+  geom_box box;
   meep::volume_list *dft_vols;
+  meep::ndim dims;
 
-  fragment_stats(meep::volume_list *vols, meep::grid_volume *grid_vol);
-  void compute_stats();
+  fragment_stats(meep::volume_list *vols, geom_box bx, meep::ndim d, double tol, int maxeval);
+  void compute_stats(geometric_object_list geom);
   void finalize_stats();
   void update_stats_from_material(material_type mat, meep::vec& v);
   void count_anisotropic_pixels(medium_struct *med);
@@ -80,6 +83,7 @@ struct fragment_stats {
 };
 
 void compute_fragment_stats(std::vector<fragment_stats>& fragments);
+std::vector<geom_box> split_grid_volume_into_boxes(meep::grid_volume *gv, int size);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */

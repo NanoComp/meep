@@ -448,13 +448,11 @@ class Simulation(object):
         else:
             absorbers = None
 
-        # Split cell into fragments
-        # fragments = []
-        # TODO: Won't have access to self.dft_objects until after this method returns.
-        # dft_volumes = [d.where for d in self.dft_objects]
-        # dft_Nfreqs = [d.Nfreqs for d in self.dft_objects]
+        # mp.compute_fragment_stats(self.geometry, gv)
 
-        # mp.compute_fragment_stats(self.geometry, dft_volumes, dft_Nfreqs, fragments)
+        # if os.environ.get('MEEP_ANALYSIS_MODE', False):
+            # print recommendations
+            # sys.exit()
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)

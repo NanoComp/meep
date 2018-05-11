@@ -39,13 +39,16 @@ TESTS_ENVIRONMENT = export LD_PRELOAD=$(abs_top_builddir)/src/.libs/libmeep.so;
 
 #LOG_COMPILER = $(RUNCODE)
 
-noinst_PROGRAMS = bend-flux-ll
+noinst_PROGRAMS = bend-flux-ll test_fragment_stats
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 user_defined_material_SOURCES = user-defined-material.cpp
 user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+test_fragment_stats_SOURCES = test_fragment_stats.cpp
+test_fragment_stats_LDADD = libmeepgeom.la $(MEEPLIBS)
 
 dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
 
