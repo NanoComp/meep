@@ -21,18 +21,20 @@ class TestForce(unittest.TestCase):
                                  sources=[sources])
 
         fr = mp.ForceRegion(mp.Vector3(y=1.27), mp.Y, size=mp.Vector3(4.38))
-        self.myforce = self.sim.add_force(fcen, 0, 1, fr)
+        self.sim.add_force(fcen, 0, 1, fr)
 
     def test_force(self):
 
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-6))
 
-        # Test store and load of force as numpy array
-        fdata = self.sim.get_force_data(self.myforce)
-        self.sim.load_force_data(self.myforce, fdata)
+        myforce = self.sim.dft_objects[0]
 
-        self.sim.display_forces(self.myforce)
-        f = mp.get_forces(self.myforce)
+        # Test store and load of force as numpy array
+        fdata = self.sim.get_force_data(myforce)
+        self.sim.load_force_data(myforce, fdata)
+
+        self.sim.display_forces(myforce)
+        f = mp.get_forces(myforce)
 
         self.assertAlmostEqual(f[0], -0.11039089113393187)
 

@@ -37,9 +37,9 @@ class TestDFTFields(unittest.TestCase):
 
     def test_get_dft_array(self):
         sim = self.init()
-        sim.init_fields()
         dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1)
-        dft_flux = sim.fields.add_dft_flux(mp.X, sim.fields.v, self.fcen, self.fcen, 1)
+        fr = mp.FluxRegion(mp.Vector3(), size=mp.Vector3(self.sxy, self.sxy), direction=mp.X)
+        dft_flux = sim.add_flux(self.fcen, 0, 1, fr)
 
         # volumes with zero thickness in x and y directions to test collapsing
         # of empty dimensions in DFT array and HDF5 output routines
@@ -64,13 +64,13 @@ class TestDFTFields(unittest.TestCase):
         with h5py.File('thin-x-flux.h5', 'r') as thin_x:
             thin_x_h5 = thin_x['ez_0.r'].value + 1j * thin_x['ez_0.i'].value
 
-        with h5py.File('thin-y-flux.h5', 'r') as thin_y:  
+        with h5py.File('thin-y-flux.h5', 'r') as thin_y:
             thin_y_h5 = thin_y['ez_0.r'].value + 1j * thin_y['ez_0.i'].value
 
         np.testing.assert_allclose(thin_x_array, thin_x_h5)
         np.testing.assert_allclose(thin_y_array, thin_y_h5)
 
-        # compare array data to HDF5 file content for fields and flux 
+        # compare array data to HDF5 file content for fields and flux
         fields_arr = sim.get_dft_array(dft_fields, mp.Ez, 0)
         flux_arr = sim.get_dft_array(dft_flux, mp.Ez, 0)
 
