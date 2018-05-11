@@ -343,7 +343,7 @@ class Simulation(object):
         return self.dimensions
 
     def _get_valid_material_frequencies(self):
-        fmin = 0
+        fmin = float('-inf')
         fmax = float('inf')
 
         for mat in [go.material for go in self.geometry] + self.extra_materials:
