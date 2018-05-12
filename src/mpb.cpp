@@ -184,6 +184,46 @@ static complex<double> meep_mpb_A(const vec &p)
                              global_eigenmode_component);
 }
 
+bool ishomogeneous(maxwell_data *mdata) {
+    const symmetric_matrix *eps_inv = mdata->eps_inv;
+    int n = mdata->fft_output_size;
+    for (int i = 0; i < n; ++i) if (eps_inv[i] != eps_inv[0]) return false;
+    return true;
+}
+
+
+// enumerate the wavevectors of propagating planewaves 
+// k0 = sqrt(eps*mu)*omega
+// ldir     = longitudinal dimension
+// tdirs[n] = nth transverse dimension (of which there are either 1 or 2)
+// gamma[n] = brillouin-zone size in nth transverse dimension
+// kbloch[n] = bloch vector in nth transverse dimension
+std::vector<vec> get_planewave_kpoints(double k0, direction ldir,
+                                       std::vector<direction> tdirs,
+                                       std::vector<double> gamma,
+                                       std::vector<double> kbloch)
+{
+  int num_transverse_dimensions = gamma.size();
+  int nt1Max = floor(k0/gamma[0]);
+  int nt2Max = (gamma.size()>1) ? floor(k0/gamma[1]) : 1;
+  double kb1 = kbloch[0];
+  double kb2 = (kbloch.size()>1) ? kbloch[1] : 0.0;
+
+  std::vector<vec> kpoints;
+  for(int nt1=0; nt1<nt1Max; nt1++)
+   for(int nt2=0; nt2<nt2Max; nt2++)
+    { double kt1 = nt1*gamma1+kb1, kt2=nt2*gamma2+kb2;
+      double kl2 = k0*k0 - kt1*kt1 - kt2*kt2; // longitudinal wavevector component
+      if (kl2<0.0) continue;
+      vec kpoint;
+      kpoint.set_direction(tdirs[0], kt1);
+      if (num_transverse_dimensions>1) kpoint.set_direction(tdirs[1], kt2);
+      kpoint.set_direction(ldir, sqrt(kl2));
+      kpoints.push_back(kpoint);
+    }
+  return kpoints;
+}
+
 /****************************************************************/
 /* call MPB to get the band_numth eigenmode at freq omega_src.  */
 /*                                                              */
@@ -201,6 +241,9 @@ static complex<double> meep_mpb_A(const vec &p)
 /* eigenmode_amplitude (above) to compute eigenmode E and H     */
 /* field components at arbitrary points in space.               */
 /* call destroy_eigenmode_data() to deallocate when finished.   */
+/*                                                              */
+/* note: if MPB failed to find the eigenmode, the return value  */
+/* is NULL.                                                     */
 /****************************************************************/
 void *fields::get_eigenmode(double omega_src,
                             direction d, const volume where,
@@ -323,6 +366,28 @@ void *fields::get_eigenmode(double omega_src,
   if (check_maxwell_dielectric(mdata, 0))
     abort("invalid dielectric function for MPB");
 
+  // optimization for planewave case
+  // PSEUDOCODE: is this what steven wants?
+  if (ishomogeneous(mdata))
+   { double k0 = sqrt(eps_medium * mu_medium) * omega;
+
+     // make a list of periodic transverse dimensions (of which there are 0, 1, or 2)
+     // and set kpoint appropriately
+     std::vector<direction> tdirs;
+     std::vector<double> gammas;
+     std::vector<double> kblochs;
+     LOOP_OVER_DIRECTIONS(d)
+      if (volume_spans_computational_cell(d) && is_periodic(d))
+       { tdirs.push_back(d);
+         gammas.push_back(2*pi/cell_size(d));
+         kblochs.push_back(kbloch.in_direction(d));
+       }
+     if (tdirs.size() > 0)
+      { std::vector<vec> kpoints=get_planewave_kpoints(k0, d, tdirs, gammas, kblochs);
+        kpoint = kpoints[band_num];
+      }
+   }
+
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 				     local_N, N_start, alloc_N);
   for (int i = 0; i < H.n * H.p; ++i) {
@@ -392,7 +457,7 @@ void *fields::get_eigenmode(double omega_src,
       if (!quiet && verbose)
 	master_printf("Newton step: group velocity v=%g, kscale=%g\n", vgrp, kscale);
       if (kscale < 0 || kscale > 100)
-	abort("Newton solver not converging -- need a better starting kpoint");
+	return 0; // abort("Newton solver not converging -- need a better starting kpoint");
       for (int i = 0; i < 3; ++i) knew[i] = k[i] * kscale;
       update_maxwell_data_k(mdata, knew, G[0], G[1], G[2]);
     }
@@ -548,6 +613,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
                                     kpoint, match_frequency,
                                     parity, resolution,
                                     eigensolver_tol);
+  if(global_eigenmode_data)
+   abort("MPB failed to determine eigenmode for band_num %i",band_num);
 
   global_eigenmode_data->amp_func = A ? A : default_amp_func;
 
@@ -644,6 +711,12 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       void *mode_data
        = get_eigenmode(freq, d, flux.where, flux.where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
+      if (mode_data==0)
+       { if (vgrp) vgrp[nb*num_freqs + nf]=0.0;
+         coeffs[ 2*nb*num_freqs + 2*nf + 0 ] = 0.0;
+         coeffs[ 2*nb*num_freqs + 2*nf + 1 ] = 0.0;
+         continue;
+       }
 
       double vg=get_group_velocity(mode_data);
       if (vgrp) vgrp[nb*num_freqs + nf]=vg;
