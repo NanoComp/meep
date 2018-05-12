@@ -391,7 +391,7 @@ void *fields::get_eigenmode(double omega_src,
         master_printf("Newton step: group velocity v=%g, kmatch=%g\n", vgrp, kmatch);
       count_dkmatch_increase += fabs(dkmatch) > fabs(dkmatch_prev);
       if (count_dkmatch_increase > 4)
-        abort("Newton solver not converging -- need a better starting kpoint");
+        return NULL;
       k[d-X] = kmatch * R[d-X][d-X];
       update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
     }
@@ -546,6 +546,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
                                     parity, resolution,
                                     eigensolver_tol);
 
+  if (!global_eigenmode_data)
+    abort("eigenmode solver failed to find the requested mode; you may need to supply a better guess for k");
+
   global_eigenmode_data->amp_func = A ? A : default_amp_func;
 
   src_time *src_mpb = src.clone();
@@ -630,6 +633,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       void *mode_data
        = get_eigenmode(freq, d, flux.where, flux.where, band_num, kpoint,
                        match_frequency, parity, resolution, eig_tol);
+      if (!mode_data) { // mode not found, assume evanescent
+        coeffs[2*nb*num_freqs + 2*nf] = coeffs[2*nb*num_freqs + 2*nf + 1] = 0;
+        continue;
+      }
 
       double vg=get_group_velocity(mode_data);
       if (vgrp) vgrp[nb*num_freqs + nf]=vg;
@@ -646,6 +653,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       if (normfac==0.0) normfac=1.0;
       coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(abs(normfac));
       coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(abs(normfac));
+      destroy_eigenmode_data((void*) mode_data);
     }
 }
 
