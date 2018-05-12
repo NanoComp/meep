@@ -206,7 +206,7 @@ void *fields::get_eigenmode(double omega_src,
                             direction d, const volume where,
                             const volume eig_vol,
                             int band_num,
-                            const vec &kpoint, bool match_frequency,
+                            const vec &_kpoint, bool match_frequency,
                             int parity,
                             double resolution,
                             double eigensolver_tol,
@@ -215,6 +215,15 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
+
+  // if the mode region extends over the full computational grid and we are bloch-periodic
+  // in any direction, set the corresponding component of the eigenmode initial-guess
+  // k-vector to be the (real part of the) bloch vector in that direction.
+  vec kpoint(_kpoint);
+  LOOP_OVER_DIRECTIONS(v.dim, d)
+    if (float(eig_vol.in_direction(d) == float(v.in_direction(d))))
+      if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
+        kpoint.set_direction(d, real(k[d]));
 
   //bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
@@ -512,10 +521,6 @@ void add_volume_source_check(component c, const src_time &src, const volume &whe
   f->add_volume_source(c, src, where, A, amp);
 }
 
-static bool equal_float(double d1, double d2) {
-  return ((float)d1)==((float)d2);
-}
-
 /***************************************************************/
 /* call get_eigenmode() to solve for the specified eigenmode,  */
 /* then call add_volume_source() to add current sources whose  */
@@ -525,22 +530,11 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  direction d, const volume &where,
 				  const volume &eig_vol,
 				  int band_num,
-				  const vec &_kpoint, bool match_frequency,
+				  const vec &kpoint, bool match_frequency,
 				  int parity,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
-
-
-  // if the source region extends over the full computational grid and we are bloch-periodic
-  // in any direction, set the corresponding component of the eigenmode initial-guess
-  // k-vector to be the (real part of the) bloch vector in that direction.
-  vec kpoint(_kpoint);
-  LOOP_OVER_DIRECTIONS(v.dim, d)
-    if (equal_float(where.in_direction(d), v.in_direction(d)))
-      if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
-        kpoint.set_direction(d, real(k[d]));
-
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
   /*--------------------------------------------------------------*/
@@ -621,15 +615,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (S.multiplicity() > 1)
    abort("symmetries are not yet supported in get_eigenmode_coefficients");
 
-  // if the flux region extends over the full computational grid and we are bloch-periodic
-  // in any direction, set the corresponding component of the eigenmode initial-guess
-  // k-vector to be the (real part of the) bloch vector in that direction. otherwise just
-  // set the initial-guess k component to zero.
-  vec kpoint(0.0,0.0,0.0);
-  LOOP_OVER_DIRECTIONS(this->v.dim, d)
-   if (equal_float(flux.where.in_direction(d), this->v.in_direction(d)))
-    if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
-     kpoint.set_direction(d, real(this->k[d]));
+  vec kpoint(0.0,0.0,0.0); // default guess
 
   // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
@@ -668,10 +654,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
 /**************************************************************/
 #else // #ifdef HAVE_MPB
 void *fields::get_eigenmode(double omega_src,
-	     		    direction d, const volume where,
-			    const volume eig_vol,
-	    	            int band_num,
-		            const vec &kpoint, bool match_frequency,
+                            direction d, const volume where,
+                            const volume eig_vol,
+                            int band_num,
+                            const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution,
                             double eigensolver_tol, bool verbose) {
