@@ -54,7 +54,7 @@ void structure::dump(const char *filename) {
   size_t ntotal = sum_to_all(my_ntot);
 
   h5file file(filename, h5file::WRITE, true);
-  size_t dims[3] = {num_chunks, NUM_FIELD_COMPONENTS, 5};
+  size_t dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
   if (am_master())
@@ -82,7 +82,7 @@ void structure::load(const char *filename) {
   // the number of entries in the chi1inv array for each chunk.
   size_t *num_chi1inv = new size_t[num_chunks*NUM_FIELD_COMPONENTS*5];
   int rank;
-  size_t dims[3], _dims[3] = {num_chunks, NUM_FIELD_COMPONENTS, 5};
+  size_t dims[3], _dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.read_size("num_chi1inv", &rank, dims, 3);
   if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])

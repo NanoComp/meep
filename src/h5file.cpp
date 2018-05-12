@@ -549,7 +549,7 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims,
 	  "file data is missing unlimited dimension for append_data");
     delete[] maxdims;
     for (i = 0; i < rank; ++i)
-      CHECK(dims[i] == (int) dims_copy[i],
+      CHECK(dims[i] == dims_copy[i],
 	    "file data is inconsistent size for subsequent processor");
     if (rank < rank1)
       CHECK(dims_copy[0] == 1, "rank-0 data is incorrect size");
