@@ -1441,10 +1441,10 @@ class fields {
   // values of field components at arbitrary points in space.
   // call destroy_eigenmode_data() to deallocate it when finished.
   void *get_eigenmode(double omega_src, direction d, const volume where,
-	              const volume eig_vol, int band_num,
-		      const vec &kpoint, bool match_frequency=true,
-                      int parity=0, double resolution=0.0,
-                      double eigensolver_tol=1.0e-7, bool verbose=false);
+                      const volume eig_vol, int band_num,
+                      const vec &kpoint, bool match_frequency,
+                      int parity, double resolution,
+                      double eigensolver_tol, bool verbose=false);
 
   void add_eigenmode_source(component c, const src_time &src,
 	  		    direction d, const volume &where,
