@@ -399,7 +399,8 @@ void *fields::get_eigenmode(double omega_src,
 	   && fabs(sqrt(eigvals[band_num - 1]) - omega_src) >
 	   omega_src * match_tol);
 
-  omega_src = sqrt(eigvals[band_num - 1]);
+  if (!match_frequency)
+    omega_src = sqrt(eigvals[band_num - 1]);
 
   // cleanup temporary storage
   delete[] eigvals;
@@ -542,7 +543,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   global_eigenmode_data
    =(eigenmode_data *)get_eigenmode(omega_src, d, where,
                                     eig_vol, band_num,
-                                    kpoint, match_frequency, d,
+                                    kpoint, match_frequency,
                                     parity, resolution,
                                     eigensolver_tol);
 
