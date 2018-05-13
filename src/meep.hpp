@@ -1457,7 +1457,7 @@ class fields {
 			    std::complex<double> A(const vec &) = 0);
 
   void get_eigenmode_coefficients(dft_flux flux,
-                                  int *bands, int num_bands,
+                                  int *bands, int num_bands, int parity,
                                   std::complex<double> *coeffs,
                                   double *vgrp, kpoint_func user_kpoint_func=0,
                                   void *user_kpoint_data=0);

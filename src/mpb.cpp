@@ -599,7 +599,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 /* bands[nb] is stored in vgrp[nb*num_freqs + nf].             */
 /***************************************************************/
 void fields::get_eigenmode_coefficients(dft_flux flux,
-                                        int *bands, int num_bands,
+                                        int *bands, int num_bands, int parity,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data)
@@ -609,7 +609,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   int num_freqs        = flux.Nfreq;
   direction d          = flux.normal_direction;
   bool match_frequency = true;
-  int parity           = 0; // NO_PARITY
   double resolution    = a;
   double eig_tol       = 1.0e-4;
 
