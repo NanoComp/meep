@@ -402,10 +402,7 @@ class Simulation(object):
             if dftf > max_freq or dftf < min_freq:
                 warnings.warn(warn_dft_fmt.format(dftf, min_freq, max_freq), RuntimeWarning)
 
-    def _init_structure(self, k=False):
-        print('-' * 11)
-        print('Initializing structure...')
-
+    def _create_grid_volume(self, k):
         dims = self._infer_dimensions(k)
 
         if dims == 0 or dims == 1:
@@ -423,6 +420,9 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
+        return gv
+
+    def _create_symmetries(self, gv):
         sym = mp.symmetry()
 
         # Initialize swig objects for each symmetry and combine them into one
@@ -441,6 +441,14 @@ class Simulation(object):
             else:
                 s.swigobj = mp.symmetry()
 
+        return sym
+
+    def _init_structure(self, k=False):
+        print('-' * 11)
+        print('Initializing structure...')
+
+        gv = self._create_grid_volume(k)
+        sym = self._create_symmetries(gv)
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
         if self.boundary_layers and type(self.boundary_layers[0]) is Absorber:
@@ -448,11 +456,11 @@ class Simulation(object):
         else:
             absorbers = None
 
-        # mp.compute_fragment_stats(self.geometry, gv)
+        mp.compute_fragment_stats(self.geometry, gv, self.subpixel_tol, self.subpixel_maxeval)
 
         # if os.environ.get('MEEP_ANALYSIS_MODE', False):
-            # print recommendations
-            # sys.exit()
+        #     print(recommendations)
+        #     sys.exit()
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)

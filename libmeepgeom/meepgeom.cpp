@@ -1631,12 +1631,18 @@ material_type make_file_material(const char *eps_input_file)
 /* Fragment Statistics                                                        */
 /******************************************************************************/
 
-std::vector<geom_box> split_grid_volume_1d(meep::grid_volume *gv, int size) {
+double fragment_stats::tol = 0;
+int fragment_stats::maxeval = 0;
+int fragment_stats::dimensions = 0;
+int fragment_stats::resolution = 0;
+
+// TODO: Combine the next four methods into one.
+static std::vector<geom_box> split_grid_volume_1d(meep::grid_volume *gv, int size) {
   int last_box_size_z = gv->nz() % size;
   std::vector<geom_box> boxes;
 
   for (int z = 0; z < gv->nz(); z += size) {
-    int z_increment = z < gv->nz() ? size - 1 : last_box_size_z;
+    int z_increment = z + size - 1 > gv->nz() ? last_box_size_z : size - 1;
     vector3 low = {0.0, 0.0, (double)z};
     vector3 high = {0.0, 0.0, (double)(z + z_increment)};
     geom_box b = {low, high};
@@ -1651,9 +1657,9 @@ static std::vector<geom_box> split_grid_volume_2d(meep::grid_volume *gv, int siz
   std::vector<geom_box> boxes;
 
   for (int x = 0; x < gv->nx(); x += size) {
-    int x_increment = x < gv->nx() ? size - 1 : last_box_size_x;
+    int x_increment = x  + size - 1 > gv->nx() ? last_box_size_x : size - 1;
     for (int y = 0; y < gv->ny(); y += size) {
-      int y_increment = y < gv->ny() ? size - 1 : last_box_size_y;
+      int y_increment = y + size - 1 > gv->ny() ? last_box_size_y : size - 1;
       vector3 low = {(double)x, (double)y, 0.0};
       vector3 high = {(double)(x + x_increment), (double)(y + y_increment), 0.0};
       geom_box b = {low, high};
@@ -1670,11 +1676,11 @@ static std::vector<geom_box> split_grid_volume_3d(meep::grid_volume *gv, int siz
   std::vector<geom_box> boxes;
 
   for (int x = 0; x < gv->nx(); x += size) {
-    int x_increment = x < gv->nx() ? size - 1 : last_box_size_x;
+    int x_increment = x  + size - 1 > gv->nx() ? last_box_size_x : size - 1;
     for (int y = 0; y < gv->ny(); y += size) {
-      int y_increment = y < gv->ny() ? size - 1 : last_box_size_y;
+      int y_increment = y + size - 1 > gv->ny() ? last_box_size_y : size - 1;
       for (int z = 0; z < gv->nz(); z += size) {
-        int z_increment = z < gv->nz() ? size - 1 : last_box_size_z;
+        int z_increment = z + size - 1 > gv->nz() ? last_box_size_z : size - 1;
         vector3 low = {(double)x, (double)y, (double)z};
         vector3 high = {(double)(x + x_increment), (double)(y + y_increment), (double)(z + z_increment)};
         geom_box b = {low, high};
@@ -1686,12 +1692,24 @@ static std::vector<geom_box> split_grid_volume_3d(meep::grid_volume *gv, int siz
 }
 
 static std::vector<geom_box> split_grid_volume_cyl(meep::grid_volume *gv, int size) {
+  int last_box_size_x = gv->nx() % size;
+  int last_box_size_z = gv->nz() % size;
   std::vector<geom_box> boxes;
 
+  for (int x = 0; x < gv->nx(); x += size) {
+    int x_increment = x  + size - 1 > gv->nx() ? last_box_size_x : size - 1;
+    for (int z = 0; z < gv->nz(); z += size) {
+      int z_increment = z + size - 1 > gv->nz() ? last_box_size_z : size - 1;
+      vector3 low = {(double)x, (double)z, 0.0};
+      vector3 high = {(double)(x + x_increment), (double)(z + z_increment), 0.0};
+      geom_box b = {low, high};
+      boxes.push_back(b);
+    }
+  }
   return boxes;
 }
 
-std::vector<geom_box> split_grid_volume_into_boxes(meep::grid_volume *gv, int size) {
+static std::vector<geom_box> split_grid_volume_into_boxes(meep::grid_volume *gv, int size) {
   switch (gv->dim) {
   case meep::D1:
     return split_grid_volume_1d(gv, size);
@@ -1702,26 +1720,37 @@ std::vector<geom_box> split_grid_volume_into_boxes(meep::grid_volume *gv, int si
   case meep::Dcyl:
     return split_grid_volume_cyl(gv, size);
     break;
+  default:
+    return std::vector<geom_box>();
   }
 }
 
-std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes) {
+static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, double tol, int maxeval,
+                                                  meep::grid_volume *gv) {
   std::vector<fragment_stats> fragments;
-  // TODO
+  fragment_stats::tol = tol;
+  fragment_stats::maxeval = maxeval;
+  fragment_stats::dimensions = meep::number_of_directions(gv->dim);
+  fragment_stats::resolution = gv->a;
+
+  for (size_t i = 0; i < boxes.size(); ++i) {
+    fragments.push_back(fragment_stats(boxes[i]));
+  }
   return fragments;
 }
 
-void compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv) {
-  std::vector<geom_box> boxes = split_grid_volume_into_boxes(gv, 10);
-  std::vector<fragment_stats> fragments = init_fragments(boxes);
+std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv,
+                                                   double tol, int maxeval, int box_size) {
+  std::vector<geom_box> boxes = split_grid_volume_into_boxes(gv, box_size);
+  std::vector<fragment_stats> fragments = init_fragments(boxes, tol, maxeval, gv);
 
   for (size_t i = 0; i < fragments.size(); ++i) {
-    fragments[i].compute_stats(geom);
-    // fragments[i].finalize_stats();
+    fragments[i].compute_stats(&geom);
   }
+  return fragments;
 }
 
-fragment_stats::fragment_stats(meep::volume_list *vols, geom_box bx, meep::ndim d, double tol, int maxeval):
+fragment_stats::fragment_stats(geom_box& bx):
   num_anisotropic_eps_pixels(0),
   num_anisotropic_mu_pixels(0),
   num_nonlinear_pixels(0),
@@ -1730,20 +1759,17 @@ fragment_stats::fragment_stats(meep::volume_list *vols, geom_box bx, meep::ndim 
   num_fourier_pixels(0),
   num_fourier_freqs(0),
   num_components(0),
-  tol(tol),
-  maxeval(maxeval),
   box(bx),
-  dft_vols(vols),
-  dims(d) {
+  dft_vols(NULL) {
 
 }
 
-void fragment_stats::compute_stats(geometric_object_list geom) {
-  int dimensions = meep::number_of_directions(dims);
+void fragment_stats::compute_stats(geometric_object_list *geom) {
 
-  for (int i = 0; i < geom.num_items; ++i) {
-    geometric_object *go = &geom.items[i];
-    size_t pixels = (size_t)ceil(box_overlap_with_object(box, *go, tol, maxeval));
+  for (int i = 0; i < geom->num_items; ++i) {
+    geometric_object *go = &geom->items[i];
+    double overlap = box_overlap_with_object(box, *go, tol, maxeval);
+    size_t pixels = (size_t)ceil(overlap * pow(resolution, dimensions));
 
     if (pixels > 0) {
       material_type mat = (material_type)go->material;
@@ -1751,48 +1777,51 @@ void fragment_stats::compute_stats(geometric_object_list geom) {
       switch (mat->which_subclass) {
       case material_data::MEDIUM: {
         medium_struct *med = &mat->medium;
+        count_anisotropic_pixels(med, pixels);
+        count_nonlinear_pixels(med, pixels);
+        count_susceptibility_pixels(med, pixels);
+        // count_dft_fields(v);
         break;
       }
       case material_data::MATERIAL_FILE:
         // TODO: Is the eps file loaded at this point?
         break;
       case material_data::MATERIAL_USER:
-        // TODO: Call with center point of box?
+        // TODO: Call with center point of box? Call at multiple sample points in box?
         break;
       case material_data::PERFECT_METAL:
         // TODO
         break;
       }
-      // resolution^dimensions
     }
-    // Pixels in box = ???
-    // Count contributions from default_material: pixels_in_box - pixels
+    // Count contributions from default_material: total_area_in_box - overlap_area
+
+    // Handle dft objects
   }
-  // Loop through dft volumes
 }
 
-void fragment_stats::finalize_stats() {
-  num_dft_fields = num_fourier_pixels * num_fourier_freqs * num_components;
-}
-
-void fragment_stats::count_anisotropic_pixels(medium_struct *med) {
+void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels) {
   // ...
 }
 
-void fragment_stats::count_nonlinear_pixels(medium_struct *med) {
+void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
   for (meep::component c = meep::Ex; c <= meep::Hz; c = (meep::component)(c + 1)) {
     if (get_chi(c, med, 2) != 0) {
-      num_nonlinear_pixels++;
+      num_nonlinear_pixels += pixels;
     }
     if (get_chi(c, med, 3) != 0) {
-      num_nonlinear_pixels++;
+      num_nonlinear_pixels += pixels;
     }
   }
 }
 
-void fragment_stats::count_susceptibility_pixels(medium_struct *med) {
+void fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
   num_susceptibility_pixels += med->E_susceptibilities.num_items;
   num_susceptibility_pixels += med->H_susceptibilities.num_items;
+}
+
+void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
+  // ...
 }
 
 // TODO: Can Python get all the volumes ('where' member) from the dft objects
@@ -1808,14 +1837,6 @@ void fragment_stats::count_dft_fields(meep::vec& v) {
   }
 }
 
-void fragment_stats::update_stats_from_material(material_type mat, meep::vec& v) {
-  medium_struct *med = &mat->medium;
-  count_anisotropic_pixels(med);
-  count_nonlinear_pixels(med);
-  count_susceptibility_pixels(med);
-  count_dft_fields(v);
-}
-
 void fragment_stats::print_stats() {
   master_printf("Fragment stats\n");
   master_printf("  num_anisotropic_eps_pixels: %zd\n", num_anisotropic_eps_pixels);
@@ -1825,6 +1846,8 @@ void fragment_stats::print_stats() {
   master_printf("  num_dft_fields: %zd\n", num_dft_fields);
   master_printf("  num_fourier_pixels: %zd\n", num_fourier_pixels);
   master_printf("  num_fourier_freqs: %zd\n", num_fourier_freqs);
-  master_printf("  num_components: %zd\n\n", num_components);
+  master_printf("  num_components: %zd\n", num_components);
+  master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);
+  master_printf("  box.high: {%f, %f, %f}\n\n", box.high.x, box.high.y, box.high.z);
 }
 } // namespace meep_geom

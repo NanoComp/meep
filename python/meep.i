@@ -45,6 +45,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 %}
 
 %include "numpy.i"
+%include "std_vector.i"
 
 %init %{
   import_array();
@@ -996,11 +997,29 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
+%template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 
 %include "vec.i"
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+
+struct vector3 {
+    double x;
+    double y;
+    double z;
+};
+
+struct geom_box {
+    vector3 low;
+    vector3 high;
+};
+
+%extend meep_geom::fragment_stats {
+    void meep_geom::fragment_stats::__repr__() {
+        $self->print_stats();
+    }
+};
 
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);

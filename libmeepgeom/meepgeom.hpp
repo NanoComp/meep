@@ -57,6 +57,11 @@ typedef std::complex<double> cdouble;
 #define TINY 1e-20
 
 struct fragment_stats {
+  static double tol;
+  static int maxeval;
+  static int dimensions;
+  static int resolution;
+
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
   size_t num_nonlinear_pixels;
@@ -65,25 +70,22 @@ struct fragment_stats {
   size_t num_fourier_pixels;
   size_t num_fourier_freqs;
   size_t num_components;
-  double tol;
-  int maxeval;
   geom_box box;
   meep::volume_list *dft_vols;
-  meep::ndim dims;
 
-  fragment_stats(meep::volume_list *vols, geom_box bx, meep::ndim d, double tol, int maxeval);
-  void compute_stats(geometric_object_list geom);
-  void finalize_stats();
-  void update_stats_from_material(material_type mat, meep::vec& v);
-  void count_anisotropic_pixels(medium_struct *med);
-  void count_nonlinear_pixels(medium_struct *med);
-  void count_susceptibility_pixels(medium_struct *med);
+  fragment_stats() {}
+  fragment_stats(geom_box& bx);
+  void compute_stats(geometric_object_list *geom);
+  void count_anisotropic_pixels(medium_struct *med, size_t pixels);
+  void count_nonlinear_pixels(medium_struct *med, size_t pixels);
+  void count_susceptibility_pixels(medium_struct *med, size_t pixels);
+  void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
   void count_dft_fields(meep::vec& v);
   void print_stats();
 };
 
-void compute_fragment_stats(std::vector<fragment_stats>& fragments);
-std::vector<geom_box> split_grid_volume_into_boxes(meep::grid_volume *gv, int size);
+std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv,
+                                                   double tol, int maxeval, int box_size=10);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */
