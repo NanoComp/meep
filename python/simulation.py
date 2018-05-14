@@ -371,7 +371,7 @@ class Simulation(object):
         warn_fmt = "{} frequency {} is out of material's range of {}-{}"
 
         for sf in source_freqs:
-            if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
+            if sf[0] + 0.5 * sf[1] > max_freq or sf[0] - 0.5 * sf[1] < min_freq:
                 warnings.warn(warn_fmt.format('source', sf, min_freq, max_freq), RuntimeWarning)
 
         for dftf in dft_freqs:
