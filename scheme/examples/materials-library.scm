@@ -206,6 +206,21 @@
 
 ;------------------------------------------------------------------
 
+; stoichiometric silicon nitride (Si3N4) from H. R. Philipp, Optical properties of silicon nitride, J. Electrochem. Soc. 120, 295-300, 1973
+; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
+; wavelength range: 0.207 - 1.24 um
+
+(define Si3N4-frq1 (/ (* 0.13967 um_scale)))
+(define Si3N4-gam1 0)
+(define Si3N4-sig1 2.8939)
+
+(define Si3N4 (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Si3N4-frq1) (gamma Si3N4-gam1) (sigma Si3N4-sig1)))))
+
+;------------------------------------------------------------------
+
 ; elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 ; wavelength range: 0.2 - 12.4 um
 
