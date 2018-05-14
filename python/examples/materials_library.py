@@ -185,6 +185,19 @@ GaAs_susc = [ mp.LorentzianSusceptibility(frequency=GaAs_frq1, gamma=GaAs_gam1, 
 GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc)
 
 #------------------------------------------------------------------
+# stoichiometric silicon nitride (Si3N4) from H. R. Philipp, Optical properties of silicon nitride, J. Electrochem. Soc. 120, 295-300, 1973
+# fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
+# wavelength range: 0.207 - 1.24 um
+
+Si3N4_frq1 = 1/(0.13967*um_scale)
+Si3N4_gam1 = 0
+Si3N4_sig1 = 2.8939
+
+Si3N4_susc = [ mp.LorentzianSusceptibility(frequency=Si3N4_frq1, gamma=Si3N4_gam1, sigma=Si3N4_sig1) ]
+
+Si3N4 = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_susc)
+
+#------------------------------------------------------------------
 
 # elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um
