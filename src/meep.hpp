@@ -1553,7 +1553,7 @@ class fields {
   /* flux and mode fields.)                               */
   /********************************************************/
   std::complex<double> process_dft_component(dft_chunk **chunklists,
-                                             int num_chunklists, volume dft_volume,
+                                             int num_chunklists,
                                              int num_freq, component c,
                                              const char *HDF5FileName,
                                              std::complex<double> **field_array=0,
