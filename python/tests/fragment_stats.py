@@ -5,7 +5,14 @@ import meep as mp
 class TestFragmentStats(unittest.TestCase):
 
     def test_1d_stats(self):
-        mat = mp.Medium(epsilon=12, epsilon_offdiag=mp.Vector3(z=1))
+        mat = mp.Medium(
+            epsilon=12,
+            epsilon_offdiag=mp.Vector3(z=1),
+            mu_offdiag=mp.Vector3(x=20),
+            E_chi2_diag=mp.Vector3(1, 1),
+            H_chi3_diag=mp.Vector3(z=1)
+        )
+
         geom = [mp.Block(size=mp.Vector3(z=10), material=mat)]
         sim = mp.Simulation(cell_size=mp.Vector3(z=30), resolution=10, geometry=geom, dimensions=1)
         gv = sim._create_grid_volume(False)
@@ -21,8 +28,8 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs[0].num_nonzero_conductivity_pixels, 0)
 
         self.assertEqual(fs[1].num_anisotropic_eps_pixels, 100)
-        self.assertEqual(fs[1].num_anisotropic_mu_pixels, 0)
-        self.assertEqual(fs[1].num_nonlinear_pixels, 0)
+        self.assertEqual(fs[1].num_anisotropic_mu_pixels, 100)
+        # self.assertEqual(fs[1].num_nonlinear_pixels, 300)
         self.assertEqual(fs[1].num_susceptibility_pixels, 0)
         self.assertEqual(fs[1].num_nonzero_conductivity_pixels, 0)
 

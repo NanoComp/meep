@@ -290,7 +290,7 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     $result = PyList_New(n);
 
     for (Py_ssize_t i = 0; i < n; ++i) {
-        PyObject *freq = PyFloat_FromDouble($1[i]);
+        PyObject *freq = PyFloat_FromDouble($1.operator[](i));
         PyList_SetItem($result, i, freq);
     }
 }
@@ -301,7 +301,7 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     $result = PyList_New(n);
 
     for (Py_ssize_t i = 0; i < n; ++i) {
-        PyObject *dim = PyInteger_FromLong($1[i]);
+        PyObject *dim = PyInteger_FromLong($1.operator[](i));
         PyList_SetItem($result, i, dim);
     }
 }

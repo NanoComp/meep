@@ -1012,6 +1012,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
+%template(IntVector) std::vector<int>;
+%template(DoubleVector) std::vector<double>;
 
 %include "vec.i"
 %include "meep.hpp"
