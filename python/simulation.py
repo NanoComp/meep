@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import warnings
 from collections import namedtuple
 from collections import Sequence
 
@@ -20,6 +21,11 @@ try:
     basestring
 except NameError:
     basestring = str
+
+
+FluxData = namedtuple('FluxData', ['E', 'H'])
+ForceData = namedtuple('ForceData', ['offdiag1', 'offdiag2', 'diag'])
+NearToFarData = namedtuple('NearToFarData', ['F'])
 
 
 def get_num_args(func):
@@ -299,6 +305,7 @@ class Simulation(object):
         self.material_function = material_function
         self.epsilon_func = epsilon_func
         self.load_structure_file = load_structure
+        self.dft_objects = []
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -334,6 +341,42 @@ class Simulation(object):
             else:
                 return 3
         return self.dimensions
+
+    def _get_valid_material_frequencies(self):
+        fmin = float('-inf')
+        fmax = float('inf')
+
+        for mat in [go.material for go in self.geometry] + self.extra_materials:
+            if isinstance(mat, mp.Medium) and mat.valid_freq_range:
+                if mat.valid_freq_range.min > fmin:
+                    fmin = mat.valid_freq_range.min
+                if mat.valid_freq_range.max < fmax:
+                    fmax = mat.valid_freq_range.max
+
+        return fmin, fmax
+
+    def _check_material_frequencies(self):
+
+        min_freq, max_freq = self._get_valid_material_frequencies()
+
+        source_freqs = [(s.src.frequency, 0 if s.src.width == 0 else 1 / s.src.width)
+                        for s in self.sources
+                        if hasattr(s.src, 'frequency')]
+
+        dft_freqs = []
+        for dftf in self.dft_objects:
+            dft_freqs.append(dftf.freq_min)
+            dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
+
+        warn_fmt = "{} frequency {} is out of material's range of {}-{}"
+
+        for sf in source_freqs:
+            if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
+                warnings.warn(warn_fmt.format('source', sf, min_freq, max_freq), RuntimeWarning)
+
+        for dftf in dft_freqs:
+            if dftf > max_freq or dftf < min_freq:
+                warnings.warn(warn_fmt.format('DFT', dftf, min_freq, max_freq), RuntimeWarning)
 
     def _init_structure(self, k=False):
         print('-' * 11)
@@ -526,6 +569,8 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._check_material_frequencies()
+
         if isinstance(cond, numbers.Number):
             stop_time = cond
             t0 = self.round_time()
@@ -559,6 +604,7 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._check_material_frequencies()
         ts = self.fields.last_source_time()
 
         if isinstance(cond, numbers.Number):
@@ -695,13 +741,22 @@ class Simulation(object):
         except ValueError:
             where = self.fields.total_volume()
 
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        dftf = self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        self.dft_objects.append(dftf)
+
+        return dftf
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
             self.init_fields()
 
         self.fields.output_dft(dft_fields, fname)
+
+    def get_dft_data(self, dft_chunk):
+        n = mp._get_dft_data_size(dft_chunk)
+        arr = np.zeros(n, np.complex128)
+        mp._get_dft_data(dft_chunk, arr)
+        return arr
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         if self.fields is None:
@@ -730,6 +785,16 @@ class Simulation(object):
         self.load_near2far(fname, n2f)
         n2f.scale_dfts(-1.0)
 
+    def get_near2far_data(self, n2f):
+        return NearToFarData(F=self.get_dft_data(n2f.F))
+
+    def load_near2far_data(self, n2f, n2fdata):
+        mp._load_dft_data(n2f.F, n2fdata.F)
+
+    def load_minus_near2far_data(self, n2f, n2fdata):
+        self.load_near2far_data(n2f, n2fdata)
+        n2f.scale_dfts(complex(1.0))
+
     def add_force(self, fcen, df, nfreq, *forces):
         if self.fields is None:
             self.init_fields()
@@ -753,6 +818,20 @@ class Simulation(object):
     def load_minus_force(self, fname, force):
         self.load_force(fname, force)
         force.scale_dfts(-1.0)
+
+    def get_force_data(self, force):
+        return ForceData(offdiag1=self.get_dft_data(force.offdiag1),
+                         offdiag2=self.get_dft_data(force.offdiag2),
+                         diag=self.get_dft_data(force.diag))
+
+    def load_force_data(self, force, fdata):
+        mp._load_dft_data(force.offdiag1, fdata.offdiag1)
+        mp._load_dft_data(force.offdiag2, fdata.offdiag2)
+        mp._load_dft_data(force.diag, fdata.diag)
+
+    def load_minus_force_data(self, force, fdata):
+        self.load_force_data(force, fdata)
+        force.scale_dfts(complex(-1.0))
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
@@ -779,6 +858,17 @@ class Simulation(object):
 
     def load_minus_flux(self, fname, flux):
         self.load_flux(fname, flux)
+        flux.scale_dfts(complex(-1.0))
+
+    def get_flux_data(self, flux):
+        return FluxData(E=self.get_dft_data(flux.E), H=self.get_dft_data(flux.H))
+
+    def load_flux_data(self, flux, fdata):
+        mp._load_dft_data(flux.E, fdata.E)
+        mp._load_dft_data(flux.H, fdata.H)
+
+    def load_minus_flux_data(self, flux, fdata):
+        self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
 
     def flux_in_box(self, d, box=None, center=None, size=None):
@@ -843,6 +933,7 @@ class Simulation(object):
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        self.dft_objects.append(stuff)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff

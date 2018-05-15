@@ -97,11 +97,13 @@ tests/*.h5
 tests/latest_output
 
 # libmeepgeom tests
+libmeepgeom/dft-fields
 libmeepgeom/bend-flux-ll
 libmeepgeom/pw-source-ll
 libmeepgeom/absorber-1d-ll
 libmeepgeom/array-slice-ll
 libmeepgeom/cyl-ellipsoid-ll
+libmeepgeom/user-defined-material
 libmeepgeom/wvg-taper
 libmeepgeom/ring-ll
 libmeepgeom/*.log
@@ -117,7 +119,7 @@ python/*.log
 python/*.bak
 
 # output files
-examples/*.h5
-examples/*.png
+scheme/examples/*.h5
+scheme/examples/*.png
 python/examples/*.h5
 python/examples/*.png

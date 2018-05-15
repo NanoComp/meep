@@ -56,10 +56,12 @@ class TestBendFlux(unittest.TestCase):
         else:
             self.pt = mp.Vector3(wvg_xcen, (sy / 2) - 1.5)
 
-    def run_with_straight_waveguide(self):
+    def test_bend_flux(self):
+        # Normalization run
         self.init(no_bend=True)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
-        self.sim.save_flux('refl-flux', self.refl)
+        # Save flux data for use in real run below
+        fdata = self.sim.get_flux_data(self.refl)
 
         expected = [
             (0.1, 3.65231563251e-05, 3.68932495077e-05),
@@ -89,14 +91,11 @@ class TestBendFlux(unittest.TestCase):
 
         np.testing.assert_allclose(expected, res[:20])
 
-    def test_ninety_degree_bend(self):
-        # We have to run the straight waveguide version first to generate the 'refl-flux'
-        # file that this test uses. We can't just prepend run_with_straight_waveguide
-        # with 'test_' because execution order of unit tests isn't deterministic.
-        self.run_with_straight_waveguide()
+        # Real run
         self.sim = None
         self.init()
-        self.sim.load_minus_flux('refl-flux', self.refl)
+        # Load flux data obtained from normalization run
+        self.sim.load_minus_flux_data(self.refl, fdata)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
 
         expected = [

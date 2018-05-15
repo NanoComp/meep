@@ -101,15 +101,21 @@ class TestAntennaRadiation(unittest.TestCase):
         r = 1000
         npts = 100
 
+        # Test store and load of near2far as numpy array
+        n2fdata = self.sim.get_near2far_data(self.nearfield)
+        self.sim.load_near2far_data(self.nearfield, n2fdata)
+
         result = []
         for n in range(npts):
             ff = self.sim.get_farfield(
                 self.nearfield,
                 mp.Vector3(r * math.cos(2 * math.pi * (n / npts)),
-                           r * math.sin(2 * math.pi * (n / npts))))
+                           r * math.sin(2 * math.pi * (n / npts)))
+            )
             result.append(ff)
 
         np.testing.assert_allclose(expected, result[-10:])
+
 
 if __name__ == '__main__':
     unittest.main()
