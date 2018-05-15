@@ -59,22 +59,24 @@ typedef std::complex<double> cdouble;
 struct fragment_stats {
   static double tol;
   static int maxeval;
-  static int dimensions;
   static int resolution;
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
   size_t num_nonlinear_pixels;
   size_t num_susceptibility_pixels;
+  size_t num_nonzero_conductivity_pixels;
   size_t num_dft_fields;
   size_t num_fourier_pixels;
   size_t num_fourier_freqs;
   size_t num_components;
+  size_t num_pixels_in_box;
   geom_box box;
   meep::volume_list *dft_vols;
 
   fragment_stats() {}
-  fragment_stats(geom_box& bx);
+  fragment_stats(geom_box& bx, size_t pixels);
+  void update_stats_from_material(material_type mat, size_t pixels);
   void compute_stats(geometric_object_list *geom);
   void count_anisotropic_pixels(medium_struct *med, size_t pixels);
   void count_nonlinear_pixels(medium_struct *med, size_t pixels);
@@ -84,8 +86,14 @@ struct fragment_stats {
   void print_stats();
 };
 
-std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv,
-                                                   double tol, int maxeval, int box_size=10);
+std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
+                                                   meep::grid_volume *gv,
+                                                   vector3 cell_size,
+                                                   material_type default_mat,
+                                                   double tol,
+                                                   int maxeval,
+                                                   bool ensure_per,
+                                                   double box_size=10);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */

@@ -92,6 +92,16 @@ static PyObject *py_meep_src_time_object() {
     return src_time;
 }
 
+static PyObject *py_vector3_object() {
+    static PyObject *vector3_object = NULL;
+    if (vector3_object == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        vector3_object = PyObject_GetAttrString(geom_mod, "Vector3");
+        Py_XDECREF(geom_mod);
+    }
+    return vector3_object;
+}
+
 static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
@@ -471,6 +481,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 // Typemap suite for vector3
+
+%typecheck (SWIG_TYPECHECK_POINTER) vector3 {
+    $1 = PyObject_IsInstance($input, py_vector3_object());
+}
 
 %typemap(in) vector3 {
     if(!pyv3_to_v3($input, &$1)) {
@@ -1013,12 +1027,6 @@ struct vector3 {
 struct geom_box {
     vector3 low;
     vector3 high;
-};
-
-%extend meep_geom::fragment_stats {
-    void meep_geom::fragment_stats::__repr__() {
-        $self->print_stats();
-    }
 };
 
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);

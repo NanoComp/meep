@@ -456,15 +456,6 @@ class Simulation(object):
         else:
             absorbers = None
 
-        mp.compute_fragment_stats(self.geometry, gv, self.subpixel_tol, self.subpixel_maxeval)
-
-        # if os.environ.get('MEEP_ANALYSIS_MODE', False):
-        #     print(recommendations)
-        #     sys.exit()
-
-        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
-                                      self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
-        self.structure.shared_chunks = True
         if self.material_function:
             self.material_function.eps = False
             self.default_material = self.material_function
@@ -473,6 +464,17 @@ class Simulation(object):
             self.default_material = self.epsilon_func
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
+
+        mp.compute_fragment_stats(self.geometry, gv, self.cell_size, self.default_material,
+                                  self.subpixel_tol, self.subpixel_maxeval, self.ensure_periodicity)
+
+        # if os.environ.get('MEEP_ANALYSIS_MODE', False):
+        #     print(recommendations)
+        #     sys.exit()
+
+        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
+                                      self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+        self.structure.shared_chunks = True
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
                                        self.subpixel_maxeval, self.ensure_periodicity and not not self.k_point,
