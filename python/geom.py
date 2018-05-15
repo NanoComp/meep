@@ -4,11 +4,15 @@ import functools
 import math
 import numbers
 import operator
+from collections import namedtuple
 from copy import deepcopy
 from numbers import Number
 
 import numpy as np
 import meep as mp
+
+
+FreqRange = namedtuple('FreqRange', ['min', 'max'])
 
 
 def check_nonnegative(prop, val):
@@ -151,7 +155,8 @@ class Medium(object):
                  E_chi2=None,
                  E_chi3=None,
                  H_chi2=None,
-                 H_chi3=None):
+                 H_chi3=None,
+                 valid_freq_range=None):
 
         if epsilon:
             epsilon_diag = Vector3(epsilon, epsilon, epsilon)
@@ -188,6 +193,7 @@ class Medium(object):
         self.H_chi3_diag = H_chi3_diag
         self.D_conductivity_diag = D_conductivity_diag
         self.B_conductivity_diag = B_conductivity_diag
+        self.valid_freq_range = valid_freq_range
 
 
 class Susceptibility(object):

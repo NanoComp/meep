@@ -290,7 +290,7 @@ void dft_chunk::operator-=(const dft_chunk &chunk) {
   }
 }
 
-static size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
+size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
   size_t n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
     n += cur->N * cur->Nomega * 2;
