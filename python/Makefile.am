@@ -56,6 +56,7 @@ TESTS =                                   \
     $(TEST_DIR)/dft_fields.py             \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
+    $(TEST_DIR)/fragment_stats.py         \
     $(TEST_DIR)/geom.py                   \
     $(TEST_DIR)/holey_wvg_bands.py        \
     $(TEST_DIR)/holey_wvg_cavity.py       \

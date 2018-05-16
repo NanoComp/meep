@@ -1883,14 +1883,46 @@ void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels)
 }
 
 void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
-  for (meep::component c = meep::Ex; c <= meep::Hz; c = (meep::component)(c + 1)) {
-    if (get_chi(c, med, 2) != 0) {
-      num_nonlinear_pixels += pixels;
-    }
-    if (get_chi(c, med, 3) != 0) {
-      num_nonlinear_pixels += pixels;
-    }
+  size_t nonzero_chi_elements = 0;
+
+  if (med->E_chi2_diag.x != 0) {
+    nonzero_chi_elements++;
   }
+  if (med->E_chi2_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi2_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi3_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi3_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi3_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi2_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi2_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi2_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi3_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi3_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi3_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+
+  num_nonlinear_pixels += nonzero_chi_elements * pixels;
 }
 
 void fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
