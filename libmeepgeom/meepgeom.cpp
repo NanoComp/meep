@@ -1635,7 +1635,6 @@ double fragment_stats::tol = 0;
 int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
 
-// TODO: Combine the next four methods into one.
 static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
   double last_box_size_z = fmod(cell_size.z, box_size);
   std::vector<geom_box> boxes;
