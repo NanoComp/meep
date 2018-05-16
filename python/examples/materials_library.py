@@ -768,7 +768,7 @@ Ti_drude = mp.Medium(epsilon=1.0, E_susceptibilities=Ti_drude_susc, valid_freq_r
 
 #------------------------------------------------------------------
 
-# silicon nitride (SiN) from Horiba Technical Note 08: Lorentz Dispersion Model
+# silicon nitride (SiN), non-stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 2.07 um
 
@@ -784,7 +784,7 @@ SiN = mp.Medium(epsilon=2.320, E_susceptibilities=SiN_susc, valid_freq_range=SiN
 
 #------------------------------------------------------------------
 
-# silicon nitride (Si3N4) from Horiba Technical Note 08: Lorentz Dispersion Model
+# silicon nitride (Si3N4), stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.23 - 0.83 um
 
