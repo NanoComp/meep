@@ -71,14 +71,15 @@ def main(args):
                              size=mp.Vector3(0, 2 * w))
 
         # transmitted flux
-        trans = sim.add_flux(fcen, df, nfreq, freg)
+        sim.add_flux(fcen, df, nfreq, freg)
 
         vol = mp.Volume(mp.Vector3(), size=mp.Vector3(sx))
 
         sim.run(mp.at_beginning(mp.output_epsilon),
-                mp.during_sources(mp.in_volume(vol, mp.to_appended("hz-slice", mp.at_every(0.4, mp.output_hfield_z)))),                
+                mp.during_sources(mp.in_volume(vol, mp.to_appended("hz-slice", mp.at_every(0.4, mp.output_hfield_z)))),
                 until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3((0.5 * sx) - dpml - 0.5, 0), 1e-3))
 
+        trans = sim.dft_objects[0]
         sim.display_fluxes(trans)  # print out the flux spectrum
 
 if __name__ == '__main__':

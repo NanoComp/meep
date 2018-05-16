@@ -124,17 +124,19 @@ class TestHoleyWvgCavity(unittest.TestCase):
         freg = mp.FluxRegion(center=mp.Vector3((0.5 * self.sx) - self.dpml - 0.5),
                              size=mp.Vector3(0, 2 * self.w))
 
-        trans = self.sim.add_flux(self.fcen, self.df, self.nfreq, freg)
+        self.sim.add_flux(self.fcen, self.df, self.nfreq, freg)
 
         self.sim.run(
             until_after_sources=mp.stop_when_fields_decayed(
                 50, mp.Ey, mp.Vector3((0.5 * self.sx) - self.dpml - 0.5, 0), 1e-1)
         )
 
+        trans = self.sim.dft_objects[0]
         res = zip(mp.get_flux_freqs(trans), mp.get_fluxes(trans))
 
         for e, r in zip(expected, res):
             np.testing.assert_allclose(e, r)
+
 
 if __name__ == '__main__':
     unittest.main()

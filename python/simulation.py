@@ -802,6 +802,7 @@ class Simulation(object):
         # Evaluated lazily so we can run fragment analysis before creating the structure
         self.dft_objects_to_add.append((self._add_near2far, [fcen, df, nfreq, near2fars]))
 
+    # Wrapper to prevent self.fields from being accessed before it is initialized
     def _add_near2far(self, fcen, df, nfreq, near2fars):
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
@@ -840,6 +841,7 @@ class Simulation(object):
         # Evaluated lazily so we can run fragment analysis before creating the structure
         self.dft_objects_to_add.append((self._add_force, [fcen, df, nfreq, forces]))
 
+    # Wrapper to prevent self.fields from being accessed before it is initialized
     def _add_force(self, fcen, df, nfreq, forces):
         return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
 
@@ -879,6 +881,7 @@ class Simulation(object):
         # Evaluated lazily so we can run fragment analysis before creating the structure
         self.dft_objects_to_add.append((self._add_flux, [fcen, df, nfreq, fluxes]))
 
+    # Wrapper to prevent self.fields from being accessed before it is initialized
     def _add_flux(self, fcen, df, nfreq, fluxes):
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
@@ -914,9 +917,19 @@ class Simulation(object):
         self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
 
-    def _add_dft_objects(self):
+    # When the user calls add_flux, add_force, add_near2far, or add_dft_fields,
+    # the functions and args are stored in `dft_objects_to_add` and only evaluated
+    # after fragment analysis is complete (since fragment analysis depends on dft
+    # objects but must happen before the structure is created). This function
+    # evaluates the stored functions and puts the resulting objects in `dft_objects`,
+    # where they can be accessed in the order in which they were added.
+    def add_dft_objects(self):
+        if self.fields is None:
+            self.init_fields()
+
         for func, args in self.dft_objects_to_add:
             self.dft_objects.append(func(*args))
+        self.dft_objects_to_add = []
 
     def flux_in_box(self, d, box=None, center=None, size=None):
         if self.fields is None:
@@ -1145,6 +1158,8 @@ class Simulation(object):
     def reset_meep(self):
         self.fields = None
         self.structure = None
+        self.dft_objects = []
+        self.dft_objects_to_add = []
 
     def restart_fields(self):
         if self.fields is not None:
@@ -1160,7 +1175,7 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
-        self._add_dft_objects()
+        self.add_dft_objects()
         self._check_material_frequencies()
 
         if kwargs:
