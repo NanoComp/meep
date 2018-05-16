@@ -8,10 +8,10 @@ In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files 
 
 [TOC]
 
-The ctl File
-------------
+The Scheme Script File
+----------------------
 
-The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
+The use of Meep revolves around the script (or control) file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
 
 Don't worry, though &mdash; simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
 
@@ -46,7 +46,7 @@ Before we define the structure, however, we have to define the computational cel
 
 The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported. `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter indicates that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
 
-Now, we can add the waveguide. Most commonly, the structure is specified by a `list` of [`geometric-object`s](../Scheme_User_Interface/#geometric-object), stored in the `geometry` variable. Here, we do:
+Now, we can add the waveguide. Most commonly, the structure is specified by a `list` of [`geometric-object`s](../Scheme_User_Interface/#geometric-object), stored in the `geometry` variable.
 
 ```scm
 (set! geometry (list
@@ -110,7 +110,7 @@ Briefly, the `-Zc dkbluered` makes the color scale go from dark blue (negative) 
 
 <center>![](../images/Tutorial-wvg-straight-ez-000200.00.png)</center>
 
-Here, we see that the the source has excited the waveguide mode, but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML layers. If we look carefully, we see somethinge else &mdash; the image is "speckled" towards the right side. This is because, by turning on the current abruptly at $t=0$, we have excited high-frequency components (very high order modes), and we have not waited long enough for them to die away; we'll eliminate these in the next section by turning on the source more smoothly.
+We see that the the source has excited the waveguide mode, but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML layers. If we look carefully, we see somethinge else &mdash; the image is "speckled" towards the right side. This is because, by turning on the current abruptly at $t=0$, we have excited high-frequency components (very high order modes), and we have not waited long enough for them to die away; we'll eliminate these in the next section by turning on the source more smoothly.
 
 ### A 90° Bend
 
@@ -135,7 +135,7 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
- Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$.
+Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$.
 
 We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
@@ -156,7 +156,7 @@ Finally, we'll run the simulation. Instead of running `output-efield-z` only at 
            (to-appended "ez" (at-every 0.6 output-efield-z)))
 ```
 
-Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a ctl file (e.g. `tutorial-ez.h5` for `tutorial.ctl`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
+`"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a ctl file (e.g. `tutorial-ez.h5` for `tutorial.ctl`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
 ```sh
 unix% h5ls ez.h5 
@@ -191,11 +191,11 @@ Instead of doing an animation, another interesting possibility is to make an ima
 unix% h5topng -0y -35 -Zc dkbluered ez.h5
 ```
 
-Here, the `-0y -35` specifies the $y=-3.5$ slice, where we have multiplied by 10 (our resolution) to get the pixel coordinate.
+The `-0y -35` specifies the $y=-3.5$ slice, where we have multiplied by 10 (our resolution) to get the pixel coordinate.
 
 #### Output Tips and Tricks
 
-Above, we outputted the full 2d data slice at every 0.6 time units, resulting in a 69MB file. This is not too bad but you can imagine how big the output file would get if we were doing a 3d simulation, or even a larger 2d simulation &mdash; one can easily generate gigabytes of files, which is not only wasteful but is also slow. Instead, it is possible to output more efficiently if you know what you want to look at.
+Above, we outputted the full 2d data slice at every 0.6 time units, resulting in a 69MB file. This is not large but you can imagine how big the output file would get if we were doing a 3d simulation, or even a larger 2d simulation &mdash; one can easily generate gigabytes of files, which is not only wasteful but is also slow. Instead, it is possible to output more efficiently if you know what you want to look at.
 
 To create the movie above, all we really need are the *images* corresponding to each time. Images can be stored much more efficiently than raw arrays of numbers &mdash; to exploit this fact, Meep allows you to **output PNG images instead of HDF5 files**. In particular, instead of `output-efield-z` as above, we can use `(output-png Ez "-Zc dkbluered")`, where Ez is the component to output and the `"-Zc dkbluered"` are options for `h5topng` which is the program that is actually used to create the image files. That is:
 
@@ -203,9 +203,9 @@ To create the movie above, all we really need are the *images* corresponding to 
 (run-until 200 (at-every 0.6 (output-png Ez "-Zc bluered")))
 ```
 
-will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a *uniform* color scale for all images, based on the minimum/maximum field values over `all` time steps. That is not possible, here, because we output an image before knowing the field values at future time steps. Thus, what `output-png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
+will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a *uniform* color scale for all images, based on the minimum/maximum field values over `all` time steps. That is not possible because we output an image before knowing the field values at future time steps. Thus, what `output-png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
 
-The above command outputs zillions of `.png` files, and it is somewhat annoying to have them clutter up our directory. Instead, we can use the following command before `run-until`:
+The above command outputs zillions of PNG files, and it is somewhat annoying to have them clutter up our directory. Instead, we can use the following command before `run-until`:
 
 ```scm
 (use-output-directory)
@@ -225,14 +225,14 @@ What if we want to output an $x \times t$ slice, as above? To do this, we only r
 
 The first argument to `in-volume` is a volume, specified by `(volume (center ...) (size ...))`, which applies to all of the nested output functions. Note that `to-appended`, `at-every`, and `in-volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
 
-Transmission Spectrum around a Waveguide Bend
+Transmission Spectrum of a Waveguide Bend
 ---------------------------------------------
 
-Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
+We have computed the field patterns for light propagating around a waveguide bend. While this can be visually informative, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend.
+The basic principles are described in [Introduction](../Introduction.md#transmissionreflection-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
-This control file will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/bend-flux.ctl).
+This script will be more complicated than before, so it is more convenient to run as a file rather than typing it interactively. See [bend-flux.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/bend-flux.ctl).
 
 Above, we hard-coded all of the parameters like the cell size, the waveguide width, etcetera. For serious work, however, this is inefficient &mdash; we often want to explore many different values of such parameters. For example, we may want to change the size of the cell, so we'll define it as:
 
@@ -249,14 +249,14 @@ Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `defin
 (define-param w 1) ; width of waveguide    
 ```
 
-In order to define the waveguide positions, etcetera, we will now have to use arithmetic. For example, the $y$ center of the horizontal waveguide will be given by `-0.5 * (sy - w - 2*pad)`. At least, that is what the expression would look like in C; in Scheme, the syntax for $1+2$ is `(+ 1 2)`, and so on, so we will define the vertical and horizontal waveguide centers as:
+In order to define the waveguide positions, we will now have to use arithmetic. For example, the $y$ center of the horizontal waveguide will be given by `-0.5*(sy-w-2*pad)`. At least, that is what the expression would look like in C; in Scheme, the syntax for $1+2$ is `(+ 1 2)`, and so on, so we will define the horizontal and vertical waveguide centers as:
 
 ```scm
-(define wvg-ycen (* -0.5 (- sy w (* 2 pad)))) ; y center of horiz. wvg          
-(define wvg-xcen (* 0.5 (- sx w (* 2 pad)))) ; x center of vert. wvg  
+(define wvg-xcen (* 0.5 (- sx w (* 2 pad))))  ; x center of vert. wvg
+(define wvg-ycen (* -0.5 (- sy w (* 2 pad)))) ; y center of horiz. wvg
 ```
 
-Now, we have to make the geometry, as before. This time, however, we really want *two* geometries: the bend, and also a straight waveguide for normalization. We could do this with two separate ctl files, but that is annoying. Instead, we'll define a parameter `no-bend?` which is `true` for the straight-waveguide case and `false` for the bend.
+We proceed to define the geometry, as before. This time, however, we really want *two* geometries: the bend, and also a straight waveguide for normalization. We could do this with two separate ctl files, but that is annoying. Instead, we'll define a parameter `no-bend?` which is `true` for the straight-waveguide case and `false` for the bend.
 
 ```scm
 (define-param no-bend? false) ; if true, have straight waveguide, not bend      
@@ -324,11 +324,11 @@ Finally, we have to specify where we want Meep to compute the flux spectra, and 
                    (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
 ```
 
-We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by 1 from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the computational cell, depending on whether the waveguide is straight or bent.
+We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by 1 μm from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the computational cell, depending on whether the waveguide is straight or bent.
 
-Here, the fluxes will be computed for 100 (`nfreq`) frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, to far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
+The fluxes will be computed for 100 (`nfreq`) frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
-Now, as described in the [Introduction](../Introduction.md#transmissionreflection-spectra), computing reflection spectra is a bit tricky because we need to separate the incident and reflected fields. We do this in Meep by saving the Fourier-transformed fields from the normalization run (`no-bend?=true`), and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields; logically, we might subtract these *after* the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save-flux` (after the normalization run) and `load-minus-flux` (before the other runs). We can call them as follows:
+As described in the [Introduction](../Introduction.md#transmissionreflection-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this in Meep by saving the Fourier-transformed fields from the normalization run (`no-bend?=true`), and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save-flux` (after the normalization run) and `load-minus-flux` (before the other runs). We can call them as follows:
 
 ```scm
 (if (not no-bend?) (load-minus-flux "refl-flux" refl))
@@ -349,7 +349,7 @@ Why do we keep running after the source has turned off? Because we must give the
                            1e-3))
 ```
 
-`stop-when-fields-decayed` takes four arguments: `(stop-when-fields-decayed dT component pt decay-by)`. What it does is, after the sources have turned off, it keeps running for an additional `dT` time units every time the given |component|<sup>2</sup> at the given point has not decayed by at least `decay-by` from its peak value for all times within the previous `dT`. In this case, `dT=50`, the component is $E_z$, the point is at the center of the flux plane at the end of the waveguide, and `decay-by=0.001`. So, it keeps running for an additional 50 time units until the square amplitude has decayed by 1/1000 from its peak: this should be sufficient to ensure that the Fourier transforms have converged.
+`stop-when-fields-decayed` takes four arguments: `(stop-when-fields-decayed dT component pt decay-by)`. What it does is, after the sources have turned off, it keeps running for an additional `dT` time units every time the given |component|<sup>2</sup> at the given point has not decayed by at least `decay-by` from its peak value for all times within the previous `dT`. In this case, `dT=50`, the component is $E_z$, the point is at the center of the flux plane at the end of the waveguide, and `decay-by=0.001`. So, it keeps running for an additional 50 time units until the square amplitude has decayed by 1/1000 from its peak. This should be sufficient to ensure that the Fourier transforms have converged.
 
 Finally, we have to output the flux values:
 
@@ -387,16 +387,108 @@ Now, we import them to Octave (using its `dlmread` command), and plot the result
 
 <center>![](../images/Tut-bend-flux.png)</center>
 
-What are we plotting here? The transmission is the transmitted flux (second column of `bend.dat`) *divided by* the incident flux (second column of `bend0.dat`), to give us the *fraction* of power transmitted. The reflection is the reflected flux (third column of `bend.dat`) *divided by* the incident flux (second column of `bend0.dat`); we also have to multiply by $-1$ because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. Finally, the loss is simply 1 - transmission - reflection.
+What are we plotting here? The transmission is the transmitted flux (second column of `bend.dat`) divided by the incident flux (second column of `bend0.dat`), to give us the *fraction* of power transmitted. The reflection is the reflected flux (third column of `bend.dat`) divided by the incident flux (second column of `bend0.dat`). We also have to multiply by -1 because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. Finally, the scattered loss is simply $1-transmission-reflection$.
 
-We should also check whether our data is converged, by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll just try doubling the cell size:
+We should also check whether our data is converged. We can do this by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll try doubling the cell size:
 
 ```sh
 unix% meep sx=32 sy=64 no-bend?=true bend-flux.ctl |tee bend0-big.out
 unix% meep sx=32 sy=64 bend-flux.ctl |tee bend-big.out
 ```
 
-Again, we must run *both* simulations in order to get the normalization right. The results are included in the plot above as dotted lines—you can see that the numbers have changed slightly for transmission and loss, probably stemming from interference between light radiated directly from the source and light propagating around the waveguide. To be really confident, we should probably run the simulation again with an even bigger cell, but we'll call it enough for this tutorial.
+Again, we must run both simulations in order to get the normalization right. The results are included in the plot above as dotted lines &mdash; you can see that the numbers have changed slightly for transmission and loss, probably stemming from interference between light radiated directly from the source and light propagating around the waveguide.
+
+Angular Reflectance Spectrum of a Planar Interface
+--------------------------------------------------
+
+We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the reflectance at a single wavelength of a planar, air-dielectric interface for an incident planewave source over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty computational cell (n=1 everywhere) to obtain the incident flux, and (2) with the dielectric interface (n=3.5) to obtain the reflected flux. Each angle of the incident source requires a separate set of simulations.
+
+A 1d computational cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectiontransmission-spectrum-when-modeling-planar-or-periodic-structures). In Meep, a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted. We will use a Gaussian source with center frequency corresponding to a wavelength of 0.6 μm at which we will compute the reflectance. Unlike a [continuous-wave](../Scheme_User_Interface/#source) (CW) source, a pulsed source turns off. This enables terminating the simulation when there are no fields left in the computational cell (due to absorption by the PMLs) via the run function `stop-when-fields-decayed`.
+
+Creating an oblique planewave source typically requires specifying two parameters: (1) the Bloch-periodic wavevector $\vec{k}$ via `k_point`, and (2) the source amplitude via `amp_func` to obtain the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence for position vector $\vec{r}$. Since this is a 1d simulation and the source is just a single pixel, it is not necessary to specify the source amplitude (for reference, see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl)). The Bloch-periodic wavevector is specified according to the dispersion relation for a planewave in a homogeneous medium (with index n): $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, the magnitude of the wavevector is equal to the frequency ω (in Meep, this excludes the 2π factor). Note: [any broadband source is incident at a given angle for only a *single* frequency component](../FAQ/#how-do-i-set-up-an-oblique-planewave-source). Computing the reflectance at multiple angles therefore requries separate simulations. The plane of incidence which contains $\vec{k}$ and the interface surface normal vector is $xz$. The source angle is defined counterclockwise (CCW) relative to the $y$ axis. In this configuration, a current source with $E_x$ polarization corresponds to the convention of $P$-polarization.
+
+The simulation script is below and in [refl-angular.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-angular.ctl)
+
+```scm
+(set-param! resolution 200) ; pixels/um
+
+(define-param sz 10)
+(define-param dpml 1)
+(set! sz (+ sz (* 2 dpml)))
+(set! pml-layers (list (make pml (thickness dpml))))
+
+(set! geometry-lattice (make lattice (size no-size no-size sz)))
+
+(define lambda-cen 0.6)
+(define fcen (/ lambda-cen))
+(define df (* 0.2 fcen))
+
+; rotation angle of source: CCW relative to y axis
+(define-param theta 0)
+(define theta-r (deg->rad theta))
+
+(set! dimensions (if (= theta-r 0) 1 3))
+
+; plane of incidence is xz
+(set! k-point (vector3* fcen (vector3 (sin theta-r) 0 (cos theta-r))))
+
+(set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df)))
+                                 (component Ex) (center 0 0 (+ (* -0.5 sz) dpml)))))
+
+(define-param empty? true)
+
+(if (not empty?)
+    (set! geometry (list (make block (size infinity infinity (* 0.5 sz)) (center 0 0 (* 0.25 sz)) (material (make medium (index 3.5)))))))
+
+(define refl (add-flux fcen 0 1 (make flux-region (center 0 0 (* -0.25 sz)))))
+
+(if (not empty?) (load-minus-flux "refl-flux" refl))
+
+(run-sources+ (stop-when-fields-decayed 50 Ex (vector3 0 0 (+ (* -0.5 sz) dpml)) 1e-9))
+
+(if empty? (save-flux "refl-flux" refl))
+
+(display-fluxes refl)
+```
+
+The simulation script above computes and prints to standard output the incident/reflected flux at a single wavelength. The following Bash shell script runs the pair of simulations for the wavelength range of 0$^\circ$ to 40$^\circ$ in increments of 5$^\circ$, pipes the output to a file, and extracts the flux data into a separate file.
+
+```sh
+#!/bin/bash
+
+for i in `seq 0 5 40`; do
+   meep empty?=true theta=${i} refl-angular.ctl |tee -a flux0.out;
+   meep empty?=false theta=${i} refl-angular.ctl |tee -a flux.out;
+done
+
+grep flux1: flux0.out |cut -d , -f3 > flux0.dat
+grep flux1: flux.out |cut -d , -f3 > flux.dat
+```
+
+A plot of the reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) is generated using the Octave/Matlab script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results.
+
+```matlab
+f0 = load("flux0.dat");
+f = load("flux.dat");
+R = -f./f0;
+
+n1 = 1;
+n2 = 3.5;
+
+theta_out = @(theta_in) asin(n1*sin(theta_in)/n2);
+
+# P polarization
+R_fresnel = @(theta_in) abs((n1*cos(theta_out(theta_in))-n2*cos(theta_in))./(n1*cos(theta_out(theta_in))+n2*cos(theta_in))).^2;
+
+thetas = [ 0:5:40 ];
+plot(thetas,R,'bo-',thetas,R_fresnel(thetas*pi/180),'rs-');
+xlabel("incident angle (degrees)");
+ylabel("reflectance");
+axis([0 40 0.20 0.31]);
+legend("meep","analytic","location","northeast");
+```
+
+<center>![](../images/reflectance_angle_spectrum.png)</center>
 
 Modes of a Ring Resonator
 -------------------------
@@ -465,7 +557,7 @@ $$Q = \frac{\mathrm{Re}\,ω}{-2 \mathrm{Im}\,ω}.$$
 
 $Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary)...if the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. **Note**: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
 
-An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. Here, for example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much—in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
+An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much—in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
 
 In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 

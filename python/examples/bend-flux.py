@@ -1,81 +1,104 @@
 # From the Meep tutorial: transmission around a 90-degree waveguide bend in 2d.
 from __future__ import division
 
-import argparse
 import meep as mp
 
+resolution = 10 # pixels/um
 
-def main(args):
-    sx = 16  # size of cell in X direction
-    sy = 32  # size of cell in Y direction
-    cell = mp.Vector3(sx, sy, 0)
+sx = 16  # size of cell in X direction
+sy = 32  # size of cell in Y direction
+cell = mp.Vector3(sx,sy,0)
 
-    pad = 4  # padding distance between waveguide and cell edge
-    w = 1  # width of waveguide
+dpml = 1.0
+pml_layers = [mp.PML(dpml)]
 
-    wvg_ycen = -0.5 * (sy - w - (2 * pad))  # y center of horiz. wvg
-    wvg_xcen = 0.5 * (sx - w - (2 * pad))  # x center of vert. wvg
+pad = 4  # padding distance between waveguide and cell edge
+w = 1    # width of waveguide
 
-    if args.no_bend:
-        geometry = [mp.Block(mp.Vector3(mp.inf, w, mp.inf), center=mp.Vector3(0, wvg_ycen),
-                             material=mp.Medium(epsilon=12))]
-    else:
-        geometry = [mp.Block(mp.Vector3(sx - pad, w, mp.inf), center=mp.Vector3(-0.5 * pad, wvg_ycen),
-                             material=mp.Medium(epsilon=12)),
-                    mp.Block(mp.Vector3(w, sy - pad, mp.inf), center=mp.Vector3(wvg_xcen, 0.5 * pad),
-                             material=mp.Medium(epsilon=12))]
+wvg_xcen =  0.5*(sx-w-2*pad)  # x center of vert. wvg    
+wvg_ycen = -0.5*(sy-w-2*pad)  # y center of horiz. wvg
 
-    fcen = 0.15  # pulse center frequency
-    df = 0.1  # pulse width (in frequency)
+geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
+                     center=mp.Vector3(0,wvg_ycen,0),
+                     material=mp.Medium(epsilon=12))]
 
-    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
-                         center=mp.Vector3(1 + (-0.5 * sx), wvg_ycen), size=mp.Vector3(0, w))]
+fcen = 0.15  # pulse center frequency
+df = 0.1     # pulse width (in frequency)
 
-    pml_layers = [mp.PML(1.0)]
-    resolution = 10
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez,
+                     center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0), size=mp.Vector3(0,w,0))]
 
-    nfreq = 100  # number of frequencies at which to compute flux
+sim = mp.Simulation(cell_size=cell,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    sources=sources,
+                    resolution=resolution)
 
-    sim = mp.Simulation(cell_size=cell,
-                        boundary_layers=pml_layers,
-                        geometry=geometry,
+nfreq = 100  # number of frequencies at which to compute flux
+    
+# reflected flux
+refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))                            
+refl = sim.add_flux(fcen,df,nfreq,refl_fr)
+    
+# transmitted flux
+tran_fr = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml,wvg_ycen,0), size=mp.Vector3(0,2*w,0))
+tran = sim.add_flux(fcen,df,nfreq,tran_fr)
+    
+pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,pt,1e-3))
+
+# for normalization run, save flux fields data for reflection plane
+straight_refl_data = sim.get_flux_data(refl)
+
+# save incident power for transmission plane
+straight_tran_flux = mp.get_fluxes(tran)
+    
+sim.reset_meep()
+    
+geometry = [mp.Block(mp.Vector3(sx-pad,w,mp.inf), center=mp.Vector3(-0.5*pad,wvg_ycen), material=mp.Medium(epsilon=12)),
+            mp.Block(mp.Vector3(w,sy-pad,mp.inf), center=mp.Vector3(wvg_xcen,0.5*pad), material=mp.Medium(epsilon=12))]
+
+sim = mp.Simulation(cell_size=cell,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
                         sources=sources,
                         resolution=resolution)
 
-    if args.no_bend:
-        fr = mp.FluxRegion(center=mp.Vector3((sx / 2) - 1.5, wvg_ycen), size=mp.Vector3(0, w * 2))
-    else:
-        fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, (sy / 2) - 1.5), size=mp.Vector3(w * 2, 0))
+# reflected flux
+refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
-    trans = sim.add_flux(fcen, df, nfreq, fr)
+tran_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5,0), size=mp.Vector3(2*w,0,0))
+tran = sim.add_flux(fcen, df, nfreq, tran_fr)
+    
+# for normal run, load negated fields to subtract incident from refl. fields
+sim.load_minus_flux_data(refl, straight_refl_data)
 
-    refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
-                            size=mp.Vector3(0, w * 2))
+pt = mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5)
 
-    # reflected flux
-    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, pt, 1e-3))
 
-    # for normal run, load negated fields to subtract incident from refl. fields
-    if not args.no_bend:
-        sim.load_minus_flux('refl-flux', refl)
+bend_refl_flux = mp.get_fluxes(refl)
+bend_tran_flux = mp.get_fluxes(tran)
 
-    if args.no_bend:
-        pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)
-    else:
-        pt = mp.Vector3(wvg_xcen, (sy / 2) - 1.5)
+flux_freqs = mp.get_flux_freqs(refl)
 
-    sim.run(mp.at_beginning(mp.output_epsilon),
-            until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, pt, 1e-3))
+import numpy as np
+import matplotlib.pyplot as plt
 
-    # for normalization run, save flux fields for refl. plane
-    if args.no_bend:
-        sim.save_flux('refl-flux', refl)
+wl = []
+Rs = []
+Ts = []
 
-    sim.display_fluxes(trans, refl)
+for i in range(0,nfreq):
+    wl = np.append(wl, 1/flux_freqs[i])
+    Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
+    Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])    
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--no_bend', action='store_true', default=False,
-                        help="Straight waveguide without bend.")
-    args = parser.parse_args()
-    main(args)
+plt.plot(wl,Rs,'bo-',label='reflectance')
+plt.plot(wl,Ts,'ro-',label='transmittance')
+plt.plot(wl,1-Rs-Ts,'go-',label='loss')
+plt.axis([5.0, 10.0, 0, 1])
+plt.xlabel("wavelength (um)")
+plt.legend(loc="upper right")
+plt.show()
