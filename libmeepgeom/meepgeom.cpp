@@ -1802,10 +1802,9 @@ fragment_stats::fragment_stats(geom_box& bx, size_t pixels):
   num_dft_fields(0),
   num_fourier_pixels(0),
   num_fourier_freqs(0),
-  num_components(0),
+  num_dft_components(0),
   num_pixels_in_box(pixels),
-  box(bx),
-  dft_vols(NULL) {
+  box(bx) {
 
 }
 
@@ -1955,17 +1954,20 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
 }
 
-// TODO: Can Python get all the volumes ('where' member) from the dft objects
-// and pass them to C++? What about Nfreqs and num_components?
-void fragment_stats::count_dft_fields(meep::vec& v) {
-  meep::volume_list *vl = dft_vols;
+enum DFTType {
+  DFT_FLUX,
+  DFT_FIELDS,
+  DFT_FORCE,
+  DFT_NEAR2FAR,
+  DFT_NUM_TYPES
+};
 
-  while(vl) {
-    if (vl->v.contains(v)) {
-      num_fourier_pixels++;
-    }
-    vl = vl->next;
-  }
+static int dft_components_per_type[] = {4, 0, 6, 4};
+
+// TODO: Python needs to pass in the `where` and `Nfreq` members from all the dft objects
+void fragment_stats::count_dft_fields(meep::vec& v) {
+  // dft_components[DFT_FIELDS] = get dynamically;
+  // ...
 }
 
 void fragment_stats::print_stats() {
@@ -1977,7 +1979,7 @@ void fragment_stats::print_stats() {
   master_printf("  num_dft_fields: %zd\n", num_dft_fields);
   master_printf("  num_fourier_pixels: %zd\n", num_fourier_pixels);
   master_printf("  num_fourier_freqs: %zd\n", num_fourier_freqs);
-  master_printf("  num_components: %zd\n", num_components);
+  master_printf("  num_dft_components: %zd\n", num_dft_components);
   master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);
   master_printf("  box.high: {%f, %f, %f}\n\n", box.high.x, box.high.y, box.high.z);
 }

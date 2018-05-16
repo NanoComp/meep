@@ -69,10 +69,9 @@ struct fragment_stats {
   size_t num_dft_fields;
   size_t num_fourier_pixels;
   size_t num_fourier_freqs;
-  size_t num_components;
+  size_t num_dft_components;
   size_t num_pixels_in_box;
   geom_box box;
-  meep::volume_list *dft_vols;
 
   fragment_stats() {}
   fragment_stats(geom_box& bx, size_t pixels);
