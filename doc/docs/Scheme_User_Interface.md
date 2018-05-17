@@ -411,15 +411,15 @@ The specific symmetry sub-classes are:
 
 **`mirror-sym`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A mirror symmetry plane. Here, the `direction` is the direction *normal* to the mirror plane.
+A mirror symmetry plane. `direction` is the direction *normal* to the mirror plane.
 
 **`rotate2-sym`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A 180° (twofold) rotational symmetry (a.k.a. $C_2$). Here, the `direction` is the axis of the rotation.
+A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of the rotation.
 
 **`rotate4-sym`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). Here, the `direction` is the axis of the rotation.
+A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of the rotation.
 
 ### pml
 
