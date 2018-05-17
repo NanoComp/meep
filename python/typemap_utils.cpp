@@ -263,6 +263,19 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_XDECREF(py_attr);
+    return 1;
+}
+
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -541,6 +554,51 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
     return 1;
 }
 
+static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
+    material_type material;
+    int height;
+    vector3 axis;
+
+    if (!get_attr_material(py_prism, &material) ||
+        !get_attr_int(py_prism, &height, "height") ||
+        !get_attr_v3(py_prism, &axis, "axis")) {
+
+        return 0;
+    }
+
+    PyObject *py_vert_list = PyObject_GetAttrString(py_prism, "vertices");
+
+    if (!py_vert_list) {
+        PyErr_PrintEx(0);
+        return 0;
+    }
+
+    if (!PyList_Check(py_vert_list)) {
+        PyErr_SetString(PyExc_TypeError, "Expected Prism.vertices to be a list\n");
+        return 0;
+    }
+
+    int num_vertices = PyList_Size(py_vert_list);
+    vector3 *vertices = new vector3[num_vertices];
+
+    for (Py_ssize_t i = 0; i < num_vertices; ++i) {
+        vector3 v3;
+        if (!pyv3_to_v3(PyList_GetItem(py_vert_list, i), &v3)) {
+            return 0;
+        }
+        vertices[i].x = v3.x;
+        vertices[i].y = v3.y;
+        vertices[i].z = v3.z;
+    }
+
+    *p = make_prism(material, vertices, num_vertices, height, axis);
+
+    delete [] vertices;
+    Py_DECREF(py_vert_list);
+
+    return 1;
+}
+
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     int success = 0;
     std::string go_type = py_class_name_as_string(po);
@@ -562,6 +620,9 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     }
     else if (go_type == "Ellipsoid") {
         success = pyellipsoid_to_ellipsoid(po, o);
+    }
+    else if (go_type == "Prism") {
+        success = pyprism_to_prism(po, o);
     }
     else {
         PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type\n", go_type.c_str());

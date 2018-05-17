@@ -17,13 +17,21 @@ class TestBendFlux(unittest.TestCase):
         wvg_xcen = 0.5 * (sx - w - (2 * pad))
 
         if no_bend:
-            geometry = [mp.Block(mp.Vector3(mp.inf, w, mp.inf), center=mp.Vector3(0, wvg_ycen),
-                                 material=mp.Medium(epsilon=12))]
+            no_bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
+                                mp.Vector3(+0.5 * sx, wvg_ycen - 0.5 * w),
+                                mp.Vector3(+0.5 * sx, wvg_ycen + 0.5 * w),
+                                mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
+
+            geometry = [mp.Prism(no_bend_vertices, 0, material=mp.Medium(epsilon=12))]
         else:
-            geometry = [mp.Block(mp.Vector3(sx - pad, w, mp.inf), center=mp.Vector3(-0.5 * pad, wvg_ycen),
-                                 material=mp.Medium(epsilon=12)),
-                        mp.Block(mp.Vector3(w, sy - pad, mp.inf), center=mp.Vector3(wvg_xcen, 0.5 * pad),
-                                 material=mp.Medium(epsilon=12))]
+            bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
+                             mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
+                             mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
+                             mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
+                             mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
+                             mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
+
+            geometry = [mp.Prism(bend_vertices, 0, material=mp.Medium(epsilon=12))]
 
         fcen = 0.15
         df = 0.1
@@ -89,7 +97,7 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        np.testing.assert_allclose(expected, res[:20])
+        np.testing.assert_allclose(expected, res[:20], rtol=1e-2)
 
         # Real run
         self.sim = None

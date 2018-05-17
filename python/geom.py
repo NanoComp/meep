@@ -341,6 +341,15 @@ class Ellipsoid(Block):
         super(Ellipsoid, self).__init__(**kwargs)
 
 
+class Prism(GeometricObject):
+
+    def __init__(self, vertices, height, axis=Vector3(z=1), **kwargs):
+        self.vertices = vertices
+        self.height = height
+        self.axis = axis
+        super(Prism, self).__init__(**kwargs)
+
+
 class Matrix(object):
 
     def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
