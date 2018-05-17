@@ -12,11 +12,11 @@
 -   Distributed memory **parallelism** on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
 -   Arbitrary **anisotropic**, electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
--   Materials library containing list of predefined broadband, complex, refractive indices.
 -   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as perfect conductor and **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size: even/odd mirror planes and 90°/180° rotations.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   Arbitrary current sources including a guided-mode launcher.
+-   Materials library containing list of predefined broadband, complex, refractive indices.
 -   Frequency-domain solver for finding the response to a continuous-wave source.
 -   Field analyses including flux spectra, near to far transformations, modal decomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
 
@@ -25,7 +25,7 @@ Time-Domain Simulation
 
 A time-domain electromagnetic simulation simply evolves [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations) over time within some finite computational volume, essentially performing a kind of **numerical experiment**. This can be used to calculate a wide variety of useful quantities. Major applications include:
 
--   **Transmission and Reflection Spectra** &mdash; by Fourier-transforming the response to a short pulse, a single simulation can yield the scattering amplitudes over a wide spectrum of frequencies.
+-   **Transmittance and Reflectance Spectra** &mdash; by Fourier-transforming the response to a short pulse, a single simulation can yield the scattering amplitudes over a wide spectrum of frequencies.
 -   **Resonant Modes and Frequencies** &mdash; by analyzing the response of the system to a short pulse, one can extract the frequencies, decay rates, and field patterns of the harmonic modes of lossy and lossless systems including waveguide and cavity modes.
 -   **Field Patterns** (e.g. Green's functions) &mdash; in response to an arbitrary source via a [continuous-wave (CW)](https://en.wikipedia.org/wiki/Continuous_wave) input (fixed-ω).
 

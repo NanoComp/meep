@@ -176,7 +176,7 @@ Of course, the main point of this section is to get the quantitative transmissio
 unix% python holey-wvg-cavity.py -N 0 | tee holey-wvg-cavity0.out
 ```
 
-which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in [Tutorial/Basics](Basics/#transmission-spectrum-around-a-waveguide-bend), giving us comma-delimited text which is the frequency and fluxes:
+which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in [Tutorial/Basics](Basics/#transmission-spectrum-of-a-waveguide-bend), giving us comma-delimited text which is the frequency and fluxes:
 
 ```sh
 unix% grep flux1: holey-wvg-cavity.out > flux.dat
