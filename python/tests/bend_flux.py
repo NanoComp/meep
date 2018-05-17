@@ -3,6 +3,7 @@ from __future__ import division
 import unittest
 import numpy as np
 import meep as mp
+from utils import compare_arrays
 
 
 class TestBendFlux(unittest.TestCase):
@@ -32,7 +33,6 @@ class TestBendFlux(unittest.TestCase):
                              mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
 
             geometry = [mp.Prism(bend_vertices, 0, material=mp.Medium(epsilon=12))]
-
         fcen = 0.15
         df = 0.1
         sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
@@ -97,7 +97,7 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        np.testing.assert_allclose(expected, res[:20], rtol=1e-2)
+        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=1e-3)
 
         # Real run
         self.sim = None
@@ -132,7 +132,7 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        np.testing.assert_allclose(expected, res[:20])
+        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=1e-2)
 
 
 if __name__ == '__main__':
