@@ -1543,11 +1543,10 @@ def display_progress(t0, t, dt):
         if t1 - closure['tlast'] >= dt:
             msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
             val1 = sim.meep_time() - t0
-            val2 = t
-            val3 = (sim.meep_time() - t0) / (0.01 * t)
-            val4 = t1 - t_0
-            val5 = ((t1 - t_0) * (t / (sim.meep_time() - t0)) - (t1 - t_0))
-            print(msg_fmt.format(val1, val2, val3, val4, val5))
+            val2 = val1 / (0.01 * t)
+            val3 = t1 - t_0
+            val4 = (val3 * (t / val1) - val3) if val1 != 0 else 0
+            print(msg_fmt.format(val1, t, val2, val3, val4))
             closure['tlast'] = t1
     return _disp
 
