@@ -20,7 +20,7 @@
 -   Exploitation of **symmetries** to reduce the computation size — even/odd mirror planes and 90°/180° rotations.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   Arbitrary current sources including a guided-mode launcher.
--   Materials library containing list of predefined broadband, complex, refractive indices.
+-   Materials library containing list of predefined broadband, complex refractive indices.
 -   Frequency-domain solver for finding the response to a continuous-wave source.
 -   Field analyses including flux spectra, near to far transformations, modal decomposition, frequency extraction, local density of states, modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
 
