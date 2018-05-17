@@ -1,4 +1,5 @@
 HPPFILES=                                    \
+ $(top_srcdir)/src/meep.hpp                  \
  $(top_srcdir)/src/meep_internals.hpp        \
  $(top_srcdir)/src/bicgstab.hpp              \
  $(top_srcdir)/src/meep/vec.hpp              \
