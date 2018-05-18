@@ -247,7 +247,37 @@ class TestFragmentStats(unittest.TestCase):
             self.check_stats(fs[i], a_eps=2500, a_mu=2500, nonlin=7500, susc=7500, cond=7500)
 
     def test_cyl(self):
-        pass
+        # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
+
+        fs = self.get_fragment_stats(mp.Vector3(10, 0, 10), mp.Vector3(30, 0, 30), mp.CYLINDRICAL)
+
+        self.assertEqual(len(fs), 9)
+
+        # Check fragment boxes
+        self.assertEqual(fs[0].box.low.x, -15)
+        self.assertEqual(fs[0].box.low.z, -15)
+        self.assertEqual(fs[0].box.high.x, -5)
+        self.assertEqual(fs[0].box.high.z, -5)
+
+        self.assertEqual(fs[1].box.low.x, -15)
+        self.assertEqual(fs[1].box.low.z, -5)
+        self.assertEqual(fs[1].box.high.x, -5)
+        self.assertEqual(fs[1].box.high.z, 5)
+
+        self.assertEqual(fs[2].box.low.x, -15)
+        self.assertEqual(fs[2].box.low.z, 5)
+        self.assertEqual(fs[2].box.high.x, -5)
+        self.assertEqual(fs[2].box.high.z, 15)
+
+        # All fragments besides the middle one have no geometry, only default_material
+        for i in [0, 1, 2, 3, 5, 6, 7, 8]:
+            # TODO: Test default_material
+            self.check_stats(fs[i], 0, 0, 0, 0, 0)
+
+        # Middle fragment contains entire block
+        idx = 4
+        self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
+        # TODO: DFT
 
 
 if __name__ == '__main__':
