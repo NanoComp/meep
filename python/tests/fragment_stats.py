@@ -26,7 +26,6 @@ class TestFragmentStats(unittest.TestCase):
 
         geom = [mp.Block(size=block_size, center=box_center, material=mat)]
         sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims)
-        sim.run(mp.at_beginning(mp.output_epsilon), until=5)
         gv = sim._create_grid_volume(False)
 
         stats = mp.compute_fragment_stats(

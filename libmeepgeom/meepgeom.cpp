@@ -1682,23 +1682,30 @@ static std::vector<geom_box> split_cell_2d(double box_size, vector3 cell_size) {
 }
 
 static std::vector<geom_box> split_cell_3d(double box_size, vector3 cell_size) {
-  double last_box_size_x = fmod(cell_size.x, box_size);
-  double last_box_size_y = fmod(cell_size.y, box_size);
-  double last_box_size_z = fmod(cell_size.z, box_size);
+  double half_box = box_size / 2;
+  double half_x = cell_size.x /2;
+  double half_y = cell_size.y /2;
+  double half_z = cell_size.z /2;
+  double edge_size_x = fmod(half_x + half_box, box_size);
+  double edge_size_y = fmod(half_y + half_box, box_size);
+  double edge_size_z = fmod(half_z + half_box, box_size);
   std::vector<geom_box> boxes;
 
-  for (double x = 0; x < cell_size.x; x += box_size) {
-    double x_increment = x  + box_size > cell_size.x ? last_box_size_x : box_size;
-    for (double y = 0; y < cell_size.y; y += box_size) {
-      double y_increment = y + box_size > cell_size.y ? last_box_size_y : box_size;
-      for (double z = 0; z < cell_size.z; z += box_size) {
-        double z_increment = z + box_size > cell_size.z ? last_box_size_z : box_size;
+  for (double x = -half_x; x < half_x;) {
+    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
+    for (double y = -half_y; y < half_y;) {
+      double y_increment = is_edge_box(y, half_y, box_size, edge_size_y) ? edge_size_y : box_size;
+      for (double z = -half_z; z < half_z;) {
+        double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
         vector3 low = {x, y, z};
         vector3 high = {x + x_increment, y + y_increment, z + z_increment};
         geom_box b = {low, high};
         boxes.push_back(b);
+        z += z_increment;
       }
+      y += y_increment;
     }
+    x += x_increment;
   }
   return boxes;
 }
