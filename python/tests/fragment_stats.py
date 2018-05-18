@@ -32,6 +32,7 @@ class TestFragmentStats(unittest.TestCase):
             geom,
             gv,
             sim.cell_size,
+            mp.Vector3(),
             sim.default_material,
             sim.subpixel_tol,
             sim.subpixel_maxeval,
@@ -39,7 +40,7 @@ class TestFragmentStats(unittest.TestCase):
         )
         return stats
 
-    def test_1d_stats(self):
+    def test_1d(self):
         # A z=30 cell, split into three fragments of size 10 each, with a block
         # covering the middle fragment.
 
@@ -56,7 +57,7 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[1], a_eps=100, a_mu=100, nonlin=300, susc=300, cond=300)
         # TODO: DFT
 
-    def test_1d_stats_with_overlap(self):
+    def test_1d_with_overlap(self):
         # A z=30 cell split into three fragments of size 10 each, with a block
         # covering the middle fragment, and half of the two outer fragments.
 
@@ -71,7 +72,7 @@ class TestFragmentStats(unittest.TestCase):
         for i in [0, 2]:
             self.check_stats(fs[i], a_eps=50, a_mu=50, nonlin=150, susc=150, cond=150)
 
-    def test_2d_stats(self):
+    def test_2d(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
 
         fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2)
@@ -88,7 +89,7 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
         # TODO: DFT
 
-    def test_2d_stats_with_overlap(self):
+    def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.
 
         fs = self.get_fragment_stats(mp.Vector3(20, 20), mp.Vector3(30, 30), 2)
@@ -108,7 +109,7 @@ class TestFragmentStats(unittest.TestCase):
         for i in [0, 2, 6, 8]:
             self.check_stats(fs[i], a_eps=250, a_mu=250, nonlin=750, susc=750, cond=750)
 
-    def test_3d_stats(self):
+    def test_3d(self):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
         # into 27 10 x 10 x 10 fragments
 
@@ -128,7 +129,7 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
         # TODO: DFT
 
-    def test_3d_stats_with_overlap(self):
+    def test_3d_with_overlap(self):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split
         # into 27 10 x 10 x 10 fragments
 
@@ -152,7 +153,7 @@ class TestFragmentStats(unittest.TestCase):
         for i in [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]:
             self.check_stats(fs[i], a_eps=2500, a_mu=2500, nonlin=7500, susc=7500, cond=7500)
 
-    def test_cyl_stats(self):
+    def test_cyl(self):
         pass
 
 

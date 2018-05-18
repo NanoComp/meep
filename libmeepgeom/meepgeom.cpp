@@ -1635,16 +1635,25 @@ double fragment_stats::tol = 0;
 int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
 
+// TODO: Account for geometry_center?
+inline static bool is_edge_box(double pt, double half_cell, double box_size, double edge_size) {
+  return (pt == -half_cell && edge_size != 0) || pt + box_size > half_cell;
+}
+
+// TODO: Account for geometry_center
 static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
-  double last_box_size_z = fmod(cell_size.z, box_size);
+  double half_box = box_size / 2;
+  double half_z = cell_size.z / 2;
+  double edge_size_z = fmod(half_z + half_box, box_size);
   std::vector<geom_box> boxes;
 
-  for (double z = 0; z < cell_size.z; z += box_size) {
-    double z_increment = z + box_size > cell_size.z ? last_box_size_z : box_size;
+  for (double z = -half_z; z < half_z;) {
+    double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
     vector3 low = {0.0, 0.0, z};
     vector3 high = {0.0, 0.0, z + z_increment};
     geom_box b = {low, high};
     boxes.push_back(b);
+    z += z_increment;
   }
   return boxes;
 }
@@ -1752,37 +1761,39 @@ static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, 
 }
 
 static void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                        vector3 cell_size, geometric_object_list *geom) {
+                        vector3 cell_size, vector3 cell_center, geometric_object_list *geom) {
   geom_initialize();
   default_material = default_mat;
   ensure_periodicity = ensure_per;
+  geometry_center = cell_center;
   dimensions = meep::number_of_directions(gv->dim);
   geometry_lattice.size = cell_size;
   geom_fix_objects0(*geom);
 
   // Since Python considers the origin to be in the center of the cell, adjust the
   // center of all geometric objects by half the cell size in every direction.
-  double x_adj = cell_size.x * 0.5;
-  double y_adj = cell_size.y * 0.5;
-  double z_adj = cell_size.z * 0.5;
-  vector3 center_offset = {x_adj, y_adj, z_adj};
+  // double x_adj = cell_size.x * 0.5;
+  // double y_adj = cell_size.y * 0.5;
+  // double z_adj = cell_size.z * 0.5;
+  // vector3 center_offset = {x_adj, y_adj, z_adj};
 
-  for (int i = 0; i < geom->num_items; ++i) {
-    geometric_object *go = &geom->items[i];
-    go->center = vector3_plus(go->center, center_offset);
-  }
+  // for (int i = 0; i < geom->num_items; ++i) {
+  //   geometric_object *go = &geom->items[i];
+  //   go->center = vector3_plus(go->center, center_offset);
+  // }
 }
 
 std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    meep::grid_volume *gv,
                                                    vector3 cell_size,
+                                                   vector3 cell_center,
                                                    material_type default_mat,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
                                                    double box_size) {
 
-  init_libctl(default_mat, ensure_per, gv, cell_size, &geom);
+  init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom);
   std::vector<geom_box> boxes = split_cell_into_boxes(gv, box_size, cell_size);
   std::vector<fragment_stats> fragments = init_fragments(boxes, tol, maxeval, gv);
 

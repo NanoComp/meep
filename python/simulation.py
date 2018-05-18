@@ -465,7 +465,7 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        mp.compute_fragment_stats(self.geometry, gv, self.cell_size, self.default_material,
+        mp.compute_fragment_stats(self.geometry, gv, self.cell_size, mp.Vector3(), self.default_material,
                                   self.subpixel_tol, self.subpixel_maxeval, self.ensure_periodicity)
 
         # if os.environ.get('MEEP_ANALYSIS_MODE', False):

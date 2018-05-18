@@ -88,6 +88,7 @@ struct fragment_stats {
 std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    meep::grid_volume *gv,
                                                    vector3 cell_size,
+                                                   vector3 cell_center,
                                                    material_type default_mat,
                                                    double tol,
                                                    int maxeval,
