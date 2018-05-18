@@ -594,7 +594,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
        file_offset[permute.in_direction(d)] = file_count[i] - 1;
       array_count[i]= (max_corner.in_direction(d)
 	               - min_corner.in_direction(d)) / 2 + 1;
-    };
+    }
 
    for (int i = 0; i < rank; ++i)
     { direction d = ds[i];
@@ -607,7 +607,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
       if (file_offset[j]) file_stride[j] *= -1;
       array_offset[j] *= array_stride[j];
       if (array_offset[j]) array_stride[j] *= -1;
-    };
+    }
 
    // aco="array chunk offset"
    ptrdiff_t aco=start[0]*array_count[1]*array_count[2] + start[1]*array_count[2] + start[2];
@@ -665,15 +665,14 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
           integral += w*mode1val*mode2val;
          else
           integral += w*mode1val*dft_val;
-       };
+       }
 
-    }; // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+    } // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
 
   if (file)
    file->write_chunk(rank, start, file_count, buffer);
 
   return integral;
-
 }
 
 /***************************************************************/
@@ -783,8 +782,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
      reim_max = 1;
    }
   else if (pfield_array)
-   { *pfield_array = field_array = new cdouble[array_size];
-   }
+   *pfield_array = field_array = new cdouble[array_size];
 
   bool append_data      = false;
   bool single_precision = false;
@@ -798,7 +796,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
         char dataname[100];
         snprintf(dataname,100,"%s_%i.%c",component_name(c),num_freq, reim ? 'i' : 'r');
         file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
-      };
+      }
 
      for (int ncl=0; ncl<num_chunklists; ncl++)
       for (dft_chunk *chunk=chunklists[ncl]; chunk; chunk=chunk->next_in_dft)
@@ -845,13 +843,125 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
 }
 
 /***************************************************************/
+/***************************************************************/
+/***************************************************************/
+bool increment(int n[3], int nMax[3], int rank)
+{ for(rank--; rank>=0; rank--)
+   if ( ++n[rank] < nMax[rank] )
+    return false;
+   else
+    n[rank]=0;
+  return true;
+}
+
+cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volume dft_volume)
+{ 
+  /*--------------------------------------------------------------*/
+  /*- identify empty dimensions ----------------------------------*/
+  /*--------------------------------------------------------------*/
+  int full_rank = *rank, reduced_rank=0, reduced_dims[3], reduced_stride[3]={1,1,1}, nd=0;
+  LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
+   if (dft_volume.in_direction(d)>0.0)
+    reduced_dims[reduced_rank++]=dims[nd++];
+   else
+    reduced_stride[nd++]=0;    // this marks a degenerate dimension
+  if (reduced_rank==full_rank) return array; // nothing to collapse
+
+  /*--------------------------------------------------------------*/
+  /*- set up strides into full and reduced arrays                 */
+  /*--------------------------------------------------------------*/
+  int stride[3]={1,1,1}; // non-reduced array strides
+  if (full_rank==2) 
+   {
+    stride[0]=dims[1];     // rstride is already all set in this case
+   }
+  else if (full_rank==3)
+   { stride[0] = dims[1]*dims[2];
+     stride[1] = dims[2];
+     if (reduced_stride[0]!=0) 
+      reduced_stride[0]=reduced_dims[1];
+     else if (reduced_stride[1]!=0)
+      reduced_stride[1]=reduced_dims[1];
+     // else: two degenerate dimensions->reduced array is 1-diml, no strides needed
+   }
+
+  /*--------------------------------------------------------------*/
+  /*- allocate reduced array and compress full array into it     -*/
+  /*--------------------------------------------------------------*/
+  int reduced_size = reduced_dims[0] * (reduced_rank==2 ? reduced_dims[1] : 1);
+  cdouble *reduced_array = new cdouble[reduced_size];
+  if (!reduced_array) abort("%s:%i: out of memory (%i)",__FILE__,__LINE__,reduced_size);
+  memset(reduced_array,0,reduced_size*sizeof(cdouble));
+  
+  int n[3]={0,0,0};
+  do
+   { int  index = n[0]*stride[0]         + n[1]*stride[1]         + n[2]*stride[2];
+     int rindex = n[0]*reduced_stride[0] + n[1]*reduced_stride[1] + n[2]*reduced_stride[2];
+     reduced_array[rindex] += array[index];
+   } while ( !increment(n,dims,full_rank) );
+
+  *rank = reduced_rank;
+  dims[0] = reduced_dims[0];
+  if (reduced_rank==2) dims[1]=reduced_dims[1];
+  delete[] array;
+  return reduced_array;
+}
+
+/***************************************************************/
+/* routines for fetching arrays of dft fields                  */
+/***************************************************************/
+cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank, int dims[3])
+{
+  dft_chunk *chunklists[2];
+  chunklists[0] = flux.E;
+  chunklists[1] = flux.H;
+  cdouble *array;
+  process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims);
+  return collapse_empty_dimensions(array, rank, dims, flux.where);
+}
+
+cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank, int dims[3])
+{
+  dft_chunk *chunklists[3];
+  chunklists[0] = force.offdiag1;
+  chunklists[1] = force.offdiag2;
+  chunklists[2] = force.diag;
+  cdouble *array;
+  process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims);
+  return collapse_empty_dimensions(array, rank, dims, force.where);
+}
+
+cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank, int dims[3])
+{
+  dft_chunk *chunklists[1];
+  chunklists[0] = n2f.F;
+  cdouble *array;
+  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
+  return collapse_empty_dimensions(array, rank, dims, n2f.where);
+}
+
+cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank, int dims[3])
+{
+  dft_chunk *chunklists[1];
+  chunklists[0] = fdft.chunks;
+  cdouble *array;
+  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
+  return collapse_empty_dimensions(array, rank, dims, fdft.where);
+}
+
+/***************************************************************/
 /* wrapper around process_dft_component that writes HDF5       */
 /* datasets for all components at all frequencies stored in    */
 /* the given collection of DFT chunks                          */
 /***************************************************************/
 void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
-                                   const char *HDF5FileName)
+                                   volume dft_volume, const char *HDF5FileName)
 {
+  bool have_empty_dimensions=false;
+  LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
+   if (dft_volume.in_direction(d)==0.0)
+    have_empty_dimensions=true;
+
   int NumFreqs=0;
   for(int nc=0; nc<num_chunklists && NumFreqs==0; nc++)
    if (chunklists[nc])
@@ -860,8 +970,42 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
   bool first_component=true;
   for(int num_freq=0; num_freq<NumFreqs; num_freq++)
    FOR_E_AND_H(c)
-    process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
-                          0, 0, 0, 0, 0, Ex, &first_component);
+    if (!have_empty_dimensions)
+     { 
+        process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
+                              0, 0, 0, 0, 0, Ex, &first_component);
+     }
+    else
+     { 
+       // the volume has zero thickness in one or more directions , but the DFT
+       // grid is two pixels thick in those directions, and this would be confusingly
+       // reflected in the raw HDF5 output. instead, get the DFT fields in array form,
+       // postprocess to collapse the empty dimensions, then export reduced array to HDF5.
+       cdouble *array;
+       int rank, dims[3];
+       process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims);
+       array=collapse_empty_dimensions(array, &rank, dims, dft_volume);
+       size_t array_size=dims[0] * (rank>1 ? dims[1] : 1);
+       double *real_array = new double[array_size];
+       if (!real_array) abort("%s:%i:out of memory(%lu)",__FILE__,__LINE__,array_size);
+       if (am_master())
+        { 
+          h5file::access_mode mode = (first_component ? h5file::WRITE : h5file::READWRITE);
+          bool parallel=false, single_precision=true;
+          h5file f(HDF5FileName, mode, parallel);
+          for(int reim=0; reim<2; reim++)
+           { for(size_t n=0; n<array_size; n++) 
+              real_array[n] = (reim==0 ? real(array[n]) : imag(array[n]));
+             char dataname[100];
+             snprintf(dataname,100,"%s_%i.%c",component_name(c),num_freq, reim ? 'i' : 'r');
+             size_t stdims[3]; for(int r=0; r<rank; r++) stdims[r]=(size_t)dims[r];
+             f.write(dataname,rank,stdims,real_array,single_precision); 
+             first_component=false;
+           }
+        }
+       delete[] real_array;
+       delete[] array;
+     }
 }
 
 void fields::output_dft(dft_flux flux, const char *HDF5FileName)
@@ -869,7 +1013,7 @@ void fields::output_dft(dft_flux flux, const char *HDF5FileName)
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  output_dft_components(chunklists, 2, HDF5FileName);
+  output_dft_components(chunklists, 2, flux.where, HDF5FileName);
 }
 
 void fields::output_dft(dft_force force, const char *HDF5FileName)
@@ -878,20 +1022,20 @@ void fields::output_dft(dft_force force, const char *HDF5FileName)
   chunklists[0] = force.offdiag1;
   chunklists[1] = force.offdiag2;
   chunklists[2] = force.diag;
-  output_dft_components(chunklists, 3, HDF5FileName);
+  output_dft_components(chunklists, 3, force.where, HDF5FileName);
 }
 
 void fields::output_dft(dft_near2far n2f, const char *HDF5FileName)
 { dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
-  output_dft_components(chunklists, 1, HDF5FileName);
+  output_dft_components(chunklists, 1, n2f.where, HDF5FileName);
 }
 
 void fields::output_dft(dft_fields fdft, const char *HDF5FileName)
 {
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
-  output_dft_components(chunklists, 1, HDF5FileName);
+  output_dft_components(chunklists, 1, fdft.where, HDF5FileName);
 }
 
 /***************************************************************/
@@ -909,48 +1053,6 @@ void fields::output_mode_fields(void *mode_data, dft_flux flux,
   chunklists[1] = flux.H;
   FOR_E_AND_H(c)
    process_dft_component(chunklists, 2, 0, c, 0, 0, 0, 0, mode_data, 0, c);
-}
-
-/***************************************************************/
-/* routines for fetching arrays of dft fields                  */
-/***************************************************************/
-cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank, int dims[3])
-{
-  dft_chunk *chunklists[2];
-  chunklists[0] = flux.E;
-  chunklists[1] = flux.H;
-  cdouble *array;
-  process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims);
-  return array;
-}
-
-cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank, int dims[3])
-{
-  dft_chunk *chunklists[3];
-  chunklists[0] = force.offdiag1;
-  chunklists[1] = force.offdiag2;
-  chunklists[2] = force.diag;
-  cdouble *array;
-  process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims);
-  return array;
-}
-
-cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank, int dims[3])
-{
-  dft_chunk *chunklists[1];
-  chunklists[0] = n2f.F;
-  cdouble *array;
-  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
-  return array;
-}
-
-cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank, int dims[3])
-{
-  dft_chunk *chunklists[1];
-  chunklists[0] = fdft.chunks;
-  cdouble *array;
-  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
-  return array;
 }
 
 /***************************************************************/
