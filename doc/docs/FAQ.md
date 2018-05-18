@@ -143,7 +143,7 @@ Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be us
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
-Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, any of the disperive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to visually verify the material geometry, etc., you may have to adjust the `epsilon` value.
+Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, any of the dispersive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to visually verify the material geometry, etc., you may have to adjust the `epsilon` value.
 
 ### Does Meep support a non-uniform grid?
 

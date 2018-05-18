@@ -7,9 +7,13 @@
 
 (set! geometry-lattice (make lattice (size no-size no-size sz)))
 
-(define lambda-cen 0.6)
-(define fcen (/ lambda-cen))
-(define df (* 0.2 fcen))
+(define-param wvl-min 0.4)
+(define-param wvl-max 0.8)
+(define fmin (/ wvl-max))
+(define fmax (/ wvl-min))
+(define fcen (* 0.5 (+ fmin fmax)))
+(define df (- fmax fmin))
+(define-param nfreq 50)
 
 ; rotation angle of source: CCW relative to y axis
 (define-param theta 0)
@@ -28,7 +32,7 @@
 (if (not empty?)
     (set! geometry (list (make block (size infinity infinity (* 0.5 sz)) (center 0 0 (* 0.25 sz)) (material (make medium (index 3.5)))))))
 
-(define refl (add-flux fcen 0 1 (make flux-region (center 0 0 (* -0.25 sz)))))
+(define refl (add-flux fcen df nfreq (make flux-region (center 0 0 (* -0.25 sz)))))
 
 (if (not empty?) (load-minus-flux "refl-flux" refl))
 
