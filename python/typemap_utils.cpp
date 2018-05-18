@@ -586,9 +586,7 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
         if (!pyv3_to_v3(PyList_GetItem(py_vert_list, i), &v3)) {
             return 0;
         }
-        vertices[i].x = v3.x;
-        vertices[i].y = v3.y;
-        vertices[i].z = v3.z;
+        vertices[i] = v3;
     }
 
     *p = make_prism(material, vertices, num_vertices, height, axis);
