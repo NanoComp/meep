@@ -368,15 +368,19 @@ class Simulation(object):
             dft_freqs.append(dftf.freq_min)
             dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
 
-        warn_fmt = "{} frequency {} is out of material's range of {}-{}"
+        warn_src = ('Note: your sources include frequencies outside the range of validity of the ' +
+                    'material models. This is fine as long as you eventually only look at outputs ' +
+                    '(fluxes, resonant modes, etc.) at valid frequencies.')
+
+        warn_dft_fmt = "DFT frequency {} is out of material's range of {}-{}"
 
         for sf in source_freqs:
-            if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
-                warnings.warn(warn_fmt.format('source', sf, min_freq, max_freq), RuntimeWarning)
+            if sf[0] + 0.5 * sf[1] > max_freq or sf[0] - 0.5 * sf[1] < min_freq:
+                warnings.warn(warn_src, RuntimeWarning)
 
         for dftf in dft_freqs:
             if dftf > max_freq or dftf < min_freq:
-                warnings.warn(warn_fmt.format('DFT', dftf, min_freq, max_freq), RuntimeWarning)
+                warnings.warn(warn_dft_fmt.format(dftf, min_freq, max_freq), RuntimeWarning)
 
     def _init_structure(self, k=False):
         print('-' * 11)
