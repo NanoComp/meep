@@ -7,14 +7,19 @@ def main(args):
     resolution = args.res
 
     dpml = 1.0
-    sz = args.sz + 2*dpml
+    sz = 10
+    sz = 10 + 2*dpml
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [ mp.PML(dpml) ]
-    
-    wvl_cen = 0.6
-    fcen = 1/wvl_cen
-    df = 0.2*fcen
 
+    wvl_min = 0.4
+    wvl_max = 0.8
+    fmin = 1/wvl_max
+    fmax = 1/wvl_min
+    fcen = 0.5*(fmin+fmax)
+    df = fmax-fmin
+    nfreq = 50
+    
     # rotation angle of source: CCW relative to y axis
     theta_r = math.radians(args.theta)
 
@@ -36,7 +41,7 @@ def main(args):
                         resolution=resolution)
 
     refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
-    refl = sim.add_flux(fcen, 0, 1, refl_fr)
+    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
     
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
 
@@ -54,19 +59,20 @@ def main(args):
                         dimensions=dimensions,
                         resolution=resolution)
 
-    refl = sim.add_flux(fcen, 0, 1, refl_fr)
+    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
     sim.load_minus_flux_data(refl, empty_data)
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
 
     refl_flux = mp.get_fluxes(refl)
-
-    print("refl:, {}, {}".format(args.theta,-refl_flux[0]/empty_flux[0]))
+    freqs = mp.get_flux_freqs(refl)
+    
+    for i in range(0,nfreq):
+        print("refl:, {}, {}, {}, {}".format(k.x,freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-res', type=int, default=200, help='resolution (default: 200 pixels/um)')
-    parser.add_argument('-sz', type=float, default=10, help='cell size (default: 10 um)')
     parser.add_argument('-theta', type=float, default=0, help='angle of incident planewave (default: 0 degrees)')
     args = parser.parse_args()
     main(args)
