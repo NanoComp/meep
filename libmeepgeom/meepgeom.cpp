@@ -1845,15 +1845,9 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
     count_nonzero_conductivity_pixels(med, pixels);
     break;
   }
-  case material_data::MATERIAL_FILE:
-    // TODO: Is the eps file loaded at this point?
-    break;
-  case material_data::MATERIAL_USER:
-    // TODO: Call with center point of box? Call at multiple sample points in box?
-    break;
-  case material_data::PERFECT_METAL:
-    // TODO: Does this contribute anything?
-    break;
+  default:
+    // Only Medium is supported
+    return;
   }
 }
 
