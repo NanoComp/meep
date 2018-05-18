@@ -11,7 +11,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fragment.num_susceptibility_pixels, susc)
         self.assertEqual(fragment.num_nonzero_conductivity_pixels, cond)
 
-    def get_fragment_stats(self, block_size, cell_size, dims):
+    def get_fragment_stats(self, block_size, cell_size, dims, box_center=mp.Vector3()):
         mat = mp.Medium(
             epsilon=12,
             epsilon_offdiag=mp.Vector3(z=1),
@@ -24,8 +24,9 @@ class TestFragmentStats(unittest.TestCase):
             B_conductivity_diag=mp.Vector3(x=1, z=1)
         )
 
-        geom = [mp.Block(size=block_size, material=mat)]
+        geom = [mp.Block(size=block_size, center=box_center, material=mat)]
         sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims)
+        sim.run(mp.at_beginning(mp.output_epsilon), until=5)
         gv = sim._create_grid_volume(False)
 
         stats = mp.compute_fragment_stats(
@@ -72,12 +73,70 @@ class TestFragmentStats(unittest.TestCase):
         for i in [0, 2]:
             self.check_stats(fs[i], a_eps=50, a_mu=50, nonlin=150, susc=150, cond=150)
 
+    def test_1d_with_partial_fragment(self):
+        # A cell with z=26, with a 16 unit block in the center, split into 3 fragments,
+        # with the first and last fragment of length 8, and 3/8 covered by the block,
+        # and the middle fragment completely covered.
+        fs = self.get_fragment_stats(mp.Vector3(z=16), mp.Vector3(z=26), 1)
+
+        self.assertEqual(len(fs), 3)
+        # Check first and last box sizes
+        self.assertEqual(fs[0].box.low.z, -13)
+        self.assertEqual(fs[0].box.high.z, -5)
+        self.assertEqual(fs[2].box.low.z, 5)
+        self.assertEqual(fs[2].box.high.z, 13)
+
+        # Middel fragment is completely covered by block
+        self.check_stats(fs[1], a_eps=100, a_mu=100, nonlin=300, susc=300, cond=300)
+        # Outer fragments are 3/8 covered
+        for i in [0, 2]:
+            self.check_stats(fs[i], a_eps=30, a_mu=30, nonlin=90, susc=90, cond=90)
+
+    def test_1d_with_shifted_center(self):
+        # A cell with z=26, with a 16 unit block shifted so that the right side is flush,
+        # with the right side of the cell, split into 3 fragments, with the first and last
+        # fragments of length 8, the first uncovered and the last completely covered by the
+        # block, and the middle fragment 80% covered by the block.
+        fs = self.get_fragment_stats(mp.Vector3(z=16), mp.Vector3(z=26), 1, mp.Vector3(z=5))
+
+        self.assertEqual(len(fs), 3)
+        # Check first and last box sizes
+        self.assertEqual(fs[0].box.low.z, -13)
+        self.assertEqual(fs[0].box.high.z, -5)
+        self.assertEqual(fs[2].box.low.z, 5)
+        self.assertEqual(fs[2].box.high.z, 13)
+
+        # First fragment is uncovered
+        self.check_stats(fs[0], 0, 0, 0, 0, 0)
+
+        # Middel fragment is 80% covered
+        self.check_stats(fs[1], a_eps=80, a_mu=80, nonlin=240, susc=240, cond=240)
+
+        # Last fragment is completely covered, but only 8 units long
+        self.check_stats(fs[2], a_eps=80, a_mu=80, nonlin=240, susc=240, cond=240)
+
     def test_2d(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
 
         fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2)
 
         self.assertEqual(len(fs), 9)
+
+        # Check fragment boxes
+        self.assertEqual(fs[0].box.low.x, -15)
+        self.assertEqual(fs[0].box.low.y, -15)
+        self.assertEqual(fs[0].box.high.x, -5)
+        self.assertEqual(fs[0].box.high.y, -5)
+
+        self.assertEqual(fs[1].box.low.x, -15)
+        self.assertEqual(fs[1].box.low.y, -5)
+        self.assertEqual(fs[1].box.high.x, -5)
+        self.assertEqual(fs[1].box.high.y, 5)
+
+        self.assertEqual(fs[2].box.low.x, -15)
+        self.assertEqual(fs[2].box.low.y, 5)
+        self.assertEqual(fs[2].box.high.x, -5)
+        self.assertEqual(fs[2].box.high.y, 15)
 
         # All fragments besides the middle one have no geometry, only default_material
         for i in [0, 1, 2, 3, 5, 6, 7, 8]:
@@ -108,6 +167,41 @@ class TestFragmentStats(unittest.TestCase):
         # The four corner fragments are quarter-filled by the block
         for i in [0, 2, 6, 8]:
             self.check_stats(fs[i], a_eps=250, a_mu=250, nonlin=750, susc=750, cond=750)
+
+    def test_2d_with_partial_fragments_and_shifted_center(self):
+        # A 26 x 26 cell with a 18 x 18 Block in the lower right corner
+
+        fs = self.get_fragment_stats(mp.Vector3(18, 18), mp.Vector3(26, 26), 2, mp.Vector3(4, -4))
+
+        self.assertEqual(len(fs), 9)
+
+        # Middle fragment is 10 x 10 and covered by block
+        self.check_stats(fs[4], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
+
+        for i in [0, 1, 2, 5, 8]:
+            # Air
+            self.check_stats(fs[i], 0, 0, 0, 0, 0)
+
+        # 10 x 8 fragment, covered by block
+        self.assertEqual(fs[3].box.low.x, -5)
+        self.assertEqual(fs[3].box.low.y, -13)
+        self.assertEqual(fs[3].box.high.x, 5)
+        self.assertEqual(fs[3].box.high.y, -5)
+        self.check_stats(fs[3], a_eps=800, a_mu=800, nonlin=2400, susc=2400, cond=2400)
+
+        # 8 x 10 fragment, covered by block
+        self.assertEqual(fs[7].box.low.x, 5)
+        self.assertEqual(fs[7].box.low.y, -5)
+        self.assertEqual(fs[7].box.high.x, 13)
+        self.assertEqual(fs[7].box.high.y, 5)
+        self.check_stats(fs[7], a_eps=800, a_mu=800, nonlin=2400, susc=2400, cond=2400)
+
+        # 8 x 8 fragment covered by block
+        self.assertEqual(fs[6].box.low.x, 5)
+        self.assertEqual(fs[6].box.low.y, -13)
+        self.assertEqual(fs[6].box.high.x, 13)
+        self.assertEqual(fs[6].box.high.y, -5)
+        self.check_stats(fs[6], a_eps=640, a_mu=640, nonlin=1920, susc=1920, cond=1920)
 
     def test_3d(self):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
