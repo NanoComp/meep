@@ -214,7 +214,7 @@ Si3N4_NIR_gam2 = 0
 Si3N4_NIR_sig2 = 40314
 
 Si3N4_NIR_susc = [ mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq1, gamma=Si3N4_NIR_gam1, sigma=Si3N4_NIR_sig1),
-                   mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq1, gamma=Si3N4_NIR_gam1, sigma=Si3N4_NIR_sig1) ]
+                   mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq2, gamma=Si3N4_NIR_gam2, sigma=Si3N4_NIR_sig2) ]
 
 Si3N4_NIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_NIR_susc, valid_freq_range=Si3N4_NIR_range)
 
