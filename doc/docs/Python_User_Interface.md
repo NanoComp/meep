@@ -913,9 +913,9 @@ As `load_flux_data`, but negates the Fourier-transformed fields after they are l
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
 
-**`get_eigenmode_coefficients(flux, direction, volume, bands, alpha, vgrp)`**  
+**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a flux object, direction, volume object, and list of band indices, return the eigenmode coefficients in `alpha` and group velocities in `vgrp`. The flux object must be created using `add_eigenmode` (an alias for `add_flux`). See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example.
+Given a flux object and list of band indices, return the eigenmode coefficients. The flux object must be created using `add_eigenmode` (an alias for `add_flux`). `eig_parity` should be one of [`meep.NO_PARITY` (default), `meep.EVEN_Z`, `meep.ODD_Z`, `meep.EVEN_Y`, `meep.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example of `get_eigenmode_coefficients`.
 
 **`add_eigenmode(fcen, df, nfreq, FluxRegions...)`**  
 An alias for `add_flux`.
