@@ -27,11 +27,10 @@ class TestChunks(unittest.TestCase):
         rgt = mp.FluxRegion(center=mp.Vector3(+0.5*sxy-dpml,0), size=mp.Vector3(0,sxy-2*dpml), weight=+1.0)
         lft = mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0), size=mp.Vector3(0,sxy-2*dpml), weight=-1.0)
 
-        sim.add_flux(fcen, 0, 1, top, bot, rgt, lft)
+        tot_flux = sim.add_flux(fcen, 0, 1, top, bot, rgt, lft)
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-5))
 
-        tot_flux = sim.dft_objects[0]
         sim.save_flux('tot_flux', tot_flux)
 
         sim.reset_meep()
@@ -45,10 +44,8 @@ class TestChunks(unittest.TestCase):
                             sources=sources,
                             resolution=resolution)
 
-        sim.add_flux(fcen, 0, 1, top, bot, rgt, lft)
+        tot_flux = sim.add_flux(fcen, 0, 1, top, bot, rgt, lft)
 
-        sim.add_dft_objects()
-        tot_flux = sim.dft_objects[0]
         sim.load_minus_flux('tot_flux', tot_flux)
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-5))

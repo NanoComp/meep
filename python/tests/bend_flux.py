@@ -45,11 +45,11 @@ class TestBendFlux(unittest.TestCase):
         else:
             fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, (sy / 2) - 1.5), size=mp.Vector3(w * 2, 0))
 
-        self.sim.add_flux(fcen, df, nfreq, fr)
+        self.trans = self.sim.add_flux(fcen, df, nfreq, fr)
         refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
                                 size=mp.Vector3(0, w * 2))
 
-        self.sim.add_flux(fcen, df, nfreq, refl_fr)
+        self.refl = self.sim.add_flux(fcen, df, nfreq, refl_fr)
 
         if no_bend:
             self.pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)
@@ -61,8 +61,7 @@ class TestBendFlux(unittest.TestCase):
         self.init(no_bend=True)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
         # Save flux data for use in real run below
-        trans, refl = self.sim.dft_objects
-        fdata = self.sim.get_flux_data(refl)
+        fdata = self.sim.get_flux_data(self.refl)
 
         expected = [
             (0.1, 3.65231563251e-05, 3.68932495077e-05),
@@ -88,7 +87,7 @@ class TestBendFlux(unittest.TestCase):
 
         ]
 
-        res = list(zip(mp.get_flux_freqs(trans), mp.get_fluxes(trans), mp.get_fluxes(refl)))
+        res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
         np.testing.assert_allclose(expected, res[:20])
 
@@ -96,9 +95,7 @@ class TestBendFlux(unittest.TestCase):
         self.sim = None
         self.init()
         # Load flux data obtained from normalization run
-        self.sim.add_dft_objects()
-        trans, refl = self.sim.dft_objects
-        self.sim.load_minus_flux_data(refl, fdata)
+        self.sim.load_minus_flux_data(self.refl, fdata)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
 
         expected = [
@@ -125,7 +122,7 @@ class TestBendFlux(unittest.TestCase):
 
         ]
 
-        res = list(zip(mp.get_flux_freqs(trans), mp.get_fluxes(trans), mp.get_fluxes(refl)))
+        res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
         np.testing.assert_allclose(expected, res[:20])
 

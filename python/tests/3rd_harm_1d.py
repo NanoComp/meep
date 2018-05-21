@@ -37,9 +37,9 @@ class Test3rdHarm1d(unittest.TestCase):
                                  dimensions=dimensions)
 
         fr = mp.FluxRegion(mp.Vector3(0, 0, (0.5 * self.sz) - self.dpml - 0.5))
-        self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr)
-        self.sim.add_flux(fcen, 0, 1, fr)
-        self.sim.add_flux(3 * fcen, 0, 1, fr)
+        self.trans = self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr)
+        self.trans1 = self.sim.add_flux(fcen, 0, 1, fr)
+        self.trans3 = self.sim.add_flux(3 * fcen, 0, 1, fr)
 
     def test_3rd_harm_1d(self):
 
@@ -51,9 +51,7 @@ class Test3rdHarm1d(unittest.TestCase):
             )
         )
 
-        trans, trans1, trans3 = self.sim.dft_objects
-
-        harmonics = [self.k, self.amp, mp.get_fluxes(trans1)[0], mp.get_fluxes(trans3)[0]]
+        harmonics = [self.k, self.amp, mp.get_fluxes(self.trans1)[0], mp.get_fluxes(self.trans3)[0]]
 
         np.testing.assert_allclose(expected_harmonics, harmonics)
 
