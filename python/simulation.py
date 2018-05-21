@@ -770,12 +770,6 @@ class Simulation(object):
                 )
 
     def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None):
-        # Evaluated lazily so we can run fragment analysis before creating the structure
-        self.dft_objects_to_add.append(
-            (self._add_dft_fields, [components, freq_min, freq_max, nfreq, where, center, size])
-        )
-
-    def _add_dft_fields(self, components, freq_min, freq_max, nfreq, where, center, size):
         if self.fields is None:
             self.init_fields()
 
@@ -784,7 +778,10 @@ class Simulation(object):
         except ValueError:
             where = self.fields.total_volume()
 
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        dftf = self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        self.dft_objects.append(dftf)
+
+        return dftf
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
@@ -799,11 +796,9 @@ class Simulation(object):
         return arr
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
-        # Evaluated lazily so we can run fragment analysis before creating the structure
-        self.dft_objects_to_add.append((self._add_near2far, [fcen, df, nfreq, near2fars]))
+        if self.fields is None:
+            self.init_fields()
 
-    # Wrapper to prevent self.fields from being accessed before it is initialized
-    def _add_near2far(self, fcen, df, nfreq, near2fars):
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
     def get_farfield(self, f, v):
@@ -838,11 +833,9 @@ class Simulation(object):
         n2f.scale_dfts(complex(1.0))
 
     def add_force(self, fcen, df, nfreq, *forces):
-        # Evaluated lazily so we can run fragment analysis before creating the structure
-        self.dft_objects_to_add.append((self._add_force, [fcen, df, nfreq, forces]))
+        if self.fields is None:
+            self.init_fields()
 
-    # Wrapper to prevent self.fields from being accessed before it is initialized
-    def _add_force(self, fcen, df, nfreq, forces):
         return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
 
     def display_forces(self, *forces):
@@ -878,11 +871,9 @@ class Simulation(object):
         force.scale_dfts(complex(-1.0))
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
-        # Evaluated lazily so we can run fragment analysis before creating the structure
-        self.dft_objects_to_add.append((self._add_flux, [fcen, df, nfreq, fluxes]))
+        if self.fields is None:
+            self.init_fields()
 
-    # Wrapper to prevent self.fields from being accessed before it is initialized
-    def _add_flux(self, fcen, df, nfreq, fluxes):
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
     add_eigenmode = add_flux
@@ -916,20 +907,6 @@ class Simulation(object):
     def load_minus_flux_data(self, flux, fdata):
         self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
-
-    # When the user calls add_flux, add_force, add_near2far, or add_dft_fields,
-    # the functions and args are stored in `dft_objects_to_add` and only evaluated
-    # after fragment analysis is complete (since fragment analysis depends on dft
-    # objects but must happen before the structure is created). This function
-    # evaluates the stored functions and puts the resulting objects in `dft_objects`,
-    # where they can be accessed in the order in which they were added.
-    def add_dft_objects(self):
-        if self.fields is None:
-            self.init_fields()
-
-        for func, args in self.dft_objects_to_add:
-            self.dft_objects.append(func(*args))
-        self.dft_objects_to_add = []
 
     def flux_in_box(self, d, box=None, center=None, size=None):
         if self.fields is None:
@@ -980,9 +957,6 @@ class Simulation(object):
         return self.fields.solve_cw(tol, maxiters, L)
 
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
-        if self.fields is None:
-            self.init_fields()
-
         vol_list = None
 
         for s in stufflist:
@@ -996,6 +970,7 @@ class Simulation(object):
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        self.dft_objects.append(stuff)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -1175,7 +1150,6 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
-        self.add_dft_objects()
         self._check_material_frequencies()
 
         if kwargs:

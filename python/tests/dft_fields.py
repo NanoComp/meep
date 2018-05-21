@@ -37,6 +37,7 @@ class TestDFTFields(unittest.TestCase):
 
     def test_get_dft_array(self):
         sim = self.init()
+        sim.init_fields()
         dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1)
         fr = mp.FluxRegion(mp.Vector3(), size=mp.Vector3(self.sxy, self.sxy), direction=mp.X)
         dft_flux = sim.add_flux(self.fcen, 0, 1, fr)
