@@ -428,7 +428,7 @@ The simulation script is below and in [refl-angular.ctl](https://github.com/stev
 (define df (- fmax fmin))           ; frequency width of source
 (define-param nfreq 50)             ; number of frequency bins
 
-; rotation angle of source: CCW relative to y axis
+; rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis 
 (define-param theta 0)
 (define theta-r (deg->rad theta))
 
@@ -475,7 +475,7 @@ done
 
 Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Octave/Matlab script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the wavelength λ and wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a given angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results.
 
-In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a modified source with a center frequency closer to a wavelength of 0.4 μm and smaller bandwidth. This can be accomplished by reducing the `wvl_max` parameter above.
+In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a modified source with a center frequency closer to a wavelength of 0.4 μm and smaller bandwidth. These can both be accomplished by reducing the `wvl-max` parameter above.
 
 ```matlab
 theta_in = [ 0:40 ];

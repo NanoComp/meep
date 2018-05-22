@@ -15,7 +15,7 @@
 (define df (- fmax fmin))            ; frequency width of source
 (define-param nfreq 50)              ; number of frequency bins
 
-; rotation angle of source: CCW relative to y axis
+; rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
 (define-param theta 0)
 (define theta-r (deg->rad theta))
 

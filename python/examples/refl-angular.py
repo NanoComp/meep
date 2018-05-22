@@ -20,7 +20,7 @@ def main(args):
     df = fmax-fmin                  # frequency width of source
     nfreq = 50                      # number of frequency bins
     
-    # rotation angle of source: CCW relative to y axis
+    # rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
     theta_r = math.radians(args.theta)
 
     # plane of incidence is xz

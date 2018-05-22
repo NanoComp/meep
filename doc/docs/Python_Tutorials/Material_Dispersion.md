@@ -86,7 +86,7 @@ The following Bash shell script runs the two simulations, pipes the output to a 
 #!/bin/bash
 
 python refl-quartz.py |tee flux.out
-grep refl: flux0.out |cut -d , -f2- > flux.dat
+grep refl: flux.out |cut -d , -f2- > flux.dat
 ```
 
 A plot of the reflectance spectrum based on the simulated data and the analytic Fresnel equations is generated using the Python script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
