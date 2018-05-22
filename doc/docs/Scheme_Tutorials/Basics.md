@@ -2,9 +2,9 @@
 # Scheme Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects_scheme.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects_scheme.html).
 
-In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses the [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
+In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields, this tutorial uses the [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
 [TOC]
 
@@ -400,48 +400,50 @@ Again, we must run both simulations in order to get the normalization right. The
 Angular Reflectance Spectrum of a Planar Interface
 --------------------------------------------------
 
-We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. Each angle of the incident planewave source requires a separate set of simulations.
+We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance spectrum of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. Each angle of the incident planewave requires a separate set of simulations.
 
-A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). In Meep, a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted. We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Scheme_User_Interface/#source) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields left in the cell (due to absorption by the PMLs) via the [run function](../Scheme_User_Interface/#run-functions) `stop-when-fields-decayed`, similar again to the previous example.
+A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). In Meep, a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted. We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Scheme_User_Interface/#source) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields left in the cell (due to absorption by the PMLs) via the [run function](../Scheme_User_Interface/#run-functions) `stop-when-fields-decayed`, similar to the previous example.
 
-Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k-point`, and (2) the source amplitude function `amp-func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Thus any broadband source is incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k-point`, and (2) the source amplitude function `amp-func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the center frequency of the Gaussian pulse; in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Thus any broadband source is incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. A current source with $E_x$ polarization lies in the plane of incidence and corresponds to the convention of $P$-polarization.
+In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. A current source with $E_x$ polarization lies in the plane of incidence and corresponds to the convention of $P$-polarization.
 
 The simulation script is below and in [refl-angular.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-angular.ctl)
 
 ```scm
-(set-param! resolution 200) ; pixels/um
+(set-param! resolution 200)         ; pixels/um
 
-(define-param sz 10)
-(define-param dpml 1)
+(define-param dpml 1)               ; PML thickness
+(define-param sz 10)                ; size of computational cell (without PMLs)
 (set! sz (+ sz (* 2 dpml)))
 (set! pml-layers (list (make pml (thickness dpml))))
 
 (set! geometry-lattice (make lattice (size no-size no-size sz)))
 
-(define-param wvl-min 0.4)
-(define-param wvl-max 0.8)
-(define fmin (/ wvl-max))
-(define fmax (/ wvl-min))
-(define fcen (* 0.5 (+ fmin fmax)))
-(define df (- fmax fmin))
-(define-param nfreq 50)
+(define-param wvl-min 0.4)          ; minimum wavelength of source
+(define-param wvl-max 0.8)          ; maximum wavelength of source
+(define fmin (/ wvl-max))           ; minimum frequency of source
+(define fmax (/ wvl-min))           ; maximum frequency of source
+(define fcen (* 0.5 (+ fmin fmax))) ; center frequency of source
+(define df (- fmax fmin))           ; frequency width of source
+(define-param nfreq 50)             ; number of frequency bins
 
 ; rotation angle of source: CCW relative to y axis
 (define-param theta 0)
 (define theta-r (deg->rad theta))
 
+; if source is at normal incidence, force number of dimensions to be 1
 (set! dimensions (if (= theta-r 0) 1 3))
 
 ; plane of incidence is xz
 (set! k-point (vector3* fcen (vector3 (sin theta-r) 0 (cos theta-r))))
 
 (set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df)))
-			         (component Ex) (center 0 0 (+ (* -0.5 sz) dpml)))))
+                                 (component Ex) (center 0 0 (+ (* -0.5 sz) dpml)))))
 
 (define-param empty? true)
 
+; add a block with n=3.5 for the air-dielectric interface
 (if (not empty?)
     (set! geometry (list (make block (size infinity infinity (* 0.5 sz)) (center 0 0 (* 0.25 sz)) (material (make medium (index 3.5)))))))
 
@@ -456,14 +458,14 @@ The simulation script is below and in [refl-angular.ctl](https://github.com/stev
 (display-fluxes refl)
 ```
 
-The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ (the $k_z$ component is irrelevant since it is in the direction of the PML) and the corresponding angle for the ($k_x$, ω) pair: for those frequencies not equal to the center frequency of the source, this is *not* the same as the angle of the incident planewave, but rather $sin^{-1}(k_x/\omega)$.
+The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ (the $k_z$ component is irrelevant since it is in the direction of the PML) and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the center frequency of the source, this is *not* the same as the angle of the incident planewave, but rather $\sin^{-1}(k_x/\omega)$.
 
-The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 40$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 40$^\circ$ in increments of 1$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
 ```sh
 #!/bin/bash
 
-for i in `seq 0 5 40`; do
+for i in `seq 0 40`; do
     meep empty?=true theta=${i} refl-angular.ctl |tee -a flux0_t${i}.out;
     grep flux1: flux0_t${i}.out |cut -d , -f2- > flux0_t${i}.dat
     meep empty?=false theta=${i} refl-angular.ctl |tee -a flux_t${i}.out;
@@ -471,10 +473,12 @@ for i in `seq 0 5 40`; do
 done
 ```
 
-Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Octave/Matlab script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum with the Bloch-periodic wavevector used in the simulation: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations based on the θ values from the previous inset. There is agreement between the simulated and analytic results.
+Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Octave/Matlab script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the wavelength λ and wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a given angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results.
+
+In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a modified source with a center frequency closer to a wavelength of 0.4 μm and smaller bandwidth. This can be accomplished by reducing the `wvl_max` parameter above.
 
 ```matlab
-theta_in = [ 0:5:40 ];
+theta_in = [ 0:40 ];
 Rmeep = [];
 for j = 1:length(theta_in)
   f0 = dlmread(sprintf("flux0_t%d.dat",theta_in(j)),',');
@@ -483,7 +487,9 @@ for j = 1:length(theta_in)
 endfor
 
 freqs = f(:,1);
+% convert frequency to wavelength
 wvl = 1./freqs;
+% create a 2d matrix for the wavelength by repeating the column vector for each angle
 wvls = repmat(wvl,1,length(theta_in));
 
 wvl_min = 0.4;
@@ -496,7 +502,7 @@ thetas = asind(kxs./freqs);
 figure;
 pcolor(kxs,wvls,Rmeep);
 shading interp; c = colormap("hot"); colormap(c); colorbar;
-eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",kxs(1,1),kxs(1,end),wvl(end),wvl(1)));
+eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(kx),max(kx),min(wvl),max(wvl)));
 xlabel("wavevector of Bloch-Periodic boundary condition (k_x/2π)");
 ylabel("wavelength (μm)");
 title("reflectance (meep)");
@@ -504,28 +510,34 @@ title("reflectance (meep)");
 figure;
 pcolor(thetas,wvls,Rmeep);
 shading interp; c = colormap("hot"); colormap(c); colorbar;
-eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(min(thetas)),max(max(thetas)),wvl(end),wvl(1)));
+eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(min(thetas)),max(max(thetas)),min(wvl),max(wvl)));
 xlabel("angle of incident planewave (degrees)");
 ylabel("wavelength (μm)");
 title("reflectance (meep)");
 
 n1 = 1;
 n2 = 3.5;
+
+% compute angle of refracted planewave in medium n2
+% for incident planewave in medium n1 at angle theta_in
 theta_out = @(theta_in) asin(n1*sin(theta_in)/n2);
-# P polarization
+
+% compute Fresnel reflectance for P-polarization in medium n2
+% for incident planewave in medium n1 at angle theta_in
 R_fresnel = @(theta_in) abs((n1*cos(theta_out(theta_in))-n2*cos(theta_in))./(n1*cos(theta_out(theta_in))+n2*cos(theta_in))).^2;
+
 Ranalytic = R_fresnel(thetas*pi/180);
 
 figure;
 pcolor(thetas,wvls,Ranalytic);
 shading interp; c = colormap("hot"); colormap(c); colorbar;
-eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(min(thetas)),max(max(thetas)),wvl(end),wvl(1)));
+eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(min(thetas)),max(max(thetas)),min(wvl),max(wvl)));
 xlabel("angle of incident planewave (degrees)");
 ylabel("wavelength (μm)");
 title("reflectance (analytic)");
 ```
 
-<center>![](../images/reflectance_angle_spectrum.png)</center>
+<center>![](../images/reflectance_angular_spectrum.png)</center>
 
 Modes of a Ring Resonator
 -------------------------

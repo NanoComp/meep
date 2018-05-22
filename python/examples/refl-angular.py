@@ -6,19 +6,19 @@ def main(args):
 
     resolution = args.res
 
-    dpml = 1.0
-    sz = 10
+    dpml = 1.0                      # PML thickness
+    sz = 10                         # size of computational cell (without PMLs)
     sz = 10 + 2*dpml
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [ mp.PML(dpml) ]
 
-    wvl_min = 0.4
-    wvl_max = 0.8
-    fmin = 1/wvl_max
-    fmax = 1/wvl_min
-    fcen = 0.5*(fmin+fmax)
-    df = fmax-fmin
-    nfreq = 50
+    wvl_min = 0.4                   # minimum wavelength of source
+    wvl_max = 0.8                   # maximum wavelength of source
+    fmin = 1/wvl_max                # minimum frequency of source
+    fmax = 1/wvl_min                # maximum frequency of source
+    fcen = 0.5*(fmin+fmax)          # center frequency of source
+    df = fmax-fmin                  # frequency width of source
+    nfreq = 50                      # number of frequency bins
     
     # rotation angle of source: CCW relative to y axis
     theta_r = math.radians(args.theta)
@@ -26,6 +26,7 @@ def main(args):
     # plane of incidence is xz
     k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fcen)
     
+    # if source is at normal incidence, force number of dimensions to be 1
     if theta_r == 0:
         dimensions = 1
     else:
@@ -49,6 +50,7 @@ def main(args):
     empty_data = sim.get_flux_data(refl)
     sim.reset_meep()
 
+    # add a block with n=3.5 for the air-dielectric interface
     geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=mp.Medium(index=3.5)) ]
 
     sim = mp.Simulation(cell_size=cell_size,
@@ -68,7 +70,7 @@ def main(args):
     freqs = mp.get_flux_freqs(refl)
     
     for i in range(0,nfreq):
-        print("refl:, {}, {}, {}, {}".format(k.x,freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
+        print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

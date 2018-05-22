@@ -2,7 +2,7 @@
 # Python Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Python interface that illustrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
 
 [TOC]
 
@@ -17,7 +17,7 @@ Executing Meep simulations is normally done at the Unix command line as follows:
  unix% python foo.py >& foo.out
 ```
 
-which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a web browser. If you use one of these approaches, you can paste in the commands from the tutorial as you follow along and see what they do.
+which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a browser. If you use one of these approaches, you can paste in the commands from the tutorial as you follow along and see what they do.
 
 Fields in a Waveguide
 ---------------------
@@ -405,7 +405,7 @@ plt.plot(wl,Rs,'bo-',label='reflectance')
 plt.plot(wl,Ts,'ro-',label='transmittance')
 plt.plot(wl,1-Rs-Ts,'go-',label='loss')
 plt.axis([5.0, 10.0, 0, 1])
-plt.xlabel("wavelength (um)")
+plt.xlabel("wavelength (μm)")
 plt.legend(loc="upper right")
 plt.show()
 ```
@@ -424,13 +424,13 @@ Again, we must run both simulations in order to get the normalization right. The
 Angular Reflectance Spectrum of a Planar Interface
 --------------------------------------------------
 
-We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. Each angle of the incident planewave source requires a separate set of simulations.
+We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance spectrum of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. Each angle of the incident planewave requires a separate set of simulations.
 
-A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). In Meep, a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted. We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Python_User_Interface/#continuoussource) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields left in the cell (due to absorption by the PMLs) via the [run function](../Python_User_Interface/#run-functions) `stop_when_fields_decayed`, similar again to the previous example.
+A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). In Meep, a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted. We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Python_User_Interface/#continuoussource) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields left in the cell (due to absorption by the PMLs) via the [run function](../Python_User_Interface/#run-functions) `stop_when_fields_decayed`, similar to the previous example.
 
-Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k_point`, and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Thus any broadband source is incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k_point`, and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the center frequency of the Gaussian pulse; in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Thus any broadband source is incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. A current source with $E_x$ polarization lies in the plane of incidence and corresponds to the convention of $P$-polarization.
+In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. A current source with $E_x$ polarization lies in the plane of incidence and corresponds to the convention of $P$-polarization.
 
 The simulation script is below and in [refl-angular.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-angular.py)
 
@@ -443,26 +443,27 @@ def main(args):
 
     resolution = args.res
 
-    dpml = 1.0
-    sz = 10
+    dpml = 1.0              # PML thickness
+    sz = 10                 # size of computational cell (without PMLs)
     sz = 10 + 2*dpml
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [ mp.PML(dpml) ]
 
-    wvl_min = 0.4
-    wvl_max = 0.8
-    fmin = 1/wvl_max
-    fmax = 1/wvl_min
-    fcen = 0.5*(fmin+fmax)
-    df = fmax-fmin
-    nfreq = 50
+    wvl_min = 0.4           # minimum wavelength of source
+    wvl_max = 0.8           # maximum wavelength of source
+    fmin = 1/wvl_max        # minimum frequency of source
+    fmax = 1/wvl_min        # maximum frequency of source
+    fcen = 0.5*(fmin+fmax)  # center frequency of source
+    df = fmax-fmin          # frequency width of source
+    nfreq = 50              # number of frequency bins
     
     # rotation angle of source: CCW relative to y axis
     theta_r = math.radians(args.theta)
 
     # plane of incidence is xz
     k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fcen)
-    
+
+    # if source is at normal incidence, force number of dimensions to be 1
     if theta_r == 0:
         dimensions = 1
     else:
@@ -486,6 +487,7 @@ def main(args):
     empty_data = sim.get_flux_data(refl)
     sim.reset_meep()
 
+    # add a block with n=3.5 for the air-dielectric interface
     geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=mp.Medium(index=3.5)) ]
 
     sim = mp.Simulation(cell_size=cell_size,
@@ -505,7 +507,7 @@ def main(args):
     freqs = mp.get_flux_freqs(refl)
     
     for i in range(0,nfreq):
-        print("refl:, {}, {}, {}, {}".format(k.x,freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
+        print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -515,27 +517,30 @@ if __name__ == '__main__':
     main(args)
 ```
 
-The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ (the $k_z$ component is irrelevant since it is in the direction of the PML) and the corresponding angle for the ($k_x$, ω) pair: for those frequencies not equal to the center frequency of the source, this is *not* the same as the angle of the incident planewave, but rather $sin^{-1}(k_x/\omega)$. There are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planwave.
+The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ (the $k_z$ component is irrelevant since it is in the direction of the PML) and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the center frequency of the source, this is *not* the same as the angle of the incident planewave, but rather $\sin^{-1}(k_x/\omega)$. There are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planwave.
 
-The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 40$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 40$^\circ$ in increments of 1$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
 ```sh
 #!/bin/bash
 
-for i in `seq 0 5 40`; do
+for i in `seq 0 40`; do
     python refl-angular.py -theta $i |tee -a flux_t${i}.out;
     grep refl: flux_t${i}.out |cut -d , -f2- > flux_t${i}.dat
 done
 ```
 
-Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Python script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum with the Bloch-periodic wavevector used in the simulation: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations based on the θ values from the previous inset. There is agreement between the simulated and analytic results.
+Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Python script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the source wavelength λ and Bloch-periodic wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a given angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results.
+
+In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a modified source with a center frequency closer to a wavelength of 0.4 μm and smaller bandwidth. This can be accomplished by reducing the `wvl_max` parameter above.
 
 ```py
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import numpy.matlib
 import math
 
-theta_in = np.arange(0,45,5)
+theta_in = np.arange(0,41)
 kxs = np.empty((50, theta_in.size))
 thetas = np.empty((50, theta_in.size))
 Rmeep = np.empty((50, theta_in.size))
@@ -545,35 +550,44 @@ for j in range(0,theta_in.size):
   kxs[:,j] = f[:,0]
   thetas[:,j] = f[:,2]
   Rmeep[:,j] = f[:,3]
-  
-import numpy.matlib  
-wvl = 1./f[:,1]
+
+wvl = f[:,1]
+# create a 2d matrix for the wavelength by repeating the column vector for each angle
 wvls = np.matlib.repmat(np.reshape(wvl, (wvl.size,1)),1,theta_in.size)
 
 plt.figure(dpi=100)
-plt.pcolormesh(kxs,wvls,Rmeep,cmap='hot',shading='gouraud')
+plt.pcolormesh(kxs, wvls, Rmeep, cmap='hot', shading='gouraud', vmin=0, vmax=Rmeep.max())
 plt.axis([kxs[0,0], kxs[0,-1], wvl[-1], wvl[0]])
 plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.xlabel("Bloch-periodic wavevector ($k_x/2π$)")
 plt.ylabel("wavelength (μm)")
 plt.title("reflectance (meep)")
-plt.colorbar()
+cbar = plt.colorbar()
+cbar.set_ticks([0, 0.1, 0.2, 0.3]);
+cbar.set_ticklabels([0, 0.1, 0.2, 0.3]);
 plt.show()
 
 plt.figure(dpi=100)
-plt.pcolormesh(thetas,wvls,Rmeep,cmap='hot',shading='gouraud')
+plt.pcolormesh(thetas, wvls, Rmeep, cmap='hot', shading='gouraud', vmin=0, vmax=Rmeep.max())
 plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
 plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.xlabel("angle of incident planewave (degrees)")
 plt.ylabel("wavelength (μm)")
 plt.title("reflectance (meep)")
-plt.colorbar()
+cbar = plt.colorbar()
+cbar.set_ticks([0, 0.1, 0.2, 0.3]);
+cbar.set_ticklabels([0, 0.1, 0.2, 0.3]);
 plt.show()
 
 n1=1
 n2=3.5
+
+# compute angle of refracted planewave in medium n2
+# for incident planewave in medium n1 at angle theta_in
 theta_out = lambda theta_in: math.asin(n1*math.sin(theta_in)/n2)
-# P polarization
+
+# compute Fresnel reflectance for P-polarization in medium n2
+# for incident planewave in medium n1 at angle theta_in
 Rfresnel = lambda theta_in: math.fabs((n1*math.cos(theta_out(theta_in))-n2*math.cos(theta_in))/(n1*math.cos(theta_out(theta_in))+n2*math.cos(theta_in)))**2
 
 Ranalytic = np.empty((50, theta_in.size))
@@ -581,18 +595,20 @@ for m in range(0,wvl.size):
     for n in range(0,theta_in.size):
         Ranalytic[m,n] = Rfresnel(math.radians(thetas[m,n]))
 
-plt.figure(dpi=100)        
-plt.pcolormesh(thetas,wvls,Ranalytic,cmap='hot',shading='gouraud')
+plt.figure(dpi=100)
+plt.pcolormesh(thetas, wvls, Ranalytic, cmap='hot', shading='gouraud', vmin=0, vmax=Ranalytic.max())
 plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
 plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.xlabel("angle of incident planewave (degrees)")
 plt.ylabel("wavelength (μm)")
 plt.title("reflectance (analytic)")
-plt.colorbar()
+cbar = plt.colorbar()
+cbar.set_ticks([0, 0.1, 0.2, 0.3]);
+cbar.set_ticklabels([0, 0.1, 0.2, 0.3]);
 plt.show()
 ```
 
-<center>![](../images/reflectance_angle_spectrum.png)</center>
+<center>![](../images/reflectance_angular_spectrum.png)</center>
 
 Modes of a Ring Resonator
 -------------------------
