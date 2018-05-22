@@ -1786,18 +1786,6 @@ static void init_libctl(material_type default_mat, bool ensure_per, meep::grid_v
   dimensions = meep::number_of_directions(gv->dim);
   geometry_lattice.size = cell_size;
   geom_fix_objects0(*geom);
-
-  // Since Python considers the origin to be in the center of the cell, adjust the
-  // center of all geometric objects by half the cell size in every direction.
-  // double x_adj = cell_size.x * 0.5;
-  // double y_adj = cell_size.y * 0.5;
-  // double z_adj = cell_size.z * 0.5;
-  // vector3 center_offset = {x_adj, y_adj, z_adj};
-
-  // for (int i = 0; i < geom->num_items; ++i) {
-  //   geometric_object *go = &geom->items[i];
-  //   go->center = vector3_plus(go->center, center_offset);
-  // }
 }
 
 std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
@@ -1805,6 +1793,9 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_size,
                                                    vector3 cell_center,
                                                    material_type default_mat,
+                                                   int total_dft_freqs,
+                                                   int total_dft_components,
+                                                   std::vector<meep::volume> dft_volumes,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
@@ -1974,16 +1965,6 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
 
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
 }
-
-enum DFTType {
-  DFT_FLUX,
-  DFT_FIELDS,
-  DFT_FORCE,
-  DFT_NEAR2FAR,
-  DFT_NUM_TYPES
-};
-
-static int dft_components_per_type[] = {4, 0, 6, 4};
 
 // TODO: Python needs to pass in the `where` and `Nfreq` members from all the dft objects
 void fragment_stats::count_dft_fields(meep::vec& v) {

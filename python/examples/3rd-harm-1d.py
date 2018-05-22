@@ -46,8 +46,10 @@ def main(args):
 
     # trans = sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq,
     #                      mp.FluxRegion(mp.Vector3(0, 0, 0.5*sz - dpml - 0.5)))
-    trans1 = sim.add_flux(fcen, 0, 1, mp.FluxRegion(mp.Vector3(0, 0, 0.5*sz - dpml - 0.5)))
-    trans3 = sim.add_flux(3 * fcen, 0, 1, mp.FluxRegion(mp.Vector3(0, 0, 0.5*sz - dpml - 0.5)))
+    trans1 = sim.add_flux(fcen, 0, 1,
+                          mp.FluxRegion(mp.Vector3(0, 0, 0.5*sz - dpml - 0.5)))
+    trans3 = sim.add_flux(3 * fcen, 0, 1,
+                          mp.FluxRegion(mp.Vector3(0, 0, 0.5*sz - dpml - 0.5)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(
         50, mp.Ex, mp.Vector3(0, 0, 0.5*sz - dpml - 0.5), 1e-6))

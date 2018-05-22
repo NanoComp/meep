@@ -1006,12 +1006,16 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %ignore is_metal;
 %ignore meep::infinity;
 
+%ignore std::vector<meep::volume>::vector(size_type);
+%ignore std::vector<meep::volume>::resize;
+
 // template instantiations
 %template(get_dft_flux_array) _get_dft_array<meep::dft_flux>;
 %template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
+%template(VolumeVector) std::vector<meep::volume>;
 %template(IntVector) std::vector<int>;
 %template(DoubleVector) std::vector<double>;
 

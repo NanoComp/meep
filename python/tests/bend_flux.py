@@ -84,7 +84,6 @@ class TestBendFlux(unittest.TestCase):
             (0.117171717172, 0.0147547920552, 0.0146151488236),
             (0.118181818182, 0.0194782085272, 0.0192840042241),
             (0.119191919192, 0.0254987474079, 0.0252348211592),
-
         ]
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))

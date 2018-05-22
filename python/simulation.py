@@ -162,6 +162,159 @@ class Near2FarRegion(object):
         self.weight = complex(weight)
 
 
+class FieldsRegion(object):
+
+    def __init__(self, where=None, center=None, size=None):
+        self.where = where
+        self.center = center
+        self.size = size
+
+
+class DftObj(object):
+
+    def __init__(self, func, args):
+        self.func = func
+        self.args = args
+        self.swigobj = None
+
+    def swigobj_attr(self, attr):
+        if self.swigobj is None:
+            self.swigobj = self.func(*self.args)
+        return getattr(self.swigobj, attr)
+
+    @property
+    def save_hdf5(self):
+        return self.swigobj_attr('save_hdf5')
+
+    @property
+    def load_hdf5(self):
+        return self.swigobj_attr('load_hdf5')
+
+    @property
+    def scale_dfts(self):
+        return self.swigobj_attr('scale_dfts')
+
+    @property
+    def remove(self):
+        return self.swigobj_attr('remove')
+
+    @property
+    def freq_min(self):
+        return self.swigobj_attr('freq_min')
+
+    @property
+    def dfreq(self):
+        return self.swigobj_attr('dfreq')
+
+    @property
+    def Nfreq(self):
+        return self.swigobj_attr('Nfreq')
+
+    @property
+    def where(self):
+        return self.swigobj_attr('where')
+
+
+class DftFlux(DftObj):
+
+    def __init__(self, func, args):
+        super(DftFlux, self).__init__(func, args)
+        self.nfreqs = args[2]
+        self.regions = args[3]
+        self.num_components = 4
+
+    @property
+    def flux(self):
+        return self.swigobj_attr('flux')
+
+    @property
+    def E(self):
+        return self.swigobj_attr('E')
+
+    @property
+    def H(self):
+        return self.swigobj_attr('H')
+
+    @property
+    def cE(self):
+        return self.swigobj_attr('cE')
+
+    @property
+    def cH(self):
+        return self.swigobj_attr('cH')
+
+    @property
+    def normal_direction(self):
+        return self.swigobj_attr('normal_direction')
+
+
+class DftForce(DftObj):
+
+    def __init__(self, func, args):
+        super(DftForce, self).__init__(func, args)
+        self.nfreqs = args[2]
+        self.regions = args[3]
+        self.num_components = 6
+
+    @property
+    def force(self):
+        return self.swigobj_attr('force')
+
+    @property
+    def offdiag1(self):
+        return self.swigobj_attr('offdiag1')
+
+    @property
+    def offdiag2(self):
+        return self.swigobj_attr('offdiag2')
+
+    @property
+    def diag(self):
+        return self.swigobj_attr('diag')
+
+
+class DftNear2Far(DftObj):
+
+    def __init__(self, func, args):
+        super(DftNear2Far, self).__init__(func, args)
+        self.nfreqs = args[2]
+        self.regions = args[3]
+        self.num_components = 4
+
+    @property
+    def farfield(self):
+        return self.swigobj_attr('farfield')
+
+    @property
+    def save_farfields(self):
+        return self.swigobj_attr('save_farfields')
+
+    @property
+    def F(self):
+        return self.swigobj_attr('F')
+
+    @property
+    def eps(self):
+        return self.swigobj_attr('eps')
+
+    @property
+    def mu(self):
+        return self.swigobj_attr('mu')
+
+
+class DftFields(DftObj):
+
+    def __init__(self, func, args):
+        super(DftFields, self).__init__(func, args)
+        self.nfreqs = args[6]
+        self.regions = [FieldsRegion(where=args[1], center=args[2], size=args[3])]
+        self.num_components = len(args[0])
+
+    @property
+    def chunks(self):
+        return self.swigobj_attr('chunks')
+
+
 Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 
@@ -325,7 +478,6 @@ class Simulation(object):
         self.epsilon_func = epsilon_func
         self.load_structure_file = load_structure
         self.dft_objects = []
-        self.dft_objects_to_add = []
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -443,6 +595,13 @@ class Simulation(object):
 
         return sym
 
+    def _get_dft_volumes(self):
+        volumes = [self._volume_from_kwargs(center=r.center, size=r.size)
+                   for dft in self.dft_objects
+                   for r in dft.regions]
+
+        return volumes
+
     def _init_structure(self, k=False):
         print('-' * 11)
         print('Initializing structure...')
@@ -465,12 +624,13 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        mp.compute_fragment_stats(self.geometry, gv, self.cell_size, mp.Vector3(), self.default_material,
-                                  self.subpixel_tol, self.subpixel_maxeval, self.ensure_periodicity)
+        total_dft_freqs = sum([x.nfreqs for x in self.dft_objects])
+        total_dft_components = sum([x.num_components for x in self.dft_objects])
+        dft_volumes = self._get_dft_volumes()
 
-        # if os.environ.get('MEEP_ANALYSIS_MODE', False):
-        #     print(recommendations)
-        #     sys.exit()
+        mp.compute_fragment_stats(self.geometry, gv, self.cell_size, mp.Vector3(), self.default_material,
+                                  total_dft_freqs, total_dft_components, dft_volumes, self.subpixel_tol,
+                                  self.subpixel_maxeval, self.ensure_periodicity)
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
@@ -769,25 +929,31 @@ class Simulation(object):
                     src.amplitude * 1.0
                 )
 
+    def _evaluate_dft_objects(self):
+        for dft in self.dft_objects:
+            if dft.swigobj is None:
+                dft.swigobj = dft.func(*dft.args)
+
     def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None):
+        dftf = DftFields(self._add_dft_fields, [components, where, center, size, freq_min, freq_max, nfreq])
+        self.dft_objects.append(dftf)
+        return dftf
+
+    def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, nfreq):
         if self.fields is None:
             self.init_fields()
-
         try:
             where = self._volume_from_kwargs(where, center, size)
         except ValueError:
             where = self.fields.total_volume()
 
-        dftf = self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
-        self.dft_objects.append(dftf)
-
-        return dftf
+        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
             self.init_fields()
 
-        self.fields.output_dft(dft_fields, fname)
+        self.fields.output_dft(dft_fields.swigobj, fname)
 
     def get_dft_data(self, dft_chunk):
         n = mp._get_dft_data_size(dft_chunk)
@@ -796,13 +962,17 @@ class Simulation(object):
         return arr
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
+        n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, near2fars])
+        self.dft_objects.append(n2f)
+        return n2f
+
+    def _add_near2far(self, fcen, df, nfreq, near2fars):
         if self.fields is None:
             self.init_fields()
-
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
     def get_farfield(self, f, v):
-        return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
+        return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
         vol = self._volume_from_kwargs(where, center, size)
@@ -833,9 +1003,13 @@ class Simulation(object):
         n2f.scale_dfts(complex(1.0))
 
     def add_force(self, fcen, df, nfreq, *forces):
+        force = DftForce(self._add_force, [fcen, df, nfreq, forces])
+        self.dft_objects.append(force)
+        return force
+
+    def _add_force(self, fcen, df, nfreq, forces):
         if self.fields is None:
             self.init_fields()
-
         return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
 
     def display_forces(self, *forces):
@@ -871,9 +1045,13 @@ class Simulation(object):
         force.scale_dfts(complex(-1.0))
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
+        flux = DftFlux(self._add_flux, [fcen, df, nfreq, fluxes])
+        self.dft_objects.append(flux)
+        return flux
+
+    def _add_flux(self, fcen, df, nfreq, fluxes):
         if self.fields is None:
             self.init_fields()
-
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
     add_eigenmode = add_flux
@@ -970,7 +1148,6 @@ class Simulation(object):
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
-        self.dft_objects.append(stuff)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -1050,16 +1227,17 @@ class Simulation(object):
         return arr
 
     def get_dft_array(self, dft_obj, component, num_freq):
-        if type(dft_obj) is mp.dft_fields:
-            return mp.get_dft_fields_array(self.fields, dft_obj, component, num_freq)
-        elif type(dft_obj) is mp.dft_flux:
-            return mp.get_dft_flux_array(self.fields, dft_obj, component, num_freq)
-        elif type(dft_obj) is mp.dft_force:
-            return mp.get_dft_force_array(self.fields, dft_obj, component, num_freq)
-        elif type(dft_obj) is mp.dft_near2far:
-            return mp.get_dft_near2far_array(self.fields, dft_obj, component, num_freq)
+        dft_swigobj = dft_obj.swigobj
+        if type(dft_swigobj) is mp.dft_fields:
+            return mp.get_dft_fields_array(self.fields, dft_swigobj, component, num_freq)
+        elif type(dft_swigobj) is mp.dft_flux:
+            return mp.get_dft_flux_array(self.fields, dft_swigobj, component, num_freq)
+        elif type(dft_swigobj) is mp.dft_force:
+            return mp.get_dft_force_array(self.fields, dft_swigobj, component, num_freq)
+        elif type(dft_swigobj) is mp.dft_near2far:
+            return mp.get_dft_near2far_array(self.fields, dft_swigobj, component, num_freq)
         else:
-            raise ValueError("Invalid type of dft object: {}".format(dft_obj))
+            raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY,
                                    eig_vol=None, eig_resolution=0, eig_tolerance=1e-7, kpoint_func=None):
@@ -1072,7 +1250,7 @@ class Simulation(object):
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
-        self.fields.get_eigenmode_coefficients(flux, eig_vol, np.array(bands, dtype=np.intc), eig_parity,
+        self.fields.get_eigenmode_coefficients(flux.swigobj, eig_vol, np.array(bands, dtype=np.intc), eig_parity,
                                                eig_resolution, eig_tolerance, coeffs, None, kpoint_func)
 
         return np.reshape(coeffs, (num_bands, flux.Nfreq, 2))
@@ -1134,7 +1312,6 @@ class Simulation(object):
         self.fields = None
         self.structure = None
         self.dft_objects = []
-        self.dft_objects_to_add = []
 
     def restart_fields(self):
         if self.fields is not None:
@@ -1150,6 +1327,7 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
+        self._evaluate_dft_objects()
         self._check_material_frequencies()
 
         if kwargs:

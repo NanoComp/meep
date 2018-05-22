@@ -34,6 +34,9 @@ class TestFragmentStats(unittest.TestCase):
             sim.cell_size,
             mp.Vector3(),
             sim.default_material,
+            0,
+            0,
+            [],
             sim.subpixel_tol,
             sim.subpixel_maxeval,
             sim.ensure_periodicity
