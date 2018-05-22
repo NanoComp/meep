@@ -41,7 +41,7 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void bend_flux(bool no_bend)
+void bend_flux(bool no_bend, bool use_prisms)
 {
   double sx=16.0;       // size of cell in X direction
   double sy=32.0;       // size of cell in Y direction
@@ -84,33 +84,57 @@ void bend_flux(bool no_bend)
    meep_geom::material_type dielectric = meep_geom::make_dielectric(12.0);
    if (no_bend)
     {
-      geometric_object objects[1];
-      objects[0] = make_block(dielectric,
-                              v3(0.0, wvg_ycen),
-                              e1, e2, e3,
-                              v3(ENORMOUS, w, ENORMOUS)
-                             );
-      geometric_object_list g={ 1, objects };
-      meep_geom::set_materials_from_geometry(&the_structure, g);
+      if (use_prisms)
+       { vector3 vertices[4];
+         vertices[0]=v3(-0.5*sx, wvg_ycen - 0.5*w, 0.0);
+         vertices[1]=v3(+0.5*sx, wvg_ycen - 0.5*w, 0.0);
+         vertices[2]=v3(+0.5*sx, wvg_ycen + 0.5*w, 0.0);
+         vertices[3]=v3(-0.5*sx, wvg_ycen + 0.5*w, 0.0);
+         double height=0.0;
+         vector3 axis=v3(0.0,0.0,1.0);
+         geometric_object objects[1];
+         objects[0] = make_prism( dielectric, vertices, 4, height, axis);
+         geometric_object_list g={ 1, objects };
+         meep_geom::set_materials_from_geometry(&the_structure, g);
+       }
+      else 
+       {
+         vector3 center = v3(0.0, wvg_ycen, 0.0);
+         vector3 size   = v3(sx,  w,        0.0);
+         geometric_object objects[1];
+         objects[0] = make_block( dielectric, center, e1, e2, e3, size );
+         geometric_object_list g={ 1, objects };
+         meep_geom::set_materials_from_geometry(&the_structure, g);
+       }
     }
    else
     {
-      geometric_object objects[2];
-      objects[0] = make_block(dielectric,
-                              v3(-0.5*pad, wvg_ycen),
-                              e1, e2, e3,
-                              v3(sx-pad, w, ENORMOUS)
-                             );
-
-      objects[1] = make_block(dielectric,
-                              v3(wvg_xcen, 0.5*pad),
-                              e1, e2, e3,
-                              v3(w, sy-pad, ENORMOUS)
-                             );
-
-      geometric_object_list g={ 2, objects };
-      meep_geom::set_materials_from_geometry(&the_structure, g);
-    };
+      if (use_prisms)
+       { vector3 vertices[6];
+         vertices[0]=v3(        -0.5*sx, wvg_ycen -0.5*w);
+         vertices[1]=v3(wvg_xcen+0.5*w,  wvg_ycen -0.5*w);
+         vertices[2]=v3(wvg_xcen+0.5*w,           +0.5*sy);
+         vertices[3]=v3(wvg_xcen-0.5*w,           +0.5*sy);
+         vertices[4]=v3(wvg_xcen-0.5*w,  wvg_ycen +0.5*w);
+         vertices[5]=v3(        -0.5*sx, wvg_ycen +0.5*w);
+         double height=0.0;
+         vector3 axis=v3(0.0,0.0,1.0);
+         geometric_object objects[1];
+         objects[0] = make_prism( dielectric, vertices, 6, height, axis);
+         geometric_object_list g={ 1, objects };
+         meep_geom::set_materials_from_geometry(&the_structure, g);
+       }
+      else 
+       { 
+         geometric_object objects[2];
+         vector3 hcenter = v3(-0.5*pad, wvg_ycen), hsize = v3(sx-pad, w);
+         vector3 vcenter = v3(wvg_xcen, 0.5*pad),  vsize = v3(w, sy-pad);
+         objects[0] = make_block(dielectric, hcenter, e1, e2, e3, hsize);
+         objects[1] = make_block(dielectric, vcenter, e1, e2, e3, vsize);
+         geometric_object_list g={ 2, objects };
+         meep_geom::set_materials_from_geometry(&the_structure, g);
+       }
+    }
 
   fields f(&the_structure);
 
@@ -215,8 +239,13 @@ int main(int argc, char *argv[])
 {
   initialize mpi(argc, argv);
 
-  bend_flux(true);
-  bend_flux(false);
+  bool use_prisms=false;
+  for(int narg=1; narg<argc; narg++)
+   if (!strcasecmp(argv[narg],"--use-prisms"))
+    use_prisms=true;
+
+  bend_flux(false, use_prisms);
+  bend_flux(true, use_prisms);
 
   // success if we made it here
   return 0;

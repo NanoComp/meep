@@ -302,7 +302,7 @@ class TestMedium(unittest.TestCase):
 
                 if should_warn:
                     self.assertEqual(len(w), 1)
-                    self.assertIn("out of material's range", str(w[-1].message))
+                    self.assertIn("material", str(w[-1].message))
                 else:
                     self.assertEqual(len(w), 0)
 
