@@ -16,24 +16,24 @@
 (set! geometry
       (if no-bend?
 	  (list
-	   (make block 
+	   (make block
 	     (center 0 wvg-ycen)
-	     (size infinity w infinity)
+	     (size sx w 0)
 	     (material (make dielectric (epsilon 12)))))
 	  (list
-	   (make block 
+	   (make block
 	     (center (* -0.5 pad) wvg-ycen)
-	     (size (- sx pad) w infinity)
+	     (size (- sx pad) w 0)
 	     (material (make dielectric (epsilon 12))))
-	   (make block 
+	   (make block
 	     (center wvg-xcen (* 0.5 pad))
-	     (size w (- sy pad) infinity)
+	     (size w (- sy pad) 0)
 	     (material (make dielectric (epsilon 12)))))))
 
 (define-param fcen 0.15) ; pulse center frequency
 (define-param df 0.1)  ; pulse width (in frequency)
 (set! sources (list
-	       (make source 
+	       (make source
 		 (src (make gaussian-src (frequency fcen) (fwidth df)))
 		 (component Ez)
 		 (center (+ 1 (* -0.5 sx)) wvg-ycen)
@@ -52,15 +52,15 @@
 		      (center wvg-xcen (- (/ sy 2) 1.5)) (size (* w 2) 0)))))
 (define refl ; reflected flux
       (add-flux fcen df nfreq
-		(make flux-region 
+		(make flux-region
 		  (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
 
 ; for normal run, load negated fields to subtract incident from refl. fields
 (if (not no-bend?) (load-minus-flux "refl-flux" refl))
 
-(run-sources+ 
+(run-sources+
  (stop-when-fields-decayed 50 Ez
-			   (if no-bend? 
+			   (if no-bend?
 			       (vector3 (- (/ sx 2) 1.5) wvg-ycen)
 			       (vector3 wvg-xcen (- (/ sy 2) 1.5)))
 			   1e-3)
