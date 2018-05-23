@@ -2,7 +2,7 @@
 # Python Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Python interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
+In this page, we'll go through a couple of simple examples using the Python interface that illustrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
 
 [TOC]
 
@@ -17,7 +17,7 @@ Executing Meep simulations is normally done at the Unix command line as follows:
  unix% python foo.py >& foo.out
 ```
 
-which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a web browser. If you use one of these approaches now, you can paste in the commands from the tutorial as you follow along and see what they do.
+which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a web browser. If you use one of these approaches, you can paste in the commands from the tutorial as you follow along and see what they do.
 
 Fields in a Waveguide
 ---------------------
@@ -32,14 +32,14 @@ The first thing to do always is to load the Meep library module:
 import meep as mp
 ```
 
-Now we can begin specifying each of the simulation objects starting with the computational cell. We're going to put a source at one end and watch the fields propagate down the waveguide in the *x* direction, so let's use a cell of length 16 &#956;m in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries do not affect the waveguide mode; let's give it a size of 8 &#956;m.
+We can begin specifying each of the simulation objects starting with the computational cell. We're going to put a source at one end and watch the fields propagate down the waveguide in the *x* direction, so let's use a cell of length 16 &#956;m in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries do not affect the waveguide mode; let's give it a size of 8 &#956;m.
 
 ```py
 cell = mp.Vector3(16, 8, 0)
 ```
 The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
 
-Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface/#geometricobject) stored in the `geometry` object. Here, we do:
+Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface/#geometricobject) stored in the `geometry` object.
 
 ```py
 geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
@@ -51,7 +51,7 @@ The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 
 
 <center>![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png)</center>
 
-Now that we have the structure, we need to specify the current sources using the `sources` object. The simplest thing is to add a single point source $J_z$:
+We have the structure and need to specify the current sources using the `sources` object. The simplest thing is to add a single point source $J_z$:
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
@@ -85,13 +85,13 @@ sim = mp.Simulation(cell_size=cell,
                     resolution=resolution)
 ```
 
-Now, we are ready to run the simulation. We time step the fields until a time of 200:
+We are ready to run the simulation. We time step the fields until a time of 200:
 
 ```py
 sim.run(until=200)
 ```
 
-It should finish in less than a second. We can now analyze and visualize the fields with Python's [NumPy](http://www.numpy.org/) and [matplotlib](https://matplotlib.org/) libraries:
+It should finish in less than a second. We can analyze and visualize the fields with Python's [NumPy](http://www.numpy.org/) and [matplotlib](https://matplotlib.org/) libraries:
 
 ```py
 import numpy as np
@@ -125,7 +125,7 @@ We see that the the source has excited the waveguide mode but has also excited r
 
 ### A 90° Bend
 
-Now, we'll start a new simulation where we look at the fields propagating through a waveguide bend, and we'll do a couple of other things differently as well. As usual, the first thing to do is to load the Meep library:
+We'll start a new simulation where we look at the fields propagating through a waveguide bend, and we'll do a couple of other things differently as well. As usual, the first thing to do is to load the Meep library:
 
 ```py
 import meep as mp
@@ -145,11 +145,11 @@ pml_layers = [mp.PML(1.0)]
 resolution = 10
 ```
 
-Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5).
+Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5).
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
-There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface/#eigenmodesource) can also be used which is covered in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function) over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface/#eigenmodesource) can also be used which is covered in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(wavelength=2*(11**0.5), width=20),
@@ -181,7 +181,7 @@ unix% h5ls ez.h5
 ez                       Dataset {161, 161, 330/Inf}
 ```
 
-That is, the file contains a single dataset `ez` that is a 162x162x330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
+That is, the file contains a single dataset `ez` that is a 162x162x330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. We have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
 ```sh
 unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
@@ -211,11 +211,9 @@ def get_slice(sim):
     size = mp.Vector3(16, 0)
     vals.append(sim.get_array(center=center, size=size, component=mp.Ez))
 
-sim.run(
-    mp.at_beginning(mp.output_epsilon),
-    mp.at_every(0.6, get_slice),
-    until=200
-)
+sim.run(mp.at_beginning(mp.output_epsilon),
+        mp.at_every(0.6, get_slice),
+        until=200)
 
 plt.figure(dpi=100)
 plt.imshow(vals, interpolation='spline36', cmap='RdBu')
@@ -227,17 +225,17 @@ plt.show()
 
 #### Output Tips and Tricks
 
-Above, we outputted the full 2d data slice at every 0.6 time units, resulting in a 69MB file. This is not too bad but you can imagine how big the output file would get if we were doing a 3d simulation, or even a larger 2d simulation &mdash; one can easily generate gigabytes of files, which is not only wasteful but is also slow. Instead, it is possible to output more efficiently if you know what you want to look at.
+Above, we outputted the full 2d data slice at every 0.6 time units, resulting in a 69MB file. This is not large but you can imagine how big the output file would get if we were doing a 3d simulation, or even a larger 2d simulation &mdash; one can easily generate gigabytes of files, which is not only wasteful but is also slow. Instead, it is possible to output more efficiently if you know what you want to look at.
 
-To create the movie above, all we really need are the *images* corresponding to each time. Images can be stored much more efficiently than raw arrays of numbers &mdash; to exploit this fact, Meep allows you to output PNG images instead of HDF5 files. In particular, instead of `output-efield-z` as above, we can use `mp.output_png(mp.Ez, "-Zc dkbluered")`, where Ez is the component to output and the `"-Zc` `dkbluered"` are options for `h5topng` of [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) which is the program that is actually used to create the image files. That is:
+To create the movie above, all we really need are the *images* corresponding to each time. Images can be stored much more efficiently than raw arrays of numbers &mdash; to exploit this fact, Meep allows you to output PNG images instead of HDF5 files. In particular, instead of `output_efield_z` as above, we can use `mp.output_png(mp.Ez, "-Zc dkbluered")`, where Ez is the component to output and the `"-Zc` `dkbluered"` are options for `h5topng` of [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) which is the program that is actually used to create the image files. That is:
 
 ```py
 sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)        
 ```
 
-will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible, here, because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
+will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
 
-The above command outputs zillions of `.png` files, and it is somewhat annoying to have them clutter up our working directory. Instead, we can add the following command before `run`:
+The above command outputs zillions of PNG files, and it is somewhat annoying to have them clutter up our working directory. Instead, we can add the following command before `run`:
 
 ```py
 sim.use_output_directory()
@@ -253,22 +251,26 @@ sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to
 
 The first argument to `in_volume` is a volume which applies to all of the nested output functions. Note that `to_appended`, `at_every`, and `in_volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
 
-Transmission Spectrum around a Waveguide Bend
+Transmittance Spectrum of a Waveguide Bend
 ---------------------------------------------
 
-Above, we computed the field patterns for light propagating around a waveguide bend. While this is pretty, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend, how much is reflected, and how much is radiated away. How can we do this?
+We have computed the field patterns for light propagating around a waveguide bend. While this can be visually informative, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend ([transmittance](https://en.wikipedia.org/wiki/Transmittance)), how much is reflected ([reflectance](https://en.wikipedia.org/wiki/Reflectance)), and how much is radiated away (scattered loss). How can we do this?
 
-The basic principles were described in the [Introduction](../Introduction.md#transmissionreflection-spectra). Basically, we'll tell Meep to keep track of the fields and their Fourier transforms in a certain region, and from this compute the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmission in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmission to get transmission as a fraction of incident power, we'll have to do *two* runs, one with and one without a bend. This Python script will be more complicated than before, so you'll definitely want it as a separate file rather than typing it interactively. See [bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py).
+The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
+
+This script will be more complicated than before, so it is more convenient to run as a file ([bend-flux.py](https://github.com/stevengj/meep/blob/master/python/examples/bend-flux.py)) rather than typing it interactively.
 
 ```py
 import meep as mp
-import argparse
 
-def main(args):
+resolution = 10 # pixels/um
 
 sx = 16  # size of cell in X direction
 sy = 32  # size of cell in Y direction
-cell = mp.Vector3(sx, sy, 0)
+cell = mp.Vector3(sx,sy,0)
+
+dpml = 1.0
+pml_layers = [mp.PML(dpml)]
 ```
 
 We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
@@ -278,44 +280,32 @@ pad = 4  # padding distance between waveguide and cell edge
 w = 1    # width of waveguide
 ```
 
-In order to define the waveguide positions, etcetera, we will now have to use arithmetic to define the vertical and horizontal waveguide centers as:
+In order to define the waveguide positions, we will have to use arithmetic to define the horizontal and vertical waveguide centers as:
 
 ```py
-wvg_xcen =  0.5 * (sx - w - (2 * pad))  # x center of horiz. wvg
-wvg_ycen = -0.5 * (sy - w - (2 * pad))  # y center of vert. wvg
+wvg_xcen =  0.5*(sx-w-2*pad)  # x center of horiz. wvg
+wvg_ycen = -0.5*(sy-w-2*pad)  # y center of vert. wvg
 ```
 
-Now, we have to define the geometry. This time, however, we really want *two* geometries: the bend, and also a straight waveguide for normalization. We could do this with two separate Python scripts, but that is annoying. Instead, we'll define a runtime parameter `-n` or `--no_bend` for the straight waveguide and no parameters for the bent waveguide.
+We proceed to define the geometry. We have to do two simulations with different geometries: the bend, and also a straight waveguide for normalization. We will first set up the straight waveguide.
 
 ```py
-if args.no_bend:
-        geometry = [mp.Block(mp.Vector3(1e20, w, 1e20), center=mp.Vector3(0, wvg_ycen),
-                             material=mp.Medium(epsilon=12))]
-else:
-        geometry = [mp.Block(mp.Vector3(sx - pad, w, 1e20), center=mp.Vector3(-0.5 * pad, wvg_ycen),
-                             material=mp.Medium(epsilon=12)),
-                    mp.Block(mp.Vector3(w, sy - pad, 1e20), center=mp.Vector3(wvg_xcen, 0.5 * pad),
-                             material=mp.Medium(epsilon=12))]
+geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
+                     center=mp.Vector3(0,wvg_ycen,0),
+                     material=mp.Medium(epsilon=12))]
 ```
 
-Thus, if `-n` is set we make a single block for a straight waveguide, and otherwise we make two blocks for a bent waveguide.
-
-The source is now a `GaussianSource` instead of a `ContinuousSrc`, parameterized by a center frequency and a frequency width (the width of the Gaussian spectrum).
+The source is a `GaussianSource` instead of a `ContinuousSrc`, parameterized by a center frequency and a frequency width (the width of the Gaussian spectrum).
 
 ```py
 fcen = 0.15  # pulse center frequency
 df = 0.1     # pulse width (in frequency)
 
 sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
-                     center=mp.Vector3(-0.5 * sx + 1, wvg_ycen), size=mp.Vector3(0, w))]
+                     center=mp.Vector3(-0.5*sx+1,wvg_ycen,0), size=mp.Vector3(0,w,0))]
 ```
 
-Notice how we're using our parameters like `wvg_ycen` and `w`: if we change the dimensions, everything will now shift automatically. The boundary conditions and resolution are set as before.
-
-```py
-pml_layers = [mp.PML(1.0)]
-resolution = 10
-```
+Notice how we're using our parameters like `wvg_ycen` and `w`: if we change the dimensions, everything will shift automatically.
 
 Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created.
 
@@ -328,99 +318,286 @@ sim = mp.Simulation(cell_size=cell,
 
 nfreq = 100  # number of frequencies at which to compute flux
 
-if args.no_bend:
-        trans_fr = mp.FluxRegion(center=mp.Vector3(0.5 * sx - 1.5, wvg_ycen), size=mp.Vector3(0, w * 2))
-else:
-        trans_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, 0.5 * sy - 1.5), size=mp.Vector3(w * 2, 0))
+# reflected flux
+refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))                            
+refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
-trans = sim.add_flux(fcen, df, nfreq, trans_fr)
+# transmitted flux
+tran_fr = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml,wvg_ycen,0), size=mp.Vector3(0,2*w,0))
+tran = sim.add_flux(fcen, df, nfreq, tran_fr)
+```
 
-refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen), size=mp.Vector3(0, w * 2))
-                            
+We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by length `dpml` from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the computational cell, depending on whether the waveguide is straight or bent.
+
+The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
+
+As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
+
+```py    
+pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,pt,1e-3))
+
+# for normalization run, save flux fields data for reflection plane
+straight_refl_data = sim.get_flux_data(refl)
+```
+
+We need to keep running after the source has turned off because we must give the pulse time to propagate completely across the cell. Moreover, the time required is a bit tricky to predict when you have complex structures, because there might be resonant phenomena that allow the source to bounce around for a long time. Therefore, it is convenient to specify the run time in a different way: instead of using a fixed time, we require that $|E_z|^2$ at the end of the waveguide must have decayed by a given amount (1/1000) from its peak value.
+
+The `stop_when_fields_decayed` routine takes four arguments: `dT`, `component`, `pt`, and `decay_by`. What it does is, after the sources have turned off, it keeps running for an additional `dT` time units every time the given |component|<sup>2</sup> at the given point has not decayed by at least `decay_by` from its peak value for all times within the previous `dT`. In this case, `dT=50`, the component is $E_z$, the point is at the center of the flux plane at the end of the waveguide, and `decay_by=0.001`. So, it keeps running for an additional 50 time units until the square amplitude has decayed by 1/1000 from its peak. This should be sufficient to ensure that the Fourier transforms have converged.
+
+Finally, we save the incident flux using `get_fluxes` which will be used later to compute the reflectance and the transmittance:
+
+```py
+# save incident power for transmission plane
+straight_tran_flux = mp.get_fluxes(tran)
+```
+
+We need to run the second simulation which involves the waveguide bend. We reset the structure and fields using `reset_meep()` and redefine the `geometry`, `Simulation`, and flux objects. At the end of the simulation, we save the reflected and transmitted fluxes.
+
+```py
+sim.reset_meep()
+    
+geometry = [mp.Block(mp.Vector3(sx-pad,w,mp.inf), center=mp.Vector3(-0.5*pad,wvg_ycen), material=mp.Medium(epsilon=12)),
+            mp.Block(mp.Vector3(w,sy-pad,mp.inf), center=mp.Vector3(wvg_xcen,0.5*pad), material=mp.Medium(epsilon=12))]
+
+sim = mp.Simulation(cell_size=cell,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    sources=sources,
+                    resolution=resolution)
+
 # reflected flux
 refl = sim.add_flux(fcen, df, nfreq, refl_fr)
-```
 
-We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by 1 from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the computational cell, depending on whether the waveguide is straight or bent.
-
-Here, the fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, to far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
-
-Now, as described in the [Introduction](../Introduction.md#transmissionreflection-spectra), computing reflection spectra is a bit tricky because we need to separate the incident and reflected fields. We do this by saving the Fourier-transformed fields from the normalization run via the runtime parameter `-n` or `--no_bend`, and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields; logically, we might subtract these *after* the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save_flux` (after the normalization run) and `load_minus_flux` (before the other runs). We can call them as follows:
-
-```py
+tran_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5,0), size=mp.Vector3(2*w,0,0))
+tran = sim.add_flux(fcen, df, nfreq, tran_fr)
+    
 # for normal run, load negated fields to subtract incident from refl. fields
-if not args.no_bend:
-        sim.load_minus_flux('refl-flux', refl)
+sim.load_minus_flux_data(refl, straight_refl_data)
 
-if args.no_bend:
-        pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)
-else:
-        pt = mp.Vector3(wvg_xcen, (sy / 2) - 1.5)
+pt = mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5)
 
-sim.run(mp.at_beginning(mp.output_epsilon),
-        until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, pt, 1e-3))
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, pt, 1e-3))
 
-if args.no_bend:
-        sim.save_flux('refl-flux', refl)
+bend_refl_flux = mp.get_fluxes(refl)
+bend_tran_flux = mp.get_fluxes(tran)
+
+flux_freqs = mp.get_flux_freqs(refl)
 ```
 
-This uses a file called `refl-flux.h5`, or actually `bend-flux-refl-flux.h5` (the Python script name is used as a prefix) to store/load the Fourier-transformed fields in the flux planes. We need to keep running after the source has turned off because we must give the pulse time to propagate completely across the cell. Moreover, the time required is a bit tricky to predict when you have complex structures, because there might be resonant phenomena that allow the source to bounce around for a long time. Therefore, it is convenient to specify the run time in a different way: instead of using a fixed time, we require that the $|E_z|^2$ at the end of the waveguide must have decayed by a given amount (e.g. 1/1000) from its peak value.
-
-
-The `stop_when_fields_decayed` routine takes four arguments: `dT`, `component`, `pt`, and `decay-by`. What it does is, after the sources have turned off, it keeps running for an additional `dT` time units every time the given |component|<sup>2</sup> at the given point has not decayed by at least `decay-by` from its peak value for all times within the previous `dT`. In this case, `dT=50`, the component is $E_z$, the point is at the center of the flux plane at the end of the waveguide, and `decay-by=0.001`. So, it keeps running for an additional 50 time units until the square amplitude has decayed by 1/1000 from its peak: this should be sufficient to ensure that the Fourier transforms have converged.
-
-Finally, we have to output the flux values:
-
+With the flux data, we are ready to compute and plot the reflectance and transmittance. The reflectance is the reflected flux divided by the incident flux. We also have to multiply by -1 because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. The transmittance is the transmitted flux divided by the incident flux. Finally, the scattered loss is simply $1-transmittance-reflectance$. The results are plotted in the accompanying figure.
+ 
 ```py
-sim.display_fluxes(trans, refl)
+import numpy as np
+import matplotlib.pyplot as plt
+
+wl = []
+Rs = []
+Ts = []
+
+for i in range(0,nfreq):
+    wl = np.append(wl, 1/flux_freqs[i])
+    Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
+    Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])    
+
+plt.plot(wl,Rs,'bo-',label='reflectance')
+plt.plot(wl,Ts,'ro-',label='transmittance')
+plt.plot(wl,1-Rs-Ts,'go-',label='loss')
+plt.axis([5.0, 10.0, 0, 1])
+plt.xlabel("wavelength (um)")
+plt.legend(loc="upper right")
+plt.show()
 ```
-
-This prints a series of outputs like:
-
-```
-flux1:, 0.1, 7.91772317108475e-7, -3.16449591437196e-7
-flux1:, 0.101010101010101, 1.18410865137737e-6, -4.85527604203706e-7
-flux1:, 0.102020202020202, 1.77218779386503e-6, -7.37944901819701e-7
-flux1:, 0.103030303030303, 2.63090852112034e-6, -1.11118350510327e-6
-flux1:, ...
-```
-
-
-This is comma-delimited data, which can easily be imported a plotting program (e.g. Octave/Matlab): the first column is the frequency, the second is the transmitted power, and the third is the reflected power.
-
-Now, we need to run the simulation *twice*, once with `-n` and once without:
-
-```sh
-unix% python bend-flux.py -n | tee bend0.out
-unix% python bend-flux.py |tee bend.out
-```
-
-The `tee` command is a useful Unix command that saves the output to a file *and* displays it on the screen, so that we can see what is going on as it runs. Then, we should pull out the `flux1` lines into a separate file to import them into our plotting program:
-
-```sh
-unix% grep flux1: bend0.out > bend0.dat
-unix% grep flux1: bend.out > bend.dat
-```
-
-Now, we import them to Octave (using its `dlmread` command), and plot the results:
 
 <center>![](../images/Tut-bend-flux.png)</center>
 
-What are we plotting here? The transmission is the transmitted flux (second column of `bend.dat`) *divided by* the incident flux (second column of `bend0.dat`), to give us the *fraction* of power transmitted. The reflection is the reflected flux (third column of `bend.dat`) *divided by* the incident flux (second column of `bend0.dat`); we also have to multiply by $-1$ because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. Finally, the loss is simply 1 - transmission - reflection.
-
-We should also check whether our data is converged, by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll just try doubling the cell size:
+We should also check whether our data is converged. We can do this by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll try doubling the cell size:
 
 ```py
 sx=32
 sy=64
 ```
 
-Again, we must run *both* simulations in order to get the normalization right. The results are included in the plot above as dotted lines—you can see that the numbers have changed slightly for transmission and loss, probably stemming from interference between light radiated directly from the source and light propagating around the waveguide. To be really confident, we should probably run the simulation again with an even bigger cell, but we'll call it enough for this tutorial.
+Again, we must run both simulations in order to get the normalization right. The results are included in the plot above as dotted lines &mdash; you can see that the numbers have changed slightly for transmittance and loss, probably stemming from interference between light radiated directly from the source and light propagating around the waveguide.
+
+Angular Reflectance Spectrum of a Planar Interface
+--------------------------------------------------
+
+We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. Each angle of the incident planewave source requires a separate set of simulations.
+
+A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). In Meep, a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted. We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Python_User_Interface/#continuoussource) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields left in the cell (due to absorption by the PMLs) via the [run function](../Python_User_Interface/#run-functions) `stop_when_fields_decayed`, similar again to the previous example.
+
+Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k_point`, and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Thus any broadband source is incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+
+In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. A current source with $E_x$ polarization lies in the plane of incidence and corresponds to the convention of $P$-polarization.
+
+The simulation script is below and in [refl-angular.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-angular.py)
+
+```py
+import meep as mp
+import argparse
+import math
+
+def main(args):
+
+    resolution = args.res
+
+    dpml = 1.0
+    sz = 10
+    sz = 10 + 2*dpml
+    cell_size = mp.Vector3(0,0,sz)
+    pml_layers = [ mp.PML(dpml) ]
+
+    wvl_min = 0.4
+    wvl_max = 0.8
+    fmin = 1/wvl_max
+    fmax = 1/wvl_min
+    fcen = 0.5*(fmin+fmax)
+    df = fmax-fmin
+    nfreq = 50
+    
+    # rotation angle of source: CCW relative to y axis
+    theta_r = math.radians(args.theta)
+
+    # plane of incidence is xz
+    k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fcen)
+    
+    if theta_r == 0:
+        dimensions = 1
+    else:
+        dimensions = 3
+    
+    sources = [ mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ex, center=mp.Vector3(0,0,-0.5*sz+dpml)) ]
+
+    sim = mp.Simulation(cell_size=cell_size,
+                        boundary_layers=pml_layers,
+                        sources=sources,
+                        k_point=k,
+                        dimensions=dimensions,
+                        resolution=resolution)
+
+    refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
+    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+    
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
+
+    empty_flux = mp.get_fluxes(refl)
+    empty_data = sim.get_flux_data(refl)
+    sim.reset_meep()
+
+    geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=mp.Medium(index=3.5)) ]
+
+    sim = mp.Simulation(cell_size=cell_size,
+                        geometry=geometry,
+                        boundary_layers=pml_layers,
+                        sources=sources,
+                        k_point=k,
+                        dimensions=dimensions,
+                        resolution=resolution)
+
+    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+    sim.load_minus_flux_data(refl, empty_data)
+
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
+
+    refl_flux = mp.get_fluxes(refl)
+    freqs = mp.get_flux_freqs(refl)
+    
+    for i in range(0,nfreq):
+        print("refl:, {}, {}, {}, {}".format(k.x,freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
+    
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-res', type=int, default=200, help='resolution (default: 200 pixels/um)')
+    parser.add_argument('-theta', type=float, default=0, help='angle of incident planewave (default: 0 degrees)')
+    args = parser.parse_args()
+    main(args)
+```
+
+The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ (the $k_z$ component is irrelevant since it is in the direction of the PML) and the corresponding angle for the ($k_x$, ω) pair: for those frequencies not equal to the center frequency of the source, this is *not* the same as the angle of the incident planewave, but rather $sin^{-1}(k_x/\omega)$. There are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planwave.
+
+The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 40$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+
+```sh
+#!/bin/bash
+
+for i in `seq 0 5 40`; do
+    python refl-angular.py -theta $i |tee -a flux_t${i}.out;
+    grep refl: flux_t${i}.out |cut -d , -f2- > flux_t${i}.dat
+done
+```
+
+Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Python script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum with the Bloch-periodic wavevector used in the simulation: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations based on the θ values from the previous inset. There is agreement between the simulated and analytic results.
+
+```py
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+theta_in = np.arange(0,45,5)
+kxs = np.empty((50, theta_in.size))
+thetas = np.empty((50, theta_in.size))
+Rmeep = np.empty((50, theta_in.size))
+
+for j in range(0,theta_in.size):
+  f = np.genfromtxt("flux_t{}.dat".format(theta_in[j]), delimiter=",")
+  kxs[:,j] = f[:,0]
+  thetas[:,j] = f[:,2]
+  Rmeep[:,j] = f[:,3]
+  
+import numpy.matlib  
+wvl = 1./f[:,1]
+wvls = np.matlib.repmat(np.reshape(wvl, (wvl.size,1)),1,theta_in.size)
+
+plt.figure(dpi=100)
+plt.pcolormesh(kxs,wvls,Rmeep,cmap='hot',shading='gouraud')
+plt.axis([kxs[0,0], kxs[0,-1], wvl[-1], wvl[0]])
+plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
+plt.xlabel("Bloch-periodic wavevector ($k_x/2π$)")
+plt.ylabel("wavelength (μm)")
+plt.title("reflectance (meep)")
+plt.colorbar()
+plt.show()
+
+plt.figure(dpi=100)
+plt.pcolormesh(thetas,wvls,Rmeep,cmap='hot',shading='gouraud')
+plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
+plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
+plt.xlabel("angle of incident planewave (degrees)")
+plt.ylabel("wavelength (μm)")
+plt.title("reflectance (meep)")
+plt.colorbar()
+plt.show()
+
+n1=1
+n2=3.5
+theta_out = lambda theta_in: math.asin(n1*math.sin(theta_in)/n2)
+# P polarization
+Rfresnel = lambda theta_in: math.fabs((n1*math.cos(theta_out(theta_in))-n2*math.cos(theta_in))/(n1*math.cos(theta_out(theta_in))+n2*math.cos(theta_in)))**2
+
+Ranalytic = np.empty((50, theta_in.size))
+for m in range(0,wvl.size):
+    for n in range(0,theta_in.size):
+        Ranalytic[m,n] = Rfresnel(math.radians(thetas[m,n]))
+
+plt.figure(dpi=100)        
+plt.pcolormesh(thetas,wvls,Ranalytic,cmap='hot',shading='gouraud')
+plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
+plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
+plt.xlabel("angle of incident planewave (degrees)")
+plt.ylabel("wavelength (μm)")
+plt.title("reflectance (analytic)")
+plt.colorbar()
+plt.show()
+```
+
+<center>![](../images/reflectance_angle_spectrum.png)</center>
 
 Modes of a Ring Resonator
 -------------------------
 
-As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -442,7 +619,7 @@ c2 = mp.Cylinder(radius=r)
 
 Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
 
-Now, we don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
+We don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 
 ```py
 fcen = 0.15  # pulse center frequency
@@ -481,9 +658,9 @@ $$Q = \frac{\mathrm{Re}\,ω}{-2 \mathrm{Im}\,ω}.$$
 
 $Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
 
-An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. Here, for example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much &mdash; in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
+An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much &mdash; in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
 
-In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. (As was shown by Marcatilli in 1969, the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius.) Now, suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
+In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by [Marcatilli in 1969](https://ieeexplore.ieee.org/document/6769758/), the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `at_end(mp.output-efield_z)` argument to our `run_after_sources` routine, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
@@ -491,7 +668,7 @@ In particular, to output the field at the end we might add an `at_end(mp.output-
 sim.run(mp.at_every((1 / fcen / 20), mp.output_efield_z), until=(1 / fcen))
 ```
 
-Now, we can get our modes just by changing two parameters and re-running:
+We can get our modes just by changing two parameters and re-running:
 
 ```py
 fcen=0.118

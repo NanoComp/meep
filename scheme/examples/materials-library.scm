@@ -785,3 +785,140 @@
      (frequency Ti-visible-frq0) (gamma Ti-visible-gam0) (sigma Ti-visible-sig0))
    (make lorentzian-susceptibility
      (frequency Ti-visible-frq1) (gamma Ti-visible-gam1) (sigma Ti-visible-sig1)))))
+
+;------------------------------------------------------------------
+
+; aluminum (Al) from Horiba Technical Note 09: Drude Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
+; wavelength range: 0.19 - 0.83 um
+
+(define Al-drude-frq (/ (* 0.0789607648707171 um-scale)))
+(define Al-drude-gam (/ (* 1.78138208333333 um-scale)))
+(define Al-drude-sig 1)
+
+(define Al-drude (make medium (epsilon 1.0)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Al-drude-frq) (gamma Al-drude-gam) (sigma Al-drude-sig)))))
+
+;------------------------------------------------------------------
+
+; cobalt (Co) from Horiba Technical Note 09: Drude Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
+; wavelength range: 0.26 - 1.65 um
+
+(define Co-frq (/ (* 0.0789607648707171 um-scale)))
+(define Co-gam (/ (* 0.213802712536644 um-scale)))
+(define Co-sig 1)
+
+(define Co (make medium (epsilon 3.694)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Co-frq) (gamma Co-gam) (sigma Co-sig)))))
+
+;------------------------------------------------------------------
+
+;; WARNING: unstable; field divergence may occur
+
+; molybdenum (Mo) from Horiba Technical Note 09: Drude Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
+; wavelength range: 0.25 - 0.83 um
+
+(define Mo-frq (/ (* 0.0620790071099539 um-scale)))
+(define Mo-gam (/ (* 0.148359690080172 um-scale)))
+(define Mo-sig 1)
+
+(define Mo (make medium (epsilon -1.366)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Mo-frq) (gamma Mo-gam) (sigma Mo-sig)))))
+
+;------------------------------------------------------------------
+
+; nickel chrome (NiCr) from Horiba Technical Note 09: Drude Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
+; wavelength range: 0.25 - 0.83 um
+
+(define NiCr-frq (/ (* 0.0868845080588648 um-scale)))
+(define NiCr-gam (/ (* 0.308418390547264 um-scale)))
+(define NiCr-sig 1)
+
+(define NiCr (make medium (epsilon 1.0)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency NiCr-frq) (gamma NiCr-gam) (sigma NiCr-sig)))))
+
+;------------------------------------------------------------------
+
+; nickel iron (NiFe) from Horiba Technical Note 09: Drude Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
+; wavelength range: 0.25 - 0.83 um
+
+(define NiFe-frq (/ (* 0.0838297450980392 um-scale)))
+(define NiFe-gam (/ (* 0.259381156903766 um-scale)))
+(define NiFe-sig 1)
+
+(define NiFe (make medium (epsilon 1.0)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency NiFe-frq) (gamma NiFe-gam) (sigma NiFe-sig)))))
+
+;------------------------------------------------------------------
+
+; titanium (Ti) from Horiba Technical Note 09: Drude Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
+; wavelength range: 0.21 - 1.24 um
+
+(define Ti-drude-frq (/ (* 0.113746966055046 um-scale)))
+(define Ti-drude-gam (/ (* 0.490056098814229 um-scale)))
+(define Ti-drude-sig 1)
+
+(define Ti-drude (make medium (epsilon 1.0)
+  (E-susceptibilities
+   (make drude-susceptibility
+     (frequency Ti-drude-frq) (gamma Ti-drude-gam) (sigma Ti-drude-sig)))))
+
+;------------------------------------------------------------------
+
+; silicon nitride (SiN), non-stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+; wavelength range: 0.21 - 2.07 um
+
+(define SiN-frq1 (/ (* 0.190891752117013 um-scale)))
+(define SiN-gam1 (/ (* 3.11518072864322 um-scale)))
+(define SiN-sig1 1.2650)
+
+(define SiN (make medium (epsilon 2.320)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency SiN-frq1) (gamma SiN-gam1) (sigma SiN-sig1)))))
+
+;------------------------------------------------------------------
+
+; silicon nitride (Si3N4), stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+; wavelength range: 0.23 - 0.83 um
+
+(define Si3N4-frq1 (/ (* 0.389153148148148 um-scale)))
+(define Si3N4-gam1 (/ (* 0.693811936205932 um-scale)))
+(define Si3N4-sig1 4.377)
+
+(define Si3N4 (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Si3N4-frq1) (gamma Si3N4-gam1) (sigma Si3N4-sig1)))))
+
+;------------------------------------------------------------------
+
+; silicon dioxide (SiO2) from Horiba Technical Note 08: Lorentz Dispersion Model
+; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
+; wavelength range: 0.25 - 1.77 um
+
+(define SiO2-frq1 (/ (* 0.103320160833333 um-scale)))
+(define SiO2-gam1 (/ (* 12.3984193000000 um-scale)))
+(define SiO2-sig1 1.12)
+
+(define SiO2 (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency SiO2-frq1) (gamma SiO2-gam1) (sigma SiO2-sig1)))))

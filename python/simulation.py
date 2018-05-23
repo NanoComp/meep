@@ -368,15 +368,19 @@ class Simulation(object):
             dft_freqs.append(dftf.freq_min)
             dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
 
-        warn_fmt = "{} frequency {} is out of material's range of {}-{}"
+        warn_src = ('Note: your sources include frequencies outside the range of validity of the ' +
+                    'material models. This is fine as long as you eventually only look at outputs ' +
+                    '(fluxes, resonant modes, etc.) at valid frequencies.')
+
+        warn_dft_fmt = "DFT frequency {} is out of material's range of {}-{}"
 
         for sf in source_freqs:
-            if sf[0] + sf[1] > max_freq or sf[0] - sf[1] < min_freq:
-                warnings.warn(warn_fmt.format('source', sf, min_freq, max_freq), RuntimeWarning)
+            if sf[0] + 0.5 * sf[1] > max_freq or sf[0] - 0.5 * sf[1] < min_freq:
+                warnings.warn(warn_src, RuntimeWarning)
 
         for dftf in dft_freqs:
             if dftf > max_freq or dftf < min_freq:
-                warnings.warn(warn_fmt.format('DFT', dftf, min_freq, max_freq), RuntimeWarning)
+                warnings.warn(warn_dft_fmt.format(dftf, min_freq, max_freq), RuntimeWarning)
 
     def _init_structure(self, k=False):
         print('-' * 11)
@@ -1024,13 +1028,16 @@ class Simulation(object):
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_obj))
 
-    def get_eigenmode_coefficients(self, flux, bands, kpoint_func=None):
+    def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY,
+                                   eig_vol=None, eig_resolution=0, eig_tolerance=1e-7, kpoint_func=None):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
+        if eig_vol is None:
+            eig_vol = flux.where
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands, dtype=np.complex128)
-        self.fields.get_eigenmode_coefficients(flux, np.array(bands, dtype=np.intc), coeffs, None, kpoint_func)
+        self.fields.get_eigenmode_coefficients(flux, eig_vol, np.array(bands, dtype=np.intc), eig_parity, eig_resolution, eig_tolerance, coeffs, None, kpoint_func)
 
         return coeffs
 
@@ -1540,11 +1547,10 @@ def display_progress(t0, t, dt):
         if t1 - closure['tlast'] >= dt:
             msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
             val1 = sim.meep_time() - t0
-            val2 = t
-            val3 = (sim.meep_time() - t0) / (0.01 * t)
-            val4 = t1 - t_0
-            val5 = ((t1 - t_0) * (t / (sim.meep_time() - t0)) - (t1 - t_0))
-            print(msg_fmt.format(val1, val2, val3, val4, val5))
+            val2 = val1 / (0.01 * t)
+            val3 = t1 - t_0
+            val4 = (val3 * (t / val1) - val3) if val1 != 0 else 0
+            print(msg_fmt.format(val1, t, val2, val3, val4))
             closure['tlast'] = t1
     return _disp
 
