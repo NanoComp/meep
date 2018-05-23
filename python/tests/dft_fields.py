@@ -41,12 +41,22 @@ class TestDFTFields(unittest.TestCase):
         dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1)
         dft_flux = sim.fields.add_dft_flux(mp.X, sim.fields.v, self.fcen, self.fcen, 1)
 
+        thin_volume = mp.volume( mp.vec(-0.5*self.sxy, 0.25*self.sxy),
+                                 mp.vec(+0.5*self.sxy, 0.25*self.sxy));
+        thin_flux = sim.fields.add_dft_flux(mp.X, thin_volume, self.fcen, self.fcen, 1)
+
         sim.run(until_after_sources=100)
-        sim.output_dft(dft_fields, 'dft-fields')
-        sim.output_dft(dft_flux, 'dft-flux')
 
         fields_arr = sim.get_dft_array(dft_fields, mp.Ez, 0)
         flux_arr = sim.get_dft_array(dft_flux, mp.Ez, 0)
+        thin_arr = sim.get_dft_array(thin_flux, mp.Ez, 0)
+
+        print "thin_arr shape is "
+        print thin_arr.shape 
+
+        sim.output_dft(thin_flux, 'thin-flux')
+        sim.output_dft(dft_fields, 'dft-fields')
+        sim.output_dft(dft_flux, 'dft-flux')
 
         with h5py.File('dft-fields.h5', 'r') as fields, h5py.File('dft-flux.h5', 'r') as flux:
             exp_fields = fields['ez_0.r'].value + 1j * fields['ez_0.i'].value

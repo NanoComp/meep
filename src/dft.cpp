@@ -612,6 +612,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
    // aco="array chunk offset"
    ptrdiff_t aco=start[0]*array_count[1]*array_count[2] + start[1]*array_count[2] + start[2];
 
+
    /*****************************************************************/
    /*****************************************************************/
    /*****************************************************************/
@@ -743,9 +744,18 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       LOOP_OVER_DIRECTIONS(chunk->fc->gv.dim, d)
        this_bufsz *= (chunk->ie.in_direction(d) - chunk->is.in_direction(d)) / 2 + 1;
       bufsz = max(bufsz, this_bufsz);
-    };
+    }
   max_corner = max_to_all(max_corner);
   min_corner = -max_to_all(-min_corner); // i.e., min_to_all
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("process %i: max {%i,%i,%i} min {%i,%i,%i}\n",my_rank(),
+max_corner.in_direction(X),
+max_corner.in_direction(Y),
+max_corner.in_direction(Z),
+min_corner.in_direction(X),
+min_corner.in_direction(Y),
+min_corner.in_direction(Z));
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   /***************************************************************/
   /***************************************************************/
@@ -757,6 +767,10 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in process_dft_component");
     size_t n = std::max(0, (max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("d=%s {%i,%i} n=%lu \n",direction_name(d),max_corner.in_direction(d),
+min_corner.in_direction(d),n);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
     if (n > 1) {
       ds[rank] = d;
@@ -768,6 +782,9 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
    { *array_rank=rank;
      for(int d=0; d<rank; d++) array_dims[d]=dims[d];
    }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("process %i: rank %i {%lu,%lu,%lu} size=%lu\n",my_rank(),rank,dims[0],dims[1],dims[2],array_size);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   if (rank==0) return 0.0; // no chunks with the specified component on this processor
 
   /***************************************************************/
@@ -865,6 +882,9 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
     reduced_dims[reduced_rank++]=dims[nd++];
    else
     reduced_stride[nd++]=0;    // this marks a degenerate dimension
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("reduced_rank=%i, full_rank=%i\n",reduced_rank,full_rank);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   if (reduced_rank==full_rank) return array; // nothing to collapse
 
   /*--------------------------------------------------------------*/
@@ -898,6 +918,9 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
    { int  index = n[0]*stride[0]         + n[1]*stride[1]         + n[2]*stride[2];
      int rindex = n[0]*reduced_stride[0] + n[1]*reduced_stride[1] + n[2]*reduced_stride[2];
      reduced_array[rindex] += array[index];
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("%i %i %i\n",n[0],n[1],n[2]);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
    } while ( !increment(n,dims,full_rank) );
 
   *rank = reduced_rank;
@@ -957,18 +980,27 @@ cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *
 void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
                                    volume dft_volume, const char *HDF5FileName)
 {
+  int num_freqs=0;
+  for(int nc=0; nc<num_chunklists && num_freqs==0; nc++)
+   if (chunklists[nc])
+    num_freqs = chunklists[nc]->Nomega;
+
   bool have_empty_dimensions=false;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
    if (dft_volume.in_direction(d)==0.0)
     have_empty_dimensions=true;
 
-  int NumFreqs=0;
-  for(int nc=0; nc<num_chunklists && NumFreqs==0; nc++)
-   if (chunklists[nc])
-    NumFreqs = chunklists[nc]->Nomega;
+  h5file *f = 0;
+  double *real_array = 0;
+  if (have_empty_dimensions && am_master())
+   f=new h5file(HDF5FileName, h5file::WRITE, false /*parallel*/);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+if (have_empty_dimensions)
+ printf(" rank %i: f=%p\n",my_rank(),f);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   bool first_component=true;
-  for(int num_freq=0; num_freq<NumFreqs; num_freq++)
+  for(int num_freq=0; num_freq<num_freqs; num_freq++)
    FOR_E_AND_H(c)
     if (!have_empty_dimensions)
      { 
@@ -984,28 +1016,48 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
        cdouble *array;
        int rank, dims[3];
        process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims);
-       array=collapse_empty_dimensions(array, &rank, dims, dft_volume);
-       size_t array_size=dims[0] * (rank>1 ? dims[1] : 1);
-       double *real_array = new double[array_size];
-       if (!real_array) abort("%s:%i:out of memory(%lu)",__FILE__,__LINE__,array_size);
+       if (rank==0)
+        { if (f) delete f;
+          master_printf("warning: empty array in output_dft_components (skipping)");
+          return;
+        }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf(" process %i: %i {%i,%i,%i} %p \n",my_rank(),rank,dims[0],dims[1],dims[2],array);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
        if (am_master())
         { 
-          h5file::access_mode mode = (first_component ? h5file::WRITE : h5file::READWRITE);
-          bool parallel=false, single_precision=true;
-          h5file f(HDF5FileName, mode, parallel);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf(" before: %i {%i,%i,%i} %p \n",rank,dims[0],dims[1],dims[2],array);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+          array=collapse_empty_dimensions(array, &rank, dims, dft_volume);
+          size_t array_size=dims[0] * (rank>1 ? dims[1] : 1);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf(" after : %i {%i,%i,%i} %p \n",rank,dims[0],dims[1],dims[2],array);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+          if (real_array==0) 
+           { real_array = new double[array_size];
+	     if (real_array==0) abort("%s:%i:out of memory(%lu)",__FILE__,__LINE__,array_size);
+           }
           for(int reim=0; reim<2; reim++)
-           { for(size_t n=0; n<array_size; n++) 
-              real_array[n] = (reim==0 ? real(array[n]) : imag(array[n]));
+           { for(size_t n=0; n<array_size; n++) real_array[n] = (reim==0 ? real(array[n]) : imag(array[n]));
              char dataname[100];
              snprintf(dataname,100,"%s_%i.%c",component_name(c),num_freq, reim ? 'i' : 'r');
              size_t stdims[3]; for(int r=0; r<rank; r++) stdims[r]=(size_t)dims[r];
-             f.write(dataname,rank,stdims,real_array,single_precision); 
-             first_component=false;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf(" write : %i {%lu,%lu,%lu} %p %p \n",rank,stdims[0],stdims[1],stdims[2],real_array,f);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+             f->write(dataname,rank,stdims,real_array, false /*single_precision*/ );
            }
         }
-       delete[] real_array;
        delete[] array;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf(" delete\n");
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
      }
+all_wait();
+
+  if (real_array) delete[] real_array;
+  if (f) delete f;
 }
 
 void fields::output_dft(dft_flux flux, const char *HDF5FileName)

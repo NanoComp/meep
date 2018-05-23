@@ -15,7 +15,7 @@ pml_layers = [mp.PML(dpml)]
 pad = 4  # padding distance between waveguide and cell edge
 w = 1    # width of waveguide
 
-wvg_xcen =  0.5*(sx-w-2*pad)  # x center of vert. wvg    
+wvg_xcen =  0.5*(sx-w-2*pad)  # x center of vert. wvg
 wvg_ycen = -0.5*(sy-w-2*pad)  # y center of horiz. wvg
 
 geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),

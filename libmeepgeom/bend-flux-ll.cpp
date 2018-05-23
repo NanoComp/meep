@@ -47,16 +47,17 @@ void bend_flux(bool no_bend, bool use_prisms)
   double sy=32.0;       // size of cell in Y direction
   double pad=4.0;       // padding distance between waveguide and cell edge
   double w=1.0;         // width of waveguide
-  double resolution=10; // (set-param! resolution 10)
+  double dpml=1.0;      // PML thickness
+  double resolution=5; 
 
   // (set! geometry-lattice (make lattice (size sx sy no-size)))
   // (set! pml-layers (list (make pml (thickness 1.0))))
-  geometry_lattice.size.x=16.0;
-  geometry_lattice.size.y=32.0;
+  geometry_lattice.size.x=sx;
+  geometry_lattice.size.y=sy;
   geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
-  structure the_structure(gv, dummy_eps, pml(1.0));
+  structure the_structure(gv, dummy_eps, pml(dpml));
 
   double wvg_ycen = -0.5*(sy - w - 2.0*pad); //y center of horiz. wvg
   double wvg_xcen =  0.5*(sx - w - 2.0*pad); //x center of vert. wvg
@@ -148,7 +149,7 @@ void bend_flux(bool no_bend, bool use_prisms)
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
   gaussian_src_time src(fcen, df);
-  volume v( vec(1.0-0.5*sx, wvg_ycen), vec(0.0,w) );
+  volume v( vec(-0.5*sx + dpml, wvg_ycen-0.5*w), vec(-0.5*sx + dpml,wvg_ycen+0.5*w) );
   f.add_volume_source(Ez, src, v);
 
   //(define trans ; transmitted flux
@@ -163,19 +164,21 @@ void bend_flux(bool no_bend, bool use_prisms)
   int nfreq      = 100; //  number of frequencies at which to compute flux
 
   volume *trans_volume=
-   no_bend ? new volume(vec(0.5*sx-1.5, wvg_ycen), vec(0.0, 2.0*w))
-           : new volume(vec(wvg_xcen, 0.5*sy-1.5), vec(2.0*w, 0.0));
-  volume_list trans_vl = volume_list(*trans_volume, Sz);
-  dft_flux trans=f.add_dft_flux(&trans_vl, f_start, f_end, nfreq);
+   no_bend ? new volume(vec(0.5*sx-1.5, wvg_ycen-w), vec(0.5*sx-1.5, wvg_ycen+w))
+           : new volume(vec(wvg_xcen-w, 0.5*sy-1.5), vec(wvg_xcen+w, 0.5*sy-1.5));
+  direction trans_dir = no_bend ? X : Y;
+  dft_flux trans=f.add_dft_flux(trans_dir, *trans_volume, f_start, f_end, nfreq);
 
   //(define refl ; reflected flux
   //      (add-flux fcen df nfreq
   //		(make flux-region
   //		  (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
   //
-  volume refl_volume( vec(-0.5*sx+1.5, wvg_ycen), vec(0.0,2.0*w));
-  volume_list refl_vl= volume_list(refl_volume, Sz);
-  dft_flux refl=f.add_dft_flux(&refl_vl, f_start, f_end, nfreq);
+  volume refl_volume( vec(-0.5*sx+1.5, wvg_ycen-w), vec(-0.5*sx+1.5,wvg_ycen+w));
+  dft_flux refl=f.add_dft_flux(NO_DIRECTION, refl_volume, f_start, f_end, nfreq);
+
+  char *prefix = const_cast<char *>(no_bend ? "straight" : "bent");
+  f.output_hdf5(Dielectric, f.total_volume(), 0, false, true, prefix);
 
   //; for normal run, load negated fields to subtract incident from refl. fields
   //(if (not no-bend?) (load-minus-flux "refl-flux" refl))
@@ -183,7 +186,7 @@ void bend_flux(bool no_bend, bool use_prisms)
   if (!no_bend)
    { refl.load_hdf5(f, dataname);
      refl.scale_dfts(-1.0);
-   };
+   }
 
   //(run-sources+
   // (stop-when-fields-decayed 50 Ez
@@ -192,14 +195,12 @@ void bend_flux(bool no_bend, bool use_prisms)
   //			       (vector3 wvg-xcen (- (/ sy 2) 1.5)))
   //			   1e-3)
   // (at-beginning output-epsilon))
-  char *prefix = const_cast<char *>(no_bend ? "straight" : "bent");
-  f.output_hdf5(Dielectric, f.total_volume(), 0, false, true, prefix);
-  vec eval_point = no_bend ? vec(0.5*sx-1.5, wvg_ycen)
-                           : vec(wvg_xcen, 0.5*sy - 1.5);
-  double DeltaT=50.0, NextCheckTime = f.round_time() + DeltaT;
+  vec eval_point = no_bend ? vec(0.5*sx-1.5, wvg_ycen) : vec(wvg_xcen, 0.5*sy - 1.5);
+  double DeltaT=10.0, NextCheckTime = f.round_time() + DeltaT;
   double Tol=1.0e-3;
   double max_abs=0.0, cur_max=0.0;
   bool Done=false;
+/*
   do
    {
      f.step();
@@ -213,9 +214,17 @@ void bend_flux(bool no_bend, bool use_prisms)
         if ( (max_abs>0.0) && cur_max < Tol*max_abs)
          Done=true;
         cur_max=0.0;
-      };
+      }
+
      //printf("%.2e %.2e %.2e %.2e\n",f.round_time(),absEz,max_abs,cur_max);
    } while(!Done);
+*/
+
+f.step();
+master_printf("howdage! refl: \n");
+f.output_dft(refl,"refl");
+master_printf("howdage! trans: \n");
+f.output_dft(trans,"trans");
 
   //; for normalization run, save flux fields for refl. plane
   //(if no-bend? (save-flux "refl-flux" refl))
@@ -223,7 +232,7 @@ void bend_flux(bool no_bend, bool use_prisms)
    refl.save_hdf5(f, dataname);
 
   //(display-fluxes trans refl)
-  printf("%11s | %12s | %12s\n", "   Time    ", " trans flux", "  refl flux");
+  printf("%11s | %12s | %12s\n", "   Freq    ", " trans flux", "  refl flux");
   double f0=fcen-0.5*df, fstep=df/(nfreq-1);
   double *trans_flux=trans.flux();
   double *refl_flux=refl.flux();
@@ -244,8 +253,8 @@ int main(int argc, char *argv[])
    if (!strcasecmp(argv[narg],"--use-prisms"))
     use_prisms=true;
 
-  bend_flux(false, use_prisms);
   bend_flux(true, use_prisms);
+  bend_flux(false, use_prisms);
 
   // success if we made it here
   return 0;
