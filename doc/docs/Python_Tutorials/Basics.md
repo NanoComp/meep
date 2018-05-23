@@ -59,7 +59,7 @@ sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
                      center=mp.Vector3(-7,0))]
 ```
 
-W gave the source a frequency of 0.15, and specified a [`ContinuousSource`](../Python_User_Interface/#continuoussource) which is just a fixed-frequency sinusoid $\exp(-iω t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2π c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $ε=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 &#956;m to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+We gave the source a frequency of 0.15, and specified a [`ContinuousSource`](../Python_User_Interface/#continuoussource) which is just a fixed-frequency sinusoid $\exp(-i \omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of 2πc, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about 1/0.15=6.67 μm, or a wavelength of about 2 μm in the ε=12 material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at (-7,0), which is 1 μm to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
 As for boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash;  which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
 
@@ -69,7 +69,7 @@ pml_layers = [mp.PML(1.0)]
 
 `pml_layers` is a set of [`PML`](../Python_User_Interface/#pml) objects &mdash; you may have more than one `PML` object if you want PML layers only on certain sides of the cell, e.g. `mp.PML(thickness=1.0,direction=mp.X,side=mp.high)` specifies a PML layer on only the $+x$ side. An important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
 
-Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/&#956;m, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
+Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/&#956;m, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-index material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a 160×80 cell.
 
 ```py
 resolution = 10
@@ -149,7 +149,7 @@ Note that we have *two* blocks, both off-center to produce the bent waveguide st
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
-There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface/#eigenmodesource) can also be used which is covered in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface/#eigenmodesource) can also be used which is covered in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t$=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(wavelength=2*(11**0.5), width=20),
@@ -613,34 +613,34 @@ plt.show()
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
 ```py
-n = 3.4   # index of waveguide
-w = 1     # width of waveguide
-r = 1     # inner radius of ring
-pad = 4   # padding between waveguide and edge of PML
-dpml = 2  # thickness of PML
-sxy = 2 * (r + w + pad + dpml)  # cell size
+n = 3.4                 # index of waveguide
+w = 1                   # width of waveguide
+r = 1                   # inner radius of ring
+pad = 4                 # padding between waveguide and edge of PML
+dpml = 2                # thickness of PML
+sxy = 2*(r+w+pad+dpml)  # cell size
 ```
 
 How do we make a circular waveguide? So far, we've only seen `Block` objects, but Meep also lets you specify cylinders, spheres, ellipsoids, and cones, as well as user-specified dielectric functions. In this case, we'll use *two* `Cylinder` objects, one inside the other:
 
 ```py
-c1 = mp.Cylinder(radius=r + w, material=mp.Medium(index=n))
+c1 = mp.Cylinder(radius=r+w, material=mp.Medium(index=n))
 c2 = mp.Cylinder(radius=r)
 ```
 
-Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
+Later objects in the `geometry` object take precedence over or rather lie "on top of" earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width w.
 
 We don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 
 ```py
-fcen = 0.15  # pulse center frequency
-df = 0.1     # pulse width (in frequency)
-src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1))
+fcen = 0.15              # pulse center frequency
+df = 0.1                 # pulse frequency width
+src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r+0.1))
 ```
 
 Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal-processing on the fields at some point with [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
@@ -653,11 +653,11 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
                     boundary_layers=[mp.PML(dpml)])
 
 sim.run(mp.at_beginning(mp.output_epsilon),
-        mp.after_sources(mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)),
+        mp.after_sources(mp.Harminv(mp.Ez, mp.Vector3(r+0.1), fcen, df)),
         until_after_sources=300)
 ```
 
-The signal-processing is performed by the `Harminv` routine, which takes four arguments: the field component $E_z$ and position $(r+0.1,0)$ to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `Harminv` in `after-sources(...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `Harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
+The signal-processing is performed by the `Harminv` routine, which takes four arguments: the field component $E_z$ and position ($r$+0.1,0) to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `Harminv` in `after-sources(...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `Harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
 
 ```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
@@ -668,20 +668,22 @@ harminv0:, 0.175246750722663, -5.22349801171605e-5, 1677.48461212767, 0.0072
 
 There are six columns in addition to the label, comma-delimited for easy import into other programs. The meaning of these columns is as follows. `Harminv` analyzes the fields $f(t)$ at the given point, and expresses this as a sum of modes in the specified bandwidth:
 
-$$f(t) = \sum_n a_n e^{-iω_n t}$$ for complex amplitudes $a_n$ and complex frequencies $ω_n$. The six columns relate to these quantities. The first column is the *real* part of $ω_n$, expressed in our usual $2π c$ units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
+$$f(t) = \sum_n a_n e^{-i \omega_n t}$$
 
-$$Q = \frac{\mathrm{Re}\,ω}{-2 \mathrm{Im}\,ω}.$$
+for complex amplitudes $a_n$ and complex frequencies ω$_n$. The six columns relate to these quantities. The first column is the *real* part of ω$_n$, expressed in our usual 2πc units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
 
-$Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
+$$Q = \frac{\mathrm{Re}\,\omega}{-2 \mathrm{Im}\,\omega}.$$
 
-An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much &mdash; in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
+$Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, and 1/$Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
+
+An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is 10<sup>-7</sup> (with an actual error of about 10<sup>-6</sup>, from below). In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much. In some cases, modes with $Q$ of around 10<sup>9</sup> can be found with only 200 periods.
 
 In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by [Marcatilli in 1969](https://ieeexplore.ieee.org/document/6769758/), the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `at_end(mp.output-efield_z)` argument to our `run_after_sources` routine, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
 ```py
-sim.run(mp.at_every((1 / fcen / 20), mp.output_efield_z), until=(1 / fcen))
+sim.run(mp.at_every(1/fcen/20, mp.output_efield_z), until=1/fcen)
 ```
 
 We can get our modes just by changing two parameters and re-running:
@@ -706,15 +708,15 @@ The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are b
 ![](../images/Tut-ring-ez-0.175.gif)
 </center>
 
-Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for $m$ = 3, 4, and 5 in this case.
+Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for m=3, 4, and 5 in this case.
 
-You may have noticed, by the way, that when you run with the narrow-bandwidth source, `Harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $ω=0.175$ mode gives:
+You may have noticed, by the way, that when you run with the narrow-bandwidth source, `Harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the ω=0.175 mode gives:
 
 ```
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
+which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 

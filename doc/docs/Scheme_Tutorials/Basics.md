@@ -68,7 +68,7 @@ We have the structure and need to specify the current sources using the [`source
                  (center -7 0))))
 ```
 
-We gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-iω t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2π c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $ε=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+We gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i \omega t)$ that by default is turned on at $t$=0. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of 2πc, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about 1/0.15=6.67 μm, or a wavelength of about 2 μm in the ε=12 material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at (-7,0), which is 1 μm to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
 As for boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash; which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
 
@@ -78,7 +78,7 @@ As for boundary conditions, we want to add absorbing boundaries around our cell.
 
 `pml-layers` is a list of [`pml`](../Scheme_User_Interface/#pml) objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. We note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
 
-Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/&#956;m, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
+Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/&#956;m, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-index material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a 160×80 cell.
 
 ```scm
 (set! resolution 10)
@@ -242,17 +242,17 @@ Above, we hard-coded all of the parameters like the cell size, the waveguide wid
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 ```
 
-Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could do `meep sx=17 tut-wvg-bend-trans.ctl` to change the $x$ size to 17, without editing the script file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
+Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could do `meep sx=17 bend-flux.ctl` to change the $x$ size to 17, without editing the script file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
 
 ```scm
 (define-param pad 4) ; padding distance between waveguide and cell edge         
-(define-param w 1) ; width of waveguide    
+(define-param w 1)   ; width of waveguide    
 ```
 
-In order to define the waveguide positions, we will have to use arithmetic. For example, the $y$ center of the horizontal waveguide will be given by `-0.5*(sy-w-2*pad)`. At least, that is what the expression would look like in C; in Scheme, the syntax for $1+2$ is `(+ 1 2)`, and so on, so we will define the horizontal and vertical waveguide centers as:
+In order to define the waveguide positions, we will have to use arithmetic. For example, the $y$ center of the horizontal waveguide will be given by `-0.5*(sy-w-2*pad)`. At least, that is what the expression would look like in C; in Scheme, the syntax for 1+2 is `(+ 1 2)`, and so on, so we will define the horizontal and vertical waveguide centers as:
 
 ```scm
-(define wvg-xcen (* 0.5 (- sx w (* 2 pad))))  ; x center of vert. wvg
+(define wvg-xcen (*  0.5 (- sx w (* 2 pad)))) ; x center of vert. wvg
 (define wvg-ycen (* -0.5 (- sy w (* 2 pad)))) ; y center of horiz. wvg
 ```
 
@@ -542,17 +542,17 @@ title("reflectance (analytic)");
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [ring.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [ring.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
 ```scm
-(define-param n 3.4) ; index of waveguide                                       
-(define-param w 1) ; width of waveguide                                         
-(define-param r 1) ; inner radius of ring                                       
-(define-param pad 4) ; padding between waveguide and edge of PML                
-(define-param dpml 2) ; thickness of PML                                        
-(define sxy (* 2 (+ r w pad dpml))) ; cell size                                 
+(define-param n 3.4)                     ; index of waveguide
+(define-param w 1)                       ; width of waveguide
+(define-param r 1)                       ; inner radius of ring
+(define-param pad 4)                     ; padding between waveguide and edge of PML
+(define-param dpml 2)                    ; thickness of PML
+(define sxy (* 2 (+ r w pad dpml)))      ; cell size
 (set! geometry-lattice (make lattice (size sxy sxy no-size)))
 ```
 
@@ -568,13 +568,13 @@ How do we make a circular waveguide? So far, we've only seen `block` objects, bu
 (set-param! resolution 10)
 ```
 
-Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width `w`.
+Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width w.
 
 We don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
 
 ```scm
-(define-param fcen 0.15) ; pulse center frequency                               
-(define-param df 0.1)  ; pulse width (in frequency)                             
+(define-param fcen 0.15)   ; pulse center frequency
+(define-param df 0.1)      ; pulse frequency width
 (set! sources (list
                (make source
                  (src (make gaussian-src (frequency fcen) (fwidth df)))
@@ -589,7 +589,7 @@ Finally, we are ready to run the simulation. The basic idea is to run until the 
               (after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
 ```
 
-The signal-processing is performed by the `harminv` function, which takes four arguments: the field component $E_z$ and position $(r+0.1,0)$ to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `harminv` in `(after-sources` `...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
+The signal-processing is performed by the `harminv` function, which takes four arguments: the field component $E_z$ and position ($r$+0.1,0) to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `harminv` in `(after-sources ...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
 
 ```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
@@ -600,13 +600,15 @@ harminv0:, 0.175246750722663, -5.22349801171605e-5, 1677.48461212767, 0.0072
 
 There are six columns (in addition to the label), comma-delimited for easy import into other programs. The meaning of these columns is as follows. [Harminv](https://github.com/stevengj/harminv) analyzes the fields $f(t)$ at the given point, and expresses this as a sum of modes (in the specified bandwidth):
 
-$$f(t) = \sum_n a_n e^{-iω_n t}$$ for complex amplitudes $a_n$ and complex frequencies $ω_n$. The six columns relate to these quantities. The first column is the *real* part of $ω_n$, expressed in our usual $2π c$ units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
+$$f(t) = \sum_n a_n e^{-i \omega_n t}$$
 
-$$Q = \frac{\mathrm{Re}\,ω}{-2 \mathrm{Im}\,ω}.$$
+for complex amplitudes $a_n$ and complex frequencies ω$_n$. The six columns relate to these quantities. The first column is the *real* part of ω$_n$, expressed in our usual 2πc units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
 
-$Q$ is the number of optical periods for the energy to decay by $\exp(-2π)$, and $1/Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary)...if the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. **Note**: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on!
+$$Q = \frac{\mathrm{Re}\,\omega}{-2 \mathrm{Im}\,\omega}.$$
 
-An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is $10^{-7}$ (with an actual error of about $10^{-6}$, from below)! In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much—in our own work, we have successfully found $Q=10^9$ modes by analyzing only 200 periods.
+$Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, and 1/$Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
+
+An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is 10<sup>-7</sup> (with an actual error of about 10<sup>-6</sup>, from below). In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much. In some cases, modes with $Q$ of around 10<sup>9</sup> can be found with only 200 periods.
 
 In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by [Marcatilli in 1969](https://ieeexplore.ieee.org/document/6769758/), the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
@@ -637,15 +639,15 @@ The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are b
 ![](../images/Tut-ring-ez-0.175.gif)
 </center>
 
-Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for $m$ = 3, 4, and 5 in this case.
+Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for m=3, 4, and 5 in this case.
 
-You may have noticed, by the way, that when you run with the narrow-bandwidth source, `harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $ω=0.175$ mode gives:
+You may have noticed, by the way, that when you run with the narrow-bandwidth source, `harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the ω=0.175 mode gives:
 
 ```
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
+which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 
@@ -655,7 +657,7 @@ In this case, because we have a mirror symmetry plane (the $x$ axis) that preser
 (set! symmetries (list (make mirror-sym (direction Y))))
 ```
 
-This tells Meep to exploit a mirror-symmetry plane through the origin perpendicular to the $y$ direction. Meep does *not check* whether your system really has this symmetry—you should only specify symmetries that really preserve your structure and your sources.
+This tells Meep to exploit a mirror-symmetry plane through the origin perpendicular to the $y$ direction. Meep does *not check* whether your system really has this symmetry — you should only specify symmetries that really preserve your structure and your sources.
 
 Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast.
 
