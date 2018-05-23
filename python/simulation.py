@@ -596,11 +596,38 @@ class Simulation(object):
         return sym
 
     def _get_dft_volumes(self):
-        volumes = [self._volume_from_kwargs(center=r.center, size=r.size)
+        volumes = [self._volume_from_kwargs(vol=r.where if hasattr(r, 'where') else None,
+                                            center=r.center, size=r.size)
                    for dft in self.dft_objects
                    for r in dft.regions]
 
         return volumes
+
+    def _compute_fragment_stats(self, gv):
+
+        def convert_volumes(dft_obj):
+            volumes = []
+            for r in dft_obj.regions:
+                volumes.append(self._volume_from_kwargs(vol=r.where if hasattr(r, 'where') else None,
+                                                        center=r.center, size=r.size))
+            return volumes
+
+        dft_data_list = [mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o))
+                         for o in self.dft_objects]
+
+        stats = mp.compute_fragment_stats(
+            self.geometry,
+            gv,
+            self.cell_size,
+            mp.Vector3(),
+            self.default_material,
+            dft_data_list,
+            self.subpixel_tol,
+            self.subpixel_maxeval,
+            self.ensure_periodicity
+        )
+
+        return stats
 
     def _init_structure(self, k=False):
         print('-' * 11)
@@ -624,13 +651,7 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        total_dft_freqs = sum([x.nfreqs for x in self.dft_objects])
-        total_dft_components = sum([x.num_components for x in self.dft_objects])
-        dft_volumes = self._get_dft_volumes()
-
-        mp.compute_fragment_stats(self.geometry, gv, self.cell_size, mp.Vector3(), self.default_material,
-                                  total_dft_freqs, total_dft_components, dft_volumes, self.subpixel_tol,
-                                  self.subpixel_maxeval, self.ensure_periodicity)
+        self.fragment_stats = self._compute_fragment_stats(gv)
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)

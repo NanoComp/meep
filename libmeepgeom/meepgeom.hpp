@@ -56,6 +56,14 @@ typedef std::complex<double> cdouble;
 // tiny floating-point number for effectively zero lengths
 #define TINY 1e-20
 
+struct dft_data {
+    int num_freqs;
+    int num_components;
+    std::vector<meep::volume> vols;
+
+    dft_data(int freqs, int components, std::vector<meep::volume> volumes);
+};
+
 struct fragment_stats {
   static double tol;
   static int maxeval;
@@ -66,10 +74,7 @@ struct fragment_stats {
   size_t num_nonlinear_pixels;
   size_t num_susceptibility_pixels;
   size_t num_nonzero_conductivity_pixels;
-  size_t num_dft_fields;
-  size_t num_fourier_pixels;
-  size_t num_fourier_freqs;
-  size_t num_dft_components;
+  size_t num_dft_pixels;
   size_t num_pixels_in_box;
   geom_box box;
 
@@ -81,7 +86,7 @@ struct fragment_stats {
   void count_nonlinear_pixels(medium_struct *med, size_t pixels);
   void count_susceptibility_pixels(medium_struct *med, size_t pixels);
   void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
-  void count_dft_fields(meep::vec& v);
+  void compute_dft_stats(std::vector<dft_data> *dft_data_list);
   void print_stats();
 };
 
@@ -90,9 +95,7 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_size,
                                                    vector3 cell_center,
                                                    material_type default_mat,
-                                                   int total_dft_freqs,
-                                                   int total_dft_components,
-                                                   std::vector<meep::volume> dft_volumes,
+                                                   std::vector<dft_data> dft_data_list,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,

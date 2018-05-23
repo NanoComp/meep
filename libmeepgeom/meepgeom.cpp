@@ -1628,6 +1628,35 @@ material_type make_file_material(const char *eps_input_file)
 }
 
 /******************************************************************************/
+/* Helpers from  libctl/utils/geom.c                                          */
+/******************************************************************************/
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
+static void geom_box_intersection(geom_box *bi, const geom_box *b1, const geom_box *b2) {
+  bi->low.x = MAX(b1->low.x, b2->low.x);
+  bi->low.y = MAX(b1->low.y, b2->low.y);
+  bi->low.z = MAX(b1->low.z, b2->low.z);
+  bi->high.x = MIN(b1->high.x, b2->high.x);
+  bi->high.y = MIN(b1->high.y, b2->high.y);
+  bi->high.z = MIN(b1->high.z, b2->high.z);
+}
+
+static int geom_boxes_intersect(const geom_box *b1, const geom_box *b2) {
+#define BETWEEN(x, low, high) ((x) >= (low) && (x) <= (high))
+  /* true if the x, y, and z ranges all intersect. */
+  return ((BETWEEN(b1->low.x, b2->low.x, b2->high.x) ||
+           BETWEEN(b1->high.x, b2->low.x, b2->high.x) ||
+           BETWEEN(b2->low.x, b1->low.x, b1->high.x)) &&
+          (BETWEEN(b1->low.y, b2->low.y, b2->high.y) ||
+           BETWEEN(b1->high.y, b2->low.y, b2->high.y) ||
+           BETWEEN(b2->low.y, b1->low.y, b1->high.y)) &&
+          (BETWEEN(b1->low.z, b2->low.z, b2->high.z) ||
+           BETWEEN(b1->high.z, b2->low.z, b2->high.z) ||
+           BETWEEN(b2->low.z, b1->low.z, b1->high.z)));
+}
+
+/******************************************************************************/
 /* Fragment Statistics                                                        */
 /******************************************************************************/
 
@@ -1760,7 +1789,7 @@ static size_t get_pixels_in_box(geom_box *b) {
               (empty_y ? 1 : b->high.y - b->low.y) *
               (empty_z ? 1 : b->high.z - b->low.z));
 
-  return (size_t)ceil(v * fragment_stats::resolution);
+  return v == 1 ? 0 : (size_t)ceil(v * fragment_stats::resolution);
 }
 
 static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, double tol, int maxeval,
@@ -1793,9 +1822,7 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_size,
                                                    vector3 cell_center,
                                                    material_type default_mat,
-                                                   int total_dft_freqs,
-                                                   int total_dft_components,
-                                                   std::vector<meep::volume> dft_volumes,
+                                                   std::vector<dft_data> dft_data_list,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
@@ -1807,6 +1834,7 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
 
   for (size_t i = 0; i < fragments.size(); ++i) {
     fragments[i].compute_stats(&geom);
+    fragments[i].compute_dft_stats(&dft_data_list);
   }
   return fragments;
 }
@@ -1817,10 +1845,7 @@ fragment_stats::fragment_stats(geom_box& bx, size_t pixels):
   num_nonlinear_pixels(0),
   num_susceptibility_pixels(0),
   num_nonzero_conductivity_pixels(0),
-  num_dft_fields(0),
-  num_fourier_pixels(0),
-  num_fourier_freqs(0),
-  num_dft_components(0),
+  num_dft_pixels(0),
   num_pixels_in_box(pixels),
   box(bx) {
 
@@ -1860,9 +1885,6 @@ void fragment_stats::compute_stats(geometric_object_list *geom) {
     if (default_material_pixels > 0) {
       update_stats_from_material((material_type)default_material, default_material_pixels);
     }
-
-    // TODO: compute dft stats
-
   }
 }
 
@@ -1966,10 +1988,20 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
 }
 
-// TODO: Python needs to pass in the `where` and `Nfreq` members from all the dft objects
-void fragment_stats::count_dft_fields(meep::vec& v) {
-  // dft_components[DFT_FIELDS] = get dynamically;
-  // ...
+void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
+
+  for (size_t i = 0; i < dft_data_list->size(); ++i) {
+    for (size_t j = 0; j < (*dft_data_list)[i].vols.size(); ++j) {
+      geom_box dft_box = gv2box((*dft_data_list)[i].vols[j]);
+
+      if (geom_boxes_intersect(&dft_box, &box)) {
+        geom_box overlap_box;
+        geom_box_intersection(&overlap_box, &dft_box, &box);
+        size_t overlap_pixels = get_pixels_in_box(&overlap_box);
+        num_dft_pixels += overlap_pixels * (*dft_data_list)[i].num_freqs * (*dft_data_list)[i].num_components;
+      }
+    }
+  }
 }
 
 void fragment_stats::print_stats() {
@@ -1978,11 +2010,17 @@ void fragment_stats::print_stats() {
   master_printf("  num_anisotropic_mu_pixels: %zd\n", num_anisotropic_mu_pixels);
   master_printf("  num_nonlinear_pixels: %zd\n", num_nonlinear_pixels);
   master_printf("  num_susceptibility_pixels: %zd\n", num_susceptibility_pixels);
-  master_printf("  num_dft_fields: %zd\n", num_dft_fields);
-  master_printf("  num_fourier_pixels: %zd\n", num_fourier_pixels);
-  master_printf("  num_fourier_freqs: %zd\n", num_fourier_freqs);
-  master_printf("  num_dft_components: %zd\n", num_dft_components);
+  master_printf("  num_nonzero_conductivity_pixels: %zd\n", num_nonzero_conductivity_pixels);
+  master_printf("  num_dft_pixels: %zd\n", num_dft_pixels);
+  master_printf("  num_pixels_in_box: %zd\n", num_pixels_in_box);
   master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);
   master_printf("  box.high: {%f, %f, %f}\n\n", box.high.x, box.high.y, box.high.z);
+}
+
+dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes):
+  num_freqs(freqs),
+  num_components(components),
+  vols(volumes) {
+
 }
 } // namespace meep_geom
