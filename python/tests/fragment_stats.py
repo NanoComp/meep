@@ -23,7 +23,8 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fragment.num_susceptibility_pixels, susc)
         self.assertEqual(fragment.num_nonzero_conductivity_pixels, cond)
 
-    def get_fragment_stats(self, block_size, cell_size, dims, box_center=mp.Vector3(), dft_vecs=None):
+    def get_fragment_stats(self, block_size, cell_size, dims, box_center=mp.Vector3(), dft_vecs=None,
+                           def_mat=mp.air):
         mat = mp.Medium(
             epsilon=12,
             epsilon_offdiag=mp.Vector3(z=1),
@@ -37,7 +38,8 @@ class TestFragmentStats(unittest.TestCase):
         )
 
         geom = [mp.Block(size=block_size, center=box_center, material=mat)]
-        sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims)
+        sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims,
+                            default_material=def_mat)
 
         if dft_vecs:
             fluxr = mp.FluxRegion(dft_vecs['flux_center'], size=dft_vecs['flux_size'])
@@ -72,7 +74,6 @@ class TestFragmentStats(unittest.TestCase):
 
         # First and last fragments have no geometry, only default_material
         for i in [0, 2]:
-            # TODO: Test default_material
             self.check_stats(fs[i], 0, 0, 0, 0, 0)
 
         # Second fragment contains entire block
@@ -87,16 +88,17 @@ class TestFragmentStats(unittest.TestCase):
         # A z=30 cell split into three fragments of size 10 each, with a block
         # covering the middle fragment, and half of the two outer fragments.
 
-        fs = self.get_fragment_stats(mp.Vector3(z=20), mp.Vector3(z=30), 1)
+        mat = mp.Medium(H_susceptibilities=[mp.DrudeSusceptibility()])
+        fs = self.get_fragment_stats(mp.Vector3(z=20), mp.Vector3(z=30), 1, def_mat=mat)
 
         self.assertEqual(len(fs), 3)
 
         # Middle fragment is completely covered by the block
         self.check_stats(fs[1], a_eps=100, a_mu=100, nonlin=300, susc=300, cond=300)
 
-        # Outer two fragments are half covered by the block
+        # Outer two fragments are half covered by the block, and half covered by default_material 'mat'
         for i in [0, 2]:
-            self.check_stats(fs[i], a_eps=50, a_mu=50, nonlin=150, susc=150, cond=150)
+            self.check_stats(fs[i], a_eps=50, a_mu=50, nonlin=150, susc=200, cond=150)
 
     def test_1d_with_partial_fragment(self):
         # A cell with z=26, with a 16 unit block in the center, split into 3 fragments,
@@ -174,7 +176,6 @@ class TestFragmentStats(unittest.TestCase):
 
         # All fragments besides the middle one have no geometry, only default_material
         for i in [0, 1, 2, 3, 5, 6, 7, 8]:
-            # TODO: Test default_material
             self.check_stats(fs[i], 0, 0, 0, 0, 0)
 
         # Middle fragment contains entire block
@@ -192,7 +193,8 @@ class TestFragmentStats(unittest.TestCase):
     def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.
 
-        fs = self.get_fragment_stats(mp.Vector3(20, 20), mp.Vector3(30, 30), 2)
+        mat = mp.Medium(H_susceptibilities=[mp.DrudeSusceptibility()])
+        fs = self.get_fragment_stats(mp.Vector3(20, 20), mp.Vector3(30, 30), 2, def_mat=mat)
 
         self.assertEqual(len(fs), 9)
 
@@ -201,13 +203,14 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
 
         # Top-middle, bottom-middle, left-middle, and right-middle fragments are half
-        # covered by the block.
+        # covered by the block, and half covered by default_material 'mat'.
         for i in [1, 3, 5, 7]:
-            self.check_stats(fs[i], a_eps=500, a_mu=500, nonlin=1500, susc=1500, cond=1500)
+            self.check_stats(fs[i], a_eps=500, a_mu=500, nonlin=1500, susc=2000, cond=1500)
 
-        # The four corner fragments are quarter-filled by the block
+        # The four corner fragments are quarter-filled by the block, and 3/4 filled by
+        # default_material 'mat'
         for i in [0, 2, 6, 8]:
-            self.check_stats(fs[i], a_eps=250, a_mu=250, nonlin=750, susc=750, cond=750)
+            self.check_stats(fs[i], a_eps=250, a_mu=250, nonlin=750, susc=1500, cond=750)
 
     def test_2d_with_partial_fragments_and_shifted_center(self):
         # A 26 x 26 cell with a 18 x 18 Block in the lower right corner
@@ -266,7 +269,6 @@ class TestFragmentStats(unittest.TestCase):
         for i in range(27):
             if i == 13:
                 continue
-            # TODO: Test default_material
             self.check_stats(fs[i], 0, 0, 0, 0, 0)
 
         # Middle fragments contains entire block
@@ -285,7 +287,8 @@ class TestFragmentStats(unittest.TestCase):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split
         # into 27 10 x 10 x 10 fragments
 
-        fs = self.get_fragment_stats(mp.Vector3(20, 20, 20), mp.Vector3(30, 30, 30), 3)
+        mat = mp.Medium(E_susceptibilities=[mp.DrudeSusceptibility()])
+        fs = self.get_fragment_stats(mp.Vector3(20, 20, 20), mp.Vector3(30, 30, 30), 3, def_mat=mat)
 
         self.assertEqual(len(fs), 27)
 
@@ -293,17 +296,18 @@ class TestFragmentStats(unittest.TestCase):
         idx = 13
         self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
 
-        # Six fragments adjacent to the middle fragment faces will be half covered by the block
+        # Six fragments adjacent to the middle fragment faces will be half covered by the block,
+        # and half covered by default_material 'mat'
         for i in [4, 10, 12, 14, 16, 22]:
-            self.check_stats(fs[i], a_eps=5000, a_mu=5000, nonlin=15000, susc=15000, cond=15000)
+            self.check_stats(fs[i], a_eps=5000, a_mu=5000, nonlin=15000, susc=20000, cond=15000)
 
-        # The corners will be 1/8 covered
+        # The corners will be 1/8 covered by the block and 7/8 covered by default_material 'mat'
         for i in [0, 2, 6, 8, 18, 20, 24, 26]:
-            self.check_stats(fs[i], a_eps=1250, a_mu=1250, nonlin=3750, susc=3750, cond=3750)
+            self.check_stats(fs[i], a_eps=1250, a_mu=1250, nonlin=3750, susc=12500, cond=3750)
 
-        # The rest will be 1/4 covered
+        # The rest will be 1/4 covered by the block and 3/4 covered by default_material 'mat'
         for i in [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]:
-            self.check_stats(fs[i], a_eps=2500, a_mu=2500, nonlin=7500, susc=7500, cond=7500)
+            self.check_stats(fs[i], a_eps=2500, a_mu=2500, nonlin=7500, susc=15000, cond=7500)
 
     def test_cyl(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
@@ -340,7 +344,6 @@ class TestFragmentStats(unittest.TestCase):
 
         # All fragments besides the middle one have no geometry, only default_material
         for i in [0, 1, 2, 3, 5, 6, 7, 8]:
-            # TODO: Test default_material
             self.check_stats(fs[i], 0, 0, 0, 0, 0)
 
         # Middle fragment contains entire block

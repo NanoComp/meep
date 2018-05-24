@@ -1996,7 +1996,6 @@ static bool is_line_or_plane(geom_box *b) {
     // already handled in get_pixels_in_box
     break;
   case meep::D2:
-    // TODO: What about floats? Will they always compare equal?
     if (b->low.x == b->high.x || b->low.y == b->high.y) {
       return true;
     }
