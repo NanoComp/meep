@@ -1665,12 +1665,10 @@ int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
 meep::ndim fragment_stats::dims = meep::D1;
 
-// TODO: Account for geometry_center?
 inline static bool is_edge_box(double pt, double half_cell, double box_size, double edge_size) {
   return (pt == -half_cell && edge_size != 0) || pt + box_size > half_cell;
 }
 
-// TODO: Account for geometry_center
 static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
   double half_box = box_size / 2;
   double half_z = cell_size.z / 2;
@@ -1793,6 +1791,12 @@ static size_t get_pixels_in_box(geom_box *b) {
   return v == 1 ? 0 : (size_t)ceil(v * fragment_stats::resolution);
 }
 
+// TODO: Is this correct?
+static void center_box(geom_box *b) {
+  b->low = vector3_plus(geometry_center, b->low);
+  b->high = vector3_plus(geometry_center, b->high);
+}
+
 static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, double tol, int maxeval,
                                                   meep::grid_volume *gv) {
   std::vector<fragment_stats> fragments;
@@ -1802,6 +1806,7 @@ static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, 
   fragment_stats::dims = gv->dim;
 
   for (size_t i = 0; i < boxes.size(); ++i) {
+    center_box(&boxes[i]);
     size_t pixels_in_box = get_pixels_in_box(&boxes[i]);
     fragments.push_back(fragment_stats(boxes[i], pixels_in_box));
   }
