@@ -58,6 +58,19 @@ typedef struct {
 
 #include "typemap_utils.cpp"
 
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_XDECREF(py_attr);
+    return 1;
+}
+
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
     if (source_time_object == NULL) {

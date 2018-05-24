@@ -263,19 +263,6 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
-static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
-    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
-
-    if (!py_attr) {
-        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-        return 0;
-    }
-
-    *result = PyInteger_AsLong(py_attr);
-    Py_XDECREF(py_attr);
-    return 1;
-}
-
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -556,11 +543,11 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
 
 static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
     material_type material;
-    int height;
+    double height;
     vector3 axis;
 
     if (!get_attr_material(py_prism, &material) ||
-        !get_attr_int(py_prism, &height, "height") ||
+        !get_attr_dbl(py_prism, &height, "height") ||
         !get_attr_v3(py_prism, &axis, "axis")) {
 
         return 0;
