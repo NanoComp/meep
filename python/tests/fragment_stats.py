@@ -78,6 +78,7 @@ class TestFragmentStats(unittest.TestCase):
         # Second fragment contains entire block
         self.check_stats(fs[1], a_eps=100, a_mu=100, nonlin=300, susc=300, cond=300)
 
+        # Check DFT regions
         self.assertEqual(fs[0].num_dft_pixels, 2000)
         self.assertEqual(fs[1].num_dft_pixels, 2800)
         self.assertEqual(fs[2].num_dft_pixels, 5400)
@@ -180,13 +181,13 @@ class TestFragmentStats(unittest.TestCase):
         idx = 4
         self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
 
-        # TODO: Fix pixels that are counted multiple times
-        # for i in [0, 1, 3, 4, 6, 7]:
-        #     self.assertEqual(fs[i].num_dft_pixels, 0)
+        # Check DFT regions
+        for i in [0, 1, 3, 4, 6, 7]:
+            self.assertEqual(fs[i].num_dft_pixels, 0)
 
-        # self.assertEqual(fs[2].num_dft_pixels, 20000)
-        # self.assertEqual(fs[5].num_dft_pixels, 28000)
-        # self.assertEqual(fs[8].num_dft_pixels, 54000)
+        self.assertEqual(fs[2].num_dft_pixels, 20000)
+        self.assertEqual(fs[5].num_dft_pixels, 28000)
+        self.assertEqual(fs[8].num_dft_pixels, 54000)
 
     def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.
@@ -247,7 +248,17 @@ class TestFragmentStats(unittest.TestCase):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
         # into 27 10 x 10 x 10 fragments
 
-        fs = self.get_fragment_stats(mp.Vector3(10, 10, 10), mp.Vector3(30, 30, 30), 3)
+        # flux covering lower-front-left fragment, near2far covering lower-middle-left,
+        # force covering lower-back-left
+        dft_vecs = make_dft_vecs(
+            mp.Vector3(-10, -10, -10),
+            mp.Vector3(10, 10, 10),
+            mp.Vector3(-10, -10, 0),
+            mp.Vector3(10, 10, 10),
+            mp.Vector3(-10, -10, 10),
+            mp.Vector3(10, 10, 10)
+        )
+        fs = self.get_fragment_stats(mp.Vector3(10, 10, 10), mp.Vector3(30, 30, 30), 3, dft_vecs=dft_vecs)
 
         self.assertEqual(len(fs), 27)
 
@@ -261,7 +272,14 @@ class TestFragmentStats(unittest.TestCase):
         # Middle fragments contains entire block
         idx = 13
         self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
-        # TODO: DFT
+
+        # Check DFT regions
+        for i in range(3, 27):
+            self.assertEqual(fs[i].num_dft_pixels, 0)
+
+        self.assertEqual(fs[0].num_dft_pixels, 200000)
+        self.assertEqual(fs[1].num_dft_pixels, 280000)
+        self.assertEqual(fs[2].num_dft_pixels, 540000)
 
     def test_3d_with_overlap(self):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split
@@ -290,7 +308,17 @@ class TestFragmentStats(unittest.TestCase):
     def test_cyl(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
 
-        fs = self.get_fragment_stats(mp.Vector3(10, 0, 10), mp.Vector3(30, 0, 30), mp.CYLINDRICAL)
+        # flux covering top-left fragment, near2far covering top-middle, force covering top-right
+        dft_vecs = make_dft_vecs(
+            mp.Vector3(-10, z=10),
+            mp.Vector3(10, z=10),
+            mp.Vector3(0, z=10),
+            mp.Vector3(10, z=10),
+            mp.Vector3(10, z=10),
+            mp.Vector3(10, z=10)
+        )
+        fs = self.get_fragment_stats(mp.Vector3(10, 0, 10), mp.Vector3(30, 0, 30),
+                                     mp.CYLINDRICAL, dft_vecs=dft_vecs)
 
         self.assertEqual(len(fs), 9)
 
@@ -318,7 +346,14 @@ class TestFragmentStats(unittest.TestCase):
         # Middle fragment contains entire block
         idx = 4
         self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
-        # TODO: DFT
+
+        # Check DFT regions
+        for i in [0, 1, 3, 4, 6, 7]:
+            self.assertEqual(fs[i].num_dft_pixels, 0)
+
+        self.assertEqual(fs[2].num_dft_pixels, 20000)
+        self.assertEqual(fs[5].num_dft_pixels, 28000)
+        self.assertEqual(fs[8].num_dft_pixels, 54000)
 
 
 if __name__ == '__main__':

@@ -1663,6 +1663,7 @@ static int geom_boxes_intersect(const geom_box *b1, const geom_box *b2) {
 double fragment_stats::tol = 0;
 int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
+meep::ndim fragment_stats::dims = meep::D1;
 
 // TODO: Account for geometry_center?
 inline static bool is_edge_box(double pt, double half_cell, double box_size, double edge_size) {
@@ -1798,6 +1799,7 @@ static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, 
   fragment_stats::tol = tol;
   fragment_stats::maxeval = maxeval;
   fragment_stats::resolution = gv->a;
+  fragment_stats::dims = gv->dim;
 
   for (size_t i = 0; i < boxes.size(); ++i) {
     size_t pixels_in_box = get_pixels_in_box(&boxes[i]);
@@ -1988,6 +1990,31 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
 }
 
+static bool is_line_or_plane(geom_box *b) {
+  switch(fragment_stats::dims) {
+  case meep::D1:
+    // already handled in get_pixels_in_box
+    break;
+  case meep::D2:
+    // TODO: What about floats? Will they always compare equal?
+    if (b->low.x == b->high.x || b->low.y == b->high.y) {
+      return true;
+    }
+    break;
+  case meep::D3:
+    if (b->low.x == b->high.x || b->low.y == b->high.y || b->low.z == b->high.z) {
+      return true;
+    }
+    break;
+  case meep::Dcyl:
+    if (b->low.x == b->high.x || b->low.z == b->high.z) {
+      return true;
+    }
+    break;
+  }
+  return false;
+}
+
 void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
 
   for (size_t i = 0; i < dft_data_list->size(); ++i) {
@@ -1997,6 +2024,13 @@ void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
       if (geom_boxes_intersect(&dft_box, &box)) {
         geom_box overlap_box;
         geom_box_intersection(&overlap_box, &dft_box, &box);
+
+        // Since geom_boxes_intersect returns true if two planes share a line or
+        // two volumes share a line or plane, we have to filter those cases out
+        // in order to avoid counting pixels multiple times.
+        if (is_line_or_plane(&overlap_box)) {
+          continue;
+        }
         size_t overlap_pixels = get_pixels_in_box(&overlap_box);
         num_dft_pixels += overlap_pixels * (*dft_data_list)[i].num_freqs * (*dft_data_list)[i].num_components;
       }

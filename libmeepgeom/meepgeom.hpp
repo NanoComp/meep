@@ -68,6 +68,7 @@ struct fragment_stats {
   static double tol;
   static int maxeval;
   static int resolution;
+  static meep::ndim dims;
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
