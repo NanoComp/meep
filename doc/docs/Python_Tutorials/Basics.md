@@ -449,12 +449,12 @@ def main(args):
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [ mp.PML(dpml) ]
 
-    wvl_min = 0.4           # minimum wavelength of source
-    wvl_max = 0.8           # maximum wavelength of source
-    fmin = 1/wvl_max        # minimum frequency of source
-    fmax = 1/wvl_min        # maximum frequency of source
-    fcen = 0.5*(fmin+fmax)  # center frequency of source
-    df = fmax-fmin          # frequency width of source
+    wvl_min = 0.4           # min wavelength
+    wvl_max = 0.8           # max wavelength
+    fmin = 1/wvl_max        # min frequency
+    fmax = 1/wvl_min        # max frequency
+    fcen = 0.5*(fmin+fmax)  # center frequency
+    df = fmax-fmin          # frequency width
     nfreq = 50              # number of frequency bins
     
     # rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
@@ -463,7 +463,7 @@ def main(args):
     # plane of incidence is xz
     k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fcen)
 
-    # if source is at normal incidence, force number of dimensions to be 1
+    # if normal incidence, force number of dimensions to be 1
     if theta_r == 0:
         dimensions = 1
     else:
@@ -524,15 +524,15 @@ Note that there are two argument parameters which can be passed to the script at
 ```sh
 #!/bin/bash
 
-for i in `seq 0 40`; do
+for i in `seq 0 41`; do
     python refl-angular.py -theta $i |tee -a flux_t${i}.out;
-    grep refl: flux_t${i}.out |cut -d , -f2- > flux_t${i}.dat
+    grep refl: flux_t${i}.out |cut -d , -f2- > flux_t${i}.dat;
 done
 ```
 
 Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Python script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the source wavelength λ and Bloch-periodic wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a given angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results.
 
-In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a modified source with a center frequency closer to a wavelength of 0.4 μm and smaller bandwidth. These can both be accomplished by reducing the `wvl_max` parameter above.
+In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a narrower bandwidth source centered at several of the missing wavelengths and also extend the angular range beyond 40$^\circ$.
 
 ```py
 import matplotlib.pyplot as plt
@@ -540,10 +540,10 @@ import numpy as np
 import numpy.matlib
 import math
 
-theta_in = np.arange(0,41)
-kxs = np.empty((50, theta_in.size))
-thetas = np.empty((50, theta_in.size))
-Rmeep = np.empty((50, theta_in.size))
+theta_in = np.arange(0,42)
+kxs = np.empty((50,theta_in.size))
+thetas = np.empty((50,theta_in.size))
+Rmeep = np.empty((50,theta_in.size))
 
 for j in range(0,theta_in.size):
   f = np.genfromtxt("flux_t{}.dat".format(theta_in[j]), delimiter=",")
@@ -563,20 +563,21 @@ plt.xlabel("Bloch-periodic wavevector ($k_x/2π$)")
 plt.ylabel("wavelength (μm)")
 plt.title("reflectance (meep)")
 cbar = plt.colorbar()
-cbar.set_ticks([0, 0.1, 0.2, 0.3]);
-cbar.set_ticklabels([0, 0.1, 0.2, 0.3]);
+cbar.set_ticks([0, 0.1, 0.2, 0.3])
+cbar.set_ticklabels([0, 0.1, 0.2, 0.3])
 plt.show()
 
 plt.figure(dpi=100)
 plt.pcolormesh(thetas, wvls, Rmeep, cmap='hot', shading='gouraud', vmin=0, vmax=Rmeep.max())
 plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
+plt.xticks([t for t in range(0,100,20)])
 plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.xlabel("angle of incident planewave (degrees)")
 plt.ylabel("wavelength (μm)")
 plt.title("reflectance (meep)")
 cbar = plt.colorbar()
-cbar.set_ticks([0, 0.1, 0.2, 0.3]);
-cbar.set_ticklabels([0, 0.1, 0.2, 0.3]);
+cbar.set_ticks([0, 0.1, 0.2, 0.3])
+cbar.set_ticklabels([0, 0.1, 0.2, 0.3])
 plt.show()
 
 n1=1
@@ -598,13 +599,14 @@ for m in range(0,wvl.size):
 plt.figure(dpi=100)
 plt.pcolormesh(thetas, wvls, Ranalytic, cmap='hot', shading='gouraud', vmin=0, vmax=Ranalytic.max())
 plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
+plt.xticks([t for t in range(0,100,20)])
 plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.xlabel("angle of incident planewave (degrees)")
 plt.ylabel("wavelength (μm)")
 plt.title("reflectance (analytic)")
 cbar = plt.colorbar()
-cbar.set_ticks([0, 0.1, 0.2, 0.3]);
-cbar.set_ticklabels([0, 0.1, 0.2, 0.3]);
+cbar.set_ticks([0, 0.1, 0.2, 0.3])
+cbar.set_ticklabels([0, 0.1, 0.2, 0.3])
 plt.show()
 ```
 

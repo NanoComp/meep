@@ -12,12 +12,12 @@ def main(args):
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [ mp.PML(dpml) ]
 
-    wvl_min = 0.4                   # minimum wavelength of source
-    wvl_max = 0.8                   # maximum wavelength of source
-    fmin = 1/wvl_max                # minimum frequency of source
-    fmax = 1/wvl_min                # maximum frequency of source
-    fcen = 0.5*(fmin+fmax)          # center frequency of source
-    df = fmax-fmin                  # frequency width of source
+    wvl_min = 0.4                   # min wavelength
+    wvl_max = 0.8                   # max wavelength
+    fmin = 1/wvl_max                # min frequency
+    fmax = 1/wvl_min                # max frequency
+    fcen = 0.5*(fmin+fmax)          # center frequency
+    df = fmax-fmin                  # frequency width
     nfreq = 50                      # number of frequency bins
     
     # rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
@@ -26,7 +26,7 @@ def main(args):
     # plane of incidence is xz
     k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fcen)
     
-    # if source is at normal incidence, force number of dimensions to be 1
+    # if normal incidence, force number of dimensions to be 1
     if theta_r == 0:
         dimensions = 1
     else:

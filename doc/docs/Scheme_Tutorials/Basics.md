@@ -465,7 +465,7 @@ The following Bash shell script runs the simulation for the wavelength range of 
 ```sh
 #!/bin/bash
 
-for i in `seq 0 40`; do
+for i in `seq 0 41`; do
     meep empty?=true theta=${i} refl-angular.ctl |tee -a flux0_t${i}.out;
     grep flux1: flux0_t${i}.out |cut -d , -f2- > flux0_t${i}.dat
     meep empty?=false theta=${i} refl-angular.ctl |tee -a flux_t${i}.out;
@@ -475,10 +475,10 @@ done
 
 Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Octave/Matlab script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the wavelength λ and wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a given angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results.
 
-In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a modified source with a center frequency closer to a wavelength of 0.4 μm and smaller bandwidth. These can both be accomplished by reducing the `wvl-max` parameter above.
+In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a narrower bandwidth source centered at several of the missing wavelengths and also extend the angular range beyond 40$^\circ$.
 
 ```matlab
-theta_in = [ 0:40 ];
+theta_in = [ 0:41 ];
 Rmeep = [];
 for j = 1:length(theta_in)
   f0 = dlmread(sprintf("flux0_t%d.dat",theta_in(j)),',');
@@ -502,7 +502,9 @@ thetas = asind(kxs./freqs);
 figure;
 pcolor(kxs,wvls,Rmeep);
 shading interp; c = colormap("hot"); colormap(c); colorbar;
-eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(kx),max(kx),min(wvl),max(wvl)));
+eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",kx(1),kx(end),min(wvl),max(wvl)));
+eval(sprintf("set(gca, 'xtick', [%0.2g:0.2:%0.2g])",kx(1),kx(end)));
+eval(sprintf("set(gca, 'ytick', [%0.1g:0.1:%0.1g])",wvl(end),wvl(1)));
 xlabel("wavevector of Bloch-Periodic boundary condition (k_x/2π)");
 ylabel("wavelength (μm)");
 title("reflectance (meep)");
@@ -511,6 +513,8 @@ figure;
 pcolor(thetas,wvls,Rmeep);
 shading interp; c = colormap("hot"); colormap(c); colorbar;
 eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(min(thetas)),max(max(thetas)),min(wvl),max(wvl)));
+eval(sprintf("set(gca, 'xtick', [%d:20:%d])",min(min(thetas)),max(max(thetas))));
+eval(sprintf("set(gca, 'ytick', [%0.1g:0.1:%0.1g])",wvl(end),wvl(1)));
 xlabel("angle of incident planewave (degrees)");
 ylabel("wavelength (μm)");
 title("reflectance (meep)");
@@ -532,6 +536,8 @@ figure;
 pcolor(thetas,wvls,Ranalytic);
 shading interp; c = colormap("hot"); colormap(c); colorbar;
 eval(sprintf("axis([%0.2g %0.2g %0.2g %0.2g])",min(min(thetas)),max(max(thetas)),min(wvl),max(wvl)));
+eval(sprintf("set(gca, 'xtick', [%d:20:%d])",min(min(thetas)),max(max(thetas))));
+eval(sprintf("set(gca, 'ytick', [%0.1g:0.1:%0.1g])",wvl(end),wvl(1)));
 xlabel("angle of incident planewave (degrees)");
 ylabel("wavelength (μm)");
 title("reflectance (analytic)");

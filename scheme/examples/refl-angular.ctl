@@ -7,19 +7,19 @@
 
 (set! geometry-lattice (make lattice (size no-size no-size sz)))
 
-(define-param wvl-min 0.4)           ; minimum wavelength of source
-(define-param wvl-max 0.8)           ; maximum wavelength of source
-(define fmin (/ wvl-max))            ; minimum frequency of source
-(define fmax (/ wvl-min))            ; maximum frequency of source
-(define fcen (* 0.5 (+ fmin fmax)))  ; center frequency of source
-(define df (- fmax fmin))            ; frequency width of source
+(define-param wvl-min 0.4)           ; min wavelength
+(define-param wvl-max 0.8)           ; max wavelength
+(define fmin (/ wvl-max))            ; min frequency
+(define fmax (/ wvl-min))            ; max frequency
+(define fcen (* 0.5 (+ fmin fmax)))  ; center frequency
+(define df (- fmax fmin))            ; frequency width
 (define-param nfreq 50)              ; number of frequency bins
 
 ; rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
 (define-param theta 0)
 (define theta-r (deg->rad theta))
 
-; if source is at normal incidence, force number of dimensions to be 1
+; if normal incidence, force number of dimensions to be 1
 (set! dimensions (if (= theta-r 0) 1 3))
 
 ; plane of incidence is xz
