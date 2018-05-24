@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # From the Meep tutorial: transmission around a 90-degree waveguide bend in 2d.
 from __future__ import division
 

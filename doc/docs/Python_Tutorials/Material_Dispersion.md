@@ -101,13 +101,13 @@ f = np.genfromtxt("flux.dat", delimiter=",")
 wvls = f[:,0]
 R_meep = f[:,1]
 
-eps_fused_quartz = lambda l: 1+0.6961663*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.4079426*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.8974794*pow(l,2)/(pow(l,2)-pow(9.896161,2))
-R_fresnel = lambda l: math.pow(math.fabs(1-math.sqrt(eps_fused_quartz(l)))/(1+math.sqrt(eps_fused_quartz(l))),2)
+eps_quartz = lambda l: 1+0.6961663*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.4079426*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.8974794*pow(l,2)/(pow(l,2)-pow(9.896161,2))
+R_fresnel = lambda l: math.pow(math.fabs(1-math.sqrt(eps_quartz(l)))/(1+math.sqrt(eps_quartz(l))),2)
 R_analytic = [ R_fresnel(i) for i in wvls ]
 
 plt.plot(wvls,R_meep,'bo-',label='meep')
 plt.plot(wvls,R_analytic,'rs-',label='analytic')
-plt.xlabel("wavelength (um)")
+plt.xlabel("wavelength (μm)")
 plt.ylabel("reflectance")
 plt.axis([0.4, 0.8, 0.0340, 0.0365])
 plt.xticks([t for t in np.arange(0.4,0.9,0.1)])
