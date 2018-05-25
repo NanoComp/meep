@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 import unittest
+import warnings
 import h5py
 import numpy as np
 import meep as mp
@@ -396,6 +397,32 @@ class TestSimulation(unittest.TestCase):
         )
 
         sim.run(mp.synchronized_magnetic(mp.output_bfield_y), until=10)
+
+    def test_harminv_warnings(self):
+
+        def check_warnings(sim, h, should_warn=True):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                sim.run(mp.after_sources(h), until_after_sources=5)
+
+                if should_warn:
+                    self.assertEqual(len(w), 1)
+                    self.assertIn("Harminv", str(w[-1].message))
+                else:
+                    self.assertEqual(len(w), 0)
+
+        sources = [mp.Source(src=mp.GaussianSource(1, fwidth=1), center=mp.Vector3(), component=mp.Ez)]
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=10, sources=sources)
+        h = mp.Harminv(mp.Ez, mp.Vector3(), 2, 1)
+        check_warnings(sim, h)
+
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=10, sources=sources)
+        h = mp.Harminv(mp.Ez, mp.Vector3(), 0.5, 0.5)
+        check_warnings(sim, h)
+
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=10, sources=sources)
+        h = mp.Harminv(mp.Ez, mp.Vector3(), 1, 2)
+        check_warnings(sim, h, should_warn=False)
 
 
 if __name__ == '__main__':

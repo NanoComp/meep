@@ -199,9 +199,28 @@ class Harminv(object):
             return _collect2
         return _collect1
 
+    def _check_freqs(self, sim):
+        source_freqs = [(s.src.frequency, 0 if s.src.width == 0 else 1 / s.src.width)
+                        for s in sim.sources
+                        if hasattr(s.src, 'frequency')]
+
+        harminv_max = self.fcen + 0.5 * self.df
+        harminv_min = self.fcen - 0.5 * self.df
+
+        for sf in source_freqs:
+            sf_max = sf[0] + 0.5 * sf[1]
+            sf_min = sf[0] - 0.5 * sf[1]
+            if sf_max > harminv_max:
+                warn_fmt = "Source frequency {} is outside maximum Harminv frequency {}"
+                warnings.warn(warn_fmt.format(sf_max, harminv_max), RuntimeWarning)
+            if sf_min < harminv_min:
+                warn_fmt = "Source frequency {} is outside minimum Harminv frequency {}"
+                warnings.warn(warn_fmt.format(sf_min, harminv_min), RuntimeWarning)
+
     def _analyze_harminv(self, sim, maxbands):
         harminv_cols = ['frequency', 'imag. freq.', 'Q', '|amp|', 'amplitude', 'error']
         display_run_data(sim, 'harminv', harminv_cols)
+        self._check_freqs(sim)
 
         dt = self.data_dt if self.data_dt is not None else sim.fields.dt
 
