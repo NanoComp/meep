@@ -845,7 +845,7 @@ Change the `k_point` (the Bloch periodicity).
 
 **`change_sources(new_sources)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Change the `Sources` input variable to `new_sources`, and changes the sources used for the current simulation.
+Change the list of sources in `Simulation.sources` to `new_sources`, and changes the sources used for the current simulation. `new_sources` must be a list of `Source` objects.
 
 **`set_materials(geometry=None, default_material=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
