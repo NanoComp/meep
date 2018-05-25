@@ -4,6 +4,7 @@ import functools
 import math
 import numbers
 import operator
+import warnings
 from collections import namedtuple
 from copy import deepcopy
 from numbers import Number
@@ -163,6 +164,15 @@ class Medium(object):
         elif index:
             i2 = index * index
             epsilon_diag = Vector3(i2, i2, i2)
+
+        if ((epsilon_diag.x < 1 and epsilon_diag.x > -mp.inf) or
+            (epsilon_diag.y < 1 and epsilon_diag.y > -mp.inf) or
+            (epsilon_diag.z < 1 and epsilon_diag.z > -mp.inf)):
+
+            eps_warning = ("Epsilon < 1 may require adjusting the Courant parameter. " +
+                           "See the 'Numerical Stability' entry under the 'Materials' " +
+                           "section of the documentation")
+            warnings.warn(eps_warning, RuntimeWarning)
 
         if mu:
             mu_diag = Vector3(mu, mu, mu)
