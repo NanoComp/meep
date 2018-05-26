@@ -20,18 +20,6 @@
 
 #include "meepgeom.hpp"
 
-/***************************************************************/
-/* hard-coded indices of layers on which various entities are  */
-/* defined in the GDSII file                                   */
-/***************************************************************/
-#define GEOM_LAYER           0
-#define STRAIGHT_WVG_LAYER   1
-#define BENT_WVG_LAYER       2
-#define SOURCE_LAYER         3
-#define RFLUX_LAYER          4
-#define STRAIGHT_TFLUX_LAYER 5
-#define BENT_TFLUX_LAYER     6
-
 using namespace meep;
 
 typedef std::complex<double> cdouble;
@@ -53,12 +41,20 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
+#define GEOM_LAYER           0   // hard-coded indices of GDSII layers
+#define STRAIGHT_WVG_LAYER   1   //  on which various geometric entities are defined
+#define BENT_WVG_LAYER       2
+#define SOURCE_LAYER         3
+#define RFLUX_LAYER          4
+#define STRAIGHT_TFLUX_LAYER 5
+#define BENT_TFLUX_LAYER     6
+
 structure create_structure_from_GDSII(char *GDSIIFile, bool no_bend,
                                       volume &vsrc, volume &vrefl, volume &vtrans)
 {
   // set computational cell
   double dpml       = 1.0;
-  double resolution = 5.0;
+  double resolution = 10.0;
   grid_volume gv=meep_geom::set_geometry_from_GDSII(resolution, GDSIIFile, GEOM_LAYER);
   structure the_structure(gv, dummy_eps, pml(dpml));
 
@@ -70,7 +66,7 @@ structure create_structure_from_GDSII(char *GDSIIFile, bool no_bend,
   geometric_object_list g={ 1, objects };
   meep_geom::set_materials_from_geometry(&the_structure, g);
 
-  // read volume specifications for source and flux-monitor regions
+  // define volumes for source and flux-monitor regions
   vsrc   = meep_geom::get_GDSII_volume(GDSIIFile, SOURCE_LAYER);
   vrefl  = meep_geom::get_GDSII_volume(GDSIIFile, RFLUX_LAYER);
   vtrans = meep_geom::get_GDSII_volume(GDSIIFile, (no_bend ? STRAIGHT_TFLUX_LAYER : BENT_TFLUX_LAYER));
@@ -90,7 +86,7 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms,
   double pad=4.0;       // padding distance between waveguide and cell edge
   double w=1.0;         // width of waveguide
   double dpml=1.0;      // PML thickness
-  double resolution=5; 
+  double resolution=10.0;
 
   // (set! geometry-lattice (make lattice (size sx sy no-size)))
   // (set! pml-layers (list (make pml (thickness 1.0))))
