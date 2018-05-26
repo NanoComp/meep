@@ -39,7 +39,7 @@ vector3 v3(double x, double y=0.0, double z=0.0)
 double dummy_eps(const vec &) { return 1.0; }
 
 /***************************************************************/
-/***************************************************************/
+/* define geometry from GDSII file *****************************/
 /***************************************************************/
 #define GEOM_LAYER           0   // hard-coded indices of GDSII layers
 #define STRAIGHT_WVG_LAYER   1   //  on which various geometric entities are defined
