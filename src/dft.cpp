@@ -983,7 +983,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
    if (dft_volume.in_direction(d)==0.0) 
     have_empty_dimensions=true;
 
-  if (have_empty_dimensions && am_master() )
+  if ( have_empty_dimensions && am_master() )
    { if (!HDF5FileName) abort("missing HDF5FileName in output_dft_components");
      int len = strlen(HDF5FileName);
      char buffer[100];
@@ -1033,8 +1033,8 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
            }
         }
        delete[] array;
-     }
-
+     } // if (!have_empty_dimensions) ... else ...
+  
   if (real_array) delete[] real_array;
   if (f) delete f;
 }
