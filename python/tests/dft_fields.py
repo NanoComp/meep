@@ -55,10 +55,6 @@ class TestDFTFields(unittest.TestCase):
         # test proper collapsing of degenerate dimensions in HDF5 files and arrays
         thin_x_array = sim.get_dft_array(thin_x_flux, mp.Ez, 0)
         thin_y_array = sim.get_dft_array(thin_y_flux, mp.Ez, 0)
-        print "thin_x_array.ndim=", thin_x_array.ndim
-        print "thin_x_array.shape=", thin_x_array.shape
-        print "thin_y_array.ndim=", thin_y_array.ndim
-        print "thin_y_array.shape=", thin_y_array.shape
         np.testing.assert_equal(thin_x_array.ndim, 1)
         np.testing.assert_equal(thin_y_array.ndim, 1)
 
