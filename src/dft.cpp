@@ -869,16 +869,29 @@ bool increment(int n[3], int nMax[3], int rank)
 cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volume dft_volume)
 { 
   /*--------------------------------------------------------------*/
-  /*- detect empty dimensions ------------------------------------*/
+  /*- detect empty dimensions and compute rank and strides for    */
+  /*- collapsed array                                             */
   /*--------------------------------------------------------------*/
-  int full_rank = *rank, reduced_rank=0, reduced_dims[3], reduced_stride[3]={1,1,1}, nd=0;
+  int full_rank = *rank; 
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+if (am_master())
+ printf("Original: %i {%i,%i}\n",full_rank,dims[0],dims[1]);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  if (full_rank==0) return array;
+
+  int reduced_rank=0, reduced_dims[2], reduced_stride[2]={1,1}, nd=0;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
-   { if (dims[nd]==0) continue;
-     if (dft_volume.in_direction(d)>0.0)
-      reduced_dims[reduced_rank++]=dims[nd++];
+   { int dim = dims[nd++];
+     if (dim==0) continue;
+     if (dft_volume.in_direction(d) == 0.0)
+      reduced_stride[nd-1]=0;    // degenerate dimension, to be collapsed
      else
-      reduced_stride[nd++]=0;    // degenerate dimension, to be collapsed
+      reduced_dims[reduced_rank++]=dim;
    }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+if (am_master())
+ printf("Reduced:  %i {%i,%i}\n",reduced_rank,reduced_dims[0],reduced_dims[1]);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   if (reduced_rank==full_rank) return array; // nothing to collapse
 
   /*--------------------------------------------------------------*/
@@ -886,9 +899,7 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
   /*--------------------------------------------------------------*/
   int stride[3]={1,1,1}; // non-reduced array strides
   if (full_rank==2) 
-   {
-     stride[0]=dims[1];     // rstride is already all set in this case
-   }
+   stride[0]=dims[1];     // rstride is already all set in this case
   else if (full_rank==3)
    { stride[0] = dims[1]*dims[2];
      stride[1] = dims[2];
@@ -931,6 +942,9 @@ cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *ra
   chunklists[1] = flux.H;
   cdouble *array;
   process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("  GDA %i %s: %i %i %i\n",my_rank(),component_name(c),rank[0],dims[0],dims[1]);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   return collapse_empty_dimensions(array, rank, dims, flux.where);
 }
 
@@ -968,6 +982,7 @@ cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *
 /* datasets for all components at all frequencies stored in    */
 /* the given collection of DFT chunks                          */
 /***************************************************************/
+#if 0
 void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
                                    volume dft_volume, const char *HDF5FileName)
 {
@@ -1037,6 +1052,68 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
 
   if (real_array) delete[] real_array;
   if (f) delete f;
+}
+#endif
+
+void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
+                                   volume dft_volume, const char *HDF5FileName)
+{
+  int NumFreqs=0;
+  for(int nc=0; nc<num_chunklists && NumFreqs==0; nc++)
+   if (chunklists[nc])
+    NumFreqs = chunklists[nc]->Nomega;
+
+  bool have_empty_dims=false;
+  LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
+   if (dft_volume.in_direction(d)==0.0) 
+    have_empty_dims=true;
+
+  //h5file *f = (have_empty_dims && am_master()) ? open_h5file(HDF5FileName,h5file::WRITE) : 0;
+  h5file::access_mode mode = h5file::WRITE;
+
+  bool first_component=true;
+  for(int num_freq=0; num_freq<NumFreqs; num_freq++)
+   FOR_E_AND_H(c)
+    if (!have_empty_dims)
+     { 
+        process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
+                              0, 0, 0, 0, 0, Ex, &first_component);
+     }
+    else
+     { 
+       // the volume has zero thickness in one or more directions , but the DFT
+       // grid is two pixels thick in those directions, and this would be confusingly
+       // reflected in the raw HDF5 output. instead, get the DFT fields in array form,
+       // postprocess to collapse the empty dimensions, then export reduced array to HDF5.
+       cdouble *array=0;
+       int rank, dims[3];
+       process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims);
+       if ( rank>0 && am_master() )
+        { 
+          array=collapse_empty_dimensions(array, &rank, dims, dft_volume);
+          if (rank==0) abort("%s:%i: internal error",__FILE__,__LINE__);
+          size_t stdims[2];
+          stdims[0] = (size_t) dims[0];
+          stdims[1] = (size_t) ( (rank>1) ? dims[1] : 1);
+          size_t array_size = stdims[0] * stdims[1];
+          double *real_array = new double[array_size];
+          if (!real_array) abort("%s:%i:out of memory(%lu)",__FILE__,__LINE__,array_size);
+          for(int reim=0; reim<2; reim++)
+           { 
+             for(size_t n=0; n<array_size; n++) 
+              real_array[n] = (reim==0 ? real(array[n]) : imag(array[n]));
+             char dataname[100], filename[100];
+             snprintf(dataname,100,"%s_%i.%c",component_name(c),num_freq, reim ? 'i' : 'r');
+             snprintf(filename,100,"%s%s",HDF5FileName,strstr(".h5",HDF5FileName) ? "" : ".h5");
+             bool single_precision=false;
+             h5file f(filename, mode, false /*parallel*/);
+             f.write(dataname, rank, stdims, real_array, single_precision);
+             mode = h5file::READWRITE;
+           }
+          delete[] real_array;
+        }
+       if (array) delete[] array;
+     }
 }
 
 void fields::output_dft(dft_flux flux, const char *HDF5FileName)
