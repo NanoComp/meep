@@ -79,29 +79,22 @@ def main(args):
                                    eig_kpoint=mp.Vector3(0.4,0,0),
                                    eig_resolution=32) ]
 
-    symmetries = [ mp.Mirror(mp.Y,+1) ]
-
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
                         geometry=geometry,
-                        sources=sources,
-                        symmetries=symmetries)
+                        sources=sources)
 
-    xm = -0.5*sx + dpml + 0.5*Lw; # x-coordinate of monitor
-    mflux = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)));
+    xm = -0.5*sx + dpml + 0.5*Lw  # x-coordinate of monitor
+    mflux = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0), 1e-10))
 
-    bands = np.array([1],dtype=np.int32) # indices of modes for which to compute expansion coefficients
-    num_bands = 1;
-    alpha = np.zeros(2*num_bands,dtype=np.complex128) # preallocate array to store coefficients
-    vgrp = np.zeros(num_bands,dtype=np.float64)       # also store mode group velocities
-    mvol = mp.volume(mp.vec(xm,-0.5*sy+dpml),mp.vec(xm,+0.5*sy-dpml))
-    sim.fields.get_eigenmode_coefficients(mflux, mp.X, mvol, bands, mp.ODD_Z, alpha, vgrp)
+    bands = [1]  # indices of modes for which to compute expansion coefficients
+    alpha = sim.get_eigenmode_coefficients(mflux, bands)
 
-    alpha0Plus  = alpha[2*0 + 0]; # coefficient of forward-traveling fundamental mode
-    alpha0Minus = alpha[2*0 + 1]; # coefficient of backward-traveling fundamental mode
+    alpha0Plus  = alpha[2*0 + 0]  # coefficient of forward-traveling fundamental mode
+    alpha0Minus = alpha[2*0 + 1]  # coefficient of backward-traveling fundamental mode
 
     print("refl:, {}, {:.8f}".format(Lt, abs(alpha0Minus)**2))
 
