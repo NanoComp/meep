@@ -23,7 +23,7 @@ See also [holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/sch
 Transmission Spectrum
 ---------------------
 
-To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that our periodicity is 1 which is a typical choice for photonic crystals.
+To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that the periodicity is 1 which is a typical choice for photonic crystals.
 
 ```scm
 (define-param eps 13)         ; dielectric constant of waveguide
@@ -49,7 +49,7 @@ Now, the computational cell is:
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 ```
 
-Our `geometry` will consist of a single `block` for the waveguide and `2N` cylindrical holes. To make the holes, we could use some kind of loop (see also [How to Write a Loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme)), but in this case it is even easier to use the predefined function `geometric-object-duplicates`, which replicates a given object by shifting by a given vector a given number of times. See the [User Interface](../Scheme_User_Interface.md#geometry-utilities).
+The `geometry` will consist of a single `block` for the waveguide and `2N` cylindrical holes. To make the holes, we could use some kind of loop (see also [How to Write a Loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme)), but in this case it is even easier to use the predefined function `geometric-object-duplicates`, which replicates a given object by shifting by a given vector a given number of times. See the [User Interface](../Scheme_User_Interface.md#geometry-utilities).
 
 ```scm
 (set! geometry
@@ -188,7 +188,7 @@ The structure is exactly the same as above, and only the sources and analysis ar
 
 ```
 
-The `(begin ...)` is a standard Scheme construct to group several statements into one, much like `{...}` brackets in C. Our new source is still a Gaussian, but is now a point source at the origin:
+The `(begin ...)` is a standard Scheme construct to group several statements into one, much like `{...}` brackets in C. The new source is still a Gaussian, but is now a point source at the origin:
 
 ```scm
 (set! sources (list

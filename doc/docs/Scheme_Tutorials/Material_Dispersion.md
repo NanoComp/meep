@@ -8,22 +8,22 @@ In these two examples, we will perform simulations with a **frequency-dependent 
 
 ### Reflectance Spectrum of Air-Silica Interface
 
-We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) spectrum at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz) (silica). As a validation, we will compare the simulated result with the analytic reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations). This is similar to an example in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface) which involved computing the angular reflectance spectrum at a single wavelength.
+We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) spectrum at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz). As a validation, we will compare the simulated result with the analytic reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations). This is similar to an example in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface) which involved computing the angular reflectance spectrum at a single wavelength.
 
 The wavelength-dependent, lossless permittivity of fused quartz, measured experimentally at 20$^\circ$, can be approximated by the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation):
 
 $$\varepsilon(\lambda) = 1 + \frac{0.6961663\lambda^2}{\lambda^2-0.0684043^2} + \frac{0.4079426\lambda^2}{\lambda^2-0.1162414^2} + \frac{0.8974794\lambda^2}{\lambda^2-9.896161^2}$$
 
-The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be imported into Meep as a [Lorentzian susceptibility](Materials/#material-dispersion) via a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/scheme/examples/materials-library.scm#L39-L56).
+The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be imported into Meep as a [Lorentzian susceptibility](Materials/#material-dispersion) via a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/scheme/examples/materials-library.scm#L163-L180).
 
-The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the quartz to obtain the reflected power. The details of this type of calculation are described in [Tutorial/Basics](Basics/#transmission-spectrum-of-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities.
+The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the quartz to obtain the reflected power. The details of this type of calculation are described in [Tutorial/Basics](Basics/#transmittance-spectrum-of-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities.
 
 The simulation script is below and in [refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
 
 ```scm
 (include "/path/to/materials-library.scm")
 
-(set-param! resolution 400) ; pixels/um
+(set-param! resolution 200) ; pixels/μm
 
 (define-param sz 10)
 (set! geometry-lattice (make lattice (size no-size no-size sz)))
@@ -77,14 +77,14 @@ A plot of the reflectance spectrum based on the simulated data and the analytic 
 f0 = dlmread("flux0.dat",",");
 f = dlmread("flux.dat",",");
 
-lambdas = 1./f(:,1);
-R = -f(:,2)./f(:,2);
+wvls = 1./f(:,1);
+R_meep = -f(:,2)./f(:,2);
 
-eps_silica = @(l) 1+(0.6961663*l.^2)./(l.^2-0.0684043^2)+(0.4079426*l.^2)./(l.^2-0.1162414^2)+(0.8974794*l.^2)./(l.^2-9.896161^2);
-R_fresnel = @(l) abs((1-eps_silica(l).^0.5)./(1+eps_silica(l).^0.5)).^2;
+eps_quartz = @(l) 1+(0.6961663*l.^2)./(l.^2-0.0684043^2)+(0.4079426*l.^2)./(l.^2-0.1162414^2)+(0.8974794*l.^2)./(l.^2-9.896161^2);
+R_fresnel = @(l) abs((1-eps_quartz(l).^0.5)./(1+eps_quartz(l).^0.5)).^2;
 
-plot(lambdas,R,'bo-',lambdas,R_fresnel(lambdas),'rs-');
-xlabel("wavelength (um)");
+plot(wvls,R_meep,'bo-',wvls,R_fresnel(wvls),'rs-');
+xlabel("wavelength (μm)");
 ylabel("reflectance");
 legend("meep","analytic");
 ```
