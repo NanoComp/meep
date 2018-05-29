@@ -8,80 +8,76 @@ In these two examples, we will perform simulations with a **frequency-dependent 
 
 ### Reflectance Spectrum of Air-Silica Interface
 
-We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) spectrum at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz) (silica). As a validation, we will compare the simulated result with the analytic reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations). This is similar to an example in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface) which involved computing the angular reflectance spectrum at a single wavelength.
+We will compute the broadband [reflectance](https://en.wikipedia.org/wiki/Reflectance) spectrum at normal incidence for a planar interface of vacuum/air and [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz). As a validation, we will compare the simulated result with the analytic reflectance computed using the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations). This is similar to an example in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface) which involved computing the broadband reflectance spectrum over a range of angles.
 
 The wavelength-dependent, lossless permittivity of fused quartz, measured experimentally at 20$^\circ$, can be approximated by the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation):
 
 $$\varepsilon(\lambda) = 1 + \frac{0.6961663\lambda^2}{\lambda^2-0.0684043^2} + \frac{0.4079426\lambda^2}{\lambda^2-0.1162414^2} + \frac{0.8974794\lambda^2}{\lambda^2-9.896161^2}$$
 
-The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be imported into Meep as a [Lorentzian susceptibility](Materials/#material-dispersion) via a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L39-L53).
+The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.7 μm. The Sellmeier form for the permittivity of fused quartz can be imported into Meep as a [Lorentzian susceptibility](Materials/#material-dispersion) via a slight reorganization to convert the wavelength dependence into frequency. This is implemented in the [materials library](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L165-L181).
 
-The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the quartz to obtain the reflected power. The details of this type of calculation are described in [Tutorial/Basics](Basics/#transmission-spectrum-of-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities.
+The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the fused quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the fused quartz to obtain the reflected power. The details of this type of calculation are described in [Tutorial/Basics](Basics/#transmittance-spectrum-of-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities.
 
 The simulation script is below and in [refl-quartz.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-quartz.py).
 
 ```py
 import meep as mp
-import argparse
 
 import sys
 sys.path.insert(0, '/path/to/materials_library/')
 from materials_library import *
 
-def main(args):
+resolution = 200  # pixels/μm
 
-    resolution = args.res
+dpml = 1.0
+sz = 10 + 2*dpml
+cell_size = mp.Vector3(0,0,sz)
+pml_layers = [ mp.PML(dpml) ]
 
-    sz = args.sz
-    cell_size = mp.Vector3(0,0,sz)
+wvl_min = 0.4
+wvl_max = 0.8
+fmin = 1/wvl_max
+fmax = 1/wvl_min
+fcen = 0.5*(fmax+fmin)
+df = fmax-fmin
+nfreq = 50
+        
+sources = [ mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ex, center=mp.Vector3(0,0,-0.5*sz+dpml)) ]
 
-    lambda_min = 0.4
-    lambda_max = 0.8
-    fmax = 1/lambda_min
-    fmin = 1/lambda_max
-    fcen = 0.5*(fmax+fmin)
-    df = fmax-fmin
+sim = mp.Simulation(cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    dimensions=1,
+                    resolution=resolution)
+
+refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
+refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(), 1e-9))
+
+empty_flux = mp.get_fluxes(refl)
+empty_data = sim.get_flux_data(refl)
+sim.reset_meep()
     
-    dpml = 1.0
-    pml_layers = [ mp.PML(dpml) ]
+geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=fused_quartz) ]
+
+sim = mp.Simulation(cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    sources=sources,
+                    dimensions=1,
+                    resolution=resolution)
+
+refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+sim.load_minus_flux_data(refl, empty_data)
     
-    sources = [ mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ex, center=mp.Vector3(0,0,-0.5*sz+dpml)) ]
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(), 1e-9))
 
-    if args.empty:
-        geometry = []
-    else:
-        geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=fused_quartz) ]
+refl_flux = mp.get_fluxes(refl)
+freqs = mp.get_flux_freqs(refl)
 
-    sim = mp.Simulation(cell_size=cell_size,
-                        boundary_layers=pml_layers,
-                        geometry=geometry,
-                        sources=sources,
-                        dimensions=1,
-                        k_point=mp.Vector3(0,0,0),
-                        resolution=resolution)
-
-    refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
-
-    nfreq = 50
-    refl = sim.add_flux(fcen, df, nfreq, refl_fr)
-
-    if not args.empty:
-        sim.load_minus_flux('refl-flux', refl)
-
-    sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
-
-    if args.empty:
-        sim.save_flux('refl-flux', refl)
-
-    sim.display_fluxes(refl)
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-empty', action='store_true', default=False, help="empty? (default: False)")
-    parser.add_argument('-res', type=int, default=400, help='resolution (default: 400 pixels/um)')
-    parser.add_argument('-sz', type=float, default=10, help='cell size (default: 10 um)')
-    args = parser.parse_args()
-    main(args)
+for i in range(0,nfreq):
+    print("refl:, {}, {}".format(1/freqs[i],-refl_flux[i]/empty_flux[i]))
 ```
 
 The following Bash shell script runs the two simulations, pipes the output to a file, and extracts the flux data into a separate file.
@@ -89,11 +85,8 @@ The following Bash shell script runs the two simulations, pipes the output to a 
 ```sh
 #!/bin/bash
 
-python refl-quartz.py -empty |tee flux0.out
-grep flux1: flux0.out |cut -d , -f2- > flux0.dat
-
 python refl-quartz.py |tee flux.out
-grep flux1: flux.out |cut -d , -f2- > flux.dat
+grep refl: flux.out |cut -d , -f2- > flux.dat
 ```
 
 A plot of the reflectance spectrum based on the simulated data and the analytic Fresnel equations is generated using the Python script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
@@ -103,19 +96,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-f0 = np.genfromtxt("flux0.dat", delimiter=",")
 f = np.genfromtxt("flux.dat", delimiter=",")
 
-lambdas = 1/f[:,0]
-R_meep = -f[:,1]/f0[:,1]
+wvls = f[:,0]
+R_meep = f[:,1]
 
-eps_fused_quartz = lambda l: 1+0.6961663*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.4079426*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.8974794*pow(l,2)/(pow(l,2)-pow(9.896161,2))
-R_fresnel = lambda l: math.pow(math.fabs(1-math.sqrt(eps_fused_quartz(l)))/(1+math.sqrt(eps_fused_quartz(l))),2)
-R_analytic = [ R_fresnel(i) for i in lambdas ]
+eps_quartz = lambda l: 1+0.6961663*math.pow(l,2)/(pow(l,2)-pow(0.0684043,2))+0.4079426*pow(l,2)/(pow(l,2)-pow(0.1162414,2))+0.8974794*pow(l,2)/(pow(l,2)-pow(9.896161,2))
+R_fresnel = lambda l: math.pow(math.fabs(1-math.sqrt(eps_quartz(l)))/(1+math.sqrt(eps_quartz(l))),2)
+R_analytic = [ R_fresnel(i) for i in wvls ]
 
-plt.plot(lambdas,R_meep,'bo-',label='meep')
-plt.plot(lambdas,R_analytic,'rs-',label='analytic')
-plt.xlabel("wavelength (um)")
+plt.plot(wvls,R_meep,'bo-',label='meep')
+plt.plot(wvls,R_analytic,'rs-',label='analytic')
+plt.xlabel("wavelength (μm)")
 plt.ylabel("reflectance")
 plt.axis([0.4, 0.8, 0.0340, 0.0365])
 plt.xticks([t for t in np.arange(0.4,0.9,0.1)])

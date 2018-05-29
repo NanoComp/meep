@@ -32,7 +32,7 @@ import argparse
 def main(args):
 ```
 
-Next, we'll define some parameters of our structure as in the figure above. All lengths are in units of microns (&#956;m). The periodicity of the photonic crystal is 1 &#956;m.
+Next, we'll define some parameters of our structure as in the figure above. All lengths are in units of microns (μm). The periodicity of the photonic crystal is 1 μm.
 
 ```py
 eps = 13          # dielectric constant of waveguide
@@ -60,7 +60,7 @@ Now, the computational cell is:
 cell = mp.Vector3(sx, sy, 0)
 ```
 
-Our `geometry` will consist of a single `Block` for the waveguide, and `2N` cylindrical holes:
+The `geometry` will consist of a single `Block` for the waveguide, and `2N` cylindrical holes:
 
 ```py
 blk = mp.Block(size=mp.Vector3(1e20, w, 1e20), material=mp.Medium(epsilon=eps))
@@ -207,7 +207,7 @@ else:
    ...sources and run from above, to get spectrum...
 ```
 
-Our new source is still a Gaussian, but is now a point source at the origin:
+The new source is still a Gaussian, but is now a point source at the origin:
 
 ```py
 src = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Hz, mp.Vector3(0))]

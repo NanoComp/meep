@@ -40,43 +40,54 @@ This is all done automatically in Meep using the `get_eigenmode_coefficients` ro
 The mode-decomposition feature is available via the `meep::fields::get_eigenmode_coefficients` function callable from Python or C++. This function makes use of several lower-level functions which are described in more detail below. The C++ prototype for this routine is:
 
 ```c++
-std::vector<cdouble>
- fields::get_eigenmode_coefficients(dft_flux *flux,
-                                    direction d,
-                                    const volume &where,
-                                    std::vector<int> bands,
-                                    kpoint_func k_func=0,
-                                    void *user_data=0)
+void fields::get_eigenmode_coefficients(dft_flux flux,
+                                        const volume &eig_vol,
+                                        int *bands,
+                                        int num_bands,
+                                        int parity,
+                                        double eig_resolution,
+                                        double eigensolver_tol,
+                                        std::complex<double> *coeffs,
+                                        double *vgrp,
+                                        kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data)
 ```
 The following are the parameters:
 
 + `flux` is a `dft_flux` object containing the frequency-domain fields on a cross-sectional slice perpendicular to the waveguide axis
 
-+ `d` is the direction of the waveguide axis
-
-+ `where` is a `volume` describing the cross-sectional slice
++ `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`). 
 
 + `bands` is an array of integers corresponding to the mode indices
 
-+ `user_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
++ `num_bands` is the length of the `bands` array
+
++ `parity` is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
+
++ `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations.
+
++ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.
+
++ `coeffs` is a user-allocated array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
+
++ `vgrp` is an optional user-allocated `double`-valued array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
+
++ `user_kpoint_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
 
 ```c++
- vec (*kpoint_func)(void user_data, double freq, int band);
+vec (*kpoint_func)(double freq, int mode, void *user_data);
 ```
 
-The return value of `get_mode_coefficients` is an array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array:
++ `user_kpoint_data` User data passed to the `user_kpoint_func`
 
-````c++
- std::vector<cdouble> coeffs=f.get_eigenmode_coefficient(...)
- fields::get_eigenmode_coefficients(dft_flux *flux,
-                                    direction d,
-                                    const volume &where,
-                                    std::vector<int> bands,
-                                    kpoint_func k_func=0,
-                                    void *user_data=0);
 
+```c++
  int num_bands = bands.size();
  int num_freqs = Flux->Nfreq;
+
+ std::vector<cdouble> coeffs(2 * num_bands * num_freqs);
+ f.get_eigenmode_coefficients(...);
+
  for(int nb=0; nb<num_bands; nb++)
   for(int nf=0; nf<num_freqs++; nf++)
    { 
@@ -85,7 +96,7 @@ The return value of `get_mode_coefficients` is an array of type `std::complex<do
      cdouble AlphaPlus  = coeffs[2*nb*num_freqs + nf + 0];
      cdouble AlphaMinus = coeffs[2*nb*num_freqs + nf + 1];
      ...
-````
+```
 
 ## Normalization
 

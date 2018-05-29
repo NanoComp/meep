@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # From the Meep tutorial: transmission around a 90-degree waveguide bend in 2d.
 from __future__ import division
 
@@ -99,6 +101,6 @@ plt.plot(wl,Rs,'bo-',label='reflectance')
 plt.plot(wl,Ts,'ro-',label='transmittance')
 plt.plot(wl,1-Rs-Ts,'go-',label='loss')
 plt.axis([5.0, 10.0, 0, 1])
-plt.xlabel("wavelength (um)")
+plt.xlabel("wavelength (μm)")
 plt.legend(loc="upper right")
 plt.show()

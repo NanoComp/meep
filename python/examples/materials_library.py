@@ -205,6 +205,40 @@ GaAs_susc = [ mp.LorentzianSusceptibility(frequency=GaAs_frq1, gamma=GaAs_gam1, 
 GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc, valid_freq_range=GaAs_range)
 
 #------------------------------------------------------------------
+# stoichiometric silicon nitride (Si3N4) from H. R. Philipp, Optical properties of silicon nitride, J. Electrochem. Soc. 120, 295-300, 1973
+# fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
+# wavelength range: 0.207 - 1.24 um
+
+Si3N4_VISNIR_range = mp.FreqRange(min=1/1.24, max=1/0.207)
+
+Si3N4_VISNIR_frq1 = 1/(0.13967*um_scale)
+Si3N4_VISNIR_gam1 = 0
+Si3N4_VISNIR_sig1 = 2.8939
+
+Si3N4_VISNIR_susc = [ mp.LorentzianSusceptibility(frequency=Si3N4_VISNIR_frq1, gamma=Si3N4_VISNIR_gam1, sigma=Si3N4_VISNIR_sig1) ]
+
+Si3N4_VISNIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_VISNIR_susc, valid_freq_range=Si3N4_VISNIR_range)
+
+#------------------------------------------------------------------
+# stoichiometric silicon nitride (Si3N4) from K. Luke, et. al., Broadband mid-infrared frequency comb generation in a Si3N4 microresonator, Opt. Lett. 40, 4823-4826, 2015
+# fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
+# wavelength range: 0.310 - 5.504 um
+
+Si3N4_NIR_range = mp.FreqRange(min=1/5.504, max=1/0.310)
+
+Si3N4_NIR_frq1 = 0.1353406
+Si3N4_NIR_gam1 = 0
+Si3N4_NIR_sig1 = 3.0249
+Si3N4_NIR_frq2 = 1239.842
+Si3N4_NIR_gam2 = 0
+Si3N4_NIR_sig2 = 40314
+
+Si3N4_NIR_susc = [ mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq1, gamma=Si3N4_NIR_gam1, sigma=Si3N4_NIR_sig1),
+                   mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq2, gamma=Si3N4_NIR_gam2, sigma=Si3N4_NIR_sig2) ]
+
+Si3N4_NIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_NIR_susc, valid_freq_range=Si3N4_NIR_range)
+
+#------------------------------------------------------------------
 
 # elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um

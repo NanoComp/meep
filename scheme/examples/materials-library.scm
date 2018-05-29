@@ -206,6 +206,41 @@
 
 ;------------------------------------------------------------------
 
+; stoichiometric silicon nitride (Si3N4) from H. R. Philipp, Optical properties of silicon nitride, J. Electrochem. Soc. 120, 295-300, 1973
+; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
+; wavelength range: 0.207 - 1.24 um
+
+(define Si3N4-VISNIR-frq1 (/ (* 0.13967 um_scale)))
+(define Si3N4-VISNIR-gam1 0)
+(define Si3N4-VISNIR-sig1 2.8939)
+
+(define Si3N4-VISNIR (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Si3N4-VISNIR-frq1) (gamma Si3N4-VISNIR-gam1) (sigma Si3N4-VISNIR-sig1)))))
+
+;------------------------------------------------------------------
+
+; stoichiometric silicon nitride (Si3N4) from K. Luke, et. al., Broadband mid-infrared frequency comb generation in a Si3N4 microresonator, Opt. Lett. 40, 4823-4826, 2015
+; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
+; wavelength range: 0.310 - 5.504 um
+
+(define Si3N4-NIR-frq1 (/ (* 0.1353406 um_scale)))
+(define Si3N4-NIR-gam1 0)
+(define Si3N4-NIR-sig1 3.0249)
+(define Si3N4-NIR-frq2 (/ (* 1239.842 um_scale)))
+(define Si3N4-NIR-gam2 0)
+(define Si3N4-NIR-sig2 40314)
+
+(define Si3N4-NIR (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Si3N4-NIR-frq1) (gamma Si3N4-NIR-gam1) (sigma Si3N4-NIR-sig1))
+  (make lorentzian-susceptibility
+    (frequency Si3N4-NIR-frq2) (gamma Si3N4-NIR-gam2) (sigma Si3N4-NIR-sig2)))))
+
+;------------------------------------------------------------------
+
 ; elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 ; wavelength range: 0.2 - 12.4 um
 

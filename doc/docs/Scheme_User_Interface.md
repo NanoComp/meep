@@ -775,7 +775,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmissionreflection-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
+Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflecttance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

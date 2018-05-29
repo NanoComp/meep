@@ -247,7 +247,7 @@ If you look at the example file rods-plates.ctl ([3](http://ab-initio.mit.edu/~m
 
 Each Casimir force calculation requires many different, very short Meep simulations. For this type of computation, it is most efficient when running on a cluster to let each individual processor handle a subset of these simulations, rather than dividing up every simulation among the entire cluster (the default behavior for the MPI version of Meep). This way the speedup is almost exactly linear in the number of processors used. All of the functions used below are defined in the file parallel.scm ([4](http://ab-initio.mit.edu/~mccauley/casimir-examples/parallel.scm)), which should be included in the header of any ctl file using them.
 
-Our strategy (shown in [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) is as follows: each Casimir force calculation has a set of "internal" indices, each of which denotes a separate simulation. The sum of the results from all of these simulations gives the actual force. In our example (as in most examples), the internal indices are the source polarization, the list of sides for the source surface, and the harmonic moments $n$:
+The strategy (shown in [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) is as follows: each Casimir force calculation has a set of "internal" indices, each of which denotes a separate simulation. The sum of the results from all of these simulations gives the actual force. In our example (as in most examples), the internal indices are the source polarization, the list of sides for the source surface, and the harmonic moments $n$:
 
 ```scm
  (define pol-list (list Ex Ey Ez Hx Hy Hz)) ;source polarizations
