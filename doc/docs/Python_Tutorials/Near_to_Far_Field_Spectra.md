@@ -10,7 +10,7 @@ There are three steps to using the near-to-far-field feature. First, we need to 
 
 ### Radiation Pattern of an Antenna
 
-In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. See [antenna-radiation.py](https://github.com/stevengj/meep/blob/master/python/examples/antenna-radiation.py). This involves an electric-current point source as the emitter in 2d vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
+In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. See [antenna-radiation.py](https://github.com/stevengj/meep/blob/master/python/examples/antenna-radiation.py). This involves an electric-current point source as the emitter in vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
@@ -19,15 +19,13 @@ In this example, we use the near-to-far-field transformation feature to compute 
 We use the `get_farfield` routine to compute the far fields by looping over a set of points along the circumference of the circle. The simulation script is shown below.
 
 ```py
-from __future__ import division, print_function
-
-import math
 import meep as mp
+import math
 
 resolution = 50
 sxy = 4
 dpml = 1
-cell = mp.Vector3(sxy + 2 * dpml, sxy + 2 * dpml, 0)
+cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
 
 pml_layers = mp.PML(dpml)
 
@@ -35,7 +33,7 @@ fcen = 1.0
 df = 0.4
 src_cmpt = mp.Ez
 
-sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(), component=src_cmpt)
+sources = mp.Source(src=mp.GaussianSource(fcen,fwidth=df), center=mp.Vector3(), component=src_cmpt)
 
 if src_cmpt == mp.Ex:
     symmetries = [mp.Mirror(mp.Y)]
@@ -51,24 +49,24 @@ sim = mp.Simulation(cell_size=cell,
                     boundary_layers=[pml_layers])
 
 nearfield = sim.add_near2far(fcen, 0, 1,
-                             mp.Near2FarRegion(mp.Vector3(0, 0.5 * sxy), size=mp.Vector3(sxy)),
-                             mp.Near2FarRegion(mp.Vector3(0, -0.5 * sxy), size=mp.Vector3(sxy), weight=-1.0),
-                             mp.Near2FarRegion(mp.Vector3(0.5 * sxy), size=mp.Vector3(0, sxy)),
-                             mp.Near2FarRegion(mp.Vector3(-0.5 * sxy), size=mp.Vector3(0, sxy), weight=-1.0))
+                             mp.Near2FarRegion(mp.Vector3(0,  0.5*sxy), size=mp.Vector3(sxy)),
+                             mp.Near2FarRegion(mp.Vector3(0, -0.5*sxy), size=mp.Vector3(sxy), weight=-1.0),
+                             mp.Near2FarRegion(mp.Vector3( 0.5*sxy), size=mp.Vector3(0,sxy)),
+                             mp.Near2FarRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(0,sxy), weight=-1.0))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
 
-r = 1000 * (1 / fcen)  # 1000 wavelengths out from the source
-npts = 100             # number of points in [0,2*pi) range of angles
+r = 1000*(1/fcen)  # 1000 wavelengths out from the source
+npts = 100         # number of points in [0,2*pi) range of angles
 
 for n in range(npts):
-    ff = sim.get_farfield(nearfield, mp.Vector3(r * math.cos(2 * math.pi * (n / npts)),
-                                                r * math.sin(2 * math.pi * (n / npts))))
-    print("farfield: {}, {}, ".format(n, 2 * math.pi * n / npts), end='')
+    ff = sim.get_farfield(nearfield, mp.Vector3(r*math.cos(2*math.pi*(n/npts)),
+                                                r*math.sin(2*math.pi*(n/npts))))
+    print("farfield: {}, {}, ".format(n,2*math.pi*n/npts), end='')
     print(", ".join([str(f).strip('()').replace('j', 'i') for f in ff]))
 ```
 
-We compute the far fields at a single frequency `fcen` for three different polarizations of the point source by running three separate times and setting the `src_cmpt` parameter to `Ex`, `Ey`, and `Ez`. The output consists of eight columns containing the far-field points' index (integer), angle (radians), followed by the six field components ($E_x$, $E_y$, $E_z$, $H_x$, $H_y$, $H_z$). Note that the far fields computed analytically using `near2far` are always complex even though the near fields are real as in this example. From the far fields at each point $\mathbf{r}$, we can compute the in-plane flux: $\sqrt{P_x^2+P_y^2}$, where $P_x$ and $P_y$ are the components of the Poynting vector $\mathbf{P}=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$.
+We compute the far fields at a single frequency corresponding to a wavelength of 1 μm (`fcen`) for three different polarizations of the point source by running three separate times and setting the `src_cmpt` parameter to `Ex`, `Ey`, and `Ez`. The output consists of eight columns containing the far-field points' index (integer), angle (radians), followed by the six field components ($E_x$, $E_y$, $E_z$, $H_x$, $H_y$, $H_z$). Note that the far fields computed analytically using `near2far` are always complex even though the near fields are real as in this example. From the far fields at each point $\mathbf{r}$, we can compute the in-plane flux: $\sqrt{P_x^2+P_y^2}$, where $P_x$ and $P_y$ are the components of the Poynting vector $\mathbf{P}=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$.
 
 We plot the in-plane flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown in the linearly-scaled, polar-coordinate plots below. As expected, the $J_x$ and $J_y$ sources produce dipole radiation patterns while $J_z$ has a monopole pattern. These plots were generated using this [Jupyter notebook](http://ab-initio.mit.edu/~oskooi/wiki_data/farfield_radiation_pattern.ipynb) and [output file](http://ab-initio.mit.edu/~oskooi/wiki_data/source_Jy_farfields.dat).
 
