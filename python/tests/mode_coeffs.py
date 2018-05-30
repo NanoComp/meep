@@ -59,11 +59,11 @@ class TestModeCoeffs(unittest.TestCase):
 
         TestPassed=True
         TOLERANCE=5.0e-3
-        c0 = alpha[2*(mode_num-1) + 0] # coefficient of forward-traveling wave for mode #mode_num
+        c0 = alpha[mode_num - 1, 0, 0] # coefficient of forward-traveling wave for mode #mode_num
         for nm in range(1,len(modes_to_check)+1):
             if nm != mode_num:
-                cfrel = np.abs(alpha[2*(nm-1)+0]) / np.abs(c0)
-                cbrel = np.abs(alpha[2*(nm-1)+1]) / np.abs(c0)
+                cfrel = np.abs(alpha[nm - 1, 0, 0]) / np.abs(c0)
+                cbrel = np.abs(alpha[nm - 1, 0, 1]) / np.abs(c0)
                 if cfrel > TOLERANCE or cbrel > TOLERANCE:
                     TestPassed=False
         self.assertTrue(TestPassed) # test 1: coefficient of excited mode >> coeffs of all other modes
