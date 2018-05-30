@@ -56,7 +56,7 @@ We will compute the fundamental mode at five different tolerance values chosen o
 (exit)
 ```
 
-The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The inset shows the magnitude of the scalar E$_z$ field, computed using a tolerance of 10$^{-12}$, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and the faint presence of the point source.
+The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The inset shows the magnitude of the scalar E$_z$ field, computed using a tolerance of 10<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and the faint presence of the point source.
 
 <center>
 ![](../images/CWsolver-scheme.png)

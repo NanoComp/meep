@@ -115,4 +115,4 @@ plt.axis('off')
 plt.show()
 ```
 
-The left inset of the figure above shows the magnitude of the scalar E$_z$ field, computed using the frequency-domain solver with a tolerance of 10$<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. The results are qualitatively similar.
+The left inset of the figure above shows the magnitude of the scalar E$_z$ field, computed using the frequency-domain solver with a tolerance of 10<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. The results are qualitatively similar.
