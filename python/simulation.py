@@ -1088,10 +1088,10 @@ class Simulation(object):
                     self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical))
 
     def change_sources(self, new_sources):
-        self.sources = new_sources if type(new_sources) is list else [new_sources]
+        self.sources = new_sources
         if self.fields:
             self.fields.remove_sources()
-            for s in new_sources:
+            for s in self.sources:
                 self.add_source(s)
 
     def reset_meep(self):
