@@ -18,7 +18,7 @@ Then you just configure Meep with the flag `--with-mpi`. If you run the resultin
 Using Parallel Meep
 -------------------
 
-The parallel version of Meep is designed to operate completely transparently: you use the same Python/Scheme file as for the serial version, and the output is the same but it is just faster.
+The parallel version of Meep is designed to operate completely transparently: you use the same Python/Scheme file as for the serial version, and the output is the same but it is just faster. In Python, the output of each process that is not the master (rank 0) is sent to `devnull`, and in Scheme, the special `print` function only prints output from the master process.
 
 In order to run MPI programs, you typically have to use a command like `mpirun` with an argument to say how many processes you want to use. Consult your MPI documentation. For example, with many popular MPI implementations, to run with 4 processes you would use something like:
 
