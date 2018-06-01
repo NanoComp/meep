@@ -1053,12 +1053,15 @@ class Simulation(object):
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
             eig_vol = flux.where
+        else:
+            eig_vol = self._volume_from_kwargs(vol=eig_vol)
 
         num_bands = len(bands)
-        coeffs = np.zeros(2 * num_bands, dtype=np.complex128)
-        self.fields.get_eigenmode_coefficients(flux, eig_vol, np.array(bands, dtype=np.intc), eig_parity, eig_resolution, eig_tolerance, coeffs, None, kpoint_func)
+        coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
+        self.fields.get_eigenmode_coefficients(flux, eig_vol, np.array(bands, dtype=np.intc), eig_parity,
+                                               eig_resolution, eig_tolerance, coeffs, None, kpoint_func)
 
-        return coeffs
+        return np.reshape(coeffs, (num_bands, flux.Nfreq, 2))
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:

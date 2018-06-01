@@ -99,7 +99,7 @@ def main(args):
 
     coeffs = sim.get_eigenmode_coefficients(mode_monitor, [1])    
     
-    print("mode:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0])**2,abs(coeffs[1])**2))
+    print("mode:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,0])**2,abs(coeffs[0,0,1])**2))
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
