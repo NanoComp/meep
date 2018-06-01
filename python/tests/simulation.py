@@ -413,7 +413,7 @@ class TestSimulation(unittest.TestCase):
 
         sources = [mp.Source(src=mp.GaussianSource(1, fwidth=1), center=mp.Vector3(), component=mp.Ez)]
         sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=10, sources=sources)
-        h = mp.Harminv(mp.Ez, mp.Vector3(), 2, 1)
+        h = mp.Harminv(mp.Ez, mp.Vector3(), 1.4, 0.5)
         check_warnings(sim, h)
 
         sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=10, sources=sources)
@@ -421,7 +421,7 @@ class TestSimulation(unittest.TestCase):
         check_warnings(sim, h)
 
         sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=10, sources=sources)
-        h = mp.Harminv(mp.Ez, mp.Vector3(), 1, 2)
+        h = mp.Harminv(mp.Ez, mp.Vector3(), 1, 1)
         check_warnings(sim, h, should_warn=False)
 
 

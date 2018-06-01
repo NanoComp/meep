@@ -210,12 +210,12 @@ class Harminv(object):
         for sf in source_freqs:
             sf_max = sf[0] + 0.5 * sf[1]
             sf_min = sf[0] - 0.5 * sf[1]
-            if sf_max > harminv_max:
-                warn_fmt = "Source frequency {} is outside maximum Harminv frequency {}"
-                warnings.warn(warn_fmt.format(sf_max, harminv_max), RuntimeWarning)
-            if sf_min < harminv_min:
-                warn_fmt = "Source frequency {} is outside minimum Harminv frequency {}"
-                warnings.warn(warn_fmt.format(sf_min, harminv_min), RuntimeWarning)
+            if harminv_max > sf_max:
+                warn_fmt = "Harminv frequency {} is outside maximum Source frequency {}"
+                warnings.warn(warn_fmt.format(harminv_max, sf_max), RuntimeWarning)
+            if harminv_min < sf_min:
+                warn_fmt = "Harminv frequency {} is outside minimum Source frequency {}"
+                warnings.warn(warn_fmt.format(harminv_min, sf_min), RuntimeWarning)
 
     def _analyze_harminv(self, sim, maxbands):
         harminv_cols = ['frequency', 'imag. freq.', 'Q', '|amp|', 'amplitude', 'error']
