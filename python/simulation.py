@@ -974,7 +974,12 @@ class Simulation(object):
         if self.fields is None:
             self.init_fields()
 
-        self.fields.output_dft(dft_fields.swigobj, fname)
+        if hasattr(dft_fields, 'swigobj'):
+            dft_fields_swigobj = dft_fields.swigobj
+        else:
+            dft_fields_swigobj = dft_fields
+
+        self.fields.output_dft(dft_fields_swigobj, fname)
 
     def get_dft_data(self, dft_chunk):
         n = mp._get_dft_data_size(dft_chunk)
@@ -1248,7 +1253,11 @@ class Simulation(object):
         return arr
 
     def get_dft_array(self, dft_obj, component, num_freq):
-        dft_swigobj = dft_obj.swigobj
+        if hasattr(dft_obj, 'swigobj'):
+            dft_swigobj = dft_obj.swigobj
+        else:
+            dft_swigobj = dft_obj
+
         if type(dft_swigobj) is mp.dft_fields:
             return mp.get_dft_fields_array(self.fields, dft_swigobj, component, num_freq)
         elif type(dft_swigobj) is mp.dft_flux:

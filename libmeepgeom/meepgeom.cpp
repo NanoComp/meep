@@ -1779,19 +1779,18 @@ static std::vector<geom_box> split_cell_into_boxes(meep::grid_volume *gv,
   }
 }
 
-static size_t get_pixels_in_box(geom_box *b) {
+static size_t get_pixels_in_box(geom_box *b, int empty_pixel=1) {
   int empty_x = b->low.x == b->high.x;
   int empty_y = b->low.y == b->high.y;
   int empty_z = b->low.z == b->high.z;
 
-  double v = ((empty_x ? 1 : b->high.x - b->low.x) *
-              (empty_y ? 1 : b->high.y - b->low.y) *
-              (empty_z ? 1 : b->high.z - b->low.z));
+  double v = ((empty_x ? empty_pixel : b->high.x - b->low.x) *
+              (empty_y ? empty_pixel : b->high.y - b->low.y) *
+              (empty_z ? empty_pixel : b->high.z - b->low.z));
 
   return v == 1 ? 0 : (size_t)ceil(v * fragment_stats::resolution);
 }
 
-// TODO: Is this correct?
 static void center_box(geom_box *b) {
   b->low = vector3_plus(geometry_center, b->low);
   b->high = vector3_plus(geometry_center, b->high);
@@ -1995,30 +1994,6 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
 }
 
-static bool is_line_or_plane(geom_box *b) {
-  switch(fragment_stats::dims) {
-  case meep::D1:
-    // already handled in get_pixels_in_box
-    break;
-  case meep::D2:
-    if (b->low.x == b->high.x || b->low.y == b->high.y) {
-      return true;
-    }
-    break;
-  case meep::D3:
-    if (b->low.x == b->high.x || b->low.y == b->high.y || b->low.z == b->high.z) {
-      return true;
-    }
-    break;
-  case meep::Dcyl:
-    if (b->low.x == b->high.x || b->low.z == b->high.z) {
-      return true;
-    }
-    break;
-  }
-  return false;
-}
-
 void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
 
   for (size_t i = 0; i < dft_data_list->size(); ++i) {
@@ -2029,13 +2004,9 @@ void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
         geom_box overlap_box;
         geom_box_intersection(&overlap_box, &dft_box, &box);
 
-        // Since geom_boxes_intersect returns true if two planes share a line or
-        // two volumes share a line or plane, we have to filter those cases out
-        // in order to avoid counting pixels multiple times.
-        if (is_line_or_plane(&overlap_box)) {
-          continue;
-        }
-        size_t overlap_pixels = get_pixels_in_box(&overlap_box);
+        // Note: Since geom_boxes_intersect returns true if two planes share a line or two volumes
+        // share a line or plane, there are cases where some pixels are counted multiple times.
+        size_t overlap_pixels = get_pixels_in_box(&overlap_box, 2);
         num_dft_pixels += overlap_pixels * (*dft_data_list)[i].num_freqs * (*dft_data_list)[i].num_components;
       }
     }

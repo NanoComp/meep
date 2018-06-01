@@ -81,9 +81,9 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[1], a_eps=100, a_mu=100, nonlin=300, susc=300, cond=300)
 
         # Check DFT regions
-        self.assertEqual(fs[0].num_dft_pixels, 2000)
-        self.assertEqual(fs[1].num_dft_pixels, 2800)
-        self.assertEqual(fs[2].num_dft_pixels, 5400)
+        self.assertEqual(fs[0].num_dft_pixels, 10240)
+        self.assertEqual(fs[1].num_dft_pixels, 17120)
+        self.assertEqual(fs[2].num_dft_pixels, 23840)
 
     def test_1d_with_overlap(self):
         # A z=30 cell split into three fragments of size 10 each, with a block
@@ -128,8 +128,8 @@ class TestFragmentStats(unittest.TestCase):
             self.check_stats(fs[i], a_eps=30, a_mu=30, nonlin=90, susc=90, cond=90)
 
         # Check dft stats
-        self.assertEqual(fs[0].num_dft_pixels, 1600)
-        self.assertEqual(fs[1].num_dft_pixels, 1000)
+        self.assertEqual(fs[0].num_dft_pixels, 8000)
+        self.assertEqual(fs[1].num_dft_pixels, 5600)
         self.assertEqual(fs[2].num_dft_pixels, 0)
 
     def test_1d_with_shifted_center(self):
@@ -165,19 +165,19 @@ class TestFragmentStats(unittest.TestCase):
 
         self.assertEqual(len(fs), 3)
 
-        for i in [1, 2]:
-            self.assertEqual(fs[i].num_dft_pixels, 0)
+        self.assertEqual(fs[1].num_dft_pixels, 800)
+        self.assertEqual(fs[2].num_dft_pixels, 0)
 
-        self.assertEqual(fs[0].num_dft_pixels, 1000)
+        self.assertEqual(fs[0].num_dft_pixels, 4000)
 
         # Same test with volume instead of center and size
         dft_vecs = make_dft_vecs(fldw=mp.Volume(mp.Vector3(z=-10), mp.Vector3(z=10)), fld_cmp=[mp.X, mp.Y])
         fs = self.get_fragment_stats(mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs)
 
-        for i in [1, 2]:
-            self.assertEqual(fs[i].num_dft_pixels, 0)
+        self.assertEqual(fs[1].num_dft_pixels, 800)
+        self.assertEqual(fs[2].num_dft_pixels, 0)
 
-        self.assertEqual(fs[0].num_dft_pixels, 1000)
+        self.assertEqual(fs[0].num_dft_pixels, 4000)
 
     def test_2d(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
@@ -217,12 +217,16 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
 
         # Check DFT regions
-        for i in [0, 1, 3, 4, 6, 7]:
+        for i in [0, 3, 6]:
             self.assertEqual(fs[i].num_dft_pixels, 0)
 
-        self.assertEqual(fs[2].num_dft_pixels, 20000)
-        self.assertEqual(fs[5].num_dft_pixels, 28000)
-        self.assertEqual(fs[8].num_dft_pixels, 54000)
+        self.assertEqual(fs[1].num_dft_pixels, 10240)
+        self.assertEqual(fs[4].num_dft_pixels, 17120)
+        self.assertEqual(fs[7].num_dft_pixels, 23840)
+
+        self.assertEqual(fs[2].num_dft_pixels, 51200)
+        self.assertEqual(fs[5].num_dft_pixels, 85600)
+        self.assertEqual(fs[8].num_dft_pixels, 119200)
 
     def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.
@@ -293,15 +297,15 @@ class TestFragmentStats(unittest.TestCase):
             fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2, dft_vecs=dft_vec)
 
             # Middle fragment is fully covered
-            self.assertEqual(fs[4].num_dft_pixels, 15000)
+            self.assertEqual(fs[4].num_dft_pixels, 30000)
 
             # 4 corners are 1/4 covered
             for i in [0, 2, 6, 8]:
-                self.assertEqual(fs[i].num_dft_pixels, 3750)
+                self.assertEqual(fs[i].num_dft_pixels, 7500)
 
             # The rest are half covered
             for i in [1, 3, 5, 7]:
-                self.assertEqual(fs[i].num_dft_pixels, 7500)
+                self.assertEqual(fs[i].num_dft_pixels, 15000)
 
     def test_3d(self):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
@@ -329,12 +333,9 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
 
         # Check DFT regions
-        for i in range(3, 27):
-            self.assertEqual(fs[i].num_dft_pixels, 0)
-
-        self.assertEqual(fs[0].num_dft_pixels, 200000)
-        self.assertEqual(fs[1].num_dft_pixels, 280000)
-        self.assertEqual(fs[2].num_dft_pixels, 540000)
+        self.assertEqual(fs[0].num_dft_pixels, 256000)
+        self.assertEqual(fs[1].num_dft_pixels, 428000)
+        self.assertEqual(fs[2].num_dft_pixels, 596000)
 
     def test_3d_with_overlap(self):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split
@@ -401,12 +402,16 @@ class TestFragmentStats(unittest.TestCase):
         self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
 
         # Check DFT regions
-        for i in [0, 1, 3, 4, 6, 7]:
+        for i in [0, 3, 6]:
             self.assertEqual(fs[i].num_dft_pixels, 0)
 
-        self.assertEqual(fs[2].num_dft_pixels, 20000)
-        self.assertEqual(fs[5].num_dft_pixels, 28000)
-        self.assertEqual(fs[8].num_dft_pixels, 54000)
+        self.assertEqual(fs[1].num_dft_pixels, 10240)
+        self.assertEqual(fs[4].num_dft_pixels, 17120)
+        self.assertEqual(fs[7].num_dft_pixels, 23840)
+
+        self.assertEqual(fs[2].num_dft_pixels, 51200)
+        self.assertEqual(fs[5].num_dft_pixels, 85600)
+        self.assertEqual(fs[8].num_dft_pixels, 119200)
 
 
 if __name__ == '__main__':
