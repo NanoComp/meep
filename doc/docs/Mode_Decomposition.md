@@ -31,7 +31,7 @@ $$
 
 2.  In MPB, compute the eigenmodes $\mathbf{E}^\pm_n$ and $\mathbf{H}^\pm_n$ as well as the propagation wavevectors β$_n$ for the same cross-sectional structure.
 
-3.  Compute the coefficients α$_n^\pm$ for any number of eigenmodes $n=1,2,...$
+3.  Compute the coefficients α$_n^\pm$ for any number of eigenmodes n=1,2,....
 
 This is all done automatically in Meep using the `get_eigenmode_coefficients` routine.
 
@@ -62,7 +62,7 @@ The following are the parameters:
 
 + `num_bands` is the length of the `bands` array
 
-+ `parity` is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
++ `parity` is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
 + `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations.
 
@@ -100,20 +100,15 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 ## Normalization
 
-The $\alpha$ coefficients computed by `get_eigenmode_coefficients`
-are normalized to ensure that their squared magnitude equals the
-power carried by the corresponding eigenmode, i.e.
+The α coefficients computed by `get_eigenmode_coefficients` are normalized to ensure that their squared magnitude equals the power carried by the corresponding eigenmode:
 
 $$|\alpha_n^\pm|^2 = P_n^\pm$$
 
-where $P_n^\pm$ is the power carried by $\pm$-traveling eigenmode $n$.
-This is discussed in more detail [below](#HowItWorks).
+where P$_n^\pm$ is the power carried by $\pm$-traveling eigenmode n. This is discussed in more detail [below](#HowItWorks).
 
 ## Related Computational Routines
 
-Besides `get_eigenmode_coefficients,` there are a few
-computational routines in `libmeep` that you may find useful
-for problems like those considered above.
+Besides `get_eigenmode_coefficients,` there are a few computational routines in `libmeep` that you may find useful for problems like those considered above.
 
 ### Computing MPB Eigenmodes
 ````
@@ -203,18 +198,15 @@ $$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle
   \tag{5}
 $$
 
-where $S$ is any surface transverse to the direction of propagation and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e. just $\hat{\mathbf{z}}$ in the case considered above). The normalization constant $C_{m}$ is a matter of convention, but in MPB it is taken to be the group velocity of the mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$: $$C_m = v_m A_S$$.
+where $S$ is any surface transverse to the direction of propagation and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e. $\hat{\mathbf{z}}$ in the case considered above). The normalization constant $C_{m}$ is a matter of convention, but in MPB it is taken to be the group velocity of the mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$: $$C_m = v_m A_S$$.
 
-Now consider a Meep calculation in which we have accumulated frequency-domain $\mathbf E^{\text{meep}}$ and $\mathbf H^{\text{meep}}$ fields on a `dft-flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane, the tangential components of the frequency-domain Meep fields take the form:
+Now consider a Meep calculation in which we have accumulated frequency-domain fields $\mathbf E^{\text{meep}}$ and $\mathbf H^{\text{meep}}$ on a `dft_flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane, the tangential components of the frequency-domain Meep fields take the form:
 
-$$ \mathbf E^{\text{meep}}_\parallel
-   = \sum_{n} (a_n^+ + a_n^-)\mathbf{E}_{n\parallel}^+
-$$
-$$ \mathbf H^{\text{meep}}_\parallel
-   = \sum_{n} (a_n^+ - a_n^-)\mathbf{H}_{n\parallel}^+
-$$
+$$ \mathbf E^{\text{meep}}_\parallel = \sum_{n} (a_n^+ + a_n^-)\mathbf{E}_{n\parallel}^+ $$
 
-We have used the well-known relations between the tangential components of the forward-traveling and backward-traveling field modes: 
+$$ \mathbf H^{\text{meep}}_\parallel = \sum_{n} (a_n^+ - a_n^-)\mathbf{H}_{n\parallel}^+ $$
+
+We have used the well-known relations between the tangential components of the forward- and backward-traveling field modes: 
 
 $$ \mathbf{E}^+_{n\parallel} =+\mathbf{E}^-_{n\parallel}
    \qquad
@@ -223,17 +215,11 @@ $$
 
 Taking the inner product of both equations with the $\mathbf{H}$ and $\mathbf{E}$ fields of each eigenmode, we find
 
-$$ \left\langle \mathbf{H}_m
-   \right|\left. \mathbf{E}^{\text{meep}} \right\rangle
-   =+(a_n^+ + a_n^-) v_m A_S
-$$
+$$ \left\langle \mathbf{H}_m \right|\left. \mathbf{E}^{\text{meep}} \right\rangle =+(a_m^+ + a_m^-) v_m A_S $$
 
-$$ \left\langle \mathbf{E}_m
-   \right|\left. \mathbf{H}^{\text{meep}} \right\rangle
-   =-(a_n^+ - a_n^+) v_m A_S
-$$
+$$ \left\langle \mathbf{E}_m \right|\left. \mathbf{H}^{\text{meep}} \right\rangle =-(a_m^+ - a_m^+) v_m A_S $$
 
-Thus, by evaluating the integrals on the LHS of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}, \mathbf{H}\}_m$ and the Meep-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $\alpha^\pm_m$. This calculation is carried out by the routine `meep::fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
+Thus, by evaluating the integrals on the left-hand side of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}_m, \mathbf{H}_m\}$ and the Meep-computed fields $\{\mathbf{E}^{\text{meep}}, \mathbf{H}^{\text{meep}}\}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $\alpha^\pm_m$. This calculation is carried out by the routine `meep::fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
 
 The Poynting flux carried by the Meep fields may be expressed in the form:
 
@@ -251,6 +237,6 @@ or alternatively,
 
 $$ \textit{power} = |\alpha_n^\pm|^2 $$
 
-where we have defined $\alpha_n^\pm \equiv \left(\sqrt{v_n A_S}{2S_x}\right)a_n^\pm$. These coefficients $\alpha_n^\pm$ are the quantities computed by `get_eigenmode_coefficients.`
+where we have defined $\alpha_n^\pm \equiv \sqrt{v_n A_S}/\left({2S_x}\right)a_n^\pm$. These coefficients $\alpha_n^\pm$ are the quantities computed by `get_eigenmode_coefficients.`
 
 

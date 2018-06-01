@@ -79,7 +79,7 @@ The results are shown in the figure below. The error in the fields decreases mon
 ![](../images/CWsolver-python.png)
 </center>
 
-As a further validation of the frequency-domain solver, we will compare its fields with those computed using time-stepping. This involves taking the Fourier transform of $E_z$ via the `add_dft_fields` routine. At the end of the time stepping, these frequency-domain fields are then output to an HDF5 file via `output_dft`. The script is extended as follows. 
+As a further validation of the frequency-domain solver, we will compare its fields with those computed using time-stepping. This involves taking the Fourier transform of E$_z$ via the `add_dft_fields` routine. At the end of the time stepping, these frequency-domain fields are then output to an HDF5 file via `output_dft`. The script is extended as follows. 
 
 ```py
 sim.reset_meep()
@@ -115,4 +115,4 @@ plt.axis('off')
 plt.show()
 ```
 
-The left inset of the figure above shows the magnitude of the scalar E$_z$ field, computed using the frequency-domain solver with a tolerance of 10$^{-12}$, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. The results are qualitatively similar.
+The left inset of the figure above shows the magnitude of the scalar E$_z$ field, computed using the frequency-domain solver with a tolerance of 10<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. The results are qualitatively similar.
