@@ -70,7 +70,7 @@ void get_polygon_center_size(dVec vertex_coordinates, meep::vec &center, meep::v
 // If Text==NULL, find any polygon on the given layer.
 // If Layer==-1, search all layers.
 // If multiple matching polygons are found, choose one arbitrarily.
-dVec get_polygon(char *GDSIIFile, char *Text, int Layer=-1)
+dVec get_polygon(const char *GDSIIFile, const char *Text, int Layer=-1)
 { 
   PolygonList polygons = libGDSII::GetPolygons(GDSIIFile, Text, Layer);
    
@@ -88,7 +88,7 @@ dVec get_polygon(char *GDSIIFile, char *Text, int Layer=-1)
   return polygons[0];
 }
 
-meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, char *Text, int Layer, double zsize)
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char *Text, int Layer, double zsize)
 {
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
 
@@ -105,10 +105,10 @@ meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, ch
   return gv;
 }
 
-meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, int Layer, double zsize)
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer, double zsize)
 { return set_geometry_from_GDSII(resolution, GDSIIFile, 0, Layer, zsize); }
 
-geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, char *Text, int Layer, double zmin, double zmax)
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text, int Layer, double zmin, double zmax)
 {
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
   
@@ -125,10 +125,10 @@ geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, char *
   return make_prism(material, vertices, num_vertices, height, zaxis);
 }
 
-geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, int Layer, double zmin, double zmax)
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, int Layer, double zmin, double zmax)
 { return get_GDSII_prism(material, GDSIIFile, 0, Layer, zmin, zmax); }
 
-meep::volume get_GDSII_volume(char *GDSIIFile, char *Text, int Layer, double zmin, double zmax)
+meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer, double zmin, double zmax)
 {
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
   meep::ndim di = ((zmin==0.0 && zmax==0.0) ? meep::D2 : meep::D3);
@@ -140,7 +140,7 @@ di = meep::D2;
   return meep::volume(max_corner, min_corner);
 }
 
-meep::volume get_GDSII_volume(char *GDSIIFile, int Layer, double zmin, double zmax)
+meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, double zmax)
 { return get_GDSII_volume(GDSIIFile, 0, Layer, zmin, zmax); }
 
 /***************************************************************/
@@ -151,35 +151,35 @@ meep::volume get_GDSII_volume(char *GDSIIFile, int Layer, double zmin, double zm
 void GDSIIError(const char *Routine)
 { meep::abort("Meep must be configured/compiled with libGDSII for %s",Routine); }
 
-meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, char *Text, int Layer, double zsize)
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char **Text, int Layer, double zsize)
 { (void) resolution; (void) GDSIIFile; (void) Text; (void) Layer; (void) zsize;
   GDSIIError("set_geometry_from_GDSII"); 
   return meep::grid_volume();
 
 }
-meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, int Layer, double zsize)
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer, double zsize)
 { (void) resolution; (void) GDSIIFile; (void) Layer; (void) zsize;
   GDSIIError("set_geometry_from_GDSII"); 
   return meep::grid_volume();
 }
-geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, char *Text, int Layer, double zmin, double zmax)
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text, int Layer, double zmin, double zmax)
 { (void) material; (void) GDSIIFile; (void) Text; (void) Layer; (void) zmin; (void) zmax;
   GDSIIError("get_GDSII_prism");
   vector3 center={0.0, 0.0, 0.0};
   return make_sphere(0,center,0.0);
 }
-geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, int Layer, double zmin, double zmax)
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, int Layer, double zmin, double zmax)
 { (void) material; (void) GDSIIFile; (void) Layer; (void) zmin; (void) zmax;
   GDSIIError("get_GDSII_prism"); 
   vector3 center={0.0, 0.0, 0.0};
   return make_sphere(0,center,0.0);
 }
-meep::volume get_GDSII_volume(char *GDSIIFile, char *Text, int Layer, double zmin, double zmax)
+meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer, double zmin, double zmax)
 { (void) GDSIIFile; (void) Text; (void) Layer; (void) zmin; (void) zmax;
   GDSIIError("get_GDSII_volume"); 
   return meep::volume(meep::vec());
 }
-meep::volume get_GDSII_volume(char *GDSIIFile, int Layer, double zmin, double zmax)
+meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, double zmax)
 { (void) GDSIIFile; (void) Layer; (void) zmin; (void) zmax;
   GDSIIError("get_GDSII_volume"); 
   return meep::volume(meep::vec());

@@ -125,12 +125,12 @@ void check_offdiag(medium_struct *m);
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/
 /***************************************************************/
-meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, char *Text, int Layer=-1, double zsize=0.0);
-meep::grid_volume set_geometry_from_GDSII(double resolution, char *GDSIIFile, int Layer, double zsize=0.0);
-geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
-geometric_object get_GDSII_prism(material_type material, char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
-meep::volume get_GDSII_volume(char *GDSIIFile, char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
-meep::volume get_GDSII_volume(char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char *Text, int Layer=-1, double zsize=0.0);
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer, double zsize=0.0);
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
+meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
+meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
 
 }; // namespace meep_geom
 
