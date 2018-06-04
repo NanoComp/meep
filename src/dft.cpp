@@ -999,7 +999,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
      file = new h5file(filename,h5file::WRITE, false /*parallel*/ );
    }
   if (have_empty_dims)
-   NumFreqs = (int)max_to_all( (double)NumFreqs ); // subtle!
+   NumFreqs = max_to_all( NumFreqs ); // subtle!
 
   bool first_component=true;
   for(int num_freq=0; num_freq<NumFreqs; num_freq++)
