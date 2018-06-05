@@ -1086,6 +1086,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         during_sources,
         get_flux_freqs,
         get_fluxes,
+        get_eigenmode_freqs,
         get_force_freqs,
         get_forces,
         get_near2far_freqs,
