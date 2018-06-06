@@ -23,7 +23,14 @@ class TestModeCoeffs(unittest.TestCase):
         sy = dpml + dair + w + dair + dpml
         cell_size = mp.Vector3(sx, sy, 0)
 
-        geometry = [mp.Block(material=Si, center=mp.Vector3(), size=mp.Vector3(mp.inf, w, mp.inf))]
+        prism_x = sx + 1
+        prism_y = w / 2
+        vertices = [mp.Vector3(-prism_x, prism_y),
+                    mp.Vector3(prism_x, prism_y),
+                    mp.Vector3(prism_x, -prism_y),
+                    mp.Vector3(-prism_x, -prism_y)]
+
+        geometry = [mp.Prism(vertices, height=100, material=Si)]
 
         boundary_layers = [mp.PML(dpml)]
 
