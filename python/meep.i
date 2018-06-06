@@ -694,6 +694,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 %apply (int *IN_ARRAY1, int DIM1) {(int *bands, int num_bands)};
 
+// coefficients
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* coeffs {
     $1 = is_array($input);
 }
@@ -702,12 +703,31 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (std::complex<double> *)array_data($input);
 }
 
+// k mag
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* kmag {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* kmag {
+    $1 = (double *)array_data($input);
+}
+
+// group velocity
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* vgrp {
+    $1 = (double *)array_data($input);
+}
+
+
 //--------------------------------------------------
 // end typemaps for get_eigenmode_coefficients
 //--------------------------------------------------
 
 //--------------------------------------------------
-// typemaps needed for add_dft_fields
+  // typemaps needed for add_dft_fields
 //--------------------------------------------------
 %typemap(in) (meep::component *components, int num_components) {
     if (!PyList_Check($input)) {
