@@ -67,7 +67,7 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
     }
 
     *result = PyInteger_AsLong(py_attr);
-    Py_DECREF(py_attr);
+    Py_XDECREF(py_attr);
     return 1;
 }
 
@@ -1044,6 +1044,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         Medium,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,
+        Prism,
         Sphere,
         Susceptibility,
         Vector3,
