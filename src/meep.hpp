@@ -1459,18 +1459,20 @@ class fields {
   void get_eigenmode_coefficients(dft_flux flux,
                                   const volume &eig_vol,
                                   int *bands, int num_bands, int parity,
-                  			          double eig_resolution, double eigensolver_tol,
+                                  double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs,
-                                  double *vgrp, kpoint_func user_kpoint_func=0,
+                                  double *vgrp, vec *kpoints=0,
+                                  kpoint_func user_kpoint_func=0,
                                   void *user_kpoint_data=0);
 
   void get_eigenmode_coefficients(dft_flux flux,
                                   int *bands, int num_bands, int parity,
                                   std::complex<double> *coeffs,
-                                  double *vgrp, kpoint_func user_kpoint_func=0,
+                                  double *vgrp, vec *kpoints=0, 
+                                  kpoint_func user_kpoint_func=0,
                                   void *user_kpoint_data=0) {
       get_eigenmode_coefficients(flux, flux.where, bands, num_bands, parity,
-          0.0, 1e-7, coeffs, vgrp, user_kpoint_func, user_kpoint_data);
+          0.0, 1e-7, coeffs, vgrp, kpoints, user_kpoint_func, user_kpoint_data);
   }
 
   // initialize.cpp:
