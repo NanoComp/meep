@@ -1834,6 +1834,10 @@ def scale_force_fields(s, force):
     force.scale_dfts(s)
 
 
+def get_eigenmode_freqs(f):
+    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+
+
 def get_force_freqs(f):
     return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
 
