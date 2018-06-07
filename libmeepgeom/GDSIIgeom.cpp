@@ -151,7 +151,7 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, dou
 void GDSIIError(const char *Routine)
 { meep::abort("Meep must be configured/compiled with libGDSII for %s",Routine); }
 
-meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char **Text, int Layer, double zsize)
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char *Text, int Layer, double zsize)
 { (void) resolution; (void) GDSIIFile; (void) Text; (void) Layer; (void) zsize;
   GDSIIError("set_geometry_from_GDSII"); 
   return meep::grid_volume();
