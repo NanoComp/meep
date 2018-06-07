@@ -429,6 +429,13 @@ LIBCTLGEOM_LIBS="-lctlgeom"
 AC_SUBST(LIBCTLGEOM_LIBS)
 
 ##############################################################################
+# check for libGDSII
+AC_CHECK_HEADER(libGDSII.h, [have_gdsii=maybe], [have_gdsii=no])
+if test $have_gdsii = maybe; then
+  AC_CHECK_LIB(GDSII, libGDSIIExists)
+fi
+
+##############################################################################
 # The following function is used only for debugging.  Note that
 # we must test for it *after* setting the compiler flags (which
 # affect whether it is declared, as it is a GNU extension).
