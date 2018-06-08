@@ -493,7 +493,7 @@ Polygonal prism type.
 
 **`vertices` [list of `Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The vertices that make up the prism.
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`.
 
 **`height` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -501,7 +501,7 @@ The prism thickness, extruded in the direction of `axis`.
 
 **`axis` [`Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The axis perpendicular to the prism. 
+The axis perpendicular to the prism. Defaults to `Vector3(x=0, y=0, z=1)`.
 
 Here are some examples of geometric objects created using the above classes:
 
