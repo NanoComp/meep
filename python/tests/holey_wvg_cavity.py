@@ -136,5 +136,6 @@ class TestHoleyWvgCavity(unittest.TestCase):
         for e, r in zip(expected, res):
             np.testing.assert_allclose(e, r)
 
+
 if __name__ == '__main__':
     unittest.main()

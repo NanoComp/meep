@@ -53,8 +53,54 @@ typedef std::complex<double> cdouble;
 // effectively infinite lengths
 #define ENORMOUS 1e20
 
-// tiny floating-point number for effectively zero lengthsh
+// tiny floating-point number for effectively zero lengths
 #define TINY 1e-20
+
+struct dft_data {
+    int num_freqs;
+    int num_components;
+    std::vector<meep::volume> vols;
+
+    dft_data(int freqs, int components, std::vector<meep::volume> volumes);
+};
+
+struct fragment_stats {
+  static double tol;
+  static int maxeval;
+  static int resolution;
+  static meep::ndim dims;
+
+  size_t num_anisotropic_eps_pixels;
+  size_t num_anisotropic_mu_pixels;
+  size_t num_nonlinear_pixels;
+  size_t num_susceptibility_pixels;
+  size_t num_nonzero_conductivity_pixels;
+  size_t num_dft_pixels;
+  size_t num_pixels_in_box;
+  geom_box box;
+
+  fragment_stats() {}
+  fragment_stats(geom_box& bx, size_t pixels);
+  void update_stats_from_material(material_type mat, size_t pixels);
+  void compute_stats(geometric_object_list *geom);
+  void count_anisotropic_pixels(medium_struct *med, size_t pixels);
+  void count_nonlinear_pixels(medium_struct *med, size_t pixels);
+  void count_susceptibility_pixels(medium_struct *med, size_t pixels);
+  void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
+  void compute_dft_stats(std::vector<dft_data> *dft_data_list);
+  void print_stats();
+};
+
+std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
+                                                   meep::grid_volume *gv,
+                                                   vector3 cell_size,
+                                                   vector3 cell_center,
+                                                   material_type default_mat,
+                                                   std::vector<dft_data> dft_data_list,
+                                                   double tol,
+                                                   int maxeval,
+                                                   bool ensure_per,
+                                                   double box_size=10);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */

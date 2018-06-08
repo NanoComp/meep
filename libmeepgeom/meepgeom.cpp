@@ -1627,4 +1627,409 @@ material_type make_file_material(const char *eps_input_file)
   return md;
 }
 
+/******************************************************************************/
+/* Helpers from  libctl/utils/geom.c                                          */
+/******************************************************************************/
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
+static void geom_box_intersection(geom_box *bi, const geom_box *b1, const geom_box *b2) {
+  bi->low.x = MAX(b1->low.x, b2->low.x);
+  bi->low.y = MAX(b1->low.y, b2->low.y);
+  bi->low.z = MAX(b1->low.z, b2->low.z);
+  bi->high.x = MIN(b1->high.x, b2->high.x);
+  bi->high.y = MIN(b1->high.y, b2->high.y);
+  bi->high.z = MIN(b1->high.z, b2->high.z);
+}
+
+static int geom_boxes_intersect(const geom_box *b1, const geom_box *b2) {
+#define BETWEEN(x, low, high) ((x) >= (low) && (x) <= (high))
+  /* true if the x, y, and z ranges all intersect. */
+  return ((BETWEEN(b1->low.x, b2->low.x, b2->high.x) ||
+           BETWEEN(b1->high.x, b2->low.x, b2->high.x) ||
+           BETWEEN(b2->low.x, b1->low.x, b1->high.x)) &&
+          (BETWEEN(b1->low.y, b2->low.y, b2->high.y) ||
+           BETWEEN(b1->high.y, b2->low.y, b2->high.y) ||
+           BETWEEN(b2->low.y, b1->low.y, b1->high.y)) &&
+          (BETWEEN(b1->low.z, b2->low.z, b2->high.z) ||
+           BETWEEN(b1->high.z, b2->low.z, b2->high.z) ||
+           BETWEEN(b2->low.z, b1->low.z, b1->high.z)));
+}
+
+/******************************************************************************/
+/* Fragment Statistics                                                        */
+/******************************************************************************/
+
+double fragment_stats::tol = 0;
+int fragment_stats::maxeval = 0;
+int fragment_stats::resolution = 0;
+meep::ndim fragment_stats::dims = meep::D1;
+
+inline static bool is_edge_box(double pt, double half_cell, double box_size, double edge_size) {
+  return (pt == -half_cell && edge_size != 0) || pt + box_size > half_cell;
+}
+
+static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
+  double half_box = box_size / 2;
+  double half_z = cell_size.z / 2;
+  double edge_size_z = fmod(half_z + half_box, box_size);
+  std::vector<geom_box> boxes;
+
+  for (double z = -half_z; z < half_z;) {
+    double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
+    vector3 low = {0.0, 0.0, z};
+    vector3 high = {0.0, 0.0, z + z_increment};
+    geom_box b = {low, high};
+    boxes.push_back(b);
+    z += z_increment;
+  }
+  return boxes;
+}
+
+static std::vector<geom_box> split_cell_2d(double box_size, vector3 cell_size) {
+  double half_box = box_size / 2;
+  double half_x = cell_size.x /2;
+  double half_y = cell_size.y /2;
+  double edge_size_x = fmod(half_x + half_box, box_size);
+  double edge_size_y = fmod(half_y + half_box, box_size);
+  std::vector<geom_box> boxes;
+
+  for (double x = -half_x; x < half_x;) {
+    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
+    for (double y = -half_y; y < half_y;) {
+      double y_increment = is_edge_box(y, half_y, box_size, edge_size_y) ? edge_size_y : box_size;
+      vector3 low = {x, y, 0.0};
+      vector3 high = {x + x_increment, y + y_increment, 0.0};
+      geom_box b = {low, high};
+      boxes.push_back(b);
+      y += y_increment;
+    }
+    x += x_increment;
+  }
+  return boxes;
+}
+
+static std::vector<geom_box> split_cell_3d(double box_size, vector3 cell_size) {
+  double half_box = box_size / 2;
+  double half_x = cell_size.x /2;
+  double half_y = cell_size.y /2;
+  double half_z = cell_size.z /2;
+  double edge_size_x = fmod(half_x + half_box, box_size);
+  double edge_size_y = fmod(half_y + half_box, box_size);
+  double edge_size_z = fmod(half_z + half_box, box_size);
+  std::vector<geom_box> boxes;
+
+  for (double x = -half_x; x < half_x;) {
+    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
+    for (double y = -half_y; y < half_y;) {
+      double y_increment = is_edge_box(y, half_y, box_size, edge_size_y) ? edge_size_y : box_size;
+      for (double z = -half_z; z < half_z;) {
+        double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
+        vector3 low = {x, y, z};
+        vector3 high = {x + x_increment, y + y_increment, z + z_increment};
+        geom_box b = {low, high};
+        boxes.push_back(b);
+        z += z_increment;
+      }
+      y += y_increment;
+    }
+    x += x_increment;
+  }
+  return boxes;
+}
+
+static std::vector<geom_box> split_cell_cyl(double box_size, vector3 cell_size) {
+  double half_box = box_size / 2;
+  double half_x = cell_size.x /2;
+  double half_z = cell_size.z /2;
+  double edge_size_x = fmod(half_x + half_box, box_size);
+  double edge_size_z = fmod(half_z + half_box, box_size);
+  std::vector<geom_box> boxes;
+
+  for (double x = -half_x; x < half_x;) {
+    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
+    for (double z = -half_z; z < half_z;) {
+      double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
+      vector3 low = {x, 0.0, z};
+      vector3 high = {x + x_increment, 0.0, z + z_increment};
+      geom_box b = {low, high};
+      boxes.push_back(b);
+      z += z_increment;
+    }
+    x += x_increment;
+  }
+  return boxes;
+}
+
+static std::vector<geom_box> split_cell_into_boxes(meep::grid_volume *gv,
+                                                   double box_size,
+                                                   vector3 cell_size) {
+  switch (gv->dim) {
+  case meep::D1:
+    return split_cell_1d(box_size, cell_size);
+  case meep::D2:
+    return split_cell_2d(box_size, cell_size);
+  case meep::D3:
+    return split_cell_3d(box_size, cell_size);
+  case meep::Dcyl:
+    return split_cell_cyl(box_size, cell_size);
+    break;
+  default:
+    return std::vector<geom_box>();
+  }
+}
+
+static size_t get_pixels_in_box(geom_box *b, int empty_pixel=1) {
+  int empty_x = b->low.x == b->high.x;
+  int empty_y = b->low.y == b->high.y;
+  int empty_z = b->low.z == b->high.z;
+
+  double v = ((empty_x ? empty_pixel : b->high.x - b->low.x) *
+              (empty_y ? empty_pixel : b->high.y - b->low.y) *
+              (empty_z ? empty_pixel : b->high.z - b->low.z));
+
+  return v == 1 ? 0 : (size_t)ceil(v * fragment_stats::resolution);
+}
+
+static void center_box(geom_box *b) {
+  b->low = vector3_plus(geometry_center, b->low);
+  b->high = vector3_plus(geometry_center, b->high);
+}
+
+static std::vector<fragment_stats> init_fragments(std::vector<geom_box>& boxes, double tol, int maxeval,
+                                                  meep::grid_volume *gv) {
+  std::vector<fragment_stats> fragments;
+  fragment_stats::tol = tol;
+  fragment_stats::maxeval = maxeval;
+  fragment_stats::resolution = gv->a;
+  fragment_stats::dims = gv->dim;
+
+  for (size_t i = 0; i < boxes.size(); ++i) {
+    center_box(&boxes[i]);
+    size_t pixels_in_box = get_pixels_in_box(&boxes[i]);
+    fragments.push_back(fragment_stats(boxes[i], pixels_in_box));
+  }
+  return fragments;
+}
+
+static void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
+                        vector3 cell_size, vector3 cell_center, geometric_object_list *geom) {
+  geom_initialize();
+  default_material = default_mat;
+  ensure_periodicity = ensure_per;
+  geometry_center = cell_center;
+  dimensions = meep::number_of_directions(gv->dim);
+  geometry_lattice.size = cell_size;
+  geom_fix_objects0(*geom);
+}
+
+std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
+                                                   meep::grid_volume *gv,
+                                                   vector3 cell_size,
+                                                   vector3 cell_center,
+                                                   material_type default_mat,
+                                                   std::vector<dft_data> dft_data_list,
+                                                   double tol,
+                                                   int maxeval,
+                                                   bool ensure_per,
+                                                   double box_size) {
+
+  init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom);
+  std::vector<geom_box> boxes = split_cell_into_boxes(gv, box_size, cell_size);
+  std::vector<fragment_stats> fragments = init_fragments(boxes, tol, maxeval, gv);
+
+  for (size_t i = 0; i < fragments.size(); ++i) {
+    fragments[i].compute_stats(&geom);
+    fragments[i].compute_dft_stats(&dft_data_list);
+  }
+  return fragments;
+}
+
+fragment_stats::fragment_stats(geom_box& bx, size_t pixels):
+  num_anisotropic_eps_pixels(0),
+  num_anisotropic_mu_pixels(0),
+  num_nonlinear_pixels(0),
+  num_susceptibility_pixels(0),
+  num_nonzero_conductivity_pixels(0),
+  num_dft_pixels(0),
+  num_pixels_in_box(pixels),
+  box(bx) {
+
+}
+
+void fragment_stats::update_stats_from_material(material_type mat, size_t pixels) {
+  switch (mat->which_subclass) {
+  case material_data::MEDIUM: {
+    medium_struct *med = &mat->medium;
+    count_anisotropic_pixels(med, pixels);
+    count_nonlinear_pixels(med, pixels);
+    count_susceptibility_pixels(med, pixels);
+    count_nonzero_conductivity_pixels(med, pixels);
+    break;
+  }
+  default:
+    // Only Medium is supported
+    return;
+  }
+}
+
+void fragment_stats::compute_stats(geometric_object_list *geom) {
+
+  for (int i = 0; i < geom->num_items; ++i) {
+    geometric_object *go = &geom->items[i];
+    double overlap = box_overlap_with_object(box, *go, tol, maxeval);
+
+    // Count contributions from material of object
+    size_t pixels = (size_t)ceil(overlap * num_pixels_in_box);
+    if (pixels > 0) {
+      material_type mat = (material_type)go->material;
+      update_stats_from_material(mat, pixels);
+    }
+
+    // Count contributions from default_material
+    size_t default_material_pixels = num_pixels_in_box - pixels;
+    if (default_material_pixels > 0) {
+      update_stats_from_material((material_type)default_material, default_material_pixels);
+    }
+  }
+}
+
+void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels) {
+  size_t eps_offdiag_elements = 0;
+  size_t mu_offdiag_elements = 0;
+
+  if (med->epsilon_offdiag.x.re != 0) {
+    eps_offdiag_elements++;
+  }
+  if (med->epsilon_offdiag.y.re != 0) {
+    eps_offdiag_elements++;
+  }
+  if (med->epsilon_offdiag.z.re != 0) {
+    eps_offdiag_elements++;
+  }
+  if (med->mu_offdiag.x.re != 0) {
+    mu_offdiag_elements++;
+  }
+  if (med->mu_offdiag.y.re != 0) {
+    mu_offdiag_elements++;
+  }
+  if (med->mu_offdiag.z.re != 0) {
+    mu_offdiag_elements++;
+  }
+
+  num_anisotropic_eps_pixels += eps_offdiag_elements * pixels;
+  num_anisotropic_mu_pixels += mu_offdiag_elements * pixels;
+}
+
+void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
+  size_t nonzero_chi_elements = 0;
+
+  if (med->E_chi2_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi2_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi2_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi3_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi3_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->E_chi3_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi2_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi2_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi2_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi3_diag.x != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi3_diag.y != 0) {
+    nonzero_chi_elements++;
+  }
+  if (med->H_chi3_diag.z != 0) {
+    nonzero_chi_elements++;
+  }
+
+  num_nonlinear_pixels += nonzero_chi_elements * pixels;
+}
+
+void fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
+  num_susceptibility_pixels += med->E_susceptibilities.num_items * pixels;
+  num_susceptibility_pixels += med->H_susceptibilities.num_items * pixels;
+}
+
+void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
+  size_t nonzero_conductivity_elements = 0;
+
+  if (med->D_conductivity_diag.x != 0) {
+    nonzero_conductivity_elements++;
+  }
+  if (med->D_conductivity_diag.y != 0) {
+    nonzero_conductivity_elements++;
+  }
+  if (med->D_conductivity_diag.z != 0) {
+    nonzero_conductivity_elements++;
+  }
+  if (med->B_conductivity_diag.x != 0) {
+    nonzero_conductivity_elements++;
+  }
+  if (med->B_conductivity_diag.y != 0) {
+    nonzero_conductivity_elements++;
+  }
+  if (med->B_conductivity_diag.z != 0) {
+    nonzero_conductivity_elements++;
+  }
+
+  num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
+}
+
+void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
+
+  for (size_t i = 0; i < dft_data_list->size(); ++i) {
+    for (size_t j = 0; j < (*dft_data_list)[i].vols.size(); ++j) {
+      geom_box dft_box = gv2box((*dft_data_list)[i].vols[j]);
+
+      if (geom_boxes_intersect(&dft_box, &box)) {
+        geom_box overlap_box;
+        geom_box_intersection(&overlap_box, &dft_box, &box);
+
+        // Note: Since geom_boxes_intersect returns true if two planes share a line or two volumes
+        // share a line or plane, there are cases where some pixels are counted multiple times.
+        size_t overlap_pixels = get_pixels_in_box(&overlap_box, 2);
+        num_dft_pixels += overlap_pixels * (*dft_data_list)[i].num_freqs * (*dft_data_list)[i].num_components;
+      }
+    }
+  }
+}
+
+void fragment_stats::print_stats() {
+  master_printf("Fragment stats\n");
+  master_printf("  num_anisotropic_eps_pixels: %zd\n", num_anisotropic_eps_pixels);
+  master_printf("  num_anisotropic_mu_pixels: %zd\n", num_anisotropic_mu_pixels);
+  master_printf("  num_nonlinear_pixels: %zd\n", num_nonlinear_pixels);
+  master_printf("  num_susceptibility_pixels: %zd\n", num_susceptibility_pixels);
+  master_printf("  num_nonzero_conductivity_pixels: %zd\n", num_nonzero_conductivity_pixels);
+  master_printf("  num_dft_pixels: %zd\n", num_dft_pixels);
+  master_printf("  num_pixels_in_box: %zd\n", num_pixels_in_box);
+  master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);
+  master_printf("  box.high: {%f, %f, %f}\n\n", box.high.x, box.high.y, box.high.z);
+}
+
+dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes):
+  num_freqs(freqs),
+  num_components(components),
+  vols(volumes) {
+
+}
 } // namespace meep_geom
