@@ -1280,9 +1280,8 @@ class Simulation(object):
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
-<<<<<<< HEAD
         vgrp   = np.zeros(num_bands * flux.Nfreq, dtype=np.float64)
-        kmag = np.zeros(num_bands * flux.Nfreq * 3, dtype=np.float64)
+        kmag   = np.zeros(num_bands * flux.Nfreq * 3, dtype=np.float64)
         self.fields.get_eigenmode_coefficients(flux, eig_vol, np.array(bands, dtype=np.intc),
                                                eig_parity, eig_resolution, eig_tolerance, coeffs,
                                                kmag,vgrp, kpoint_func)
@@ -1291,12 +1290,6 @@ class Simulation(object):
         vgrp   = np.reshape(vgrp, (num_bands, flux.Nfreq))
         kmag   = np.reshape(kmag, (num_bands, flux.Nfreq, 3))
         return coeffs, kmag, vgrp
-=======
-        self.fields.get_eigenmode_coefficients(flux.swigobj, eig_vol, np.array(bands, dtype=np.intc), eig_parity,
-                                               eig_resolution, eig_tolerance, coeffs, None, kpoint_func)
-
-        return np.reshape(coeffs, (num_bands, flux.Nfreq, 2))
->>>>>>> 588f58abb975069624d86916d63ba72fdbb819d9
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
