@@ -2,10 +2,12 @@
 # Mode Decomposition
 ---
 
+This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. There are examples for two different cases: (1) guided modes in dielectric media and (2) planewaves in homogeneous media.
+
 Reflectance of a Waveguide Taper
 --------------------------------
 
-This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. The example involves computing the reflectance &mdash; the fraction of the reflected power to the incident power &mdash; of the fundamental mode of a linear waveguide taper as shown in the schematic below. We will verify that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This example involves computing the reflectance &mdash; the fraction of the reflected power to the incident power &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation geometry are shown in the schematic below. We will verify that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
@@ -136,3 +138,150 @@ plt.show()
 <center>
 ![](../images/refl_coeff_vs_taper_length.png)
 </center>
+
+Diffraction Spectrum of a Binary Grating
+----------------------------------------
+
+The mode-decomposition feature can also be applied to planewaves in homogeneous scalar permittivity/permeability with no anisotropy. This will be demonstrated in this example to compute the diffraction spectrum of a binary phase grating. The unit cell geometry of the grating is shown in the schematic below. The grating is periodic in the $y$ direction with periodicity `gp` and has a rectangular profile of height `gh` and duty cycle `gdc`. The grating parameters are `gh`=0.5 μm, `gdc`=0.5, and `gp`=10 μm. There is a semi-infinite substrate of thickness `dsub` adjacent to the grating. The substrate and grating are glass with a wavelength-independent refractive index of 1.5. The surrounding is air/vacuum. Perfectly matched layers (PML) of thickness `dpml` are used in the $\pm x$ boundaries. A pulsed planewave with $E_z$ polarization spanning wavelengths of 0.4 to 0.6 μm is normally incident on the grating from the glass substrate. An eigenmode monitor is placed in the air region. We will use mode decomposition to compute the transmittance &mdash; the ratio of the power in the $+x$ direction of the diffracted mode relative to that of the incident planewave &mdash; for the first ten diffraction orders. Two simulations are required: (1) an empty cell to obtain the incident power of the source, and (2) the grating structure to obtain the diffraction orders. At the end of the simulation, the angle and transmittance for each diffraction order at each wavelength is displayed.
+
+The simulation script is shown below and in [binary-grating.py](https://github.com/stevengj/meep/blob/master/python/examples/binary-grating.py).
+
+<center>
+![](../images/grating.png)
+</center>
+
+```py
+import meep as mp
+import math
+
+resolution = 40        # pixels/μm
+
+dsub = 3.0             # substrate thickness
+dair = 3.0             # air padding between grating and pml
+gp = 10.0              # grating period
+gh = 0.5               # grating height
+gdc = 0.5              # grating duty cycle
+
+dpml = 1.0             # PML thickness
+sx = dpml+dsub+gh+dair+dpml
+sy = gp
+
+cell_size = mp.Vector3(sx,sy,0)
+pml_layers = [ mp.PML(thickness=dpml,direction=mp.X) ]
+
+wvl_min = 0.4           # min wavelength
+wvl_max = 0.6           # max wavelength
+fmin = 1/wvl_max        # min frequency
+fmax = 1/wvl_min        # max frequency
+fcen = 0.5*(fmin+fmax)  # center frequency
+df = fmax-fmin          # frequency width
+
+src_pos = -0.5*sx+dpml+0.5*dsub
+sources = [ mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0)) ]
+
+k_point = mp.Vector3(0,0,0)
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    k_point=k_point,
+                    sources=sources)
+
+nfreq = 21
+xm = 0.5*sx-dpml
+eig_mon = sim.add_eigenmode(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0), 1e-9))
+
+alpha0 = sim.get_eigenmode_coefficients(eig_mon, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+
+sim.reset_meep()
+
+nglass = 1.5
+glass = mp.Medium(index=nglass)
+
+geometry = [ mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+             mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0)) ]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    k_point=k_point,
+                    sources=sources)
+
+eig_mon = sim.add_eigenmode(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0), 1e-9))
+
+freqs = mp.get_eigenmode_freqs(eig_mon)
+
+kx = lambda m,freq: math.sqrt(freq**2 - (m/10)**2)
+theta_out = lambda m,freq: math.acos(kx(m,freq)/freq)
+
+nmode = 10
+for nm in range(nmode):
+  alpha = sim.get_eigenmode_coefficients(eig_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+  for nf in range(nfreq):
+      mode_wvl = 1/freqs[nf]
+      mode_angle = math.degrees(theta_out(nm,freqs[nf]))
+      mode_tran = abs(alpha[0,nf,0])**2/abs(alpha0[0,nf,0])**2)
+      print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
+```
+
+Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for removing degenerate modes in MPB which uses the `k_point`, (0,0,0) in this example, in its calculations. `ODD_Z` is for modes with $E_z$ polarzation. `EVEN_Y` is necessary since each diffraction order with a given k<sub>x</sub> consists of two modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. For `ODD_Y`, MPB will compute the sine mode but this will have zero power because the source is even. Leaving out the $y$ parity will result in MPB returning a random superposition of the two modes. Specifying the `eig_parity` parameter this way ensures that the ordering of the modes corresponds to the diffraction orders.
+
+The simulation is run and the results piped to a file (the grating data is extracted to a separate file for plotting) using the following shell script:
+
+```sh
+#!/bin/bash
+
+python binary-grating.py |tee grating.out
+grep grating grating.out |cut -d , -f2- > grating.dat
+```
+
+The diffraction spectrum is plotted using the following script and shown in the figure below.
+
+```py
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+d = np.genfromtxt("grating.dat",delimiter=",")
+
+nmode = 10
+nfreq = 21
+
+thetas = np.empty((nmode,nfreq))
+wvls = np.empty((nmode,nfreq))
+tran = np.empty((nmode,nfreq))
+
+for j in range(nfreq):
+    tran[:,j] = d[j::nfreq,2]
+    thetas[:,j] = d[j::nfreq,1]
+    wvls[:,j] = d[j,0]
+
+plt.figure(dpi=150)
+plt.pcolormesh(wvls, thetas, tran, cmap='Blues', shading='flat', vmin=0, vmax=tran.max())
+plt.axis([wvls.min(), wvls.max(), thetas.min(), thetas.max()])
+plt.xlabel("wavelength (μm)")
+plt.ylabel("diffraction angle (degrees)")
+plt.xticks([t for t in np.arange(0.4,0.7,0.1)])
+plt.yticks([t for t in range(0,35,5)])
+cbar = plt.colorbar()
+cbar.set_ticks([t for t in np.arange(0,0.6,0.1)])
+cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.6,0.1)])
+plt.show()
+```
+
+Each diffraction order corresponds to a single angle. In the figure below, this angle is represented by the *lower* boundary of each labeled region. For example, the m=0 order has a diffraction angle of 0 degrees at all wavelengths. The representation of the diffraction orders as finite angular regions is an artifact of matplotlib's [pcolormesh](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html) routine which positions/sizes the mesh elements using the coordinates of their edges. The transmittance of each diffraction order should ideally be a constant. The slight wavelength dependence shown in the figure is a numerical artifact which can be mitigated by (1) increasing the resolution or (2) time-stepping for a longer duration to ensure that the fields have sufficiently decayed away.
+
+The propagating modes are a finite set of planewaves. The wavevector k<sub>x</sub> of these diffraction modes can be computed analytically: for a frequency of ω (in c=1 units), these propagating modes are the real solutions of sqrt(ω²n² - (k<sub>y</sub>+2πm/Λ)²) where m is the diffraction order (a non-negative integer) and Λ is the periodicity of the grating. In this example, n=1, k<sub>y</sub>=0, and Λ=10 μm. As an example, at a wavelength of 0.5 μm there are 20 diffraction orders. The wavevector k<sub>x</sub> is used to compute the angle of the diffraction order as $\cos^{-1}(k_x/\omega)$. This data is used to generate the plot of the diffraction spectrum and is included in the output of the simulation script.
+
+<center>
+![](../images/grating_diffraction_spectra.png)
+</center>
+
+In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element, as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare course on [Optics](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in Lecture 16 ([Gratings: Amplitude and Phase, Sinusoidal and Binary](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf)). From the theory, the diffraction efficiency is (2/(mπ))<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π (the distance `gh` in the simulation). A special feature of this grating example is that the diffraction efficiency is 0 for all *even* orders. This is verified by the simulated diffraction spectrum above.
+
+We can compare the simulation with the analytic results via the ratios of the transmittances and efficiencies of the odd orders at a wavelength of 0.5 μm (for which the scalar theory is valid). We consider three sets of orders: 1 and 3, 3 and 5, and 5 and 7. From the scalar theory, the ratio of the diffraction efficiency multiplied by the cosine angle of these orders are 9.0916, 2.8364, and 2.0259. From Meep, the ratio of the transmittance for these orders are 9.0537, 2.8323, and 2.0776. This corresponds to relative errors of approximately 0.42%, 0.14%, and 2.55%. 
