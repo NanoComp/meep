@@ -3,6 +3,7 @@ from __future__ import division
 import unittest
 import numpy as np
 import meep as mp
+from utils import compare_arrays
 
 
 class TestBendFlux(unittest.TestCase):
@@ -15,15 +16,24 @@ class TestBendFlux(unittest.TestCase):
         w = 1
         wvg_ycen = -0.5 * (sy - w - (2 * pad))
         wvg_xcen = 0.5 * (sx - w - (2 * pad))
+        height = 100
 
         if no_bend:
-            geometry = [mp.Block(mp.Vector3(mp.inf, w, mp.inf), center=mp.Vector3(0, wvg_ycen),
-                                 material=mp.Medium(epsilon=12))]
+            no_bend_vertices = [mp.Vector3(-0.5 * sx - 5, wvg_ycen - 0.5 * w),
+                                mp.Vector3(+0.5 * sx + 5, wvg_ycen - 0.5 * w),
+                                mp.Vector3(+0.5 * sx + 5, wvg_ycen + 0.5 * w),
+                                mp.Vector3(-0.5 * sx - 5, wvg_ycen + 0.5 * w)]
+
+            geometry = [mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))]
         else:
-            geometry = [mp.Block(mp.Vector3(sx - pad, w, mp.inf), center=mp.Vector3(-0.5 * pad, wvg_ycen),
-                                 material=mp.Medium(epsilon=12)),
-                        mp.Block(mp.Vector3(w, sy - pad, mp.inf), center=mp.Vector3(wvg_xcen, 0.5 * pad),
-                                 material=mp.Medium(epsilon=12))]
+            bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
+                             mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
+                             mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
+                             mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
+                             mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
+                             mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
+
+            geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
 
         fcen = 0.15
         df = 0.1
@@ -84,12 +94,11 @@ class TestBendFlux(unittest.TestCase):
             (0.117171717172, 0.0147547920552, 0.0146151488236),
             (0.118181818182, 0.0194782085272, 0.0192840042241),
             (0.119191919192, 0.0254987474079, 0.0252348211592),
-
         ]
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        np.testing.assert_allclose(expected, res[:20])
+        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=1e-7)
 
         # Real run
         self.sim = None
@@ -124,7 +133,7 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        np.testing.assert_allclose(expected, res[:20])
+        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=1e-3)
 
 
 if __name__ == '__main__':

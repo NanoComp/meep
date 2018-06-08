@@ -14,6 +14,7 @@ from scipy.optimize import minimize_scalar
 from scipy.optimize import ridder
 import meep as mp
 from meep import mpb
+from utils import compare_arrays
 
 
 class TestModeSolver(unittest.TestCase):
@@ -178,20 +179,7 @@ class TestModeSolver(unittest.TestCase):
             ref_arr[1::3] = ref_y.ravel()
             ref_arr[2::3] = ref_z.ravel()
 
-            self.compare_arrays(ref_arr, field)
-
-    def compare_arrays(self, exp, res, tol=1e-3):
-        exp_1d = exp.ravel()
-        res_1d = res.ravel()
-
-        norm_exp = np.linalg.norm(exp_1d)
-        norm_res = np.linalg.norm(res_1d)
-
-        if norm_exp == 0:
-            self.assertEqual(norm_res, 0)
-        else:
-            diff = np.linalg.norm(res_1d - exp_1d) / norm_exp
-            self.assertLess(diff, tol)
+            compare_arrays(self, ref_arr, field)
 
     def compare_h5_files(self, ref_path, res_path, tol=1e-3):
         with h5py.File(ref_path) as ref:
@@ -200,7 +188,7 @@ class TestModeSolver(unittest.TestCase):
                     if k == 'description':
                         self.assertEqual(ref[k].value, res[k].value)
                     else:
-                        self.compare_arrays(ref[k].value, res[k].value, tol=tol)
+                        compare_arrays(self, ref[k].value, res[k].value, tol=tol)
 
     def test_update_band_range_data(self):
         brd = []
@@ -407,7 +395,7 @@ class TestModeSolver(unittest.TestCase):
 
         expected_energy_in_dielectric = 0.6990769686037558
 
-        self.compare_arrays(np.array(expected_energy), np.array(energy))
+        compare_arrays(self, np.array(expected_energy), np.array(energy))
         self.assertAlmostEqual(expected_energy_in_dielectric, energy_in_dielectric, places=3)
 
     def test_compute_group_velocity(self):
@@ -693,7 +681,7 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, 'r') as f:
             expected = f['data-new'].value
 
-        self.compare_arrays(expected, converted_dpwr[-1])
+        compare_arrays(self, expected, converted_dpwr[-1])
 
     def test_hole_slab(self):
         from mpb_hole_slab import ms
@@ -958,7 +946,7 @@ class TestModeSolver(unittest.TestCase):
             expected_re = f['z.r-new'].value
             expected_im = f['z.i-new'].value
             expected = np.vectorize(complex)(expected_re, expected_im)
-            self.compare_arrays(expected, new_efield)
+            compare_arrays(self, expected, new_efield)
 
         ms.run_te()
 
@@ -992,7 +980,7 @@ class TestModeSolver(unittest.TestCase):
 
         with h5py.File(ref_path, 'r') as f:
             ref = f['data-new'].value
-            self.compare_arrays(ref, new_eps, tol=1e-3)
+            compare_arrays(self, ref, new_eps, tol=1e-3)
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()
@@ -1065,7 +1053,7 @@ class TestModeSolver(unittest.TestCase):
         mu = ms.get_mu()
         with h5py.File(data_path, 'r') as f:
             data = f['data'].value
-            self.compare_arrays(data, mu)
+            compare_arrays(self, data, mu)
 
     def test_output_tot_pwr(self):
         ms = self.init_solver()
@@ -1083,7 +1071,7 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, 'r') as f:
             expected = f['data'].value
 
-        self.compare_arrays(expected, arr)
+        compare_arrays(self, expected, arr)
 
     def test_get_eigenvectors(self):
         ms = self.init_solver()
@@ -1196,7 +1184,7 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
-        self.compare_arrays(expected_freqs, ms.all_freqs[-1])
+        compare_arrays(self, expected_freqs, ms.all_freqs[-1])
 
         self.check_gap_list(expected_gap_list, ms.gap_list)
 
@@ -1340,7 +1328,7 @@ class TestModeSolver(unittest.TestCase):
         md = mpb.MPBData(rectify=True, resolution=32, periods=3)
         result2 = md.convert(efield_no_bloch)
 
-        self.compare_arrays(result1, result2, tol=1e-7)
+        compare_arrays(self, result1, result2, tol=1e-7)
 
     def test_poynting(self):
         ms = self.init_solver()

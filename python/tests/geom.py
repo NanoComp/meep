@@ -245,6 +245,15 @@ class TestEllipsoid(unittest.TestCase):
         self.assertIn(zeros(), e)
 
 
+class TestPrism(unittest.TestCase):
+
+    def test_contains_point(self):
+        vertices = [gm.Vector3(-1, 1), gm.Vector3(1, 1), gm.Vector3(1, -1), gm.Vector3(-1, -1)]
+        p = gm.Prism(vertices, height=1)
+        self.assertIn(zeros(), p)
+        self.assertNotIn(gm.Vector3(2, 2), p)
+
+
 class TestMedium(unittest.TestCase):
 
     def test_D_conductivity(self):

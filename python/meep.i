@@ -45,6 +45,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 %}
 
 %include "numpy.i"
+%include "std_vector.i"
 
 %init %{
   import_array();
@@ -67,7 +68,7 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
     }
 
     *result = PyInteger_AsLong(py_attr);
-    Py_DECREF(py_attr);
+    Py_XDECREF(py_attr);
     return 1;
 }
 
@@ -89,6 +90,16 @@ static PyObject *py_meep_src_time_object() {
         Py_XDECREF(meep_mod);
     }
     return src_time;
+}
+
+static PyObject *py_vector3_object() {
+    static PyObject *vector3_object = NULL;
+    if (vector3_object == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        vector3_object = PyObject_GetAttrString(geom_mod, "Vector3");
+        Py_XDECREF(geom_mod);
+    }
+    return vector3_object;
 }
 
 static double py_callback_wrap(const meep::vec &v) {
@@ -470,6 +481,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 // Typemap suite for vector3
+
+%typecheck (SWIG_TYPECHECK_POINTER) vector3 {
+    $1 = PyObject_IsInstance($input, py_vector3_object());
+}
 
 %typemap(in) vector3 {
     if(!pyv3_to_v3($input, &$1)) {
@@ -1011,16 +1026,37 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %ignore is_metal;
 %ignore meep::infinity;
 
+%ignore std::vector<meep::volume>::vector(size_type);
+%ignore std::vector<meep::volume>::resize;
+%ignore std::vector<meep_geom::dft_data>::vector(size_type);
+%ignore std::vector<meep_geom::dft_data>::resize;
+
 // template instantiations
 %template(get_dft_flux_array) _get_dft_array<meep::dft_flux>;
 %template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
+%template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
+%template(DftDataVector) std::vector<meep_geom::dft_data>;
+%template(VolumeVector) std::vector<meep::volume>;
+%template(IntVector) std::vector<int>;
+%template(DoubleVector) std::vector<double>;
 
 %include "vec.i"
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+
+struct vector3 {
+    double x;
+    double y;
+    double z;
+};
+
+struct geom_box {
+    vector3 low;
+    vector3 high;
+};
 
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
@@ -1064,6 +1100,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         Medium,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,
+        Prism,
         Sphere,
         Susceptibility,
         Vector3,
@@ -1106,6 +1143,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         during_sources,
         get_flux_freqs,
         get_fluxes,
+        get_eigenmode_freqs,
         get_force_freqs,
         get_forces,
         get_near2far_freqs,

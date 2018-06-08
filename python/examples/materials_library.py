@@ -1,12 +1,40 @@
 # Materials Library
 
 import meep as mp
+import numpy as np
 
 # default unit length is 1 um
 um_scale = 1.0
 
 # conversion factor for eV to 1/um [=1/hc]
 eV_um_scale = um_scale/1.23984193
+
+# ------------------------------------------------------------------ #
+# Silicon (Si)
+# ------------------------------------------------------------------ #
+# silicon (Si) from Palik's Handbook & Lukas's book
+# wavelength range: 1.15 - 1.8 um
+
+# Reference:
+# H. H. Li. Refractive index of silicon and germanium and its wavelength and
+# temperature derivatives, J. Phys. Chem. Ref. Data 9, 561-658 (1993)
+# Speed of light in vacuum, m/s
+c = 299792458
+
+Si_range = mp.FreqRange(min=1/1.8, max=1/1.15)
+
+eps = 7.9874
+eps_lorentz = 3.6880
+omega0 = 3.9328e15
+delta0 = 0
+
+Si_frq1 = omega0 / (2 * np.pi * c) * 1e-6
+Si_gam1 = 0
+Si_sig1 = eps_lorentz
+
+Si_susc = [ mp.LorentzianSusceptibility(frequency=Si_frq1, gamma=Si_gam1, sigma=Si_sig1) ]
+
+Si = mp.Medium(epsilon=eps, E_susceptibilities=Si_susc, valid_freq_range=Si_range)
 
 #------------------------------------------------------------------
 
@@ -618,7 +646,7 @@ Au_JC_visible = mp.Medium(epsilon=6.1599, E_susceptibilities=Au_JC_visible_susc)
 
 #------------------------------------------------------------------
 
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Au_visible_frq0 = 1/(0.0473629248511456*um_scale)
 Au_visible_gam0 = 1/(0.255476199605166*um_scale)
 Au_visible_sig0 = 1
@@ -636,7 +664,7 @@ Au_visible = mp.Medium(epsilon=0.6888, E_susceptibilities=Au_visible_susc, valid
 
 ## WARNING: unstable; field divergence may occur
 
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Ag_visible_frq0 = 1/(0.142050162130618*um_scale)
 Ag_visible_gam0 = 1/(18.0357292925015*um_scale)
 Ag_visible_sig0 = 1
@@ -654,7 +682,7 @@ Ag_visible = mp.Medium(epsilon=0.0067526, E_susceptibilities=Ag_visible_susc, va
 
 ## WARNING: unstable; field divergence may occur
 
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Al_visible_frq0 = 1/(0.0625841659042985*um_scale)
 Al_visible_gam0 = 1/(0.606007002962666*um_scale)
 Al_visible_sig0 = 1
@@ -670,7 +698,7 @@ Al_visible = mp.Medium(epsilon=0.13313, E_susceptibilities=Al_visible_susc, vali
 
 #------------------------------------------------------------------
 
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Cr_visible_frq0 = 1/(0.118410119507342*um_scale)
 Cr_visible_gam0 = 1/(0.628596264869804*um_scale)
 Cr_visible_sig0 = 1
@@ -688,7 +716,7 @@ Cr_visible = mp.Medium(epsilon=2.7767, E_susceptibilities=Cr_visible_susc, valid
 
 ## WARNING: unstable; field divergence may occur
 
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Ti_visible_frq0 = 1/(0.101331651921602*um_scale)
 Ti_visible_gam0 = 1/(0.365743382258719*um_scale)
 Ti_visible_sig0 = 1
