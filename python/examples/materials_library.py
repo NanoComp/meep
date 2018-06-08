@@ -1,40 +1,12 @@
 # Materials Library
 
 import meep as mp
-import numpy as np
 
 # default unit length is 1 um
 um_scale = 1.0
 
 # conversion factor for eV to 1/um [=1/hc]
 eV_um_scale = um_scale/1.23984193
-
-# ------------------------------------------------------------------ #
-# Silicon (Si)
-# ------------------------------------------------------------------ #
-# silicon (Si) from Palik's Handbook & Lukas's book
-# wavelength range: 1.15 - 1.8 um
-
-# Reference:
-# H. H. Li. Refractive index of silicon and germanium and its wavelength and
-# temperature derivatives, J. Phys. Chem. Ref. Data 9, 561-658 (1993)
-# Speed of light in vacuum, m/s
-c = 299792458
-
-Si_range = mp.FreqRange(min=1/1.8, max=1/1.15)
-
-eps = 7.9874
-eps_lorentz = 3.6880
-omega0 = 3.9328e15
-delta0 = 0
-
-Si_frq1 = omega0 / (2 * np.pi * c) * 1e-6
-Si_gam1 = 0
-Si_sig1 = eps_lorentz
-
-Si_susc = [ mp.LorentzianSusceptibility(frequency=Si_frq1, gamma=Si_gam1, sigma=Si_sig1) ]
-
-Si = mp.Medium(epsilon=eps, E_susceptibilities=Si_susc, valid_freq_range=Si_range)
 
 #------------------------------------------------------------------
 
