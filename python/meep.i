@@ -727,7 +727,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 //--------------------------------------------------
-  // typemaps needed for add_dft_fields
+// typemaps needed for add_dft_fields
 //--------------------------------------------------
 %typemap(in) (meep::component *components, int num_components) {
     if (!PyList_Check($input)) {
