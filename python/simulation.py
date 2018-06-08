@@ -1056,7 +1056,7 @@ class Simulation(object):
         else:
             eig_vol = self._volume_from_kwargs(vol=eig_vol)
 
-        num_bands = int(len(bands))
+        num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
         vgrp   = np.zeros(num_bands * flux.Nfreq, dtype=np.float64)
         kmag = np.zeros(num_bands * flux.Nfreq * 3, dtype=np.float64)
