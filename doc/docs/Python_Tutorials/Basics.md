@@ -564,7 +564,7 @@ plt.ylabel("wavelength (μm)")
 plt.title("reflectance (meep)")
 cbar = plt.colorbar()
 cbar.set_ticks([t for t in np.arange(0,0.4,0.1)])
-cbar.set_ticklabels(["{:.2f}".format(t) for t in np.arange(0,0.4,0.1)])
+cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 
 plt.figure(dpi=100)
@@ -577,7 +577,7 @@ plt.ylabel("wavelength (μm)")
 plt.title("reflectance (meep)")
 cbar = plt.colorbar()
 cbar.set_ticks([t for t in np.arange(0,0.4,0.1)])
-cbar.set_ticklabels(["{:.2f}".format(t) for t in np.arange(0,0.4,0.1)])
+cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 
 n1=1
@@ -606,7 +606,7 @@ plt.ylabel("wavelength (μm)")
 plt.title("reflectance (analytic)")
 cbar = plt.colorbar()
 cbar.set_ticks([t for t in np.arange(0,0.4,0.1)])
-cbar.set_ticklabels(["{:.2f}".format(t) for t in np.arange(0,0.4,0.1)])
+cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 ```
 
