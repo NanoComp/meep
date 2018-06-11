@@ -79,6 +79,9 @@ static complex<double> default_amp_func(const vec &pt)
 /* structure storing all data needed to compute position-dependent */
 /* amplitude for eigenmode source (the fields of this structure    */
 /* were formerly global variables)                                 */
+/* Note: 'Gk' is the k-point in real space, i.e. G*k where         */
+/* G = matrix of reciprocal-lattice basis vectors                  */
+/* k = k vector in reciprocal-lattice basis                        */
 /*******************************************************************/
 typedef struct eigenmode_data
  {
@@ -87,7 +90,7 @@ typedef struct eigenmode_data
    evectmatrix H;
    int n[3];
    double s[3];
-   double k[3];
+   double Gk[3]; 
    vec center;
    amplitude_function amp_func;
    int band_num;
@@ -473,9 +476,9 @@ void *fields::get_eigenmode(double omega_src,
   edata->s[0]           = s[0];
   edata->s[1]           = s[1];
   edata->s[2]           = s[2];
-  edata->k[0]           = k[0];
-  edata->k[1]           = k[1];
-  edata->k[2]           = k[2];
+  edata->Gk[0]          = G[0][0]*k[0] + G[1][0]*k[1] + G[2][0]*k[2];
+  edata->Gk[1]          = G[0][1]*k[0] + G[1][1]*k[1] + G[2][1]*k[2];
+  edata->Gk[2]          = G[0][2]*k[0] + G[1][2]*k[1] + G[2][2]*k[2];
   edata->center         = eig_vol.center() - where.center();
   edata->amp_func       = default_amp_func;
   edata->band_num       = band_num;
@@ -500,7 +503,7 @@ double get_group_velocity(void *vedata)
 
 vec get_k(void *vedata)
 { eigenmode_data *edata = (eigenmode_data *)vedata;
-  return vec(edata->k[0], edata->k[1], edata->k[2]);
+  return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
 }
 
 /***************************************************************/
