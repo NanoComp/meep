@@ -16,6 +16,8 @@ Gzipped tarballs of stable versions of the source are available on the [releases
 Conda Packages
 ---------------
 
+### Official Releases
+
 The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. Binary packages for serial and parallel PyMeep on Linux and macOS are currently available (64 bit architectures only), and are updated with each MEEP release. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
 
 ```bash
@@ -27,10 +29,10 @@ export PATH=<desired_prefix>/bin:$PATH
 Next, we create a Conda environment for PyMeep to isolate it from other Python libraries that may be installed.
 
 ```bash
-conda create -n mp -c chogan -c defaults -c conda-forge pymeep
+conda create -n mp -c conda-forge pymeep
 ```
 
-This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command. We hope to move everything to conda-forge to simplify the channel selection, but currently we need to pull dependencies from three different channels (the -c arguments), and the order they are specified in is very important.
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command. The serial version of PyMeep is currently hosted on the `conda-forge` channel.
 
 Next, we need to activate the environment before we can start using it.
 
@@ -40,10 +42,10 @@ source activate mp
 
 Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
 
-Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`.
+Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`. Since a parallel `hdf5` package isn't available on `conda-forge` yet, we're still hosting parallel PyMeep on the `chogan` channel.
 
 ```bash
-conda create -n pmp -c chogan -c defaults -c conda-forge pymeep-parallel
+conda create -n pmp -c chogan -c conda-forge pymeep-parallel
 source activate pmp
 ```
 
@@ -64,6 +66,17 @@ parameter in file ../../orte/orted/pmix/pmix_server.c at line 264
 [laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad
 parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
 666
+```
+
+### Nightly Builds
+
+To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  Just put the `dev` label before the other channels like this:
+
+```bash
+# Serial pymeep
+conda create -n mp_test -c chogan/label/dev -c chogan -c conda-forge pymeep
+# Parallel pymeep
+conda create -n pmp_test -c chogan/label/dev -c chogan -c conda-forge pymeep-parallel
 ```
 
 Installation on Linux
