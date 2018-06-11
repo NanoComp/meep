@@ -847,3 +847,43 @@ SiO2_sig1 = 1.12
 SiO2_susc = [ mp.LorentzianSusceptibility(frequency=SiO2_frq1, gamma=SiO2_gam1, sigma=SiO2_sig1) ]
 
 SiO2 = mp.Medium(epsilon=1.0, E_susceptibilities=SiO2_susc, valid_freq_range=SiO2_range)
+
+#------------------------------------------------------------------
+
+# indium phosphide (InP) from Handbook of Optics, 2nd edition, Vol. 2., McGraw-Hill, 1994
+# ref: https://refractiveindex.info/?shelf=main&book=InP&page=Pettit
+# wavelength range: 0.95 - 10 um
+
+InP_range = mp.FreqRange(min=1/10, max=1/0.95)
+
+InP_frq1 = 1/(0.6263*um_scale)
+InP_gam1 = 0
+InP_sig1 = 2.316
+InP_frq2 = 1/(32.935*um_scale)
+InP_gam2 = 0
+InP_sig2 = 2.765
+
+InP_susc = [ mp.LorentzianSusceptibility(frequency=InP_frq1, gamma=InP_gam1, sigma=InP_sig1),
+             mp.LorentzianSusceptibility(frequency=InP_frq2, gamma=InP_gam2, sigma=InP_sig2) ]
+
+InP = mp.Medium(epsilon=7.255, E_susceptibilities=InP_susc, valid_freq_range=InP_range)
+
+#------------------------------------------------------------------
+
+# germanium (Ge) from N. P. Barnes and M. S. Piltch, J. Optical Society America, Vol. 69, pp. 178-180, 1979
+# ref: https://refractiveindex.info/?shelf=main&book=Ge&page=Icenogle
+# wavelength range: 2.5 - 12 um
+
+Ge_range = mp.FreqRange(min=1/12, max=1/2.5)
+
+Ge_frq1 = 1/(0.6641159*um_scale)
+Ge_gam1 = 0
+Ge_sig1 = 6.7288
+Ge_frq2 = 1/(62.210127*um_scale)
+Ge_gam2 = 0
+Ge_sig2 = 0.21307
+
+Ge_susc = [ mp.LorentzianSusceptibility(frequency=Ge_frq1, gamma=Ge_gam1, sigma=Ge_sig1),
+            mp.LorentzianSusceptibility(frequency=Ge_frq2, gamma=Ge_gam2, sigma=Ge_sig2) ]
+
+Ge = mp.Medium(epsilon=9.28156, E_susceptibilities=Ge_susc, valid_freq_range=Ge_range)

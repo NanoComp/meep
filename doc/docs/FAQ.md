@@ -139,7 +139,7 @@ In general, you will need large simulations to benefit from lots of processors. 
 
 ### How do I compute S-parameters?
 
-Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/#reflectance-of-a-waveguide-taper).
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
