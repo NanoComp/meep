@@ -109,10 +109,10 @@ To investigate the scaling, we compute the reflectance for a range of taper leng
 ```sh
 #!/bin/bash
 
-mpirun -np 2 python mode-decomposition.py -Lt 0 |tee taper_data.out;
+mpirun -np 2 python -u mode-decomposition.py -Lt 0 |tee taper_data.out;
 
 for i in `seq 0 6`; do
-    mpirun -np 2 python mode-decomposition.py -Lt $((2**${i})) |tee -a taper_data.out;
+    mpirun -np 2 python -u mode-decomposition.py -Lt $((2**${i})) |tee -a taper_data.out;
 done
 
 grep mode: taper_data.out |cut -d , -f2- > taper_data.dat
@@ -238,7 +238,7 @@ The simulation is run and the results piped to a file (the grating data is extra
 ```sh
 #!/bin/bash
 
-python binary-grating.py |tee grating.out
+python -u binary_grating.py |tee grating.out
 grep grating grating.out |cut -d , -f2- > grating.dat
 ```
 

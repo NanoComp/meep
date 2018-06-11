@@ -85,7 +85,7 @@ The following Bash shell script runs the two simulations, pipes the output to a 
 ```sh
 #!/bin/bash
 
-python refl-quartz.py |tee flux.out
+python -u refl-quartz.py |tee flux.out
 grep refl: flux.out |cut -d , -f2- > flux.dat
 ```
 
@@ -187,7 +187,7 @@ for fs, kx in zip(all_freqs, [v.x for v in kpts]):
 Alternatively we could just read all of the frequencies into Python or Octave/Matlab and compute the ratios there. After running the program with
 
 ```sh
-unix% python material-dispersion.py | tee material-dispersion.out
+unix% python -u material-dispersion.py | tee material-dispersion.out
 ```
 
 we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation ω(k) for the real part of ω:
