@@ -485,7 +485,23 @@ The directions of the axes of the block; the lengths of these vectors are ignore
 
 ### Ellipsoid
 
-An ellipsoid. This is actually a subclass of `Block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
+An ellipsoid. This is actually a subclass of `Block**, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
+
+### Prism
+
+Polygonal prism type.
+
+**`vertices` [list of `Vector3`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`.
+
+**`height` [`number`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The prism thickness, extruded in the direction of `axis`.
+
+**`axis` [`Vector3`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The axis perpendicular to the prism. Defaults to `Vector3(x=0, y=0, z=1)`.
 
 Here are some examples of geometric objects created using the above classes:
 
@@ -920,6 +936,10 @@ Given a flux object and list of band indices, return the eigenmode coefficients 
 **`add_eigenmode(fcen, df, nfreq, FluxRegions...)`**  
 An alias for `add_flux`.
 
+**`get_eigenmode_freqs(flux)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
+e
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
@@ -976,7 +996,7 @@ Given a number of force objects, this displays a comma-separated table of freque
 
 You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `display_csv("force", get_force_freqs(f1), get_forces(f1), get_forces(f2), get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
-**`get_force_freqs(flux)`**  
+**`get_force_freqs(force)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a force object, returns a list of the frequencies that it is computing the spectrum for.
 
@@ -1020,6 +1040,10 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwith `df` centered at `fcen`, at `nfreq` frequency points.
 
+**`get_ldos_freqs(ldos)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given an ldos object, returns a list of the frequencies that it is computing the spectrum for.
+
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `dft_ldos_data` global variable after the `run` is complete.
 
 Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
@@ -1047,6 +1071,10 @@ After the simulation run is complete, you can compute the far fields. This is us
 **`get_farfield(near2far, x)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `Vector3` point `x` which can lie anywhere outside the near-field surface, including outside the computational cell and a `near2far` object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (Ex1,Ey1,Ez1,Hx1,Hy1,Hz1,Ex2,Ey2,Ez2,Hx2,Hy2,Hz2,...) for the frequencies 1,2,…,`nfreq`.
+
+**`get_near2far_freqs(n2f)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given a near2far object, returns a list of the frequencies that it is computing the spectrum for.
 
 **`output_farfields(near2far, fname, resolution, where=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

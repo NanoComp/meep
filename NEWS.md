@@ -1,6 +1,8 @@
 # Meep Release Notes
 
-## Meep 1.5 alpha
+## Meep 1.5
+
+6/7/2018
 
  * Python interface to MPB (#191 etc.).
 
@@ -10,6 +12,9 @@
 
  * DFT slices: output Fourier-transformed fields in any given
    region of space (#259).
+
+ * New `prism` geometric-object type for polygonal prisms (#341, #345)
+   for upcoming GDSII import (#357).  Libctl 4.1.0 is required.
 
  * Structure dump/load feature to rapidly load in a geometry
    from a previous calculation (#261, #266).
@@ -65,14 +70,14 @@
 31 March 2015.
 
   * New near-to-far-field functionality: given a bounding surface,
-    automatically computes the Fourier-transformed field in any 
+    automatically computes the Fourier-transformed field in any
     desired grid of "far-field" points arbitrarily far away.
 
   * Compatibility with Harminv 1.4 (fixes issue #13: ppc64 portability).
 
   * Fix compilation with latest C++ standard (e.g. on OS X 10.9).
 
-  * Bug fix in CW solver convergence test; thanks to 
+  * Bug fix in CW solver convergence test; thanks to
     Wu Chuanren and @FilipDominec for the bug report.
 
   * Build fix for Fedora 21 (thanks to Dean Brettle) (issue #14).
@@ -107,7 +112,7 @@
 
   * Support for anisotropic dispersive materials (tensor sigma parameter).
 
-  * Support for Drude dispersion model.  New syntax is 
+  * Support for Drude dispersion model.  New syntax is
     `make drude-susceptibility`, `make lorentzian-susceptibility`, etc.
     (old `make polarizability` is still supported for backwards compatibility).
 
@@ -167,7 +172,7 @@
     (default is `false` since it only works in 2d and is a little subtle
      for real fields).
 
-  * Includes preliminary new features to aid in computation of 
+  * Includes preliminary new features to aid in computation of
     optical forces (both classical and quantum Casimir forces);
     further documentation pending more testing.
 

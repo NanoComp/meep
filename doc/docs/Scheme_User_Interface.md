@@ -907,6 +907,10 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwith `df` centered at `fcen`, at `nfreq` frequency points.
 
+**`(get-ldos-freqs ldos)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given an ldos object, returns a list of the frequencies that it is computing the spectrum for.
+
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `dft-ldos-data` global variable after the `run` is complete.
 
 Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
@@ -934,6 +938,10 @@ After the simulation run is complete, you can compute the far fields. This is us
 **`(get_farfield near2far x)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `vector3` point `x` which can lie anywhere outside the near-field surface, including outside the computational cell and a near2far object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (Ex1,Ey1,Ez1,Hx1,Hy1,Hz1,Ex2,Ey2,Ez2,Hx2,Hy2,Hz2,...) for the frequencies 1,2,…,`nfreq`.
+
+**`(get-near2far-freqs n2f)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Given a near2far object, returns a list of the frequencies that it is computing the spectrum for.
 
 **`(output-farfields near2far fname where resolution)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

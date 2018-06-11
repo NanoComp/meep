@@ -875,7 +875,7 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
   int full_rank = *rank; 
   if (full_rank==0) return array;
 
-  int reduced_rank=0, reduced_dims[2], reduced_stride[2]={1,1}, nd=0;
+  int reduced_rank=0, reduced_dims[3], reduced_stride[3]={1,1,1}, nd=0;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
    { int dim = dims[nd++];
      if (dim==0) continue;

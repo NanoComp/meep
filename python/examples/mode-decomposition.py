@@ -20,36 +20,27 @@ def main(args):
     sy = dpml + dair + w2 + dair + dpml
     cell_size = mp.Vector3(sx,sy,0)
 
-    geometry = [ mp.Block(material=Si, center=mp.Vector3(0,0,0), size=mp.Vector3(mp.inf,w1,mp.inf)) ]
+    prism_x = sx + 1
+    half_w1 = 0.5 * w1
+    half_w2 = 0.5 * w2
+    half_Lt = 0.5 * Lt
 
     if Lt > 0:
-        geometry.append(mp.Block(material=Si, center=mp.Vector3(0.5*sx-0.5*(Lt+Lw+dpml),0,0), size=mp.Vector3(Lt+Lw+dpml,w2,mp.inf)))
+        vertices = [mp.Vector3(-prism_x, half_w1),
+                    mp.Vector3(-half_Lt, half_w1),
+                    mp.Vector3(half_Lt, half_w2),
+                    mp.Vector3(prism_x, half_w2),
+                    mp.Vector3(prism_x, -half_w2),
+                    mp.Vector3(half_Lt, -half_w2),
+                    mp.Vector3(-half_Lt, -half_w1),
+                    mp.Vector3(-prism_x, -half_w1)]
+    else:
+        vertices = [mp.Vector3(-prism_x, half_w1),
+                    mp.Vector3(prism_x, half_w1),
+                    mp.Vector3(prism_x, -half_w1),
+                    mp.Vector3(-prism_x, -half_w1)]
 
-        hh = w2
-        ww = 2*Lt
-
-        # taper angle (CCW, relative to +X axis)
-        rot_theta = math.atan(0.5*(w2-w1)/Lt)
-
-        pvec = mp.Vector3(-0.5*sx+dpml+Lw,0.5*w1,0)
-        cvec = mp.Vector3(-0.5*sx+dpml+Lw+0.5*ww,0.5*hh+0.5*w1,0)
-        rvec = cvec-pvec
-        rrvec = rvec.rotate(mp.Vector3(0,0,1), rot_theta)
-
-        geometry.append(mp.Block(material=mp.air, center=pvec+rrvec, size=mp.Vector3(ww,hh,mp.inf),
-                                 e1=mp.Vector3(1,0,0).rotate(mp.Vector3(0,0,1),rot_theta),
-                                 e2=mp.Vector3(0,1,0).rotate(mp.Vector3(0,0,1),rot_theta),
-                                 e3=mp.Vector3(0,0,1)))
-
-        pvec = mp.Vector3(-0.5*sx+dpml+Lw,-0.5*w1,0)
-        cvec = mp.Vector3(-0.5*sx+dpml+Lw+0.5*ww,-(0.5*hh+0.5*w1),0)
-        rvec = cvec-pvec
-        rrvec = rvec.rotate(mp.Vector3(0,0,1),-rot_theta)
-
-        geometry.append(mp.Block(material=mp.air, center=pvec+rrvec, size=mp.Vector3(ww,hh,mp.inf),
-                                 e1=mp.Vector3(1,0,0).rotate(mp.Vector3(0,0,1),-rot_theta),
-                                 e2=mp.Vector3(0,1,0).rotate(mp.Vector3(0,0,1),-rot_theta),
-                                 e3=mp.Vector3(0,0,1)))
+    geometry = [mp.Prism(vertices, height=100, material=Si)]
 
     boundary_layers = [ mp.PML(dpml) ]
 

@@ -4,7 +4,7 @@
 
 The latest development source is available on [GitHub](https://github.com/stevengj/meep).
 
-The current stable release is **version 1.4.3** which can be downloaded from:
+The current stable release is **version 1.5** which can be downloaded from:
 
 -   <https://github.com/stevengj/meep/releases>
 
