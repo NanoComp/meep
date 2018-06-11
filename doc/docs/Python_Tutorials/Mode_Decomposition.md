@@ -64,7 +64,7 @@ def main(args):
                     mp.Vector3(prism_x, -half_w1),
                     mp.Vector3(-prism_x, -half_w1)]
 
-    geometry = [mp.Prism(vertices, height=100, material=Si)]
+    geometry = [mp.Prism(vertices, height=mp.inf, material=Si)]
 
     boundary_layers = [ mp.PML(dpml) ]
 

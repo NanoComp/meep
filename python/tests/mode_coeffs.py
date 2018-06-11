@@ -30,7 +30,7 @@ class TestModeCoeffs(unittest.TestCase):
                     mp.Vector3(prism_x, -prism_y),
                     mp.Vector3(-prism_x, -prism_y)]
 
-        geometry = [mp.Prism(vertices, height=100, material=Si)]
+        geometry = [mp.Prism(vertices, height=mp.inf, material=Si)]
 
         boundary_layers = [mp.PML(dpml)]
 
