@@ -1,6 +1,6 @@
 # Mode Decomposition
 
-Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. A tutorial example is provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. Tutorial examples are provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
 
 [TOC]
 
@@ -56,17 +56,17 @@ The following are the parameters:
 
 + `flux` is a `dft_flux` object containing the frequency-domain fields on a cross-sectional slice perpendicular to the waveguide axis
 
-+ `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`). 
++ `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
 
 + `bands` is an array of integers corresponding to the mode indices
 
 + `num_bands` is the length of the `bands` array
 
-+ `parity` is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
++ `parity` is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
 
-+ `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations.
++ `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations
 
-+ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.
++ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance
 
 + `coeffs` is a user-allocated array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
 
@@ -78,7 +78,7 @@ The following are the parameters:
 vec (*kpoint_func)(double freq, int mode, void *user_data);
 ```
 
-+ `user_kpoint_data` User data passed to the `user_kpoint_func`
++ `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
 
 ```c++
@@ -122,7 +122,7 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               double eigensolver_tol);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L187-L485).
 
 ### Working with MPB Eigenmodes
 
@@ -144,31 +144,28 @@ These are implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/
 ### Exporting Frequency-Domain Fields
 
 ````
-  void output_flux_fields(dft_flux *flux, const volume where,
-                          const char *HDF5FileName);
+  void output_dft(dft_flux flux, const char *HDF5FileName);
 
-  void output_mode_fields(void *mode_data, dft_flux *flux,
-                          const volume where, 
-                          const char *HDF5FileName);
+  void output_mode_fields(void *mode_data, dft_flux flux, const char *HDF5FileName);
 ````
 
-`output_flux_fields` exports the components of the frequency-domain fields stored in `flux` to an HDF5 file with the given filename. `where` is the `volume` passed to the `flux` constructor. In general, `flux` will store data for fields at multiple frequencies.
+`output_dft` exports the components of the frequency-domain fields stored in `flux` to an HDF5 file with the given filename In general, `flux` will store data for fields at multiple frequencies.
 
 `output_mode_fields` is similar, but instead exports the components of the eigenmode described by `mode_data` which should be the return value of a call to `get_eigenmode`.
 
-These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp).
+These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1077-L1088).
 
 ### Computing Overlap Integrals
 ````
   std::complex<double> get_mode_flux_overlap(void *mode_data, 
                                              dft_flux *flux, 
                                              int num_freq, 
-                                             const volume where);
+                                             std::complex<double>overlap[2]);
 
   std::complex<double> get_mode_mode_overlap(void *mode1_data,
                                              void *mode2_data,
                                              dft_flux *flux,
-                                             const volume where);
+                                             std::complex<double>overlap[2]);
 ````
 
 `get_mode_flux_overlap` computes the overlap integral between the eigenmode described by `mode_data` and the fields stored in `flux` for the `num_freq`th stored frequency, where `num_freq` ranges from 0 to `flux->Nfreq-1`. `mode_data` should be the return value of a previous call to `get_eigenmode.`
