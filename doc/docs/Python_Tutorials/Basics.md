@@ -525,7 +525,7 @@ Note that there are two argument parameters which can be passed to the script at
 #!/bin/bash
 
 for i in `seq 0 41`; do
-    python refl-angular.py -theta $i |tee -a flux_t${i}.out;
+    python -u refl-angular.py -theta $i |tee -a flux_t${i}.out;
     grep refl: flux_t${i}.out |cut -d , -f2- > flux_t${i}.dat;
 done
 ```

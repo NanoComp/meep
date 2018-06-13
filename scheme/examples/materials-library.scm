@@ -210,7 +210,7 @@
 ; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
 ; wavelength range: 0.207 - 1.24 um
 
-(define Si3N4-VISNIR-frq1 (/ (* 0.13967 um_scale)))
+(define Si3N4-VISNIR-frq1 (/ (* 0.13967 um-scale)))
 (define Si3N4-VISNIR-gam1 0)
 (define Si3N4-VISNIR-sig1 2.8939)
 
@@ -225,10 +225,10 @@
 ; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
 ; wavelength range: 0.310 - 5.504 um
 
-(define Si3N4-NIR-frq1 (/ (* 0.1353406 um_scale)))
+(define Si3N4-NIR-frq1 (/ (* 0.1353406 um-scale)))
 (define Si3N4-NIR-gam1 0)
 (define Si3N4-NIR-sig1 3.0249)
-(define Si3N4-NIR-frq2 (/ (* 1239.842 um_scale)))
+(define Si3N4-NIR-frq2 (/ (* 1239.842 um-scale)))
 (define Si3N4-NIR-gam2 0)
 (define Si3N4-NIR-sig2 40314)
 
@@ -957,3 +957,45 @@
  (E-susceptibilities 
   (make lorentzian-susceptibility
     (frequency SiO2-frq1) (gamma SiO2-gam1) (sigma SiO2-sig1)))))
+
+;------------------------------------------------------------------
+
+; indium phosphide (InP) from Handbook of Optics, 2nd edition, Vol. 2., McGraw-Hill, 1994
+; ref: https://refractiveindex.info/?shelf=main&book=InP&page=Pettit
+; wavelength range: 0.95 - 10 um
+
+(define InP-frq1 (/ (* 0.6263 um-scale)))
+(define InP-gam1 0)
+(define InP-sig1 2.316)
+
+(define InP-frq2 (/ (* 32.935 um-scale)))
+(define InP-gam2 0)
+(define InP-sig2 2.765)
+
+(define InP (make medium (epsilon 7.255)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency InP-frq1) (gamma InP-gam1) (sigma InP-sig1))
+  (make lorentzian-susceptibility
+    (frequency InP-frq2) (gamma InP-gam2) (sigma InP-sig2)))))
+
+;------------------------------------------------------------------
+
+; germanium (Ge) from N. P. Barnes and M. S. Piltch, J. Optical Society America, Vol. 69, pp. 178-180, 1979
+; ref: https://refractiveindex.info/?shelf=main&book=Ge&page=Icenogle
+; wavelength range: 2.5 - 12 um
+
+(define Ge-frq1 (/ (* 0.6641159 um-scale)))
+(define Ge-gam1 0)
+(define Ge-sig1 6.7288)
+
+(define Ge-frq2 (/ (* 62.210127 um-scale)))
+(define Ge-gam2 0)
+(define Ge-sig2 0.21307)
+
+(define Ge (make medium (epsilon 9.28156)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Ge-frq1) (gamma Ge-gam1) (sigma Ge-sig1))
+  (make lorentzian-susceptibility
+    (frequency Ge-frq2) (gamma Ge-gam2) (sigma Ge-sig2)))))
