@@ -29,10 +29,10 @@ export PATH=<desired_prefix>/bin:$PATH
 Next, we create a Conda environment for PyMeep to isolate it from other Python libraries that may be installed.
 
 ```bash
-conda create -n mp -c conda-forge pymeep
+conda create -n mp -c chogan -c conda-forge pymeep
 ```
 
-This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command. The serial version of PyMeep is currently hosted on the `conda-forge` channel.
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command.
 
 Next, we need to activate the environment before we can start using it.
 
@@ -42,7 +42,7 @@ source activate mp
 
 Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
 
-Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`. Since a parallel `hdf5` package isn't available on `conda-forge` yet, we're still hosting parallel PyMeep on the `chogan` channel.
+Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`.
 
 ```bash
 conda create -n pmp -c chogan -c conda-forge pymeep-parallel
