@@ -2,7 +2,7 @@ lib_LTLIBRARIES = libmeep.la
 include_HEADERS = meep.hpp
 pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/libmeepgeom
+AM_CPPFLAGS = -I$(top_srcdir)/src
 
 BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp
 

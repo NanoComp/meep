@@ -20,9 +20,9 @@
 #include <math.h>
 #include <complex>
 
+#include <ctlgeom.h>
 #include "meep.hpp"
 #include "meep_internals.hpp"
-#include "meepgeom.hpp"
 
 using namespace std;
 
