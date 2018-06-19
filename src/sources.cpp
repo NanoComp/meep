@@ -22,6 +22,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "meepgeom.hpp"
 
 using namespace std;
 
@@ -313,6 +314,41 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   src_vol *tmp = new src_vol(c, data->src, idx_vol, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+}
+
+static realnum *amp_func_data_re = NULL;
+static realnum *amp_func_data_im = NULL;
+static size_t amp_file_dims[] = {1, 1, 1};
+
+complex<double> amp_file_func(const vec &p) {
+  complex<double> res;
+  double rx = geometry_lattice.size.x == 0 ? 0 : 0.5 + (p.x() - geometry_center.x) / geometry_lattice.size.x;
+  double ry = geometry_lattice.size.y == 0 ? 0 : 0.5 + (p.y() - geometry_center.y) / geometry_lattice.size.y;
+  double rz = geometry_lattice.size.z == 0 ? 0 : 0.5 + (p.z() - geometry_center.z) / geometry_lattice.size.z;
+  res.real(meep_geom::linear_interpolate(rx, ry, rz, amp_func_data_re,
+                                         amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
+  res.imag(meep_geom::linear_interpolate(rx, ry, rz, amp_func_data_im,
+                                         amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
+  return res;
+}
+
+// Reads amplitude function data from h5file 'filename.' Assumes real and imaginary components
+// of 'dataset' exist with '.re' and '.im' extensions.
+void fields::add_volume_source(component c, const src_time &src, const volume &where_,
+                               const char *filename, const char *dataset,
+                               complex<double> amp) {
+
+  meep::h5file eps_file(filename, meep::h5file::READONLY, false);
+  int rank;
+  std::string dataset_re = std::string(dataset) + ".re";
+  std::string dataset_im = std::string(dataset) + ".im";
+  // TODO: Free this memory
+  amp_func_data_re = eps_file.read(dataset_re.c_str(), &rank, amp_file_dims, 3);
+  amp_func_data_im = eps_file.read(dataset_im.c_str(), &rank, amp_file_dims, 3);
+  master_printf("read in %zdx%zdx%zd amplitude function file \"%s\"\n",
+                amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], filename);
+
+  add_volume_source(c, src, where_, amp_file_func, amp);
 }
 
 void fields::add_volume_source(component c, const src_time &src,

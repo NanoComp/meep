@@ -1,11 +1,15 @@
 from __future__ import division
 
 import math
+import os
 import unittest
 
 import meep as mp
 from meep.geom import Cylinder, Vector3
 from meep.source import EigenModeSource, ContinuousSource, GaussianSource
+
+
+data_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'data')
 
 
 class TestEigenModeSource(unittest.TestCase):
@@ -134,6 +138,37 @@ class TestSourceTypemaps(unittest.TestCase):
         fp = sim.get_field_point(mp.Ez, mp.Vector3(1))
 
         self.assertAlmostEqual(fp, -0.021997617628500023 + 0j)
+
+
+class TestAmpFileFunc(unittest.TestCase):
+
+    def init_and_run(self, file_func):
+        cell = mp.Vector3(1, 1)
+        resolution = 10
+        fcen = 0.8
+        df = 0.02
+
+        def ones(p):
+            return 1 + 1j
+
+        if file_func:
+            fname = os.path.join(data_dir, 'amp_func_file.h5')
+            dset = 'amp_data'
+            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(),
+                                 amp_func_file=fname, amp_func_dataset=dset)]
+        else:
+            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(),
+                                 amp_func=ones)]
+
+        sim = mp.Simulation(cell_size=cell, resolution=resolution, sources=sources)
+        sim.run(until=200)
+        return sim.get_field_point(mp.Ez, mp.Vector3())
+
+    def test_amp_file_func(self):
+        field_point_amp_file = self.init_and_run(file_func=True)
+        field_point_amp_func = self.init_and_run(file_func=False)
+        self.assertAlmostEqual(field_point_amp_file, field_point_amp_func)
+
 
 if __name__ == '__main__':
     unittest.main()
