@@ -325,10 +325,10 @@ complex<double> amp_file_func(const vec &p) {
   double rx = geometry_lattice.size.x == 0 ? 0 : 0.5 + (p.x() - geometry_center.x) / geometry_lattice.size.x;
   double ry = geometry_lattice.size.y == 0 ? 0 : 0.5 + (p.y() - geometry_center.y) / geometry_lattice.size.y;
   double rz = geometry_lattice.size.z == 0 ? 0 : 0.5 + (p.z() - geometry_center.z) / geometry_lattice.size.z;
-  res.real(meep_geom::linear_interpolate(rx, ry, rz, amp_func_data_re,
-                                         amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
-  res.imag(meep_geom::linear_interpolate(rx, ry, rz, amp_func_data_im,
-                                         amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
+  res.real(linear_interpolate(rx, ry, rz, amp_func_data_re,
+                              amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
+  res.imag(linear_interpolate(rx, ry, rz, amp_func_data_im,
+                              amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
   return res;
 }
 

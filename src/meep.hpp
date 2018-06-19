@@ -1789,6 +1789,8 @@ std::complex<double> eigenmode_amplitude(void *vedata,
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);
 
+realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data,
+                           int nx, int ny, int nz, int stride);
 } /* namespace meep */
 
 #endif /* MEEP_H */
