@@ -545,6 +545,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete[] $1.items;
 }
 
+%typemap(out) geometric_object_list {
+    $result = gobj_list_to_py_list(&$1);
+
+    if (!$result) {
+        SWIG_fail;
+    }
+}
+
 // Typemap suite for susceptibility_list
 
 %typecheck(SWIG_TYPECHECK_POINTER) susceptibility_list {

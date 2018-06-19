@@ -110,19 +110,6 @@ static PyObject* cnumber_to_pycomplex(cnumber *c) {
     return result;
 }
 
-static PyObject* v3_to_pyv3(vector3 *v) {
-    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
-    PyObject *args = Py_BuildValue("(ddd)", v->x, v->y, v->z);
-    PyObject *py_v = PyObject_Call(v3_class, args, NULL);
-
-    Py_DECREF(geom_mod);
-    Py_DECREF(args);
-    Py_DECREF(v3_class);
-
-    return py_v;
-}
-
 static PyObject* cv3_to_pyv3(cvector3 *cv) {
     PyObject *geom_mod = PyImport_ImportModule("meep.geom");
     PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");

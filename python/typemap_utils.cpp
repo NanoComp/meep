@@ -217,6 +217,19 @@ static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
     return 1;
 }
 
+static PyObject* v3_to_pyv3(vector3 *v) {
+    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+    PyObject *args = Py_BuildValue("(ddd)", v->x, v->y, v->z);
+    PyObject *py_v = PyObject_Call(v3_class, args, NULL);
+
+    Py_DECREF(geom_mod);
+    Py_DECREF(args);
+    Py_DECREF(v3_class);
+
+    return py_v;
+}
+
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
@@ -369,6 +382,27 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
 
     return 1;
 }
+static PyObject *material_to_py_material(material_type mat) {
+    switch (mat->which_subclass) {
+    case meep_geom::MEDIUM:
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *medium_class = PyObject_GetAttrString(geom_mod, "Medium");
+
+        PyObject *args = Py_BuildValue("", );
+        PyObject *py_mat = PyObject_Call(v3_class, args, NULL);
+
+        Py_DECREF(geom_mod);
+        Py_DECREF(args);
+        Py_DECREF(medium_class);
+
+        return py_mat;
+        break;
+    default:
+        // Only Medium is supported at this time.
+        PyErr_SetString(PyExc_NotImplementedError, "Can only convert C++ medium_struct to Python");
+        return NULL;
+    }
+}
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m) {
     if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
@@ -409,6 +443,10 @@ static int pymedium_to_medium(PyObject *po, medium_struct *m) {
     }
 
     return 1;
+}
+
+static PyObject *medium_to_pymedium(medium_struct *m) {
+
 }
 
 static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
@@ -638,4 +676,64 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
     }
 
     return 1;
+}
+
+static PyObject *gobj_to_py_obj(geometric_object *gobj) {
+    switch (gobj->which_subclass) {
+    case PRISM:
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *prism_class = PyObject_GetAttrString(geom_mod, "Prism");
+
+        int num_verts = gobj->subclass.prism_data->vertices.num_items;
+        PyObject *py_verts = Py_ListNew(num_verts);
+        for (int i = 0; i < num_verts; ++i) {
+            PyList_SetItem(py_verts, i, v3_to_pyv3(&gobj->subclass.prism_data->vertices.items[i]));
+        }
+
+        double height = gobj->subclass.prism_data->height;
+
+        // TODO: How to get this from m_c2p or m_p2c?
+        vector3 axis = {0, 0, 1};
+        PyObject *py_axis = v3_to_pyv3(&axis);
+
+        PyObject *py_center = v3_to_pyv3(gobj->subclass.prism_data->centroid);
+        PyObject *py_mat = material_to_py_material(gobj->material);
+
+        PyObject *args = Py_BuildValue("(OdO)", py_verts, height, py_axis);
+        PyObject *kwargs = PyBuildValue("{s:O,s:O}", "center", py_center, "material", py_mat);
+        PyObject *res = PyObject_Call(prism_class, args, kwargs);
+
+        Py_DECREF(geom_mod);
+        Py_DECREF(prism_class);
+        Py_DECREF(args);
+        Py_DECREF(kwargs);
+        Py_DECREF(py_verts);
+        Py_DECREF(py_axis);
+        Py_DECREF(py_center);
+        Py_DECREF(py_mat);
+
+        return res;
+    case BLOCK:
+    case SPHERE:
+    case CYLINDER:
+    default:
+        // We currently only have the need to create python Prisms from C++.
+        // Other geometry can be added as needed.
+        PyErr_SetString(PyExc_RuntimeError, "Conversion of non-prism geometric_object to Python is not supported");
+        return NULL;
+    }
+}
+
+static PyObject* gobj_list_to_py_list(geometric_object_list *objs) {
+
+    PyObject *py_res = PyList_New(objs->num_items);
+
+    for (int i = 0; i < objs->num_items; ++i) {
+        PyList_SetItem(py_res, i, gobj_to_py_obj(&objs->items[i]));
+        geometric_object_destroy(*objs->items[i]);
+    }
+
+    free(objs->items);
+
+    return py_res;
 }
