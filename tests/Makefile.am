@@ -12,7 +12,7 @@ DONE = $(SRC:.cpp=.done)
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 AM_CPPFLAGS = -I$(top_srcdir)/src
-LDADD = $(LIBMEEP) @LIBCTLGEOM_LIBS@
+LDADD = $(LIBMEEP)
 
 .SUFFIXES = .dac .done
 
