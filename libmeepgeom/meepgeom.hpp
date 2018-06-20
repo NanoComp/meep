@@ -23,9 +23,6 @@
 #include <math.h>
 #include <vector>
 
-#include <meep.hpp>
-#include <ctlgeom.h>
-
 #include "meep.hpp"
 #include "material_data.hpp"
 
