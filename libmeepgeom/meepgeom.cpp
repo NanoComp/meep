@@ -334,10 +334,10 @@ void epsilon_file_material(material_data *md, vector3 p)
   double rz = geometry_lattice.size.z == 0
     ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
   mm->epsilon_diag.x = mm->epsilon_diag.y = mm->epsilon_diag.z =
-    linear_interpolate(rx, ry, rz, md->epsilon_data,
-		       md->epsilon_dims[0],
-                       md->epsilon_dims[1],
-                       md->epsilon_dims[2], 1);
+      meep::linear_interpolate(rx, ry, rz, md->epsilon_data,
+                               md->epsilon_dims[0],
+                               md->epsilon_dims[1],
+                               md->epsilon_dims[2], 1);
   mm->epsilon_offdiag.x.re = mm->epsilon_offdiag.y.re = mm->epsilon_offdiag.z.re = 0;
 }
 
