@@ -318,7 +318,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 
 static realnum *amp_func_data_re = NULL;
 static realnum *amp_func_data_im = NULL;
-static size_t amp_file_dims[] = {1, 1, 1};
+static size_t amp_file_dims[3];
 
 complex<double> amp_file_func(const vec &p) {
   complex<double> res;
@@ -342,13 +342,20 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   int rank;
   std::string dataset_re = std::string(dataset) + ".re";
   std::string dataset_im = std::string(dataset) + ".im";
-  // TODO: Free this memory
+
+  amp_file_dims[0] = amp_file_dims[1] = amp_file_dims[2] = 1;
   amp_func_data_re = eps_file.read(dataset_re.c_str(), &rank, amp_file_dims, 3);
+  master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n",
+                amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], filename, dataset_re.c_str());
+
   amp_func_data_im = eps_file.read(dataset_im.c_str(), &rank, amp_file_dims, 3);
-  master_printf("read in %zdx%zdx%zd amplitude function file \"%s\"\n",
-                amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], filename);
+  master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n",
+                amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], filename, dataset_im.c_str());
 
   add_volume_source(c, src, where_, amp_file_func, amp);
+
+  delete[] amp_func_data_re;
+  delete[] amp_func_data_im;
 }
 
 void fields::add_volume_source(component c, const src_time &src,
