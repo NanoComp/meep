@@ -433,7 +433,7 @@ Shifts the objects `center` by `vec`. This can also be accomplished via the `+` 
 
 **`info`(indent_by [integer])**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces(0 by default).
+Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
 
 One normally does not create objects of type `GeometricObject` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties and can be specified in a subclass's constructor via keyword arguemnts.
 
@@ -461,7 +461,7 @@ Length of the cylinder along its axis. No default value.
 
 **`axis` [`Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Direction of the cylinder's axis; the length of this vector is ignored. Defaults to point parallel to the $z$ axis.
+Direction of the cylinder's axis; the length of this vector is ignored. Defaults to `Vector3(x=0, y=0, z=1)`.
 
 ### Cone
 

@@ -122,7 +122,7 @@ Examples are provided in [Tutorials/Frequency-Domain Solver](Python_Tutorials/Fr
 
 ### Is there a materials library?
 
-A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO$_2$), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al$_2$O$_3$), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si$_3$N$_4$), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Additional information is provided in [Materials](Materials/#materials-library).
+A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO$_2$), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al$_2$O$_3$), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si$_3$N$_4$), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Additional information is provided in [Materials](Materials/#materials-library).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
@@ -139,7 +139,7 @@ In general, you will need large simulations to benefit from lots of processors. 
 
 ### How do I compute S-parameters?
 
-Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/#reflectance-of-a-waveguide-taper).
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
