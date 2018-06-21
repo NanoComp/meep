@@ -513,6 +513,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(out) geometric_object meep_geom::get_GDSII_prism {
+    $result = gobj_to_py_obj(&$1);
+
+    if (!$result) {
+        SWIG_fail;
+    }
+}
+
 // Typemap suite for boolean
 
 %typemap(out) boolean {

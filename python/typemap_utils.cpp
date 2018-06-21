@@ -386,19 +386,28 @@ static PyObject *material_to_py_material(material_type mat) {
     switch (mat->which_subclass) {
     case meep_geom::material_data::MEDIUM: {
         PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
         PyObject *medium_class = PyObject_GetAttrString(geom_mod, "Medium");
 
-        PyObject *args = PyTuple_New(0);
-        PyObject *py_mat = PyObject_Call(medium_class, args, NULL);
-
-        Py_DECREF(geom_mod);
-        Py_DECREF(args);
-        Py_DECREF(medium_class);
+        PyObject *medium_args = PyTuple_New(0);
+        PyObject *py_mat = PyObject_Call(medium_class, medium_args, NULL);
 
         // TODO: Set all Medium attributes
+        PyObject *v3_args = Py_BuildValue("(f,f,f)",
+                                          mat->medium.epsilon_diag.x,
+                                          mat->medium.epsilon_diag.y,
+                                          mat->medium.epsilon_diag.z);
+        PyObject *py_eps_diag = PyObject_Call(v3_class, v3_args, NULL);
+        PyObject_SetAttrString(py_mat, "epsilon_diag", py_eps_diag);
+
+        Py_DECREF(geom_mod);
+        Py_DECREF(medium_args);
+        Py_DECREF(v3_args);
+        Py_DECREF(medium_class);
+        Py_DECREF(v3_class);
+        Py_DECREF(py_eps_diag);
 
         return py_mat;
-        break;
     }
     default:
         // Only Medium is supported at this time.
