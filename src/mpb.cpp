@@ -610,9 +610,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands, int parity,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
-                                        double *vgrp, vec *kpoints,
-                                        kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data)
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data, vec *kpoints)
 {
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -707,9 +706,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands, int parity,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
-                                        double *vgrp, vec *kpoints, 
-                                        kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data)
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data, vec *kpoints)
 
 { (void) flux; (void) eig_vol; (void) bands; (void)num_bands;
   (void) parity; (void) eig_resolution; (void) eigensolver_tol;
