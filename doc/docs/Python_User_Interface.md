@@ -493,11 +493,11 @@ Polygonal prism type.
 
 **`vertices` [list of `Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`.
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite (`mp.inf`) prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
 
 **`height` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The prism thickness, extruded in the direction of `axis`.
+The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
 
 **`axis` [`Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
