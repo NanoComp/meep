@@ -173,10 +173,10 @@ kpts = mp.interpolate(k_interp, [mp.Vector3(kmin), mp.Vector3(kmax)])
 
 sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources, default_material=default_material, resolution=resolution)
 
-all_freqs = sim.run(kpts, k_points=200)  # a list of lists of frequencies
+all_freqs = sim.run_k_points(200, kpts)  # a list of lists of frequencies
 ```
 
-The `k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio (ck/ω)$^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
+The `run_k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding ε via the ratio (ck/ω)$^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
 
 ```py
 for fs, kx in zip(all_freqs, [v.x for v in kpts]):
