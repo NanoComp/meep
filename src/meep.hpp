@@ -1456,22 +1456,13 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
-  void get_eigenmode_coefficients(dft_flux flux,
-                                  const volume &eig_vol,
+  void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol,
                                   int *bands, int num_bands, int parity,
-                  			          double eig_resolution, double eigensolver_tol,
-                                  std::complex<double> *coeffs,
-                                  double *vgrp, kpoint_func user_kpoint_func=0,
-                                  void *user_kpoint_data=0);
+                                  double eig_resolution, double eigensolver_tol,
+                                  std::complex<double> *coeffs, double *vgrp, 
+                                  kpoint_func user_kpoint_func=0,
+                                  void *user_kpoint_data=0, vec *kpoints=0);
 
-  void get_eigenmode_coefficients(dft_flux flux,
-                                  int *bands, int num_bands, int parity,
-                                  std::complex<double> *coeffs,
-                                  double *vgrp, kpoint_func user_kpoint_func=0,
-                                  void *user_kpoint_data=0) {
-      get_eigenmode_coefficients(flux, flux.where, bands, num_bands, parity,
-          0.0, 1e-7, coeffs, vgrp, user_kpoint_func, user_kpoint_data);
-  }
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));

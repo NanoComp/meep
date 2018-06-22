@@ -79,6 +79,9 @@ static complex<double> default_amp_func(const vec &pt)
 /* structure storing all data needed to compute position-dependent */
 /* amplitude for eigenmode source (the fields of this structure    */
 /* were formerly global variables)                                 */
+/* Note: 'Gk' is the k-point in real space, i.e. G*k where         */
+/* G = matrix of reciprocal-lattice basis vectors                  */
+/* k = k vector in reciprocal-lattice basis                        */
 /*******************************************************************/
 typedef struct eigenmode_data
  {
@@ -87,7 +90,7 @@ typedef struct eigenmode_data
    evectmatrix H;
    int n[3];
    double s[3];
-   double k[3];
+   double Gk[3]; 
    vec center;
    amplitude_function amp_func;
    int band_num;
@@ -473,9 +476,9 @@ void *fields::get_eigenmode(double omega_src,
   edata->s[0]           = s[0];
   edata->s[1]           = s[1];
   edata->s[2]           = s[2];
-  edata->k[0]           = k[0];
-  edata->k[1]           = k[1];
-  edata->k[2]           = k[2];
+  edata->Gk[0]          = G[0][0]*k[0] + G[1][0]*k[1] + G[2][0]*k[2];
+  edata->Gk[1]          = G[0][1]*k[0] + G[1][1]*k[1] + G[2][1]*k[2];
+  edata->Gk[2]          = G[0][2]*k[0] + G[1][2]*k[1] + G[2][2]*k[2];
   edata->center         = eig_vol.center() - where.center();
   edata->amp_func       = default_amp_func;
   edata->band_num       = band_num;
@@ -500,7 +503,7 @@ double get_group_velocity(void *vedata)
 
 vec get_k(void *vedata)
 { eigenmode_data *edata = (eigenmode_data *)vedata;
-  return vec(edata->k[0], edata->k[1], edata->k[2]);
+  return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
 }
 
 /***************************************************************/
@@ -597,6 +600,10 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 /* array of size num_bands*num_freqs. then on return the group */
 /* velocity for the mode with frequency #nf and band index     */
 /* bands[nb] is stored in vgrp[nb*num_freqs + nf].             */
+/*                                                             */
+/* similarly, if kpoints is non-null it should point to a      */
+/* caller-allocated array of size num_bands*num_freqs, which on*/
+/* return will be populated by the k-vectors for the modes.    */
 /***************************************************************/
 void fields::get_eigenmode_coefficients(dft_flux flux,
                                         const volume &eig_vol,
@@ -604,7 +611,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data)
+                                        void *user_kpoint_data, vec *kpoints)
 {
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -640,6 +647,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
 
       double vg=get_group_velocity(mode_data);
       if (vgrp) vgrp[nb*num_freqs + nf]=vg;
+      if (kpoints) kpoints[nb*num_freqs + nf]=get_k(mode_data);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -699,11 +707,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data)
+                                        void *user_kpoint_data, vec *kpoints)
 
 { (void) flux; (void) eig_vol; (void) bands; (void)num_bands;
   (void) parity; (void) eig_resolution; (void) eigensolver_tol;
-  (void) coeffs; (void) vgrp; (void) user_kpoint_func; (void) user_kpoint_data;
+  (void) coeffs; (void) vgrp; (void) kpoints; (void) user_kpoint_func; (void) user_kpoint_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
