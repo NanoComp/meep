@@ -603,6 +603,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands, int parity,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
+                                        double *kmag,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data)
 {
@@ -638,8 +639,38 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
         continue;
       }
 
+      // Calculate and store the group velocity if requested
       double vg=get_group_velocity(mode_data);
       if (vgrp) vgrp[nb*num_freqs + nf]=vg;
+
+      // Calculate and store the k vector magnitude if requested
+      vec km=get_k(mode_data);
+      if (kmag) {
+        double x = 0, y = 0, z = 0;
+
+        switch (km.dim) {
+          case meep::D1:
+            z = km.z();
+            break;
+          case meep::D2:
+            x = km.x();
+            y = km.y();
+            break;
+          case meep::D3:
+            x = km.x();
+            y = km.y();
+            z = km.z();
+            break;
+          case meep::Dcyl:
+            x = km.r();
+            z = km.z();
+            break;
+        }
+
+        kmag[3*nb*num_freqs + 3*nf + 0] = x;
+        kmag[3*nb*num_freqs + 3*nf + 1] = y;
+        kmag[3*nb*num_freqs + 3*nf + 2] = z;
+      }
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -698,12 +729,13 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         int *bands, int num_bands, int parity,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
+                                        double *kmag,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data)
 
 { (void) flux; (void) eig_vol; (void) bands; (void)num_bands;
   (void) parity; (void) eig_resolution; (void) eigensolver_tol;
-  (void) coeffs; (void) vgrp; (void) user_kpoint_func; (void) user_kpoint_data;
+  (void) coeffs; (void) kmag; (void) vgrp; (void) user_kpoint_func; (void) user_kpoint_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
