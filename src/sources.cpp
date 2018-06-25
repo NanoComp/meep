@@ -20,7 +20,6 @@
 #include <math.h>
 #include <complex>
 
-#include <ctlgeom.h>
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
@@ -318,18 +317,48 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 
 static realnum *amp_func_data_re = NULL;
 static realnum *amp_func_data_im = NULL;
+static const volume *amp_func_vol = NULL;
 static size_t amp_file_dims[3];
 
 complex<double> amp_file_func(const vec &p) {
+  double x_size = amp_func_vol->in_direction(X);
+  double y_size = amp_func_vol->in_direction(Y);
+  double z_size = amp_func_vol->in_direction(Z);
+
+  double rx = x_size == 0 ? 0 : 0.5 + p.x() / x_size;
+  double ry = y_size == 0 ? 0 : 0.5 + p.y() / y_size;
+  double rz = z_size == 0 ? 0 : 0.5 + p.z() / z_size;
+
   complex<double> res;
-  double rx = geometry_lattice.size.x == 0 ? 0 : 0.5 + (p.x() - geometry_center.x) / geometry_lattice.size.x;
-  double ry = geometry_lattice.size.y == 0 ? 0 : 0.5 + (p.y() - geometry_center.y) / geometry_lattice.size.y;
-  double rz = geometry_lattice.size.z == 0 ? 0 : 0.5 + (p.z() - geometry_center.z) / geometry_lattice.size.z;
   res.real(linear_interpolate(rx, ry, rz, amp_func_data_re,
                               amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
   res.imag(linear_interpolate(rx, ry, rz, amp_func_data_im,
                               amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
   return res;
+}
+
+void fields::add_volume_source(component c, const src_time &src, const volume &where_,
+                               complex<double> *arr, size_t dims[3], complex<double> amp) {
+
+  amp_func_vol = &where_;
+
+  for (int i = 0; i < 3; ++i) {
+    amp_file_dims[i] = dims[i];
+  }
+
+  size_t total_size = dims[0] * dims[1] * dims[2];
+  amp_func_data_re = new double[total_size];
+  amp_func_data_im = new double[total_size];
+
+  for (size_t i = 0; i < total_size; ++i) {
+    amp_func_data_re[i] = real(arr[i]);
+    amp_func_data_im[i] = imag(arr[i]);
+  }
+
+  add_volume_source(c, src, where_, amp_file_func, amp);
+
+  delete[] amp_func_data_re;
+  delete[] amp_func_data_im;
 }
 
 // Reads amplitude function data from h5file 'filename.' Assumes real and imaginary components
@@ -343,19 +372,33 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   std::string dataset_re = std::string(dataset) + ".re";
   std::string dataset_im = std::string(dataset) + ".im";
 
-  amp_file_dims[0] = amp_file_dims[1] = amp_file_dims[2] = 1;
-  amp_func_data_re = eps_file.read(dataset_re.c_str(), &rank, amp_file_dims, 3);
+  size_t re_dims[] = {1, 1, 1};
+  double *real_data = eps_file.read(dataset_re.c_str(), &rank, re_dims, 3);
   master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n",
-                amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], filename, dataset_re.c_str());
+                re_dims[0], re_dims[1], re_dims[2], filename, dataset_re.c_str());
 
-  amp_func_data_im = eps_file.read(dataset_im.c_str(), &rank, amp_file_dims, 3);
+  size_t im_dims[] = {1, 1, 1};
+  double *imag_data = eps_file.read(dataset_im.c_str(), &rank, im_dims, 3);
   master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n",
-                amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], filename, dataset_im.c_str());
+                im_dims[0], im_dims[1], im_dims[2], filename, dataset_im.c_str());
 
-  add_volume_source(c, src, where_, amp_file_func, amp);
+  for (int i = 0; i < 3; ++i) {
+    if (re_dims[i] != im_dims[i]) {
+      abort("Imaginary and real datasets have different dimensions");
+    }
+  }
 
-  delete[] amp_func_data_re;
-  delete[] amp_func_data_im;
+  size_t total_size = re_dims[0] * re_dims[1] * re_dims[2];
+  complex<double> *amp_data = new complex<double>[total_size];
+  for (size_t i = 0; i < total_size; ++i) {
+    amp_data[i] = complex<double>(real_data[i], imag_data[i]);
+  }
+
+  add_volume_source(c, src, where_, amp_data, re_dims, amp);
+
+  delete[] real_data;
+  delete[] imag_data;
+  delete[] amp_data;
 }
 
 void fields::add_volume_source(component c, const src_time &src,

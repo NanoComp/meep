@@ -332,8 +332,9 @@ realnum *h5file::read(const char *dataname,
 	close_data_id = false;
       }
       else {
-	CHECK(dataset_exists(file_id, dataname),
-	      "missing dataset in HDF5 file");
+        if (!dataset_exists(file_id, dataname)) {
+          abort("missing dataset in HDF5 file: %s", dataname);
+        }
 	data_id = H5Dopen(file_id, dataname);
       }
     }
