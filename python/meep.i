@@ -92,16 +92,6 @@ static PyObject *py_meep_src_time_object() {
     return src_time;
 }
 
-static PyObject *py_vector3_object() {
-    static PyObject *vector3_object = NULL;
-    if (vector3_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        vector3_object = PyObject_GetAttrString(geom_mod, "Vector3");
-        Py_XDECREF(geom_mod);
-    }
-    return vector3_object;
-}
-
 static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);

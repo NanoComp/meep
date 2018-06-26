@@ -111,8 +111,7 @@ static PyObject* cnumber_to_pycomplex(cnumber *c) {
 }
 
 static PyObject* cv3_to_pyv3(cvector3 *cv) {
-    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+    PyObject *v3_class = py_vector3_object();
 
     vector3 r = cvector3_re(*cv);
     vector3 i = cvector3_im(*cv);
@@ -128,9 +127,7 @@ static PyObject* cv3_to_pyv3(cvector3 *cv) {
     PyObject *args = Py_BuildValue("(DDD)", &x, &y, &z);
     PyObject *py_v = PyObject_Call(v3_class, args, NULL);
 
-    Py_DECREF(geom_mod);
     Py_DECREF(args);
-    Py_DECREF(v3_class);
 
     return py_v;
 }
@@ -140,7 +137,7 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
     PyObject *c2 = cv3_to_pyv3(&m->c1);
     PyObject *c3 = cv3_to_pyv3(&m->c2);
 
-    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+    PyObject *geom_mod = get_geom_mod();
     PyObject *matrix_class = PyObject_GetAttrString(geom_mod, "Matrix");
 
     PyObject *args = Py_BuildValue("(OOO)", c1, c2, c3);
@@ -149,7 +146,6 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
     Py_DECREF(c1);
     Py_DECREF(c2);
     Py_DECREF(c3);
-    Py_DECREF(geom_mod);
     Py_DECREF(matrix_class);
     Py_DECREF(args);
 
