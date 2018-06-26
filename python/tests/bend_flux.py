@@ -148,7 +148,8 @@ class TestBendFlux(unittest.TestCase):
 
     def test_bend_flux(self):
         self.run_bend_flux(False)
-        self.run_bend_flux(True)
+        if mp.with_libGDSII():
+            self.run_bend_flux(True)
 
 
 if __name__ == '__main__':
