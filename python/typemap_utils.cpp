@@ -382,6 +382,80 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
 
     return 1;
 }
+
+template<class T>
+static void set_v3_on_pyobj(PyObject *py_obj, PyObject *v3_class, T *v3, const char *attr) {
+    PyObject *v3_args = Py_BuildValue("(f,f,f)", v3->x, v3->y, v3->z);
+    PyObject *pyv3 = PyObject_Call(v3_class, v3_args, NULL);
+    PyObject_SetAttrString(py_obj, attr, pyv3);
+
+    Py_DECREF(v3_args);
+    Py_DECREF(pyv3);
+}
+
+static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
+    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+
+    PyObject *res;
+    PyObject *args = PyTuple_New(0);
+
+    if (s->noise_amp == 0) {
+        if (s->drude) {
+            PyObject *py_drude_class = PyObject_GetAttrString(geom_mod, "DrudeSusceptibility");
+            res = PyObject_Call(py_drude_class, args, NULL);
+            Py_DECREF(py_drude_class);
+        }
+        else {
+            PyObject *py_lorentz_class = PyObject_GetAttrString(geom_mod, "LorentzianSusceptibility");
+            res = PyObject_Call(py_lorentz_class, args, NULL);
+            Py_DECREF(py_lorentz_class);
+        }
+    }
+    else {
+        if (s->drude) {
+            PyObject *py_noisy_drude_class = PyObject_GetAttrString(geom_mod, "NoisyDrudeSusceptibility");
+            res = PyObject_Call(py_noisy_drude_class, args, NULL);
+            Py_DECREF(py_noisy_drude_class);
+        }
+        else {
+            PyObject *py_noisy_lorentz_class = PyObject_GetAttrString(geom_mod, "NoisyLorentzianSusceptibility");
+            res = PyObject_Call(py_noisy_lorentz_class, args, NULL);
+            Py_DECREF(py_noisy_lorentz_class);
+        }
+        PyObject *py_noise = PyFloat_FromDouble(s->noise_amp);
+        PyObject_SetAttrString(res, "noise_amp", py_noise);
+        Py_DECREF(py_noise);
+    }
+
+    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+    set_v3_on_pyobj<vector3>(res, v3_class, &s->sigma_diag, "sigma_diag");
+    set_v3_on_pyobj<vector3>(res, v3_class, &s->sigma_offdiag, "sigma_offdiag");
+
+    PyObject *py_freq = PyFloat_FromDouble(s->frequency);
+    PyObject *py_gamma = PyFloat_FromDouble(s->gamma);
+
+    PyObject_SetAttrString(res, "frequency", py_freq);
+    PyObject_SetAttrString(res, "gamma", py_gamma);
+
+    Py_DECREF(geom_mod);
+    Py_DECREF(args);
+    Py_DECREF(v3_class);
+    Py_DECREF(py_freq);
+    Py_DECREF(py_gamma);
+
+    return res;
+}
+
+static PyObject *susceptibility_list_to_py_list(susceptibility_list *sl) {
+    PyObject *res = PyList_New(sl->num_items);
+
+    for (Py_ssize_t i = 0; i < sl->num_items; ++i) {
+        PyList_SetItem(res, i, susceptibility_to_py_obj(&sl->items[i]));
+    }
+
+    return res;
+}
+
 static PyObject *material_to_py_material(material_type mat) {
     switch (mat->which_subclass) {
     case meep_geom::material_data::MEDIUM: {
@@ -392,20 +466,28 @@ static PyObject *material_to_py_material(material_type mat) {
         PyObject *medium_args = PyTuple_New(0);
         PyObject *py_mat = PyObject_Call(medium_class, medium_args, NULL);
 
-        // TODO: Set all Medium attributes
-        PyObject *v3_args = Py_BuildValue("(f,f,f)",
-                                          mat->medium.epsilon_diag.x,
-                                          mat->medium.epsilon_diag.y,
-                                          mat->medium.epsilon_diag.z);
-        PyObject *py_eps_diag = PyObject_Call(v3_class, v3_args, NULL);
-        PyObject_SetAttrString(py_mat, "epsilon_diag", py_eps_diag);
+        PyObject *py_E_sus = susceptibility_list_to_py_list(&mat->medium.E_susceptibilities);
+        PyObject *py_H_sus = susceptibility_list_to_py_list(&mat->medium.H_susceptibilities);
+        PyObject_SetAttrString(py_mat, "E_susceptibilities", py_E_sus);
+        PyObject_SetAttrString(py_mat, "H_susceptibilities", py_H_sus);
+
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.epsilon_diag, "epsilon_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.mu_diag, "mu_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.E_chi2_diag, "E_chi2_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.E_chi3_diag, "E_chi3_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.H_chi2_diag, "H_chi2_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.H_chi3_diag, "H_chi3_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.D_conductivity_diag, "D_conductivity_diag");
+        set_v3_on_pyobj<vector3>(py_mat, v3_class, &mat->medium.B_conductivity_diag, "B_conductivity_diag");
+        set_v3_on_pyobj<cvector3>(py_mat, v3_class, &mat->medium.epsilon_offdiag, "epsilon_offdiag");
+        set_v3_on_pyobj<cvector3>(py_mat, v3_class, &mat->medium.mu_offdiag, "mu_offdiag");
 
         Py_DECREF(geom_mod);
         Py_DECREF(medium_args);
-        Py_DECREF(v3_args);
         Py_DECREF(medium_class);
         Py_DECREF(v3_class);
-        Py_DECREF(py_eps_diag);
+        Py_DECREF(py_E_sus);
+        Py_DECREF(py_H_sus);
 
         return py_mat;
     }
@@ -697,18 +779,20 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
         PyObject *prism_class = PyObject_GetAttrString(geom_mod, "Prism");
 
         int num_verts = gobj->subclass.prism_data->vertices.num_items;
+        prism *prsm = gobj->subclass.prism_data;
+
         PyObject *py_verts = PyList_New(num_verts);
         for (int i = 0; i < num_verts; ++i) {
-            PyList_SetItem(py_verts, i, v3_to_pyv3(&gobj->subclass.prism_data->vertices.items[i]));
+            vector3 vp = prsm->vertices.items[i];
+            vector3 prism_v3 = vector3_plus(prsm->centroid, matrix3x3_vector3_mult(prsm->m_p2c, vp));
+            PyList_SetItem(py_verts, i, v3_to_pyv3(&prism_v3));
         }
 
         double height = gobj->subclass.prism_data->height;
-
-        // TODO: How to get this from m_c2p or m_p2c?
         vector3 axis = {0, 0, 1};
         PyObject *py_axis = v3_to_pyv3(&axis);
 
-        PyObject *py_center = v3_to_pyv3(&gobj->subclass.prism_data->centroid);
+        PyObject *py_center = v3_to_pyv3(&gobj->center);
         PyObject *py_mat = material_to_py_material((meep_geom::material_type)gobj->material);
 
         PyObject *args = Py_BuildValue("(OdO)", py_verts, height, py_axis);

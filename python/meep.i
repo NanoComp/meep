@@ -380,7 +380,7 @@ size_t _get_dft_data_size(meep::dft_chunk *dc) {
 void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart);
-    if (n != size) {
+    if (n != (size_t)size) {
         meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
     }
 
@@ -396,7 +396,7 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
 void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart);
-    if (n != size) {
+    if (n != (size_t)size) {
         meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
     }
 
@@ -513,7 +513,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
-%typemap(out) geometric_object meep_geom::get_GDSII_prism {
+%typemap(out) geometric_object {
     $result = gobj_to_py_obj(&$1);
 
     if (!$result) {
