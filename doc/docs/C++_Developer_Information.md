@@ -82,3 +82,34 @@ In particular, you should probably avoid:
 
 -   The `monitor_point` class. Just declare an array to store the fields you want, get them with `fields::get_field`, and analyze them with `do_harminv`. Or, to accumulate the DFT as you run, use the `dft_chunk` class via `fields::add_dft`.
 -   Slice and EPS output. This has been superseded by HDF5 output, which is much more flexible and efficient.
+
+---
+# Python Developer Information
+
+## Overview
+
+The `meep` Python package consists of two types of files.
+
+1. Files created by SWIG [SWIG](http://www.swig.org/), which makes up the "low-level" interface. 
+2. Files that make up the high-level Python interface.
+
+Graphic for python source generation
+
+## Package Organization
+
+Description of how the `meep` package is constructed
+
+## File Organization
+
+| File              | Description                                                                                                                           |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| geom.py           | Python geometric objects that are analogues to the geometric objects defined in `libctl/utils/geom.c`                                 |
+| mpb_data.py | Definition of `MPBData`, a Python class that contains the functionality of the `mpb-data` command line program. |
+| simulation.py     | Definition of the `Simulation` class and step functions associated with running a simulation.                                         |
+| solver.py | Classes and functions related to the Python interface to `MPB`.
+| source.py         | Definitions of Python objects relating to sources.                                                                                    |
+| meep.i            | SWIG interface file for the `meep` Python module.                                                                                     |
+| mpb.i             | SWIG interface file for the `meep.mpb` Python module.                                                                                 |
+| numpy.i           | Typemaps for `numpy` arrays (taken from the numpy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i)) |
+| vec.i             | SWIG interface file for `vec.hpp`. Iincluded into `meep.i`.                                                                           |
+| typemap_utils.cpp | Utility functions for writing SWIG typemaps. Included into `meep.i`.                                                                  |
