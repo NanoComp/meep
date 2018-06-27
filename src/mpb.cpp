@@ -98,6 +98,13 @@ typedef struct eigenmode_data
    double group_velocity;
  } eigenmode_data;
 
+// utility routine for modular arithmetic that always returns a nonnegative integer
+int pmod(int n, int modulus)
+{ n = n % modulus;
+  if (n<0) n+=modulus;
+  return n;
+}
+
 /*******************************************************************/
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
@@ -142,9 +149,9 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   double dx, dy, dz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = (nx + int(rx * nx)) % nx;
-  y = (ny + int(ry * ny)) % ny;
-  z = (nz + int(rz * nz)) % nz;
+  x = pmod( int(rx * nx), nx );
+  y = pmod( int(ry * ny), ny );
+  z = pmod( int(rz * nz), nz );
 
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x;
@@ -152,9 +159,9 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   dz = rz * nz - z;
 
   /* get the other closest point in the grid, with periodic boundaries: */
-  x2 = (nx + (dx >= 0.0 ? x + 1 : x - 1)) % nx;
-  y2 = (ny + (dy >= 0.0 ? y + 1 : y - 1)) % ny;
-  z2 = (nz + (dz >= 0.0 ? z + 1 : z - 1)) % nz;
+  x2 = pmod( (dx >= 0.0 ? x + 1 : x - 1), nx );
+  y2 = pmod( (dy >= 0.0 ? y + 1 : y - 1), ny );
+  z2 = pmod( (dz >= 0.0 ? z + 1 : z - 1), nz );
   x = x % nx; y = y % ny; z = z % nz;
 
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
