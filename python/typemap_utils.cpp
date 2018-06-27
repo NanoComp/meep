@@ -35,6 +35,9 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
+extern "C" {
+    vector3 prism_coordinate_p2c(prism *prsm, vector3 vp);
+}
 static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
 
@@ -785,12 +788,12 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
         PyObject *py_verts = PyList_New(num_verts);
         for (int i = 0; i < num_verts; ++i) {
             vector3 vp = prsm->vertices.items[i];
-            vector3 prism_v3 = vector3_plus(prsm->centroid, matrix3x3_vector3_mult(prsm->m_p2c, vp));
-            PyList_SetItem(py_verts, i, v3_to_pyv3(&prism_v3));
+            vector3 cart_v3 = prism_coordinate_p2c(prsm, vp);
+            PyList_SetItem(py_verts, i, v3_to_pyv3(&cart_v3));
         }
 
         double height = gobj->subclass.prism_data->height;
-        vector3 axis = {0, 0, 1};
+        vector3 axis = gobj->subclass.prism_data->m_p2c.c2;
         PyObject *py_axis = v3_to_pyv3(&axis);
 
         PyObject *py_center = v3_to_pyv3(&gobj->center);
