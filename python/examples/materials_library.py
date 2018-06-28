@@ -597,7 +597,7 @@ W = mp.Medium(epsilon=1.0, E_susceptibilities=W_susc, valid_freq_range=metal_ran
 
 #------------------------------------------------------------------
 
-# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996, 2015
+# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 089996, 2015
 # wavelength range: 0.4 - 0.8 um
 
 metal_visible_range = mp.FreqRange(min=1/0.8, max=1/0.4)
@@ -655,13 +655,13 @@ Ag_visible = mp.Medium(epsilon=0.0067526, E_susceptibilities=Ag_visible_susc, va
 ## WARNING: unstable; field divergence may occur
 
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
-Al_visible_frq0 = 1/(0.0625841659042985*um_scale)
-Al_visible_gam0 = 1/(0.606007002962666*um_scale)
+Al_visible_frq0 = 1/(0.06258427644275502*um_scale)
+Al_visible_gam0 = 1/(0.60600700296266655*um_scale)
 Al_visible_sig0 = 1
 
-Al_visible_frq1 = 1/(0.528191199577075*um_scale)
-Al_visible_gam1 = 1/(0.291862527666814*um_scale)
-Al_visible_sig1 = -44.4456675577921
+Al_visible_frq1 = 1/(0.5281911995770755*um_scale)
+Al_visible_gam1 = 1/(0.29186252766681436*um_scale)
+Al_visible_sig1 = -44.445667557792106
 
 Al_visible_susc = [ mp.DrudeSusceptibility(frequency=Al_visible_frq0, gamma=Al_visible_gam0, sigma=Al_visible_sig0),
                     mp.LorentzianSusceptibility(frequency=Al_visible_frq1, gamma=Al_visible_gam1, sigma=Al_visible_sig1) ]
@@ -671,12 +671,12 @@ Al_visible = mp.Medium(epsilon=0.13313, E_susceptibilities=Al_visible_susc, vali
 #------------------------------------------------------------------
 
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
-Cr_visible_frq0 = 1/(0.118410119507342*um_scale)
-Cr_visible_gam0 = 1/(0.628596264869804*um_scale)
+Cr_visible_frq0 = 1/(0.11841011950734219*um_scale)
+Cr_visible_gam0 = 1/(0.6285962648698036*um_scale)
 Cr_visible_sig0 = 1
 
 Cr_visible_frq1 = 1/(0.565709598452496*um_scale)
-Cr_visible_gam1 = 1/(0.731117670900812*um_scale)
+Cr_visible_gam1 = 1/(0.7311176709008125*um_scale)
 Cr_visible_sig1 = 13.2912419951294
 
 Cr_visible_susc = [ mp.DrudeSusceptibility(frequency=Cr_visible_frq0, gamma=Cr_visible_gam0, sigma=Cr_visible_sig0),
@@ -689,13 +689,13 @@ Cr_visible = mp.Medium(epsilon=2.7767, E_susceptibilities=Cr_visible_susc, valid
 ## WARNING: unstable; field divergence may occur
 
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
-Ti_visible_frq0 = 1/(0.101331651921602*um_scale)
-Ti_visible_gam0 = 1/(0.365743382258719*um_scale)
+Ti_visible_frq0 = 1/(0.10133165192160223*um_scale)
+Ti_visible_gam0 = 1/(0.3657433822587187*um_scale)
 Ti_visible_sig0 = 1
 
-Ti_visible_frq1 = 1/(4.56839173979216e-09*um_scale)
-Ti_visible_gam1 = 1/(5.86441957443603e-10*um_scale)
-Ti_visible_sig1 = 54742662.1963414
+Ti_visible_frq1 = 1/(4.568391739792164e-09*um_scale)
+Ti_visible_gam1 = 1/(5.864419574436031e-10*um_scale)
+Ti_visible_sig1 = 54742662.19634139
 
 Ti_visible_susc = [ mp.DrudeSusceptibility(frequency=Ti_visible_frq0, gamma=Ti_visible_gam0, sigma=Ti_visible_sig0),
                     mp.LorentzianSusceptibility(frequency=Ti_visible_frq1, gamma=Ti_visible_gam1, sigma=Ti_visible_sig1) ]

@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects_scheme.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields, this tutorial uses the [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
@@ -133,11 +133,11 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 (set! resolution 10)
 ```
 
+Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
+
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
-Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$.
-
-We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. An eigenmode source can also be used which is described in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at t=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```scm
 (set! sources (list
@@ -348,7 +348,7 @@ Why do we keep running after the source has turned off? Because we must give the
    1e-3))
 ```
 
-`stop-when-fields-decayed` takes four arguments: `(stop-when-fields-decayed dT component pt decay-by)`. What it does is, after the sources have turned off, it keeps running for an additional `dT` time units every time the given |component|<sup>2</sup> at the given point has not decayed by at least `decay-by` from its peak value for all times within the previous `dT`. In this case, `dT=50`, the component is $E_z$, the point is at the center of the flux plane at the end of the waveguide, and `decay-by=0.001`. So, it keeps running for an additional 50 time units until the square amplitude has decayed by 1/1000 from its peak. This should be sufficient to ensure that the Fourier transforms have converged.
+`stop-when-fields-decayed` takes four arguments: `(stop-when-fields-decayed dT component pt decay-by)`. What it does is, after the sources have turned off, it keeps running for an additional `dT` time units every time the given |component|<sup>2</sup> at the given point has not decayed by at least `decay-by` from its peak value for all times within the previous `dT`. In this case, `dT=50`, the component is E<sub>z</sub>, the point is at the center of the flux plane at the end of the waveguide, and `decay-by=0.001`. So, it keeps running for an additional 50 time units until the square amplitude has decayed by 1/1000 from its peak. This should be sufficient to ensure that the Fourier transforms have converged.
 
 Finally, we have to output the flux values:
 
@@ -406,7 +406,7 @@ A 1d cell must be used since a higher-dimensional cell will introduce [artificia
 
 Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k-point`, and (2) the source amplitude function `amp-func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the center frequency of the Gaussian pulse; in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Any broadband source is therefore incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the $E_x$ and $H_y$ field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E$_x$ polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E$_y$ source. This example involves just the $\mathcal{P}$-polarization.
+In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
 The simulation script is below and in [refl-angular.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-angular.ctl)
 
@@ -458,7 +458,7 @@ The simulation script is below and in [refl-angular.ctl](https://github.com/stev
 (display-fluxes refl)
 ```
 
-The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the center frequency of the source, this is *not* the same as the given angle of the incident planewave, but rather $\sin^{-1}(k_x/\omega)$.
+The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the center frequency of the source, this is *not* the same as the given angle of the incident planewave, but rather sin<sup>-1</sup>(k<sub>x</sub>/ω).
 
 The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 41$^\circ$ in increments of 1$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
@@ -587,7 +587,7 @@ We don't know the frequency of the mode(s) ahead of time, so we'll just hit the 
                  (component Ez) (center (+ r 0.1) 0))))
 ```
 
-Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal-processing on the fields at some point with [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
+Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal processing on the fields at some point with [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
 
 ```scm
 (run-sources+ 300
@@ -595,7 +595,7 @@ Finally, we are ready to run the simulation. The basic idea is to run until the 
               (after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
 ```
 
-The signal-processing is performed by the `harminv` function, which takes four arguments: the field component $E_z$ and position ($r$+0.1,0) to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `harminv` in `(after-sources ...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
+The signal processing is performed by the `harminv` function, which takes four arguments: the field component E<sub>z</sub> and position ($r$+0.1,0) to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `harminv` in `(after-sources ...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
 
 ```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error

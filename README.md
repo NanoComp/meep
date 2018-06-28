@@ -4,8 +4,6 @@
 [![Build Status](https://travis-ci.org/stevengj/meep.svg?branch=master)](https://travis-ci.org/stevengj/meep)
 ![Python versions 2.7–3.6](https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5%2C%203.6-brightgreen.svg)
 
-# Meep
-
 **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
 
 **Features**
@@ -15,8 +13,9 @@
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
 -   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard.
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
+-   Precompiled binary packages of latest builds and official releases available via [Conda](https://meep.readthedocs.io/en/latest/Installation/#conda-packages)
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
--   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
+-   **PML** absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size — even/odd mirror planes and 90°/180° rotations.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   Arbitrary current sources including a guided-mode launcher.
