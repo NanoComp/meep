@@ -128,19 +128,28 @@ meep
 
 ### `meep.i`
 
-SWIG interface file for the `meep` Python module.
+SWIG interface file for the `meep` Python module. Includes typemaps, helper functions, and module initialization code. The typemaps mostly call other helper functions defined either in `meep.i`, or in `typemap_utils.cpp` (if the function is used in `mpb.i` too). There are also various `py_*_wrap` functions that handle calling user defined Python functions from C++. Everything in the `%pythoncode` block at the end of the file is run once when the `meep` module is first imported. See the [SWIG documenation](http://www.swig.org/Doc3.0/SWIGDocumentation.html) for more details.
 
 ### `vec.i`
 
-SWIG interface file for `vec.hpp`. Included into `meep.i`.
+SWIG interface file for `vec.hpp`. Included into `meep.i`. SWIG warnings are disabled (if found benign) in this file.
 
 ### `numpy.i`
 
-Typemaps for `numpy` arrays (taken from the numpy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i))
+Typemaps for `numpy` arrays (taken from the numpy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i)). See the [documentation](https://docs.scipy.org/doc/numpy-1.13.0/reference/swig.interface-file.html) for instructions on using these typemaps.
 
 ### `typemap_utils.cpp`
 
-Utility functions for writing SWIG typemaps. Included into `meep.i`.
+Utility functions for writing SWIG typemaps. Since this file is included into both `meep.i` and `mpb.i`, only code that is useful to both interface files should be put here (otherwise the compiler complains about unused functions). Code used only by one interface should be put in the respective `.i` file. The majority of the code in this file is for converting the Python geometric objects defined in `geom.py` to C objects. The `get_attr_*` functions are helpers for getting C versions of attributes on Python objects. The convention in the file is for functions to return `1` on success and `0` on failure so that the top level typemaps in `meep.i` can be written as:
+
+```c++
+%typemap(in) type {
+    if(!py_type_to_type($input, &$1)) {
+        SWIG_fail;
+    }
+}
+```
+Keeping the code within `%typemap` blocks small is valuable because it gets copied everywhere the typemap is used, which can lead to code bloat.
 
 ### `geom.py`
 
@@ -160,7 +169,7 @@ SWIG interface file for the `meep.mpb` Python module.
 
 ### `solver.py`
 
-Classes and functions related to the Python interface to `MPB`.
+Classes and functions related to the high-level Python interface to `MPB`. Additional classes or functions in this file should be accompanied by an `import` statement in the `%pythoncode` block at the bottom of `mpb.i`.
 
 ### `mpb_data.py`
 
