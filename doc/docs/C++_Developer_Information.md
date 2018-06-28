@@ -88,28 +88,80 @@ In particular, you should probably avoid:
 
 ## Overview
 
-The `meep` Python package consists of two types of files.
+The `meep` Python package consists of a low-level interface and a high-level interface. The low-level interface is the direct result of running [SWIG](http://www.swig.org/) on the C++ headers.
 
-1. Files created by SWIG [SWIG](http://www.swig.org/), which makes up the "low-level" interface. 
-2. Files that make up the high-level Python interface.
+<center>![](images/swig_process.png)</center>
 
-Graphic for python source generation
+Next, we compile `meep-python.cpp`, rename `meep.py` to `__init__.py` and put them in a folder called `meep`. Putting all the code in `__init__.py` allows us to access the symbols directly from the `meep` namespace rather than going through an additional module like `meep.meep.vec`. Now we have a complete Python package.
+
+<center>![](images/pypackage_creation.png)</center>
+
+`__init__.py` contains "proxy" classes for all public `meep` objects. They hold a `this` pointer that dispatches to the appropriate C++ functions in the `_meep.so` extension module. The interface this package exposes is basically the same as the C++ interface. That is, a simulation written in this low-level Python interface would not look much different from the same simulation written in C++. By implementing a high-level interface on top of the basic SWIG wrappers, we can abstract away many of the low details of setting up a simulation, take advantage of Python language features like keyword arguments, and gain productivity from libraries like numpy.
 
 ## Package Organization
 
-Description of how the `meep` package is constructed
+After adding the high-level interface files, the `meep` package looks like this.
+```bash
+meep
+├── __init__.py
+├── _meep.so
+├── geom.py
+├── simulation.py
+└── source.py
+```
+Fow now, the Python `MPB` interface is also included in the `meep` package. It's constructed in the same manner as the `meep` package. The low-level interface is in `meep/mpb/__init__.py` and `meep/mpb/_mpb.so`, and the high-level interface is in `solver.py`. Here is a view of the complete package.
+```bash
+meep
+├── mpb
+│   ├── __init__.py
+│   ├── _mpb.so
+│   ├── mpb_data.py
+│   └── solver.py
+├── __init__.py
+├── _meep.so
+├── geom.py
+├── simulation.py
+└── source.py
+```
 
-## File Organization
+## Description of Files
 
-| File              | Description                                                                                                                           |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| geom.py           | Python geometric objects that are analogues to the geometric objects defined in `libctl/utils/geom.c`                                 |
-| mpb_data.py | Definition of `MPBData`, a Python class that contains the functionality of the `mpb-data` command line program. |
-| simulation.py     | Definition of the `Simulation` class and step functions associated with running a simulation.                                         |
-| solver.py | Classes and functions related to the Python interface to `MPB`.
-| source.py         | Definitions of Python objects relating to sources.                                                                                    |
-| meep.i            | SWIG interface file for the `meep` Python module.                                                                                     |
-| mpb.i             | SWIG interface file for the `meep.mpb` Python module.                                                                                 |
-| numpy.i           | Typemaps for `numpy` arrays (taken from the numpy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i)) |
-| vec.i             | SWIG interface file for `vec.hpp`. Iincluded into `meep.i`.                                                                           |
-| typemap_utils.cpp | Utility functions for writing SWIG typemaps. Included into `meep.i`.                                                                  |
+### `meep.i`
+
+SWIG interface file for the `meep` Python module.
+
+### `vec.i`
+
+SWIG interface file for `vec.hpp`. Included into `meep.i`.
+
+### `numpy.i`
+
+Typemaps for `numpy` arrays (taken from the numpy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i))
+
+### `typemap_utils.cpp`
+
+Utility functions for writing SWIG typemaps. Included into `meep.i`.
+
+### `geom.py`
+
+Pure Python implementations of the geometric objects defined in `libctl`. The user-defined list of objects (`Simulation.geometry`) gets converted to C objects when `meep.set_materials_from_geometry` is called in `Simulation._init_structure`. The function responsible for this conversion is `typemap_utils.cpp:py_list_to_gobj_list`. This file also contains classes that represent materials (`Medium`) and susceptibilities, and cartesian/reciprocal/lattice conversion functions. Note that when adding a class or function to this file, it must also be imported in the `%pythoncode` block at the end of `python/meep.i` if you want it to be directly accessible from the `meep` namespace (i.e., to get `meep.MyClass` instead of `meep.geom.MyClass`).
+
+### `simulation.py`
+
+Holds the `Simulation` class, which is the primary abstraction of the high-level interface. Minimally, a simulation script amounts to passing the desired keyword arguments to the `Simulation` contructor and calling the `run` method on the resulting instance. The various step functions are also included in this file. When adding extra functions or class to this file, an import statement should also be added to the `%pythoncode` block at the bottom of `python/meep.i`.
+
+### `source.py`
+
+Holds classes representing sources, including `GaussianSource`, `ContinuousSource`, `CustomSource`, and `EigenModeSource`. When adding extra functions or class to this file, an import statement should also be added to the `%pythoncode` block at the bottom of `python/meep.i`.
+
+### `mpb.i`
+
+SWIG interface file for the `meep.mpb` Python module.
+
+### `solver.py`
+
+Classes and functions related to the Python interface to `MPB`.
+
+### `mpb_data.py`
+
+Definition of `MPBData`, a Python class useful for `MPB` data analysis (documented [here](https://mpb.readthedocs.io/en/latest/Python_Data_Analysis_Tutorial). This is is a Python port of the functionality available in the [`mpb-data` command line program](https://github.com/stevengj/mpb/blob/master/utils/mpb-data.c) originally written in C.
