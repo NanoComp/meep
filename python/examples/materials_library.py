@@ -14,7 +14,7 @@ eV_um_scale = um_scale/1.23984193
 # based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
 # wavelength range: 0.4 - 1.0 um
 
-cSi_range = mp.FreqRange(min=1, max=1/0.4)
+cSi_range = mp.FreqRange(min=um_scale, max=um_scale/0.4)
 
 cSi_frq1 = 3.64/um_scale
 cSi_gam1 = 0
@@ -38,7 +38,7 @@ cSi = mp.Medium(epsilon=1.0, E_susceptibilities=cSi_susc, valid_freq_range=cSi_r
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 0.83 um
 
-aSi_range = mp.FreqRange(min=1/0.83, max=1/0.21)
+aSi_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.21)
 
 aSi_frq1 = 1/(0.315481407124682*um_scale)
 aSi_gam1 = 1/(0.645751005208333*um_scale)
@@ -54,7 +54,7 @@ aSi = mp.Medium(epsilon=3.109, E_susceptibilities=aSi_susc, valid_freq_range=aSi
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 0.83 um
 
-aSi_H_range = mp.FreqRange(min=1/0.83, max=1/0.21)
+aSi_H_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.21)
 
 aSi_H_frq1 = 1/(0.334189199460916*um_scale)
 aSi_H_gam1 = 1/(0.579365387850467*um_scale)
@@ -70,7 +70,7 @@ aSi_H = mp.Medium(epsilon=3.22, E_susceptibilities=aSi_H_susc, valid_freq_range=
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 0.83 um
 
-ITO_range = mp.FreqRange(min=1/0.83, max=1/0.21)
+ITO_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.21)
 
 ITO_frq1 = 1/(0.182329695588235*um_scale)
 ITO_gam1 = 1/(1.94637665620094*um_scale)
@@ -86,7 +86,7 @@ ITO = mp.Medium(epsilon=1.0, E_susceptibilities=ITO_susc, valid_freq_range=ITO_r
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 2.07 um
 
-Al2O3_range = mp.FreqRange(min=1/2.07, max=1/0.21)
+Al2O3_range = mp.FreqRange(min=um_scale/2.07, max=um_scale/0.21)
 
 Al2O3_frq1 = 1/(0.101476668030774*um_scale)
 Al2O3_gam1 = 0
@@ -102,7 +102,7 @@ Al2O3 = mp.Medium(epsilon=1.0, E_susceptibilities=Al2O3_susc, valid_freq_range=A
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.26 - 1.65 um
 
-AlN_range = mp.FreqRange(min=1/1.65, max=1/0.26)
+AlN_range = mp.FreqRange(min=um_scale/1.65, max=um_scale/0.26)
 
 AlN_frq1 = 1/(0.139058089950651*um_scale)
 AlN_gam1 = 0
@@ -118,7 +118,7 @@ AlN = mp.Medium(epsilon=1.0, E_susceptibilities=AlN_susc, valid_freq_range=AlN_r
 # ref: https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
 # wavelength range: 0.56 - 2.2 um
 
-AlAs_range = mp.FreqRange(min=1/2.2, max=1/0.56)
+AlAs_range = mp.FreqRange(min=um_scale/2.2, max=um_scale/0.56)
 
 AlAs_frq1 = 1/(0.2822*um_scale)
 AlAs_gam1 = 0
@@ -138,7 +138,7 @@ AlAs = mp.Medium(epsilon=2.0792, E_susceptibilities=AlAs_susc, valid_freq_range=
 # ref: https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
 # wavelength range: 0.3 - 2.5 um
 
-BK7_range = mp.FreqRange(min=1/2.5, max=1/0.3)
+BK7_range = mp.FreqRange(min=um_scale/2.5, max=um_scale/0.3)
 
 BK7_frq1 = 1/(0.07746417668832478*um_scale)
 BK7_gam1 = 0
@@ -162,7 +162,7 @@ BK7 = mp.Medium(epsilon=1.0, E_susceptibilities=BK7_susc, valid_freq_range=BK7_r
 # ref: https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
 # wavelength range: 0.21 - 6.7 um
 
-fused_quartz_range = mp.FreqRange(min=1/6.7, max=1/0.21)
+fused_quartz_range = mp.FreqRange(min=um_scale/6.7, max=um_scale/0.21)
 
 fused_quartz_frq1 = 1/(0.0684043*um_scale)
 fused_quartz_gam1 = 0
@@ -186,7 +186,7 @@ fused_quartz = mp.Medium(epsilon=1.0, E_susceptibilities=fused_quartz_susc, vali
 # ref: https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
 # wavelength range: 0.97 - 17 um
 
-GaAs_range = mp.FreqRange(min=1/17, max=1/0.97)
+GaAs_range = mp.FreqRange(min=um_scale/17, max=um_scale/0.97)
 
 GaAs_frq1 = 1/(0.4431307*um_scale)
 GaAs_gam1 = 0
@@ -209,7 +209,7 @@ GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc, valid_freq_rang
 # fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
 # wavelength range: 0.207 - 1.24 um
 
-Si3N4_VISNIR_range = mp.FreqRange(min=1/1.24, max=1/0.207)
+Si3N4_VISNIR_range = mp.FreqRange(min=um_scale/1.24, max=um_scale/0.207)
 
 Si3N4_VISNIR_frq1 = 1/(0.13967*um_scale)
 Si3N4_VISNIR_gam1 = 0
@@ -224,7 +224,7 @@ Si3N4_VISNIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_VISNIR_susc, vali
 # fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
 # wavelength range: 0.310 - 5.504 um
 
-Si3N4_NIR_range = mp.FreqRange(min=1/5.504, max=1/0.310)
+Si3N4_NIR_range = mp.FreqRange(min=um_scale/5.504, max=um_scale/0.310)
 
 Si3N4_NIR_frq1 = 0.1353406
 Si3N4_NIR_gam1 = 0
@@ -243,7 +243,7 @@ Si3N4_NIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_NIR_susc, valid_freq
 # elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um
 
-metal_range = mp.FreqRange(min=1/12.4, max=1/0.2)
+metal_range = mp.FreqRange(min=um_scale/12.4, max=um_scale/0.2)
 
 Ag_plasma_frq = 9.01*eV_um_scale
 Ag_f0 = 0.845
@@ -597,10 +597,10 @@ W = mp.Medium(epsilon=1.0, E_susceptibilities=W_susc, valid_freq_range=metal_ran
 
 #------------------------------------------------------------------
 
-# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 089996, 2015
+# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996, 2015
 # wavelength range: 0.4 - 0.8 um
 
-metal_visible_range = mp.FreqRange(min=1/0.8, max=1/0.4)
+metal_visible_range = mp.FreqRange(min=um_scale/0.8, max=um_scale/0.4)
 
 # fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9, 1972
 Au_JC_visible_frq0 = 1/(0.139779231751333*um_scale)
@@ -655,13 +655,13 @@ Ag_visible = mp.Medium(epsilon=0.0067526, E_susceptibilities=Ag_visible_susc, va
 ## WARNING: unstable; field divergence may occur
 
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
-Al_visible_frq0 = 1/(0.06258427644275502*um_scale)
-Al_visible_gam0 = 1/(0.60600700296266655*um_scale)
+Al_visible_frq0 = 1/(0.0625841659042985*um_scale)
+Al_visible_gam0 = 1/(0.606007002962666*um_scale)
 Al_visible_sig0 = 1
 
-Al_visible_frq1 = 1/(0.5281911995770755*um_scale)
-Al_visible_gam1 = 1/(0.29186252766681436*um_scale)
-Al_visible_sig1 = -44.445667557792106
+Al_visible_frq1 = 1/(0.528191199577075*um_scale)
+Al_visible_gam1 = 1/(0.291862527666814*um_scale)
+Al_visible_sig1 = -44.4456675577921
 
 Al_visible_susc = [ mp.DrudeSusceptibility(frequency=Al_visible_frq0, gamma=Al_visible_gam0, sigma=Al_visible_sig0),
                     mp.LorentzianSusceptibility(frequency=Al_visible_frq1, gamma=Al_visible_gam1, sigma=Al_visible_sig1) ]
@@ -671,12 +671,12 @@ Al_visible = mp.Medium(epsilon=0.13313, E_susceptibilities=Al_visible_susc, vali
 #------------------------------------------------------------------
 
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
-Cr_visible_frq0 = 1/(0.11841011950734219*um_scale)
-Cr_visible_gam0 = 1/(0.6285962648698036*um_scale)
+Cr_visible_frq0 = 1/(0.118410119507342*um_scale)
+Cr_visible_gam0 = 1/(0.628596264869804*um_scale)
 Cr_visible_sig0 = 1
 
 Cr_visible_frq1 = 1/(0.565709598452496*um_scale)
-Cr_visible_gam1 = 1/(0.7311176709008125*um_scale)
+Cr_visible_gam1 = 1/(0.731117670900812*um_scale)
 Cr_visible_sig1 = 13.2912419951294
 
 Cr_visible_susc = [ mp.DrudeSusceptibility(frequency=Cr_visible_frq0, gamma=Cr_visible_gam0, sigma=Cr_visible_sig0),
@@ -689,13 +689,13 @@ Cr_visible = mp.Medium(epsilon=2.7767, E_susceptibilities=Cr_visible_susc, valid
 ## WARNING: unstable; field divergence may occur
 
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
-Ti_visible_frq0 = 1/(0.10133165192160223*um_scale)
-Ti_visible_gam0 = 1/(0.3657433822587187*um_scale)
+Ti_visible_frq0 = 1/(0.101331651921602*um_scale)
+Ti_visible_gam0 = 1/(0.365743382258719*um_scale)
 Ti_visible_sig0 = 1
 
-Ti_visible_frq1 = 1/(4.568391739792164e-09*um_scale)
-Ti_visible_gam1 = 1/(5.864419574436031e-10*um_scale)
-Ti_visible_sig1 = 54742662.19634139
+Ti_visible_frq1 = 1/(4.56839173979216e-09*um_scale)
+Ti_visible_gam1 = 1/(5.86441957443603e-10*um_scale)
+Ti_visible_sig1 = 54742662.1963414
 
 Ti_visible_susc = [ mp.DrudeSusceptibility(frequency=Ti_visible_frq0, gamma=Ti_visible_gam0, sigma=Ti_visible_sig0),
                     mp.LorentzianSusceptibility(frequency=Ti_visible_frq1, gamma=Ti_visible_gam1, sigma=Ti_visible_sig1) ]
@@ -708,7 +708,7 @@ Ti_visible = mp.Medium(epsilon=-5.4742e7, E_susceptibilities=Ti_visible_susc, va
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.19 - 0.83 um
 
-Al_drude_range = mp.FreqRange(min=1/0.83, max=1/0.19)
+Al_drude_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.19)
 
 Al_drude_frq = 1/(0.0789607648707171*um_scale)
 Al_drude_gam = 1/(1.78138208333333*um_scale)
@@ -724,7 +724,7 @@ Al_drude = mp.Medium(epsilon=1.0, E_susceptibilities=Al_drude_susc, valid_freq_r
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.26 - 1.65 um
 
-Co_range = mp.FreqRange(min=1/1.65, max=1/0.26)
+Co_range = mp.FreqRange(min=um_scale/1.65, max=um_scale/0.26)
 
 Co_frq = 1/(0.0789607648707171*um_scale)
 Co_gam = 1/(0.213802712536644*um_scale)
@@ -742,7 +742,7 @@ Co = mp.Medium(epsilon=3.694, E_susceptibilities=Co_susc, valid_freq_range=Co_ra
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.25 - 0.83 um
 
-Mo_range = mp.FreqRange(min=1/0.83, max=1/0.25)
+Mo_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.25)
 
 Mo_frq = 1/(0.0620790071099539*um_scale)
 Mo_gam = 1/(0.148359690080172*um_scale)
@@ -758,7 +758,7 @@ Mo = mp.Medium(epsilon=-1.366, E_susceptibilities=Mo_susc, valid_freq_range=Mo_r
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.25 - 0.83 um
 
-NiCr_range = mp.FreqRange(min=1/0.83, max=1/0.25)
+NiCr_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.25)
 
 NiCr_frq = 1/(0.0868845080588648*um_scale)
 NiCr_gam = 1/(0.308418390547264*um_scale)
@@ -774,7 +774,7 @@ NiCr = mp.Medium(epsilon=1.0, E_susceptibilities=NiCr_susc, valid_freq_range=NiC
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.25 - 0.83 um
 
-NiFe_range = mp.FreqRange(min=1/0.83, max=1/0.25)
+NiFe_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.25)
 
 NiFe_frq = 1/(0.0838297450980392*um_scale)
 NiFe_gam = 1/(0.259381156903766*um_scale)
@@ -790,7 +790,7 @@ NiFe = mp.Medium(epsilon=1.0, E_susceptibilities=NiFe_susc, valid_freq_range=NiF
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.21 - 1.24 um
 
-Ti_drude_range = mp.FreqRange(min=1/1.24, max=1/0.21)
+Ti_drude_range = mp.FreqRange(min=um_scale/1.24, max=um_scale/0.21)
 
 Ti_drude_frq = 1/(0.113746966055046*um_scale)
 Ti_drude_gam = 1/(0.490056098814229*um_scale)
@@ -806,7 +806,7 @@ Ti_drude = mp.Medium(epsilon=1.0, E_susceptibilities=Ti_drude_susc, valid_freq_r
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 2.07 um
 
-SiN_range = mp.FreqRange(min=1/2.07, max=1/0.21)
+SiN_range = mp.FreqRange(min=um_scale/2.07, max=um_scale/0.21)
 
 SiN_frq1 = 1/(0.190891752117013*um_scale)
 SiN_gam1 = 1/(3.11518072864322*um_scale)
@@ -822,7 +822,7 @@ SiN = mp.Medium(epsilon=2.320, E_susceptibilities=SiN_susc, valid_freq_range=SiN
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.23 - 0.83 um
 
-Si3N4_range = mp.FreqRange(min=1/0.83, max=1/0.23)
+Si3N4_range = mp.FreqRange(min=um_scale/0.83, max=um_scale/0.23)
 
 Si3N4_frq1 = 1/(0.389153148148148*um_scale)
 Si3N4_gam1 = 1/(0.693811936205932*um_scale)
@@ -838,7 +838,7 @@ Si3N4 = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_susc, valid_freq_range=S
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.25 - 1.77 um
 
-SiO2_range = mp.FreqRange(min=1/1.77, max=1/0.25)
+SiO2_range = mp.FreqRange(min=um_scale/1.77, max=um_scale/0.25)
 
 SiO2_frq1 = 1/(0.103320160833333*um_scale)
 SiO2_gam1 = 1/(12.3984193000000*um_scale)
@@ -854,7 +854,7 @@ SiO2 = mp.Medium(epsilon=1.0, E_susceptibilities=SiO2_susc, valid_freq_range=SiO
 # ref: https://refractiveindex.info/?shelf=main&book=InP&page=Pettit
 # wavelength range: 0.95 - 10 um
 
-InP_range = mp.FreqRange(min=1/10, max=1/0.95)
+InP_range = mp.FreqRange(min=um_scale/10, max=um_scale/0.95)
 
 InP_frq1 = 1/(0.6263*um_scale)
 InP_gam1 = 0
@@ -874,7 +874,7 @@ InP = mp.Medium(epsilon=7.255, E_susceptibilities=InP_susc, valid_freq_range=InP
 # ref: https://refractiveindex.info/?shelf=main&book=Ge&page=Icenogle
 # wavelength range: 2.5 - 12 um
 
-Ge_range = mp.FreqRange(min=1/12, max=1/2.5)
+Ge_range = mp.FreqRange(min=um_scale/12, max=um_scale/2.5)
 
 Ge_frq1 = 1/(0.6641159*um_scale)
 Ge_gam1 = 0
@@ -887,3 +887,28 @@ Ge_susc = [ mp.LorentzianSusceptibility(frequency=Ge_frq1, gamma=Ge_gam1, sigma=
             mp.LorentzianSusceptibility(frequency=Ge_frq2, gamma=Ge_gam2, sigma=Ge_sig2) ]
 
 Ge = mp.Medium(epsilon=9.28156, E_susceptibilities=Ge_susc, valid_freq_range=Ge_range)
+
+#------------------------------------------------------------------
+
+# silicon (Si) from C. D. Salzberg and J. J. Villa, , J. Optical Society America, Vol. 47, pp. 244-246, 1957
+# ref: https://refractiveindex.info/?shelf=main&book=Si&page=Salzberg
+# wavelength range: 1.36 - 11 um
+
+Si_range = mp.FreqRange(min=um_scale/11, max=um_scale/1.36)
+
+Si_frq1 = 1/(0.301516485*um_scale)
+Si_gam1 = 0
+Si_sig1 = 10.6684293
+Si_frq2 = 1/(1.13475115*um_scale)
+Si_gam2 = 0
+Si_sig2 = 0.0030434748
+Si_frq3 = 1/(1104*um_scale)
+Si_gam3 = 0
+Si_sig3 = 1.54133408
+
+Si_susc = [ mp.LorentzianSusceptibility(frequency=Si_frq1, gamma=Si_gam1, sigma=Si_sig1),
+            mp.LorentzianSusceptibility(frequency=Si_frq2, gamma=Si_gam2, sigma=Si_sig2),
+            mp.LorentzianSusceptibility(frequency=Si_frq3, gamma=Si_gam3, sigma=Si_sig3) ]
+
+Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc, valid_freq_range=Si_range)
+
