@@ -84,7 +84,7 @@ static PyObject *py_vector3_object() {
     return vector3_object;
 }
 
-static PyObject* vec2py(const meep::vec &v) {
+static PyObject* vec2py(const meep::vec &v, bool newobj=false) {
 
     double x = 0, y = 0, z = 0;
 
@@ -107,27 +107,41 @@ static PyObject* vec2py(const meep::vec &v) {
         break;
     }
 
-    if (py_callback_v3 == NULL) {
+    if (newobj) {
         PyObject *v3_class = py_vector3_object();
-        PyObject *args = PyTuple_New(0);
-        py_callback_v3 = PyObject_Call(v3_class, args, NULL);
+        PyObject *args = Py_BuildValue("(f,f,f)",
+                                       PyFloat_FromDouble(x),
+                                       PyFloat_FromDouble(y),
+                                       PyFloat_FromDouble(z));
+        PyObject *res = PyObject_Call(v3_class, args, NULL);
 
         Py_DECREF(args);
+
+        return res;
     }
+    else {
+        if (py_callback_v3 == NULL) {
+            PyObject *v3_class = py_vector3_object();
+            PyObject *args = PyTuple_New(0);
+            py_callback_v3 = PyObject_Call(v3_class, args, NULL);
 
-    PyObject *pyx = PyFloat_FromDouble(x);
-    PyObject *pyy = PyFloat_FromDouble(y);
-    PyObject *pyz = PyFloat_FromDouble(z);
+            Py_DECREF(args);
+        }
 
-    PyObject_SetAttrString(py_callback_v3, "x", pyx);
-    PyObject_SetAttrString(py_callback_v3, "y", pyy);
-    PyObject_SetAttrString(py_callback_v3, "z", pyz);
+        PyObject *pyx = PyFloat_FromDouble(x);
+        PyObject *pyy = PyFloat_FromDouble(y);
+        PyObject *pyz = PyFloat_FromDouble(z);
 
-    Py_DECREF(pyx);
-    Py_DECREF(pyy);
-    Py_DECREF(pyz);
+        PyObject_SetAttrString(py_callback_v3, "x", pyx);
+        PyObject_SetAttrString(py_callback_v3, "y", pyy);
+        PyObject_SetAttrString(py_callback_v3, "z", pyz);
 
-    return py_callback_v3;
+        Py_DECREF(pyx);
+        Py_DECREF(pyy);
+        Py_DECREF(pyz);
+
+        return py_callback_v3;
+    }
 }
 
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
