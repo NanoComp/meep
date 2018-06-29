@@ -36,6 +36,10 @@ namespace meep_geom {
 
 #ifdef HAVE_LIBGDSII
 
+bool with_libGDSII() {
+    return true;
+}
+
 void get_polygon_bounding_box(dVec vertex_coordinates, meep::vec &max_corner, meep::vec &min_corner)
 {
   double xmax=vertex_coordinates[2*0+0], xmin=xmax;
@@ -201,6 +205,10 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, dou
 /* stubs for compilation without libGDSII **********************/
 /***************************************************************/
 #else // HAVE_LIBGDSII
+
+bool with_libGDSII() {
+    return false;
+}
 
 void GDSIIError(const char *Routine)
 { meep::abort("Meep must be configured/compiled with libGDSII for %s",Routine); }

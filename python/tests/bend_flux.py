@@ -1,5 +1,6 @@
 from __future__ import division
 
+import os
 import unittest
 import numpy as np
 import meep as mp
@@ -8,7 +9,7 @@ from utils import compare_arrays
 
 class TestBendFlux(unittest.TestCase):
 
-    def init(self, no_bend=False):
+    def init(self, no_bend=False, gdsii=False):
         sx = 16
         sy = 32
         cell = mp.Vector3(sx, sy, 0)
@@ -17,23 +18,31 @@ class TestBendFlux(unittest.TestCase):
         wvg_ycen = -0.5 * (sy - w - (2 * pad))
         wvg_xcen = 0.5 * (sx - w - (2 * pad))
         height = 100
+        data_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+        gdsii_file = os.path.join(data_dir, 'bend-flux.gds')
 
         if no_bend:
-            no_bend_vertices = [mp.Vector3(-0.5 * sx - 5, wvg_ycen - 0.5 * w),
-                                mp.Vector3(+0.5 * sx + 5, wvg_ycen - 0.5 * w),
-                                mp.Vector3(+0.5 * sx + 5, wvg_ycen + 0.5 * w),
-                                mp.Vector3(-0.5 * sx - 5, wvg_ycen + 0.5 * w)]
+            if gdsii:
+                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 1)
+            else:
+                no_bend_vertices = [mp.Vector3(-0.5 * sx - 5, wvg_ycen - 0.5 * w),
+                                    mp.Vector3(+0.5 * sx + 5, wvg_ycen - 0.5 * w),
+                                    mp.Vector3(+0.5 * sx + 5, wvg_ycen + 0.5 * w),
+                                    mp.Vector3(-0.5 * sx - 5, wvg_ycen + 0.5 * w)]
 
-            geometry = [mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))]
+                geometry = [mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))]
         else:
-            bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
-                             mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
-                             mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
-                             mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
-                             mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
-                             mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
+            if gdsii:
+                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 2)
+            else:
+                bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
+                                 mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
+                                 mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
+                                 mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
+                                 mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
+                                 mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
 
-            geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
+                geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
 
         fcen = 0.15
         df = 0.1
@@ -66,9 +75,9 @@ class TestBendFlux(unittest.TestCase):
         else:
             self.pt = mp.Vector3(wvg_xcen, (sy / 2) - 1.5)
 
-    def test_bend_flux(self):
+    def run_bend_flux(self, from_gdsii_file):
         # Normalization run
-        self.init(no_bend=True)
+        self.init(no_bend=True, gdsii=from_gdsii_file)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
         # Save flux data for use in real run below
         fdata = self.sim.get_flux_data(self.refl)
@@ -98,11 +107,12 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=1e-7)
+        tolerance = 1e-2 if from_gdsii_file else 1e-7
+        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=tolerance)
 
         # Real run
         self.sim = None
-        self.init()
+        self.init(gdsii=from_gdsii_file)
         # Load flux data obtained from normalization run
         self.sim.load_minus_flux_data(self.refl, fdata)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
@@ -133,7 +143,13 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=1e-3)
+        tolerance = 1e-2 if from_gdsii_file else 1e-3
+        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=tolerance)
+
+    def test_bend_flux(self):
+        self.run_bend_flux(False)
+        if mp.with_libGDSII():
+            self.run_bend_flux(True)
 
 
 if __name__ == '__main__':

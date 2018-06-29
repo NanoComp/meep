@@ -92,16 +92,6 @@ static PyObject *py_meep_src_time_object() {
     return src_time;
 }
 
-static PyObject *py_vector3_object() {
-    static PyObject *vector3_object = NULL;
-    if (vector3_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        vector3_object = PyObject_GetAttrString(geom_mod, "Vector3");
-        Py_XDECREF(geom_mod);
-    }
-    return vector3_object;
-}
-
 static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
@@ -380,7 +370,7 @@ size_t _get_dft_data_size(meep::dft_chunk *dc) {
 void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart);
-    if (n != size) {
+    if (n != (size_t)size) {
         meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
     }
 
@@ -396,7 +386,7 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
 void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart);
-    if (n != size) {
+    if (n != (size_t)size) {
         meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
     }
 
@@ -513,6 +503,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(out) geometric_object {
+    $result = gobj_to_py_obj(&$1);
+
+    if (!$result) {
+        SWIG_fail;
+    }
+}
+
 // Typemap suite for boolean
 
 %typemap(out) boolean {
@@ -543,6 +541,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
+}
+
+%typemap(out) geometric_object_list {
+    $result = gobj_list_to_py_list(&$1);
+
+    if (!$result) {
+        SWIG_fail;
+    }
 }
 
 // Typemap suite for susceptibility_list

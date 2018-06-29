@@ -171,6 +171,7 @@ void check_offdiag(medium_struct *m);
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/
 /***************************************************************/
+bool with_libGDSII();
 meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char *Text, int Layer=-1, double zsize=0.0);
 meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer, double zsize=0.0);
 geometric_object_list get_GDSII_prisms(material_type material, const char *GDSIIFile, int Layer=-1, double zmin=0.0, double zmax=0.0);
