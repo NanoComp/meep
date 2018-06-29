@@ -174,3 +174,16 @@ Classes and functions related to the high-level Python interface to `MPB`. Addit
 ### `mpb_data.py`
 
 Definition of `MPBData`, a Python class useful for `MPB` data analysis (documented [here](https://mpb.readthedocs.io/en/latest/Python_Data_Analysis_Tutorial)). This is is a Python port of the functionality available in the [`mpb-data` command line program](https://github.com/stevengj/mpb/blob/master/utils/mpb-data.c) originally written in C.
+
+## Testing
+
+The tests for the Python interface are located in `python/tests`. To run the whole test suite, run `make check` in the `python` build tree. During development it is more convenient to run individual tests. This can be accomplished by running `python <path_to_test>/test.py MyTestCase.test_method`. See the [Python unittest framework documentation](https://docs.python.org/3/library/unittest.html) for more info. If you're using an out-of-tree build (recommended), the development process will look something like this:
+```bash
+cd meep/build/python
+export PYTHONPATH=`pwd`
+
+# After making changes, rebuild the Python package
+make
+# Run test
+python ../../python/tests/my_test.py MyNewTest.test_my_feature
+```
