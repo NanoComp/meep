@@ -1425,6 +1425,12 @@ class fields {
                         int is_continuous = 0);
   void add_point_source(component c, const src_time &src,
                         const vec &, std::complex<double> amp = 1.0);
+  void add_volume_source(component c, const src_time &src, const volume &where_,
+                         std::complex<double> *arr, size_t dims[3],
+                         std::complex<double> amp);
+  void add_volume_source(component c, const src_time &src,
+                         const volume &where_, const char *filename,
+                         const char *dataset, std::complex<double> amp);
   void add_volume_source(component c, const src_time &src,
 			 const volume &,
 			 std::complex<double> A(const vec &),
@@ -1786,6 +1792,8 @@ std::complex<double> eigenmode_amplitude(void *vedata,
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);
 
+realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data,
+                           int nx, int ny, int nz, int stride);
 } /* namespace meep */
 
 #endif /* MEEP_H */

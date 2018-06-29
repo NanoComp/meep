@@ -934,11 +934,21 @@ class Simulation(object):
                     src.amp_func
                 )
         else:
-            if src.amp_func is None:
+            if src.amp_func_file:
                 self.fields.add_volume_source(
                     src.component,
                     src.src.swigobj,
                     where,
+                    src.amp_func_file,
+                    src.amp_func_dataset,
+                    src.amplitude * 1.0,
+                )
+            elif src.amp_func:
+                self.fields.add_volume_source(
+                    src.component,
+                    src.src.swigobj,
+                    where,
+                    src.amp_func,
                     src.amplitude * 1.0,
                 )
             else:
@@ -946,7 +956,6 @@ class Simulation(object):
                     src.component,
                     src.src.swigobj,
                     where,
-                    src.amp_func,
                     src.amplitude * 1.0
                 )
 

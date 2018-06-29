@@ -193,57 +193,6 @@ static void read_epsilon_file(const char *eps_input_file)
   }
 }
 
-/* Linearly interpolate a given point in a 3d grid of data.  The point
-   coordinates should be in the range [0,1], or at the very least [-1,2]
-   ... anything outside [0,1] is *mirror* reflected into [0,1] */
-static meep::realnum linear_interpolate(
-		     meep::realnum rx, meep::realnum ry, meep::realnum rz,
-		     meep::realnum *data, int nx, int ny, int nz, int stride)
-{
-     int x, y, z, x2, y2, z2;
-     meep::realnum dx, dy, dz;
-
-     /* mirror boundary conditions for r just beyond the boundary */
-     if (rx < 0.0) rx = -rx; else if (rx > 1.0) rx = 1.0 - rx;
-     if (ry < 0.0) ry = -ry; else if (ry > 1.0) ry = 1.0 - ry;
-     if (rz < 0.0) rz = -rz; else if (rz > 1.0) rz = 1.0 - rz;
-
-     /* get the point corresponding to r in the epsilon array grid: */
-     x = rx * nx; if (x == nx) --x;
-     y = ry * ny; if (y == ny) --y;
-     z = rz * nz; if (z == nz) --z;
-
-     /* get the difference between (x,y,z) and the actual point
-        ... we shift by 0.5 to center the data points in the pixels */
-     dx = rx * nx - x - 0.5;
-     dy = ry * ny - y - 0.5;
-     dz = rz * nz - z - 0.5;
-
-     /* get the other closest point in the grid, with mirror boundaries: */
-     x2 = (dx >= 0.0 ? x + 1 : x - 1);
-     if (x2 < 0) x2++; else if (x2 == nx) x2--;
-     y2 = (dy >= 0.0 ? y + 1 : y - 1);
-     if (y2 < 0) y2++; else if (y2 == ny) y2--;
-     z2 = (dz >= 0.0 ? z + 1 : z - 1);
-     if (z2 < 0) z2++; else if (z2 == nz) z2--;
-
-     /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
-     dx = fabs(dx);
-     dy = fabs(dy);
-     dz = fabs(dz);
-
-     /* define a macro to give us data(x,y,z) on the grid,
-	in row-major order (the order used by HDF5): */
-#define D(x,y,z) (data[(((x)*ny + (y))*nz + (z)) * stride])
-
-     return(((D(x,y,z)*(1.0-dx) + D(x2,y,z)*dx) * (1.0-dy) +
-	     (D(x,y2,z)*(1.0-dx) + D(x2,y2,z)*dx) * dy) * (1.0-dz) +
-	    ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
-	     (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
-
-#undef D
-}
-
 // return material of the point p from the file (assumed already read)
 static void epsilon_file_material(material_type &m, vector3 p)
 {
@@ -259,8 +208,8 @@ static void epsilon_file_material(material_type &m, vector3 p)
   double rz = geometry_lattice.size.z == 0
     ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
   mm->epsilon_diag.x = mm->epsilon_diag.y = mm->epsilon_diag.z =
-    linear_interpolate(rx, ry, rz, epsilon_data,
-		       epsilon_dims[0], epsilon_dims[1], epsilon_dims[2], 1);
+    meep::linear_interpolate(rx, ry, rz, epsilon_data,
+                             epsilon_dims[0], epsilon_dims[1], epsilon_dims[2], 1);
   mm->epsilon_offdiag.x = mm->epsilon_offdiag.y = mm->epsilon_offdiag.z = 0;
 }
 
