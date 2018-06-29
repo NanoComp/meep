@@ -1,23 +1,14 @@
-Add support for importing GDSII file format used in
-planar lithography.
+HDF5 file output routines for frequency-dependent permittivity and permeability.
 
-Output DFT array in readable format rather than as a dump
-of internal data structure.
+Skewed bloch periodic boundary conditions for non-orthogonal unit cells
 
-Material and field internal data structure dump/load
-(i.e., to enable restarting from pre-loaded data)
+Add support for importing GDSII file format used in planar lithography.
 
 Discrete rotational symmetry in cylindrical coordinates.
 
-Near-field to far-field transformations for 2d cell with 1d periodicity
-and 3d cell with 2d periodicity.
-
 Gyromagnetic materials via general anisotropic conductivities.
 
-Parallelize grid initialization for user-defined material
-function.
-
-Extend second-order accurate subpixel smoothing scheme to
+Second-order accurate subpixel smoothing scheme for
 dispersive materials involving complex permittivity.
 
 Finish implementation of active materials (multilevel atoms and
@@ -25,7 +16,7 @@ saturable absorption/gain).
 
 Support 3d (r,phi,z) cell, where m is "Bloch wavenumber"
       -- gives 6-fold (and n-fold) symmetry as side effect
-      -- allows computation of bended photonic-crystal waveguides
+      -- allows computation of bent photonic-crystal waveguides
 
 Implement transparent boundary conditions to back PML layers, so that
 glancing-angle waves can be absorbed.
@@ -43,9 +34,7 @@ periodic boundaries, etc.?
 
 Remove monitor point class (redundant with HDF5 output, DFT volumes?).
 
-Integrated support for calling MPB mode solver for current distributions.
-
-rename fields::initialize to fields::add_to_fields or something like that,
+Rename fields::initialize to fields::add_to_fields or something like that,
 and allow specifying a geometric_volume.
 
 Support Pade approximates (libpadespectrum) for Fourier and modal analysis.

@@ -11,8 +11,9 @@
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
 -   Distributed memory **parallelism** on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
+-   Precompiled binary packages of latest builds and official releases available via [Conda](Installation/#conda-packages)
 -   Arbitrary **anisotropic**, electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
--   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as perfect conductor and **Bloch-periodic** boundary conditions.
+-   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size: even/odd mirror planes and 90°/180° rotations.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   Arbitrary current sources including a guided-mode launcher.

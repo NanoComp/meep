@@ -21,6 +21,8 @@ Meep was originally developed as part of graduate research at MIT. The project i
 
 There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A good place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings (6000+) since 2006 spanning a variety of discussion topics. Bug reports and new feature requests should be filed as a [GitHub issue](https://github.com/stevengj/meep/issues).
 
+### Are professional consulting services available?
+
 [Simpetus](http://www.simpetus.com), a company started by Meep's developers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
 
 ### How can I contribute to the Meep project?
@@ -35,6 +37,10 @@ The technical details of Meep's inner workings are described in the peer-reviewe
 
 For a list of published works which have used Meep, see the Google Scholar citation page for Meep's [technical reference](https://scholar.google.com/scholar?cites=17712807607104508775) as well as the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259).
 
+### Can I access Meep in the public cloud?
+
+Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
+
 Installation
 ------------
 
@@ -43,8 +49,6 @@ Installation
 Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to supercomputers. [Conda packages](Installation/#conda-packages) are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
 
 Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Installation shell scripts are available for [Ubuntu 16.04](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep_python_mpi.sh) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
-
-Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
 ### Guile is installed, but configure complains that it can't find `guile`
 
@@ -71,7 +75,7 @@ Meep doesn't implement a frequency-independent complex ε. Not only is this not 
 
 Maxwell's equations have exponentially growing solutions for a frequency-independent negative ε. For any physical medium with negative ε, there must be dispersion, and you must likewise use dispersive materials in Meep to obtain negative ε at some desired frequency. The requirement of dispersion to obtain negative ε follows from the Kramers–Kronig relations, and also follows from thermodynamic considerations that the energy in the electric field must be positive. See, for example, the book [Electrodynamics of Continuous Media](https://www.amazon.com/Electrodynamics-Continuous-Media-Second-Theoretical/dp/0750626348) by Landau, Pitaevskii, and Lifshitz. At an even more fundamental level, it can be derived from passivity constraints as shown in [Physical Review A, Vol. 90, 023847, 2014](http://arxiv.org/abs/arXiv:1405.0238).
 
-If you solve Maxwell's equations in a homogeneous-epsilon material at some real wavevector **k**, you get a dispersion relation $\omega^2 = c^2 |\mathbf{k}|^2 / \varepsilon$. If ε is positive, there are two real solutions $\omega^2 = \pm c |\mathbf{k}| / \sqrt{\varepsilon}$, giving oscillating solutions. If ε is negative, there are two imaginary solutions corresponding to exponentially decaying and exponentially growing solutions from any current source. These solutions can always be spatially decomposed into a superposition of real-**k** values via a spatial Fourier transform.
+If you solve Maxwell's equations in a homogeneous-epsilon material at some real wavevector **k**, you get a dispersion relation $\omega^2 = c^2 |\mathbf{k}|^2 / \varepsilon$. If ε is positive, there are two real solutions $\omega = \pm c |\mathbf{k}| / \sqrt{\varepsilon}$, giving oscillating solutions. If ε is negative, there are two imaginary solutions corresponding to exponentially decaying and exponentially growing solutions from any current source. These solutions can always be spatially decomposed into a superposition of real-**k** values via a spatial Fourier transform.
 
 If you do a simulation of any kind in the time domain (not just FDTD), you pretty much can't avoid exciting both the decaying and the growing solutions. This is *not* a numerical instability, it is a real solution of the underlying equations for an unphysical material.
 
@@ -110,7 +114,7 @@ Even if you disable the subpixel averaging, however, when you output the dielect
 
 ### How do I set up an oblique planewave source?
 
-A planewave incident at any angle can be generated by typically setting the amplitude function of a 1d/line source (for a 2d computational cell) or 2d/planar source (for a 3d cell) and the Bloch-periodic boundary conditions. Tutorial examples are provided for [Python](Python_Tutorials/Basics/#angular-reflectance-spectrum-of-a-planar-interface) and [Scheme](Scheme_Tutorials/Basics/#angular-reflectance-spectrum-of-a-planar-interface). Additional examples are available for [Python](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) and [Scheme](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl). This is discussed on the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg00692.html). Note: the oblique planewave is incident at the given angle for only a *single* frequency component. For more details, refer to Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+A planewave incident at any angle can be generated by typically setting the amplitude function of a 1d/line source (for a 2d computational cell) or 2d/planar source (for a 3d cell) and the Bloch-periodic boundary conditions. Tutorial examples are provided for [Python](Python_Tutorials/Basics/#angular-reflectance-spectrum-of-a-planar-interface) and [Scheme](Scheme_Tutorials/Basics/#angular-reflectance-spectrum-of-a-planar-interface). Additional examples are available for [Python](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) and [Scheme](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl). This topic is also discussed on the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg00692.html). Note: the oblique planewave is incident at the given angle for only a *single* frequency component. For more details, refer to Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 ### What is Meep's frequency-domain solver and how does it work? 
 
@@ -122,7 +126,7 @@ Examples are provided in [Tutorials/Frequency-Domain Solver](Python_Tutorials/Fr
 
 ### Is there a materials library?
 
-A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO$_2$), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al$_2$O$_3$), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si$_3$N$_4$), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Additional information is provided in [Materials](Materials/#materials-library).
+A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO<sub>2</sub>), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al<sub>2</sub>O<sub>3</sub>), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si<sub>3</sub>N<sub>4</sub>), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Additional information is provided in [Materials](Materials/#materials-library).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
@@ -143,7 +147,7 @@ Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be us
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
-Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, any of the dispersive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to visually verify the material geometry, etc., you may have to adjust the `epsilon` value.
+Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, any of the dispersive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry with visualization tools, etc., you may have to adjust the `epsilon` value.
 
 ### Does Meep support a non-uniform grid?
 

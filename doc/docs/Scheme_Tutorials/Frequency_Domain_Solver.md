@@ -2,7 +2,7 @@
 # Frequency Domain Solver
 ---
 
-This tutorial demonstrates Meep's [frequency-domain solver](../Scheme_User_Interface/#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For details regarding this feature, refer to this [FAQ](../FAQ/#what-is-meeps-frequency-domain-solver-and-how-does-it-work). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in a [separate tutorial](Basics/#modes-of-a-ring-resonator). We will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver.
+This tutorial demonstrates Meep's [frequency-domain solver](../Scheme_User_Interface/#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For details on how this feature works, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in [Basics/Modes of a Ring Resonator](Basics/#modes-of-a-ring-resonator). We will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver.
 
 Usage of the frequency-domain solver involves only two changes to the [original simulation](https://github.com/stevengj/meep/blob/master/scheme/examples/ring.ctl): (1) replace the Gaussian-pulse source with a [continuous source](../Scheme_User_Interface/#source), and (2) turn on complex fields since, by default, real fields are used. Everything else remains unchanged.
 
@@ -56,7 +56,7 @@ We will compute the fundamental mode at five different tolerance values chosen o
 (exit)
 ```
 
-The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The inset shows the magnitude of the scalar E$_z$ field, computed using a tolerance of 10<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and the faint presence of the point source.
+The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The inset shows the magnitude of the scalar E<sub>z</sub> field, computed using a tolerance of 10<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and the faint presence of the point source.
 
 <center>
 ![](../images/CWsolver-scheme.png)

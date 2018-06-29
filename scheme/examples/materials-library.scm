@@ -999,3 +999,30 @@
     (frequency Ge-frq1) (gamma Ge-gam1) (sigma Ge-sig1))
   (make lorentzian-susceptibility
     (frequency Ge-frq2) (gamma Ge-gam2) (sigma Ge-sig2)))))
+
+;------------------------------------------------------------------
+
+; silicon (Si) from C. D. Salzberg and J. J. Villa, , J. Optical Society America, Vol. 47, pp. 244-246, 1957
+; ref: https://refractiveindex.info/?shelf=main&book=Si&page=Salzberg
+; wavelength range: 1.36 - 11 um
+
+(define Si-frq1 (/ (* 0.301516485 um-scale)))
+(define Si-gam1 0)
+(define Si-sig1 10.6684293)
+
+(define Si-frq2 (/ (* 1.13475115 um-scale)))
+(define Si-gam2 0)
+(define Si-sig2 0.0030434748)
+
+(define Si-frq3 (/ (* 1104 um-scale)))
+(define Si-gam3 0)
+(define Si-sig3 1.54133408)
+
+(define Si (make medium (epsilon 9.28156)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency Si-frq1) (gamma Si-gam1) (sigma Si-sig1))
+  (make lorentzian-susceptibility
+    (frequency Si-frq2) (gamma Si-gam2) (sigma Si-sig2))
+  (make lorentzian-susceptibility
+    (frequency Si-frq3) (gamma Si-gam3) (sigma Si-sig3)))))

@@ -22,7 +22,8 @@
 (define-param fcen 0.8) ; pulse center frequency
 (define-param df 0.02) ; turn-on bandwidth
 (define-param kdir (vector3 1 1)) ; direction of k (length is irrelevant)
-(define k (vector3-scale (* 2 pi fcen)
+(define-param n 1) ; refractive index of material containing the source
+(define k (vector3-scale (* 2 pi fcen n)
                          (unit-vector3 kdir))) ; k with correct length
 
 (set! sources

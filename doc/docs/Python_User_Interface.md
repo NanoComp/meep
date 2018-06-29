@@ -503,7 +503,7 @@ The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used f
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The axis perpendicular to the prism. Defaults to `Vector3(x=0, y=0, z=1)`.
 
-Here are some examples of geometric objects created using the above classes:
+These are some examples of geometric objects created using the above classes:
 
 ```py
 # A cylinder of infinite radius and height 0.25 pointing along the x axis,
@@ -526,6 +526,20 @@ ell = meep.Ellipsoid(center=meep.Vector3(0,0,0), size=meep.Vector3(0.8,0.2,0.2),
 # its center, the whole thing centered at (1,2,3):
 geometry=[meep.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=meep.metal),
           meep.Sphere(center=Vector3(1,2,3), radius=0.2, material=meep.air)]					  
+```
+
+```py
+# A hexagon defined as a prism with six vertices centered on the origin
+# of material crystalline silicon (from the materials library)
+vertices = [ mp.Vector3(-1,0),
+             mp.Vector3(-0.5,math.sqrt(3)/2),
+             mp.Vector3(0.5,math.sqrt(3)/2),
+             mp.Vector3(1,0),
+             mp.Vector3(0.5,-math.sqrt(3)/2),
+             mp.Vector3(-0.5,-math.sqrt(3)/2) ]
+
+geometry = [mp.Prism(vertices, height=mp.inf, material=cSi)]
+
 ```
 
 ### Symmetry

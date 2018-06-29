@@ -2,7 +2,7 @@
 # Introduction
 ---
 
-Meep implements the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and then the fields are evolved in time using discrete time steps &mdash; as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
+Meep implements the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and the fields are evolved in time using discrete time steps &mdash; as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
 
 In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
 

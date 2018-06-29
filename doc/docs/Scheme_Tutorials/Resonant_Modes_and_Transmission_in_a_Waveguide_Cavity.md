@@ -100,7 +100,7 @@ The structure has mirror symmetry planes through the $x$ and $y$ axes. The sourc
 
 Note that we specify the plane by its normal, the $y$ direction. See also [Exploiting Symmetry](../Exploiting_Symmetry.md).
 
-Finally, we need to tell Meep to [compute the flux spectrum](../Introduction.md#transmissionreflection-spectra) at the other end of the computational cell, after the holes but before the PML:
+Finally, we need to tell Meep to [compute the flux spectrum](../Introduction.md#transmittancereflectance-spectra) at the other end of the computational cell, after the holes but before the PML:
 
 ```scm
 (define trans ; transmitted flux                                          
@@ -369,7 +369,7 @@ Plotting the real parts of ω, where the light cone ω &gt; *ck* is shaded gray,
 ![](../images/Holey-wvg-bands.png)
 </center>
 
-Here, the gray shaded region is the **light cone**, $ω > ck_x$, which is the region corresponding to modes that are extended in the air surrounding the waveguide. Below the light cone, we see several discrete *guided bands*, which must have field patterns localized to the vicinity of the waveguide. The imaginary part of ω for bands below the light cone is very small, due to either numerical error or the finite computational cell size. Some tiny portion of the guided mode overlaps the PML. Note the band gap between the first and second guided mode, from about 0.2 to 0.3.
+The gray shaded region is the **light cone**, $ω > ck_x$, which is the region corresponding to modes that are extended in the air surrounding the waveguide. Below the light cone, we see several discrete *guided bands*, which must have field patterns localized to the vicinity of the waveguide. The imaginary part of ω for bands below the light cone is very small, due to either numerical error or the finite computational cell size. Some tiny portion of the guided mode overlaps the PML. Note the band gap between the first and second guided mode, from about 0.2 to 0.3.
 
 Inside the light cone, we also see several discrete bands. These are **leaky modes**, or resonances, which have some intrinsic lifetime/loss because they couple with radiating states inside the light cone, which is reflected in the imaginary parts of their ω. Twice the imaginary part of ω is the energy loss rate per unit time; for a waveguide, it is more conventional to report loss per unit distance; to get this you would divide the loss per unit time by the *group velocity* $|dω/dk_x|$ = |slope|. Harminv only identifies leaky modes that have a substantial lifetime. The default threshold is a lifetime, or $Q$, of 50 periods.
 
@@ -390,6 +390,6 @@ It is usually a good idea to examine the field patterns for any modes that you a
 </center>
 
 -   From the top, the first two pictures show the first two guided bands underneath the light cone at $k_x=0.4$. Note that the second guided band is propagating to the *left*, which is due to its negative slope (note, however, that there is a corresponding right-propagating mode at $k_x=-0.4$). Note that they are strongly (exponentially) localized to the waveguide, as they should be.
--   The next mode is the first leaky mode at $k_x=0.1$. As $k_x$ goes to zero, in fact, this mode actually becomes lossless, a peculiarity of symmetry related to an effect demonstrated in Phys. Rev. B. 63, 125107 (2001). However, at this non-zero $k_x$, the radiation loss is clearly visible.
+-   The next mode is the first leaky mode at $k_x=0.1$. As $k_x$ goes to zero, in fact, this mode actually becomes lossless, a peculiarity of symmetry related to an effect demonstrated in Phys. Rev. B. 63, 125107, 2001. However, at this non-zero $k_x$, the radiation loss is clearly visible.
 -   The next mode is one of the many higher-order leaky modes visible in the band diagram; we arbitrarily chose the backwards-propagating mode at $k_x=0.3$, $ω=0.8838-0.0018i$ to plot. As can be seen from the field pattern, this mode has a very short wavelength in the material. This is short enough that it is worth checking how big the error introduced by the finite resolution is. By doubling the resolution to 40 pixels/unit, we found that this mode has shifted to $ω=0.8996-0.0021i$, or about a 2% error at the lower resolution.
 -   Finally, we show one of the modes right along the edge of the light cone, at $k_x=0.25$, $ω=0.2506$. This mode is clearly not localized to the waveguide, and is just propagating through the air parallel to the waveguide &mdash; i.e. it is really part of the continuum of extended modes and its discreteness is an artifact of the finite cell and imperfect boundary conditions. For light propagating completely parallel to the boundary, PML is not very effective, so the imaginary part of ω is only -0.0008 for this field.
