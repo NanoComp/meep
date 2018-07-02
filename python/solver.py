@@ -771,11 +771,6 @@ class ModeSolver(object):
         k_split = (0, self.k_points)
         self.mode_solver.set_kpoint_index(k_split[0])
 
-        if k_split[0] == 0:
-            self.output_epsilon()  # output epsilon immediately for 1st k block
-            if self.mode_solver.using_mu():
-                self.output_mu()  # and mu too, if we have it
-
         if self.num_bands > 0:
             for i, k in enumerate(k_split[1]):
                 self.current_k = k

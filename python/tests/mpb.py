@@ -347,6 +347,7 @@ class TestModeSolver(unittest.TestCase):
 
         ms = self.init_solver()
         ms.run_te()
+        ms.output_epsilon()
 
         res_path = self.filename_prefix + '-epsilon.h5'
         self.compare_h5_files(data_path, res_path)
@@ -985,6 +986,7 @@ class TestModeSolver(unittest.TestCase):
     def test_subpixel_averaging(self):
         ms = self.init_solver()
         ms.run_te()
+        ms.output_epsilon()
 
         expected_brd = [
             ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
@@ -1043,6 +1045,7 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         ms.run_te()
+        ms.output_mu()
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
         fname = 'tutorial-mu.h5'
