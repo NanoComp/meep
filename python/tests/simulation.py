@@ -424,6 +424,49 @@ class TestSimulation(unittest.TestCase):
         h = mp.Harminv(mp.Ez, mp.Vector3(), 1, 1)
         check_warnings(sim, h, should_warn=False)
 
+    def test_meep_vec(self):
+
+        def assert_one(v):
+            self.assertEqual(v.z(), 1)
+
+        def assert_two(v):
+            self.assertEqual(v.x(), 1)
+            self.assertEqual(v.y(), 2)
+
+        def assert_three(v):
+            assert_two(v)
+            self.assertEqual(v.z(), 3)
+
+        def assert_raises(it, err):
+            with self.assertRaises(err):
+                mp.meep_vec(it)
+
+        v1 = mp.meep_vec([1])
+        assert_one(v1)
+        v2 = mp.meep_vec([1, 2])
+        assert_two(v2)
+        v3 = mp.meep_vec([1, 2, 3])
+        assert_three(v3)
+        assert_raises([1, 2, 3, 4], NotImplementedError)
+
+        v1 = mp.meep_vec((1,))
+        assert_one(v1)
+        v2 = mp.meep_vec((1, 2))
+        assert_two(v2)
+        v3 = mp.meep_vec((1, 2, 3))
+        assert_three(v3)
+        assert_raises((1, 2, 3, 4), NotImplementedError)
+
+        v1 = mp.meep_vec(np.array([1], dtype=np.float64))
+        assert_one(v1)
+        v2 = mp.meep_vec(np.array([1, 2], dtype=np.float64))
+        assert_two(v2)
+        v3 = mp.meep_vec(np.array([1., 2., 3.]))
+        assert_three(v3)
+        assert_raises(np.array([1, 2, 3, 4], dtype=np.float64), NotImplementedError)
+
+        assert_raises(1, TypeError)
+
 
 if __name__ == '__main__':
     unittest.main()

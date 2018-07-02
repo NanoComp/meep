@@ -1183,6 +1183,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         in_point,
         in_volume,
         interpolate,
+        meep_vec,
         output_epsilon,
         output_mu,
         output_hpwr,

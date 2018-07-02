@@ -2119,3 +2119,11 @@ def interpolate(n, nums):
             res.extend(np.linspace(low, high, n + 1, endpoint=False).tolist())
 
     return res + [nums[-1]]
+
+
+def meep_vec(it):
+    try:
+        return mp.vec(*[i for i in it])
+    except (TypeError, NotImplementedError):
+        print("Expected an iterable with three or fewer floating point values.")
+        raise
