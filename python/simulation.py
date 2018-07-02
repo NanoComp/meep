@@ -1289,10 +1289,22 @@ class Simulation(object):
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
-        self.fields.get_eigenmode_coefficients(flux.swigobj, eig_vol, np.array(bands, dtype=np.intc), eig_parity,
-                                               eig_resolution, eig_tolerance, coeffs, None, kpoint_func)
+        vgrp = np.zeros(num_bands * flux.Nfreq)
 
-        return np.reshape(coeffs, (num_bands, flux.Nfreq, 2))
+        kpoints = mp.get_eigenmode_coefficients_and_kpoints(
+            self.fields,
+            flux.swigobj,
+            eig_vol,
+            np.array(bands, dtype=np.intc),
+            eig_parity,
+            eig_resolution,
+            eig_tolerance,
+            coeffs,
+            vgrp,
+            kpoint_func
+        )
+
+        return np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:

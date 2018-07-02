@@ -399,6 +399,27 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int
     }
 }
 
+struct kpoint_list {
+    meep::vec *kpoints;
+    size_t n;
+};
+
+kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
+                                                  int *bands, int num_bands, int parity, double eig_resolution,
+                                                  double eigensolver_tol, std::complex<double> *coeffs,
+                                                  double *vgrp, meep::kpoint_func user_kpoint_func,
+                                                  void *user_kpoint_data) {
+
+    size_t num_kpoints = num_bands * flux.Nfreq;
+    meep::vec *kpoints = new meep::vec[num_kpoints];
+
+    f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints);
+
+    kpoint_list res = {kpoints, num_kpoints};
+
+    return res;
+}
 %}
 
 %numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
@@ -426,6 +447,19 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
+
+// Typemap suite for get_eigenmode_coefficients_and_kpoints
+
+%typemap(out) kpoint_list {
+
+    $result = PyList_New($1.n);
+
+    for (size_t i = 0; i < $1.n; ++i) {
+        PyList_SetItem($result, i, vec2py($1.kpoints[i], true));
+    }
+
+    delete[] $1.kpoints;
+}
 
 // Typemap suite for do_harminv
 
@@ -721,6 +755,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(in, fragment="NumPy_Macros") std::complex<double>* coeffs {
     $1 = (std::complex<double> *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* vgrp {
+    $1 = (double *)array_data($input);
 }
 
 //--------------------------------------------------
@@ -1050,7 +1092,11 @@ struct geom_box {
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
-
+kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_flux flux,
+                                                   const meep::volume &eig_vol, int *bands, int num_bands,
+                                                   int parity, double eig_resolution, double eigensolver_tol,
+                                                   std::complex<double> *coeffs, double *vgrp,
+                                                   meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
 %ignore eps_func;
 %ignore inveps_func;
 

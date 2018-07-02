@@ -68,7 +68,7 @@ def main(args):
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
-    coeffs = sim.get_eigenmode_coefficients(mode_monitor, [1])
+    coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(mode_monitor, [1])
 
     print("mode:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,0])**2,abs(coeffs[0,0,1])**2))
 

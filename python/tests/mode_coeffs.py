@@ -59,7 +59,7 @@ class TestModeCoeffs(unittest.TestCase):
         sim.run(until_after_sources=100)
 
         modes_to_check = [1, 2]  # indices of modes for which to compute expansion coefficients
-        alpha = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
+        alpha, vgrp, kpoints = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
 
         mode_power = mp.get_fluxes(mode_flux)[0]
 
