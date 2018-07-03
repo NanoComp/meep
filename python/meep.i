@@ -1170,6 +1170,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         at_end,
         at_every,
         at_time,
+        before_time,
         dft_ldos,
         display_progress,
         during_sources,
