@@ -1023,6 +1023,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
 
+%rename(_vec) meep::vec::vec;
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
 // Rename python builtins
@@ -1183,7 +1184,6 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         in_point,
         in_volume,
         interpolate,
-        meep_vec,
         output_epsilon,
         output_mu,
         output_hpwr,
@@ -1233,6 +1233,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         stop_when_fields_decayed,
         synchronized_magnetic,
         to_appended,
+        vec,
         when_true,
         when_false,
         with_prefix

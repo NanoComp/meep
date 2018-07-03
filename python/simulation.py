@@ -34,6 +34,20 @@ def get_num_args(func):
     return func.__code__.co_argcount
 
 
+def vec(*args):
+    try:
+        # Check for vec(iterable)
+        return mp._vec(*args[0])
+    except (TypeError, NotImplementedError):
+        try:
+            # Check for vec(x, [y, [z]])
+            return mp._vec(*args)
+        except (TypeError, NotImplementedError):
+            print("Expected an iterable with three or fewer floating point values")
+            print("    or something of the form vec(x, [y, [z]])")
+            raise
+
+
 def py_v3_to_vec(dims, v3, is_cylindrical=False):
     if dims == 1:
         return mp.vec(v3.z)
@@ -2121,9 +2135,3 @@ def interpolate(n, nums):
     return res + [nums[-1]]
 
 
-def meep_vec(it):
-    try:
-        return mp.vec(*[i for i in it])
-    except (TypeError, NotImplementedError):
-        print("Expected an iterable with three or fewer floating point values.")
-        raise

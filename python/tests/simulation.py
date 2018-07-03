@@ -424,7 +424,7 @@ class TestSimulation(unittest.TestCase):
         h = mp.Harminv(mp.Ez, mp.Vector3(), 1, 1)
         check_warnings(sim, h, should_warn=False)
 
-    def test_meep_vec(self):
+    def test_vec_constructor(self):
 
         def assert_one(v):
             self.assertEqual(v.z(), 1)
@@ -439,33 +439,30 @@ class TestSimulation(unittest.TestCase):
 
         def assert_raises(it, err):
             with self.assertRaises(err):
-                mp.meep_vec(it)
+                mp.vec(it)
 
-        v1 = mp.meep_vec([1])
+        v1 = mp.vec(1)
         assert_one(v1)
-        v2 = mp.meep_vec([1, 2])
+        v2 = mp.vec(1, 2)
         assert_two(v2)
-        v3 = mp.meep_vec([1, 2, 3])
+        v3 = mp.vec(1, 2, 3)
         assert_three(v3)
-        assert_raises([1, 2, 3, 4], NotImplementedError)
 
-        v1 = mp.meep_vec((1,))
-        assert_one(v1)
-        v2 = mp.meep_vec((1, 2))
-        assert_two(v2)
-        v3 = mp.meep_vec((1, 2, 3))
-        assert_three(v3)
-        assert_raises((1, 2, 3, 4), NotImplementedError)
+        def check_iterable(one, two, three, four):
+            v1 = mp.vec(one)
+            assert_one(v1)
+            v2 = mp.vec(two)
+            assert_two(v2)
+            v3 = mp.vec(three)
+            assert_three(v3)
+            assert_raises(four, NotImplementedError)
 
-        v1 = mp.meep_vec(np.array([1], dtype=np.float64))
-        assert_one(v1)
-        v2 = mp.meep_vec(np.array([1, 2], dtype=np.float64))
-        assert_two(v2)
-        v3 = mp.meep_vec(np.array([1., 2., 3.]))
-        assert_three(v3)
-        assert_raises(np.array([1, 2, 3, 4], dtype=np.float64), NotImplementedError)
-
-        assert_raises(1, TypeError)
+        check_iterable([1], [1, 2], [1, 2, 3], [1, 2, 3, 4])
+        check_iterable((1,), (1, 2), (1, 2, 3), (1, 2, 3, 4))
+        check_iterable(np.array([1.]),
+                       np.array([1., 2.]),
+                       np.array([1., 2., 3.]),
+                       np.array([1., 2., 3., 4.]))
 
 
 if __name__ == '__main__':
