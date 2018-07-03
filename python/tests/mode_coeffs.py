@@ -61,6 +61,9 @@ class TestModeCoeffs(unittest.TestCase):
         modes_to_check = [1, 2]  # indices of modes for which to compute expansion coefficients
         alpha, vgrp, kpoints = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
 
+        self.assertTrue(kpoints[0].close(mp.Vector3(0.604301, 0, 0)))
+        self.assertTrue(kpoints[1].close(mp.Vector3(0.494353, 0, 0)))
+
         mode_power = mp.get_fluxes(mode_flux)[0]
 
         TestPassed = True
