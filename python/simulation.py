@@ -38,7 +38,7 @@ def vec(*args):
     try:
         # Check for vec(iterable)
         return mp._vec(*args[0])
-    except (TypeError, NotImplementedError):
+    except (TypeError, NotImplementedError, IndexError):
         try:
             # Check for vec(x, [y, [z]])
             return mp._vec(*args)
