@@ -36,12 +36,15 @@ def get_num_args(func):
 
 def vec(*args):
     try:
-        # Check for vec(iterable)
-        return mp._vec(*args[0])
-    except (TypeError, NotImplementedError, IndexError):
+        # Check for vec(x, [y, [z]])
+        return mp._vec(*args)
+    except (TypeError, NotImplementedError):
         try:
-            # Check for vec(x, [y, [z]])
-            return mp._vec(*args)
+            # Check for vec(iterable)
+            if len(args) != 1:
+                raise TypeError
+
+            return mp._vec(*args[0])
         except (TypeError, NotImplementedError):
             print("Expected an iterable with three or fewer floating point values")
             print("    or something of the form vec(x, [y, [z]])")

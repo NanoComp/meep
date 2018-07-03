@@ -447,6 +447,10 @@ class TestSimulation(unittest.TestCase):
         assert_two(v2)
         v3 = mp.vec(1, 2, 3)
         assert_three(v3)
+        mp.vec()
+
+        with self.assertRaises(TypeError):
+            mp.vec(1, 2, 3, 4)
 
         def check_iterable(one, two, three, four):
             v1 = mp.vec(one)
@@ -463,6 +467,12 @@ class TestSimulation(unittest.TestCase):
                        np.array([1., 2.]),
                        np.array([1., 2., 3.]),
                        np.array([1., 2., 3., 4.]))
+
+        with self.assertRaises(TypeError):
+            mp.vec([1, 2], 3)
+
+        with self.assertRaises(TypeError):
+            mp.vec(1, [2, 3])
 
 
 if __name__ == '__main__':
