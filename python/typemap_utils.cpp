@@ -109,10 +109,7 @@ static PyObject* vec2py(const meep::vec &v, bool newobj=false) {
 
     if (newobj) {
         PyObject *v3_class = py_vector3_object();
-        PyObject *args = Py_BuildValue("(f,f,f)",
-                                       PyFloat_FromDouble(x),
-                                       PyFloat_FromDouble(y),
-                                       PyFloat_FromDouble(z));
+        PyObject *args = Py_BuildValue("(d,d,d)", x, y, z);
         PyObject *res = PyObject_Call(v3_class, args, NULL);
 
         Py_DECREF(args);
@@ -413,7 +410,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
 template<class T>
 static void set_v3_on_pyobj(PyObject *py_obj, T *v3, const char *attr) {
     PyObject *v3_class = py_vector3_object();
-    PyObject *v3_args = Py_BuildValue("(f,f,f)", v3->x, v3->y, v3->z);
+    PyObject *v3_args = Py_BuildValue("(d,d,d)", v3->x, v3->y, v3->z);
     PyObject *pyv3 = PyObject_Call(v3_class, v3_args, NULL);
     PyObject_SetAttrString(py_obj, attr, pyv3);
 
