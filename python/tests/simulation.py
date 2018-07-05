@@ -424,6 +424,56 @@ class TestSimulation(unittest.TestCase):
         h = mp.Harminv(mp.Ez, mp.Vector3(), 1, 1)
         check_warnings(sim, h, should_warn=False)
 
+    def test_vec_constructor(self):
+
+        def assert_one(v):
+            self.assertEqual(v.z(), 1)
+
+        def assert_two(v):
+            self.assertEqual(v.x(), 1)
+            self.assertEqual(v.y(), 2)
+
+        def assert_three(v):
+            assert_two(v)
+            self.assertEqual(v.z(), 3)
+
+        def assert_raises(it, err):
+            with self.assertRaises(err):
+                mp.vec(it)
+
+        v1 = mp.vec(1)
+        assert_one(v1)
+        v2 = mp.vec(1, 2)
+        assert_two(v2)
+        v3 = mp.vec(1, 2, 3)
+        assert_three(v3)
+        mp.vec()
+
+        with self.assertRaises(TypeError):
+            mp.vec(1, 2, 3, 4)
+
+        def check_iterable(one, two, three, four):
+            v1 = mp.vec(one)
+            assert_one(v1)
+            v2 = mp.vec(two)
+            assert_two(v2)
+            v3 = mp.vec(three)
+            assert_three(v3)
+            assert_raises(four, NotImplementedError)
+
+        check_iterable([1], [1, 2], [1, 2, 3], [1, 2, 3, 4])
+        check_iterable((1,), (1, 2), (1, 2, 3), (1, 2, 3, 4))
+        check_iterable(np.array([1.]),
+                       np.array([1., 2.]),
+                       np.array([1., 2., 3.]),
+                       np.array([1., 2., 3., 4.]))
+
+        with self.assertRaises(TypeError):
+            mp.vec([1, 2], 3)
+
+        with self.assertRaises(TypeError):
+            mp.vec(1, [2, 3])
+
 
 if __name__ == '__main__':
     unittest.main()

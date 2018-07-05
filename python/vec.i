@@ -64,6 +64,7 @@
 %rename(__getitem__) meep::grid_volume::operator[];
 %rename(symmetry_assign) meep::symmetry::operator=;
 
-%rename(vec_from_dim) meep::vec::vec(ndim, double);
+%rename(vec_dim_val) meep::vec::vec(ndim, double);
+%rename(vec_dim) meep::vec::vec(ndim);
 
 %include "meep/vec.hpp"
