@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import functools
 import math
 import numbers
 import os
@@ -903,61 +904,38 @@ class Simulation(object):
             eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions,
                              is_cylindrical=self.is_cylindrical).swigobj
 
+            add_eig_src_args = [
+                src.component,
+                src.src.swigobj,
+                direction,
+                where,
+                eig_vol,
+                src.eig_band,
+                py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
+                src.eig_match_freq,
+                src.eig_parity,
+                src.eig_resolution,
+                src.eig_tolerance,
+                src.amplitude
+            ]
+            add_eig_src = functools.partial(self.fields.add_eigenmode_source, *add_eig_src_args)
+
             if src.amp_func is None:
-                self.fields.add_eigenmode_source(
-                    src.component,
-                    src.src.swigobj,
-                    direction,
-                    where,
-                    eig_vol,
-                    src.eig_band,
-                    py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
-                    src.eig_match_freq,
-                    src.eig_parity,
-                    src.eig_resolution,
-                    src.eig_tolerance,
-                    src.amplitude
-                )
+                add_eig_src()
             else:
-                self.fields.add_eigenmode_source(
-                    src.component,
-                    src.src.swigobj,
-                    direction,
-                    where,
-                    eig_vol,
-                    src.eig_band,
-                    py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
-                    src.eig_parity,
-                    src.eig_resolution,
-                    src.eig_tolerance,
-                    src.amplitude,
-                    src.amp_func
-                )
+                add_eig_src(src.amp_func)
         else:
+            add_vol_src_args = [src.component, src.src.swigobj, where]
+            add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)
+
             if src.amp_func_file:
-                self.fields.add_volume_source(
-                    src.component,
-                    src.src.swigobj,
-                    where,
-                    src.amp_func_file,
-                    src.amp_func_dataset,
-                    src.amplitude * 1.0,
-                )
+                add_vol_src(src.amp_func_file, src.amp_func_dataset, src.amplitude * 1.0,)
             elif src.amp_func:
-                self.fields.add_volume_source(
-                    src.component,
-                    src.src.swigobj,
-                    where,
-                    src.amp_func,
-                    src.amplitude * 1.0,
-                )
+                add_vol_src(src.amp_func, src.amplitude * 1.0)
+            elif src.amp_data is not None:
+                add_vol_src(src.amp_data, src.amplitude * 1.0,)
             else:
-                self.fields.add_volume_source(
-                    src.component,
-                    src.src.swigobj,
-                    where,
-                    src.amplitude * 1.0
-                )
+                add_vol_src(src.amplitude * 1.0)
 
     def _evaluate_dft_objects(self):
         for dft in self.dft_objects:

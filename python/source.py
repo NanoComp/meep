@@ -14,7 +14,7 @@ def check_positive(prop, val):
 class Source(object):
 
     def __init__(self, src, component, center, size=Vector3(), amplitude=1.0, amp_func=None,
-                 amp_func_file='', amp_func_dataset=''):
+                 amp_func_file='', amp_func_dataset='', amp_data=None):
         self.src = src
         self.component = component
         self.center = center
@@ -23,6 +23,7 @@ class Source(object):
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_func_dataset = amp_func_dataset
+        self.amp_data = amp_data
 
 
 class SourceTime(object):

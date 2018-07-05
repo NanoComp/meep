@@ -321,9 +321,26 @@ static const volume *amp_func_vol = NULL;
 static size_t amp_file_dims[3];
 
 complex<double> amp_file_func(const vec &p) {
-  double x_size = amp_func_vol->in_direction(X);
-  double y_size = amp_func_vol->in_direction(Y);
-  double z_size = amp_func_vol->in_direction(Z);
+  double x_size = 0, y_size = 0, z_size = 0;
+
+  switch (amp_func_vol->dim) {
+  case D1:
+    z_size = amp_func_vol->in_direction(Z);
+    break;
+  case D2:
+    x_size = amp_func_vol->in_direction(X);
+    y_size = amp_func_vol->in_direction(Y);
+    break;
+  case D3:
+    x_size = amp_func_vol->in_direction(X);
+    y_size = amp_func_vol->in_direction(Y);
+    z_size = amp_func_vol->in_direction(Z);
+    break;
+  case Dcyl:
+    x_size = amp_func_vol->in_direction(X);
+    z_size = amp_func_vol->in_direction(Z);
+    break;
+  }
 
   double rx = x_size == 0 ? 0 : 0.5 + p.x() / x_size;
   double ry = y_size == 0 ? 0 : 0.5 + p.y() / y_size;
@@ -338,15 +355,16 @@ complex<double> amp_file_func(const vec &p) {
 }
 
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
-                               complex<double> *arr, size_t dims[3], complex<double> amp) {
+                               complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
+                               complex<double> amp) {
 
   amp_func_vol = &where_;
 
-  for (int i = 0; i < 3; ++i) {
-    amp_file_dims[i] = dims[i];
-  }
+  amp_file_dims[0] = dim1;
+  amp_file_dims[1] = dim2;
+  amp_file_dims[2] = dim3;
 
-  size_t total_size = dims[0] * dims[1] * dims[2];
+  size_t total_size = dim1 * dim2 * dim3;
   amp_func_data_re = new double[total_size];
   amp_func_data_im = new double[total_size];
 
@@ -394,7 +412,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
     amp_data[i] = complex<double>(real_data[i], imag_data[i]);
   }
 
-  add_volume_source(c, src, where_, amp_data, re_dims, amp);
+  add_volume_source(c, src, where_, amp_data, re_dims[0], re_dims[1], re_dims[2], amp);
 
   delete[] real_data;
   delete[] imag_data;

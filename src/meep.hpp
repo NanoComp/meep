@@ -1426,7 +1426,7 @@ class fields {
   void add_point_source(component c, const src_time &src,
                         const vec &, std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src, const volume &where_,
-                         std::complex<double> *arr, size_t dims[3],
+                         std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
                          std::complex<double> amp);
   void add_volume_source(component c, const src_time &src,
                          const volume &where_, const char *filename,
