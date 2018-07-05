@@ -162,17 +162,18 @@ class TestAmpFileFunc(unittest.TestCase):
         N = 100
         M = 200
 
-        amp_data = np.zeros((N, M))
+        self.amp_data = np.zeros((N, M, 1), dtype=np.complex128)
 
         for i in range(N):
             for j in range(M):
-                amp_data[i, j] = amp_fun(mp.Vector3(i / N - 0.15, j / M - 0.1))
+                v = mp.Vector3((i / N) * 0.3 - 0.15, (j / M) * 0.2 - 0.1)
+                self.amp_data[i, j] = amp_fun(v)
 
         with h5py.File(self.fname, 'w') as f:
-            f[self.dset + '.re'] = amp_data
-            f[self.dset + '.im'] = np.zeros((N, M))
+            f[self.dset + '.re'] = np.real(self.amp_data)
+            f[self.dset + '.im'] = np.imag(self.amp_data)
 
-    def init_and_run(self, file_func):
+    def init_and_run(self, test_type):
         cell = mp.Vector3(1, 1)
         resolution = 10
         fcen = 0.8
@@ -181,12 +182,15 @@ class TestAmpFileFunc(unittest.TestCase):
         cen = mp.Vector3(0.1, 0.2)
         sz = mp.Vector3(0.3, 0.2)
 
-        if file_func:
+        if test_type == 'file':
             sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
                                  size=sz, amp_func_file=self.fname, amp_func_dataset=self.dset)]
-        else:
+        elif test_type == 'func':
             sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
                                  size=sz, amp_func=amp_fun)]
+        elif test_type == 'arr':
+            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
+                                 size=sz, amp_data=self.amp_data)]
 
         sim = mp.Simulation(cell_size=cell, resolution=resolution, sources=sources)
         sim.run(until=200)
@@ -194,9 +198,32 @@ class TestAmpFileFunc(unittest.TestCase):
 
     def test_amp_file_func(self):
         self.create_h5data()
-        field_point_amp_file = self.init_and_run(file_func=True)
-        field_point_amp_func = self.init_and_run(file_func=False)
+        field_point_amp_file = self.init_and_run(test_type='file')
+        field_point_amp_func = self.init_and_run(test_type='func')
+        field_point_amp_arr = self.init_and_run(test_type='arr')
+
         self.assertAlmostEqual(field_point_amp_file, field_point_amp_func)
+        self.assertAlmostEqual(field_point_amp_arr, field_point_amp_func)
+
+        # import matplotlib.pyplot as plt
+        # from matplotlib.collections import PatchCollection
+        # from matplotlib.patches import Rectangle
+
+        # xes = [v.x + 0.1 for v in vecs[-20:]]
+        # ys = [v.y + 0.2 for v in vecs[-20:]]
+        # arr_x = [v.x for v in arr_vecs]
+        # arr_y = [v.y for v in arr_vecs]
+
+        # fig, ax = plt.subplots(1)
+        # plt.plot(xes, ys, 'go')
+        # plt.plot(arr_x, arr_y, 'bo')
+        # plt.axis([-0.5, 0.5, -0.5, 0.5])
+        # src_rect = Rectangle((-0.05, 0.1), 0.3, 0.2)
+        # pc = PatchCollection([src_rect], facecolor='r', alpha=0.5, edgecolor='None')
+        # ax.add_collection(pc)
+        # ax.axhline(y=0, color='k')
+        # ax.axvline(x=0, color='k')
+        # plt.show()
 
 
 if __name__ == '__main__':
