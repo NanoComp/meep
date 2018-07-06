@@ -396,7 +396,7 @@ wl = []
 Rs = []
 Ts = []
 
-for i in range(0,nfreq):
+for i in range(nfreq):
     wl = np.append(wl, 1/flux_freqs[i])
     Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
     Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])    
@@ -506,7 +506,7 @@ def main(args):
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
     
-    for i in range(0,nfreq):
+    for i in range(nfreq):
         print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
     
 if __name__ == '__main__':
@@ -545,7 +545,7 @@ kxs = np.empty((50,theta_in.size))
 thetas = np.empty((50,theta_in.size))
 Rmeep = np.empty((50,theta_in.size))
 
-for j in range(0,theta_in.size):
+for j in range(theta_in.size):
   f = np.genfromtxt("flux_t{}.dat".format(theta_in[j]), delimiter=",")
   kxs[:,j] = f[:,0]
   thetas[:,j] = f[:,2]
@@ -592,8 +592,8 @@ theta_out = lambda theta_in: math.asin(n1*math.sin(theta_in)/n2)
 Rfresnel = lambda theta_in: math.fabs((n1*math.cos(theta_out(theta_in))-n2*math.cos(theta_in))/(n1*math.cos(theta_out(theta_in))+n2*math.cos(theta_in)))**2
 
 Ranalytic = np.empty((50, theta_in.size))
-for m in range(0,wvl.size):
-    for n in range(0,theta_in.size):
+for m in range(wvl.size):
+    for n in range(theta_in.size):
         Ranalytic[m,n] = Rfresnel(math.radians(thetas[m,n]))
 
 plt.figure(dpi=100)
