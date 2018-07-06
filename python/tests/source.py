@@ -154,6 +154,7 @@ class TestAmpFileFunc(unittest.TestCase):
     def setUp(self):
 
         def rm_h5():
+            mp.all_wait()
             if mp.am_master():
                 os.remove(self.fname)
 
@@ -174,6 +175,7 @@ class TestAmpFileFunc(unittest.TestCase):
             with h5py.File(self.fname, 'w') as f:
                 f[self.dset + '.re'] = np.real(self.amp_data)
                 f[self.dset + '.im'] = np.imag(self.amp_data)
+        mp.all_wait()
 
     def init_and_run(self, test_type):
         cell = mp.Vector3(1, 1)
