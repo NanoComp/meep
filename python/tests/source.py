@@ -175,7 +175,7 @@ class TestAmpFileFunc(unittest.TestCase):
 
     def init_and_run(self, test_type):
         cell = mp.Vector3(1, 1)
-        resolution = 10
+        resolution = 60
         fcen = 0.8
         df = 0.02
 
@@ -202,28 +202,8 @@ class TestAmpFileFunc(unittest.TestCase):
         field_point_amp_func = self.init_and_run(test_type='func')
         field_point_amp_arr = self.init_and_run(test_type='arr')
 
-        self.assertAlmostEqual(field_point_amp_file, field_point_amp_func)
-        self.assertAlmostEqual(field_point_amp_arr, field_point_amp_func)
-
-        # import matplotlib.pyplot as plt
-        # from matplotlib.collections import PatchCollection
-        # from matplotlib.patches import Rectangle
-
-        # xes = [v.x + 0.1 for v in vecs[-20:]]
-        # ys = [v.y + 0.2 for v in vecs[-20:]]
-        # arr_x = [v.x for v in arr_vecs]
-        # arr_y = [v.y for v in arr_vecs]
-
-        # fig, ax = plt.subplots(1)
-        # plt.plot(xes, ys, 'go')
-        # plt.plot(arr_x, arr_y, 'bo')
-        # plt.axis([-0.5, 0.5, -0.5, 0.5])
-        # src_rect = Rectangle((-0.05, 0.1), 0.3, 0.2)
-        # pc = PatchCollection([src_rect], facecolor='r', alpha=0.5, edgecolor='None')
-        # ax.add_collection(pc)
-        # ax.axhline(y=0, color='k')
-        # ax.axvline(x=0, color='k')
-        # plt.show()
+        self.assertAlmostEqual(field_point_amp_file, field_point_amp_func, places=4)
+        self.assertAlmostEqual(field_point_amp_arr, field_point_amp_func, places=4)
 
 
 if __name__ == '__main__':
