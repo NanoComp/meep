@@ -154,7 +154,8 @@ class TestAmpFileFunc(unittest.TestCase):
     def setUp(self):
 
         def rm_h5():
-            os.remove(self.fname)
+            if mp.am_master():
+                os.remove(self.fname)
 
         self.addCleanup(rm_h5)
 
@@ -169,9 +170,10 @@ class TestAmpFileFunc(unittest.TestCase):
                 v = mp.Vector3((i / N) * 0.3 - 0.15, (j / M) * 0.2 - 0.1)
                 self.amp_data[i, j] = amp_fun(v)
 
-        with h5py.File(self.fname, 'w') as f:
-            f[self.dset + '.re'] = np.real(self.amp_data)
-            f[self.dset + '.im'] = np.imag(self.amp_data)
+        if mp.am_master():
+            with h5py.File(self.fname, 'w') as f:
+                f[self.dset + '.re'] = np.real(self.amp_data)
+                f[self.dset + '.im'] = np.imag(self.amp_data)
 
     def init_and_run(self, test_type):
         cell = mp.Vector3(1, 1)
