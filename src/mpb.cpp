@@ -486,7 +486,7 @@ void *fields::get_eigenmode(double omega_src,
   edata->Gk[0]          = G[0][0]*k[0] + G[1][0]*k[1] + G[2][0]*k[2];
   edata->Gk[1]          = G[0][1]*k[0] + G[1][1]*k[1] + G[2][1]*k[2];
   edata->Gk[2]          = G[0][2]*k[0] + G[1][2]*k[1] + G[2][2]*k[2];
-  edata->center         = eig_vol.center() - where.center();
+  edata->center         = eig_vol.center();
   edata->amp_func       = default_amp_func;
   edata->band_num       = band_num;
   edata->omega          = omega_src;
@@ -556,6 +556,11 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
                                     kpoint, match_frequency,
                                     parity, resolution,
                                     eigensolver_tol);
+
+  /* add_volume_source amp_fun coordinates are relative to where.center();
+     this is not the default in get_eigenmode because where-relative coordinates
+     are not used elsewhere, e.g. in getting mode coefficients in dft.cpp. */
+  global_eigenmode_data->center -= where.center();
 
   if (!global_eigenmode_data)
     abort("eigenmode solver failed to find the requested mode; you may need to supply a better guess for k");
