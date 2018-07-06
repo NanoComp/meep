@@ -423,7 +423,14 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 %}
 
 %numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
+%numpy_typemaps(std::complex<double>, NPY_CDOUBLE, size_t);
+
 %apply (std::complex<meep::realnum> *INPLACE_ARRAY1, int DIM1) {(std::complex<meep::realnum> *cdata, int size)};
+
+// add_volume_source
+%apply (std::complex<double> *INPLACE_ARRAY3, size_t DIM1, size_t DIM2, size_t DIM3) {
+    (std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3)
+};
 
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
 // pointer object instead of as a built-in function
@@ -1098,6 +1105,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
+
 %ignore eps_func;
 %ignore inveps_func;
 

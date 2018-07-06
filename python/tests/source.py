@@ -3,6 +3,7 @@ from __future__ import division
 import math
 import os
 import unittest
+import numpy as np
 
 import meep as mp
 from meep.geom import Cylinder, Vector3
@@ -140,34 +141,58 @@ class TestSourceTypemaps(unittest.TestCase):
         self.assertAlmostEqual(fp, -0.021997617628500023 + 0j)
 
 
+def amp_fun(p):
+    return p.x + 2 * p.y
+
+
 class TestAmpFileFunc(unittest.TestCase):
 
-    def init_and_run(self, file_func):
+    def create_h5data(self):
+        N = 100
+        M = 200
+
+        self.amp_data = np.zeros((N, M, 1), dtype=np.complex128)
+
+        for i in range(N):
+            for j in range(M):
+                v = mp.Vector3((i / N) * 0.3 - 0.15, (j / M) * 0.2 - 0.1)
+                self.amp_data[i, j] = amp_fun(v)
+
+    def init_and_run(self, test_type):
         cell = mp.Vector3(1, 1)
-        resolution = 10
+        resolution = 60
         fcen = 0.8
         df = 0.02
 
-        def ones(p):
-            return 1 + 1j
+        cen = mp.Vector3(0.1, 0.2)
+        sz = mp.Vector3(0.3, 0.2)
 
-        if file_func:
-            fname = os.path.join(data_dir, 'amp_func_file.h5')
-            dset = 'amp_data'
-            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(),
-                                 amp_func_file=fname, amp_func_dataset=dset)]
-        else:
-            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(),
-                                 amp_func=ones)]
+        data_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'data')
+        amp_file = os.path.join(data_dir, 'amp_func_file.h5')
+        dset = 'amp_data'
+
+        if test_type == 'file':
+            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
+                                 size=sz, amp_func_file=amp_file, amp_func_dataset=dset)]
+        elif test_type == 'func':
+            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
+                                 size=sz, amp_func=amp_fun)]
+        elif test_type == 'arr':
+            sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
+                                 size=sz, amp_data=self.amp_data)]
 
         sim = mp.Simulation(cell_size=cell, resolution=resolution, sources=sources)
         sim.run(until=200)
         return sim.get_field_point(mp.Ez, mp.Vector3())
 
     def test_amp_file_func(self):
-        field_point_amp_file = self.init_and_run(file_func=True)
-        field_point_amp_func = self.init_and_run(file_func=False)
-        self.assertAlmostEqual(field_point_amp_file, field_point_amp_func)
+        self.create_h5data()
+        field_point_amp_file = self.init_and_run(test_type='file')
+        field_point_amp_func = self.init_and_run(test_type='func')
+        field_point_amp_arr = self.init_and_run(test_type='arr')
+
+        self.assertAlmostEqual(field_point_amp_file, field_point_amp_func, places=4)
+        self.assertAlmostEqual(field_point_amp_arr, field_point_amp_func, places=4)
 
 
 if __name__ == '__main__':
