@@ -3,7 +3,6 @@ from __future__ import division
 import math
 import os
 import unittest
-import h5py
 import numpy as np
 
 import meep as mp
@@ -148,18 +147,6 @@ def amp_fun(p):
 
 class TestAmpFileFunc(unittest.TestCase):
 
-    fname = 'amp_func_file.h5'
-    dset = 'amp_data'
-
-    def setUp(self):
-
-        def rm_h5():
-            mp.all_wait()
-            if mp.am_master():
-                os.remove(self.fname)
-
-        self.addCleanup(rm_h5)
-
     def create_h5data(self):
         N = 100
         M = 200
@@ -171,12 +158,6 @@ class TestAmpFileFunc(unittest.TestCase):
                 v = mp.Vector3((i / N) * 0.3 - 0.15, (j / M) * 0.2 - 0.1)
                 self.amp_data[i, j] = amp_fun(v)
 
-        if mp.am_master():
-            with h5py.File(self.fname, 'w') as f:
-                f[self.dset + '.re'] = np.real(self.amp_data)
-                f[self.dset + '.im'] = np.imag(self.amp_data)
-        mp.all_wait()
-
     def init_and_run(self, test_type):
         cell = mp.Vector3(1, 1)
         resolution = 60
@@ -186,9 +167,13 @@ class TestAmpFileFunc(unittest.TestCase):
         cen = mp.Vector3(0.1, 0.2)
         sz = mp.Vector3(0.3, 0.2)
 
+        data_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'data')
+        amp_file = os.path.join(data_dir, 'amp_func_file.h5')
+        dset = 'amp_data'
+
         if test_type == 'file':
             sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
-                                 size=sz, amp_func_file=self.fname, amp_func_dataset=self.dset)]
+                                 size=sz, amp_func_file=amp_file, amp_func_dataset=dset)]
         elif test_type == 'func':
             sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
                                  size=sz, amp_func=amp_fun)]
