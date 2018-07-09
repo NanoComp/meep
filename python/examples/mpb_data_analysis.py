@@ -31,7 +31,7 @@ def tri_rods():
     converted = []
     for f in efields:
         # Get just the z component of the efields
-        f = f[:, :, 2]
+        f = f[..., 0, 2]
         converted.append(md.convert(f))
 
     tr_ms.run_te()
