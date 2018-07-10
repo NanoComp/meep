@@ -1868,7 +1868,7 @@ def output_png(compnt, options, rm_h5=True):
             if sim.output_volume is None:
                 ov = sim.fields.total_volume()
             else:
-                ov = sim.output_volume.swigobj
+                ov = sim.output_volume
 
             closure['maxabs'] = max(closure['maxabs'],
                                     sim.fields.max_abs(compnt, ov))
