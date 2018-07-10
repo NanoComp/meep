@@ -16,7 +16,7 @@ sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
 cell_size = mp.Vector3(sx,sy,0)
-pml_layers = [ mp.PML(thickness=dpml,direction=mp.X) ]
+pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
 
 wvl_min = 0.4           # min wavelength
 wvl_max = 0.6           # max wavelength
@@ -26,7 +26,7 @@ fcen = 0.5*(fmin+fmax)  # center frequency
 df = fmax-fmin          # frequency width
 
 src_pos = -0.5*sx+dpml+0.5*dsub
-sources = [ mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0)) ]
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0))]
 
 k_point = mp.Vector3(0,0,0)
 
@@ -48,8 +48,8 @@ sim.reset_meep()
 
 glass = mp.Medium(index=1.5)
 
-geometry = [ mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
-             mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0)) ]
+geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+            mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
 
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,

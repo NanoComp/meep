@@ -15,9 +15,9 @@ This example involves computing the reflectance &mdash; the fraction of the refl
 ![](../images/waveguide-taper.png)
 </center>
 
-The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width 1 μm (`w1`) coupled to a second waveguide of width 2 μm (`w2`) via a linearly-sloped taper (length `Lt`). The structure is homogeneous with ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode at a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes which are computed separately via the eigenmode solver MPB. The technical details are described in [Mode Decomposition](../Mode_Decomposition). The squared magnitude of the mode coefficient is equivalent to the power in the given eigenmode. We could have also placed a line monitor in the second waveguide to compute the transmittance. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters).
+The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous with ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode at a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes which are computed separately via the eigenmode solver MPB. The technical details are described in [Mode Decomposition](../Mode_Decomposition). The squared magnitude of the mode coefficient is equivalent to the power in the given eigenmode. We could have also placed a line monitor in the second waveguide to compute the transmittance. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters); in this example, we compute |S<sub>11</sub>|<sup>2</sup>.
 
-Note that even though the structure has mirror symmetry in the $y$ direction, we cannot exploit this feature to reduce the computation size by a factor of two as symmetries are not yet supported for the mode-decomposition feature. For comparison, another approach for computing the reflectance involves the `dft_flux` which is demonstrated in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface).
+Note that even though the structure has mirror symmetry in the $y$ direction, we cannot exploit this feature to reduce the computation size by a factor of two as symmetries are not yet supported for the mode-decomposition feature. For comparison, another approach for computing the reflectance involves the [flux](../Python_User_Interface/#flux-spectra) which is demonstrated in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface).
 
 At the end of the simulation, the squared magnitude of the mode coefficients for the forward- and backward-propagating fundamental mode along with the taper length are displayed. The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
 
@@ -44,10 +44,10 @@ def main(args):
     sy = dpml+dair+w2+dair+dpml
     cell_size = mp.Vector3(sx,sy,0)
 
-    prism_x = sx + 1
-    half_w1 = 0.5 * w1
-    half_w2 = 0.5 * w2
-    half_Lt = 0.5 * Lt
+    prism_x = sx+1
+    half_w1 = 0.5*w1
+    half_w2 = 0.5*w2
+    half_Lt = 0.5*Lt
 
     if Lt > 0:
         vertices = [mp.Vector3(-prism_x, half_w1),
@@ -66,7 +66,7 @@ def main(args):
 
     geometry = [mp.Prism(vertices, height=mp.inf, material=Si)]
 
-    boundary_layers = [ mp.PML(dpml) ]
+    boundary_layers = [mp.PML(dpml)]
 
     # mode wavelength
     lcen = 6.67
@@ -74,12 +74,12 @@ def main(args):
     # mode frequency
     fcen = 1/lcen
     
-    sources = [ mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.2*fcen),
-                                   component=mp.Ez,
-                                   size=mp.Vector3(0,sy-2*dpml,0),
-                                   center=mp.Vector3(-0.5*sx+dpml+0.2*Lw,0,0),
-                                   eig_match_freq=True,
-                                   eig_parity=mp.ODD_Z+mp.EVEN_Y) ]
+    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.2*fcen),
+                                  component=mp.Ez,
+                                  size=mp.Vector3(0,sy-2*dpml,0),
+                                  center=mp.Vector3(-0.5*sx+dpml+0.2*Lw,0,0),
+                                  eig_match_freq=True,
+                                  eig_parity=mp.ODD_Z+mp.EVEN_Y)]
     
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -88,31 +88,31 @@ def main(args):
                         sources=sources)
 
     xm = -0.5*sx+dpml+0.5*Lw  # x-coordinate of monitor
-    mode_monitor = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
+    mode_monitor = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy-2*dpml,0)))
     
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
-    coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(mode_monitor, [1])    
+    coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(mode_monitor, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)    
     
     print("mode:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,0])**2,abs(coeffs[0,0,1])**2))
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-Lt', type=float, default=3.0, help='taper length (default: 3.0)')
-    parser.add_argument('-res', type=int, default=50, help='resolution (default: 50)')
+    parser.add_argument('-res', type=int, default=60, help='resolution (default: 60)')
     args = parser.parse_args()
     main(args)
 ```
 
-To investigate the scaling, we compute the reflectance for a range of taper lengths on a logarithmic scale: 1, 2, 4, 8, 16, 32, and 64 μm. A quadratic scaling of the reflectance with the taper length will appear as a straight line on a log-log plot. In order to obtain the incident power, we need a separate simulation with no waveguide taper and involving just the first waveguide. This is done by using a taper length of 0. We will use a parallel simulation with two processors to speed up the calculation. The bash script is shown below.
+To investigate the scaling, we compute the reflectance for five different taper lengths: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. In order to obtain the incident power, we need a separate simulation with just the first waveguide. This is done by using a taper length of 0. We will use a parallel simulation with three processors to speed up the calculation. The bash script is shown below.
 
 ```sh
 #!/bin/bash
 
-mpirun -np 2 python -u mode-decomposition.py -Lt 0 |tee taper_data.out;
+mpirun -np 3 python -u mode-decomposition.py -Lt 0 |tee taper_data.out;
 
-for i in `seq 0 6`; do
-    mpirun -np 2 python -u mode-decomposition.py -Lt $((2**${i})) |tee -a taper_data.out;
+for i in `seq 0 4`; do
+    mpirun -np 3 python -u mode-decomposition.py -Lt $((2**${i})) |tee -a taper_data.out;
 done
 
 grep mode: taper_data.out |cut -d , -f2- > taper_data.dat
@@ -130,10 +130,10 @@ Rmeep = f[1:,2]/f[0,1]
 
 plt.figure(dpi=150)
 plt.loglog(Lt,Rmeep,'bo-',label='meep')
-plt.loglog(Lt,0.01/Lt**2,'k-',label=r'quadratic reference (1/Lt$^2$)')
+plt.loglog(Lt,0.005/Lt**2,'k-',label=r'quadratic reference (1/Lt$^2$)')
 plt.legend(loc='upper right')
 plt.xlabel('taper length Lt (μm)')
-plt.ylabel('reflectance')
+plt.ylabel(r'reflectance, $|S_{11}|^2$')
 plt.show()
 ```
 
@@ -169,7 +169,7 @@ sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
 cell_size = mp.Vector3(sx,sy,0)
-pml_layers = [ mp.PML(thickness=dpml,direction=mp.X) ]
+pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
 
 wvl_min = 0.4           # min wavelength
 wvl_max = 0.6           # max wavelength
@@ -179,7 +179,7 @@ fcen = 0.5*(fmin+fmax)  # center frequency
 df = fmax-fmin          # frequency width
 
 src_pos = -0.5*sx+dpml+0.5*dsub
-sources = [ mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0)) ]
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0))]
 
 k_point = mp.Vector3(0,0,0)
 
@@ -201,8 +201,8 @@ sim.reset_meep()
 
 glass = mp.Medium(index=1.5)
 
-geometry = [ mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
-             mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0)) ]
+geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+            mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
 
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
@@ -269,17 +269,18 @@ plt.xlabel("wavelength (μm)")
 plt.ylabel("diffraction angle (degrees)")
 plt.xticks([t for t in np.arange(0.4,0.7,0.1)])
 plt.yticks([t for t in range(0,35,5)])
+plt.title("transmittance of diffraction orders")
 cbar = plt.colorbar()
 cbar.set_ticks([t for t in np.arange(0,0.6,0.1)])
 cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.6,0.1)])
 plt.show()
 ```
 
-Each diffraction order corresponds to a single angle. In the figure below, this angle is represented by the *lower* boundary of each labeled region. For example, the m=0 order has a diffraction angle of 0 degrees at all wavelengths. The representation of the diffraction orders as finite angular regions is an artifact of matplotlib's [pcolormesh](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html) routine. Note that only the non-negative diffraction orders are shown as these are equivalent to the negative orders due to the symmetry of the source and the structure.
+Each diffraction order corresponds to a single angle. In the figure below, this angle is represented by the *lower* boundary of each labeled region. For example, the m=0 order has a diffraction angle of 0 degrees at all wavelengths. The representation of the diffraction orders as finite angular regions is an artifact of matplotlib's [pcolormesh](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html) routine. Note that only the positive diffraction orders are shown as these are equivalent to the negative orders due to the symmetry of the source and the structure.
 
 The transmittance of each diffraction order should ideally be a constant. The slight wavelength dependence shown in the figure is a numerical artifact which can be mitigated by (1) increasing the resolution or (2) time-stepping for a longer duration to ensure that the fields have sufficiently decayed away.
 
-The diffraction orders/modes are a finite set of propagating planewaves. The wavevector k<sub>x</sub> of these modes can be computed analytically: for a frequency of ω (in c=1 units), these propagating modes are the *real* solutions of sqrt(ω²n² - (k<sub>y</sub>+2πm/Λ)²) where m is the diffraction order (an integer) and Λ is the periodicity of the grating. In this example, n=1, k<sub>y</sub>=0, and Λ=10 μm. Thus, as an example, at a wavelength of 0.5 μm there are 20 diffraction orders. The wavevector k<sub>x</sub> is used to compute the angle of the diffraction order as cos<sup>-1</sup>(k<sub>x</sub>/ω). Evanescent modes, those with an *imaginary* k<sub>x</sub>, exist but carry no power. Note that currently Meep does not compute the number of propagating modes for you. If the mode number passed to `get_eigenmode_coefficients` is larger than the number of propagating modes at a given frequency/wavelength, MPB's Newton solver will fail to converge and will return zero for the mode coefficient. It is therefore a good idea to know beforehand the number of propagating modes.
+The diffraction orders/modes are a finite set of propagating planewaves. The wavevector k<sub>x</sub> of these modes can be computed analytically: for a frequency of ω (in c=1 units), these propagating modes are the *real* solutions of sqrt(ω²n² - (k<sub>y</sub>+2πm/Λ)²) where m is the diffraction order (an integer) and Λ is the periodicity of the grating. In this example, n=1, k<sub>y</sub>=0, and Λ=10 μm. Thus, as an example, at a wavelength of 0.5 μm there are 20 diffraction orders (though we only computed the first ten). The wavevector k<sub>x</sub> is used to compute the angle of the diffraction order as cos<sup>-1</sup>(k<sub>x</sub>/ω). Evanescent modes, those with an *imaginary* k<sub>x</sub>, exist for |m|>20 but these modes carry no power. Note that currently Meep does not compute the number of propagating modes for you. If the mode number passed to `get_eigenmode_coefficients` is larger than the number of propagating modes at a given frequency/wavelength, MPB's Newton solver will fail to converge and will return zero for the mode coefficient. It is therefore a good idea to know beforehand the number of propagating modes.
 
 <center>
 ![](../images/grating_diffraction_spectra.png)

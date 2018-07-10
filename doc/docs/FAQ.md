@@ -98,7 +98,7 @@ An official Python interface was released in January 2018 with version 1.4. An u
 
 ### What are the different ways to define the material geometry?
 
-There are currently three ways to define the material geometry: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class used to specify a collection of shapes including spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function, or (3) importing the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
+There are currently three ways to define the material geometry: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class used to specify a collection of shapes including prisms, spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function, or (3) importing the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
 
 ### Is there a materials library?
 
