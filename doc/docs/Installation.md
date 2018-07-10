@@ -44,6 +44,8 @@ source activate mp
 
 Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
 
+Warning: The `pymeep` package is built to work with OpenBLAS, which means numpy should also use OpenBLAS. Since the default numpy is built with MKL, installing other packages into the enviornment may cause conda to switch to an MKL-based numpy. This can cause segmentation faults when calling MPB. To work around this, you can make sure the `no-mkl` conda package is installed, make sure you're getting packages from the `conda-forge` channel (they use OpenBLAS for everything), or as a last resort, run `import meep` before importing any other library that is linked to MKL>
+
 Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`.
 
 ```bash
