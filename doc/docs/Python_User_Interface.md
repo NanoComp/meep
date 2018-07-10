@@ -638,11 +638,7 @@ A Python function of a single argument, that takes a `Vector3` giving a position
 
 **`amp_func_file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If set to a path to an HDF5 file, MEEP will read the file and create an amplitude function that interpolates into the grid specified by the file. The file is required to have a dataset, which is controlled by `amp_func_datase` below. Defaults to the empty string.
-
-**`amp_func_dataset` [`string`]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Specifies the name of the dataset where the grid data specified in `amp_func_file` is stored. MEEP expects the data to be split into real and imaginary parts, so if the string `data` is passed for this parameter, MEEP will look for two datasets--`data.re`, and `data.im`. Requires `amp_func_file` to be set. Defaults to the empty string.
+String of the form `path_to_h5_file:dataset`. The file name should not have the `.h5` extension. MEEP will read the HDF5 file and create an amplitude function that interpolates into the grid specified by the file. MEEP expects the data to be split into real and imaginary parts, so in the above example it will look for `dataset.re` and `dataset.im` in the file `path_to_h5_file.h5`. Defaults to the empty string.
 
 **`amp_data` ['numpy.ndarray with dtype=numpy.complex128']**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

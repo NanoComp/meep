@@ -946,7 +946,13 @@ class Simulation(object):
             add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)
 
             if src.amp_func_file:
-                add_vol_src(src.amp_func_file, src.amp_func_dataset, src.amplitude * 1.0,)
+                fname_dset = src.amp_func_file.rsplit(':', 1)
+                if len(fname_dset) != 2:
+                    err_msg = "Expected a string of the form 'h5filename:dataset'. Got '{}'"
+                    raise ValueError(err_msg.format(src.amp_func_file))
+
+                fname, dset = fname_dset
+                add_vol_src(fname + '.h5', dset, src.amplitude * 1.0,)
             elif src.amp_func:
                 add_vol_src(src.amp_func, src.amplitude * 1.0)
             elif src.amp_data is not None:

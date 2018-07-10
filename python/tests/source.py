@@ -168,12 +168,12 @@ class TestAmpFileFunc(unittest.TestCase):
         sz = mp.Vector3(0.3, 0.2)
 
         data_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'data')
-        amp_file = os.path.join(data_dir, 'amp_func_file.h5')
-        dset = 'amp_data'
+        amp_file = os.path.join(data_dir, 'amp_func_file')
+        amp_file += ':amp_data'
 
         if test_type == 'file':
             sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
-                                 size=sz, amp_func_file=amp_file, amp_func_dataset=dset)]
+                                 size=sz, amp_func_file=amp_file)]
         elif test_type == 'func':
             sources = [mp.Source(mp.ContinuousSource(fcen, fwidth=df), component=mp.Ez, center=cen,
                                  size=sz, amp_func=amp_fun)]
