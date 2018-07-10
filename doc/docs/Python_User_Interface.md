@@ -636,6 +636,18 @@ An overall complex amplitude multiplying the the current source. Default is 1.0.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function of a single argument, that takes a `Vector3` giving a position and returns a complex current amplitude for that point. The position argument is *relative* to the `center` of the current source, so that you can move your current around without changing your function. Default is `None`, meaning that a constant amplitude of 1.0 is used. Note that your amplitude function (if any) is *multiplied* by the `amplitude` property, so both properties can be used simultaneously.
 
+**`amp_func_file` [`string`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+If set to a path to an HDF5 file, MEEP will read the file and create an amplitude function that interpolates into the grid specified by the file. The file is required to have a dataset, which is controlled by `amp_func_datase` below. Defaults to the empty string.
+
+**`amp_func_dataset` [`string`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Specifies the name of the dataset where the grid data specified in `amp_func_file` is stored. MEEP expects the data to be split into real and imaginary parts, so if the string `data` is passed for this parameter, MEEP will look for two datasets--`data.re`, and `data.im`. Requires `amp_func_file` to be set. Defaults to the empty string.
+
+**`amp_data` ['numpy.ndarray with dtype=numpy.complex128']**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Like `amp_func_file` above, but instead of interpolating into an HDF5 file, interpolates into a complex numpy array. The array should be three dimensions. For a 2D simulation, just pass 1 for the third dimension, e.g., `arr = np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
+
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
 ### EigenModeSource
