@@ -106,7 +106,7 @@ A materials library is available containing [crystalline silicon](https://en.wik
 
 ### How do I import n and k values into Meep?
 
-You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials/#material-dispersion). In general, you have to use a nonlinear optimization program to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. Note that Meep currently only does subpixel averaging of the nondispersive part of ε (and μ).
+You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the wavelength- or frequency-dependent data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials/#material-dispersion). In general, you have to use a nonlinear optimization program to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. Note that Meep currently only does subpixel averaging of the nondispersive part of ε (and μ).
 
 ### Does Meep support importing GDSII files?
 
@@ -156,3 +156,7 @@ Only the real, frequency-independent part of ε/μ is written out to an HDF5 fil
 ### Does Meep support a non-uniform grid?
 
 Meep does not support grids with spatially varying resolution. One possible approach, which does not require changes to the underlying code and is not yet implemented, is to use a coordinate transformation to selectively increase the resolution in a given region of the computational cell. This is possible using transformation optics which involves a change of materials. For more details, see the notes [Coordinate Transformation and Invariance in Electromagnetism](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) and the [notes by Felix Schwarz on variable resolution in Meep](https://github.com/fesc3555/meep_variable_resolution) using this technique.
+
+### How to visualize the structure and fields in 3d?
+
+You will need to use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorials/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).

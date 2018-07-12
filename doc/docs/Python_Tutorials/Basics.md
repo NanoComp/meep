@@ -9,7 +9,7 @@ We'll go through several examples using the Python interface that demonstrate th
 The Meep Python Library
 -----------------------
 
-Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality and will also be demonstrated. Much of the functionality of the low-level C++ interface has been abstracted in Python which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available where necessary.
+Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [Matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality and will also be demonstrated. Much of the functionality of the low-level C++ interface has been abstracted in Python which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available where necessary.
 
 Executing Meep simulations is normally done at the Unix command line as follows:
 
@@ -91,7 +91,7 @@ We are ready to run the simulation. We time step the fields until a time of 200:
 sim.run(until=200)
 ```
 
-It should finish in less than a second. We can analyze and visualize the fields with Python's [NumPy](http://www.numpy.org/) and [matplotlib](https://matplotlib.org/) libraries:
+It should finish in less than a second. We can analyze and visualize the fields with the NumPy and Matplotlib libraries:
 
 ```py
 import numpy as np
@@ -735,3 +735,45 @@ Everything else about your simulation is the same: you can still get the fields 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface](../Python_User_Interface/#symmetry) for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+
+Visualizing 3d Structures
+-------------------------
+
+The previous examples were based on 1d or 2d structures which can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface/#prism) with index 3.5 perforated by a [conical](../Python_User_Interface/#cone) hole. No other simulation parameters are specified. The permittivity data is visualized using an iso-surface plot via [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d). A snapshot of this plot is shown below (the Cartesian direction labels have been added separately in post processing and are not part of Mayavi). For visualization of the vector fields in 3d, you can use [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d).
+
+Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](Python_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
+
+```py
+import meep as mp
+import numpy as np
+import math
+
+cell_size = mp.Vector3(2,2,2)
+
+# A hexagon is defined as a prism with six vertices centered on the origin
+vertices = [mp.Vector3(-1,0),
+            mp.Vector3(-0.5,math.sqrt(3)/2),
+            mp.Vector3(0.5,math.sqrt(3)/2),
+            mp.Vector3(1,0),
+            mp.Vector3(0.5,-math.sqrt(3)/2),
+            mp.Vector3(-0.5,-math.sqrt(3)/2)]
+
+geometry = [mp.Prism(vertices, height=1.0, material=mp.Medium(index=3.5)),
+            mp.Cone(radius=1.0, radius2=0.1, height=2.0, material=mp.air)]
+
+sim = mp.Simulation(resolution=20,
+                    cell_size=cell_size,
+                    geometry=geometry)
+
+sim.init_fields()
+
+eps_data = sim.get_array(center=mp.Vector3(), size=cell_size, component=mp.Dielectric)
+
+from mayavi import mlab
+s = mlab.contour3d(eps_data, colormap="YlGnBu")
+mlab.show()
+```
+
+<center>
+![](../images/prism_epsilon.png)
+</center>
