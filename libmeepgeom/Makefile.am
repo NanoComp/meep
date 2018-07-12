@@ -42,7 +42,10 @@ TESTS_ENVIRONMENT = export LD_PRELOAD=$(abs_top_builddir)/src/.libs/libmeep.so;
 
 #LOG_COMPILER = $(RUNCODE)
 
-noinst_PROGRAMS = bend-flux-ll
+noinst_PROGRAMS = bend-flux-ll SIEPICCoupler
+
+SIEPICCoupler_SOURCES = SIEPICCoupler.cpp
+SIEPICCoupler_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)

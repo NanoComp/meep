@@ -417,7 +417,8 @@ void dft_flux::scale_dfts(complex<double> scale) {
 }
 
 dft_flux fields::add_dft_flux(const volume_list *where_,
-			      double freq_min, double freq_max, int Nfreq) {
+			      double freq_min, double freq_max, int Nfreq, bool use_symmetry)
+{
   if (!where_) // handle empty list of volumes
     return dft_flux(Ex, Hy, NULL, NULL, freq_min, freq_max, Nfreq, v, NO_DIRECTION);
 
@@ -430,7 +431,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
   // to store the first volume in the list.
   volume firstvol(where_->v);
 
-  volume_list *where = S.reduce(where_);
+  volume_list *where = use_symmetry ?  S.reduce(where_) : new volume_list(where_);
   volume_list *where_save = where;
   while (where) {
     derived_component c = derived_component(where->c);
@@ -486,14 +487,19 @@ direction fields::normal_direction(const volume &where) const {
 }
 
 dft_flux fields::add_dft_flux(direction d, const volume &where,
-			      double freq_min, double freq_max, int Nfreq) {
+			      double freq_min, double freq_max, int Nfreq,
+                              bool use_symmetry) {
   if (d == NO_DIRECTION)
     d = normal_direction(where);
   volume_list vl(where, direction_component(Sx, d));
-  dft_flux flux=add_dft_flux(&vl, freq_min, freq_max, Nfreq);
+  dft_flux flux=add_dft_flux(&vl, freq_min, freq_max, Nfreq, use_symmetry);
   flux.normal_direction=d;
   return flux;
 }
+
+dft_flux fields::add_mode_monitor(direction d, const volume &where,
+                                  double freq_min, double freq_max, int Nfreq)
+{ return add_dft_flux(d,where,freq_min,freq_max,Nfreq,false); }
 
 dft_flux fields::add_dft_flux_box(const volume &where,
 				  double freq_min, double freq_max, int Nfreq){
@@ -646,9 +652,9 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
 
       cdouble mode1val=0.0, mode2val=0.0;
       if (mode1_data)
-       mode1val=eigenmode_amplitude(mode1_data,loc,c_conjugate);
+       mode1val=eigenmode_amplitude(mode1_data,loc,S.transform(c_conjugate,sn));
       if (mode2_data)
-       mode2val=eigenmode_amplitude(mode2_data,loc,c);
+       mode2val=eigenmode_amplitude(mode2_data,loc,S.transform(c,sn));
 
       if (file)
        { int idx2 = ((((file_offset[0] + file_offset[1] + file_offset[2])

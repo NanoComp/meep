@@ -634,8 +634,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
-  if (S.multiplicity() > 1)
-   abort("symmetries are not yet supported in get_eigenmode_coefficients");
+  //if (S.multiplicity() > 1)
+  // abort("symmetries are not yet supported in get_eigenmode_coefficients");
 
   vec kpoint(0.0,0.0,0.0); // default guess
 
