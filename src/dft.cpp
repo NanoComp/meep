@@ -348,19 +348,15 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   load_dft_hdf5(dft_chunks, component_name(c), file, dprefix);
 }
 
-dft_flux::dft_flux(const component cE_, const component cH_,
-		   dft_chunk *E_, dft_chunk *H_,
-		   double fmin, double fmax, int Nf,
-		   const volume &where_,
-                   direction normal_direction_) : where(where_)
+dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
+		   double fmin, double fmax, int Nf, const volume &where_,
+                   direction normal_direction_, bool use_symmetry_) :
+ Nfreq(Nf), E(E_), H(H_), cE(cE_), cH(cH_), where(where_),
+ normal_direction(normal_direction_), use_symmetry(use_symmetry_)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
-  Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
-  E = E_; H = H_;
-  cE = cE_; cH = cH_;
-  normal_direction = normal_direction_;
 }
 
 dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
@@ -368,6 +364,7 @@ dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
   E = f.E; H = f.H;
   cE = f.cE; cH = f.cH;
   normal_direction = f.normal_direction;
+  use_symmetry=f.use_symmetry;
 }
 
 double *dft_flux::flux() {
@@ -417,10 +414,11 @@ void dft_flux::scale_dfts(complex<double> scale) {
 }
 
 dft_flux fields::add_dft_flux(const volume_list *where_,
-			      double freq_min, double freq_max, int Nfreq, bool use_symmetry)
+			      double freq_min, double freq_max, int Nfreq, 
+                              bool use_symmetry)
 {
   if (!where_) // handle empty list of volumes
-    return dft_flux(Ex, Hy, NULL, NULL, freq_min, freq_max, Nfreq, v, NO_DIRECTION);
+   return dft_flux(Ex, Hy, NULL, NULL, freq_min, freq_max, Nfreq, v, NO_DIRECTION, use_symmetry);
 
   dft_chunk *E = 0, *H = 0;
   component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
@@ -466,7 +464,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
   // if the volume list has only one entry, store its component's direction.
   // if the volume list has > 1 entry, store NO_DIRECTION.
   direction flux_dir = (where_->next ? NO_DIRECTION : component_direction(where_->c));
-  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, firstvol, flux_dir);
+  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, firstvol, flux_dir, use_symmetry);
 }
 
 
@@ -499,7 +497,7 @@ dft_flux fields::add_dft_flux(direction d, const volume &where,
 
 dft_flux fields::add_mode_monitor(direction d, const volume &where,
                                   double freq_min, double freq_max, int Nfreq)
-{ return add_dft_flux(d,where,freq_min,freq_max,Nfreq,false); }
+{ return add_dft_flux(d,where,freq_min,freq_max,Nfreq, /*use_symmetry=*/false); }
 
 dft_flux fields::add_dft_flux_box(const volume &where,
 				  double freq_min, double freq_max, int Nfreq){

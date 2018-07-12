@@ -230,10 +230,10 @@ void *fields::get_eigenmode(double omega_src,
   // in any direction, set the corresponding component of the eigenmode initial-guess
   // k-vector to be the (real part of the) bloch vector in that direction.
   vec kpoint(_kpoint);
-  LOOP_OVER_DIRECTIONS(v.dim, d)
-    if (float(eig_vol.in_direction(d) == float(v.in_direction(d))))
-      if (boundaries[High][d]==Periodic && boundaries[Low][d]==Periodic)
-        kpoint.set_direction(d, real(k[d]));
+  LOOP_OVER_DIRECTIONS(v.dim, dd)
+   if (float(eig_vol.in_direction(dd) == float(v.in_direction(dd))))
+      if (boundaries[High][dd]==Periodic && boundaries[Low][dd]==Periodic)
+        kpoint.set_direction(dd, real(k[dd]));
 
   //bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
@@ -634,8 +634,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
-  //if (S.multiplicity() > 1)
-  // abort("symmetries are not yet supported in get_eigenmode_coefficients");
+  if (flux.use_symmetry && S.multiplicity() > 1)
+   abort("flux regions for eigenmode projection must be created by add_mode_monitor()");
 
   vec kpoint(0.0,0.0,0.0); // default guess
 
