@@ -739,16 +739,16 @@ In this case, we actually have a lot more symmetry that we could potentially exp
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on 1d or 2d structures which can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, [Mayavi](https://docs.enthought.com/mayavi/mayavi/) can be used. The following example involves a hexagonal prism with index 3.5 perforated by a conical hole. The permittivity data is visualized using an iso-surface plot via [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d). A snapshot of this plot is shown below (the Cartesian coordinate directions have been added separately in post processing and are not part of the script or Mayavi). For visualization of the vector fields in 3d, you can use [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d).
+The previous examples were based on 1d or 2d structures which can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface/#prism) with index 3.5 perforated by a [conical](../Python_User_Interface/#cone) hole. No other simulation parameters are specified. The permittivity data is visualized using an iso-surface plot via [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d). A snapshot of this plot is shown below (the Cartesian direction labels have been added separately in post processing and are not part of Mayavi). For visualization of the vector fields in 3d, you can use [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d).
 
-Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](Python_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. VTK data can be visualized in Mayavi or Paraview.
+Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](Python_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
 
 ```py
 import meep as mp
 import numpy as np
 import math
 
-cell_size = mp.Vector3(3,3,3)
+cell_size = mp.Vector3(2,2,2)
 
 # A hexagon is defined as a prism with six vertices centered on the origin
 vertices = [mp.Vector3(-1,0),
