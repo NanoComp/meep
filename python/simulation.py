@@ -952,7 +952,10 @@ class Simulation(object):
                     raise ValueError(err_msg.format(src.amp_func_file))
 
                 fname, dset = fname_dset
-                add_vol_src(fname + '.h5', dset, src.amplitude * 1.0,)
+                if not fname.endswith('.h5'):
+                    fname += '.h5'
+
+                add_vol_src(fname, dset, src.amplitude * 1.0,)
             elif src.amp_func:
                 add_vol_src(src.amp_func, src.amplitude * 1.0)
             elif src.amp_data is not None:
