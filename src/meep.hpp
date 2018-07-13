@@ -935,7 +935,8 @@ public:
   dft_flux(const component cE_, const component cH_,
 	   dft_chunk *E_, dft_chunk *H_,
 	   double fmin, double fmax, int Nf,
-	   const volume &where_, direction normal_direction_);
+	   const volume &where_, direction normal_direction_,
+	   bool use_symmetry_);
   dft_flux(const dft_flux &f);
 
   double *flux();
@@ -960,6 +961,7 @@ public:
   component cE, cH;
   volume where;
   direction normal_direction;
+  bool use_symmetry;
 };
 
 // stress.cpp (normally created with fields::add_dft_force)
@@ -1539,14 +1541,18 @@ class fields {
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV = true);
   void update_dfts();
+  dft_flux add_dft_flux(const volume_list *where,
+			double freq_min, double freq_max, int Nfreq, bool use_symmetry=true);
   dft_flux add_dft_flux(direction d, const volume &where,
-			double freq_min, double freq_max, int Nfreq);
+			double freq_min, double freq_max, int Nfreq, bool use_symmetry=true);
   dft_flux add_dft_flux_box(const volume &where,
 			    double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux_plane(const volume &where,
 			      double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux(const volume_list *where,
-			double freq_min, double freq_max, int Nfreq);
+
+  // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
+  dft_flux add_mode_monitor(direction d, const volume &where,
+                            double freq_min, double freq_max, int Nfreq);
 
   dft_fields add_dft_fields(component *components, int num_components,
                             const volume where,
