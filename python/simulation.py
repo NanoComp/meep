@@ -1093,7 +1093,11 @@ class Simulation(object):
             self.init_fields()
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
-    add_eigenmode = add_flux
+    add_mode_monitor = add_flux
+
+    def add_eigenmode(self, fcen, df, nfreq, *fluxes):
+        warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
+        return self.add_flux(fcen, df, nfreq, *fluxes)
 
     def display_fluxes(self, *fluxes):
         display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))

@@ -64,7 +64,7 @@ def main(args):
                         sources=sources)
 
     xm = -0.5*sx+dpml+0.5*Lw  # x-coordinate of monitor
-    mode_monitor = sim.add_eigenmode(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy-2*dpml,0)))
+    mode_monitor = sim.add_mode_monitor(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy-2*dpml,0)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 

@@ -38,7 +38,7 @@ sim = mp.Simulation(resolution=resolution,
 
 nfreq = 21
 xm = 0.5*sx-dpml-0.5*dpad
-eig_mon = sim.add_eigenmode(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+eig_mon = sim.add_mode_monitor(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
@@ -58,7 +58,7 @@ sim = mp.Simulation(resolution=resolution,
                     k_point=k_point,
                     sources=sources)
 
-eig_mon = sim.add_eigenmode(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+eig_mon = sim.add_mode_monitor(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
