@@ -40,7 +40,7 @@ class TestPhysical(unittest.TestCase):
                             boundary_layers=pml_layers,
                             sources=sources,
                             force_complex_fields=True)
-        sim.init_fields()
+        sim.init_sim()
         sim.solve_cw(tol=1e-6)
 
         p1 = mp.Vector3()

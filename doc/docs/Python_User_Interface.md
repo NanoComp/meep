@@ -152,11 +152,11 @@ The following require a bit more understanding of the inner workings of Meep to 
 
 **`structure` [`meep::structure*`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Pointer to the current structure being simulated; initialized by `_init_structure` which is called automatically by `init_fields()` which is called automatically by any of the [run functions](#run-functions). The structure initailization is handled by the `Simulation` class, and most users will not need to call `_init_structure`.
+Pointer to the current structure being simulated; initialized by `_init_structure` which is called automatically by `init_sim()` which is called automatically by any of the [run functions](#run-functions). The structure initailization is handled by the `Simulation` class, and most users will not need to call `_init_structure`.
 
 **`fields` [`meep::fields*`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Pointer to the current fields being simulated; initialized by `init_fields()` which is called automatically by any of the [run functions](#run-functions).
+Pointer to the current fields being simulated; initialized by `init_sim()` which is called automatically by any of the [run functions](#run-functions).
 
 **`num_chunks` [`integer`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1150,11 +1150,11 @@ Loads a structure from the file `fname`. A file name to load can also be passed 
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_fields()`:
+Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_sim()`:
 
 ```py
 sim = meep.Simulation(...)
-sim.init_fields()
+sim.init_sim()
 sim.solve_cw(tol, maxiters, L)
 ```
 
@@ -1446,18 +1446,18 @@ By default, Meep initializes C++ objects like `meep::structure` and `meep::field
 
 ### Initializing the Structure and Fields
 
-The `structure` and `fields` variables are automatically initialized when any of the run functions is called, or by various other functions such as `add_flux`. To initialize them separately, you can call `Simulation.init_fields()` manually, or `Simulation._init_structure(k_point)` to just initialize the structure.
+The `structure` and `fields` variables are automatically initialized when any of the run functions is called, or by various other functions such as `add_flux`. To initialize them separately, you can call `Simulation.init_sim()` manually, or `Simulation._init_structure(k_point)` to just initialize the structure.
 
 If you want to time step more than one field simultaneously, the easiest way is probably to do something like:
 
 ```py
-sim = Simulation(cell_size, resolution).init_fields()
+sim = Simulation(cell_size, resolution).init_sim()
 my_fields = sim.fields
 sim.fields = None
 sim.reset_meep()
 ```
 
-and then change the geometry etc. and re-run `sim.init_fields()`. Then you'll have two field objects in memory.
+and then change the geometry etc. and re-run `sim.init_sim()`. Then you'll have two field objects in memory.
 
 ### SWIG Wrappers
 

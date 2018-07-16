@@ -482,7 +482,7 @@ class Simulation(object):
         self.force_complex_fields = force_complex_fields
         self.verbose = verbose
         self.progress_interval = progress_interval
-        self.init_fields_hooks = []
+        self.init_sim_hooks = []
         self.run_index = 0
         self.filename_prefix = filename_prefix
         self.output_append_h5 = None
@@ -710,7 +710,7 @@ class Simulation(object):
             raise ValueError("Fields must be initialized before calling dump_structure")
         self.structure.dump(fname)
 
-    def init_fields(self):
+    def init_sim(self):
 
         if self.structure is None:
             self._init_structure(self.k_point)
@@ -745,8 +745,12 @@ class Simulation(object):
         for s in self.sources:
             self.add_source(s)
 
-        for hook in self.init_fields_hooks:
+        for hook in self.init_sim_hooks:
             hook()
+
+    def init_fields(self):
+        warnings.warn('init_fields is deprecated. Please use init_sim instead', DeprecationWarning)
+        self.init_sim()
 
     def require_dimensions(self):
         if self.structure is None:
@@ -754,12 +758,12 @@ class Simulation(object):
 
     def meep_time(self):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         return self.fields.time()
 
     def round_time(self):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         return self.fields.round_time()
 
@@ -795,7 +799,7 @@ class Simulation(object):
                 mp.trash_output_directory(dname)
             closure['trashed'] = True
 
-        self.init_fields_hooks.append(hook)
+        self.init_sim_hooks.append(hook)
 
         if self.fields is not None:
             hook()
@@ -806,7 +810,7 @@ class Simulation(object):
     def _run_until(self, cond, step_funcs):
         self.interactive = False
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         if isinstance(cond, numbers.Number):
             stop_time = cond
@@ -839,7 +843,7 @@ class Simulation(object):
 
     def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         ts = self.fields.last_source_time()
 
@@ -885,7 +889,7 @@ class Simulation(object):
             k_index += 1
 
             if k_index == 1:
-                self.init_fields()
+                self.init_sim()
                 output_epsilon(self)
 
             freqs = self._run_k_point(t, k)
@@ -901,13 +905,13 @@ class Simulation(object):
 
     def set_epsilon(self, eps):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         self.structure.set_epsilon(eps, self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
 
     def add_source(self, src):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         where = Volume(src.center, src.size, dims=self.dimensions,
                        is_cylindrical=self.is_cylindrical).swigobj
@@ -975,7 +979,7 @@ class Simulation(object):
 
     def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, nfreq):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         try:
             where = self._volume_from_kwargs(where, center, size)
         except ValueError:
@@ -985,7 +989,7 @@ class Simulation(object):
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         if hasattr(dft_fields, 'swigobj'):
             dft_fields_swigobj = dft_fields.swigobj
@@ -1007,7 +1011,7 @@ class Simulation(object):
 
     def _add_near2far(self, fcen, df, nfreq, near2fars):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
     def get_farfield(self, f, v):
@@ -1019,12 +1023,12 @@ class Simulation(object):
 
     def load_near2far(self, fname, n2f):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         n2f.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_near2far(self, fname, n2f):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         n2f.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_near2far(self, fname, n2f):
@@ -1048,7 +1052,7 @@ class Simulation(object):
 
     def _add_force(self, fcen, df, nfreq, forces):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
 
     def display_forces(self, *forces):
@@ -1057,12 +1061,12 @@ class Simulation(object):
 
     def load_force(self, fname, force):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         force.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_force(self, fname, force):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         force.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_force(self, fname, force):
@@ -1090,7 +1094,7 @@ class Simulation(object):
 
     def _add_flux(self, fcen, df, nfreq, fluxes):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
     add_mode_monitor = add_flux
@@ -1104,13 +1108,13 @@ class Simulation(object):
 
     def load_flux(self, fname, flux):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         flux.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_flux(self, fname, flux):
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         flux.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
@@ -1355,7 +1359,7 @@ class Simulation(object):
 
             if needs_complex_fields and self.fields.is_real:
                 self.fields = None
-                self.init_fields()
+                self.init_sim()
             else:
                 if self.k_point:
                     self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical))
@@ -1377,14 +1381,14 @@ class Simulation(object):
             self.fields.t = 0
             self.fields.zero_fields()
         else:
-            self.init_fields()
+            self.init_sim()
 
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
 
         if self.fields is None:
-            self.init_fields()
+            self.init_sim()
 
         self._evaluate_dft_objects()
         self._check_material_frequencies()
