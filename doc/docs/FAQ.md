@@ -159,4 +159,4 @@ Meep does not support grids with spatially varying resolution. One possible appr
 
 ### How do I visualize the structure and fields in 3d?
 
-You will need to use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).
+You will need [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).
