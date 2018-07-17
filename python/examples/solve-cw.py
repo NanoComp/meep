@@ -80,7 +80,7 @@ import h5py
 f = h5py.File("dft_fields.h5", 'r')
 ezi = f["ez_0.i"].value
 ezr = f["ez_0.r"].value
-ez_dat = ezr + 1j * ezi
+ez_dat = ezr+1j*ezi
 
 eps_data = sim.get_array(vol, component=mp.Dielectric)
 ez_data = np.absolute(ez_dat)

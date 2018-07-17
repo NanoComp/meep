@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations and technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations and technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields, this tutorial uses the [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
@@ -51,7 +51,7 @@ We can add the waveguide. Most commonly, the structure is specified by a `list` 
 ```scm
 (set! geometry (list
                 (make block (center 0 0) (size infinity 1 infinity)
-                      (material (make dielectric (epsilon 12))))))
+                      (material (make medium (epsilon 12))))))
 ```
 
 The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
@@ -126,9 +126,9 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 (set! geometry-lattice (make lattice (size 16 16 no-size)))
 (set! geometry (list
                 (make block (center -2 -3.5) (size 12 1 infinity)
-                      (material (make dielectric (epsilon 12))))
+                      (material (make medium (epsilon 12))))
                 (make block (center 3.5 2) (size 1 12 infinity)
-                      (material (make dielectric (epsilon 12))))))
+                      (material (make medium (epsilon 12))))))
 (set! pml-layers (list (make pml (thickness 1.0))))
 (set! resolution 10)
 ```
@@ -272,16 +272,16 @@ We define the geometry via two cases, with an if statement &mdash; the Scheme sy
            (make block
              (center 0 wvg-ycen)
              (size infinity w infinity)
-             (material (make dielectric (epsilon 12)))))
+             (material (make medium (epsilon 12)))))
           (list
            (make block
              (center (* -0.5 pad) wvg-ycen)
              (size (- sx pad) w infinity)
-             (material (make dielectric (epsilon 12))))
+             (material (make medium (epsilon 12))))
            (make block
              (center wvg-xcen (* 0.5 pad))
              (size w (- sy pad) infinity)
-             (material (make dielectric (epsilon 12)))))))
+             (material (make medium (epsilon 12)))))))
 ```
 
 
@@ -567,7 +567,7 @@ How do we make a circular waveguide? So far, we've only seen `block` objects, bu
 ```scm
 (set! geometry (list
                 (make cylinder (center 0 0) (height infinity)
-                      (radius (+ r w)) (material (make dielectric (index n))))
+                      (radius (+ r w)) (material (make medium (index n))))
                 (make cylinder (center 0 0) (height infinity)
                       (radius r) (material air))))
 (set! pml-layers (list (make pml (thickness dpml))))
@@ -670,6 +670,42 @@ Everything else about your simulation is the same: you can still get the fields 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See [User Interface](../Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+
+Visualizing 3d Structures
+-------------------------
+
+The previous examples were based on 1d or 2d structures which can be visualized using [h5topng](https://github.com/stevengj/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
+
+```scm
+(set-param! resolution 50)
+
+(set! geometry-lattice (make lattice (size 3 3 3)))
+
+(set! geometry (list (make sphere (radius 1) (material (make medium (index 3.5))) (center 0 0 0))
+                     (make cone (radius 0.8) (radius2 0.1) (height 2) (material air) (center 0 0 0))))
+
+(init-fields)
+
+(output-epsilon)
+
+(exit)
+```
+
+```sh
+#!/bin/bash
+
+meep sphere-cone.ctl;
+
+h5tovtk -o epsilon.vtk structure_demo-eps-000000.00.h5;
+
+mayavi2 -d epsilon.vtk -m IsoSurface &> /dev/null &
+
+```
+
+<center>
+![](../images/sphere_epsilon.png)
+</center>
+
 
 Editors and ctl
 ---------------

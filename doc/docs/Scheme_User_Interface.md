@@ -971,12 +971,12 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 These functions dump the raw ε data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same chunks (i.e. the same grid, number of processors, and PML). Currently only stores ε and μ, and not nonlinear coefficients or polarizability.
 
-**`(meep-structure-dump structure fname)`**
+**`(meep-structure-dump structure fname)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Dumps the structure to the file `fname` using the global `structure` object
 (which is initialized after you execute `run` or `init-structure`).
 
-**`(meep-structure-load structure fname)`**
+**`(meep-structure-load structure fname)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Loads a structure from the file `fname`.   This should be called after
 `(init-structure)` so that the global `structure` object is initialized,

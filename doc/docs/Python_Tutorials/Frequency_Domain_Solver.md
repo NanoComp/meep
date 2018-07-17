@@ -2,7 +2,7 @@
 # Frequency Domain Solver
 ---
 
-This tutorial demonstrates Meep's [frequency-domain solver](../Python_User_Interface/#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For details on how this feature works, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in [Basics/Modes of a Ring Resonator](Basics/#modes-of-a-ring-resonator). First, we will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver. And then, we will demonstrate qualitative agreement with the frequency-domain fields computed using a different method: [Fourier transforming](https://en.wikipedia.org/wiki/Discrete_Fourier_transform) the time-domain fields in response to a narrowband Gaussian-pulse source.
+This tutorial demonstrates Meep's [frequency-domain solver](../Python_User_Interface/#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For details on how this feature works, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in [Tutorial/Basics](Basics/#modes-of-a-ring-resonator). First, we will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver. And then, we will demonstrate qualitative agreement with the frequency-domain fields computed using a different method: [Fourier transforming](https://en.wikipedia.org/wiki/Discrete_Fourier_transform) the time-domain fields in response to a narrowband Gaussian-pulse source.
 
 Usage of the frequency-domain solver involves only two changes to the [original simulation](https://github.com/stevengj/meep/blob/master/python/examples/ring.py): (1) replace the Gaussian-pulse source with a [continuous source](../Python_User_Interface/#continuoussource), and (2) turn on complex fields since, by default, real fields are used. Everything else remains unchanged.
 
@@ -103,7 +103,7 @@ import h5py
 f = h5py.File("dft_fields.h5", 'r')
 ezi = f["ez_0.i"].value
 ezr = f["ez_0.r"].value
-ez_dat = ezr + 1j * ezi
+ez_dat = ezr+1j*ezi
 
 eps_data = sim.get_array(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml,sxy-2*dpml), component=mp.Dielectric)
 ez_data = np.absolute(ez_dat)
