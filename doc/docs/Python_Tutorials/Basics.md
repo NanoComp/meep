@@ -765,7 +765,7 @@ sim = mp.Simulation(resolution=20,
                     cell_size=cell_size,
                     geometry=geometry)
 
-sim.init_fields()
+sim.init_sim()
 
 eps_data = sim.get_array(center=mp.Vector3(), size=cell_size, component=mp.Dielectric)
 

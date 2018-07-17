@@ -32,7 +32,7 @@ tols = np.power(10, np.arange(-8.0,-8.0-num_tols,-1.0))
 ez_dat = np.zeros((122,122,num_tols), dtype=np.complex_)
 
 for i in range(num_tols):
-    sim.init_fields()
+    sim.init_sim()
     sim.solve_cw(tols[i], 10000, 10)
     ez_dat[:,:,i] = sim.get_array(vol, component=mp.Ez)
 
