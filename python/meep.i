@@ -30,9 +30,24 @@
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
+#include "mpb.h"
 
 namespace meep {
-    size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
+size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
+typedef std::complex<double> (*amplitude_function)(const vec &);
+struct eigenmode_data {
+    maxwell_data *mdata;
+    scalar_complex *fft_data_H, *fft_data_E;
+    evectmatrix H;
+    int n[3];
+    double s[3];
+    double Gk[3];
+    vec center;
+    amplitude_function amp_func;
+    int band_num;
+    double omega;
+    double group_velocity;
+};
 }
 
 using namespace meep;
@@ -419,6 +434,37 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     kpoint_list res = {kpoints, num_kpoints};
 
     return res;
+}
+
+struct py_eigenmode_data {
+    void *data;
+    int band_num;
+    double omega;
+    double group_velocity;
+    PyObject *Gk;
+};
+
+py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                                 const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                                 bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                                 bool verbose) {
+    void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
+                                    parity, resolution, eigensolver_tol, verbose);
+    meep::eigenmode_data *emdata = (meep::eigenmode_data *)data;
+
+    py_eigenmode_data result = {};
+    result.data = data;
+    result.band_num = emdata->band_num;
+    result.omega = emdata->omega;
+    result.group_velocity = emdata->group_velocity;
+
+    PyObject *v3_class = py_vector3_object();
+    PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
+    result.Gk = PyObject_Call(v3_class, args, NULL);
+
+    Py_DECREF(args);
+
+    return result;
 }
 %}
 
@@ -1094,6 +1140,14 @@ struct geom_box {
     vector3 high;
 };
 
+struct py_eigenmode_data {
+    void *data;
+    int band_num;
+    double omega;
+    double group_velocity;
+    PyObject *Gk;
+};
+
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
@@ -1105,6 +1159,10 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
+py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                                 const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                                 bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                                 bool verbose);
 
 %ignore eps_func;
 %ignore inveps_func;
