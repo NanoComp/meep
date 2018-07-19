@@ -712,7 +712,7 @@ class Simulation(object):
 
     def init_sim(self):
 
-        materials = [g.material for g in self.geometry]
+        materials = [g.material for g in self.geometry if isinstance(g.material, mp.Medium)]
         if isinstance(self.default_material, mp.Medium):
             materials.append(self.default_material)
         for med in materials:
