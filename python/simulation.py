@@ -338,14 +338,14 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 class EigenmodeData(object):
 
-    def __init__(self, band_num, omega, group_velocity, Gk, swigobj):
+    def __init__(self, band_num, omega, group_velocity, k, swigobj):
         self.band_num = band_num
         self.omega = omega
         self.group_velocity = group_velocity
-        self.Gk = Gk
+        self.k = k
         self.swigobj = swigobj
 
-    def eigenmode_amplitude(self, point, component):
+    def amplitude(self, point, component):
         swig_point = mp.vec(point.x, point.y, point.z)
         return mp.eigenmode_amplitude(self.swigobj, swig_point, component)
 

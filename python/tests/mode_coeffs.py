@@ -91,8 +91,8 @@ class TestModeCoeffs(unittest.TestCase):
         self.assertEqual(emdata.band_num, 2)
 
         eval_point = mp.Vector3(0.7, -0.2, 0.3)
-        ex_at_eval_point = emdata.eigenmode_amplitude(eval_point, mp.Ex)
-        hz_at_eval_point = emdata.eigenmode_amplitude(eval_point, mp.Hz)
+        ex_at_eval_point = emdata.amplitude(eval_point, mp.Ex)
+        hz_at_eval_point = emdata.amplitude(eval_point, mp.Hz)
         self.assertAlmostEqual(ex_at_eval_point, 6.568131761292562e-05 + 0.4258364121372713j)
         self.assertAlmostEqual(hz_at_eval_point, 3.011392520908835 - 9.889032702825595e-06j)
 
