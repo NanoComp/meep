@@ -336,6 +336,20 @@ class DftFields(DftObj):
 Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 
+class EigenmodeData(object):
+
+    def __init__(self, band_num, omega, group_velocity, k, swigobj):
+        self.band_num = band_num
+        self.omega = omega
+        self.group_velocity = group_velocity
+        self.k = k
+        self.swigobj = swigobj
+
+    def amplitude(self, point, component):
+        swig_point = mp.vec(point.x, point.y, point.z)
+        return mp.eigenmode_amplitude(self.swigobj, swig_point, component)
+
+
 class Harminv(object):
 
     def __init__(self, c, pt, fcen, df, mxbands=None):
@@ -1330,6 +1344,24 @@ class Simulation(object):
         )
 
         return np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints
+
+    def get_eigenmode(self, omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
+                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False):
+
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before calling get_eigenmode")
+
+        where = self._volume_from_kwargs(vol=where)
+        if eig_vol is None:
+            eig_vol = where
+        else:
+            eig_vol = self._volume_from_kwargs(vol=eig_vol)
+
+        swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
+        emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
+                                   match_frequency, parity, resolution, eigensolver_tol, verbose)
+
+        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk, emdata.data)
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
