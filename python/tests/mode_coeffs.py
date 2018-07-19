@@ -49,7 +49,7 @@ class TestModeCoeffs(unittest.TestCase):
                             boundary_layers=boundary_layers,
                             geometry=geometry,
                             sources=sources,
-                            symmetries=[mp.Mirror(mp.Y)] if mode_num == 1 else []
+                            symmetries=[mp.Mirror(mp.Y)] if mode_num == 1 else [mp.Mirror(mp.Y, phase=-1)]
                             )
 
         xm = 0.5*sx - dpml  # x-coordinate of monitor
