@@ -712,6 +712,19 @@ class Simulation(object):
 
     def init_sim(self):
 
+        materials = [g.material for g in self.geometry if isinstance(g.material, mp.Medium)]
+        if isinstance(self.default_material, mp.Medium):
+            materials.append(self.default_material)
+        for med in materials:
+            if ((med.epsilon_diag.x < 1 and med.epsilon_diag.x > -mp.inf) or
+                (med.epsilon_diag.y < 1 and med.epsilon_diag.y > -mp.inf) or
+                (med.epsilon_diag.z < 1 and med.epsilon_diag.z > -mp.inf)):
+
+                eps_warning = ("Epsilon < 1 may require adjusting the Courant parameter. " +
+                               "See the 'Numerical Stability' entry under the 'Materials' " +
+                               "section of the documentation")
+                warnings.warn(eps_warning, RuntimeWarning)
+
         if self.structure is None:
             self._init_structure(self.k_point)
 
