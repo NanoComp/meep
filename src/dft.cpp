@@ -666,13 +666,29 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
          buffer[idx2] = reim ? imag(val) : real(val);
        }
       else if (field_array)
-       { int idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
+       { 
+          int idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
                                   + loop_i1 * array_stride[0])
                                   + loop_i2 * array_stride[1])
                                   + loop_i3 * array_stride[2]);
 
-         if (retain_dV_and_interp_weights) dft_val*=w;
+         // in the presence of symmetry, the above fails because idx2 is not the
+         // correct index into the dft_array for symmetry-transformed chunks.
+         // solution: attempt to infer the correct idx2 from the coordinates
+         // of loc, which has already been transformed into the correct coordinate
+         // for the physical grid point in question.
+         int my_loop_i1 = round((loc.in_direction(direction(loop_d1)) - 0.5*loop_is1*fc->gv.inva)/(fc->gv.inva));
+         int my_loop_i2 = fc->gv.dim<D2 ? 0 
+                                        : round((loc.in_direction(direction(loop_d2)) - 0.5*loop_is2*fc->gv.inva)/(fc->gv.inva));
+         int my_loop_i3 = fc->gv.dim<D3 ? 0 
+                                        : round((loc.in_direction(direction(loop_d3)) - 0.5*loop_is3*fc->gv.inva)/(fc->gv.inva));
+  
+         idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
+                                  + my_loop_i1 * array_stride[0])
+                                  + my_loop_i2 * array_stride[1])
+                                  + my_loop_i3 * array_stride[2]);
 
+         if (retain_dV_and_interp_weights) dft_val*=w;
          field_array[aco+idx2] = dft_val;
        }
       else
