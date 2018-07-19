@@ -253,6 +253,9 @@ MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FL
 MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
 
 sudo apt-get update
+
+# If building on Ubuntu 18.04LTS, replace libpng16-dev with libpng-dev,
+# and libpython3.5-dev with libpython3-dev.
 sudo apt-get -y install     \
     libblas-dev             \
     liblapack-dev           \
@@ -300,6 +303,7 @@ sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CP
 make && sudo make install
 
 sudo pip3 install --upgrade pip
+# If pip3 doesn't work on ubuntu 18.04, just use pip
 pip3 install --user --no-cache-dir mpi4py
 export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
@@ -315,7 +319,10 @@ make && sudo make install
 You may want to add the following line to your `.profile` so Python can always find the meep package:
 
 ```bash
+# Ubuntu 16.04
 export PYTHONPATH=/usr/local/lib/python3.5/site-packages
+# Ubuntu 18.04
+export PYTHONPATH=/usr/local/lib/python3.6/site-packages
 ```
 
 
