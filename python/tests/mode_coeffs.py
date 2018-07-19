@@ -49,8 +49,7 @@ class TestModeCoeffs(unittest.TestCase):
                             boundary_layers=boundary_layers,
                             geometry=geometry,
                             sources=sources,
-                            symmetries=[mp.Mirror(mp.Y)] if mode_num == 1 else [mp.Mirror(mp.Y, phase=-1)]
-                            )
+                            symmetries=[mp.Mirror(mp.Y, phase=1 if mode_num % 2 == 1 else -1)])
 
         xm = 0.5*sx - dpml  # x-coordinate of monitor
         mflux = sim.add_mode_monitor(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
