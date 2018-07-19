@@ -1133,15 +1133,15 @@ class Simulation(object):
         if self.fields is None:
             self.init_sim()
 
-        if self.symmetries:
-            return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
-        else:
-            region = fluxes[0]
-            v = mp.Volume(region.center, region.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
-            d0 = region.direction
-            d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
+        if len(fluxes) != 1:
+            raise ValueError("add_mode_monitor expected just one FluxRegion. Got {}".format(len(fluxes)))
 
-            return self.fields.add_mode_monitor(d, v.swigobj, fcen - df / 2, fcen + df / 2, nfreq)
+        region = fluxes[0]
+        v = mp.Volume(region.center, region.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
+        d0 = region.direction
+        d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
+
+        return self.fields.add_mode_monitor(d, v.swigobj, fcen - df / 2, fcen + df / 2, nfreq)
 
     def add_eigenmode(self, fcen, df, nfreq, *fluxes):
         warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
