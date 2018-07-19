@@ -25,7 +25,7 @@ def main():
     fcen = 0.15             # pulse center frequency
     df = 0.1                # pulse width (in frequency)
 
-    src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1))
+    src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r+0.1))
 
     sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
                         geometry=[c1, c2],

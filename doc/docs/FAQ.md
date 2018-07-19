@@ -23,7 +23,7 @@ There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listin
 
 ### Are professional consulting services available?
 
-[Simpetus](http://www.simpetus.com), a company started by Meep's developers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
+Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
 
 ### How can I contribute to the Meep project?
 
@@ -39,7 +39,7 @@ For a list of published works which have used Meep, see the Google Scholar citat
 
 ### Can I access Meep in the public cloud?
 
-Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
+Yes. Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
 Installation
 ------------
@@ -130,7 +130,7 @@ Meep contains a [frequency-domain solver](Python_User_Interface/#frequency-domai
 
 This means that all of the features from the time-domain solver (e.g., arbitrary materials, symmetries, subpixel averaging, parallelization, etc.) are also available as a frequency-domain solver. For certain problems, such as cavities (e.g., ring resonators) with long-lived resonant modes, the frequency-domain solver converges much faster than the straightforward approach of simply running a long simulation until transients have disappeared. Another benefit is that an arbitrary, complex, refractive index can be specified directly using the [electric conductivity](Materials/#conductivity-and-complex) without having to fit the data to a sum of [Drude-Lorentz susceptibility terms](Materials/#material-dispersion).
 
-Examples are provided in [Tutorials/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver/).
+Examples are provided in [Tutorial/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver/).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
@@ -157,6 +157,6 @@ Only the real, frequency-independent part of ε/μ is written out to an HDF5 fil
 
 Meep does not support grids with spatially varying resolution. One possible approach, which does not require changes to the underlying code and is not yet implemented, is to use a coordinate transformation to selectively increase the resolution in a given region of the computational cell. This is possible using transformation optics which involves a change of materials. For more details, see the notes [Coordinate Transformation and Invariance in Electromagnetism](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) and the [notes by Felix Schwarz on variable resolution in Meep](https://github.com/fesc3555/meep_variable_resolution) using this technique.
 
-### How to visualize the structure and fields in 3d?
+### How do I visualize the structure and fields in 3d?
 
-You will need to use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorials/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).
+You will need [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).

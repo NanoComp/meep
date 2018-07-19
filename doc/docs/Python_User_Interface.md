@@ -638,9 +638,9 @@ A Python function of a single argument, that takes a `Vector3` giving a position
 
 **`amp_func_file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-String of the form `path_to_h5_file.h5:dataset`. The `.h5` extension is optional. MEEP will read the HDF5 file and create an amplitude function that interpolates into the grid specified by the file. MEEP expects the data to be split into real and imaginary parts, so in the above example it will look for `dataset.re` and `dataset.im` in the file `path_to_h5_file.h5`. Defaults to the empty string.
+String of the form `path_to_h5_file.h5:dataset`. The `.h5` extension is optional. Meep will read the HDF5 file and create an amplitude function that interpolates into the grid specified by the file. Meep expects the data to be split into real and imaginary parts, so in the above example it will look for `dataset.re` and `dataset.im` in the file `path_to_h5_file.h5`. Defaults to the empty string.
 
-**`amp_data` ['numpy.ndarray with dtype=numpy.complex128']**  
+**`amp_data` [`numpy.ndarray with dtype=numpy.complex128`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Like `amp_func_file` above, but instead of interpolating into an HDF5 file, interpolates into a complex numpy array. The array should be three dimensions. For a 2D simulation, just pass 1 for the third dimension, e.g., `arr = np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
@@ -828,7 +828,7 @@ Given a `meep.Volume`, returns the integral of the electric- and magnetic-field 
 
 **`modal_volume_in_box(box=None, center=None, size=None)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|^2) / maximum (ε|E|^2). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
+Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum (ε|E|<sup>2</sup>). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 

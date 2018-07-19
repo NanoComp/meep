@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. All of the examples here are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations and technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations and technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields, this tutorial uses the [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
@@ -51,7 +51,7 @@ We can add the waveguide. Most commonly, the structure is specified by a `list` 
 ```scm
 (set! geometry (list
                 (make block (center 0 0) (size infinity 1 infinity)
-                      (material (make dielectric (epsilon 12))))))
+                      (material (make medium (epsilon 12))))))
 ```
 
 The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
@@ -126,9 +126,9 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 (set! geometry-lattice (make lattice (size 16 16 no-size)))
 (set! geometry (list
                 (make block (center -2 -3.5) (size 12 1 infinity)
-                      (material (make dielectric (epsilon 12))))
+                      (material (make medium (epsilon 12))))
                 (make block (center 3.5 2) (size 1 12 infinity)
-                      (material (make dielectric (epsilon 12))))))
+                      (material (make medium (epsilon 12))))))
 (set! pml-layers (list (make pml (thickness 1.0))))
 (set! resolution 10)
 ```
@@ -272,16 +272,16 @@ We define the geometry via two cases, with an if statement &mdash; the Scheme sy
            (make block
              (center 0 wvg-ycen)
              (size infinity w infinity)
-             (material (make dielectric (epsilon 12)))))
+             (material (make medium (epsilon 12)))))
           (list
            (make block
              (center (* -0.5 pad) wvg-ycen)
              (size (- sx pad) w infinity)
-             (material (make dielectric (epsilon 12))))
+             (material (make medium (epsilon 12))))
            (make block
              (center wvg-xcen (* 0.5 pad))
              (size w (- sy pad) infinity)
-             (material (make dielectric (epsilon 12)))))))
+             (material (make medium (epsilon 12)))))))
 ```
 
 
@@ -548,7 +548,7 @@ title("reflectance (analytic)");
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [ring.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [ring.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -562,12 +562,12 @@ As before, we'll define some parameters to describe the geometry, so that we can
 (set! geometry-lattice (make lattice (size sxy sxy no-size)))
 ```
 
-How do we make a circular waveguide? So far, we've only seen `block` objects, but Meep also lets you specify cylinders, spheres, ellipsoids, and cones, as well as user-specified dielectric functions. In this case, we'll use *two* `cylinder` objects, one inside the other:
+How do we make a circular waveguide? So far, we've only seen `block` objects, but Meep also lets you specify cylinders, spheres, ellipsoids, and cones, as well as user-specified dielectric functions. In this case, we'll use two `cylinder` objects, one inside the other:
 
 ```scm
 (set! geometry (list
                 (make cylinder (center 0 0) (height infinity)
-                      (radius (+ r w)) (material (make dielectric (index n))))
+                      (radius (+ r w)) (material (make medium (index n))))
                 (make cylinder (center 0 0) (height infinity)
                       (radius r) (material air))))
 (set! pml-layers (list (make pml (thickness dpml))))
@@ -576,7 +576,7 @@ How do we make a circular waveguide? So far, we've only seen `block` objects, bu
 
 Later objects in the `geometry` list take precedence over (lie "on top of") earlier objects, so the second `air` (ε=1) cylinder cuts a circular hole out of the larger cylinder, leaving a ring of width w.
 
-We don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the $E_z$-polarized modes in a chosen bandwidth:
+We don't know the frequency of the mode(s) ahead of time, so we'll just hit the structure with a broad Gaussian pulse to excite all of the E<sub>z</sub>-polarized modes in a chosen bandwidth:
 
 ```scm
 (define-param fcen 0.15)   ; pulse center frequency
@@ -608,17 +608,17 @@ There are six columns (in addition to the label), comma-delimited for easy impor
 
 $$f(t) = \sum_n a_n e^{-i \omega_n t}$$
 
-for complex amplitudes $a_n$ and complex frequencies ω$_n$. The six columns relate to these quantities. The first column is the *real* part of ω$_n$, expressed in our usual 2πc units, and the second column is the *imaginary* part &mdash; a *negative* imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
+for complex amplitudes $a_n$ and complex frequencies ω$_n$. The six columns relate to these quantities. The first column is the *real* part of ω$_n$, expressed in our usual 2πc units, and the second column is the *imaginary* part &mdash; a negative imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
 
 $$Q = \frac{\mathrm{Re}\,\omega}{-2 \mathrm{Im}\,\omega}.$$
 
-$Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, and 1/$Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: *this error is only the uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
+$Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, and 1/$Q$ is the fractional bandwidth at half-maximum of the resonance peak in Fourier domain. This $Q$ is the third column of the output. The fourth and fifth columns are the absolute value $|a_n|$ and complex amplitudes $a_n$. The last column is a crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: this error is only the *uncertainty in the signal processing*, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
 
 An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is 10<sup>-7</sup> (with an actual error of about 10<sup>-6</sup>, from below). In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much. In some cases, modes with $Q$ of around 10<sup>9</sup> can be found with only 200 periods.
 
 In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by [Marcatilli in 1969](https://ieeexplore.ieee.org/document/6769758/), the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
-In particular, to output the field at the end we might add an `(at-end output-efield-z)` argument to our `run-sources+` function, but this is problematic: we might be unlucky and output at a time when the $E_z$ field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
+In particular, to output the field at the end we might add an `(at-end output-efield-z)` argument to our `run-sources+` function, but this is problematic: we might be unlucky and output at a time when the E<sub>z</sub> field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 
 ```scm
 (run-until (/ 1 fcen) (at-every (/ 1 fcen 20) output-efield-z))
@@ -670,6 +670,42 @@ Everything else about your simulation is the same: you can still get the fields 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See [User Interface](../Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+
+Visualizing 3d Structures
+-------------------------
+
+The previous examples were based on 1d or 2d structures which can be visualized using [h5topng](https://github.com/stevengj/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
+
+```scm
+(set-param! resolution 50)
+
+(set! geometry-lattice (make lattice (size 3 3 3)))
+
+(set! geometry (list (make sphere (radius 1) (material (make medium (index 3.5))) (center 0 0 0))
+                     (make cone (radius 0.8) (radius2 0.1) (height 2) (material air) (center 0 0 0))))
+
+(init-fields)
+
+(output-epsilon)
+
+(exit)
+```
+
+```sh
+#!/bin/bash
+
+meep sphere-cone.ctl;
+
+h5tovtk -o epsilon.vtk structure_demo-eps-000000.00.h5;
+
+mayavi2 -d epsilon.vtk -m IsoSurface &> /dev/null &
+
+```
+
+<center>
+![](../images/sphere_epsilon.png)
+</center>
+
 
 Editors and ctl
 ---------------
