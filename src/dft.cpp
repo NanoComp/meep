@@ -414,7 +414,7 @@ void dft_flux::scale_dfts(complex<double> scale) {
 }
 
 dft_flux fields::add_dft_flux(const volume_list *where_,
-			      double freq_min, double freq_max, int Nfreq, 
+			      double freq_min, double freq_max, int Nfreq,
                               bool use_symmetry)
 {
   if (!where_) // handle empty list of volumes
@@ -660,20 +660,29 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
        }
       else if (field_array)
        {
-         IVEC_LOOP_ILOC(fc->gv, iloc);         // iloc <-- indices of parent point in Yee grid
-         iloc = S.transform(iloc, sn) + shift; // iloc <-- indices of child point in Yee grid
-         iloc -= min_corner;                   // iloc <-- 2*(indices of point in DFT array)
+          int idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
+                                  + loop_i1 * array_stride[0])
+                                  + loop_i2 * array_stride[1])
+                                  + loop_i3 * array_stride[2]);
 
-         // the index of point n1 or (n1,n2) or (n1,n2,n3) in a 1D, 2D, or 3D array is
-         // (for a 1D array) n1
-         // (for a 2D array) n2 + n1*N2
-         // (for a 3D array) n3 + n2*N3 + n1*N2*N3
-         // where NI = number of points in Ith direction.
-         int idx2=0;
-         for (int i=rank-1, stride=1; i>=0; stride*=array_count[i--])
-          idx2 += stride * (iloc.in_direction(ds[i]) / 2);
+         // in the presence of symmetry, the above fails because idx2 is not the
+         // correct index into the dft_array for symmetry-transformed chunks.
+         // solution: attempt to infer the correct idx2 from the coordinates
+         // of loc, which has already been transformed into the correct coordinate
+         // for the physical grid point in question.
+         int my_loop_i1 = round((loc.in_direction(direction(loop_d1)) - 0.5*loop_is1*fc->gv.inva)/(fc->gv.inva));
+         int my_loop_i2 = fc->gv.dim<D2 ? 0
+                                        : round((loc.in_direction(direction(loop_d2)) - 0.5*loop_is2*fc->gv.inva)/(fc->gv.inva));
+         int my_loop_i3 = fc->gv.dim<D3 ? 0
+                                        : round((loc.in_direction(direction(loop_d3)) - 0.5*loop_is3*fc->gv.inva)/(fc->gv.inva));
 
-         field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
+         idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
+                                  + my_loop_i1 * array_stride[0])
+                                  + my_loop_i2 * array_stride[1])
+                                  + my_loop_i3 * array_stride[2]);
+
+         if (retain_dV_and_interp_weights) dft_val*=w;
+         field_array[aco+idx2] = dft_val;
        }
       else
        { if (unconjugated_inner_product==false)
@@ -871,12 +880,12 @@ bool increment(int n[3], int nMax[3], int rank)
 }
 
 cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volume dft_volume)
-{ 
+{
   /*--------------------------------------------------------------*/
   /*- detect empty dimensions and compute rank and strides for    */
   /*- collapsed array                                             */
   /*--------------------------------------------------------------*/
-  int full_rank = *rank; 
+  int full_rank = *rank;
   if (full_rank==0) return array;
 
   int reduced_rank=0, reduced_dims[3], reduced_stride[3]={1,1,1}, nd=0;
@@ -894,12 +903,12 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
   /*- set up strides into full and reduced arrays                 */
   /*--------------------------------------------------------------*/
   int stride[3]={1,1,1}; // non-reduced array strides
-  if (full_rank==2) 
+  if (full_rank==2)
    stride[0]=dims[1];     // rstride is already all set in this case
   else if (full_rank==3)
    { stride[0] = dims[1]*dims[2];
      stride[1] = dims[2];
-     if (reduced_stride[0]!=0) 
+     if (reduced_stride[0]!=0)
       reduced_stride[0]=reduced_dims[1];
      else if (reduced_stride[1]!=0)
       reduced_stride[1]=reduced_dims[1];
@@ -913,7 +922,7 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
   cdouble *reduced_array = new cdouble[reduced_size];
   if (!reduced_array) abort("%s:%i: out of memory (%i)",__FILE__,__LINE__,reduced_size);
   memset(reduced_array,0,reduced_size*sizeof(cdouble));
-  
+
   int n[3]={0,0,0};
   do
    { int  index = n[0]*stride[0]         + n[1]*stride[1]         + n[2]*stride[2];
@@ -993,7 +1002,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
   // in which case those processes will think NumFreqs==0.
   bool have_empty_dims=false;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
-   if (dft_volume.in_direction(d)==0.0) 
+   if (dft_volume.in_direction(d)==0.0)
     have_empty_dims=true;
 
   h5file *file=0;
@@ -1009,7 +1018,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
   for(int num_freq=0; num_freq<NumFreqs; num_freq++)
    FOR_E_AND_H(c)
     if (!have_empty_dims)
-     { 
+     {
         process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
                               0, 0, 0, 0, 0, Ex, &first_component);
      }
@@ -1018,7 +1027,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
        int rank, dims[3];
        process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims);
        if ( rank>0 && am_master() )
-        { 
+        {
           array=collapse_empty_dimensions(array, &rank, dims, dft_volume);
           if (rank==0) abort("%s:%i: internal error",__FILE__,__LINE__);
           size_t stdims[2];
@@ -1028,8 +1037,8 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
           double *real_array = new double[array_size];
           if (!real_array) abort("%s:%i:out of memory(%lu)",__FILE__,__LINE__,array_size);
           for(int reim=0; reim<2; reim++)
-           { 
-             for(size_t n=0; n<array_size; n++) 
+           {
+             for(size_t n=0; n<array_size; n++)
               real_array[n] = (reim==0 ? real(array[n]) : imag(array[n]));
              char dataname[100], filename[100];
              snprintf(dataname,100,"%s_%i.%c",component_name(c),num_freq, reim ? 'i' : 'r');
