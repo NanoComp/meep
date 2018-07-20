@@ -93,22 +93,22 @@ static int h5io_critical_section_tag = 0;
 
 /*****************************************************************************/
 
-#ifdef HAVE_HDF5
-static bool dataset_exists(hid_t id, const char *name)
-{
-     hid_t data_id;
-     SUPPRESS_HDF5_ERRORS(data_id = H5Dopen(id, name));
-     if (data_id >= 0)
-          H5Dclose(data_id);
-     return (data_id >= 0);
-}
-#endif
-
-/*****************************************************************************/
-
 using namespace std;
 
 namespace meep {
+
+bool h5file::dataset_exists(const char *name) {
+#ifdef HAVE_HDF5
+  hid_t id = HID(get_id());
+  hid_t data_id;
+  SUPPRESS_HDF5_ERRORS(data_id = H5Dopen(id, name));
+  if (data_id >= 0)
+    H5Dclose(data_id);
+  return (data_id >= 0);
+#else
+  return false;
+#endif
+}
 
 // lazy file creation & locking
 void *h5file::get_id() {
@@ -256,7 +256,7 @@ void h5file::read_size(const char *dataname, int *rank, size_t *dims, int maxran
     if (is_cur(dataname))
       data_id = HID(cur_id);
     else {
-      CHECK(dataset_exists(file_id, dataname),
+      CHECK(dataset_exists(dataname),
 	    "missing dataset in HDF5 file");
       data_id = H5Dopen(file_id, dataname);
       set_cur(dataname, &data_id);
@@ -332,7 +332,7 @@ realnum *h5file::read(const char *dataname,
 	close_data_id = false;
       }
       else {
-        if (!dataset_exists(file_id, dataname)) {
+        if (!dataset_exists(dataname)) {
           abort("missing dataset in HDF5 file: %s", dataname);
         }
 	data_id = H5Dopen(file_id, dataname);
@@ -406,7 +406,7 @@ char *h5file::read(const char *dataname)
     if (is_cur(dataname))
       unset_cur();
 
-    CHECK(dataset_exists(file_id, dataname),
+    CHECK(dataset_exists(dataname),
 	  "missing dataset in HDF5 file");
 
     data_id = H5Dopen(file_id, dataname);
@@ -467,7 +467,7 @@ void h5file::remove_data(const char *dataname)
     delete cur;
   }
 
-  if (dataset_exists(file_id, dataname)) {
+  if (dataset_exists(dataname)) {
     /* this is hackish ...need to pester HDF5 developers to make
        H5Gunlink a collective operation for parallel mode */
     if (!parallel || am_master()) {

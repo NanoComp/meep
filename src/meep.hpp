@@ -54,6 +54,8 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
+class h5file;
+
 /* generic base class, only used by subclassing: represents susceptibility
    polarizability vector P = chi(omega) W  (where W = E or H). */
 class susceptibility {
@@ -151,6 +153,9 @@ public:
     (void) inotowned; (void) n; (void) c; (void) cmp; (void) P_internal_data;
     return 0; }
 
+  virtual void dump(h5file *h5f, const char *prefix);
+  virtual void load(h5file *h5f, const char *prefix);
+
   susceptibility *next;
   size_t ntot;
   realnum *sigma[NUM_FIELD_COMPONENTS][5];
@@ -199,6 +204,10 @@ public:
   virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
 					  int n,
 					  void *P_internal_data) const;
+
+  virtual void dump(h5file *h5f, const char *prefix);
+  virtual void load(h5file *h5f, const char *prefix);
+
 protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
@@ -216,6 +225,9 @@ public:
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 			double dt, const grid_volume &gv,
 			void *P_internal_data) const;
+
+  virtual void dump(h5file *h5f, const char *prefix);
+  virtual void load(h5file *h5f, const char *prefix);
 
 protected:
   double noise_amp;
@@ -325,6 +337,9 @@ public:
   const char *file_name() const { return filename; }
 
   void prevent_deadlock(); // hackery for exclusive mode
+
+  bool dataset_exists(const char *name);
+
 private:
   access_mode mode;
   char *filename;

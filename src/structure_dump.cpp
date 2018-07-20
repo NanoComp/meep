@@ -73,6 +73,25 @@ void structure::dump(const char *filename) {
               my_start += ntot;
             }
     }
+
+  // dump the susceptibilities
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine()) {
+      for (int ft = 0; ft < NUM_FIELD_TYPES; ++ft) {
+        if (chunks[i]->chiP[ft]) {
+          susceptibility *susc = chunks[i]->chiP[ft];
+          int n = 0;
+          while (susc) {
+            char prefix[12];
+            snprintf(prefix, 12, "%d_%d_%d_", i, ft, n);
+            susc->dump(&file, prefix);
+            susc = susc->next;
+            n++;
+          }
+        }
+      }
+    }
+  }
 }
 
 void structure::load(const char *filename) {
@@ -87,6 +106,7 @@ void structure::load(const char *filename) {
   file.read_size("num_chi1inv", &rank, dims, 3);
   if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])
     abort("chunk mismatch in structure::load");
+
   if (am_master())
     file.read_chunk(3, start, dims, num_chi1inv);
 
@@ -134,6 +154,79 @@ void structure::load(const char *filename) {
               my_start += ntot;
             }
     }
-}
 
+  // load the susceptibilities
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine()) {
+      for (int ft = 0; ft < NUM_FIELD_TYPES; ++ft) {
+        int n = 0;
+        char params_dset[25];
+        snprintf(params_dset, 25, "%d_%d_%d_", i, ft, 0);
+        strcat(params_dset, "params");
+        susceptibility *susc_ptr;
+
+        while (file.dataset_exists(params_dset)) {
+          int params_rank;
+          size_t params_start[1] = {0};
+          size_t params_dims[1] = {0};
+          file.read_size(params_dset, &params_rank, params_dims, 1);
+
+          if (params_rank != 1 || params_dims[0] > 4 || params_dims[0] < 3)
+            abort("inconsistent data size in structure::load");
+
+          if (params_dims[0] == 3) {
+            realnum params[3] = {0};
+
+            if (am_master())
+              file.read_chunk(1, params_start, params_dims, params);
+            file.prevent_deadlock();
+            broadcast(0, params, 3);
+
+            if (n == 0) {
+              chunks[i]->chiP[ft] = new lorentzian_susceptibility(params[0], params[1], (bool)params[2]);
+              susc_ptr = chunks[i]->chiP[ft];
+            }
+            else
+              susc_ptr->next = new lorentzian_susceptibility(params[0], params[1], (bool)params[2]);
+          }
+          else {
+            realnum params[4] = {0};
+
+            if (am_master())
+              file.read_chunk(1, params_start, params_dims, params);
+            file.prevent_deadlock();
+            broadcast(0, params, 4);
+
+            if (n == 0) {
+              chunks[i]->chiP[ft] = new noisy_lorentzian_susceptibility(params[0], params[1], params[2],
+                                                                   (bool)params[3]);
+              susc_ptr = chunks[i]->chiP[ft];
+            }
+            else
+              susc_ptr->next = new noisy_lorentzian_susceptibility(params[0], params[1], params[2],
+                                                                   (bool)params[3]);
+          }
+
+          size_t ntot = chunks[i]->gv.ntot();
+          if (n == 0)
+            susc_ptr->ntot = ntot;
+          else
+            susc_ptr->next->ntot = ntot;
+          char prefix[12];
+          snprintf(prefix, 12, "%d_%d_%d_", i, ft, n);
+          if (n == 0)
+            susc_ptr->load(&file, prefix);
+          else
+            susc_ptr->next->load(&file, prefix);
+
+          if (n != 0)
+            susc_ptr = susc_ptr->next;
+          n++;
+          snprintf(params_dset, 25, "%d_%d_%d_", i, ft, n);
+          strcat(params_dset, "params");
+        }
+      }
+    }
+  }
+}
 }
