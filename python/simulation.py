@@ -1124,11 +1124,28 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
-    add_mode_monitor = add_flux
+    def add_mode_monitor(self, fcen, df, nfreq, *fluxes):
+        flux = DftFlux(self._add_mode_monitor, [fcen, df, nfreq, fluxes])
+        self.dft_objects.append(flux)
+        return flux
+
+    def _add_mode_monitor(self, fcen, df, nfreq, fluxes):
+        if self.fields is None:
+            self.init_sim()
+
+        if len(fluxes) != 1:
+            raise ValueError("add_mode_monitor expected just one FluxRegion. Got {}".format(len(fluxes)))
+
+        region = fluxes[0]
+        v = mp.Volume(region.center, region.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
+        d0 = region.direction
+        d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
+
+        return self.fields.add_mode_monitor(d, v.swigobj, fcen - df / 2, fcen + df / 2, nfreq)
 
     def add_eigenmode(self, fcen, df, nfreq, *fluxes):
         warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
-        return self.add_flux(fcen, df, nfreq, *fluxes)
+        return self.add_mode_monitor(fcen, df, nfreq, *fluxes)
 
     def display_fluxes(self, *fluxes):
         display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))

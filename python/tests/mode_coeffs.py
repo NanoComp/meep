@@ -49,7 +49,7 @@ class TestModeCoeffs(unittest.TestCase):
                             boundary_layers=boundary_layers,
                             geometry=geometry,
                             sources=sources,
-                            )
+                            symmetries=[mp.Mirror(mp.Y, phase=1 if mode_num % 2 == 1 else -1)])
 
         xm = 0.5*sx - dpml  # x-coordinate of monitor
         mflux = sim.add_mode_monitor(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
@@ -75,10 +75,13 @@ class TestModeCoeffs(unittest.TestCase):
                 cbrel = np.abs(alpha[nm - 1, 0, 1]) / np.abs(c0)
                 if cfrel > TOLERANCE or cbrel > TOLERANCE:
                     TestPassed = False
-        self.assertTrue(TestPassed) # test 1: coefficient of excited mode >> coeffs of all other modes
 
-        self.assertAlmostEqual(mode_power / abs(c0**2), 1.0, places=1) # test 2: |mode coeff|^2 = power
         self.sim = sim
+
+        # test 1: coefficient of excited mode >> coeffs of all other modes
+        self.assertTrue(TestPassed, msg="cfrel: {}, cbrel: {}".format(cfrel, cbrel))
+        # test 2: |mode coeff|^2 = power
+        self.assertAlmostEqual(mode_power / abs(c0**2), 1.0, places=1)
 
     def test_modes(self):
         self.run_mode_coeffs(1, None)
