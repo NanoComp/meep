@@ -660,29 +660,20 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
        }
       else if (field_array)
        {
-          int idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
-                                  + loop_i1 * array_stride[0])
-                                  + loop_i2 * array_stride[1])
-                                  + loop_i3 * array_stride[2]);
+         IVEC_LOOP_ILOC(fc->gv, iloc);         // iloc <-- indices of parent point in Yee grid
+         iloc = S.transform(iloc, sn) + shift; // iloc <-- indices of child point in Yee grid
+         iloc -= min_corner;                   // iloc <-- 2*(indices of point in DFT array)
 
-         // in the presence of symmetry, the above fails because idx2 is not the
-         // correct index into the dft_array for symmetry-transformed chunks.
-         // solution: attempt to infer the correct idx2 from the coordinates
-         // of loc, which has already been transformed into the correct coordinate
-         // for the physical grid point in question.
-         int my_loop_i1 = round((loc.in_direction(direction(loop_d1)) - 0.5*loop_is1*fc->gv.inva)/(fc->gv.inva));
-         int my_loop_i2 = fc->gv.dim<D2 ? 0
-                                        : round((loc.in_direction(direction(loop_d2)) - 0.5*loop_is2*fc->gv.inva)/(fc->gv.inva));
-         int my_loop_i3 = fc->gv.dim<D3 ? 0
-                                        : round((loc.in_direction(direction(loop_d3)) - 0.5*loop_is3*fc->gv.inva)/(fc->gv.inva));
+         // the index of point n1 or (n1,n2) or (n1,n2,n3) in a 1D, 2D, or 3D array is
+         // (for a 1D array) n1
+         // (for a 2D array) n2 + n1*N2
+         // (for a 3D array) n3 + n2*N3 + n1*N2*N3
+         // where NI = number of points in Ith direction.
+         int idx2=0;
+         for (int i=rank-1, stride=1; i>=0; stride*=array_count[i--])
+          idx2 += stride * iloc.in_direction(ds[i]) / 2;
 
-         idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
-                                  + my_loop_i1 * array_stride[0])
-                                  + my_loop_i2 * array_stride[1])
-                                  + my_loop_i3 * array_stride[2]);
-
-         if (retain_dV_and_interp_weights) dft_val*=w;
-         field_array[aco+idx2] = dft_val;
+         field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
        }
       else
        { if (unconjugated_inner_product==false)
