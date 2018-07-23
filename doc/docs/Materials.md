@@ -125,15 +125,14 @@ Experimental values of the complex refractive index are fit to a [Drude-Lorentz 
 
 Fitting parameters for all materials are defined for a unit distance of 1 µm. For simulations which use a different value for the unit distance, the predefined variable `um_scale` (Python) or `um-scale` (Scheme) must be scaled by *multiplying* by whatever the unit distance is, in units of µm. For example, if the unit distance is 100 nm, this would require adding the line `um_scale = 0.1*um_scale` after the line where [`um_scale` is defined](https://github.com/stevengj/meep/blob/master/python/examples/materials_library.py#L6). This change must be made directly to the materials library file.
 
-
-To import the library into a Python script requires adding the following lines:
+As an example, to import aluminum from the library into a Python script requires adding the following lines:
 
 ```python
 import sys
 sys.path.insert(0, '/path/to/materials_library/')
-from materials_library import *
+from materials_library import Al
 ```
-Then, the materials can be simply used as `geometry = [ meep.Cylinder(material=Al, ... ]`.
+Then, the material can be simply used as `geometry = [meep.Cylinder(material=Al, ...]`.
 
 In Scheme, the required lines are:
 
