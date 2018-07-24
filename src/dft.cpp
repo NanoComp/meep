@@ -671,7 +671,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
          // where NI = number of points in Ith direction.
          int idx2=0;
          for (int i=rank-1, stride=1; i>=0; stride*=array_count[i--])
-          idx2 += stride * iloc.in_direction(ds[i]) / 2;
+          idx2 += stride * (iloc.in_direction(ds[i]) / 2);
 
          field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
        }
