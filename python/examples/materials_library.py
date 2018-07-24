@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Materials Library
 
 import meep as mp
