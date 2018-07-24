@@ -1253,6 +1253,11 @@ typedef double (*field_rfunction)(const std::complex<double> *fields,
 field_rfunction derived_component_func(derived_component c, const grid_volume &gv,
 				       int &nfields, component cs[12]);
 
+std::vector<std::complex<double> > get_field_components(fields_chunk *fc, component cgrid,
+                                                        std::complex<double> shift_phase,
+                                                        const symmetry &S, int sn,
+                                                        int idx, std::vector<component> components);
+
 /***************************************************************/
 /* prototype for optional user-supplied function to provide an */
 /* initial estimate of the wavevector of mode #mode at         */

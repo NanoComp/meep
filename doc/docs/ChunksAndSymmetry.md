@@ -227,7 +227,7 @@ type of loop you want (see below). Your loop function will then be
 called once for every `chunk` in the problem---including both
 chunks whose fields are present in memory, and those 
 whose aren't due to being eliminated by symmetry---with a long list
-arguments describing the chunk in question.
+of arguments describing the chunk in question.
 
 The body of your chunk-loop function will typically want to execute
 a loop over all grid points in the chunk. This is facilitated by a host
@@ -263,6 +263,8 @@ the physical problem you're considering really is symmetric, which
 [meep does not check](/Exploiting_Symmetry.md).)
 
 ```c++
+typedef std::complex<double> cdouble;
+typedef std::vector<cdouble> cvector;
 void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec ie,
                   vec s0, vec s1, vec e0, vec e1, double dV0, double dV1,
                   ivec shift, std::complex<double> shift_phase,
@@ -279,9 +281,16 @@ void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec i
      IVEC_LOOP_LOC(gv, rparent);   // cartesian coordinates
 
      // apply symmetry transform to get grid indices and coordinates of child point
-     ichild = S.transform(iparent, sn) + shift;
-     rchild = S.transform(rparent, sn) + rshift;
+     ivec ichild = S.transform(iparent, sn) + shift;
+     vec rchild = S.transform(rparent, sn) + rshift;
 
+     // fetch values for all desired field components
+     std::vector<component> components;
+     components.push_back(Ex);
+     components.push_back(Hz);
+     cvector fvals = get_field_components(fc, cgrid, shift_phase, S, sn, idx, components);
+
+     // at this point, fvals[0,1] = values of Ex, Hz at child grid point
    }
 }
 ```
