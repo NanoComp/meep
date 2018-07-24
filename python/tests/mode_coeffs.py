@@ -96,8 +96,9 @@ class TestModeCoeffs(unittest.TestCase):
         eval_point = mp.Vector3(0.7, -0.2, 0.3)
         ex_at_eval_point = emdata.amplitude(eval_point, mp.Ex)
         hz_at_eval_point = emdata.amplitude(eval_point, mp.Hz)
-        self.assertAlmostEqual(ex_at_eval_point, 2.4827383502368017e-05 + 0.16095103621219753j)
-        self.assertAlmostEqual(hz_at_eval_point, 1.1381993864995965-3.7330585912764835e-06j)
+        self.assertAlmostEqual(ex_at_eval_point, 2.4827383502368017e-05 + 0.16095103621219753j, places=4)
+        self.assertAlmostEqual(hz_at_eval_point, 1.1381993864995965-3.7330585912764835e-06j, places=4)
+    
     def test_kpoint_func(self):
 
         def kpoint_func(freq, mode):
