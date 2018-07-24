@@ -74,5 +74,7 @@ for nm in range(nmode):
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
     mode_angle = math.degrees(theta_out(nm,freqs[nf]))
-    mode_tran = 0.5*abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
+    mode_tran = abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
+    if nm != 0:
+      mode_tran = 0.5*mode_tran
     print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
