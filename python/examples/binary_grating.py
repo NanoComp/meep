@@ -3,7 +3,7 @@
 import meep as mp
 import math
 
-resolution = 40        # pixels/μm
+resolution = 60        # pixels/μm
 
 dsub = 3.0             # substrate thickness
 dpad = 3.0             # padding between grating and pml
@@ -30,10 +30,13 @@ sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center
 
 k_point = mp.Vector3(0,0,0)
 
+glass = mp.Medium(index=1.5)
+
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
                     boundary_layers=pml_layers,
                     k_point=k_point,
+                    default_material=glass,
                     sources=sources)
 
 nfreq = 21
@@ -45,8 +48,6 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm
 coeffs0, vgrps0, kpoints0 = sim.get_eigenmode_coefficients(eig_mon, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
 
 sim.reset_meep()
-
-glass = mp.Medium(index=1.5)
 
 geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
             mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
@@ -73,5 +74,5 @@ for nm in range(nmode):
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
     mode_angle = math.degrees(theta_out(nm,freqs[nf]))
-    mode_tran = abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
+    mode_tran = 0.5*abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
     print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))

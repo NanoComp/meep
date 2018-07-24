@@ -944,7 +944,7 @@ Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc, valid_freq_range=Si_rang
 
 # poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
-# wavelength range: 0.437-1.052 µm
+# wavelength range: 0.437-1.052 um
 
 PMMA_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -960,7 +960,7 @@ PMMA = mp.Medium(epsilon=1.0, E_susceptibilities=PMMA_susc, valid_freq_range=PMM
 
 # polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
-# wavelength range: 0.437-1.052 µm
+# wavelength range: 0.437-1.052 um
 
 PC_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -976,7 +976,7 @@ PC = mp.Medium(epsilon=1.0, E_susceptibilities=PC_susc, valid_freq_range=PC_rang
 
 # polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
-# wavelength range: 0.437-1.052 µm
+# wavelength range: 0.437-1.052 um
 
 PS_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -992,7 +992,7 @@ PS = mp.Medium(epsilon=1.0, E_susceptibilities=PS_susc, valid_freq_range=PS_rang
 
 # cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
-# wavelength range: 0.437-1.052 µm
+# wavelength range: 0.437-1.052 um
 
 CLS_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
