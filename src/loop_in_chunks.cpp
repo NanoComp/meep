@@ -185,44 +185,49 @@ typedef complex<double> cdouble;
 namespace meep {
 
 /***************************************************************/
-/* utility routine designed to be called by chunkloop functions*/
-/* for fetching values of field components at grid points,     */
-/* taking into account the complications of symmetry and       */
-/* yee-grid averaging.                                         */
-/* The first 5 arguments are the arguments of the same name    */
-/* passed to the chunkloop function.                           */
-/* The 6th argument is the integer idx defined inside the body */
-/* of a LOOP_OVER_IVECS.                                       */
-/* components is a caller-created list of components; the      */
-/* return value is an array of the same length storing the     */
-/* values of those components at the grid point.               */
+/* get_field_components is a utility routine, designed to be   */
+/* called by chunkloop functions, for fetching values of field */
+/* components at grid points, accounting for the complications */
+/* of symmetry and yee-grid averaging.                         */
 /***************************************************************/
-vector<complex<double> > get_field_components(fields_chunk *fc, component cgrid,
-                                              complex<double> shift_phase,
-                                              const symmetry &S, int sn,
-                                              int idx, vector<component> components)
-{
-  vector<complex<double> > fvals;
+field_component_data create_field_component_data(fields_chunk *fc, component cgrid,
+                                                 complex<double> shift_phase,
+                                                 const symmetry &S, int sn,
+                                                 vector <component> components)
+{ 
+  field_component_data data;
+  data.fc=fc;
+  data.field_values.reserve(components.size()); // output buffer
 
-  for (size_t nc=0; nc<components.size(); nc++)
-   { 
-     // get symmetry-parent component and yee-grid offsets
-     component cparent = S.transform(components[nc], -sn);
+  // for each requested component, get symmetry-parent component, yee-grid offsets, and phase shift
+  for(size_t nc=0; nc<components.size(); nc++)
+   { data.parent_components.push_back(S.transform(components[nc], -sn));
+     data.phases.push_back(shift_phase * S.phase_shift(data.parent_components[nc],sn));
      ptrdiff_t ofs1=0, ofs2=0;
      if (cgrid == Centered)
-      fc->gv.yee2cent_offsets(cparent, ofs1, ofs2);
+      fc->gv.yee2cent_offsets(data.parent_components[nc],ofs1,ofs2);
+     data.offsets.push_back(ofs1);
+     data.offsets.push_back(ofs2);
+   }
 
+ return data;
+}
+
+void get_field_components(field_component_data &data, int idx)
+{
+  for (size_t nc=0; nc<data.field_values.size(); nc++)
+   { 
      // do appropriate averaging to get value of field component at grid point
+     component cparent = data.parent_components[nc];
+     ptrdiff_t ofs1    = data.offsets[2*nc+0], ofs2 = data.offsets[2*nc+1];
      double favg[2]={0.0,0.0}; // real, imag parts
      for (int reim=0; reim<2; reim++)
-      { double *fgrid = fc->f[cparent][reim];
+      { double *fgrid = data.fc->f[cparent][reim];
         if (!fgrid) continue;
         favg[reim] = 0.25*( fgrid[idx] + fgrid[idx+ofs1] + fgrid[idx+ofs2] + fgrid[idx+ofs1+ofs2] );
       }
-     fvals[nc] = shift_phase * S.phase_shift(cparent,sn) * cdouble(favg[0], favg[1]);
+     data.field_values[nc] = data.phases[nc] * cdouble(favg[0], favg[1]);
    }
-
-  return fvals;
 }
 
 /* The following two functions convert a vec to the nearest ivec
