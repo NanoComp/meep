@@ -244,6 +244,8 @@
 ; elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 ; wavelength range: 0.2 - 12.4 um
 
+; silver (Ag)
+
 (define Ag-plasma-frq (* 9.01 eV-um-scale))
 
 (define Ag-f0 0.845)
@@ -285,6 +287,8 @@
        (frequency Ag-frq4) (gamma Ag-gam4) (sigma Ag-sig4)))))
 
 ;------------------------------------------------------------------
+
+; gold (Au)
 
 (define Au-plasma-frq (* 9.03 eV-um-scale))
 
@@ -328,6 +332,8 @@
 
 ;------------------------------------------------------------------
 
+; copper (Cu)
+
 (define Cu-plasma-frq (* 10.83 eV-um-scale))
 
 (define Cu-f0 0.575)
@@ -369,6 +375,8 @@
        (frequency Cu-frq4) (gamma Cu-gam4) (sigma Cu-sig4)))))
 
 ;------------------------------------------------------------------
+
+; aluminum (Al)
 
 (define Al-plasma-frq (* 14.98 eV-um-scale))
 
@@ -412,6 +420,8 @@
 
 ;------------------------------------------------------------------
 
+; beryllium (Be)
+
 (define Be-plasma-frq (* 18.51 eV-um-scale))
 
 (define Be-f0 0.084)
@@ -453,6 +463,8 @@
        (frequency Be-frq4) (gamma Be-gam4) (sigma Be-sig4)))))
 
 ;------------------------------------------------------------------
+
+; chromium (Cr)
 
 (define Cr-plasma-frq (* 10.75 eV-um-scale))
 
@@ -496,6 +508,8 @@
 
 ;------------------------------------------------------------------
 
+; nickel (Ni)
+
 (define Ni-plasma-frq (* 15.92 eV-um-scale))
 
 (define Ni-f0 0.096)
@@ -537,6 +551,8 @@
        (frequency Ni-frq4) (gamma Ni-gam4) (sigma Ni-sig4)))))
 
 ;------------------------------------------------------------------
+
+; palladium (Pd)
 
 (define Pd-plasma-frq (* 9.72 eV-um-scale))
 
@@ -580,6 +596,8 @@
 
 ;------------------------------------------------------------------
 
+; platinum (Pt)
+
 (define Pt-plasma-frq (* 9.59 eV-um-scale))
 
 (define Pt-f0 0.333)
@@ -622,6 +640,8 @@
 
 ;------------------------------------------------------------------
 
+; titanium (Ti)
+
 (define Ti-plasma-frq (* 7.29 eV-um-scale))
 
 (define Ti-f0 0.148)
@@ -663,6 +683,8 @@
        (frequency Ti-frq4) (gamma Ti-gam4) (sigma Ti-sig4)))))
 
 ;------------------------------------------------------------------
+
+; tungsten (W)
 
 (define W-plasma-frq (* 13.22 eV-um-scale))
 
@@ -709,6 +731,7 @@
 ; metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996, 2015
 ; wavelength range: 0.4 - 0.8 um
 
+; gold (Au)
 ; fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9, 1972
 (define Au-JC-visible-frq0 (/ (* 0.139779231751333 um-scale)))
 (define Au-JC-visible-gam0 (/ (* 26.1269913352870 um-scale)))
@@ -727,6 +750,7 @@
 
 ;------------------------------------------------------------------                       
 
+; gold (Au)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 (define Au-visible-frq0 (/ (* 0.0473629248511456 um-scale)))
 (define Au-visible-gam0 (/ (* 0.255476199605166 um-scale)))
@@ -767,6 +791,7 @@
 
 ;; UNSTABLE: field divergence may occur
 
+; aluminum (Al)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 (define Al-visible-frq0 (/ (* 0.0625841659042985 um-scale)))
 (define Al-visible-gam0 (/ (* 0.606007002962666 um-scale)))
@@ -785,6 +810,7 @@
 
 ;------------------------------------------------------------------                       
 
+; chromium (Cr)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 (define Cr-visible-frq0 (/ (* 0.118410119507342 um-scale)))
 (define Cr-visible-gam0 (/ (* 0.628596264869804 um-scale)))
@@ -805,6 +831,7 @@
 
 ;; UNSTABLE: field divergence may occur
 
+; titanium (Ti)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 (define Ti-visible-frq0 (/ (* 0.101331651921602 um-scale)))
 (define Ti-visible-gam0 (/ (* 0.365743382258719 um-scale)))
@@ -1026,3 +1053,64 @@
     (frequency Si-frq2) (gamma Si-gam2) (sigma Si-sig2))
   (make lorentzian-susceptibility
     (frequency Si-frq3) (gamma Si-gam3) (sigma Si-sig3)))))
+
+;------------------------------------------------------------------
+
+; poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+; ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
+; wavelength range: 0.437-1.052 µm
+
+(define PMMA-frq1 (/ (* 0.106362587407415 um-scale)))
+(define PMMA-gam1 0)
+(define PMMA-sig1 1.1819)
+
+(define PMMA (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency PMMA-frq1) (gamma PMMA-gam1) (sigma PMMA-sig1)))))
+
+;------------------------------------------------------------------
+
+; polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+; ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
+; wavelength range: 0.437-1.052 µm
+
+(define PC-frq1 (/ (* 0.145958898324152 um-scale)))
+(define PC-gam1 0)
+(define PC-sig1 1.4182)
+
+(define PC (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency PC-frq1) (gamma PC-gam1) (sigma PC-sig1)))))
+
+;------------------------------------------------------------------
+
+; polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+; ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
+; wavelength range: 0.437-1.052 µm
+
+(define PS-frq1 (/ (* 0.142182980697410 um-scale)))
+(define PS-gam1 0)
+(define PS-sig1 1.4435)
+
+(define PS (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency PS-frq1) (gamma PS-gam1) (sigma PS-sig1)))))
+
+;------------------------------------------------------------------
+
+; cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+; ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
+; wavelength range: 0.437-1.052 µm
+
+(define CLS-frq1 (/ (* 0.105294824184287 um-scale)))
+(define CLS-gam1 0)
+(define CLS-sig1 1.124)
+
+(define CLS (make medium (epsilon 1.0)
+ (E-susceptibilities 
+  (make lorentzian-susceptibility
+    (frequency CLS-frq1) (gamma CLS-gam1) (sigma CLS-sig1)))))
+
