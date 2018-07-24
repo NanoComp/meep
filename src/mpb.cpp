@@ -445,6 +445,7 @@ void *fields::get_eigenmode(double omega_src,
     for (i = N-1; i >= 0 && fabs(real(cdata[i] * phase)) < 0.5 * maxabs; --i)
       ;
     if (real(cdata[i] * phase) < 0) phase = -phase;
+    phase /= sqrt(R[0][0]*R[1][1]*R[2][2]);
     for (i = 0; i < N; ++i) cdata[i] *= phase;
     complex<mpb_real> *hdata = (complex<mpb_real> *) H.data;
     for (i = 0; i < H.n; ++i) hdata[i*H.p + (band_num-1)] *= phase;
