@@ -1800,6 +1800,14 @@ vec get_k(void *vedata);
 
 realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data,
                            int nx, int ny, int nz, int stride);
+
+// utility routine for modular arithmetic that always returns a nonnegative integer
+inline int pmod(int n, int modulus) {
+  n = n % modulus;
+  if (n < 0)
+    n += modulus;
+  return n;
+}
 } /* namespace meep */
 
 #endif /* MEEP_H */
