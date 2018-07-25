@@ -1058,7 +1058,7 @@
 
 ; poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
-; wavelength range: 0.437-1.052 µm
+; wavelength range: 0.437-1.052 um
 
 (define PMMA-frq1 (/ (* 0.106362587407415 um-scale)))
 (define PMMA-gam1 0)
@@ -1073,7 +1073,7 @@
 
 ; polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
-; wavelength range: 0.437-1.052 µm
+; wavelength range: 0.437-1.052 um
 
 (define PC-frq1 (/ (* 0.145958898324152 um-scale)))
 (define PC-gam1 0)
@@ -1088,7 +1088,7 @@
 
 ; polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
-; wavelength range: 0.437-1.052 µm
+; wavelength range: 0.437-1.052 um
 
 (define PS-frq1 (/ (* 0.142182980697410 um-scale)))
 (define PS-gam1 0)
@@ -1103,7 +1103,7 @@
 
 ; cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
-; wavelength range: 0.437-1.052 µm
+; wavelength range: 0.437-1.052 um
 
 (define CLS-frq1 (/ (* 0.105294824184287 um-scale)))
 (define CLS-gam1 0)
