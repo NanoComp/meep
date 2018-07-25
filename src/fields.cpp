@@ -664,9 +664,9 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data,
   if (rz < 0.0) rz = -rz; else if (rz > 1.0) rz = 1.0 - rz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = rx * nx; if (x == nx) --x;
-  y = ry * ny; if (y == ny) --y;
-  z = rz * nz; if (z == nz) --z;
+  x = pmod(int(rx * nx), nx);
+  y = pmod(int(ry * ny), ny);
+  z = pmod(int(rz * nz), nz);
 
   /* get the difference between (x,y,z) and the actual point
      ... we shift by 0.5 to center the data points in the pixels */
@@ -675,12 +675,9 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data,
   dz = rz * nz - z - 0.5;
 
   /* get the other closest point in the grid, with mirror boundaries: */
-  x2 = (dx >= 0.0 ? x + 1 : x - 1);
-  if (x2 < 0) x2++; else if (x2 == nx) x2--;
-  y2 = (dy >= 0.0 ? y + 1 : y - 1);
-  if (y2 < 0) y2++; else if (y2 == ny) y2--;
-  z2 = (dz >= 0.0 ? z + 1 : z - 1);
-  if (z2 < 0) z2++; else if (z2 == nz) z2--;
+  x2 = pmod( (dx >= 0.0 ? x + 1 : x - 1), nx );
+  y2 = pmod( (dy >= 0.0 ? y + 1 : y - 1), ny );
+  z2 = pmod( (dz >= 0.0 ? z + 1 : z - 1), nz );
 
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
   dx = fabs(dx);

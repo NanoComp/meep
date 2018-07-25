@@ -98,13 +98,6 @@ typedef struct eigenmode_data
    double group_velocity;
  } eigenmode_data;
 
-// utility routine for modular arithmetic that always returns a nonnegative integer
-int pmod(int n, int modulus)
-{ n = n % modulus;
-  if (n<0) n+=modulus;
-  return n;
-}
-
 /*******************************************************************/
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
