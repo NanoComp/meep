@@ -577,8 +577,8 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
    /*****************************************************************/
    size_t start[3]={0,0,0};
    size_t file_count[3]={1,1,1},  array_count[3]={1,1,1};
-   int file_offset[3]={0,0,0}, array_offset[3]={0,0,0};
-   int file_stride[3]={1,1,1}, array_stride[3]={1,1,1};
+   int file_offset[3]={0,0,0};
+   int file_stride[3]={1,1,1};
    ivec isS = S.transform(is, sn) + shift;
    ivec ieS = S.transform(ie, sn) + shift;
 
@@ -604,17 +604,10 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
     { direction d = ds[i];
       int j = permute.in_direction(d);
       for (int k = i + 1; k < rank; ++k)
-       { file_stride[j] *= file_count[k];
-         array_stride[j] *= array_count[k];
-       }
+       file_stride[j] *= file_count[k];
       file_offset[j] *= file_stride[j];
       if (file_offset[j]) file_stride[j] *= -1;
-      array_offset[j] *= array_stride[j];
-      if (array_offset[j]) array_stride[j] *= -1;
     }
-
-   // aco="array chunk offset"
-   ptrdiff_t aco=start[0]*array_count[1]*array_count[2] + start[1]*array_count[2] + start[2];
 
    /*****************************************************************/
    /*****************************************************************/
@@ -666,14 +659,21 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
          buffer[idx2] = reim ? imag(val) : real(val);
        }
       else if (field_array)
-       { int idx2 = ((((array_offset[0] + array_offset[1] + array_offset[2])
-                                  + loop_i1 * array_stride[0])
-                                  + loop_i2 * array_stride[1])
-                                  + loop_i3 * array_stride[2]);
+       {
+         IVEC_LOOP_ILOC(fc->gv, iloc);         // iloc <-- indices of parent point in Yee grid
+         iloc = S.transform(iloc, sn) + shift; // iloc <-- indices of child point in Yee grid
+         iloc -= min_corner;                   // iloc <-- 2*(indices of point in DFT array)
 
-         if (retain_dV_and_interp_weights) dft_val*=w;
+         // the index of point n1 or (n1,n2) or (n1,n2,n3) in a 1D, 2D, or 3D array is
+         // (for a 1D array) n1
+         // (for a 2D array) n2 + n1*N2
+         // (for a 3D array) n3 + n2*N3 + n1*N2*N3
+         // where NI = number of points in Ith direction.
+         int idx2=0;
+         for (int i=rank-1, stride=1; i>=0; stride*=array_count[i--])
+          idx2 += stride * (iloc.in_direction(ds[i]) / 2);
 
-         field_array[aco+idx2] = dft_val;
+         field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
        }
       else
        { if (unconjugated_inner_product==false)
