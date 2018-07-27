@@ -664,8 +664,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       cdouble cminus  = 0.5*(mode_flux[0] - mode_flux[1]);
       cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
       if (normfac==0.0) normfac=1.0;
-      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus * sqrt(S.multiplicity()/abs(normfac));
-      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus * sqrt(S.multiplicity()/abs(normfac));
+      double cscale = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus * cscale;
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus * cscale;
       destroy_eigenmode_data((void*) mode_data);
     }
 }
