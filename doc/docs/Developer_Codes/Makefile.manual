@@ -1,0 +1,19 @@
+# set MEEP_PREFIX to the root of the MEEP installation directory,
+# i.e. the --prefix argument specified to `configure` or `autogen.sh`
+MEEP_PREFIX=/usr/local/
+
+CXXFLAGS = -O2
+CPPFLAGS += -I$(MEEP_PREFIX)/include
+LDFLAGS += -L$(MEEP_PREFIX)/lib -Wl,-rpath,$(MEEP_PREFIX)/lib
+LDFLAGS += -L$(MEEP_PREFIX)/lib64 -Wl,-rpath,$(MEEP_PREFIX)/lib64
+
+##################################################
+# HR libraries ###################################
+##################################################
+LIBS = -lmeepgeom -lmeep -lctlgeom
+
+WriteChunkInfo:  	WriteChunkInfo.o
+			$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean:	
+		rm *.o *.a

@@ -80,3 +80,4 @@ pages:
 - C++ Interface:
     - Developer Information: 'C++_Developer_Information.md'
     - Tutorial/Basics: 'C++_Tutorial.md'
+    - Chunks and Symmetry: 'ChunksAndSymmetry.md'

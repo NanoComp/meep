@@ -183,13 +183,53 @@ using namespace std;
 
 namespace meep {
 
+/***************************************************************/
+/* get_field_components is a utility routine, designed to be   */
+/* called by chunkloop functions, for fetching values of field */
+/* components at grid points, accounting for the complications */
+/* of symmetry and yee-grid averaging.                         */
+/***************************************************************/
+chunkloop_field_components::chunkloop_field_components(fields_chunk *fc, component cgrid,
+                                                       std::complex<double> shift_phase,
+                                                       const symmetry &S, int sn,
+                                                       int num_fields, const component *components) :
+  fc(fc), parent_components(num_fields), phases(num_fields), offsets(2*num_fields), values(num_fields)
+{
+  // for each requested component, get symmetry-parent component, yee-grid offsets, and phase shift
+  for (int nc=0; nc < num_fields; nc++) {
+    parent_components[nc] = S.transform(components[nc], -sn);
+    phases[nc] = shift_phase * S.phase_shift(parent_components[nc], sn);
+    ptrdiff_t ofs1=0, ofs2=0;
+    if (cgrid == Centered)
+      fc->gv.yee2cent_offsets(parent_components[nc], ofs1, ofs2);
+    offsets[2*nc]   = ofs1;
+    offsets[2*nc+1] = ofs2;
+  }
+}
+
+void chunkloop_field_components::update_values(ptrdiff_t idx)
+{
+  for (size_t nc=0; nc < values.size(); nc++) {
+    // do appropriate averaging to get value of field component at grid point
+    component cparent = parent_components[nc];
+    ptrdiff_t ofs1 = offsets[2*nc], ofs2 = offsets[2*nc+1];
+    double favg[2]={0.0,0.0}; // real, imag parts
+    for (int reim=0; reim<2; reim++) {
+      const double *fgrid = fc->f[cparent][reim];
+      if (!fgrid) continue;
+      favg[reim] = 0.25 * (fgrid[idx] + fgrid[idx+ofs1] + fgrid[idx+ofs2] + fgrid[idx+ofs1+ofs2]);
+    }
+    values[nc] = phases[nc] * std::complex<double>(favg[0], favg[1]);
+  }
+}
+
 /* The following two functions convert a vec to the nearest ivec
    in the dielectric (odd-coordinate) grid, either rounding down (floor)
    or up (ceil).  In the special case where a component of the vec is
    *exactly* on a component of the ivec, we add the corresponding
    component of equal_shift (which should be either -2, 0, or +2).
    (equal_shift is there to prevent us from counting edge points twice.) */
-   
+
 static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
   ivec ipt(pt.dim);
   LOOP_OVER_DIRECTIONS(pt.dim, d) {
@@ -252,7 +292,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    "snap" them to the nearest grid point.  */
 
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
-			    const volume &where, 
+			    const volume &where,
 			    component cgrid,
 			    bool use_symmetry, bool snap_empty_dims)
 {
@@ -263,7 +303,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
   if (cgrid == Permeability) cgrid = Centered;
-  
+
   /*
     We handle looping on an arbitrary component grid by shifting
     to the centered grid and then shifting back.  The looping
@@ -273,7 +313,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     of its field components onto this grid without communication.
     Another virtue of this grid is that it is invariant under all of
     our symmetry transformations, so we can uniquely decide which
-    transformed chunk gets to loop_in_chunks which grid point. 
+    transformed chunk gets to loop_in_chunks which grid point.
   */
   vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
   ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
@@ -284,7 +324,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
      "epsilon grid"). */
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
-  
+
   /* Integration weights at boundaries (c.f. long comment at top). */
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
@@ -346,7 +386,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     ivec min_ishift(gv.dim), max_ishift(gv.dim);
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
       if (boundaries[High][S.transform(d, -sn).d] == Periodic) {
-	min_ishift.set_direction(d, 
+	min_ishift.set_direction(d,
 	 int(floor((wherec.in_direction_min(d) - gvS.in_direction_max(d))
 		   / L.in_direction(d))));
 	max_ishift.set_direction(d,
@@ -358,7 +398,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	max_ishift.set_direction(d, 0);
       }
     }
-    
+
     // loop over lattice shifts
     ivec ishift(min_ishift);
     do {
@@ -445,7 +485,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	      e1c.set_direction(d, swap);
 	    }
 	  }
-	  
+
 
 	  // Determine integration "volumes" dV0 and dV1;
 	  double dV0 = 1.0, dV1 = 0.0;
@@ -457,7 +497,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->gv[isc], sn) + shift
 				- yee_c).in_direction(R));
 	  }
-	 
+
 	  chunkloop(chunks[i], i, cS,
 		    isc - iyee_cS, iec - iyee_cS,
 		    s0c, s1c, e0c, e1c,
@@ -467,8 +507,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 		    chunkloop_data);
 	}
       }
-      
-      
+
+
       LOOP_OVER_DIRECTIONS(gv.dim, d) {
 	if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
 	  ishift.set_direction(d, ishift.in_direction(d) + 1);
