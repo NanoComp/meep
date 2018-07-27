@@ -44,8 +44,8 @@ detail below.
 
 ## Chunk data structures
 
-For each chunk in a geometry, `libmeep` creates instances of 
-the data structures `structure_chunk` (storing data on the 
+For each chunk in a geometry, `libmeep` creates instances of
+the data structures `structure_chunk` (storing data on the
 geometry of the chunk and the material properties at grid
 points in the chunk) and `fields_chunk` (storing the actual values
 of the time-domain field components at grid points in the chunk).
@@ -64,7 +64,7 @@ have `dft_chunks` associated with them.
 Our running example throughout this page will be a 2D geometry,
 of dimensions $(L_x, L_y)=(8,6)$, with PML layers of thickness 1
 on all sides, discretized with 5 points per unit length
-to yield a 40 &times; 30 grid. 
+to yield a 40 &times; 30 grid.
 
 ### Chunking in the single-processor case
 
@@ -108,14 +108,14 @@ in the single-processor case become 24 chunks:
 In this image, grid points with different $z$ coordinates (different
 heights off the $xy$ plane) are handled by different processors,
 while points with the same $z$ coordinate but different colors
-live in different chunks. In this case, processes 0, 2, 5, and 7 
+live in different chunks. In this case, processes 0, 2, 5, and 7
 each own 4 chunks, while processes 1, 3, 4, and 6 each own 2 chunks.
 
 <a name="HandlingSymmetries"></a>
 ## Handling of symmetries
 
 Meep's approach to handling symmetries is discussed
-from the user's perspective in the 
+from the user's perspective in the
 ["Exploiting Symmetry" section of the meep manual](/Exploiting_Symmetry.md)
 and from a high-level algorithmic perspective in the
 [meep</span> paper](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
@@ -150,7 +150,7 @@ feature.
   (including the identity transformation). On the $m$th visit to a given
   parent point $\mathbf{x}_p$, we
 
-    **1)** look up the components of the fields $\mathbf{E}_p, \mathbf{H}_p$ 
+    **1)** look up the components of the fields $\mathbf{E}_p, \mathbf{H}_p$
            stored in memory for $\mathbf{x}_p$,
 
     **2)** apply the transformation $\mathcal{S}_m$ to both the grid-point
@@ -159,7 +159,7 @@ feature.
            $$       \mathbf{x}_{cm} = \mathcal{S}_m \mathbf{x}_p,
              \quad \mathbf{E}_{cm} = \mathcal{S}_m \mathbf{E}_p,
              \quad \mathbf{H}_{cm} = \mathcal{S}_m \mathbf{H}_p.
-           $$ 
+           $$
           [If the materials are anisotropic (i.e. the permittivity and/or permeability
            are tensors) we must transform those appropriately too.]
 
@@ -216,8 +216,8 @@ points and field components:
 
 To allow developers to implement loops over grid points without
 stressing out over the various complications outlined above,
-the `fields` class in `libmeep` offers a convenient method called 
-`loop_in_chunks.` 
+the `fields` class in `libmeep` offers a convenient method called
+`loop_in_chunks.`
 
 To use this routine, you will first write a "chunk-loop function"
 which carries out some operation involving grid points and (optionally)
@@ -225,7 +225,7 @@ field components at grid points. Then you pass your routine to
 `loop_in_chunks` with some additional arguments customizing the
 type of loop you want (see below). Your loop function will then be
 called once for every `chunk` in the problem---including both
-chunks whose fields are present in memory, and those 
+chunks whose fields are present in memory, and those
 whose aren't due to being eliminated by symmetry---with a long list
 of arguments describing the chunk in question.
 
@@ -250,7 +250,7 @@ void field_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ive
 Notwithstanding this formidable-looking beast of a calling convention,
 most of the arguments here are things that you can blindly pass on to
 API functions and convenience macros, which will return quantities whose
-significance is easy to understand. 
+significance is easy to understand.
 
 Here's a skeleton chunk-loop function
 that executes a loop over all grid points in the chunk,
@@ -285,7 +285,7 @@ void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec i
 
   // loop over all grid points in chunk
   LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-   { 
+   {
      // get grid indices and coordinates of parent point
      IVEC_LOOP_ILOC(gv, iparent);  // grid indices
      IVEC_LOOP_LOC(gv, rparent);   // cartesian coordinates
