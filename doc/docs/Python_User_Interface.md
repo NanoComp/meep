@@ -1168,6 +1168,12 @@ The frequency-domain solver requires you to use complex-valued fields, via `forc
 
 After `solve_cw` completes, it should be as if you had just run the simulation for an infinite time with the source at that frequency. You can call the various field-output functions and so on as usual at this point.
 
+### GDSII Support
+
+**`meep.get_GDSII_prisms(material, gdsii_filename, layer)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer `layer` of a GDSII file `gdsii_filename`.
+
 Run and Step Functions
 ----------------------
 
