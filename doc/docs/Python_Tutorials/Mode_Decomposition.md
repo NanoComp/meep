@@ -15,11 +15,11 @@ This example involves computing the reflectance &mdash; the fraction of the refl
 ![](../images/waveguide-taper.png)
 </center>
 
-The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous with ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode at a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes which are computed separately via the eigenmode solver MPB. The technical details are described in [Mode Decomposition](../Mode_Decomposition). The squared magnitude of the mode coefficient is equivalent to the power in the given eigenmode. We could have also placed a line monitor in the second waveguide to compute the transmittance. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters); in this example, we compute |S<sub>11</sub>|<sup>2</sup>.
+The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode at a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes which are computed separately via the eigenmode solver MPB. The technical details are described in [Mode Decomposition](../Mode_Decomposition). The squared magnitude of the mode coefficient is equivalent to the power in the given eigenmode. We could have also placed a line monitor in the second waveguide to compute the transmittance. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters); in this example, we compute |S<sub>11</sub>|<sup>2</sup>.
 
-Note that even though the structure has mirror symmetry in the $y$ direction, we cannot exploit this feature to reduce the computation size by a factor of two as symmetries are not yet supported for the mode-decomposition feature. For comparison, another approach for computing the reflectance involves the [flux](../Python_User_Interface/#flux-spectra) which is demonstrated in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface).
+The structure has mirror symmetry in the $y$ direction which we can exploit to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor` which would normally be used is not optimized for symmetry objects.
 
-At the end of the simulation, the squared magnitude of the mode coefficients for the forward- and backward-propagating fundamental mode along with the taper length are displayed. The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
+At the end of the simulation, the squared magnitude of the mode coefficients for the forward- and backward-propagating fundamental mode along with the taper length are displayed. For comparison, another approach for computing the reflectance involves the [flux](../Python_User_Interface/#flux-spectra) which is demonstrated in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface). The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
 
 ```py
 import meep as mp
@@ -80,15 +80,18 @@ def main(args):
                                   center=mp.Vector3(-0.5*sx+dpml+0.2*Lw,0,0),
                                   eig_match_freq=True,
                                   eig_parity=mp.ODD_Z+mp.EVEN_Y)]
-    
+
+    symmetries=[mp.Mirror(mp.Y)]
+
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
                         geometry=geometry,
-                        sources=sources)
+                        sources=sources,
+                        symmetries=symmetries)
 
     xm = -0.5*sx+dpml+0.5*Lw  # x-coordinate of monitor
-    mode_monitor = sim.add_mode_monitor(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy-2*dpml,0)))
+    mode_monitor = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy-2*dpml,0)))
     
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
@@ -185,16 +188,19 @@ k_point = mp.Vector3(0,0,0)
 
 glass = mp.Medium(index=1.5)
 
+symmetries=[mp.Mirror(mp.Y)]
+
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
                     boundary_layers=pml_layers,
                     k_point=k_point,
                     default_material=glass,
-                    sources=sources)
+                    sources=sources,
+                    symmetries=symmetries)
 
 nfreq = 21
 xm = 0.5*sx-dpml-0.5*dpad
-eig_mon = sim.add_mode_monitor(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
@@ -210,9 +216,10 @@ sim = mp.Simulation(resolution=resolution,
                     boundary_layers=pml_layers,
                     geometry=geometry,
                     k_point=k_point,
-                    sources=sources)
+                    sources=sources,
+                    symmetries=symmetries)
 
-eig_mon = sim.add_mode_monitor(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
@@ -233,7 +240,7 @@ for nm in range(nmode):
       print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
 ```
 
-Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarzation. `EVEN_Y` is necessary since each diffraction order m (an integer) with |m|>0 and a given k<sub>x</sub> consists of two modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. Additionally, the total transmittance must be halved in this case to obtain the transmittance for either the +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the sine mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Specifying the `eig_parity` parameter this way ensures that the ordering of the modes corresponds to only the non-degenerate diffraction orders.
+Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarzation. `EVEN_Y` is necessary since each diffraction order m (an integer) with |m|>0 and a given k<sub>x</sub> consists of two modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. Additionally, the total transmittance must be halved in this case to obtain the transmittance for either the +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the sine mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Specifying the `eig_parity` parameter this way ensures that the ordering of the modes corresponds to only the non-degenerate diffraction orders. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
 
 The simulation is run and the results piped to a file (the grating data is extracted to a separate file for plotting) using the following shell script:
 
