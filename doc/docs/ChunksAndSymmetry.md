@@ -257,17 +257,14 @@ that executes a loop over all grid points in the chunk,
 obtaining on each loop iteration both the integer indices and the cartesian
 coordinates of the child point, as well as values for a list
 of field components of interest (specified before the loop in the
-call to `create_field_component_data`). You can fill in the rest of the loop body
-to do whatever you want with `ichild,` `rchild,` and `data.field_values,` and the
+constructor of `chunkloop_field_components`). You can fill in the rest of the loop body
+to do whatever you want with `ichild,` `rchild,` and `data.values,` and the
 results will be identical whether or not you declare symmetries when
 defining your geometry. (Well, the results will be identical assuming
 the physical problem you're considering really is symmetric, which
 [meep does not check](/Exploiting_Symmetry.md).)
 
 ```c++
-typedef std::complex<double> cdouble;
-typedef std::vector<cdouble> cvector;
-typedef std::vector<component> component_vector;
 void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec ie,
                   vec s0, vec s1, vec e0, vec e1, double dV0, double dV1,
                   ivec shift, std::complex<double> shift_phase,
@@ -277,11 +274,8 @@ void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec i
   vec rshift(shift * (0.5*fc->gv.inva));  // shift into unit cell for PBC geometries
 
   // prepare the list of field components to fetch at each grid point
-  component_vector components;
-  components.push_back(Ex);
-  components.push_back(Hz);
-  field_component_data data
-   = create_field_component_data(fc, cgrid, shift_phase, S, n, components);
+  component components[] = {Ex, Hz};
+  chunkloop_field_components data(fc, cgrid, shift_phase, S, sn, 2, components);
 
   // loop over all grid points in chunk
   LOOP_OVER_IVECS(fc->gv, is, ie, idx)
@@ -295,9 +289,9 @@ void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec i
      vec rchild = S.transform(rparent, sn) + rshift;
 
      // fetch field components at child point
-     get_field_components(data, idx);
-     cdouble Ex = data.field_values[0];
-     cdouble Hz = data.field_values[1];
+     data.update_values(idx);
+     std::complex<double> Ex = data.values[0],
+                          Hz = data.values[1];
    }
 }
 ```

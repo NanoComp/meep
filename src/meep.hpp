@@ -1253,20 +1253,30 @@ typedef double (*field_rfunction)(const std::complex<double> *fields,
 field_rfunction derived_component_func(derived_component c, const grid_volume &gv,
 				       int &nfields, component cs[12]);
 
-typedef struct field_component_data
- { fields_chunk *fc;
-   std::vector<component> parent_components;
-   std::vector< std::complex<double> > phases;
-   std::vector<ptrdiff_t> offsets;
-   std::vector< std::complex<double> > field_values;
- } field_component_data;
-
-field_component_data create_field_component_data(fields_chunk *fc, component cgrid,
-                                                 std::complex<double> shift_phase,
-                                                 const symmetry &S, int sn,
-                                                 std::vector <component> components);
-
-void get_field_components(field_component_data &data, int idx);
+/* A utility class for loop_in_chunks, for fetching values of field
+   components at grid points, accounting for the complications
+   of symmetry and yee-grid averaging. */
+class chunkloop_field_components {
+ private:
+  fields_chunk *fc;
+  std::vector<component> parent_components;
+  std::vector< std::complex<double> > phases;
+  std::vector<ptrdiff_t> offsets;
+ public:
+  chunkloop_field_components(fields_chunk *fc, component cgrid,
+                             std::complex<double> shift_phase,
+                             const symmetry &S, int sn,
+                             int num_fields, const component *components);
+#if __cplusplus >= 201103L // delegating constructors are a C++11 feature
+  chunkloop_field_components(fields_chunk *fc, component cgrid,
+                             std::complex<double> shift_phase,
+                             const symmetry &S, int sn,
+                             std::vector <component> components) :
+    chunkloop_field_components(fc, cgrid, shift_phase, S, sn, components.data(), components.size()) {}
+#endif
+  void update_values(ptrdiff_t idx);
+  std::vector< std::complex<double> > values; // updated by update_values(idx)
+ };
 
 /***************************************************************/
 /* prototype for optional user-supplied function to provide an */
@@ -1482,7 +1492,7 @@ class fields {
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol,
                                   int *bands, int num_bands, int parity,
                                   double eig_resolution, double eigensolver_tol,
-                                  std::complex<double> *coeffs, double *vgrp, 
+                                  std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func=0,
                                   void *user_kpoint_data=0, vec *kpoints=0);
 
