@@ -627,7 +627,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
   if (d==NO_DIRECTION)
    abort("cannot determine normal direction in get_eigenmode_coefficients");
 
-  if (flux.use_symmetry && S.multiplicity() > 1)
+  if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
    abort("flux regions for eigenmode projection must be created by add_mode_monitor()");
 
   vec kpoint(0.0,0.0,0.0); // default guess
@@ -664,8 +664,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       cdouble cminus  = 0.5*(mode_flux[0] - mode_flux[1]);
       cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
       if (normfac==0.0) normfac=1.0;
-      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(abs(normfac));
-      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(abs(normfac));
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 0 : 1) ] = cplus/sqrt(abs(normfac)) * S.multiplicity();
+      coeffs[ 2*nb*num_freqs + 2*nf + (vg>0.0 ? 1 : 0) ] = cminus/sqrt(abs(normfac)) * S.multiplicity();
       destroy_eigenmode_data((void*) mode_data);
     }
 }
