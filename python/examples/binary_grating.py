@@ -32,16 +32,19 @@ k_point = mp.Vector3(0,0,0)
 
 glass = mp.Medium(index=1.5)
 
+symmetries=[mp.Mirror(mp.Y)]
+
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
                     boundary_layers=pml_layers,
                     k_point=k_point,
                     default_material=glass,
-                    sources=sources)
+                    sources=sources,
+                    symmetries=symmetries)
 
 nfreq = 21
 xm = 0.5*sx-dpml-0.5*dpad
-eig_mon = sim.add_mode_monitor(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
@@ -57,9 +60,10 @@ sim = mp.Simulation(resolution=resolution,
                     boundary_layers=pml_layers,
                     geometry=geometry,
                     k_point=k_point,
-                    sources=sources)
+                    sources=sources,
+                    symmetries=symmetries)
 
-eig_mon = sim.add_mode_monitor(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
