@@ -52,7 +52,7 @@ class TestModeCoeffs(unittest.TestCase):
                             symmetries=[mp.Mirror(mp.Y, phase=1 if mode_num % 2 == 1 else -1)])
 
         xm = 0.5*sx - dpml  # x-coordinate of monitor
-        mflux = sim.add_mode_monitor(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
+        mflux = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
         mode_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
 
         # sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(-0.5*sx+dpml,0), 1e-10))

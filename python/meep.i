@@ -1223,6 +1223,7 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         Harminv,
         Identity,
         Mirror,
+        ModeRegion,
         Near2FarRegion,
         PML,
         Rotate2,
