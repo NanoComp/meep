@@ -162,13 +162,7 @@ class FluxRegion(object):
         self.weight = complex(weight)
 
 
-class ModeRegion(object):
-
-    def __init__(self, center, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0):
-        self.center = center
-        self.size = size
-        self.direction = direction
-        self.weight = complex(weight)
+ModeRegion = FluxRegion
 
 
 class ForceRegion(object):
