@@ -162,6 +162,15 @@ class FluxRegion(object):
         self.weight = complex(weight)
 
 
+class ModeRegion(object):
+
+    def __init__(self, center, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0):
+        self.center = center
+        self.size = size
+        self.direction = direction
+        self.weight = complex(weight)
+
+
 class ForceRegion(object):
 
     def __init__(self, center, direction, size=mp.Vector3(), weight=1.0):
@@ -1134,7 +1143,7 @@ class Simulation(object):
             self.init_sim()
 
         if len(fluxes) != 1:
-            raise ValueError("add_mode_monitor expected just one FluxRegion. Got {}".format(len(fluxes)))
+            raise ValueError("add_mode_monitor expected just one ModeRegion. Got {}".format(len(fluxes)))
 
         region = fluxes[0]
         v = mp.Volume(region.center, region.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
