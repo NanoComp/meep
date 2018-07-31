@@ -90,7 +90,7 @@ typedef struct eigenmode_data
    evectmatrix H;
    int n[3];
    double s[3];
-   double Gk[3]; 
+   double Gk[3];
    vec center;
    amplitude_function amp_func;
    int band_num;
@@ -282,6 +282,7 @@ void *fields::get_eigenmode(double omega_src,
     n[i] = int(resolution * s[i] + 0.5); if (n[i] == 0) n[i] = 1;
     R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
     G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
+    k[i] *= R[i][i]; // convert k to reciprocal basis
   }
 
   maxwell_data *mdata = create_maxwell_data(n[0], n[1], n[2],
@@ -367,7 +368,7 @@ void *fields::get_eigenmode(double omega_src,
 		(am_master() && verbose && !quiet ? EIGS_VERBOSE : 0));
     if (!quiet)
       master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
-		    band_num, k[0],k[1],k[2],
+		    band_num, G[0][0]*k[0],G[1][1]*k[1],G[2][2]*k[2],
 		    sqrt(eigvals[band_num-1]), num_iters);
 
     if (match_frequency) {
