@@ -53,112 +53,112 @@ class Simulation(object):
 
 All `Simulation` attributes are described here in further detail. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
 
-**`geometry` [ list of `GeometricObject` class ]**  
+**`geometry` [ list of `GeometricObject` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
 
-**`sources` [ list of `Source` class ]**  
+**`sources` [ list of `Source` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the current sources to be present in the simulation. Defaults to none (empty list).
 
-**`symmetries` [ list of `Symmetry` class ]**  
+**`symmetries` [ list of `Symmetry` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the spatial symmetries (mirror or rotation) to exploit in the simulation. Defaults to none (empty list). The symmetries must be obeyed by *both* the structure and the sources. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
 
-**`boundary_layers` [ list of `PML` class ]**  
+**`boundary_layers` [ list of `PML` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to none.
 
-**`cell_size` [ `Vector3` ]**  
+**`cell_size` [ `Vector3` ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the size of the computational cell which is centered on the origin of the coordinate system. Any sizes of 0 imply a reduced-dimensionality calculation. Strictly speaking, the dielectric function is taken to be uniform along that dimension. A 2d calculation is especially optimized. See `dimensions` below. **Note:** because Maxwell's equations are scale invariant, you can use any units of distance you want to specify the cell size: nanometers, microns, centimeters, whatever. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units](Introduction.md#units-in-meep). Required argument (no default).
 
-**`default_material` [`Medium` class ]**  
+**`default_material` [`Medium` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). See also `epsilon_input_file` below.
 
-**`material_function` [ function ]**  
+**`material_function` [ function ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns a `Medium`. See also [Medium](#medium). Defaults to `None`.
 
-**`epsilon_func` [ function ]**  
+**`epsilon_func` [ function ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns the dielectric constant at that point. See also [Medium](#medium). Defaults to `None`.
 
-**`epsilon_input_file` [`string`]**  
+**`epsilon_input_file` [`string`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default_material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need not match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default_material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default_material` are still used.
 
-**`dimensions` [`integer`]**  
+**`dimensions` [`integer`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Explicitly specifies the dimensionality of the simulation, if the value is less than 3. If the value is 3 (the default), then the dimensions are automatically reduced to 2 if possible when `cell_size` in the $z$ direction is `0`. If `dimensions` is the special value of `CYLINDRICAL`, then cylindrical coordinates are used and the $x$ and $z$ dimensions are interpreted as $r$ and $z$, respectively. If `dimensions` is 1, then the cell must be along the $z$ direction and only $E_x$ and $H_y$ field components are permitted. If `dimensions` is 2, then the cell must be in the $xy$ plane.
 
-**`m` [`number`]**  
+**`m` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 For `CYLINDRICAL` simulations, specifies that the angular $\phi$ dependence of the fields is of the form $e^{im\phi}$ (default is `m=0`). If the simulation cell includes the origin $r=0$, then `m` must be an integer.
 
-**`accurate_fields_near_cylorigin` [`boolean`]**  
+**`accurate_fields_near_cylorigin` [`boolean`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For `CYLINDRICAL` simulations with |*m*| &gt; 1, compute more accurate fields near the origin $r=0$ at the expense of requiring a smaller Courant factor. Empirically, when this option is set to `True`, a Courant factor of roughly $\min[0.5, 1 / (|m| + 0.5)]$ or smaller seems to be needed. Default is `False`, in which case the $D_r$, $D_z$, and $B_r$ fields within |*m*| pixels of the origin are forced to zero, which usually ensures stability with the default Courant factor of 0.5, at the expense of slowing convergence of the fields near $r=0$.
 
-**`resolution` [`number`]**  
+**`resolution` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the computational grid resolution in pixels per distance unit. Required argument. No default.
 
-**`k_point` [`False` or `Vector3`]**  
+**`k_point` [`False` or `Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If `False` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. The `k_point` vector is specified in Cartesian coordinates in units of 2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k_points` through its function `reciprocal->cartesian`.
 
-**`ensure_periodicity` [`boolean`]**  
+**`ensure_periodicity` [`boolean`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If `True` (the default) *and* if the boundary conditions are periodic (`k_point` is not `False`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the computational cell.
 
-**`eps_averaging` [`boolean`]**  
+**`eps_averaging` [`boolean`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If `True` (the default), then subpixel averaging is used when initializing the dielectric function. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). The input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
 
-**`force_complex_fields` [`boolean`]**  
+**`force_complex_fields` [`boolean`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep runs its simulations with purely real fields whenever possible. It uses complex fields which require twice the memory and computation if the `k_point` is non-zero or if `m` is non-zero. However, by setting `force_complex_fields` to `True`, Meep will always use complex fields.
 
-**`filename_prefix` [`string`]**  
+**`filename_prefix` [`string`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A string prepended to all output filenames. If empty (the default), then Meep uses the name of the current Python file, with ".py" replaced by "-" (e.g. `foo.py` uses a `"foo-"` prefix). See also [Output File Names](Python_User_Interface.md#output-file-names).
 
-**`Courant` [`number`]**  
+**`Courant` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the Courant factor $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
 
-**`output_volume` [`Volume` class ]**  
+**`output_volume` [`Volume` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the default region of space that is output by the HDF5 output functions (below); see also the `Volume` class which manages `meep::volume*` objects. Default is `None`, which means that the whole computational cell is output. Normally, you should use the `in_volume(...)` function to modify the output volume instead of setting `output_volume` directly.
 
-**`output_single_precision` [`boolean`]**  
+**`output_single_precision` [`boolean`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Meep performs its computations in [double precision](https://en.wikipedia.org/wiki/double_precision), and by default its output HDF5 files are in the same format. However, by setting this variable to `True` (default is `False`) you can instead output in [single precision](https://en.wikipedia.org/wiki/single_precision) which saves a factor of two in space.
 
-**`progress_interval` [`number`]**  
+**`progress_interval` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Time interval (seconds) after which Meep prints a progress message. Default is 4 seconds.
 
-**`extra_materials` [ list of `Medium` class ]**  
+**`extra_materials` [ list of `Medium` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep turns off support for material dispersion, nonlinearities, and similar properties if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work however if you use a `material_function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra_materials`. `extra_materials` is a list of materials that Meep should look for in the computational cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material_function` here.
 
-**`load_structure` [`string`]**  
+**`load_structure` [`string`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If not empty, Meep will load the structure specified by this string. The file must have been created by `meep.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
-**`structure` [`meep::structure*`]**  
+**`structure` [`meep::structure*`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Pointer to the current structure being simulated; initialized by `_init_structure` which is called automatically by `init_sim()` which is called automatically by any of the [run functions](#run-functions). The structure initailization is handled by the `Simulation` class, and most users will not need to call `_init_structure`.
 
-**`fields` [`meep::fields*`]**  
+**`fields` [`meep::fields*`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Pointer to the current fields being simulated; initialized by `init_sim()` which is called automatically by any of the [run functions](#run-functions).
 
-**`num_chunks` [`integer`]**  
+**`num_chunks` [`integer`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Minimum number of "chunks" (subarrays) to divide the structure/fields into (default 0). Actual number is determined by number of processors, PML layers, etcetera. Mainly useful for debugging.
 
@@ -167,19 +167,19 @@ Predefined Variables
 
 These are available directly via the `meep` package.
 
-**`air`, `vacuum` [`Medium` class ]**  
+**`air`, `vacuum` [`Medium` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Two aliases for a predefined material type with a dielectric constant of 1.
 
-**`perfect_electric_conductor` or `metal` [`Medium` class ]**  
+**`perfect_electric_conductor` or `metal` [`Medium` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A predefined material type corresponding to a perfect electric conductor at the boundary of which the parallel electric field is zero. Technically, $\varepsilon = -\infty$.
 
-**`perfect_magnetic_conductor` [`Medium` class ]**  
+**`perfect_magnetic_conductor` [`Medium` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A predefined material type corresponding to a perfect magnetic conductor at the boundary of which the parallel magnetic field is zero. Technically, $\mu = -\infty$.
 
-**`inf` [`number`]**  
+**`inf` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A big number (10$^{20}$) to use for "infinite" dimensions of objects.
 
 Constants (Enumerated Types)
@@ -187,19 +187,19 @@ Constants (Enumerated Types)
 
 Several of the functions/classes in Meep ask you to specify e.g. a field component or a direction in the grid. These should be one of the following constants (which are available directly via the `meep` package):
 
-**`direction` constants**  
+**`direction` constants**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z$, $r$, $\phi$, respectively.
 
-**`side` constants**  
+**`side` constants**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
 
-**`component` constants**  
+**`component` constants**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hy`, `Hp`, `Hz`, `Bx`, `By`, `Bz`, `By`, `Bp`, `Bz`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, ε, μ, respectively.
 
-**`derived_component` constants**  
+**`derived_component` constants**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 These are additional components which are not actually stored by Meep but are computed as needed, mainly for use in output functions. One of `Sx`, `Sy`, `Sz`, `Sr`, `Sp`, `EnergyDensity`, `D_EnergyDensity`, `H_EnergyDensity` for $S_x$, $S_y$, $S_z$, $S_r$, $S_\phi$ (components of the Poynting vector $\mathrm{Re}\,\mathbf{E}^* \times \mathbf{H}$), $(\mathbf{E}^* \cdot \mathbf{D} + \mathbf{H}^* \cdot \mathbf{B})/2$, $\mathbf{E}^* \cdot \mathbf{D}/2$, $\mathbf{H}^* \cdot \mathbf{B}/2$, respectively.
 
@@ -229,47 +229,47 @@ The following are available directly via the `meep` package.
 
 This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
 
-**`epsilon` [`number`]**  
+**`epsilon` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
 
 Using `epsilon=ep` is actually a synonym for `epsilon_diag=meep.Vector3(ep, ep, ep)`.
 
-**`epsilon_diag` and `epsilon_offdiag` [`Vector3`]**  
+**`epsilon_diag` and `epsilon_offdiag` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 These properties allow you to specify ε as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts. Specifying `epsilon_diag=Vector3(a, b, c)` and/or `epsilon_offdiag=Vector3(u, v, w)` corresponds to a relative permittivity ε tensor
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
 Default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
-**`mu` [`number`]**  
+**`mu` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The frequency-independent isotropic relative permeability μ. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=meep.Vector3(pm, pm, pm)`.
 
-**`mu_diag` and `mu_offdiag` [`Vector3`]**  
+**`mu_diag` and `mu_offdiag` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 These properties allow you to specify μ as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts exactly as for ε above. Default is the identity matrix.
 
-**`D_conductivity` [`number`]**  
+**`D_conductivity` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The frequency-independent electric conductivity $\sigma_D$. Default is 0. You can also specify a diagonal anisotropic conductivity tensor by using the property `D_conductivity_diag` which takes a `Vector3` to give the $\sigma_D$ tensor diagonal. See also [Conductivity](Materials.md#conductivity-and-complex).
 
-**`B_conductivity` [`number`]**  
+**`B_conductivity` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The frequency-independent magnetic conductivity $\sigma_B$. Default is 0. You can also specify a diagonal anisotropic conductivity tensor by using the property `B_conductivity_diag` which takes a `Vector3` to give the $\sigma_B$ tensor diagonal. See also [Conductivity](Materials.md#conductivity-and-complex).
 
-**`chi2` [`number`]**  
+**`chi2` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The nonlinear (Pockels) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
-**`chi3` [`number`]**  
+**`chi3` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
-**`E_susceptibilities` [ list of `Susceptibility` class ]**  
+**`E_susceptibilities` [ list of `Susceptibility` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 List of dispersive susceptibilities (see below) added to the dielectric constant ε in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
 
-**`H_susceptibilities` [ list of `Susceptibility` class ]**  
+**`H_susceptibilities` [ list of `Susceptibility` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
 
@@ -285,59 +285,59 @@ Instead of the `material` or `material_function` arguments, you can also use the
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `Susceptibility`.
 
-### Susceptibility  
+### Susceptibility
 
 Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
 
-**`sigma` [`number`]**  
+**`sigma` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma_diag` which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `sigma_diag=meep.Vector3(a, b, c)` and `sigma_offdiag=meep.Vector3(u, v, w)` corresponds to a σ tensor
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
-### LorentzianSusceptibility  
+### LorentzianSusceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
-**`frequency` [`number`]**  
+**`frequency` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The resonance frequency $f_n = \omega_n / 2\pi$.
 
-**`gamma` [`number`]**  
+**`gamma` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The resonance loss rate $γ_n / 2\pi$.
 
-### DrudeSusceptibility  
+### DrudeSusceptibility
 
 Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
-**`frequency` [`number`]**  
+**`frequency` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a resonance frequency).
 
-**`gamma` [`number`]**  
+**`gamma` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The loss rate $γ_n / 2\pi$.
 
 Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
-### NoisyLorentzianSusceptibility or NoisyDrudeSusceptibility  
+### NoisyLorentzianSusceptibility or NoisyDrudeSusceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
 
-**`noise_amp` [`number`]**  
+**`noise_amp` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The noise has root-mean square amplitude σ $\times$ `noise_amp`.
 
-### Vector3  
+### Vector3
 
 Properties:
 
-**`x`, `y`, `z` [`float` or `complex`]**  
+**`x`, `y`, `z` [`float` or `complex`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The `x`, `y`, and `z` components of the vector.
 
-**`Vector3(x=0.0, y=0.0, z=0.0)`**  
+**`Vector3(x=0.0, y=0.0, z=0.0)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Create a new Vector3 with the given components. All three components default to zero.
 
@@ -409,29 +409,29 @@ Returns the vector *`v1`* rotated by an angle *`theta`* (in radians) in the righ
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:
 
-**`GeometricObject`**  
+**`GeometricObject`**
 
 Properties:
 
-**`material` [`Medium` class or function ]**  
+**`material` [`Medium` class or function ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The material that the object is made of (usually some sort of dielectric). Uses default `Medium`. If a function is supplied, it must take one argument and return a Python `Medium`.
 
-**`epsilon_func` [ function ]**  
+**`epsilon_func` [ function ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A function that takes one argument (a `Vector3`) and returns the dielectric constant at that point. Can be used instead of `material`. Default is `None`.
 
-**`center` [`Vector3`]**  
+**`center` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Center point of the object. Defaults to (0, 0, 0).
 
 Methods:
 
-**`shift`(vec [`Vector3`])**  
+**`shift`(vec [`Vector3`])**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geomtric_obj + Vector3(10, 10, 10)`.
 
-**`info`(indent_by [integer])**  
+**`info`(indent_by [integer])**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
 
@@ -443,7 +443,7 @@ In a 2d calculation, only the intersections of the objects with the $xy$ plane a
 
 A sphere. Properties:
 
-**`radius` [`number`]**  
+**`radius` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Radius of the sphere. No default value.
 
@@ -451,15 +451,15 @@ Radius of the sphere. No default value.
 
 A cylinder, with circular cross-section and finite height. Properties:
 
-**`radius` [`number`]**  
+**`radius` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Radius of the cylinder's cross-section. No default value.
 
-**`height` [`number`]**  
+**`height` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Length of the cylinder along its axis. No default value.
 
-**`axis` [`Vector3`]**  
+**`axis` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Direction of the cylinder's axis; the length of this vector is ignored. Defaults to `Vector3(x=0, y=0, z=1)`.
 
@@ -467,7 +467,7 @@ Direction of the cylinder's axis; the length of this vector is ignored. Defaults
 
 A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
 
-**`radius2` [`number`]**  
+**`radius2` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
 
@@ -475,11 +475,11 @@ Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis`
 
 A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
 
-**`size` [`Vector3`]**  
+**`size` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The lengths of the block edges along each of its three axes. Not really a 3-vector, but it has three components, each of which should be nonzero. No default value.
 
-**`e1`, `e2`, `e3` [`Vector3`]**  
+**`e1`, `e2`, `e3` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The directions of the axes of the block; the lengths of these vectors are ignored. Must be linearly independent. They default to the three lattice directions.
 
@@ -491,15 +491,15 @@ An ellipsoid. This is actually a subclass of `Block**, and inherits all the same
 
 Polygonal prism type.
 
-**`vertices` [list of `Vector3`]**  
+**`vertices` [list of `Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite (`mp.inf`) prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
 
-**`height` [`number`]**  
+**`height` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
 
-**`axis` [`Vector3`]**  
+**`axis` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The axis perpendicular to the prism. Defaults to `Vector3(x=0, y=0, z=1)`.
 
@@ -525,7 +525,7 @@ ell = meep.Ellipsoid(center=meep.Vector3(0,0,0), size=meep.Vector3(0.8,0.2,0.2),
 # A unit cube of material mat with a spherical air hole of radius 0.2 at
 # its center, the whole thing centered at (1,2,3):
 geometry=[meep.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=meep.metal),
-          meep.Sphere(center=Vector3(1,2,3), radius=0.2, material=meep.air)]					  
+          meep.Sphere(center=Vector3(1,2,3), radius=0.2, material=meep.air)]
 ```
 
 ```py
@@ -546,25 +546,25 @@ geometry = [mp.Prism(vertices, height=mp.inf, material=cSi)]
 
 This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the computational cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting Symmetry](Exploiting_Symmetry.md). This is the base class of the specific symmetries below, so normally you don't create it directly. However, it has two properties which are shared by all symmetries:
 
-**`direction` [`direction` constant ]**  
+**`direction` [`direction` constant ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The direction of the symmetry (the normal to a mirror plane or the axis for a rotational symmetry). e.g. `X`, `Y`, or `Z` (only Cartesian/grid directions are allowed). No default value.
 
-**`phase` [`complex`]**  
+**`phase` [`complex`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 An additional phase to multiply the fields by when operating the symmetry on them. Default is +1, e.g. a phase of -1 for a mirror plane corresponds to an *odd* mirror. Technically, you are essentially specifying the representation of the symmetry group that your fields and sources transform under.
 
 The specific symmetry sub-classes are:
 
-**`Mirror`**  
+**`Mirror`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A mirror symmetry plane. `direction` is the direction *normal* to the mirror plane.
 
-**`Rotate2`**  
+**`Rotate2`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of the rotation.
 
-**`Rotate4`**  
+**`Rotate4`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of the rotation.
 
@@ -572,23 +572,23 @@ A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of
 
 This class is used for specifying the PML absorbing boundary layers around the cell, if any, via the `boundary_layers` input variable. See also [Perfectly Matched Layers](Perfectly_Matched_Layer.md). `boundary_layers` can be zero or more `PML` objects, with multiple objects allowing you to specify different PML layers on different boundaries. The class represents a single PML layer specification, which sets up one or more PML layers around the boundaries according to the following properties.
 
-**`thickness` [`number`]**  
+**`thickness` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The spatial thickness of the PML layer which extends from the boundary towards the *inside* of the computational cell. The thinner it is, the more numerical reflections become a problem. No default value.
 
-**`direction` [`direction` constant ]**  
+**`direction` [`direction` constant ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the direction of the boundaries to put the PML layers next to. e.g. if `X`, then specifies PML on the $\pm x$ boundaries (depending on the value of `side`, below). Default is the special value `ALL`, which puts PML layers on the boundaries in all directions.
 
-**`side` [`side` constant ]**  
+**`side` [`side` constant ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify which side, `Low` or `High` of the boundary or boundaries to put PML on. e.g. if side is `Low` and direction is `X`, then a PML layer is added to the $-x$ boundary. Default is the special value `ALL`, which puts PML layers on both sides.
 
-**`R_asymptotic` [`number`]**  
+**`R_asymptotic` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The asymptotic reflection in the limit of infinite resolution or infinite PML thickness, for refections from air (an upper bound for other media with index &gt; 1). For a finite resolution or thickness, the reflection will be *much larger*, due to the discretization of Maxwell's equation. Default value is 10<sup>−15</sup>, which should suffice for most purposes. You want to set this to be small enough so that waves propagating within the PML are attenuated sufficiently, but making `R_asymptotic` too small will increase the numerical reflection due to discretization.
 
-**`pml_profile` [`function`]**  
+**`pml_profile` [`function`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml_profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `pml_profile=lambda u: u*u*u`.
 
@@ -612,35 +612,35 @@ The `Source` class is used to specify the current sources via the `Simulation.so
 
 Properties:
 
-**`src` [`SourceTime` class ]**  
+**`src` [`SourceTime` class ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the time-dependence of the source (see below). No default.
 
-**`component` [`component` constant ]**  
+**`component` [`component` constant ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the direction and type of the current component: e.g. `meep.Ex`, `meep.Ey`, etcetera for an electric-charge current, and `meep.Hx`, `meep.Hy`, etcetera for a magnetic-charge current. Note that currents pointing in an arbitrary direction are specified simply as multiple current sources with the appropriate amplitudes for each component. No default.
 
-**`center` [`Vector3`]**  
+**`center` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The location of the center of the current source in the computational cell. No default.
 
-**`size` [`Vector3`]**  
+**`size` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The size of the current distribution along each direction of the computational cell. Default is (0,0,0): a point-dipole source.
 
-**`amplitude` [`complex`]**  
+**`amplitude` [`complex`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 An overall complex amplitude multiplying the the current source. Default is 1.0.
 
-**`amp_func` [`function`]**  
+**`amp_func` [`function`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function of a single argument, that takes a `Vector3` giving a position and returns a complex current amplitude for that point. The position argument is *relative* to the `center` of the current source, so that you can move your current around without changing your function. Default is `None`, meaning that a constant amplitude of 1.0 is used. Note that your amplitude function (if any) is *multiplied* by the `amplitude` property, so both properties can be used simultaneously.
 
-**`amp_func_file` [`string`]**  
+**`amp_func_file` [`string`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 String of the form `path_to_h5_file.h5:dataset`. The `.h5` extension is optional. Meep will read the HDF5 file and create an amplitude function that interpolates into the grid specified by the file. Meep expects the data to be split into real and imaginary parts, so in the above example it will look for `dataset.re` and `dataset.im` in the file `path_to_h5_file.h5`. Defaults to the empty string.
 
-**`amp_data` [`numpy.ndarray with dtype=numpy.complex128`]**  
+**`amp_data` [`numpy.ndarray with dtype=numpy.complex128`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Like `amp_func_file` above, but instead of interpolating into an HDF5 file, interpolates into a complex numpy array. The array should be three dimensions. For a 2D simulation, just pass 1 for the third dimension, e.g., `arr = np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
@@ -650,31 +650,31 @@ As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chap
 
 This is a subclass of `Source` and has **all of the properties** of `Source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp_func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
 
-**`eig_band` [`integer`]**  
+**`eig_band` [`integer`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency band at a given **k** point, and so on.
 
-**`direction` [`meep.X`, `meep.Y`, or `meep.Z;` default `meep.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**  
+**`direction` [`meep.X`, `meep.Y`, or `meep.Z;` default `meep.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig_match_freq` is `False`, you can specify a particular **k** vector of the desired mode with `eig_kpoint` (in Meep units of 2π/$a$).
+By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig_match_freq` is `False`, you can specify a particular **k** vector of the desired mode with `eig_kpoint` (in Meep units of 2π/$a$).   (By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`.)
 
-**`eig_parity` [`meep.NO_PARITY` (default), `meep.EVEN_Z`, `meep.ODD_Z`, `meep.EVEN_Y`, `meep.ODD_Y`]**  
+**`eig_parity` [`meep.NO_PARITY` (default), `meep.EVEN_Z`, `meep.ODD_Z`, `meep.EVEN_Y`, `meep.ODD_Y`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
-**`eig_resolution` [`integer`, defaults to same as Meep resolution ]**  
+**`eig_resolution` [`integer`, defaults to same as Meep resolution ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels.
 
-**`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]**  
+**`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.
 
-**`component` [as above, but defaults to `ALL_COMPONENTS`]**  
+**`component` [as above, but defaults to `ALL_COMPONENTS`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Once the MPB modes are computed, equivalent electric and magnetic sources are created within Meep. By default, these sources include magnetic and electric currents in *all* transverse directions within the source region, corresponding to the mode fields as described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). If you specify a `component` property, however, you can include only one component of these currents if you wish. Most users won't need this feature.
 
-**`eig_lattice_size` [`Vector3`], `eig_lattice_center` [`Vector3`]**  
+**`eig_lattice_size` [`Vector3`], `eig_lattice_center` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig_lattice_size` and `eig_lattice_center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
 
@@ -686,23 +686,23 @@ The `src_time` object (`Source.src`), which specifies the time dependence of the
 
 A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
 
-**`frequency` [`number`]**  
+**`frequency` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The frequency *f* in units of $c$/distance or ω in units of $2\pi c$/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
-**`start_time` [`number`]**  
+**`start_time` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The starting time for the source. Default is 0 (turn on at $t=0$).
 
-**`end_time` [`number`]**  
+**`end_time` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The end time for the source. Default is 10<sup>20</sup> (never turn off).
 
-**`width` [`number`]**  
+**`width` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Roughly, the temporal width of the smoothing (technically, the inverse of the exponential rate at which the current turns off and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
 
-**`cutoff` [`number`]**  
+**`cutoff` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 How many `width`s the current decays for before we cut it off and set it to zero. Default is 3.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times.
 
@@ -710,19 +710,19 @@ How many `width`s the current decays for before we cut it off and set it to zero
 
 A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
 
-**`frequency` [`number`]**  
+**`frequency` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The center frequency $f$ in units of $c$/distance (or ω in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
-**`width` [`number`]**  
+**`width` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The width $w$ used in the Gaussian. No default value. You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
 
-**`start_time` [`number`]**  
+**`start_time` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The starting time for the source; default is 0 (turn on at $t=0$). This is not the time of the peak. See below.
 
-**`cutoff` [`number`]**  
+**`cutoff` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start_time + cutoff*width`.
 
@@ -730,15 +730,15 @@ How many `width`s the current decays for before we cut it off and set it to zero
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off.
 
-**`src_func` [`function`]**  
+**`src_func` [`function`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The function $f(t)$ specifying the time-dependence of the source. It should take one argument (the time in Meep units) and return a complex number.
 
-**`start_time` [`number`]**  
+**`start_time` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The starting time for the source. Default is -10<sup>20</sup>: turn on at $t=-\infty$. Note, however, that the simulation normally starts at $t=0$ with zero fields as the initial condition, so there is implicitly a sharp turn-on at $t=0$ whether you specify it or not.
 
-**`end_time` [`number`]**  
+**`end_time` [`number`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The end time for the source. Default is 10<sup>20</sup> (never turn off).
 
@@ -748,16 +748,16 @@ A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a regi
 
 Properties:
 
-**`center` [`Vector3`]**  
+**`center` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The center of the flux region (no default).
 
-**`size` [`Vector3`]**  
+**`size` [`Vector3`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The size of the flux region along each of the coordinate axes. Default is (0,0,0); a single point.
 
-**`direction` [`direction` constant ]**  
+**`direction` [`direction` constant ]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The direction in which to compute the flux (e.g. `meep.X`, `meep.Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
 
-**`weight` [`complex`]**  
+**`weight` [`complex`]**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A weight factor to multiply the flux by when it is computed. Default is 1.0.
 
 Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
@@ -773,7 +773,7 @@ Miscellaneous Functions
 
 The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is empty (the default), however, then Meep constructs a default prefix based on the current Python filename with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
 
-**`Simulation.get_filename_prefix()`**  
+**`Simulation.get_filename_prefix()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return the current prefix string that is prepended, by default, to all file names.
 
@@ -781,14 +781,14 @@ If you don't want to use any prefix, then you should set `filename_prefix` to `F
 
 In addition to the filename prefix, you can also specify that all the output files be written into a newly-created directory (if it does not yet exist). This is done by running:
 
-**`Simulation.use_output_directory([dirname])`**  
+**`Simulation.use_output_directory([dirname])`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Put output in a subdirectory, which is created if necessary. If the optional argument dirname is specified, that is the name of the directory. Otherwise, the directory name is the current Python file name with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of `"test-out"`.
 
 
 ### Simulation Time
 
-**`Simulation.meep_time()`**  
+**`Simulation.meep_time()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return the current simulation time in simulation time units (e.g. during a run function). This is not the wall-clock time.
 
@@ -798,35 +798,35 @@ Occasionally, e.g. for termination conditions of the form *time* &lt; *T*?, it
 
 Meep supports a large number of functions to perform computations on the fields. Most of them are accessed via the lower-level C++/SWIG interface. Some of them are based on the following simpler, higher-level versions. They are accessible as methods of a `Simulation` instance.
 
-**`get_field_point(c, pt)`**  
+**`get_field_point(c, pt)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, returns the value of that component at that point.
 
-**`get_epsilon_point(pt)`**  
+**`get_epsilon_point(pt)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Equivalent to `get_field_point(meep.Dielectric, pt)`.
 
-**`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**  
+**`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computationall cell). The volume can also be specified via the `center` and `size` arguments.
 
-**`flux_in_box(dir, box=None, center=None, size=None)`**  
+**`flux_in_box(dir, box=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `direction` constant, and a `meep.Volume`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `flux_in_box(d=meep.X,meep.Volume(center=meep.Vector3(0,0,0),size=meep.Vector3(0,1,1)))`. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`electric_energy_in_box(box=None, center=None, size=None)`**  
+**`electric_energy_in_box(box=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `meep.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`magnetic_energy_in_box(box=None, center=None, size=None)`**  
+**`magnetic_energy_in_box(box=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `meep.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`field_energy_in_box(box=None, center=None, size=None)`**  
+**`field_energy_in_box(box=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `meep.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
-**`modal_volume_in_box(box=None, center=None, size=None)`**  
+**`modal_volume_in_box(box=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum (ε|E|<sup>2</sup>). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you.
 
@@ -836,13 +836,13 @@ Often, you want the integration box to be the entire computational cell. A usefu
 
 One versatile feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output_field_function`, described later). This is done via the functions:
 
-**`integrate_field_function(cs, func, where=None, center=None, size=None)`**  
+**`integrate_field_function(cs, func, where=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Returns the integral of the complex-valued function `func` over the `Volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` contained in the `Simulation` instance that calls this method. `func` is a function of position (a `Vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued. The volume can optionally be specified via the `center` and `size` arguments.
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
 
-**`max_abs_field_function(cs, func, where=None, center=None, size=None)`**  
+**`max_abs_field_function(cs, func, where=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `integrate_field_function`, but returns the maximum absolute value of `func` in the volume `where` instead of its integral.
 
@@ -850,7 +850,7 @@ The integration is performed by summing over the grid points with a simple trape
 
 Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* computational cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
 
-**`integrate2_field_function(fields2, cs1, cs2, func, where=None, center=None, size=None)`**  
+**`integrate2_field_function(fields2, cs1, cs2, func, where=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Similar to `integrate_field_function`, but takes additional parameters `fields2` and `cs2`. `fields2` is a `meep::fields*` object similar to the global `fields` variable (see below) specifying the fields from another simulation. `cs1` is a list of components to integrate with from the `meep::fields` instance in `Simulation.fields`, as for `integrate_field_function`, while `cs2` is a list of components to integrate from `fields2`. Similar to `integrate_field_function`, `func` is a function that returns an number given arguments consisting of: the position vector, followed by the values of the components specified by `cs1` (in order), followed by the values of the components specified by `cs2` (in order). The volume can optionally be specified via the `center` and `size` arguments.
 
 To get two fields in memory at once for `integrate2_field_function`, the easiest way is to run one simulation within a given Python file, then save the results in another fields variable, then run a second simulation. This would look something like:
@@ -869,23 +869,23 @@ It is also possible to timestep both fields simultaneously (e.g. doing one times
 
 Once the fields/simulation have been initialized, you can change the values of various parameters by using the following functions (which are attributes of the `Simulation` class):
 
-**`reset_meep()`**  
+**`reset_meep()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Reset all of Meep's parameters, deleting the fields, structures, etcetera, from memory as if you had not run any computations.
 
-**`restart_fields()`**  
+**`restart_fields()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Restart the fields at time zero, with zero fields. Does *not* reset the Fourier transforms of the flux planes, which continue to be accumulated.
 
-**`change_k_point(k)`**  
+**`change_k_point(k)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Change the `k_point` (the Bloch periodicity).
 
-**`change_sources(new_sources)`**  
+**`change_sources(new_sources)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Change the list of sources in `Simulation.sources` to `new_sources`, and changes the sources used for the current simulation. `new_sources` must be a list of `Source` objects.
 
-**`set_materials(geometry=None, default_material=None)`**  
+**`set_materials(geometry=None, default_material=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 This can be called in a step function, and is useful for changing the geometry or default material as a function of time.
 
@@ -893,76 +893,76 @@ This can be called in a step function, and is useful for changing the geometry o
 
 Given a bunch of `FluxRegion` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmttancereflectance-spectra) and [Tutorial/Basics](Python_Tutorials/Basics.md). These are attributes of the `Simulation` class. The most important function is:
 
-**`add_flux(fcen, df, nfreq, FluxRegions...)`**  
+**`add_flux(fcen, df, nfreq, FluxRegions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *flux object*, which you can pass to the functions below to get the flux spectrum, etcetera.
 
 As described in the tutorial, you normally use `add_flux` via statements like:
 
-**`transmission = sim.add_flux(...)`**  
+**`transmission = sim.add_flux(...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 to store the flux object in a variable. `add_flux` initializes the fields if necessary, just like calling `run`, so you should only call it *after* initializing your `Simulation` object which includes specifying `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many flux objects as you want, e.g. to look at powers flowing in different regions or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the flux region multiplied by the number of electric and magnetic field components required to get the Poynting vector multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
 Once you have called `add_flux`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the [run functions](#run-functions). At any time, you can ask for Meep to print out the current flux spectrum via:
 
-**`display_fluxes(fluxes...)`**  
+**`display_fluxes(fluxes...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
 You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `display_csv("flux", get_flux_freqs(f1), get_fluxes(f1), get_fluxes(f2), get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
-**`get_flux_freqs(flux)`**  
+**`get_flux_freqs(flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`get_fluxes(flux)`**  
+**`get_fluxes(flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
 As described in [Tutorial/Basics](Python_Tutorials/Basics.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
-**`save_flux(filename, flux)`**  
+**`save_flux(filename, flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
-**`load_flux(filename, flux)`**  
+**`load_flux(filename, flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_flux` in a simulation of the same dimensions (for both the computational cell and the flux regions) with the same number of processors.
 
-**`load_minus_flux(filename, flux)`**  
+**`load_minus_flux(filename, flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load_flux`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
 Sometimes it is more convenient to keep the Fourier-transformed fields in memory rather than writing them to a file and immediately loading them back again. To that end, the `Simulation` class exposes the following three methods:
 
-**`get_flux_data(flux)`**  
+**`get_flux_data(flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Get the Fourier-transformed fields corresponding to the given flux object as a `FluxData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_flux_data` below and should be considered opaque.
 
-**`load_flux_data(flux, fdata)`**  
+**`load_flux_data(flux, fdata)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from the `FluxData` object `fdata`. You must load from an object that was created by `get_flux_data` in a simulation of the same dimensions (for both the computational cell and the flux regions) with the same number of processors.
 
-**`load_minus_flux_data(flux, fdata)`**  
+**`load_minus_flux_data(flux, fdata)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load_flux_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
-**`scale_flux_fields(s, flux)`**  
+**`scale_flux_fields(s, flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
 
-**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**  
+**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object and list of band indices, return a tuple of 1) the eigenmode coefficients as a 3D numpy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)), 2) the group velocity as a numpy array, and 3) a list of kpoints as `mp.Vector3`s. The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`meep.NO_PARITY` (default), `meep.EVEN_Z`, `meep.ODD_Z`, `meep.EVEN_Y`, `meep.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example of `get_eigenmode_coefficients`.
 
-Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with nonmonotonic dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.
+Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with nonmonotonic dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.)
 
-**`add_mode_monitor(fcen, df, nfreq, ModeRegions...)`**  
+**`add_mode_monitor(fcen, df, nfreq, ModeRegions...)`**
 Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
-**`get_eigenmode_freqs(flux)`**  
+**`get_eigenmode_freqs(flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
 
@@ -980,29 +980,29 @@ Most commonly, you will want to **normalize** the force spectrum in some way, ju
 
 The usage is similar to the flux spectra: you define a set of `ForceRegion` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add_force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display_forces` to display the force spectra at the end. There are also `save_force`, `load_force`, and `load_minus_force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
-**`ForceRegion`**  
+**`ForceRegion`**
 
 A region (volume, plane, line, or point) in which to compute the integral of the stress tensor of the Fourier-transformed fields. Its properties are:
 
-**`center [ Vector3 ]`**  
+**`center [ Vector3 ]`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The center of the force region (no default).
 
-**`size [ Vector3 ]`**  
+**`size [ Vector3 ]`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The size of the force region along each of the coordinate axes. Default is (0,0,0) (a single point).
 
-**`direction [ direction constant ]`**  
+**`direction [ direction constant ]`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). Unlike `FluxRegion`, you must specify this explicitly, because there is not generally any relationship between the direction of the force and the orientation of the force region.
 
-**`weight [ complex ]`**  
+**`weight [ complex ]`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A weight factor to multiply the force by when it is computed. Default is 1.0.
 
 In most circumstances, you should define a set of `ForceRegion`s whose union is a closed surface lying in vacuum and enclosing the object that is experiencing the force.
 
-**`Simulation.add_force(fcen, df, nfreq, ForceRegions...)`**  
+**`Simulation.add_force(fcen, df, nfreq, ForceRegions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Add a bunch of `ForceRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
 
@@ -1016,45 +1016,45 @@ to store the flux object in a variable. `add_force` initializes the fields if ne
 
 Once you have called `add_force`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current force spectrum via:
 
-**`display_forces(forces...)`**  
+**`display_forces(forces...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the force spectra.
 
 You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `display_csv("force", get_force_freqs(f1), get_forces(f1), get_forces(f2), get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
-**`get_force_freqs(force)`**  
+**`get_force_freqs(force)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a force object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`get_forces(flux)`**  
+**`get_forces(flux)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
 As described in [Tutorial/Basics](Python_Tutorials/Basics.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
-**`save_force(filename, force)`**  
+**`save_force(filename, force)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
-**`load_force(filename, force)`**  
+**`load_force(filename, force)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_force` in a simulation of the same dimensions for both the computational cell and the force regions with the same number of processors.
 
-**`load_minus_force(filename, force)`**  
+**`load_minus_force(filename, force)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load_force`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
 To keep the fields in memory and avoid writing to and reading from a file, use the following three methods:
 
-**`get_force_data(force)`**  
+**`get_force_data(force)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Get the Fourier-transformed fields corresponding to the given force object as a `ForceData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_force_data` below and should be considered opaque. 
+Get the Fourier-transformed fields corresponding to the given force object as a `ForceData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_force_data` below and should be considered opaque.
 
-**`load_force_data(force, fdata)`**  
+**`load_force_data(force, fdata)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given force object (replacing any values currently there) from the `ForceData` object `fdata`. You must load from an object that was created by `get_force_data` in a simulation of the same dimensions (for both the computational cell and the flux regions) with the same number of processors.
 
-**`load_minus_force_data(filename, force)`**  
+**`load_minus_force_data(filename, force)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load_force_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
@@ -1062,11 +1062,11 @@ As `load_force_data`, but negates the Fourier-transformed fields after they are 
 
 Meep can also calculate the LDOS (local density of states) spectrum, as described in [Tutorial/Local Density of States](Python_Tutorials/Local_Density_of_States.md). To do this, you simply pass the following step function to your `run` command:
 
-**`dft_ldos(fcen, df, nfreq)`**  
+**`dft_ldos(fcen, df, nfreq)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwith `df` centered at `fcen`, at `nfreq` frequency points.
 
-**`get_ldos_freqs(ldos)`**  
+**`get_ldos_freqs(ldos)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given an ldos object, returns a list of the frequencies that it is computing the spectrum for.
 
@@ -1086,7 +1086,7 @@ This is based on the principle of equivalence: given the Fourier-transformed tan
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
-**`add_near2far(fcen, df, nfreq, Near2FarRegions...)`**  
+**`add_near2far(fcen, df, nfreq, Near2FarRegions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Add a bunch of `Near2FarRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally-spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a `near2far` object, which you can pass to the functions below to get the far fields.
 
@@ -1094,15 +1094,15 @@ Each `Near2FarRegion` is identical to `FluxRegion` except for the name: in 3d, t
 
 After the simulation run is complete, you can compute the far fields. This is usually for a pulsed source so that the fields have decayed away and the Fourier transforms have finished accumulating.
 
-**`get_farfield(near2far, x)`**  
+**`get_farfield(near2far, x)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a `Vector3` point `x` which can lie anywhere outside the near-field surface, including outside the computational cell and a `near2far` object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (Ex1,Ey1,Ez1,Hx1,Hy1,Hz1,Ex2,Ey2,Ez2,Hx2,Hy2,Hz2,...) for the frequencies 1,2,…,`nfreq`.
 
-**`get_near2far_freqs(n2f)`**  
+**`get_near2far_freqs(n2f)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a near2far object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`output_farfields(near2far, fname, resolution, where=None, center=None, size=None)`**  
+**`output_farfields(near2far, fname, resolution, where=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted. The volume can optionally be specified via `center` and `size`.
 
@@ -1110,33 +1110,33 @@ Note that far fields have the same units and scaling as the *Fourier transforms*
 
 For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Python_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
-**`save_near2far(filename, near2far)`**  
+**`save_near2far(filename, near2far)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Save the Fourier-transformed fields corresponding to the given `near2far` object in an HDF5 file of the given name (without the ".h5" suffix). The current filename-prefix is prepended automatically.
 
-**`load_near2far(filename, near2far)`**  
+**`load_near2far(filename, near2far)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given `near2far` object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_near2far` in a simulation of *the same dimensions* for both the computational cell and the near2far regions with the same number of processors.
 
-**`load_minus_near2far(filename, near2far)`**  
+**`load_minus_near2far(filename, near2far)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load_near2far`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
 To keep the fields in memory and avoid writing to and reading from a file, use the following three methods:
 
-**`get_near2far_data(n2f)`**  
+**`get_near2far_data(n2f)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Get the Fourier-transformed fields corresponding to the given near2far object as a `NearToFarData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_near2far_data` below and should be considered opaque.
 
-**`load_near2far_data(n2f, n2fdata)`**  
+**`load_near2far_data(n2f, n2fdata)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given near2far object (replacing any values currently there) from the `NearToFarData` object `n2fdata`. You must load from an object that was created by `get_near2far_data` in a simulation of the same dimensions (for both the computational cell and the flux regions) with the same number of processors.
 
-**`load_minus_near2far_data(n2f, n2fdata)`**  
+**`load_minus_near2far_data(n2f, n2fdata)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load_near2far_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
-**`scale_near2far_fields(s, near2far)`**  
+**`scale_near2far_fields(s, near2far)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.g. `load_minus_near2far` is equivalent to `load_near2far` followed by `scale_near2far_fields` with `s=-1`.
 
@@ -1144,11 +1144,11 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 These functions dump the raw ε data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same chunks (i.e. the same grid, number of processors, and PML). Currently only stores ε and μ, and not nonlinear coefficients or polarizability.
 
-**`Simulation.dump_structure(fname)`**  
+**`Simulation.dump_structure(fname)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Dumps the structure to the file `fname`.
 
-**`Simulation.load_structure(fname)`**  
+**`Simulation.load_structure(fname)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
 
@@ -1172,7 +1172,7 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### GDSII Support
 
-**`meep.get_GDSII_prisms(material, gdsii_filename, layer)`**  
+**`meep.get_GDSII_prisms(material, gdsii_filename, layer)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer `layer` of a GDSII file `gdsii_filename`.
 
@@ -1187,17 +1187,17 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 
 ### Run Functions
 
-**`run(step_functions..., until=condition/time)`**  
+**`run(step_functions..., until=condition/time)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Run the simulation until a certain time or condition, calling the given step functions (if any) at each timestep. The keyword argument `until` is *either* a number, in which case it is an additional time (in Meep units) to run for, *or* it is a function (of no arguments) which returns `True` when the simulation should stop.
 
-**`run(step_functions..., until_after_sources=condition/time)`**  
+**`run(step_functions..., until_after_sources=condition/time)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Run the simulation until all sources have turned off, calling the given step functions (if any) at each timestep. The keyword argument `until_after_sources` is either a number, in which case it is an *additional* time (in Meep units) to run for after the sources are off, *or* it is a function (of no arguments). In the latter case, the simulation runs until the sources are off *and* `condition` returns `True`.
 
 In particular, a useful value for `until_after_sources` or `until` is often `stop_when_field_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md):
 
-**`stop_when_fields_decayed(dT, c, pt, decay_by)`**  
+**`stop_when_fields_decayed(dT, c, pt, decay_by)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return a `condition` function, suitable for passing to `until`/`until_after_sources`, that examines the component `c` (e.g. `Ex`, etc.) at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared* has decayed by at least `decay_by` from its maximum previous value. In particular, it keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value over that time period &mdash; in this way, it won't be fooled just because the field happens to go through 0 at some instant.
 
@@ -1205,7 +1205,7 @@ Note that, if you make `decay_by` very small, you may need to increase the `cuto
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is:
 
-**`run_k_points(T, k_points)`**  
+**`run_k_points(T, k_points)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources. Returns a list of lists of frequencies (one list of frequencies for each *k*). Also prints out a comma-delimited list of frequencies, prefixed by `freqs:`, and their imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
 
@@ -1219,39 +1219,39 @@ The most common step function is an output function, which outputs some field co
 
 Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), when they are outputted they are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d.
 
-**`output_epsilon()`**  
+**`output_epsilon()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
 
-**`output_mu()`**  
+**`output_mu()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
 
-**`output_dft(dft_fields, fname, where=None, center=None, size=None)`**  
+**`output_dft(dft_fields, fname, where=None, center=None, size=None)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `Volume` `where` defaults to the entire computational cell. The volume can also be specified via the `center` and `size` arguments.
 
-**`output_hpwr()`**  
+**`output_hpwr()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 
-**`output_dpwr()`**  
+**`output_dpwr()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 
-**`output_tot_pwr()`**  
+**`output_tot_pwr()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the total electric and magnetic energy density. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
-**`output_Xfield_x(), output_Xfield_y(), output_Xfield_z(), output_Xfield_r(), output_Xfield_p()`**  
+**`output_Xfield_x(), output_Xfield_y(), output_Xfield_z(), output_Xfield_r(), output_Xfield_p()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting field, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting field, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
-**`output_Xfield()`**  
+**`output_Xfield()`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Outputs *all* the components of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` as above, to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
 
-**`output_png(component, h5topng_options)`**  
+**`output_png(component, h5topng_options)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](https://github.com/stevengj/h5utils/blob/master/README.md), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc bluered"`). See also [Tutorial/Basics](Python_Tutorials/Basics.md#output-tips-and-tricks).
 
@@ -1261,7 +1261,7 @@ By default, `output_png` deletes the `.h5` file when it is done. To preserve the
 
 More generally, it is possible to output an arbitrary function of position and zero or more field components, similar to the `integrate_field_function` described above. This is done by:
 
-**`output_field_function(name, cs, func, real_only=False)`**  
+**`output_field_function(name, cs, func, real_only=False)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
 
@@ -1287,7 +1287,7 @@ with the following input parameters:
 
 + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
-**`get_dft_array(dft_obj, component, num_freq)`**  
+**`get_dft_array(dft_obj, component, num_freq)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Returns the Fourier-transformed fields as a NumPy array.
 
@@ -1301,7 +1301,7 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 The following step function collects field data from a given point and runs [Harminv](https://github.com/stevengj/harminv) on that data to extract the frequencies, decay rates, and other information.
 
-**`Harminv(c, pt, fcen, df, [maxbands])`**  
+**`Harminv(c, pt, fcen, df, [maxbands])`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 `Harminv` is implemented as a class whose constructor returns a step function that collects data from the field component `c` (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
 
@@ -1313,27 +1313,27 @@ $$f(t) = \sum_n a_n e^{-i\omega_n t}$$
 
 The results are stored in the list `Harminv.modes`, which is a list of tuples holding the frequency, amplitude, and error of the modes. Given one of these tuples (e.g., `first_mode = harminv_instance.modes[0]`), you can extract its various components:
 
-**`freq`**  
+**`freq`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The complex frequency ω (in the usual Meep $2\pi c$ units).
 
-**`freq.real`**  
+**`freq.real`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The real part of the frequency ω.
 
-**`freq.decay`**  
+**`freq.decay`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The imaginary part of the frequency ω.
 
-**`Q`**  
+**`Q`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The dimensionless lifetime, or quality factor defined as $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
 
-**`amp`**  
+**`amp`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The complex amplitude $a$.
 
-**`err`**  
+**`err`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A crude measure of the error in the frequency (both real and imaginary)...if the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. **Note**: this error is only the uncertainty in the signal processing, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
 
@@ -1348,80 +1348,80 @@ sim.run(meep.after_sources(h))
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. 
+Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior.
 See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 #### Miscellaneous Step-Function Modifiers
 
-**`combine_step_funcs(step_functions...)`**  
+**`combine_step_funcs(step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, return a new step function that on each step calls all of the passed step functions.
 
-**`synchronized_magnetic(step_functions...)`**  
+**`synchronized_magnetic(step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, return a new step function that on each step calls all of the passed step functions with the magnetic field synchronized in time with the electric field. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 #### Controlling When a Step Function Executes
 
-**`when_true(condition, step_functions...)`**  
+**`when_true(condition, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions and a condition function `condition` (a function of no arguments), evaluate the step functions whenever `condition` returns `True`.
 
-**`when_false(condition, step_functions...)`**  
+**`when_false(condition, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions and a condition function `condition` (a function of no arguments), evaluate the step functions whenever `condition` returns `False`.
 
-**`at_every(dT, step_functions...)`**  
+**`at_every(dT, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them at every time interval of $dT$ units (rounded up to the next time step).
 
-**`after_time(T, step_functions...)`**  
+**`after_time(T, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only for times after a $T$ time units have elapsed from the start of the run.
 
-**`before_time(T, step_functions...)`**  
+**`before_time(T, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only for times before a $T$ time units have elapsed from the start of the run.
 
-**`at_time(T, step_functions...)`**  
+**`at_time(T, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only once, after a $T$ time units have elapsed from the start of the run.
 
-**`after_sources(step_functions...)`**  
+**`after_sources(step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only for times after all of the sources have turned off.
 
-**`after_sources_and_time(T, step_functions...)`**  
+**`after_sources_and_time(T, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only for times after all of the sources have turned off, plus an additional $T$ time units have elapsed.
 
-**`during_sources(step_functions...)`**  
+**`during_sources(step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only for times *before* all of the sources have turned off.
 
-**`at_beginning(step_functions...)`**  
+**`at_beginning(step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only once, at the beginning of the run.
 
-**`at_end(step_functions...)`**  
+**`at_end(step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, evaluates them only once, at the end of the run.
 
 #### Modifying HDF5 Output
 
-**`in_volume(v, step_functions...)`**  
+**`in_volume(v, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the computational cell, corresponding to the `meep::volume* v` (created by the `Volume` function).
 
-**`in_point(pt, step_functions...)`**  
+**`in_point(pt, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, modifies any output functions among them to only output a single *point* of data, at `pt` (a `Vector3`).
 
-**`to_appended(filename, step_functions...)`**  
+**`to_appended(filename, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, modifies any output functions among them to *append* their data to datasets in a single newly-created file named `filename` (plus an `.h5` suffix and the current filename prefix). They append by adding an *extra dimension* to their datasets, corresponding to time.
 
-**`with_prefix(prefix, step_functions...)`**  
+**`with_prefix(prefix, step_functions...)`**
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, modifies any output functions among them to prepend the string `prefix` to the file names (much like `filename_prefix`, above).
 
@@ -1432,7 +1432,7 @@ A step function can take two forms. The simplest is just a function with one arg
 ```py
 def my_step(sim):
        print("Hello world!")
-```       
+```
 
 If one then does `sim.run(my_step, until=100)`, Meep will run for 100 time units and print "Hello world!" at every time step.
 
