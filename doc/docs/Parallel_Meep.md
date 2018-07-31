@@ -57,19 +57,19 @@ Although all processes execute the Python/Scheme file in parallel, print stateme
 
 If for some reason you need to distinguish different MPI processes in your Python/Scheme file, you can use the following two functions:
 
-**`(meep-count-processors)`**  
-**`meep.count_processors()`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`(meep-count-processors)`**
+**`meep.count_processors()`**
+—
 Returns the number of processes that Meep is using in parallel.
 
-**`(meep-my-rank)`**  
-**`meep.my_rank()`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`(meep-my-rank)`**
+**`meep.my_rank()`**
+—
 Returns the index of the process running the current file, from zero to (meep-count-processors)–1.
 
-**`(meep-all-wait)`**  
-**`meep.all_wait()`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`(meep-all-wait)`**
+**`meep.all_wait()`**
+—
 Blocks until all processes execute this statment (MPI_Barrier).
 
 **Warning**: do not attempt to perform different Meep commands in different processes by using the `(meep-my-rank)` or `meep.my_rank()`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.

@@ -194,49 +194,49 @@ make check
 
 The configure script accepts several flags to modify its behavior.
 
-**`--prefix=dir`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--prefix=dir`**
+—
 Install into `dir/bin`, etcetera, as described above.
 
 
-**`--with-mpi`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--with-mpi`**
+—
 Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep` and can be run in either serial or parallel mode (the latter via `mpirun`). Requires MPI to be installed, as described above.  (You should install this *instead* of the serial Meep.) Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
 
-**`--with-libctl=dir`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--with-libctl=dir`**
+—
 If libctl was installed in a nonstandard location (i.e. neither `/usr` nor `/usr/local`), you need to specify the location of the libctl directory, *`dir`*. This is either `prefix/share/libctl`, where `prefix` is the installation prefix of libctl, or the original libctl source code directory. To configure *without* the libctl/Guile interface, use `--without-libctl`.
 
-**`--without-python`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--without-python`**
+—
 Disable building the Python API for Meep.
 
-**`--with-blas=lib`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--with-blas=lib`**
+—
 The `configure` script automatically attempts to detect accelerated BLAS libraries, like DXML (DEC/Alpha), SCSL and SGIMATH (SGI/MIPS), ESSL (IBM/PowerPC), ATLAS, and PHiPACK. You can, however, force a specific library name to try via `--with-blas=lib`.
 
-**`--with-lapack=lib`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--with-lapack=lib`**
+—
 Cause the `configure` script to look for a LAPACK library called *`lib`*. The default is to use `-llapack`.
 
-**`--enable-debug`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--enable-debug`**
+—
 Compile for debugging, adding extra runtime checks and so on.
 
-**`--enable-shared`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--enable-shared`**
+—
 Install the Meep libraries as shared libraries (i.e. dynamically linked) rather than as static libraries. This is off by default because shared libraries require the user to configure their runtime linker paths correctly (see "Paths for Running" above).
 
-**`--without-hdf5`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--without-hdf5`**
+—
 Install Meep without support for the HDF5 libraries (this means you won't be able to output fields and so on).
 
-**`--enable-portable-binary`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--enable-portable-binary`**
+—
 By default, Meep's `configure` script picks compiler flags to optimize Meep as much as possible for the machine you are compiling on. If you wish to run the *same compiled executable* on other machines, however, you need to tell it not to pick compiler flags that use features specific to your current processor. In this case you should pass `--enable-portable-binary` to `configure`. (This option is mainly useful for people creating binary packages for Debian, Fedora, etcetera.)
 
-**`--with-gcc-arch=arch`, `--without-gcc-arch`**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+**`--with-gcc-arch=arch`, `--without-gcc-arch`**
+—
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
 ### Building From Source
