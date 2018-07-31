@@ -334,11 +334,18 @@ class Ellipsoid(Block):
 
 class Prism(GeometricObject):
 
-    def __init__(self, vertices, height, axis=Vector3(z=1), **kwargs):
+    def __init__(self, vertices, height, axis=Vector3(z=1), center=None, **kwargs):
+        centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) + (0.5*height)*axis
+        if center is not None and len(vertices): # shift centroid to center
+            shift = center - centroid
+            vertices = map(lambda v: v + shift, vertices)
+        else:
+            center = centroid
         self.vertices = vertices
         self.height = height
         self.axis = axis
-        super(Prism, self).__init__(**kwargs)
+
+        super(Prism, self).__init__(center=center, **kwargs)
 
 
 class Matrix(object):
