@@ -504,6 +504,14 @@ The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used f
 —
 The axis perpendicular to the prism. Defaults to `Vector3(x=0, y=0, z=1)`.
 
+**`center` [`Vector3`]**
+—
+If `center` is *not* specified, then the coordinates of the `vertices` define the *bottom* of the prism
+(with the top of the prism being at the same coordinates shifted by `height*axis`).
+If `center` *is* specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid)
+of all the vertices (top and bottom) the resulting 3d prism (so that the coordinates of the `vertices` are
+shifted accordingly).
+
 These are some examples of geometric objects created using the above classes:
 
 ```py
