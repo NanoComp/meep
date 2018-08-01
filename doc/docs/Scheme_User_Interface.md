@@ -128,7 +128,7 @@ A predefined material type corresponding to a perfect magnetic conductor at the 
 A material that, effectively, punches a hole through other objects to the background (`default-material`).
 
 **`infinity` [`number`]**
-—A big number (10$^{20}$) to use for "infinite" dimensions of objects.
+—A big number (10<sup>20</sup>) to use for "infinite" dimensions of objects.
 
 **`pi` [`number`]**
 —π (3.14159...).
@@ -582,7 +582,7 @@ The starting time for the source. Default is 0 (turn on at $t=0$). This is not t
 How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start-time + cutoff*width`.
 
 **`custom-src`**
-—
+
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
 
 **`src-func` [`function`]**
