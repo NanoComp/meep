@@ -807,11 +807,10 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
         vector3 axis = gobj->subclass.prism_data->m_p2c.c2;
         PyObject *py_axis = v3_to_pyv3(&axis);
 
-        PyObject *py_center = v3_to_pyv3(&gobj->center);
         PyObject *py_mat = material_to_py_material((meep_geom::material_type)gobj->material);
 
         PyObject *args = Py_BuildValue("(OdO)", py_verts, height, py_axis);
-        PyObject *kwargs = Py_BuildValue("{s:O,s:O}", "center", py_center, "material", py_mat);
+        PyObject *kwargs = Py_BuildValue("{s:O,s:O}", "material", py_mat);
         PyObject *res = PyObject_Call(prism_class, args, kwargs);
 
         Py_DECREF(prism_class);
@@ -819,7 +818,6 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
         Py_DECREF(kwargs);
         Py_DECREF(py_verts);
         Py_DECREF(py_axis);
-        Py_DECREF(py_center);
         Py_DECREF(py_mat);
 
         return res;
