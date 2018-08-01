@@ -181,7 +181,7 @@ A predefined material type corresponding to a perfect electric conductor at the 
 A predefined material type corresponding to a perfect magnetic conductor at the boundary of which the parallel magnetic field is zero. Technically, $\mu = -\infty$.
 
 **`inf` [`number`]**
-—A big number (10$^{20}$) to use for "infinite" dimensions of objects.
+—A big number (10<sup>20</sup>) to use for "infinite" dimensions of objects.
 
 Constants (Enumerated Types)
 ----------------------------
@@ -540,14 +540,14 @@ geometry=[meep.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=meep.m
 ```py
 # A hexagon defined as a prism with six vertices centered on the origin
 # of material crystalline silicon (from the materials library)
-vertices = [ mp.Vector3(-1,0),
-             mp.Vector3(-0.5,math.sqrt(3)/2),
-             mp.Vector3(0.5,math.sqrt(3)/2),
-             mp.Vector3(1,0),
-             mp.Vector3(0.5,-math.sqrt(3)/2),
-             mp.Vector3(-0.5,-math.sqrt(3)/2) ]
+vertices = [mp.Vector3(-1,0),
+            mp.Vector3(-0.5,math.sqrt(3)/2),
+            mp.Vector3(0.5,math.sqrt(3)/2),
+            mp.Vector3(1,0),
+            mp.Vector3(0.5,-math.sqrt(3)/2),
+            mp.Vector3(-0.5,-math.sqrt(3)/2)]
 
-geometry = [mp.Prism(vertices, height=mp.inf, material=cSi)]
+geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 
 ```
 
@@ -736,7 +736,7 @@ The starting time for the source; default is 0 (turn on at $t=0$). This is not t
 How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start_time + cutoff*width`.
 
 ### CustomSource
-—
+
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off.
 
 **`src_func` [`function`]**
@@ -967,6 +967,7 @@ Given a flux object and list of band indices, return a tuple of 1) the eigenmode
 Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with nonmonotonic dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.)
 
 **`add_mode_monitor(fcen, df, nfreq, ModeRegions...)`**
+—
 Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.

@@ -69,15 +69,12 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm
 
 freqs = mp.get_eigenmode_freqs(eig_mon)
 
-kx = lambda m,freq: math.sqrt(freq**2 - (m/gp)**2)
-theta_out = lambda m,freq: math.acos(kx(m,freq)/freq)
-
 nmode = 10
 for nm in range(nmode):
   coeffs, vgrps, kpoints = sim.get_eigenmode_coefficients(eig_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(theta_out(nm,freqs[nf]))
+    mode_angle = math.degrees(math.acos(kpoints[nf].x/freqs[nf]))
     mode_tran = abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
     if nm != 0:
       mode_tran = 0.5*mode_tran
