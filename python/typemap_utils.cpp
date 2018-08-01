@@ -810,7 +810,7 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
         PyObject *py_mat = material_to_py_material((meep_geom::material_type)gobj->material);
 
         PyObject *args = Py_BuildValue("(OdO)", py_verts, height, py_axis);
-        PyObject *kwargs = Py_BuildValue("{s:O,s:O}", "material", py_mat);
+        PyObject *kwargs = Py_BuildValue("{s:O}", "material", py_mat);
         PyObject *res = PyObject_Call(prism_class, args, kwargs);
 
         Py_DECREF(prism_class);
