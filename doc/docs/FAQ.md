@@ -46,9 +46,11 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to supercomputers. [Conda packages](Installation/#conda-packages) are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
+Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, from notebooks to desktops to supercomputers. [Conda packages](Installation/#conda-packages) of the latest released version are available for Linux and macOS. There are also Conda packages of [nightly development builds](Installation/#nightly-builds) which can be used to experiment with new features. Installing Meep from the source code requires some understanding of Unix, especially to install the various dependencies. Installation shell scripts are available for [Ubuntu 16.04 and 18.04](Build_From_Source/#building-from-source) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
-Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Installation shell scripts are available for [Ubuntu 16.04](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep_python_mpi.sh) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+### Can I install Meep on Windows machines?
+
+Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app and then follow the instructions for [Ubuntu 16.04](Build_From_Source/#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 ### Guile is installed, but configure complains that it can't find `guile`
 
@@ -94,7 +96,7 @@ Usage
 
 ### Is there a Python interface?
 
-An official Python interface was released in January 2018 with version 1.4. An unofficial [Python interface](https://github.com/FilipDominec/python-meep-utils), which is not compatible with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
+Yes. An official Python interface was released in January 2018 with version 1.4. An unofficial [Python interface](https://github.com/FilipDominec/python-meep-utils), which is not compatible with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
 ### What are the different ways to define the material geometry?
 
@@ -102,7 +104,7 @@ There are currently three ways to define the material geometry: (1) the [`Geomet
 
 ### Is there a materials library?
 
-A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO<sub>2</sub>), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al<sub>2</sub>O<sub>3</sub>), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si<sub>3</sub>N<sub>4</sub>), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Additional information is provided in [Materials](Materials/#materials-library).
+Yes. A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (including hydrogenated), [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO<sub>2</sub>), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al<sub>2</sub>O<sub>3</sub>), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si<sub>3</sub>N<sub>4</sub>), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), as well as 11 elemental metals: silver (Ag), gold (Au), copper (Cu), aluminum (Al), berylium (Be), chromium (Cr), nickel (Ni), palladium (Pd), platinum (Pt), titantium (Ti), and tungsten (W). Additional information is provided in [Materials](Materials/#materials-library).
 
 ### How do I import n and k values into Meep?
 
@@ -155,7 +157,7 @@ Only the real, frequency-independent part of ε/μ is written out to an HDF5 fil
 
 ### Does Meep support a non-uniform grid?
 
-Meep does not support grids with spatially varying resolution. One possible approach, which does not require changes to the underlying code and is not yet implemented, is to use a coordinate transformation to selectively increase the resolution in a given region of the computational cell. This is possible using transformation optics which involves a change of materials. For more details, see the notes [Coordinate Transformation and Invariance in Electromagnetism](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) and the [notes by Felix Schwarz on variable resolution in Meep](https://github.com/fesc3555/meep_variable_resolution) using this technique.
+No. Meep does not support grids with spatially varying resolution. One possible approach, which does not require changes to the underlying code and is not yet implemented, is to use a coordinate transformation to selectively increase the resolution in a given region of the computational cell. This is possible using transformation optics which involves a change of materials. For more details, see the notes [Coordinate Transformation and Invariance in Electromagnetism](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) and the [notes by Felix Schwarz on variable resolution in Meep](https://github.com/fesc3555/meep_variable_resolution) using this technique.
 
 ### How do I visualize the structure and fields in 3d?
 

@@ -540,14 +540,14 @@ geometry=[meep.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=meep.m
 ```py
 # A hexagon defined as a prism with six vertices centered on the origin
 # of material crystalline silicon (from the materials library)
-vertices = [ mp.Vector3(-1,0),
-             mp.Vector3(-0.5,math.sqrt(3)/2),
-             mp.Vector3(0.5,math.sqrt(3)/2),
-             mp.Vector3(1,0),
-             mp.Vector3(0.5,-math.sqrt(3)/2),
-             mp.Vector3(-0.5,-math.sqrt(3)/2) ]
+vertices = [mp.Vector3(-1,0),
+            mp.Vector3(-0.5,math.sqrt(3)/2),
+            mp.Vector3(0.5,math.sqrt(3)/2),
+            mp.Vector3(1,0),
+            mp.Vector3(0.5,-math.sqrt(3)/2),
+            mp.Vector3(-0.5,-math.sqrt(3)/2)]
 
-geometry = [mp.Prism(vertices, height=mp.inf, material=cSi)]
+geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 
 ```
 
