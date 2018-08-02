@@ -648,6 +648,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                        match_frequency, parity, eig_resolution, eigensolver_tol);
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2*nb*num_freqs + 2*nf] = coeffs[2*nb*num_freqs + 2*nf + 1] = 0;
+        if (vgrp) vgrp[nb*num_freqs + nf] = 0;
+        if (kpoints) kpoints[nb*num_freqs + nf] = vec(0.0,0.0,0.0);
         continue;
       }
 
