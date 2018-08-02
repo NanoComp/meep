@@ -432,6 +432,7 @@ void *fields::get_eigenmode(double omega_src,
     }
     theta = 0.5 * atan2(-sq_sum1, sq_sum0);
     complex<mpb_real> phase(cos(theta), sin(theta));
+    phase /= sqrt(R[0][0]*R[1][1]*R[2][2]);
     for (i = 0; i < N; ++i) {
       double r = fabs(real(cdata[i] * phase));
       if (r > maxabs) maxabs = r;
