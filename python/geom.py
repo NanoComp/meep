@@ -338,7 +338,7 @@ class Prism(GeometricObject):
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) + (0.5*height)*axis
         if center is not None and len(vertices): # shift centroid to center
             shift = center - centroid
-            vertices = map(lambda v: v + shift, vertices)
+            vertices = list(map(lambda v: v + shift, vertices))
         else:
             center = centroid
         self.vertices = vertices
