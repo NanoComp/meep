@@ -23,7 +23,7 @@ There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listin
 
 ### Are professional consulting services available?
 
-Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
+Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers and maintainers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
 
 ### How can I contribute to the Meep project?
 
@@ -112,7 +112,7 @@ You can import any arbitrary complex permittivity profile via n and k values int
 
 ### Does Meep support importing GDSII files?
 
-Not currently, but work is underway to add support for this feature with expected release in mid 2018. Importing [GDSII](https://en.wikipedia.org/wiki/GDSII) files will facilitate the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+Not currently, but work is ongoing to add support for this feature with expected release in mid-late 2018. Importing [GDSII](https://en.wikipedia.org/wiki/GDSII) files will facilitate the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
 
 ### Why doesn't turning off subpixel averaging work?
 
@@ -161,4 +161,4 @@ No. Meep does not support grids with spatially varying resolution. One possible 
 
 ### How do I visualize the structure and fields in 3d?
 
-You will need [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).
+You can use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics/#visualizing-3d-structures).

@@ -25,8 +25,8 @@ fmax = 1/wvl_min        # max frequency
 fcen = 0.5*(fmin+fmax)  # center frequency
 df = fmax-fmin          # frequency width
 
-src_pos = -0.5*sx+dpml+0.5*dsub
-sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0))]
+src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0))]
 
 k_point = mp.Vector3(0,0,0)
 
@@ -43,12 +43,12 @@ sim = mp.Simulation(resolution=resolution,
                     symmetries=symmetries)
 
 nfreq = 21
-xm = 0.5*sx-dpml-0.5*dpad
-eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+flux_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
-coeffs0, vgrps0, kpoints0 = sim.get_eigenmode_coefficients(eig_mon, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+input_flux = mp.get_fluxes(flux_mon)
 
 sim.reset_meep()
 
@@ -63,19 +63,19 @@ sim = mp.Simulation(resolution=resolution,
                     sources=sources,
                     symmetries=symmetries)
 
-eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
-freqs = mp.get_eigenmode_freqs(eig_mon)
+freqs = mp.get_eigenmode_freqs(mode_mon)
 
 nmode = 10
 for nm in range(nmode):
-  coeffs, vgrps, kpoints = sim.get_eigenmode_coefficients(eig_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+  coeffs, vgrps, kpoints = sim.get_eigenmode_coefficients(mode_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
     mode_angle = math.degrees(math.acos(kpoints[nf].x/freqs[nf]))
-    mode_tran = abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
+    mode_tran = abs(coeffs[0,nf,0])**2/input_flux[nf]
     if nm != 0:
       mode_tran = 0.5*mode_tran
     print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
