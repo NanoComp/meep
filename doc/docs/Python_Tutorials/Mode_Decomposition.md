@@ -2,7 +2,7 @@
 # Mode Decomposition
 ---
 
-This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. There are examples for two different cases: (1) guided modes in dielectric media and (2) planewaves in homogeneous ε/μ media.
+This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. There are examples for two different cases in lossless, dielectric media: (1) guided modes and (2) planewaves.
 
 [TOC]
 
@@ -181,8 +181,8 @@ fmax = 1/wvl_min        # max frequency
 fcen = 0.5*(fmin+fmax)  # center frequency
 df = fmax-fmin          # frequency width
 
-src_pos = -0.5*sx+dpml+0.5*dsub
-sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3(src_pos,0,0), size=mp.Vector3(0,sy,0))]
+src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0))]
 
 k_point = mp.Vector3(0,0,0)
 
@@ -199,12 +199,12 @@ sim = mp.Simulation(resolution=resolution,
                     symmetries=symmetries)
 
 nfreq = 21
-xm = 0.5*sx-dpml-0.5*dpad
-eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+flux_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
-coeffs0, vgrps0, kpoints0 = sim.get_eigenmode_coefficients(eig_mon, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+input_flux = mp.get_fluxes(flux_mon)
 
 sim.reset_meep()
 
@@ -219,19 +219,19 @@ sim = mp.Simulation(resolution=resolution,
                     sources=sources,
                     symmetries=symmetries)
 
-eig_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy,0)))
+mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
 
-freqs = mp.get_eigenmode_freqs(eig_mon)
+freqs = mp.get_eigenmode_freqs(mode_mon)
 
 nmode = 10
 for nm in range(nmode):
-  coeffs, vgrps, kpoints = sim.get_eigenmode_coefficients(eig_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+  coeffs, vgrps, kpoints = sim.get_eigenmode_coefficients(mode_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
   for nf in range(nfreq):
       mode_wvl = 1/freqs[nf]
       mode_angle = math.degrees(math.acos(kpoints[nf].x/freqs[nf]))
-      mode_tran = abs(coeffs[0,nf,0])**2/abs(coeffs0[0,nf,0])**2
+      mode_tran = abs(coeffs[0,nf,0])**2/input_flux[nf]
       if nm != 0:
       	 mode_tran = 0.5*mode_tran
       print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
@@ -295,6 +295,6 @@ The diffraction orders/modes are a finite set of propagating planewaves. The wav
 ![](../images/grating_diffraction_spectra.png)
 </center>
 
-In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is (2/(mπ))<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π. The phase differerence/contrast is equivalent to (2π/λ)(n-1)s where λ is the wavelength, n is the refractive index of the grating, and s is the propagation distance in the grating (`gh` in the simulation script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above.
+In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is (2/(mπ))<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π. The phase differerence/contrast is (2π/λ)(n-1)s where λ is the wavelength, n is the refractive index of the grating, and s is the propagation distance in the grating (`gh` in the simulation script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above.
 
 To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the analytic results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm (for which the scalar theory is valid) for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3942, 0.04371, 0.0154, and 0.0077. This corresponds to relative errors of approximately 1.4%, 2.3%, 2.0%, and 3.1% which indicates good agreement.
