@@ -100,7 +100,7 @@ void susceptibility::dump(h5file *h5f, size_t *start) {
 }
 
 void susceptibility::load(h5file *h5f, size_t *start, size_t num_sigmas, size_t *cd_vals) {
-  for (int i = 0; i < num_sigmas; ++i) {
+  for (size_t i = 0; i < num_sigmas; ++i) {
     size_t c = cd_vals[i * 2];
     size_t d = cd_vals[(i * 2) + 1];
     sigma[c][d] = new realnum[ntot];

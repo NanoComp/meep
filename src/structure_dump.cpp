@@ -30,6 +30,110 @@ using namespace std;
 
 namespace meep {
 
+void structure::write_num_susceptibilites(h5file *file, const char *dname, size_t *source) {
+  size_t len = *source == 0 ? 0 : num_chunks;
+  file->create_data(dname, 1, &len);
+  for (size_t i = 0; i < len; i++)
+    if (chunks[i]->is_mine()) {
+      size_t start = i;
+      size_t ntot = 1;
+      file->write_chunk(1, &start, &ntot, source);
+    }
+}
+
+void structure::write_num_sigmas(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas) {
+  size_t sus_ntot = sum_to_all(num_sus);
+  size_t sigma_start = partial_sum_to_all(num_sus) - num_sus;
+
+  file->create_data(dname, 1, &sus_ntot);
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine()) {
+      file->write_chunk(1, &sigma_start, &num_sus, num_sigmas);
+    }
+  }
+  file->prevent_deadlock();
+}
+
+// Write location (component and direction) of each non-null sigma
+void structure::write_component_direction_data(h5file *file, const char* dname, size_t *num_sus, size_t **num_sigmas,
+                                               size_t ***sigma_cd, int EorH) {
+  size_t my_sigma_cd_ntot = 0;
+  for (size_t i = 0; i < num_sus[EorH]; ++i) {
+    my_sigma_cd_ntot += num_sigmas[EorH][i] * 2;
+  }
+
+  size_t sigma_cd_ntot = sum_to_all(my_sigma_cd_ntot);
+  size_t my_sigma_cd_start = partial_sum_to_all(my_sigma_cd_ntot) - my_sigma_cd_ntot;
+
+  file->create_data(dname, 1, &sigma_cd_ntot);
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
+      for (size_t j = 0; j < num_sus[EorH]; ++j) {
+        size_t cd_count = num_sigmas[EorH][j] * 2;
+        file->write_chunk(1, &my_sigma_cd_start, &cd_count, sigma_cd[EorH][j]);
+        my_sigma_cd_start += cd_count;
+      }
+    }
+  }
+  file->prevent_deadlock();
+}
+
+void structure::write_sigma_data(h5file *file, const char *dname, size_t *num_sus, size_t **num_sigmas, int EorH) {
+  size_t my_ntot = 0;
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
+      for (size_t j = 0; j < num_sus[EorH]; ++j) {
+        my_ntot += num_sigmas[EorH][j] * chunks[i]->chiP[0]->ntot;
+      }
+    }
+  }
+
+  size_t my_start = partial_sum_to_all(my_ntot ) - my_ntot;
+  size_t ntotal = sum_to_all(my_ntot );
+
+  // Write sigma data
+  file->create_data(dname, 1, &ntotal);
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
+      susceptibility *sus = chunks[i]->chiP[EorH];
+      while (sus) {
+        sus->dump(file, &my_start);
+        sus = sus->next;
+      }
+    }
+  }
+  file->prevent_deadlock();
+}
+
+void structure::write_susceptibility_params(h5file *file, const char *dname, int EorH) {
+  // Get number of susceptibility params
+  size_t params_ntotal = 0;
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
+      susceptibility *sus = chunks[i]->chiP[EorH];
+      while (sus) {
+        params_ntotal += sus->get_num_params() + 1;
+        sus = sus->next;
+      }
+    }
+  }
+
+  // Write params
+  size_t params_start = 0;
+  file->create_data(dname, 1, &params_ntotal);
+  if (am_master()) {
+    for (int i = 0; i < num_chunks; ++i) {
+      if (chunks[i]->chiP[EorH] && chunks[i]->is_mine()) {
+        susceptibility *sus = chunks[i]->chiP[EorH];
+        while (sus) {
+          sus->dump_params(file, &params_start);
+          sus = sus->next;
+        }
+      }
+    }
+  }
+}
+
 void structure::dump(const char *filename) {
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
@@ -93,31 +197,16 @@ void structure::dump(const char *filename) {
   }
 
   // Write susceptibility list sizes
-  size_t E_sus_len = my_num_sus[0] == 0 ? 0 : num_chunks;
-  file.create_data("num_E_sus", 1, &E_sus_len);
-  for (size_t i = 0; i < E_sus_len; i++)
-    if (chunks[i]->is_mine()) {
-      size_t my_start = i;
-      size_t ntot = 1;
-      file.write_chunk(1, &my_start, &ntot, &my_num_sus[0]);
-    }
-
-  size_t H_sus_len = my_num_sus[1] == 0 ? 0 : num_chunks;
-  file.create_data("num_H_sus", 1, &H_sus_len);
-  for (size_t i = 0; i < H_sus_len; i++)
-    if (chunks[i]->is_mine()) {
-      size_t my_start = i;
-      size_t ntot = 1;
-      file.write_chunk(1, &my_start, &ntot, &my_num_sus[1]);
-    }
+  write_num_susceptibilites(&file, "num_E_sus", &my_num_sus[0]);
+  write_num_susceptibilites(&file, "num_H_sus", &my_num_sus[1]);
   file.prevent_deadlock();
 
   // Get number of non-null sigma entries for each susceptibility of each chiP
   size_t *num_sigmas[2];
-  num_sigmas[0] = new size_t[my_num_sus[0]];
-  num_sigmas[1] = new size_t[my_num_sus[1]];
-  memset(num_sigmas[0], 0, sizeof(size_t) * my_num_sus[0]);
-  memset(num_sigmas[1], 0, sizeof(size_t) * my_num_sus[1]);
+  for (int i = 0; i < 2; ++i) {
+    num_sigmas[i] = new size_t[my_num_sus[i]];
+    memset(num_sigmas[i], 0, sizeof(size_t) * my_num_sus[i]);
+  }
 
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->is_mine()) {
@@ -140,32 +229,13 @@ void structure::dump(const char *filename) {
   }
 
   // Write num_sigmas data
-  size_t sus_ntot[2] = {0, 0};
-  sum_to_all(my_num_sus, sus_ntot, 2);
-  size_t my_E_sigma_start = partial_sum_to_all(my_num_sus[0]) - my_num_sus[0];
-  size_t my_H_sigma_start = partial_sum_to_all(my_num_sus[1]) - my_num_sus[1];
-
-  file.create_data("num_E_sigmas", 1, &sus_ntot[0]);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine()) {
-      file.write_chunk(1, &my_E_sigma_start, &my_num_sus[0], num_sigmas[0]);
-    }
-  }
-
-  file.create_data("num_H_sigmas", 1, &sus_ntot[1]);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine()) {
-      file.write_chunk(1, &my_H_sigma_start, &my_num_sus[1], num_sigmas[1]);
-    }
-  }
-  file.prevent_deadlock();
+  write_num_sigmas(&file, "num_E_sigmas", my_num_sus[E_stuff], num_sigmas[E_stuff]);
+  write_num_sigmas(&file, "num_H_sigmas", my_num_sus[H_stuff], num_sigmas[H_stuff]);
 
   // Get component and direction of non-null sigmas
   size_t **sigma_cd[2] = {NULL, NULL};
-  sigma_cd[0] = new size_t*[my_num_sus[0]];
-  sigma_cd[1] = new size_t*[my_num_sus[1]];
-
   for (int ft = 0; ft < 2; ++ft) {
+    sigma_cd[ft] = new size_t*[my_num_sus[ft]];
     for (size_t i = 0; i < my_num_sus[ft]; ++i) {
       sigma_cd[ft][i] = new size_t[num_sigmas[ft][i] * 2];
       memset(sigma_cd[ft][i], 0, sizeof(size_t) * num_sigmas[ft][i] * 2);
@@ -195,90 +265,14 @@ void structure::dump(const char *filename) {
     }
   }
 
-  size_t my_sigma_cd_E_ntot = 0;
-  for (size_t i = 0; i < my_num_sus[E_stuff]; ++i) {
-    my_sigma_cd_E_ntot += num_sigmas[E_stuff][i] * 2;
-  }
+  write_component_direction_data(&file, "sigma_cd_E", my_num_sus, num_sigmas, sigma_cd, E_stuff);
+  write_component_direction_data(&file, "sigma_cd_H", my_num_sus, num_sigmas, sigma_cd, H_stuff);
 
-  size_t my_sigma_cd_H_ntot = 0;
-  for (size_t i = 0; i < my_num_sus[H_stuff]; ++i) {
-    my_sigma_cd_H_ntot += num_sigmas[H_stuff][i] * 2;
-  }
+  write_sigma_data(&file, "E_sigma", my_num_sus, num_sigmas, E_stuff);
+  write_sigma_data(&file, "H_sigma", my_num_sus, num_sigmas, H_stuff);
 
-  size_t sigma_cd_E_ntot = sum_to_all(my_sigma_cd_E_ntot);
-  size_t sigma_cd_H_ntot = sum_to_all(my_sigma_cd_H_ntot);
-
-  size_t my_sigma_cd_E_start = partial_sum_to_all(my_sigma_cd_E_ntot) - my_sigma_cd_E_ntot;
-  size_t my_sigma_cd_H_start = partial_sum_to_all(my_sigma_cd_H_ntot) - my_sigma_cd_H_ntot;
-
-  // Write location (component and direction) of each non-null sigma
-  file.create_data("sigma_cd_E", 1, &sigma_cd_E_ntot);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[E_stuff]) {
-      for (size_t j = 0; j < my_num_sus[E_stuff]; ++j) {
-        size_t cd_count = num_sigmas[E_stuff][j] * 2;
-        file.write_chunk(1, &my_sigma_cd_E_start, &cd_count, sigma_cd[E_stuff][j]);
-        my_sigma_cd_E_start += cd_count;
-      }
-    }
-  }
-
-  file.create_data("sigma_cd_H", 1, &sigma_cd_H_ntot);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[H_stuff]) {
-      for (size_t j = 0; j < my_num_sus[H_stuff]; ++j) {
-        size_t cd_count = num_sigmas[H_stuff][j];
-        file.write_chunk(1, &my_sigma_cd_H_start, &cd_count, sigma_cd[H_stuff][j]);
-        my_sigma_cd_H_start += cd_count;
-      }
-    }
-  }
-  file.prevent_deadlock();
-
-  size_t my_tot_E_sus_points = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[E_stuff]) {
-      for (size_t j = 0; j < my_num_sus[E_stuff]; ++j) {
-        my_tot_E_sus_points += num_sigmas[E_stuff][j] * chunks[i]->chiP[0]->ntot;
-      }
-    }
-  }
-  size_t my_tot_H_sus_points = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[H_stuff]) {
-      for (size_t j = 0; j < my_num_sus[H_stuff]; ++j) {
-        my_tot_H_sus_points += num_sigmas[H_stuff][j] * chunks[i]->chiP[0]->ntot;
-      }
-    }
-  }
-
-  size_t my_E_sus_start = partial_sum_to_all(my_tot_E_sus_points) - my_tot_E_sus_points;
-  size_t my_H_sus_start = partial_sum_to_all(my_tot_H_sus_points) - my_tot_H_sus_points;
-  size_t E_sus_ntotal = sum_to_all(my_tot_E_sus_points);
-  size_t H_sus_ntotal = sum_to_all(my_tot_H_sus_points);
-
-  // Write sigma data
-  file.create_data("E_sigma", 1, &E_sus_ntotal);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[E_stuff]) {
-      susceptibility *sus = chunks[i]->chiP[E_stuff];
-      while (sus) {
-        sus->dump(&file, &my_E_sus_start);
-        sus = sus->next;
-      }
-    }
-  }
-
-  file.create_data("H_sigma", 1, &H_sus_ntotal);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[H_stuff]) {
-      susceptibility *sus = chunks[i]->chiP[H_stuff];
-      while (sus) {
-        sus->dump(&file, &my_H_sus_start);
-        sus = sus->next;
-      }
-    }
-  }
+  write_susceptibility_params(&file, "E_params", E_stuff);
+  write_susceptibility_params(&file, "H_params", H_stuff);
 
   for (int ft = 0; ft < 2; ++ft) {
     for (size_t i = 0; i < my_num_sus[ft]; ++i) {
@@ -286,56 +280,6 @@ void structure::dump(const char *filename) {
     }
     delete[] sigma_cd[ft];
     delete[] num_sigmas[ft];
-  }
-
-  // Get number of susceptibility params
-  size_t E_params_ntotal = 0;
-  size_t H_params_ntotal = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine()) {
-      for (int ft = 0; ft < NUM_FIELD_TYPES; ++ft) {
-        if (chunks[i]->chiP[ft]) {
-          susceptibility *sus = chunks[i]->chiP[ft];
-          while (sus) {
-            if (ft == 0)
-              E_params_ntotal += sus->get_num_params() + 1;
-            else if (ft == 1)
-              H_params_ntotal += sus->get_num_params() + 1;
-            sus = sus->next;
-          }
-        }
-      }
-    }
-  }
-
-  // Write params for E_stuff susceptibilities
-  size_t params_start = 0;
-  file.create_data("E_params", 1, &E_params_ntotal);
-  if (am_master()) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->chiP[E_stuff] && chunks[i]->is_mine()) {
-        susceptibility *sus = chunks[i]->chiP[E_stuff];
-        while (sus) {
-          sus->dump_params(&file, &params_start);
-          sus = sus->next;
-        }
-      }
-    }
-  }
-
-  // Write params for H_stuff susceptibilities
-  params_start = 0;
-  file.create_data("H_params", 1, &H_params_ntotal);
-  if (am_master()) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->chiP[H_stuff] && chunks[i]->is_mine()) {
-        susceptibility *sus = chunks[i]->chiP[H_stuff];
-        while (sus) {
-          sus->dump_params(&file, &params_start);
-          sus = sus->next;
-        }
-      }
-    }
   }
 }
 
@@ -426,6 +370,113 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
+size_t structure::read_num_susceptibilities(h5file *file, const char *dname) {
+  size_t result = 0;
+  int rank = 0;
+  size_t dims[] = {0, 0, 0};
+  file->read_size(dname, &rank, dims, 1);
+  if (dims[0] > 0) {
+    for (int i = 0; i < num_chunks; ++i) {
+      if (chunks[i]->is_mine()) {
+        size_t start = i;
+        size_t count = 1;
+        file->read_chunk(rank, &start, &count, &result);
+      }
+    }
+  }
+  file->prevent_deadlock();
+
+  return result;
+}
+
+size_t *structure::read_num_sigmas(h5file *file, const char *dname, size_t num_sus) {
+  size_t *result = new size_t[num_sus];
+  size_t start = partial_sum_to_all(num_sus) - num_sus;
+
+  int rank = 0;
+  size_t dims[] = {0, 0, 0};
+  file->read_size(dname, &rank, dims, 1);
+  if (dims[0] != num_chunks * num_sus)
+    abort("inconsistent data size in structure::load");
+
+  if (num_sus > 0) {
+    for (int i = 0; i < num_chunks; ++i) {
+      if (chunks[i]->is_mine()) {
+        file->read_chunk(rank, &start, &num_sus, result);
+      }
+    }
+  }
+
+  file->prevent_deadlock();
+  return result;
+}
+
+size_t **structure::read_component_direction_data(h5file *file, const char *dname, size_t num_sus,
+                                                  size_t *num_sigmas) {
+  size_t **result = new size_t*[num_sus];
+  for (size_t i = 0; i < num_sus; ++i) {
+    result[i] = new size_t[num_sigmas[i] * 2];
+  }
+
+  size_t num_pairs = 0;
+  for (size_t i = 0; i < num_sus; ++i) {
+    num_pairs += num_sigmas[i];
+  }
+
+  size_t start = partial_sum_to_all(num_pairs * 2) - num_pairs * 2;
+
+  int rank = 0;
+  size_t dims[] = {0, 0, 0};
+  file->read_size(dname, &rank, dims, 1);
+
+  if (num_sus > 0) {
+    for (int i = 0; i < num_chunks; ++i) {
+      if (chunks[i]->is_mine()) {
+        for (size_t j = 0; j < num_sus; ++j) {
+          size_t count = num_sigmas[j] * 2;
+          file->read_chunk(rank, &start, &count, result[j]);
+          start += count;
+        }
+      }
+    }
+  }
+  file->prevent_deadlock();
+  return result;
+}
+
+void structure::read_sigma(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas, size_t **sigma_cd,
+                           int EorH) {
+  size_t my_ntot = 0;
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
+      for (size_t j = 0; j < num_sus; ++j) {
+        my_ntot += num_sigmas[j] * chunks[i]->chiP[EorH]->ntot;
+      }
+    }
+  }
+
+  size_t start = partial_sum_to_all(my_ntot) - my_ntot;
+
+  // Load sigma data into susceptibilites
+  int rank = 0;
+  size_t dims[3] = {0, 0, 0};
+  file->read_size(dname, &rank, dims, 1);
+  if (dims[0] > 0) {
+    for (int i = 0; i < num_chunks; ++i) {
+      if (chunks[i]->is_mine()) {
+        susceptibility *sus = chunks[i]->chiP[EorH];
+        size_t n = 0;
+        while (sus) {
+          sus->load(file, &start, num_sigmas[n], sigma_cd[n]);
+          sus = sus->next;
+          n++;
+        }
+      }
+    }
+  }
+  file->prevent_deadlock();
+}
+
 void structure::load(const char *filename) {
   h5file file(filename, h5file::READONLY, true);
 
@@ -492,197 +543,30 @@ void structure::load(const char *filename) {
   set_chiP_from_file(&file, "H_params", H_stuff);
 
   // Get number of H and E susceptibilites on this processor
-  size_t my_num_E_sus = 0;
-  int num_E_sus_rank = 0;
-  size_t num_E_sus_dims[] = {0, 0, 0};
-  file.read_size("num_E_sus", &num_E_sus_rank, num_E_sus_dims, 1);
-  if (num_E_sus_dims[0] > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        size_t start = i;
-        size_t count = 1;
-        file.read_chunk(num_E_sus_rank, &start, &count, &my_num_E_sus);
-      }
-    }
-  }
-  size_t my_num_H_sus = 0;
-  int num_H_sus_rank = 0;
-  size_t num_H_sus_dims[] = {0, 0, 0};
-  file.read_size("num_H_sus", &num_H_sus_rank, num_H_sus_dims, 1);
-  if (num_H_sus_dims[0] > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        size_t start = i;
-        size_t count = 1;
-        file.read_chunk(num_H_sus_rank, &start, &count, &my_num_H_sus);
-      }
-    }
-  }
-  file.prevent_deadlock();
+  size_t my_num_E_sus = read_num_susceptibilities(&file, "num_E_sus");
+  size_t my_num_H_sus = read_num_susceptibilities(&file, "num_H_sus");
 
-  // Get non-null sigma entry data
-  size_t *num_E_sigmas = new size_t[my_num_E_sus];
-  size_t my_E_sigma_start = partial_sum_to_all(my_num_E_sus) - my_num_E_sus;
+  // Allocate and read non-null sigma entry data
+  size_t *num_E_sigmas = read_num_sigmas(&file, "num_E_sigmas", my_num_E_sus);
+  size_t *num_H_sigmas = read_num_sigmas(&file, "num_H_sigmas", my_num_H_sus);
 
-  int num_E_sigma_rank = 0;
-  size_t num_E_sigma_dims[] = {0, 0, 0};
-  file.read_size("num_E_sigmas", &num_E_sigma_rank, num_E_sigma_dims, 1);
-  if (num_E_sigma_dims[0] != num_chunks * my_num_E_sus)
-    abort("inconsistent data size in structure::load");
+  // Allocate and read component and direction data of the non-null susceptibilities
+  size_t **sigma_cd_E = read_component_direction_data(&file, "sigma_cd_E", my_num_E_sus, num_E_sigmas);
+  size_t **sigma_cd_H = read_component_direction_data(&file, "sigma_cd_H", my_num_H_sus, num_H_sigmas);
 
-  if (my_num_E_sus > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        file.read_chunk(num_E_sigma_rank, &my_E_sigma_start, &my_num_E_sus, num_E_sigmas);
-      }
-    }
-  }
-
-  file.prevent_deadlock();
-
-  size_t *num_H_sigmas = new size_t[my_num_H_sus];
-  size_t my_H_sigma_start = partial_sum_to_all(my_num_H_sus) - my_num_H_sus;
-
-  int num_H_sigma_rank = 0;
-  size_t num_H_sigma_dims[] = {0, 0, 0};
-  file.read_size("num_H_sigmas", &num_H_sigma_rank, num_H_sigma_dims, 1);
-  if (num_H_sigma_dims[0] != num_chunks * my_num_H_sus)
-    abort("inconsistent data size in structure::load");
-
-  if (my_num_H_sus > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        file.read_chunk(num_H_sigma_rank, &my_H_sigma_start, &my_num_H_sus, num_H_sigmas);
-      }
-    }
-  }
-  file.prevent_deadlock();
-
-  // Get component and direction data of the non-null susceptibilities
-  size_t **sigma_cd_E = new size_t*[my_num_E_sus];
-  for (size_t i = 0; i < my_num_E_sus; ++i) {
-    sigma_cd_E[i] = new size_t[num_E_sigmas[i] * 2];
-  }
-
-  size_t my_num_E_cd_pairs = 0;
-  for (size_t i = 0; i < my_num_E_sus; ++i) {
-    my_num_E_cd_pairs += num_E_sigmas[i];
-  }
-
-  size_t my_sigma_cd_E_start = partial_sum_to_all(my_num_E_cd_pairs * 2) - my_num_E_cd_pairs * 2;
-
-  int sigma_cd_E_rank = 0;
-  size_t sigma_cd_E_dims[] = {0, 0, 0};
-  file.read_size("sigma_cd_E", &sigma_cd_E_rank, sigma_cd_E_dims, 1);
-
-  if (my_num_E_sus > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        for (size_t j = 0; j < my_num_E_sus; ++j) {
-          size_t count = num_E_sigmas[j] * 2;
-          file.read_chunk(sigma_cd_E_rank, &my_sigma_cd_E_start, &count, sigma_cd_E[j]);
-          my_sigma_cd_E_start += count;
-        }
-      }
-    }
-  }
-  file.prevent_deadlock();
-
-  size_t **sigma_cd_H = new size_t*[my_num_H_sus];
-  for (size_t i = 0; i < my_num_H_sus; ++i) {
-    sigma_cd_H[i] = new size_t[num_H_sigmas[i] * 2];
-  }
-
-  size_t my_num_H_cd_pairs = 0;
-  for (size_t i = 0; i < my_num_H_sus; ++i) {
-    my_num_H_cd_pairs += num_H_sigmas[i];
-  }
-
-  size_t my_sigma_cd_H_start = partial_sum_to_all(my_num_H_cd_pairs * 2) - my_num_H_cd_pairs * 2;
-
-  int sigma_cd_H_rank = 0;
-  size_t sigma_cd_H_dims[] = {0, 0, 0};
-  file.read_size("sigma_cd_H", &sigma_cd_H_rank, sigma_cd_H_dims, 1);
-
-  if (my_num_H_sus > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        for (size_t j = 0; j < my_num_H_sus; ++j) {
-          size_t count = num_H_sigmas[j] * 2;
-          file.read_chunk(sigma_cd_H_rank, &my_sigma_cd_H_start, &count, sigma_cd_H[j]);
-          my_sigma_cd_H_start += count;
-        }
-      }
-    }
-  }
-  file.prevent_deadlock();
-
-  // Get total sigma size on this processor
-  size_t my_E_sigma_ntot = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[E_stuff]) {
-      for (size_t j = 0; j < my_num_E_sus; ++j) {
-        my_E_sigma_ntot += num_E_sigmas[j] * chunks[i]->chiP[E_stuff]->ntot;
-      }
-    }
-  }
-
-  size_t my_H_sigma_ntot = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[H_stuff]) {
-      for (size_t j = 0; j < my_num_H_sus; ++j) {
-        my_H_sigma_ntot += num_H_sigmas[j] * chunks[i]->chiP[H_stuff]->ntot;
-      }
-    }
-  }
-
-  size_t E_sigma_start = partial_sum_to_all(my_E_sigma_ntot) - my_E_sigma_ntot;
-  size_t H_sigma_start = partial_sum_to_all(my_H_sigma_ntot) - my_H_sigma_ntot;
-
-  // Load sigma data into susceptibilites
-  int E_sigma_rank = 0;
-  size_t E_sigma_dims[3] = {0, 0, 0};
-  file.read_size("E_sigma", &E_sigma_rank, E_sigma_dims, 1);
-  if (E_sigma_dims[0] > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        susceptibility *sus = chunks[i]->chiP[E_stuff];
-        size_t n = 0;
-        while (sus) {
-          sus->load(&file, &E_sigma_start, num_E_sigmas[n], sigma_cd_E[n]);
-          sus = sus->next;
-          n++;
-        }
-      }
-    }
-  }
-
-  int H_sigma_rank = 0;
-  size_t H_sigma_dims[3] = {0, 0, 0};
-  file.read_size("H_sigma", &H_sigma_rank, H_sigma_dims, 1);
-  if (H_sigma_dims[0] > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        susceptibility *sus = chunks[i]->chiP[H_stuff];
-        size_t n = 0;
-        while (sus) {
-          sus->load(&file, &H_sigma_start, num_H_sigmas[n], sigma_cd_H[n]);
-          sus = sus->next;
-          n++;
-        }
-      }
-    }
-  }
+  // Load sigma data
+  read_sigma(&file, "E_sigma", my_num_E_sus, num_E_sigmas, sigma_cd_E, E_stuff);
+  read_sigma(&file, "H_sigma", my_num_H_sus, num_H_sigmas, sigma_cd_H, H_stuff);
 
   delete[] num_E_sigmas;
   delete[] num_H_sigmas;
   for (size_t i = 0; i < my_num_E_sus; ++i) {
     delete[] sigma_cd_E[i];
   }
-  delete[] sigma_cd_E;
   for (size_t i = 0; i < my_num_H_sus; ++i) {
     delete[] sigma_cd_H[i];
   }
+  delete[] sigma_cd_E;
   delete[] sigma_cd_H;
 }
 } // namespace meep

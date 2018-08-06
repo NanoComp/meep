@@ -682,7 +682,18 @@ class structure {
 			     const boundary_region &br, const symmetry &s);
   void check_chunks();
   void changing_chunks();
+  // Helper methods for dumping and loading susceptibilities
   void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
+  void write_num_susceptibilites(h5file *file, const char *dname, size_t *source);
+  void write_num_sigmas(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas);
+  void write_component_direction_data(h5file *file, const char* dname, size_t *num_sus, size_t **num_sigmas,
+                                      size_t ***sigma_cd, int EorH);
+  void write_sigma_data(h5file *file, const char *dname, size_t *num_sus, size_t **num_sigmas, int EorH);
+  void write_susceptibility_params(h5file *file, const char *dname, int EorH);
+  size_t read_num_susceptibilities(h5file *file, const char *dname);
+  size_t *read_num_sigmas(h5file *file, const char *dname, size_t num_sus);
+  size_t **read_component_direction_data(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas);
+  void read_sigma(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas, size_t **sigma_cd, int EorH);
 };
 
 class src_vol;
