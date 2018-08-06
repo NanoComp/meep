@@ -90,107 +90,27 @@ bool susceptibility::needs_W_notowned(component c,
   return false;
 }
 
-void susceptibility::dump(h5file *h5f, const char *prefix) {
-  size_t sz = NUM_FIELD_COMPONENTS * 5;
-  size_t *num_sigma_ = new size_t[sz];
-  memset(num_sigma_, 0, sizeof(size_t) * sz);
-  size_t my_ntot = 0;
-
-  for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-    for (int d = 0; d < 5; ++d)
-      if (sigma[c][d])
-        my_ntot += (num_sigma_[c * 5 + d] = ntot);
-
-  size_t *num_sigma = new size_t[sz];
-  sum_to_master(num_sigma_, num_sigma, sz);
-  delete[] num_sigma_;
-
-  // determine total dataset size and offset of this process's data
-  size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-  size_t ntotal = sum_to_all(my_ntot);
-
-  size_t dims[3] = {1, NUM_FIELD_COMPONENTS, 5};
-  char num_sigma_dset[25];
-  strcpy(num_sigma_dset, prefix);
-  strcat(num_sigma_dset, "num_sigma");
-  h5f->create_data(num_sigma_dset, 3, dims);
-  if (am_master()) {
-    size_t start[3] = {0, 0, 0};
-    h5f->write_chunk(3, start, dims, num_sigma);
-  }
-  delete[] num_sigma;
-
-  // write sigma data
-  char sigma_dset[25];
-  strcpy(sigma_dset, prefix);
-  strcat(sigma_dset, "sigma");
-  h5f->create_data(sigma_dset, 1, &ntotal);
+void susceptibility::dump(h5file *h5f, size_t *start) {
   for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
     for (int d = 0; d < 5; ++d)
       if (sigma[c][d]) {
-        h5f->write_chunk(1, &my_start, &ntot, sigma[c][d]);
-        my_start += ntot;
+        h5f->write_chunk(1, start, &ntot, sigma[c][d]);
+        *start += ntot;
       }
-
 }
 
-void susceptibility::load(h5file *h5f, const char *prefix) {
-  size_t sz = NUM_FIELD_COMPONENTS * 5;
-  size_t *num_sigma = new size_t[sz];
-  int rank;
-  size_t dims[3], _dims[3] = {1, NUM_FIELD_COMPONENTS, 5};
+void susceptibility::load(h5file *h5f, size_t *start, size_t num_sigmas, size_t *cd_vals) {
+  for (int i = 0; i < num_sigmas; ++i) {
+    size_t c = cd_vals[i * 2];
+    size_t d = cd_vals[(i * 2) + 1];
+    sigma[c][d] = new realnum[ntot];
+    // TODO: Is this right?
+    trivial_sigma[c][d] = false;
 
-  char num_sigma_dset[25];
-  strcpy(num_sigma_dset, prefix);
-  strcat(num_sigma_dset, "num_sigma");
-  h5f->read_size(num_sigma_dset, &rank, dims, 3);
-  if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])
-    abort("chunk mismatch in susceptibility::load");
-  if (am_master()) {
-    size_t sigma_start[3] = {0, 0, 0};
-    h5f->read_chunk(3, sigma_start, dims, num_sigma);
+    // Populate sigma[c][d]
+    h5f->read_chunk(1, start, &ntot, sigma[c][d]);
+    *start += ntot;
   }
-
-  h5f->prevent_deadlock();
-  broadcast(0, num_sigma, dims[0] * dims[1] * dims[2]);
-
-  // allocate data as needed and check sizes
-  size_t my_ntot = 0;
-  for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-    for (int d = 0; d < 5; ++d) {
-      size_t n = num_sigma[c * 5 + d];
-      if (n == 0) {
-        delete[] sigma[c][d];
-        sigma[c][d] = NULL;
-      }
-      else {
-        if (n != ntot)
-          abort("grid size mismatch %zd vs %zd in susceptibility::load", n, ntot);
-        sigma[c][d] = new realnum[ntot];
-        my_ntot += ntot;
-      }
-    }
-
-  // determine total dataset size and offset of this process's data
-  size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-  size_t ntotal = sum_to_all(my_ntot);
-
-  // read the data
-  char sigma_dset[25];
-  strcpy(sigma_dset, prefix);
-  strcat(sigma_dset, "sigma");
-  h5f->read_size(sigma_dset, &rank, dims, 1);
-
-  if (rank != 1 || dims[0] != ntotal)
-    abort("inconsistent data size in susceptibility::load");
-
-  for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-    for (int d = 0; d < 5; ++d)
-      if (sigma[c][d]) {
-        h5f->read_chunk(1, &my_start, &ntot, sigma[c][d]);
-        trivial_sigma[c][d] = false;
-        my_start += ntot;
-      }
 }
 
 typedef struct {
@@ -377,28 +297,12 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
   return d->P[c][cmp] + n;
 }
 
-void lorentzian_susceptibility::dump(h5file *h5f, const char *prefix) {
-  susceptibility::dump(h5f, prefix);
-
-  // write params data
-  char params_dset[25];
-  strcpy(params_dset, prefix);
-  strcat(params_dset, "params");
-  size_t params_dims[1] = {3};
-  h5f->create_data(params_dset, 1, params_dims);
-  double params_data[3] = {omega_0, gamma, (double)no_omega_0_denominator};
-  size_t params_start[1] = {0};
-  h5f->write_chunk(1, params_start, params_dims, params_data);
-}
-
-void lorentzian_susceptibility::load(h5file *h5f, const char *prefix) {
-  susceptibility::load(h5f, prefix);
-
-  // TODO: load params
-  char params_dset[25];
-  strcpy(params_dset, prefix);
-  strcat(params_dset, "params");
-
+void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
+  size_t num_params = 5;
+  size_t params_dims[1] = {num_params};
+  double params_data[] = {4, (double)get_id(), omega_0, gamma, (double)no_omega_0_denominator};
+  h5f->write_chunk(1, start, params_dims, params_data);
+  *start += num_params;
 }
 
 void noisy_lorentzian_susceptibility::update_P
@@ -425,24 +329,11 @@ void noisy_lorentzian_susceptibility::update_P
   }
 }
 
-void noisy_lorentzian_susceptibility::dump(h5file *h5f, const char *prefix) {
-  susceptibility::dump(h5f, prefix);
-
-  // write params data
-  char params_dset[25];
-  strcpy(params_dset, prefix);
-  strcat(params_dset, "params");
-  size_t params_dims[1] = {4};
-  h5f->create_data(params_dset, 1, params_dims);
-  double params_data[4] = {noise_amp, omega_0, gamma, (double)no_omega_0_denominator};
-  size_t params_start[1] = {0};
-  h5f->write_chunk(1, params_start, params_dims, params_data);
-}
-
-void noisy_lorentzian_susceptibility::load(h5file *h5f, const char *prefix) {
-  susceptibility::load(h5f, prefix);
-
-  // load params
-  // TODO
+void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
+  size_t num_params = 6;
+  size_t params_dims[1] = {num_params};
+  double params_data[] = {5, (double)get_id(), noise_amp, omega_0, gamma, (double)no_omega_0_denominator};
+  h5f->write_chunk(1, start, params_dims, params_data);
+  *start += num_params;
 }
 } // namespace meep
