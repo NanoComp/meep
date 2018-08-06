@@ -489,7 +489,6 @@ void structure::load(const char *filename) {
   file.read_size("num_chi1inv", &rank, dims, 3);
   if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])
     abort("chunk mismatch in structure::load");
-
   if (am_master())
     file.read_chunk(3, start, dims, num_chi1inv);
 

@@ -342,8 +342,6 @@ public:
 
   void prevent_deadlock(); // hackery for exclusive mode
 
-  bool dataset_exists(const char *name);
-
 private:
   access_mode mode;
   char *filename;
