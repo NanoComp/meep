@@ -1272,7 +1272,7 @@ class chunkloop_field_components {
                              std::complex<double> shift_phase,
                              const symmetry &S, int sn,
                              std::vector <component> components) :
-    chunkloop_field_components(fc, cgrid, shift_phase, S, sn, components.data(), components.size()) {}
+    chunkloop_field_components(fc, cgrid, shift_phase, S, sn, components.size(), components.data()) {}
 #endif
   void update_values(ptrdiff_t idx);
   std::vector< std::complex<double> > values; // updated by update_values(idx)
