@@ -335,7 +335,8 @@ class TestSimulation(unittest.TestCase):
 
         sim.run(mp.at_every(5, get_field_point), until=50)
 
-        compare_arrays(self, np.array(ref_field_points), np.array(field_points), tol=1e-5)
+        for ref_pt, pt in zip(ref_field_points, field_points):
+            self.assertAlmostEqual(ref_pt, pt)
 
         mp.all_wait()
         if mp.am_master():
