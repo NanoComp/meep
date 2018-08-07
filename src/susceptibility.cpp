@@ -104,7 +104,6 @@ void susceptibility::load(h5file *h5f, size_t *start, size_t num_sigmas, size_t 
     size_t c = cd_vals[i * 2];
     size_t d = cd_vals[(i * 2) + 1];
     sigma[c][d] = new realnum[ntot];
-    // TODO: Is this right?
     trivial_sigma[c][d] = false;
 
     // Populate sigma[c][d]

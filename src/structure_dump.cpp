@@ -30,6 +30,8 @@ using namespace std;
 
 namespace meep {
 
+// Writes the number of susceptibilites to an hdf5 file. This is the length of the susceptibility
+// lists pointed to by chunks[i]->chiP[E_stuff] and chunks[i]->chiP[H_stuff]
 void structure::write_num_susceptibilites(h5file *file, const char *dname, size_t *source) {
   size_t len = *source == 0 ? 0 : num_chunks;
   file->create_data(dname, 1, &len);
@@ -41,6 +43,8 @@ void structure::write_num_susceptibilites(h5file *file, const char *dname, size_
     }
 }
 
+// The number of sigmas is the number of non-null elements of
+// chunks[i]->chiP[E_stuff|H_stuff]->sigma
 void structure::write_num_sigmas(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas) {
   size_t sus_ntot = sum_to_all(num_sus);
   size_t sigma_start = partial_sum_to_all(num_sus) - num_sus;
@@ -54,7 +58,7 @@ void structure::write_num_sigmas(h5file *file, const char *dname, size_t num_sus
   file->prevent_deadlock();
 }
 
-// Write location (component and direction) of each non-null sigma
+// Write location (component and direction) of each non-null sigma (sigma[c][d])
 void structure::write_component_direction_data(h5file *file, const char* dname, size_t *num_sus, size_t **num_sigmas,
                                                size_t ***sigma_cd, int EorH) {
   size_t my_sigma_cd_ntot = 0;
@@ -78,6 +82,8 @@ void structure::write_component_direction_data(h5file *file, const char* dname, 
   file->prevent_deadlock();
 }
 
+// Write the actual data in a particular non-null sigma[c][d] for each susceptibility in this
+// chunk's chiP lists.
 void structure::write_sigma_data(h5file *file, const char *dname, size_t *num_sus, size_t **num_sigmas, int EorH) {
   size_t my_ntot = 0;
   for (int i = 0; i < num_chunks; ++i) {
@@ -105,6 +111,8 @@ void structure::write_sigma_data(h5file *file, const char *dname, size_t *num_su
   file->prevent_deadlock();
 }
 
+// Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy), omega_0,
+// gamma, no_omega_0_denominator)
 void structure::write_susceptibility_params(h5file *file, const char *dname, int EorH) {
   // Get number of susceptibility params
   size_t params_ntotal = 0;
@@ -283,6 +291,7 @@ void structure::dump(const char *filename) {
   }
 }
 
+// Reconstruct the chiP lists of susceptibilities from the params hdf5 data
 susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t *start, size_t dims[3], size_t ntot) {
   susceptibility *sus = NULL;
   susceptibility *res = NULL;
@@ -370,6 +379,7 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
+// Read the number of susceptibilities in the chiP lists.
 size_t structure::read_num_susceptibilities(h5file *file, const char *dname) {
   size_t result = 0;
   int rank = 0;
@@ -389,6 +399,7 @@ size_t structure::read_num_susceptibilities(h5file *file, const char *dname) {
   return result;
 }
 
+// Read the num_sigma data that was created by write_num_sigmas
 size_t *structure::read_num_sigmas(h5file *file, const char *dname, size_t num_sus) {
   size_t *result = new size_t[num_sus];
   size_t start = partial_sum_to_all(num_sus) - num_sus;
@@ -411,6 +422,7 @@ size_t *structure::read_num_sigmas(h5file *file, const char *dname, size_t num_s
   return result;
 }
 
+// Read the cd data created by write_component_direction_data
 size_t **structure::read_component_direction_data(h5file *file, const char *dname, size_t num_sus,
                                                   size_t *num_sigmas) {
   size_t **result = new size_t*[num_sus];
@@ -444,6 +456,8 @@ size_t **structure::read_component_direction_data(h5file *file, const char *dnam
   return result;
 }
 
+// Read the sigma data into the non-null sigma[c][d] entries for each susceptibility
+// in this chunk's chiP list.
 void structure::read_sigma(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas, size_t **sigma_cd,
                            int EorH) {
   size_t my_ntot = 0;

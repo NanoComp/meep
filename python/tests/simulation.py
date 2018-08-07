@@ -311,17 +311,16 @@ class TestSimulation(unittest.TestCase):
                             geometry=[geometry],
                             sources=[sources])
 
+        sample_point = mp.Vector3(0.12, -0.29)
         ref_field_points = []
 
         def get_ref_field_point(sim):
-            p = sim.get_field_point(mp.Ez, mp.Vector3(0.12, -0.29))
+            p = sim.get_field_point(mp.Ez, sample_point)
             ref_field_points.append(p.real)
 
         sim.run(mp.at_every(5, get_ref_field_point), until=50)
         dump_fn = 'test_load_dump_structure.h5'
         sim.dump_structure(dump_fn)
-
-        sim.reset_meep()
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
@@ -331,7 +330,7 @@ class TestSimulation(unittest.TestCase):
         field_points = []
 
         def get_field_point(sim):
-            p = sim.get_field_point(mp.Ez, mp.Vector3(0.12, -0.29))
+            p = sim.get_field_point(mp.Ez, sample_point)
             field_points.append(p.real)
 
         sim.run(mp.at_every(5, get_field_point), until=50)
