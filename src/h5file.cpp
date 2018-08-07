@@ -239,7 +239,7 @@ void h5file::set_cur(const char *dataname, void *data_id) {
 #endif
   HID(cur_id) = HID(data_id);
   if (!is_cur(dataname)) {
-    if (!cur_dataname || strlen(dataname) < strlen(cur_dataname))
+    if (!cur_dataname || strlen(dataname) > strlen(cur_dataname))
       cur_dataname = (char *) realloc(cur_dataname, strlen(dataname) + 1);
     strcpy(cur_dataname, dataname);
   }
