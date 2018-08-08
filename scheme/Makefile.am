@@ -26,7 +26,7 @@ SWIG ?= swig
 meep_wrap.cxx: meep.i meep_op_renames.i meep_enum_renames.i meep_renames.i ctl-io.i meep-ctl-swig.hpp meep_swig_bug_workaround.i $(LIBHDRS)
 	$(SWIG) -I$(top_srcdir)/src -c++ -guile -o $@ $(srcdir)/meep.i
 	patch -p0 $@ < $(srcdir)/meep_wrap.patch
-	sed -i.bak '/(SCM_SMOB_PREDICATE(swig_tag, smob) || SCM_SMOB_PREDICATE(swig_collectable_tag, smob))/ s/swig_collectable_tag, smob)/swig_collectable_tag, smob) || SCM_SMOB_DATA_0(smob) == (swig_collectable_tag \& ~0xff00)/' $@;
+	sed -i.bak '/(SCM_SMOB_PREDICATE(swig_tag, smob) || SCM_SMOB_PREDICATE(swig_collectable_tag, smob))/ s/swig_collectable_tag, smob)/swig_collectable_tag, smob) || SCM_SMOB_PREDICATE((swig_collectable_tag \& ~0xff00), (smob))/' $@;
 else
 meep_wrap.cxx:
 	echo "#error need --with-maintainer-mode to generate this file" 1>&2
