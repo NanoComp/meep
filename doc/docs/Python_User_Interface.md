@@ -494,7 +494,7 @@ Polygonal prism type.
 
 **`vertices` [list of `Vector3`]**
 —
-The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite (`mp.inf`) prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths (with `height` of `mp.inf`) are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
 
 **`height` [`number`]**
 —

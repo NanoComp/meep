@@ -369,7 +369,7 @@ Polygonal prism type.
 
 **`vertices` [list of `vector3`]**
 —
-The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite (`infinity`) prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths (with `height` of `infinity`) are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
 
 **`height` [`number`]**
 —
@@ -378,14 +378,6 @@ The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used f
 **`axis` [`vector3`]**
 —
 The axis perpendicular to the prism. Defaults to `(0,0,1)`.
-
-**`center` [`vector3`]**
-—
-If `center` is *not* specified, then the coordinates of the `vertices` define the *bottom* of the prism
-(with the top of the prism being at the same coordinates shifted by `height*axis`).
-If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid)
-of all the vertices (top and bottom) of the resulting 3d prism (so that the coordinates of the `vertices` are
-shifted accordingly).
 
 These are some examples of geometric objects created using the above classes:
 
@@ -422,14 +414,13 @@ These are some examples of geometric objects created using the above classes:
       (list
        (make prism
          (vertices
-           (list (vector3 -1 0)
-                 (vector3 -0.5 (/ (sqrt 3) 2))
-                 (vector3 0.5 (/ (sqrt 3) 2))
-                 (vector3 1 0)
-                 (vector3 0.5 (/ (sqrt 3) -2))
-                 (vector3 -0.5 (/ (sqrt 3) -2))))
+           (list (vector3 -1 0 0)
+                 (vector3 -0.5 (/ (sqrt 3) 2) 0)
+                 (vector3 0.5 (/ (sqrt 3) 2) 0)
+                 (vector3 1 0 0)
+                 (vector3 0.5 (/ (sqrt 3) -2) 0)
+                 (vector3 -0.5 (/ (sqrt 3) -2) 0)))
 	 (height 1.5)
-	 (center (vector3 0 0 0))
 	 (material cSi))))
 ```
 
