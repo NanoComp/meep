@@ -635,7 +635,7 @@ The location of the center of the current source in the computational cell. No d
 
 **`size` [`Vector3`]**
 —
-The size of the current distribution along each direction of the computational cell. Default is (0,0,0): a point-dipole source.
+The size of the current distribution along each direction of the computational cell. Default is `(0,0,0)`: a point-dipole source.
 
 **`amplitude` [`complex`]**
 —
@@ -761,7 +761,7 @@ Properties:
 —The center of the flux region (no default).
 
 **`size` [`Vector3`]**
-—The size of the flux region along each of the coordinate axes. Default is (0,0,0); a single point.
+—The size of the flux region along each of the coordinate axes. Default is `(0,0,0)`; a single point.
 
 **`direction` [`direction` constant ]**
 —The direction in which to compute the flux (e.g. `mp.X`, `mp.Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
@@ -773,7 +773,7 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 ### Volume
 
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
 
 Miscellaneous Functions
 -----------------------
@@ -1000,7 +1000,7 @@ The center of the force region (no default).
 
 **`size [ Vector3 ]`**
 —
-The size of the force region along each of the coordinate axes. Default is (0,0,0) (a single point).
+The size of the force region along each of the coordinate axes. Default is `(0,0,0)` (a single point).
 
 **`direction [ direction constant ]`**
 —
@@ -1221,7 +1221,7 @@ Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each
 
 ### Predefined Step Functions
 
-Several useful step functions are predefined by Mp. These are available directly via the `meep` package but require a `Simulation` instance as an argument.
+Several useful step functions are predefined by Meep. These are available directly via the `meep` package but require a `Simulation` instance as an argument.
 
 #### Output Functions
 

@@ -543,7 +543,7 @@ A Scheme function of a single argument, that takes a vector3 giving a position a
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `eigenmode-source`:
 
-**`eigenmode-source`**
+### eigenmode-source
 
 This is a subclass of `source` and has **all of the properties** of `source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp-func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
 
@@ -579,7 +579,7 @@ Note that MPB only supports dispersionless non-magnetic materials but it does su
 
 The `src-time` object, which specifies the time dependence of the source, can be one of the following three classes.
 
-**`continuous-src`**
+### continuous-src
 
 A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
 
@@ -603,7 +603,7 @@ Roughly, the temporal width of the smoothing (technically, the inverse of the ex
 —
 How many `width`s the current decays for before we cut it off and set it to zero. Default is 3.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times.
 
-**`gaussian-src`**
+### gaussian-src
 
 A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
 
@@ -623,7 +623,7 @@ The starting time for the source. Default is 0 (turn on at $t=0$). This is not t
 —
 How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start-time + cutoff*width`.
 
-**`custom-src`**
+### custom-src
 
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
 
@@ -651,7 +651,7 @@ A region (volume, plane, line, or point) in which to compute the integral of the
 —The center of the flux region (no default).
 
 **`size` [`vector3`]**
-—The size of the flux region along each of the coordinate axes. Default is (0,0,0); a single point.
+—The size of the flux region along each of the coordinate axes. Default is `(0,0,0)`; a single point.
 
 **`direction` [`direction` constant ]**
 —The direction in which to compute the flux (e.g. `X`, `Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
@@ -718,7 +718,7 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 
 **`(volume (center ...) (size ...))`**
 —
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point.
 
 ### Simulation Time
 
