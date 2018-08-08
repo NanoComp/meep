@@ -251,7 +251,7 @@ Instead of `material-func`, you can use `epsilon-func`: give it a function of po
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `susceptibility`.
 
-**`susceptibility`**
+### susceptibility
 
 Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
 
@@ -261,7 +261,7 @@ The scale factor σ. You can also specify an anisotropic σ tensor by using the 
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
-**`lorentzian-susceptibility`**
+### lorentzian-susceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
@@ -273,7 +273,7 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
-**`drude-susceptibility`**
+### drude-susceptibility
 
 Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
@@ -287,7 +287,7 @@ The loss rate $γ_n / 2\pi$.
 
 Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
-**`noisy-lorentzian-susceptibility` or `noisy-drude-susceptibility`**
+### noisy-lorentzian-susceptibility or noisy-drude-susceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
 
@@ -315,7 +315,7 @@ One normally does not create objects of type `geometric-object` directly, howeve
 
 In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
-**`sphere`**
+### sphere
 
 A sphere. Properties:
 
@@ -323,7 +323,7 @@ A sphere. Properties:
 —
 Radius of the sphere. No default value.
 
-**`cylinder`**
+### cylinder
 
 A cylinder, with circular cross-section and finite height. Properties:
 
@@ -339,7 +339,7 @@ Length of the cylinder along its axis. No default value.
 —
 Direction of the cylinder's axis; the length of this vector is ignored. Defaults to point parallel to the $z$ axis.
 
-**`cone`**
+### cone
 
 A cone, or possibly a truncated cone. This is actually a subclass of `cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
 
@@ -347,7 +347,7 @@ A cone, or possibly a truncated cone. This is actually a subclass of `cylinder`,
 —
 Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
 
-**`block`**
+### block
 
 A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
 
@@ -359,11 +359,35 @@ The lengths of the block edges along each of its three axes. Not really a 3-vect
 —
 The directions of the axes of the block; the lengths of these vectors are ignored. Must be linearly independent. They default to the three lattice directions.
 
-**`ellipsoid`**
+### ellipsoid
 
 An ellipsoid. This is actually a subclass of `block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
 
-Here are some examples of geometric objects created using the above classes:
+### prism
+
+Polygonal prism type.
+
+**`vertices` [list of `vector3`]**
+—
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite (`infinity`) prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+
+**`height` [`number`]**
+—
+The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
+
+**`axis` [`vector3`]**
+—
+The axis perpendicular to the prism. Defaults to `(0,0,1)`.
+
+**`center` [`vector3`]**
+—
+If `center` is *not* specified, then the coordinates of the `vertices` define the *bottom* of the prism
+(with the top of the prism being at the same coordinates shifted by `height*axis`).
+If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid)
+of all the vertices (top and bottom) of the resulting 3d prism (so that the coordinates of the `vertices` are
+shifted accordingly).
+
+These are some examples of geometric objects created using the above classes:
 
 ```scm
 ; A cylinder of infinite radius and height 0.25 pointing along the x axis,
@@ -389,6 +413,24 @@ Here are some examples of geometric objects created using the above classes:
 (set! geometry (list
                (make block (center 1 2 3) (material metal) (size 1 1 1))
                (make sphere (center 1 2 3) (material air) (radius 0.2))))
+```
+
+```scm
+; A hexagon defined as a prism with six vertices centered on the origin
+; of material crystalline silicon (from the materials library)
+(set! geometry
+      (list
+       (make prism
+         (vertices
+           (list (vector3 -1 0)
+                 (vector3 -0.5 (/ (sqrt 3) 2))
+                 (vector3 0.5 (/ (sqrt 3) 2))
+                 (vector3 1 0)
+                 (vector3 0.5 (/ (sqrt 3) -2))
+                 (vector3 -0.5 (/ (sqrt 3) -2))))
+	 (height 1.5)
+	 (center (vector3 0 0 0))
+	 (material cSi))))
 ```
 
 ### symmetry
