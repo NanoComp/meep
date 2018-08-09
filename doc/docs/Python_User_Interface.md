@@ -147,7 +147,7 @@ By default, Meep turns off support for material dispersion, nonlinearities, and 
 
 **`load_structure` [`string`]**
 —
-If not empty, Meep will load the structure specified by this string. The file must have been created by `meep.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+If not empty, Meep will load the structure specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -212,17 +212,17 @@ Classes are complex datatypes with various properties which may have default val
 The `meep` package defines several types of classes. The most important of these is the `Simulation` class. Classes which are available directly from the `meep` package are constructed with:
 
 ```py
-meep.ClassName(prop1=val1, prop2=val2, ...)
+mp.ClassName(prop1=val1, prop2=val2, ...)
 ```
 
-The most numerous are the geometric object classes which are the same as those used in [MPB](https://mpb.readthedocs.io). You can get a list of the available classes (and constants) in the python interpreter with:
+The most numerous are the geometric object classes which are the same as those used in [MPB](https://mpb.readthedocs.io). You can get a list of the available classes (and constants) in the Python interpreter with:
 
 ```py
 import meep
 [x for x in dir(meep) if x[0].isupper()]
 ```
 
-More information, including their property types and default values, is available with the standard python `help` function: `help(meep.ClassName)`.
+More information, including their property types and default values, is available with the standard python `help` function: `help(mp.ClassName)`.
 
 The following are available directly via the `meep` package.
 
@@ -233,7 +233,7 @@ This class is used to specify the materials that geometric objects are made of. 
 **`epsilon` [`number`]**
 —The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
 
-Using `epsilon=ep` is actually a synonym for `epsilon_diag=meep.Vector3(ep, ep, ep)`.
+Using `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
 
 **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]**
 —
@@ -244,7 +244,7 @@ Default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
 **`mu` [`number`]**
 —
-The frequency-independent isotropic relative permeability μ. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=meep.Vector3(pm, pm, pm)`.
+The frequency-independent isotropic relative permeability μ. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=mp.Vector3(pm, pm, pm)`.
 
 **`mu_diag` and `mu_offdiag` [`Vector3`]**
 —
@@ -292,7 +292,7 @@ Parent class for various dispersive susceptibility terms, parameterized by an an
 
 **`sigma` [`number`]**
 —
-The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma_diag` which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `sigma_diag=meep.Vector3(a, b, c)` and `sigma_offdiag=meep.Vector3(u, v, w)` corresponds to a σ tensor
+The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma_diag` which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)` corresponds to a σ tensor
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
@@ -424,19 +424,19 @@ A function that takes one argument (a `Vector3`) and returns the dielectric cons
 
 **`center` [`Vector3`]**
 —
-Center point of the object. Defaults to (0, 0, 0).
+Center point of the object. Defaults to `(0,0,0)`.
 
 Methods:
 
 **`shift`(vec [`Vector3`])**
 —
-Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geomtric_obj + Vector3(10, 10, 10)`.
+Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geomtric_obj + Vector3(10,10,10)`.
 
 **`info`(indent_by [integer])**
 —
 Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
 
-One normally does not create objects of type `GeometricObject` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties and can be specified in a subclass's constructor via keyword arguemnts.
+One normally does not create objects of type `GeometricObject` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties and can be specified in a subclass's constructor via keyword arguments.
 
 In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
@@ -486,7 +486,7 @@ The directions of the axes of the block; the lengths of these vectors are ignore
 
 ### Ellipsoid
 
-An ellipsoid. This is actually a subclass of `Block**, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
+An ellipsoid. This is actually a subclass of `Block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
 
 ### Prism
 
@@ -494,7 +494,7 @@ Polygonal prism type.
 
 **`vertices` [list of `Vector3`]**
 —
-The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite (`mp.inf`) prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths (with `height` of `mp.inf`) are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
 
 **`height` [`number`]**
 —
@@ -502,14 +502,14 @@ The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used f
 
 **`axis` [`Vector3`]**
 —
-The axis perpendicular to the prism. Defaults to `Vector3(x=0, y=0, z=1)`.
+The axis perpendicular to the prism. Defaults to `Vector3(x=0,y=0,z=1)`.
 
 **`center` [`Vector3`]**
 —
 If `center` is *not* specified, then the coordinates of the `vertices` define the *bottom* of the prism
 (with the top of the prism being at the same coordinates shifted by `height*axis`).
-If `center` *is* specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid)
-of all the vertices (top and bottom) the resulting 3d prism (so that the coordinates of the `vertices` are
+If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid)
+of all the vertices (top and bottom) of the resulting 3d prism (so that the coordinates of the `vertices` are
 shifted accordingly).
 
 These are some examples of geometric objects created using the above classes:
@@ -517,24 +517,24 @@ These are some examples of geometric objects created using the above classes:
 ```py
 # A cylinder of infinite radius and height 0.25 pointing along the x axis,
 # centered at the origin:
-cyl = meep.Cylinder(center=meep.Vector3(0,0,0), height=0.25, radius=meep.inf,
-                  axis=meep.Vector3(1,0,0), material=meep.Medium(index=3.5))
+cyl = mp.Cylinder(center=mp.Vector3(0,0,0), height=0.25, radius=mp.inf,
+                  axis=mp.Vector3(1,0,0), material=mp.Medium(index=3.5))
 ```
 
 ```py
 # An ellipsoid with its long axis pointing along (1,1,1), centered on
 # the origin (the other two axes are orthogonal and have equal
 # semi-axis lengths):
-ell = meep.Ellipsoid(center=meep.Vector3(0,0,0), size=meep.Vector3(0.8,0.2,0.2),
+ell = mp.Ellipsoid(center=mp.Vector3(0,0,0), size=mp.Vector3(0.8,0.2,0.2),
                    e1=Vector3(1,1,1), e2=Vector3(0,1,-1), e3=Vector3(-2,1,1),
-                   material=meep.Medium(epsilon=13))
+                   material=mp.Medium(epsilon=13))
 ```
 
 ```py
 # A unit cube of material mat with a spherical air hole of radius 0.2 at
 # its center, the whole thing centered at (1,2,3):
-geometry=[meep.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=meep.metal),
-          meep.Sphere(center=Vector3(1,2,3), radius=0.2, material=meep.air)]
+geometry=[mp.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=mp.metal),
+          mp.Sphere(center=Vector3(1,2,3), radius=0.2, material=mp.air)]
 ```
 
 ```py
@@ -603,7 +603,7 @@ By default, Meep turns on the PML conductivity quadratically within the PML laye
 
 #### `Absorber`
 
-Instead of a `PML` layer, there is an alternative class called `Absorber` which is a **drop-in** replacement for `PML`. For example, you can do `boundary_layers=[meep.Absorber(thickness=2)]` instead of `boundary_layers=[meep.PML(thickness=2)]`. All the parameters are the same as for `PML`, above. You can have a mix of `PML` on some boundaries and `Absorber` on others.
+Instead of a `PML` layer, there is an alternative class called `Absorber` which is a **drop-in** replacement for `PML`. For example, you can do `boundary_layers=[mp.Absorber(thickness=2)]` instead of `boundary_layers=[mp.PML(thickness=2)]`. All the parameters are the same as for `PML`, above. You can have a mix of `PML` on some boundaries and `Absorber` on others.
 
 The `Absorber` class does *not* implement a perfectly matched layer (PML), however (except in 1d). Instead, it is simply a scalar electric **and** magnetic conductivity that turns on gradually within the layer according to the `pml_profile` (defaulting to quadratic). Such a scalar conductivity gradient is only reflectionless in the limit as the layer becomes sufficiently thick.
 
@@ -627,7 +627,7 @@ Specify the time-dependence of the source (see below). No default.
 
 **`component` [`component` constant ]**
 —
-Specify the direction and type of the current component: e.g. `meep.Ex`, `meep.Ey`, etcetera for an electric-charge current, and `meep.Hx`, `meep.Hy`, etcetera for a magnetic-charge current. Note that currents pointing in an arbitrary direction are specified simply as multiple current sources with the appropriate amplitudes for each component. No default.
+Specify the direction and type of the current component: e.g. `mp.Ex`, `mp.Ey`, etcetera for an electric-charge current, and `mp.Hx`, `mp.Hy`, etcetera for a magnetic-charge current. Note that currents pointing in an arbitrary direction are specified simply as multiple current sources with the appropriate amplitudes for each component. No default.
 
 **`center` [`Vector3`]**
 —
@@ -635,7 +635,7 @@ The location of the center of the current source in the computational cell. No d
 
 **`size` [`Vector3`]**
 —
-The size of the current distribution along each direction of the computational cell. Default is (0,0,0): a point-dipole source.
+The size of the current distribution along each direction of the computational cell. Default is `(0,0,0)`: a point-dipole source.
 
 **`amplitude` [`complex`]**
 —
@@ -663,11 +663,11 @@ This is a subclass of `Source` and has **all of the properties** of `Source` abo
 —
 The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency band at a given **k** point, and so on.
 
-**`direction` [`meep.X`, `meep.Y`, or `meep.Z;` default `meep.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
+**`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
 —
 By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig_match_freq` is `False`, you can specify a particular **k** vector of the desired mode with `eig_kpoint` (in Meep units of 2π/$a$).   (By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`.)
 
-**`eig_parity` [`meep.NO_PARITY` (default), `meep.EVEN_Z`, `meep.ODD_Z`, `meep.EVEN_Y`, `meep.ODD_Y`]**
+**`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]**
 —
 The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
@@ -681,7 +681,7 @@ The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues
 
 **`component` [as above, but defaults to `ALL_COMPONENTS`]**
 —
-Once the MPB modes are computed, equivalent electric and magnetic sources are created within Meep. By default, these sources include magnetic and electric currents in *all* transverse directions within the source region, corresponding to the mode fields as described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). If you specify a `component` property, however, you can include only one component of these currents if you wish. Most users won't need this feature.
+Once the MPB modes are computed, equivalent electric and magnetic sources are created within Mp. By default, these sources include magnetic and electric currents in *all* transverse directions within the source region, corresponding to the mode fields as described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). If you specify a `component` property, however, you can include only one component of these currents if you wish. Most users won't need this feature.
 
 **`eig_lattice_size` [`Vector3`], `eig_lattice_center` [`Vector3`]**
 —
@@ -761,10 +761,10 @@ Properties:
 —The center of the flux region (no default).
 
 **`size` [`Vector3`]**
-—The size of the flux region along each of the coordinate axes. Default is (0,0,0); a single point.
+—The size of the flux region along each of the coordinate axes. Default is `(0,0,0)`; a single point.
 
 **`direction` [`direction` constant ]**
-—The direction in which to compute the flux (e.g. `meep.X`, `meep.Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
+—The direction in which to compute the flux (e.g. `mp.X`, `mp.Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
 
 **`weight` [`complex`]**
 —A weight factor to multiply the flux by when it is computed. Default is 1.0.
@@ -773,7 +773,7 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 ### Volume
 
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
 
 Miscellaneous Functions
 -----------------------
@@ -813,7 +813,7 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 
 **`get_epsilon_point(pt)`**
 —
-Equivalent to `get_field_point(meep.Dielectric, pt)`.
+Equivalent to `get_field_point(mp.Dielectric, pt)`.
 
 **`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**
 —
@@ -821,23 +821,23 @@ Given a list of field components `cs`, compute the Fourier transform of these fi
 
 **`flux_in_box(dir, box=None, center=None, size=None)`**
 —
-Given a `direction` constant, and a `meep.Volume`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `flux_in_box(d=meep.X,meep.Volume(center=meep.Vector3(0,0,0),size=meep.Vector3(0,1,1)))`. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
+Given a `direction` constant, and a `mp.Volume`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `flux_in_box(d=mp.X,mp.Volume(center=mp.Vector3(0,0,0),size=mp.Vector3(0,1,1)))`. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
 **`electric_energy_in_box(box=None, center=None, size=None)`**
 —
-Given a `meep.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
+Given a `mp.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
 **`magnetic_energy_in_box(box=None, center=None, size=None)`**
 —
-Given a `meep.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
+Given a `mp.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
 **`field_energy_in_box(box=None, center=None, size=None)`**
 —
-Given a `meep.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
+Given a `mp.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, meep will construct the appropriate volume for you.
 
 **`modal_volume_in_box(box=None, center=None, size=None)`**
 —
-Given a `meep.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum (ε|E|<sup>2</sup>). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you.
+Given a `mp.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum (ε|E|<sup>2</sup>). If no volume argument is provided, the entire computational cell is used by default. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
@@ -962,7 +962,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 **`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
 —
-Given a flux object and list of band indices, return a tuple of 1) the eigenmode coefficients as a 3D numpy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)), 2) the group velocity as a numpy array, and 3) a list of kpoints as `mp.Vector3`s. The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`meep.NO_PARITY` (default), `meep.EVEN_Z`, `meep.ODD_Z`, `meep.EVEN_Y`, `meep.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example of `get_eigenmode_coefficients`.
+Given a flux object and list of band indices, return a tuple of 1) the eigenmode coefficients as a 3D numpy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)), 2) the group velocity as a numpy array, and 3) a list of kpoints as `mp.Vector3`s. The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example of `get_eigenmode_coefficients`.
 
 Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with nonmonotonic dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.)
 
@@ -1000,7 +1000,7 @@ The center of the force region (no default).
 
 **`size [ Vector3 ]`**
 —
-The size of the force region along each of the coordinate axes. Default is (0,0,0) (a single point).
+The size of the force region along each of the coordinate axes. Default is `(0,0,0)` (a single point).
 
 **`direction [ direction constant ]`**
 —
@@ -1167,7 +1167,7 @@ Loads a structure from the file `fname`. A file name to load can also be passed 
 Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_sim()`:
 
 ```py
-sim = meep.Simulation(...)
+sim = mp.Simulation(...)
 sim.init_sim()
 sim.solve_cw(tol, maxiters, L)
 ```
@@ -1182,7 +1182,7 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### GDSII Support
 
-**`meep.get_GDSII_prisms(material, gdsii_filename, layer)`**
+**`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —
 Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer `layer` of a GDSII file `gdsii_filename`.
 
@@ -1265,7 +1265,7 @@ Outputs *all* the components of the field *X*, where *X* is either `h`, `b`, `e`
 —
 Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](https://github.com/stevengj/h5utils/blob/master/README.md), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc bluered"`). See also [Tutorial/Basics](Python_Tutorials/Basics.md#output-tips-and-tricks).
 
-It is often useful to use the h5topng `-C` or `-A` options to overlay the dielectric function when outputting fields. To do this, you need to know the name of the dielectric-function `.h5` file which must have been previously output by `output_epsilon`. To make this easier, a built-in shell variable `$EPS` is provided which refers to the last-output dielectric-function `.h5` file. So, for example `output_png(meep.Ez,"-C $EPS")` will output the $E_z$ field and overlay the dielectric contours.
+It is often useful to use the h5topng `-C` or `-A` options to overlay the dielectric function when outputting fields. To do this, you need to know the name of the dielectric-function `.h5` file which must have been previously output by `output_epsilon`. To make this easier, a built-in shell variable `$EPS` is provided which refers to the last-output dielectric-function `.h5` file. So, for example `output_png(mp.Ez,"-C $EPS")` will output the $E_z$ field and overlay the dielectric contours.
 
 By default, `output_png` deletes the `.h5` file when it is done. To preserve the `.h5` file requires `output_png(component, h5topng_options, rm_h5=False)`.
 
@@ -1282,7 +1282,7 @@ See also [Field Function Examples](Field_Function_Examples.md), and [Synchronizi
 The output functions described above write the data for the fields and materials for the entire computational volume to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the computational volume and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 ```python
- get_array(vol=None, center=None, size=None component=meep.Ez, cmplx=False, arr=None)
+ get_array(vol=None, center=None, size=None component=mp.Ez, cmplx=False, arr=None)
 ```
 
 with the following input parameters:
@@ -1301,9 +1301,9 @@ with the following input parameters:
 —
 Returns the Fourier-transformed fields as a NumPy array.
 
-+ `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `meep.add_flux`).
++ `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
 
-+ `component`: A field component (e.g., `meep.Ez`)
++ `component`: A field component (e.g., `mp.Ez`)
 
 + `num_freq`: The index of the frequency: (an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.)
 
@@ -1315,7 +1315,7 @@ The following step function collects field data from a given point and runs [Har
 —
 `Harminv` is implemented as a class whose constructor returns a step function that collects data from the field component `c` (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
 
-**Important:** normally, you should only use Harminv to analyze data *after the sources are off*. Wrapping it in `after_sources(meep.Harminv(...))` is sufficient.
+**Important:** normally, you should only use Harminv to analyze data *after the sources are off*. Wrapping it in `after_sources(mp.Harminv(...))` is sufficient.
 
 In particular, Harminv takes the time series $f(t)$ corresponding to the given field component as a function of time and decomposes it (within the specified bandwidth) as:
 
@@ -1350,9 +1350,9 @@ A crude measure of the error in the frequency (both real and imaginary)...if the
 For example, `[m.freq for m in harminv_instance.modes]` gives a list of the real parts of the frequencies. Be sure to save a reference to the `Harminv` instance if you wish to use the results after the simulation:
 
 ```py
-sim = meep.Simulation(...)
-h = meep.Harminv(...)
-sim.run(meep.after_sources(h))
+sim = mp.Simulation(...)
+h = mp.Harminv(...)
+sim.run(mp.after_sources(h))
 # do something with h.modes
 ```
 
@@ -1485,6 +1485,6 @@ If you look at a function in the C++ interface, then there are a few simple rule
 
 -   First, all functions in the `meep::` namespace are available in the Meep Python module from the top-level `meep` package.
 -   Second, any method of a class is accessible via the standard Python class interface. For example, `meep::fields::step`, which is the function that performs a time-step, is exposed to Python as `fields_instance.step()` where a fields instance is usually accessible from Simulation.fields.
--   C++ constructors are called using the normal Python class instantiation. E.g., `fields = meep.fields(...)` returns a new `meep::fields` object. Calling destructors is not necessary because objects are automatically garbage collected.
+-   C++ constructors are called using the normal Python class instantiation. E.g., `fields = mp.fields(...)` returns a new `meep::fields` object. Calling destructors is not necessary because objects are automatically garbage collected.
 
 Some argument type conversion is performed automatically, e.g. types like complex numbers are converted to `complex<double>`, etcetera. `Vector3` vectors are converted to `meep::vec`, but to do this we need to know the dimensionality of the problem in C++. The problem dimensions are automatically initialized by `Simulation._init_structure`, but if you want to pass vector arguments to C++ before that time you should call `Simulation.require_dimensions()`, which infers the dimensions from the `cell_size`, `k_point`, and `dimensions` variables.

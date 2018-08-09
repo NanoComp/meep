@@ -251,7 +251,7 @@ Instead of `material-func`, you can use `epsilon-func`: give it a function of po
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `susceptibility`.
 
-**`susceptibility`**
+### susceptibility
 
 Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
 
@@ -261,7 +261,7 @@ The scale factor σ. You can also specify an anisotropic σ tensor by using the 
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
-**`lorentzian-susceptibility`**
+### lorentzian-susceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
@@ -273,7 +273,7 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
-**`drude-susceptibility`**
+### drude-susceptibility
 
 Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
 
@@ -287,7 +287,7 @@ The loss rate $γ_n / 2\pi$.
 
 Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
-**`noisy-lorentzian-susceptibility` or `noisy-drude-susceptibility`**
+### noisy-lorentzian-susceptibility or noisy-drude-susceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
 
@@ -315,7 +315,7 @@ One normally does not create objects of type `geometric-object` directly, howeve
 
 In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
-**`sphere`**
+### sphere
 
 A sphere. Properties:
 
@@ -323,7 +323,7 @@ A sphere. Properties:
 —
 Radius of the sphere. No default value.
 
-**`cylinder`**
+### cylinder
 
 A cylinder, with circular cross-section and finite height. Properties:
 
@@ -339,7 +339,7 @@ Length of the cylinder along its axis. No default value.
 —
 Direction of the cylinder's axis; the length of this vector is ignored. Defaults to point parallel to the $z$ axis.
 
-**`cone`**
+### cone
 
 A cone, or possibly a truncated cone. This is actually a subclass of `cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
 
@@ -347,7 +347,7 @@ A cone, or possibly a truncated cone. This is actually a subclass of `cylinder`,
 —
 Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
 
-**`block`**
+### block
 
 A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
 
@@ -359,11 +359,27 @@ The lengths of the block edges along each of its three axes. Not really a 3-vect
 —
 The directions of the axes of the block; the lengths of these vectors are ignored. Must be linearly independent. They default to the three lattice directions.
 
-**`ellipsoid`**
+### ellipsoid
 
 An ellipsoid. This is actually a subclass of `block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
 
-Here are some examples of geometric objects created using the above classes:
+### prism
+
+Polygonal prism type.
+
+**`vertices` [list of `vector3`]**
+—
+The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths (with `height` of `infinity`) are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+
+**`height` [`number`]**
+—
+The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
+
+**`axis` [`vector3`]**
+—
+The axis perpendicular to the prism. Defaults to `(0,0,1)`.
+
+These are some examples of geometric objects created using the above classes:
 
 ```scm
 ; A cylinder of infinite radius and height 0.25 pointing along the x axis,
@@ -389,6 +405,23 @@ Here are some examples of geometric objects created using the above classes:
 (set! geometry (list
                (make block (center 1 2 3) (material metal) (size 1 1 1))
                (make sphere (center 1 2 3) (material air) (radius 0.2))))
+```
+
+```scm
+; A hexagon defined as a prism with six vertices centered on the origin
+; of material crystalline silicon (from the materials library)
+(set! geometry
+      (list
+       (make prism
+         (vertices
+           (list (vector3 -1 0 0)
+                 (vector3 -0.5 (/ (sqrt 3) 2) 0)
+                 (vector3 0.5 (/ (sqrt 3) 2) 0)
+                 (vector3 1 0 0)
+                 (vector3 0.5 (/ (sqrt 3) -2) 0)
+                 (vector3 -0.5 (/ (sqrt 3) -2) 0)))
+	 (height 1.5)
+	 (material cSi))))
 ```
 
 ### symmetry
@@ -501,7 +534,7 @@ A Scheme function of a single argument, that takes a vector3 giving a position a
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `eigenmode-source`:
 
-**`eigenmode-source`**
+### eigenmode-source
 
 This is a subclass of `source` and has **all of the properties** of `source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp-func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
 
@@ -537,7 +570,7 @@ Note that MPB only supports dispersionless non-magnetic materials but it does su
 
 The `src-time` object, which specifies the time dependence of the source, can be one of the following three classes.
 
-**`continuous-src`**
+### continuous-src
 
 A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
 
@@ -561,7 +594,7 @@ Roughly, the temporal width of the smoothing (technically, the inverse of the ex
 —
 How many `width`s the current decays for before we cut it off and set it to zero. Default is 3.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times.
 
-**`gaussian-src`**
+### gaussian-src
 
 A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
 
@@ -581,7 +614,7 @@ The starting time for the source. Default is 0 (turn on at $t=0$). This is not t
 —
 How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start-time + cutoff*width`.
 
-**`custom-src`**
+### custom-src
 
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
 
@@ -609,7 +642,7 @@ A region (volume, plane, line, or point) in which to compute the integral of the
 —The center of the flux region (no default).
 
 **`size` [`vector3`]**
-—The size of the flux region along each of the coordinate axes. Default is (0,0,0); a single point.
+—The size of the flux region along each of the coordinate axes. Default is `(0,0,0)`; a single point.
 
 **`direction` [`direction` constant ]**
 —The direction in which to compute the flux (e.g. `X`, `Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
@@ -676,7 +709,7 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 
 **`(volume (center ...) (size ...))`**
 —
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point.
 
 ### Simulation Time
 
