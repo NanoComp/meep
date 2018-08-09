@@ -494,7 +494,7 @@ Polygonal prism type.
 
 **`vertices` [list of `Vector3`]**
 —
-The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths (with `height` of `mp.inf`) are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell.
 
 **`height` [`number`]**
 —
@@ -502,11 +502,11 @@ The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used f
 
 **`axis` [`Vector3`]**
 —
-The axis perpendicular to the prism. Defaults to `Vector3(x=0,y=0,z=1)`.
+The axis perpendicular to the prism. Defaults to `Vector3(0,0,1)`.
 
 **`center` [`Vector3`]**
 —
-If `center` is *not* specified, then the coordinates of the `vertices` define the *bottom* of the prism
+If `center` is not specified, then the coordinates of the `vertices` define the *bottom* of the prism
 (with the top of the prism being at the same coordinates shifted by `height*axis`).
 If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid)
 of all the vertices (top and bottom) of the resulting 3d prism (so that the coordinates of the `vertices` are
@@ -651,7 +651,7 @@ String of the form `path_to_h5_file.h5:dataset`. The `.h5` extension is optional
 
 **`amp_data` [`numpy.ndarray with dtype=numpy.complex128`]**
 —
-Like `amp_func_file` above, but instead of interpolating into an HDF5 file, interpolates into a complex numpy array. The array should be three dimensions. For a 2D simulation, just pass 1 for the third dimension, e.g., `arr = np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
+Like `amp_func_file` above, but instead of interpolating into an HDF5 file, interpolates into a complex NumPy array. The array should be three dimensions. For a 2d simulation, just pass 1 for the third dimension, e.g., `arr = np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
@@ -946,7 +946,7 @@ Sometimes it is more convenient to keep the Fourier-transformed fields in memory
 
 **`get_flux_data(flux)`**
 —
-Get the Fourier-transformed fields corresponding to the given flux object as a `FluxData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_flux_data` below and should be considered opaque.
+Get the Fourier-transformed fields corresponding to the given flux object as a `FluxData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_flux_data` below and should be considered opaque.
 
 **`load_flux_data(flux, fdata)`**
 —
@@ -962,7 +962,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 **`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
 —
-Given a flux object and list of band indices, return a tuple of 1) the eigenmode coefficients as a 3D numpy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)), 2) the group velocity as a numpy array, and 3) a list of kpoints as `mp.Vector3`s. The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. See [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/) for an example of `get_eigenmode_coefficients`.
+Given a flux object and list of band indices, return a tuple of (1) the eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)), (2) the group velocity as a NumPy array, and (3) a list of kpoints as `mp.Vector3`s. The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
 
 Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with nonmonotonic dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.)
 
@@ -1058,7 +1058,7 @@ To keep the fields in memory and avoid writing to and reading from a file, use t
 
 **`get_force_data(force)`**
 —
-Get the Fourier-transformed fields corresponding to the given force object as a `ForceData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_force_data` below and should be considered opaque.
+Get the Fourier-transformed fields corresponding to the given force object as a `ForceData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_force_data` below and should be considered opaque.
 
 **`load_force_data(force, fdata)`**
 —
@@ -1136,7 +1136,7 @@ To keep the fields in memory and avoid writing to and reading from a file, use t
 
 **`get_near2far_data(n2f)`**
 —
-Get the Fourier-transformed fields corresponding to the given near2far object as a `NearToFarData`, which is just a named tuple of numpy arrays. Note that this object is only useful for passing to `load_near2far_data` below and should be considered opaque.
+Get the Fourier-transformed fields corresponding to the given near2far object as a `NearToFarData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_near2far_data` below and should be considered opaque.
 
 **`load_near2far_data(n2f, n2fdata)`**
 —
