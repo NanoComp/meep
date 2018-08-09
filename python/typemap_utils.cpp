@@ -179,7 +179,7 @@ static std::string py_class_name_as_string(PyObject *po) {
     PyObject *py_type = PyObject_Type(po);
     PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
-    char *bytes = PyObject_ToCharPtr(name);
+    const char *bytes = PyObject_ToCharPtr(name);
 
     std::string class_name(bytes);
 
