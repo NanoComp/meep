@@ -400,11 +400,11 @@ Again, we must run both simulations in order to get the normalization right. The
 Angular Reflectance Spectrum of a Planar Interface
 --------------------------------------------------
 
-We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance spectrum of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. Each given angle of the incident planewave requires a separate set of simulations.
+We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance spectrum of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum (n=1) everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. For each angle of the incident planewave, a separate simulation is necessary.
 
 A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Scheme_User_Interface/#source) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields remaining in the cell (due to absorption by the PMLs) via the [run function](../Scheme_User_Interface/#run-functions) `stop-when-fields-decayed`, similar to the previous example.
 
-Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k-point`, and (2) the source amplitude function `amp-func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the center frequency of the Gaussian pulse; in Meep, this excludes the 2π factor). Note that a fixed wavevector is only applicable to a single frequency. Any broadband source is therefore incident at a given angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k-point`, and (2) the source amplitude function `amp-func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the minimum frequency of the pulse which excludes the 2π factor). Note that a fixed wavevector only applies to a single frequency. Any broadband source is therefore incident at a specified angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
@@ -436,7 +436,7 @@ The simulation script is below and in [refl-angular.ctl](https://github.com/stev
 (set! dimensions (if (= theta-r 0) 1 3))
 
 ; plane of incidence is xz
-(set! k-point (vector3* fcen (vector3 (sin theta-r) 0 (cos theta-r))))
+(set! k-point (vector3* fmin (vector3 (sin theta-r) 0 (cos theta-r))))
 
 (set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df)))
                                  (component Ex) (center 0 0 (+ (* -0.5 sz) dpml)))))
@@ -458,14 +458,14 @@ The simulation script is below and in [refl-angular.ctl](https://github.com/stev
 (display-fluxes refl)
 ```
 
-The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the center frequency of the source, this is *not* the same as the given angle of the incident planewave, but rather sin<sup>-1</sup>(k<sub>x</sub>/ω).
+The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the minimum frequency of the source, this is *not* the same as the specified angle of the incident planewave, but rather sin<sup>-1</sup>(k<sub>x</sub>/ω).
 
-The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 41$^\circ$ in increments of 1$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
 ```sh
 #!/bin/bash
 
-for i in `seq 0 41`; do
+for i in `seq 0 5 80`; do
     meep empty?=true theta=${i} refl-angular.ctl |tee -a flux0_t${i}.out;
     grep flux1: flux0_t${i}.out |cut -d , -f2- > flux0_t${i}.dat
     meep empty?=false theta=${i} refl-angular.ctl |tee -a flux_t${i}.out;
@@ -473,17 +473,17 @@ for i in `seq 0 41`; do
 done
 ```
 
-Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Octave/Matlab script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the wavelength λ and wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a given angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results.
+Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Octave/Matlab script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the wavelength λ and wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a particular angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results. The [Brewster's angle](https://en.wikipedia.org/wiki/Brewster%27s_angle), where the transmittance is 1 and the reflectance 0, is tan<sup>-1</sup>(3.5/1)=74.1$^\circ$. This is also verified by the simulated results.
 
-In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations using a narrower bandwidth source centered at several of the missing wavelengths and also extend the angular range beyond 41$^\circ$.
+In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations for different wavelength spectra.
 
 ```matlab
-theta_in = [ 0:41 ];
+theta_in = [0:5:80];
 Rmeep = [];
 for j = 1:length(theta_in)
   f0 = dlmread(sprintf("flux0_t%d.dat",theta_in(j)),',');
   f = dlmread(sprintf("flux_t%d.dat",theta_in(j)),',');
-  Rmeep = [ Rmeep -f(:,2)./f0(:,2) ];
+  Rmeep = [Rmeep -f(:,2)./f0(:,2)];
 endfor
 
 freqs = f(:,1);

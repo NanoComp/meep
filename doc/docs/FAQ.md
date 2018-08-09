@@ -112,7 +112,7 @@ You can import any arbitrary complex permittivity profile via n and k values int
 
 ### Does Meep support importing GDSII files?
 
-Not currently, but work is ongoing to add support for this feature with expected release in mid-late 2018. Importing [GDSII](https://en.wikipedia.org/wiki/GDSII) files will facilitate the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+Yes. The [`get_GDSII_prisms`](Python_User_Interface/#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
 
 ### Why doesn't turning off subpixel averaging work?
 

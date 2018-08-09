@@ -23,7 +23,7 @@
 (set! dimensions (if (= theta-r 0) 1 3))
 
 ; plane of incidence is xz
-(set! k-point (vector3* fcen (vector3 (sin theta-r) 0 (cos theta-r))))
+(set! k-point (vector3* fmin (vector3 (sin theta-r) 0 (cos theta-r))))
 
 (set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df)))
 			         (component Ex) (center 0 0 (+ (* -0.5 sz) dpml)))))
