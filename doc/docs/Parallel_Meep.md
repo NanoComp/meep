@@ -57,6 +57,11 @@ Although all processes execute the Python/Scheme file in parallel, print stateme
 
 If for some reason you need to distinguish different MPI processes in your Python/Scheme file, you can use the following two functions:
 
+**`(meep-am-master)`**
+**`meep.am_master()`**
+—
+Returns true if the current process is the master process (rank == 0).
+
 **`(meep-count-processors)`**
 **`meep.count_processors()`**
 —
