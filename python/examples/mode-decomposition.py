@@ -1,4 +1,6 @@
-import meep as mp
+# -*- coding: utf-8 -*-
+
+import meep as mp # pixels/μm
 
 resolution = 60
 
@@ -53,6 +55,7 @@ flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-10))
 
+incident_coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
 incident_flux = mp.get_fluxes(flux)
 incident_flux_data = sim.get_flux_data(flux)
 
@@ -97,4 +100,4 @@ for m in range(5):
         
     coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
     taper_flux = mp.get_fluxes(refl_flux)
-    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,(abs(coeffs[0,0,1])**2)/incident_flux[0],-taper_flux[0]/incident_flux[0]))
+    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2,-taper_flux[0]/incident_flux[0]))

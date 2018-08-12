@@ -9,22 +9,22 @@ This tutorial demonstrates the mode-decomposition feature which is used to decom
 Reflectance of a Waveguide Taper
 --------------------------------
 
-This example involves computing the reflectance &mdash; the fraction of the reflected power over the incident power &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance using two differerent methods produces nearly identical results: (1) mode decomposition and (2) directly from the fields via the [Poynting flux](../Introduction/#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This example involves computing the reflectance &mdash; the fraction of the reflected power over the incident power &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance using two differerent methods produces nearly identical results: (1) mode decomposition and (2) directly from the fields via its [Poynting flux](../Introduction/#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
 </center>
 
-The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode with a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to span the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes. These are computed separately via the eigenmode solver [MPB](https://mpb.readthedocs.io). The technical details are described in [Mode Decomposition](../Mode_Decomposition). The squared magnitude of the mode coefficient is equivalent to the power (i.e., Poynting flux) in the given eigenmode. Another line monitor could also have been placed in the second waveguide to compute the transmittance. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). In this example, we are computing |S<sub>11</sub>|<sup>2</sup> which is the reflectance.
+The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode with a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to span the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes. These are computed separately via the eigenmode solver [MPB](https://mpb.readthedocs.io). Technical details are described in [Mode Decomposition](../Mode_Decomposition) where it is shown that the squared magnitude of the mode coefficient is equivalent to the power (i.e., Poynting flux) in the given eigenmode. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). In this example, we are computing |S<sub>11</sub>|<sup>2</sup> which is the reflectance. Another line monitor could have been placed in the second waveguide to compute the transmittance or |S<sub>21</sub>|<sup>2</sup>. Also not considered in this example is the scattering into radiative modes.
 
-The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor`, which is an alias for `add_flux`, is not optimized for symmetry.
+The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity` as `mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor`, which is an alias for `add_flux`, is not optimized for symmetry.
 
 At the end of the simulation, the reflectance of the fundamental mode computed using the two methods are displayed. The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
 
 ```py
 import meep as mp
 
-resolution = 60
+resolution = 60   # pixels/μm
 
 w1 = 1            # width of waveguide 1
 w2 = 2            # width of waveguide 2
@@ -77,6 +77,7 @@ flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-10))
 
+incident_coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)	
 incident_flux = mp.get_fluxes(flux)
 incident_flux_data = sim.get_flux_data(flux)
 
@@ -121,17 +122,17 @@ for m in range(5):
         
     coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
     taper_flux = mp.get_fluxes(refl_flux)
-    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,(abs(coeffs[0,0,1])**2)/incident_flux[0],-taper_flux[0]/incident_flux[0]))
+    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2,-taper_flux[0]/incident_flux[0]))
 ```
 
-To investigate the scaling, we compute the reflectance for five different taper lengths: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. The Bash commands to run the simulation and extract the plotting data from the output are as follows:
+We compute the reflectance for five different taper lengths on an exponential scale: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. The Bash commands to run the simulation and extract the plotting data from the output are:
 
 ```sh
 python -u mode-decomposition.py |tee taper_data.out;
 grep refl: taper_data.out |cut -d , -f2- > taper_data.dat
 ```
 
-The results are plotted using the Python script below. The plot is shown in the accompanying figure. For reference, a quadratic scaling is shown in black. The reflectance values computed using the two methods are nearly identical. Also, the reflectance of the linear waveguide taper decreases quadratically with the taper length which is consistent with analytic theory.
+The results are plotted using the Python script below. The plot is shown in the accompanying figure. The reflectance values computed using the two methods of mode decomposition and flux are nearly identical. For reference, a line with quadratic scaling is shown in black. The reflectance of the linear waveguide taper decreases quadratically with the taper length consistent with analytic theory.
 
 ```py
 import numpy as np
