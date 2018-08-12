@@ -2,8 +2,6 @@ HDF5 file output routines for frequency-dependent permittivity and permeability.
 
 Skewed bloch periodic boundary conditions for non-orthogonal unit cells
 
-Add support for importing GDSII file format used in planar lithography.
-
 Discrete rotational symmetry in cylindrical coordinates.
 
 Gyromagnetic materials via general anisotropic conductivities.
