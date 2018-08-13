@@ -17,7 +17,7 @@
 -   Exploitation of **symmetries** to reduce the computation size including even/odd mirror planes and 90°/180° rotations.
 -   Arbitrary current sources including a guided-mode launcher.
 -   Frequency-domain solver for finding the response to a [continuous-wave (CW)](https://en.wikipedia.org/wiki/Continuous_wave) source.
--   Field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
+-   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   **GDSII** file import for planar geometries.
 -   **Materials library** containing predefined broadband, complex refractive indices.
 -   Field analyses including Poynting flux, near to far transformations, mode decomposition, frequency extraction, local density of states (LDOS), modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
