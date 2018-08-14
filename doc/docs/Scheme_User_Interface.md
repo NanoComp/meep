@@ -369,11 +369,11 @@ Polygonal prism type.
 
 **`vertices` [list of `vector3`]**
 —
-The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths (with `height` of `infinity`) are not supported. To simulate infinite geometry, just extend the edge of the prism a little past the cell.
+The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell.
 
 **`height` [`number`]**
 —
-The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
+The prism thickness, extruded in the direction of `axis`. `infinity` can be used for infinite height.
 
 **`axis` [`vector3`]**
 —
