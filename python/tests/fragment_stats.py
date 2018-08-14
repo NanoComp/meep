@@ -87,9 +87,9 @@ class TestFragmentStats(unittest.TestCase):
                          cond=300 / sym_factor)
 
         # Check DFT regions
-        self.assertEqual(fs[0].num_dft_pixels, 10240 / sym_factor)
-        self.assertEqual(fs[1].num_dft_pixels, 17120 / sym_factor)
-        self.assertEqual(fs[2].num_dft_pixels, 23840 / sym_factor)
+        self.assertEqual(fs[0].num_dft_pixels, 10240)
+        self.assertEqual(fs[1].num_dft_pixels, 17120)
+        self.assertEqual(fs[2].num_dft_pixels, 23840)
 
     def test_1d(self):
         self._test_1d([])
@@ -238,13 +238,13 @@ class TestFragmentStats(unittest.TestCase):
         for i in [0, 3, 6]:
             self.assertEqual(fs[i].num_dft_pixels, 0)
 
-        self.assertEqual(fs[1].num_dft_pixels, 10240 / sym_factor)
-        self.assertEqual(fs[4].num_dft_pixels, 17120 / sym_factor)
-        self.assertEqual(fs[7].num_dft_pixels, 23840 / sym_factor)
+        self.assertEqual(fs[1].num_dft_pixels, 10240)
+        self.assertEqual(fs[4].num_dft_pixels, 17120)
+        self.assertEqual(fs[7].num_dft_pixels, 23840)
 
-        self.assertEqual(fs[2].num_dft_pixels, 51200 / sym_factor)
-        self.assertEqual(fs[5].num_dft_pixels, 85600 / sym_factor)
-        self.assertEqual(fs[8].num_dft_pixels, 119200 / sym_factor)
+        self.assertEqual(fs[2].num_dft_pixels, 51200)
+        self.assertEqual(fs[5].num_dft_pixels, 85600)
+        self.assertEqual(fs[8].num_dft_pixels, 119200)
 
     def test_2d(self):
         self._test_2d([])
@@ -363,9 +363,9 @@ class TestFragmentStats(unittest.TestCase):
                          cond=30000 / sym_factor)
 
         # Check DFT regions
-        self.assertEqual(fs[0].num_dft_pixels, 256000 / sym_factor)
-        self.assertEqual(fs[1].num_dft_pixels, 428000 / sym_factor)
-        self.assertEqual(fs[2].num_dft_pixels, 596000 / sym_factor)
+        self.assertEqual(fs[0].num_dft_pixels, 256000)
+        self.assertEqual(fs[1].num_dft_pixels, 428000)
+        self.assertEqual(fs[2].num_dft_pixels, 596000)
 
     def test_3d(self):
         self._test_3d([])

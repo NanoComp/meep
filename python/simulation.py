@@ -670,7 +670,6 @@ class Simulation(object):
                 fs.num_nonlinear_pixels //= 2
                 fs.num_susceptibility_pixels //= 2
                 fs.num_nonzero_conductivity_pixels //= 2
-                fs.num_dft_pixels //= 2
                 fs.num_pixels_in_box //= 2
 
         return stats
