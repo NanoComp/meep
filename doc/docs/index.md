@@ -14,7 +14,7 @@
 -   **Precompiled binary packages** of official releases and nightly builds via [Conda](Installation/#conda-packages).
 -   Arbitrary **anisotropic**, electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
 -   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
--   Exploitation of **symmetries** to reduce the computation size including even/odd mirror planes and 90°/180° rotations.
+-   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   Arbitrary current sources including a guided-mode launcher.
 -   Frequency-domain solver for finding the response to a [continuous-wave (CW)](https://en.wikipedia.org/wiki/Continuous_wave) source.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
