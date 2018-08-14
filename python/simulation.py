@@ -1030,11 +1030,9 @@ class Simulation(object):
 
     def get_dft_data(self, dft_chunk):
         n = mp._get_dft_data_size(dft_chunk)
-        my_arr = np.zeros(n, np.complex128)
-        result = np.zeros(n, np.complex128)
-        mp._get_dft_data(dft_chunk, my_arr)
-        mp.sum_to_all(my_arr, result, n)
-        return result
+        arr = np.zeros(n, np.complex128)
+        mp._get_dft_data(dft_chunk, arr)
+        return arr
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, near2fars])

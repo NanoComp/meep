@@ -377,50 +377,44 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     return py_arr;
 }
 
-size_t _get_dft_data_size(meep::dft_chunk *dft_chunks) {
-    size_t n = 0;
-    for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
-        n += cur->N * cur->Nomega;
-    return sum_to_all(n);
+size_t _get_dft_data_size(meep::dft_chunk *dc) {
+    size_t istart;
+    return meep::dft_chunks_Ntotal(dc, &istart) / 2;
 }
 
 void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
-    size_t my_ntot = 0;
-    for (dft_chunk *cur = dc; cur; cur = cur->next_in_dft)
-        my_ntot += cur->N * cur->Nomega;
-    size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-    size_t ntot = sum_to_all(my_ntot);
+    size_t istart;
+    size_t n = meep::dft_chunks_Ntotal(dc, &istart) / 2;
+    istart /= 2;
 
-    if (ntot != (size_t)size) {
+    if (n != (size_t)size) {
         meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
     }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
         size_t Nchunk = cur->N * cur->Nomega;
         for (size_t i = 0; i < Nchunk; ++i) {
-            cdata[i + my_start] = cur->dft[i];
+            cdata[i + istart] = cur->dft[i];
         }
-        my_start += Nchunk;
+        istart += Nchunk;
     }
 }
 
 void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
-    size_t my_ntot = 0;
-    for (dft_chunk *cur = dc; cur; cur = cur->next_in_dft)
-        my_ntot += cur->N * cur->Nomega;
-    size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-    size_t ntot = sum_to_all(my_ntot);
+    size_t istart;
+    size_t n = meep::dft_chunks_Ntotal(dc, &istart) / 2;
+    istart /= 2;
 
-    if (ntot != (size_t)size) {
+    if (n != (size_t)size) {
         meep::abort("Total dft_chunks size does not agree with size allocated for output array.\n");
     }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
         size_t Nchunk = cur->N * cur->Nomega;
         for (size_t i = 0; i < Nchunk; ++i) {
-            cur->dft[i] = cdata[i + my_start];
+            cur->dft[i] = cdata[i + istart];
         }
-        my_start += Nchunk;
+        istart += Nchunk;
     }
 }
 
@@ -806,8 +800,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
-// For sum_to_all
-%apply std::complex<double>* slice { std::complex<double>* in, std::complex<double>* out };
 
 //--------------------------------------------------
 // typemaps needed for get_eigenmode_coefficients
