@@ -2,141 +2,154 @@
 # Mode Decomposition
 ---
 
-This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. There are examples for two different cases in lossless, dielectric media: (1) guided modes and (2) planewaves.
+This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. There are examples for two kinds of modes in lossless, dielectric media: (1) localized (i.e., guided) and (2) non-localized (i.e., planewave).
 
 [TOC]
 
 Reflectance of a Waveguide Taper
 --------------------------------
 
-This example involves computing the reflectance &mdash; the fraction of the reflected power to the incident power &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation geometry are shown in the schematic below. We will verify that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This example involves computing the reflectance &mdash; the fraction of the reflected power over the incident power &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance using two differerent methods produces nearly identical results: (1) mode decomposition and (2) directly from the fields via its [Poynting flux](../Introduction/#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
 </center>
 
-The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode at a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to capture the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes which are computed separately via the eigenmode solver MPB. The technical details are described in [Mode Decomposition](../Mode_Decomposition). The squared magnitude of the mode coefficient is equivalent to the power in the given eigenmode. We could have also placed a line monitor in the second waveguide to compute the transmittance. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters); in this example, we compute |S<sub>11</sub>|<sup>2</sup>.
+The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode with a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to span the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes. These are computed separately via the eigenmode solver [MPB](https://mpb.readthedocs.io). Technical details are described in [Mode Decomposition](../Mode_Decomposition) where it is shown that the squared magnitude of the mode coefficient is equivalent to the power (i.e., Poynting flux) in the given eigenmode. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). In this example, we are computing |S<sub>11</sub>|<sup>2</sup> which is the reflectance. Another line monitor could have been placed in the second waveguide to compute the transmittance or |S<sub>21</sub>|<sup>2</sup>. Also not considered in this example is the scattering into radiative modes.
 
-The structure has mirror symmetry in the $y$ direction which we can exploit to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor` which would normally be used is not optimized for symmetry objects.
+The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor`, which is an alias for `add_flux`, is not optimized for symmetry.
 
-At the end of the simulation, the squared magnitude of the mode coefficients for the forward- and backward-propagating fundamental mode along with the taper length are displayed. For comparison, another approach for computing the reflectance involves the [flux](../Python_User_Interface/#flux-spectra) which is demonstrated in [Tutorial/Basics](Basics/#angular-reflectance-spectrum-of-a-planar-interface). The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
+At the end of the simulation, the reflectance of the fundamental mode computed using the two methods are displayed. The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
 
 ```py
 import meep as mp
-import math
-import argparse
 
-def main(args):
+resolution = 60   # pixels/μm
 
-    resolution = args.res
+w1 = 1            # width of waveguide 1
+w2 = 2            # width of waveguide 2
+Lw = 10           # length of waveguide 1/2
 
-    w1 = 1            # width of waveguide 1
-    w2 = 2            # width of waveguide 2
-    Lw = 10           # length of waveguide 1 and 2
-    Lt = args.Lt      # taper length
+Si = mp.Medium(epsilon=12.0)
 
-    Si = mp.Medium(epsilon=12.0)
+dair = 3.0
+dpml = 5.0
+
+sx = dpml+Lw+dpml
+sy = dpml+dair+w2+dair+dpml
+cell_size = mp.Vector3(sx,sy,0)
+
+prism_x = sx+1
+half_w1 = 0.5*w1
+half_w2 = 0.5*w2
+
+# straight waveguide
+vertices = [mp.Vector3(-prism_x,half_w1),
+            mp.Vector3(prism_x,half_w1),
+            mp.Vector3(prism_x,-half_w1),
+            mp.Vector3(-prism_x,-half_w1)]
     
-    dair = 3.0
-    dpml = 5.0
-    
+boundary_layers = [mp.PML(dpml)]
+
+# mode wavelength
+lcen = 6.67
+# mode frequency
+fcen = 1/lcen
+
+sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                              component=mp.Ez,
+                              center=mp.Vector3(-0.5*sx+dpml+0.2*Lw,0,0),
+                              size=mp.Vector3(0,sy-2*dpml,0),
+                              eig_match_freq=True,
+                              eig_parity=mp.ODD_Z+mp.EVEN_Y)]
+
+symmetries=[mp.Mirror(mp.Y)]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=boundary_layers,
+                    geometry=[mp.Prism(vertices,height=mp.inf,material=Si)],
+                    sources=sources,
+                    symmetries=symmetries)
+
+mon_pt = mp.Vector3(-0.5*sx+dpml+0.5*Lw,0,0)
+flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml,0)))
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-10))
+
+incident_coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)	
+incident_flux = mp.get_fluxes(flux)
+incident_flux_data = sim.get_flux_data(flux)
+
+for m in range(5):
+    Lt = 2**m
     sx = dpml+Lw+Lt+Lw+dpml
-    sy = dpml+dair+w2+dair+dpml
     cell_size = mp.Vector3(sx,sy,0)
 
     prism_x = sx+1
-    half_w1 = 0.5*w1
-    half_w2 = 0.5*w2
     half_Lt = 0.5*Lt
-
-    if Lt > 0:
-        vertices = [mp.Vector3(-prism_x, half_w1),
-                    mp.Vector3(-half_Lt, half_w1),
-                    mp.Vector3(half_Lt, half_w2),
-                    mp.Vector3(prism_x, half_w2),
-                    mp.Vector3(prism_x, -half_w2),
-                    mp.Vector3(half_Lt, -half_w2),
-                    mp.Vector3(-half_Lt, -half_w1),
-                    mp.Vector3(-prism_x, -half_w1)]
-    else:
-        vertices = [mp.Vector3(-prism_x, half_w1),
-                    mp.Vector3(prism_x, half_w1),
-                    mp.Vector3(prism_x, -half_w1),
-                    mp.Vector3(-prism_x, -half_w1)]
-
-    geometry = [mp.Prism(vertices, height=mp.inf, material=Si)]
-
-    boundary_layers = [mp.PML(dpml)]
-
-    # mode wavelength
-    lcen = 6.67
-
-    # mode frequency
-    fcen = 1/lcen
     
-    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.2*fcen),
+    # linear taper
+    vertices = [mp.Vector3(-prism_x,half_w1),
+                mp.Vector3(-half_Lt,half_w1),
+                mp.Vector3(half_Lt,half_w2),
+                mp.Vector3(prism_x,half_w2),
+                mp.Vector3(prism_x,-half_w2),
+                mp.Vector3(half_Lt,-half_w2),
+                mp.Vector3(-half_Lt,-half_w1),
+                mp.Vector3(-prism_x,-half_w1)]
+
+    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                                   component=mp.Ez,
-                                  size=mp.Vector3(0,sy-2*dpml,0),
                                   center=mp.Vector3(-0.5*sx+dpml+0.2*Lw,0,0),
+                                  size=mp.Vector3(0,sy-2*dpml,0),
                                   eig_match_freq=True,
                                   eig_parity=mp.ODD_Z+mp.EVEN_Y)]
 
-    symmetries=[mp.Mirror(mp.Y)]
-
+    sim.reset_meep()
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
-                        geometry=geometry,
+                        geometry=[mp.Prism(vertices,height=mp.inf,material=Si)],
                         sources=sources,
                         symmetries=symmetries)
 
-    xm = -0.5*sx+dpml+0.5*Lw  # x-coordinate of monitor
-    mode_monitor = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0,0), size=mp.Vector3(0,sy-2*dpml,0)))
-    
-    sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
+    mon_pt = mp.Vector3(-0.5*sx+dpml+0.5*Lw,0,0)
+    refl_flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml,0)))
 
-    coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(mode_monitor, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)    
-    
-    print("mode:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,0])**2,abs(coeffs[0,0,1])**2))
-    
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-Lt', type=float, default=3.0, help='taper length (default: 3.0)')
-    parser.add_argument('-res', type=int, default=60, help='resolution (default: 60)')
-    args = parser.parse_args()
-    main(args)
+    sim.load_minus_flux_data(refl_flux,incident_flux_data)
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-10))
+        
+    coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    taper_flux = mp.get_fluxes(refl_flux)
+    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2,-taper_flux[0]/incident_flux[0]))
 ```
 
-To investigate the scaling, we compute the reflectance for five different taper lengths: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. In order to obtain the incident power, we need a separate simulation with just the first waveguide. This is done by using a taper length of 0. We will use a parallel simulation with three processors to speed up the calculation. The bash script is shown below.
+We compute the reflectance for five different taper lengths: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. The Bash commands to run the simulation and extract the plotting data from the output are:
 
 ```sh
-#!/bin/bash
-
-mpirun -np 3 python -u mode-decomposition.py -Lt 0 |tee taper_data.out;
-
-for i in `seq 0 4`; do
-    mpirun -np 3 python -u mode-decomposition.py -Lt $((2**${i})) |tee -a taper_data.out;
-done
-
-grep mode: taper_data.out |cut -d , -f2- > taper_data.dat
+python -u mode-decomposition.py |tee taper_data.out;
+grep refl: taper_data.out |cut -d , -f2- > taper_data.dat
 ```
 
-The results are plotted using the Python script below. The plot is shown in the accompanying figure. For reference, a quadratic scaling is shown in black. Consistent with analytical results, the reflectance of the linear waveguide taper decreases quadratically with the taper length.
+The results are plotted using the Python script below. The plot is shown in the accompanying figure. The reflectance values computed using the two methods of mode decomposition and flux are nearly identical. For reference, a line with quadratic scaling is shown in black. The reflectance of the linear waveguide taper decreases quadratically with the taper length consistent with analytic theory.
 
 ```py
 import numpy as np
 import matplotlib.pyplot as plt
 
 f = np.genfromtxt("taper_data.dat", delimiter=",")
-Lt = f[1:,0]
-Rmeep = f[1:,2]/f[0,1]
+Lt = f[:,0]
+Rmode = f[:,1]
+Rflux = f[:,2]
 
 plt.figure(dpi=150)
-plt.loglog(Lt,Rmeep,'bo-',label='meep')
+plt.loglog(Lt,Rmode,'bo-',label='mode decomposition')
+plt.loglog(Lt,Rflux,'ro-',label='flux')
 plt.loglog(Lt,0.005/Lt**2,'k-',label=r'quadratic reference (1/Lt$^2$)')
 plt.legend(loc='upper right')
 plt.xlabel('taper length Lt (μm)')
-plt.ylabel(r'reflectance, $|S_{11}|^2$')
+plt.ylabel('reflectance')
 plt.show()
 ```
 

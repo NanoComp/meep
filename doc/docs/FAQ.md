@@ -89,18 +89,18 @@ Note also that, as a consequence of the above analysis, ε must go to a positive
 
 ### Why are there strange peaks in my reflectance/transmittance spectrum when modeling planar or periodic structures?
 
-Modeling flat/planar structures typically requires a 1d cell and periodic structures a single unit cell in 2d/3d. You may be using a higher-dimensional cell with multiple periods (a supercell) which introduces unwanted additional modes due to band folding. For more details, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Note that a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted.
+Modeling flat/planar structures typically requires a 1d cell and periodic structures a single unit cell in 2d/3d. You may be using a higher-dimensional cell with multiple periods (a supercell) which introduces unwanted additional modes due to band folding. For more details, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Note that a 1d cell must be along the $z$ direction with only the E<sub>x</sub> and H<sub>y</sub> field components permitted.
 
 Usage
 -----
 
 ### Is there a Python interface?
 
-Yes. An official Python interface was released in January 2018 with version 1.4. An unofficial [Python interface](https://github.com/FilipDominec/python-meep-utils), which is not compatible with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
+Yes. An official Python interface was released in January 2018 with Version 1.4. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which is not compatible with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
 ### What are the different ways to define the material geometry?
 
-There are currently three ways to define the material geometry: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class used to specify a collection of shapes including prisms, spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function, or (3) importing the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
+There are currently three ways to define the material geometry: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class used to specify a collection of predefined shapes including prisms, spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function (i.e., for a given position in the computational cell, return the ε or μ at that point), or (3) importing the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
 
 ### Is there a materials library?
 
@@ -108,7 +108,7 @@ Yes. A materials library is available containing [crystalline silicon](https://e
 
 ### How do I import n and k values into Meep?
 
-You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the wavelength- or frequency-dependent data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials/#material-dispersion). In general, you have to use a nonlinear optimization program to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. Note that Meep currently only does subpixel averaging of the nondispersive part of ε (and μ).
+You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the wavelength- or frequency-dependent data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials/#material-dispersion). In general, you have to use nonlinear optimization to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. Note that Meep currently only does subpixel averaging of the nondispersive part of ε (and μ).
 
 ### Does Meep support importing GDSII files?
 
@@ -132,7 +132,7 @@ Meep contains a [frequency-domain solver](Python_User_Interface/#frequency-domai
 
 This means that all of the features from the time-domain solver (e.g., arbitrary materials, symmetries, subpixel averaging, parallelization, etc.) are also available as a frequency-domain solver. For certain problems, such as cavities (e.g., ring resonators) with long-lived resonant modes, the frequency-domain solver converges much faster than the straightforward approach of simply running a long simulation until transients have disappeared. Another benefit is that an arbitrary, complex, refractive index can be specified directly using the [electric conductivity](Materials/#conductivity-and-complex) without having to fit the data to a sum of [Drude-Lorentz susceptibility terms](Materials/#material-dispersion).
 
-Examples are provided in [Tutorial/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver/).
+For an example, see [Tutorial/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver/).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
@@ -153,7 +153,7 @@ Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be us
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
-Only the real, frequency-independent part of ε/μ is written out to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry with visualization tools, etc., you may have to adjust the `epsilon` value.
+Only the real, frequency-independent part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials/#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to adjust the `epsilon` value.
 
 ### Does Meep support a non-uniform grid?
 

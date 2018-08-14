@@ -28,7 +28,7 @@ fcen = 0.15  # pulse center frequency
 df = 0.1     # pulse width (in frequency)
 
 sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez,
-                     center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0), size=mp.Vector3(0,w,0))]
+                     center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0),size=mp.Vector3(0,w,0))]
 
 sim = mp.Simulation(cell_size=cell,
                     boundary_layers=pml_layers,
@@ -39,11 +39,11 @@ sim = mp.Simulation(cell_size=cell,
 nfreq = 100  # number of frequencies at which to compute flux
 
 # reflected flux
-refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))
+refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0),size=mp.Vector3(0,2*w,0))
 refl = sim.add_flux(fcen,df,nfreq,refl_fr)
 
 # transmitted flux
-tran_fr = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml,wvg_ycen,0), size=mp.Vector3(0,2*w,0))
+tran_fr = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml,wvg_ycen,0),size=mp.Vector3(0,2*w,0))
 tran = sim.add_flux(fcen,df,nfreq,tran_fr)
 
 pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
@@ -58,23 +58,23 @@ straight_tran_flux = mp.get_fluxes(tran)
 
 sim.reset_meep()
 
-geometry = [mp.Block(mp.Vector3(sx-pad,w,mp.inf), center=mp.Vector3(-0.5*pad,wvg_ycen), material=mp.Medium(epsilon=12)),
-            mp.Block(mp.Vector3(w,sy-pad,mp.inf), center=mp.Vector3(wvg_xcen,0.5*pad), material=mp.Medium(epsilon=12))]
+geometry = [mp.Block(mp.Vector3(sx-pad,w,mp.inf),center=mp.Vector3(-0.5*pad,wvg_ycen),material=mp.Medium(epsilon=12)),
+            mp.Block(mp.Vector3(w,sy-pad,mp.inf),center=mp.Vector3(wvg_xcen,0.5*pad),material=mp.Medium(epsilon=12))]
 
 sim = mp.Simulation(cell_size=cell,
                     boundary_layers=pml_layers,
                     geometry=geometry,
-                        sources=sources,
-                        resolution=resolution)
+                    sources=sources,
+                    resolution=resolution)
 
 # reflected flux
 refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
-tran_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5,0), size=mp.Vector3(2*w,0,0))
-tran = sim.add_flux(fcen, df, nfreq, tran_fr)
+tran_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5,0),size=mp.Vector3(2*w,0,0))
+tran = sim.add_flux(fcen,df,nfreq,tran_fr)
 
 # for normal run, load negated fields to subtract incident from refl. fields
-sim.load_minus_flux_data(refl, straight_refl_data)
+sim.load_minus_flux_data(refl,straight_refl_data)
 
 pt = mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5)
 
