@@ -662,6 +662,16 @@ class Simulation(object):
             self.ensure_periodicity
         )
 
+        mirror_symmetries = [sym for sym in self.symmetries if isinstance(sym, Mirror)]
+        for sym in mirror_symmetries:
+            for fs in stats:
+                fs.num_anisotropic_eps_pixels //= 2
+                fs.num_anisotropic_mu_pixels //= 2
+                fs.num_nonlinear_pixels //= 2
+                fs.num_susceptibility_pixels //= 2
+                fs.num_nonzero_conductivity_pixels //= 2
+                fs.num_pixels_in_box //= 2
+
         return stats
 
     def _init_structure(self, k=False):
