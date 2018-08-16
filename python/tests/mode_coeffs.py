@@ -62,7 +62,7 @@ class TestModeCoeffs(unittest.TestCase):
         alpha, vgrp, kpoints = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
 
         self.assertTrue(kpoints[0].close(mp.Vector3(0.604301, 0, 0)))
-        self.assertTrue(kpoints[1].close(mp.Vector3(0.494353, 0, 0)))
+        self.assertTrue(kpoints[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
 
         mode_power = mp.get_fluxes(mode_flux)[0]
 
@@ -96,8 +96,8 @@ class TestModeCoeffs(unittest.TestCase):
         eval_point = mp.Vector3(0.7, -0.2, 0.3)
         ex_at_eval_point = emdata.amplitude(eval_point, mp.Ex)
         hz_at_eval_point = emdata.amplitude(eval_point, mp.Hz)
-        self.assertAlmostEqual(ex_at_eval_point, 2.4827383502368017e-05 + 0.16095103621219753j, places=4)
-        self.assertAlmostEqual(hz_at_eval_point, 1.1381993864995965-3.7330585912764835e-06j, places=4)
+        self.assertAlmostEqual(ex_at_eval_point, 2.4827383502368017e-05 + 0.16095103621219753j, places=2)
+        self.assertAlmostEqual(hz_at_eval_point, 1.1381993864995965-3.7330585912764835e-06j, places=2)
 
     def test_kpoint_func(self):
 
