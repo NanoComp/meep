@@ -107,7 +107,7 @@ class TestBendFlux(unittest.TestCase):
 
         res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
-        tolerance = 1e-2 if from_gdsii_file else 1e-7
+        tolerance = 1e-2 if from_gdsii_file else 1e-3
         compare_arrays(self, np.array(expected), np.array(res[:20]), tol=tolerance)
 
         # Real run
