@@ -818,6 +818,8 @@ class Simulation(object):
     def get_filename_prefix(self):
         if self.filename_prefix:
             return self.filename_prefix
+        elif self.filename_prefix is False:
+            return ''
         else:
             _, filename = os.path.split(sys.argv[0])
 
