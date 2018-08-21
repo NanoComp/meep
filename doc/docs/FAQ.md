@@ -93,8 +93,6 @@ Modeling flat/planar structures typically requires a 1d cell and periodic struct
 
 For flux calculations involving pulsed (i.e., Gaussian) sources, it is important to run the simulation long enough to ensure that all the fields have sufficiently decayed away (i.e., due to absorption by the PMLs, etc). Terminating the simulation prematurely will result in the Fourier-transformed fields, which are being accumulated during the time stepping (as explained in [Introduction](https://meep.readthedocs.io/en/latest/Introduction/#transmittancereflectance-spectra)), to not be fully converged. Convergence of the fields is typically achieved by lowering the `decay_by` parameter in the `stop_when_fields_decayed` [run function](https://meep.readthedocs.io/en/latest/Python_User_Interface/#run-functions).
 
-Finally, when modeling subwavelength features involving dispersive materials for which Meep's [subpixel smoothing](https://meep.readthedocs.io/en/latest/Introduction/#the-illusion-of-continuity) is *not* applicable, it is important to use a sufficiently high resolution. In general, it is good practice to always use various convergence tests such as these to ensure accurate results.
-
 Usage
 -----
 
@@ -117,6 +115,12 @@ You can import any arbitrary complex permittivity profile via n and k values int
 ### Does Meep support importing GDSII files?
 
 Yes. The [`get_GDSII_prisms`](Python_User_Interface/#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+
+### Checking convergence
+
+In any computer simulation like Meep, you should check that your results are *converged* with respect to any approximation that was made.   There is no simple formula that will tell you in advance exactly how much resolution (etc.) is required for a given level of accuracy; the most reliable procedure is to simply double the resolution and verify that the answers you care about don't change to your desired tolerance.   Useful things to check (ideally by doubling) in this way are: **resolution**, **run time** (for Fourier spectra), **PML thickness**.   Sometimes it is also informative to double the `cutoff` parameter of sources to increase their smoothness (reducing the amplitude of long-lived high-frequency modes).
+
+Meep's [subpixel smoothing](https://meep.readthedocs.io/en/latest/Introduction/#the-illusion-of-continuity) often improves the rate of convergence and makes convergence a smoother function of resolution.  However, subpixel smoothing does not occur for dispersive materials or user-defined material functions ε(x) (instead of the built-in geometric objects).
 
 ### Why doesn't turning off subpixel averaging work?
 
