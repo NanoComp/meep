@@ -780,13 +780,13 @@ Miscellaneous Functions
 
 ### Output File Names
 
-The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is empty (the default), however, then Meep constructs a default prefix based on the current Python filename with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
+The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is `None` (the default), however, then Meep constructs a default prefix based on the current Python filename with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
 
 **`Simulation.get_filename_prefix()`**
 —
 Return the current prefix string that is prepended, by default, to all file names.
 
-If you don't want to use any prefix, then you should set `filename_prefix` to `False`.
+If you don't want to use any prefix, then you should set `filename_prefix` to the empty string `''`.
 
 In addition to the filename prefix, you can also specify that all the output files be written into a newly-created directory (if it does not yet exist). This is done by running:
 

@@ -503,6 +503,15 @@ class TestSimulation(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertNotIn("Epsilon", str(w[0].message))
 
+    def test_get_filename_prefix(self):
+        sim = self.init_simple_simulation()
+        self.assertEqual(sim.get_filename_prefix(), "simulation")
+        sim.filename_prefix = ''
+        self.assertEqual(sim.get_filename_prefix(), "")
+        sim.filename_prefix = False
+        with self.assertRaises(TypeError):
+            sim.get_filename_prefix()
+
 
 if __name__ == '__main__':
     unittest.main()
