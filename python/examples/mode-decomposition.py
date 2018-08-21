@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import meep as mp # pixels/μm
+import meep as mp
 
-resolution = 60
+resolution = 60   # pixels/μm
 
 w1 = 1            # width of waveguide 1
 w2 = 2            # width of waveguide 2

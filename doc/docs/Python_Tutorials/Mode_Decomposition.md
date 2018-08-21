@@ -22,9 +22,9 @@ The structure has mirror symmetry in the $y$ direction which can be exploited to
 At the end of the simulation, the reflectance of the fundamental mode computed using the two methods are displayed. The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
 
 ```py
-import meep as mp # pixels/μm
+import meep as mp
 
-resolution = 60
+resolution = 60   # pixels/μm
 
 w1 = 1            # width of waveguide 1
 w2 = 2            # width of waveguide 2
