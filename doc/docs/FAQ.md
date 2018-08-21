@@ -91,6 +91,10 @@ Note also that, as a consequence of the above analysis, ε must go to a positive
 
 Modeling flat/planar structures typically requires a 1d cell and periodic structures a single unit cell in 2d/3d. You may be using a higher-dimensional cell with multiple periods (a supercell) which introduces unwanted additional modes due to band folding. For more details, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Note that a 1d cell must be along the $z$ direction with only the E<sub>x</sub> and H<sub>y</sub> field components permitted.
 
+For flux calculations involving pulsed (i.e., Gaussian) sources, it is important to run the simulation long enough to ensure that all the fields have sufficiently decayed away (i.e., due to absorption by the PMLs, etc). Terminating the simulation prematurely will result in the Fourier-transformed fields, which are being accumulated during the time stepping (as explained in [Introduction](https://meep.readthedocs.io/en/latest/Introduction/#transmittancereflectance-spectra)), to not be fully converged. Convergence of the fields is typically achieved by lowering the `decay_by` parameter in the `stop_when_fields_decayed` [run function](https://meep.readthedocs.io/en/latest/Python_User_Interface/#run-functions).
+
+Finally, when modeling subwavelength features involving dispersive materials for which Meep's [subpixel smoothing](https://meep.readthedocs.io/en/latest/Introduction/#the-illusion-of-continuity) is *not* applicable, it is important to use a sufficiently high resolution. In general, it is good practice to always use various convergence tests such as these to ensure accurate results.
+
 Usage
 -----
 
