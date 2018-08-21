@@ -845,7 +845,7 @@ class Simulation(object):
 
         if self.fields is not None:
             hook()
-        self.filename_prefix = ''
+        self.filename_prefix = None
 
         return dname
 
