@@ -466,7 +466,7 @@ class Simulation(object):
                  num_chunks=0,
                  Courant=0.5,
                  accurate_fields_near_cylorigin=False,
-                 filename_prefix='',
+                 filename_prefix=None,
                  output_volume=None,
                  output_single_precision=False,
                  load_structure=''):
@@ -816,17 +816,17 @@ class Simulation(object):
         return self.fields.get_eps(v3)
 
     def get_filename_prefix(self):
-        if self.filename_prefix:
+        if isinstance(self.filename_prefix, str):
             return self.filename_prefix
-        elif self.filename_prefix is False:
-            return ''
-        else:
+        elif self.filename_prefix is None:
             _, filename = os.path.split(sys.argv[0])
 
             if filename == 'ipykernel_launcher.py' or filename == '__main__.py':
                 return ''
             else:
                 return re.sub(r'\.py$', '', filename)
+        else:
+            raise TypeError("Expected a string for filename_prefix, or None for the default.")
 
     def use_output_directory(self, dname=''):
         if not dname:
