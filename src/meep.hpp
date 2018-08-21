@@ -212,7 +212,7 @@ public:
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 4; }
 
-protected:
+// protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
 };
@@ -341,6 +341,8 @@ public:
   const char *file_name() const { return filename; }
 
   void prevent_deadlock(); // hackery for exclusive mode
+  bool dataset_exists(const char *name);
+
 private:
   access_mode mode;
   char *filename;
@@ -668,6 +670,7 @@ class structure {
   double get_eps(const vec &loc) const;
   double get_mu(const vec &loc) const;
   double max_eps() const;
+  void print_disp_materials(const char *filename, int rank);
 
   friend class boundary_region;
 

@@ -304,11 +304,14 @@ class TestSimulation(unittest.TestCase):
 
         sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(),
                             component=mp.Ez)
-        geometry = mp.Block(material=Al, size=mp.Vector3(1, 1, mp.inf))
+        geometry = [mp.Block(material=Al, center=mp.Vector3(-1.5, -1.5), size=mp.Vector3(1, 1, mp.inf))]
+
+        pml_layers = [mp.PML(0.5)]
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
-                            geometry=[geometry],
+                            boundary_layers=pml_layers,
+                            geometry=geometry,
                             sources=[sources])
 
         sample_point = mp.Vector3(0.12, -0.29)
@@ -325,6 +328,7 @@ class TestSimulation(unittest.TestCase):
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
                             sources=[sources],
+                            boundary_layers=pml_layers,
                             load_structure=dump_fn)
 
         field_points = []

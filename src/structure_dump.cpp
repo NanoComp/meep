@@ -30,120 +30,74 @@ using namespace std;
 
 namespace meep {
 
-// Writes the number of susceptibilites to an hdf5 file. This is the length of the susceptibility
-// lists pointed to by chunks[i]->chiP[E_stuff] and chunks[i]->chiP[H_stuff]
-void structure::write_num_susceptibilites(h5file *file, const char *dname, size_t *source) {
-  size_t len = *source == 0 ? 0 : num_chunks;
-  file->create_data(dname, 1, &len);
-  for (size_t i = 0; i < len; i++)
-    if (chunks[i]->is_mine()) {
-      size_t start = i;
-      size_t ntot = 1;
-      file->write_chunk(1, &start, &ntot, source);
-    }
-}
-
-// The number of sigmas is the number of non-null elements of
-// chunks[i]->chiP[E_stuff|H_stuff]->sigma
-void structure::write_num_sigmas(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas) {
-  size_t sus_ntot = sum_to_all(num_sus);
-  size_t sigma_start = partial_sum_to_all(num_sus) - num_sus;
-
-  file->create_data(dname, 1, &sus_ntot);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine()) {
-      file->write_chunk(1, &sigma_start, &num_sus, num_sigmas);
-    }
-  }
-  file->prevent_deadlock();
-}
-
-// Write location (component and direction) of each non-null sigma (sigma[c][d])
-void structure::write_component_direction_data(h5file *file, const char* dname, size_t *num_sus, size_t **num_sigmas,
-                                               size_t ***sigma_cd, int EorH) {
-  size_t my_sigma_cd_ntot = 0;
-  for (size_t i = 0; i < num_sus[EorH]; ++i) {
-    my_sigma_cd_ntot += num_sigmas[EorH][i] * 2;
-  }
-
-  size_t sigma_cd_ntot = sum_to_all(my_sigma_cd_ntot);
-  size_t my_sigma_cd_start = partial_sum_to_all(my_sigma_cd_ntot) - my_sigma_cd_ntot;
-
-  file->create_data(dname, 1, &sigma_cd_ntot);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
-      for (size_t j = 0; j < num_sus[EorH]; ++j) {
-        size_t cd_count = num_sigmas[EorH][j] * 2;
-        file->write_chunk(1, &my_sigma_cd_start, &cd_count, sigma_cd[EorH][j]);
-        my_sigma_cd_start += cd_count;
-      }
-    }
-  }
-  file->prevent_deadlock();
-}
-
-// Write the actual data in a particular non-null sigma[c][d] for each susceptibility in this
-// chunk's chiP lists.
-void structure::write_sigma_data(h5file *file, const char *dname, size_t *num_sus, size_t **num_sigmas, int EorH) {
-  size_t my_ntot = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
-      for (size_t j = 0; j < num_sus[EorH]; ++j) {
-        my_ntot += num_sigmas[EorH][j] * chunks[i]->chiP[0]->ntot;
-      }
-    }
-  }
-
-  size_t my_start = partial_sum_to_all(my_ntot ) - my_ntot;
-  size_t ntotal = sum_to_all(my_ntot );
-
-  // Write sigma data
-  file->create_data(dname, 1, &ntotal);
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
-      susceptibility *sus = chunks[i]->chiP[EorH];
-      while (sus) {
-        sus->dump(file, &my_start);
-        sus = sus->next;
-      }
-    }
-  }
-  file->prevent_deadlock();
-}
-
 // Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy), omega_0,
 // gamma, no_omega_0_denominator)
 void structure::write_susceptibility_params(h5file *file, const char *dname, int EorH) {
-  // Get number of susceptibility params
+  // Get number of susceptibility params from first chunk, since all chunks will have
+  // the same susceptibility list.
   size_t params_ntotal = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
-      susceptibility *sus = chunks[i]->chiP[EorH];
-      while (sus) {
-        params_ntotal += sus->get_num_params() + 1;
-        sus = sus->next;
-      }
-    }
+  susceptibility *sus = chunks[0]->chiP[EorH];
+  while (sus) {
+    params_ntotal += sus->get_num_params() + 1;
+    sus = sus->next;
   }
 
   // Write params
   size_t params_start = 0;
   file->create_data(dname, 1, &params_ntotal);
   if (am_master()) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->chiP[EorH] && chunks[i]->is_mine()) {
-        susceptibility *sus = chunks[i]->chiP[EorH];
-        while (sus) {
-          sus->dump_params(file, &params_start);
-          sus = sus->next;
-        }
-      }
+    susceptibility *sus = chunks[0]->chiP[EorH];
+    while (sus) {
+      sus->dump_params(file, &params_start);
+      sus = sus->next;
     }
   }
 }
 
-void structure::dump(const char *filename) {
+// TODO: temp
+void structure::print_disp_materials(const char *filename, int rank) {
+  if (my_rank() == rank) {
+    char fname[15];
+    snprintf(fname, 15, "%s_%d.txt", filename, rank);
+    FILE *f = fopen(fname, "w");
+    for (int ft = 0; ft < 2; ++ft) {
+      for (int i = 0; i < num_chunks; ++i) {
+        fprintf(f, "chunk: %d\n", i);
+        lorentzian_susceptibility *sus = (lorentzian_susceptibility*)chunks[i]->chiP[ft];
+        int n = 0;
+        while (sus) {
+          fprintf(f, " sus: %d\n", n);
+          fprintf(f, " omega: %e\n", sus->omega_0);
+          fprintf(f, " gamma: %e\n", sus->gamma);
+          fprintf(f, " drude: %s\n", sus->no_omega_0_denominator ? "true" : "false");
+          fprintf(f, " ntot: %zu\n", sus->ntot);
+          fprintf(f, " id: %d\n", sus->get_id());
+          for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
+            for (int d = 0; d < 5; ++d) {
+              if (!sus->trivial_sigma[c][d]) {
+                fprintf(f, " non-trivial sigma: [%d][%d]\n", c, d);
+              }
+              if (sus->sigma[c][d]) {
+                fprintf(f, " sigma[%d][%d], ntot: %zu", c, d, sus->ntot);
+                for (size_t j = 0; j < sus->ntot; ++j) {
+                  if (j % 10 == 0) fprintf(f, "\n   ");
+                  fprintf(f, "%g, ", sus->sigma[c][d][j]);
+                }
+                fprintf(f, "\n\n");
+              }
+            }
+          }
+          fprintf(f, "\n");
+          sus = (lorentzian_susceptibility*)sus->next;
+          n++;
+        }
+      }
+    }
+    fclose(f);
+  }
+}
 
+void structure::dump(const char *filename) {
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.
   size_t *num_chi1inv_ = new size_t[num_chunks*NUM_FIELD_COMPONENTS*5];
@@ -187,127 +141,204 @@ void structure::dump(const char *filename) {
     }
   file.prevent_deadlock();
 
-  // Get sizes of susceptibility lists for chiP[E_stuff] and chiP[H_stuff]
-  size_t my_num_sus[2] = {0, 0};
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine()) {
-      susceptibility *Esus = chunks[i]->chiP[E_stuff];
-      while (Esus) {
-        my_num_sus[0] += 1;
-        Esus = Esus->next;
-      }
-      susceptibility *Hsus = chunks[i]->chiP[H_stuff];
-      while (Hsus) {
-        my_num_sus[1] += 1;
-        Hsus = Hsus->next;
-      }
-    }
+  // Get the sizes of susceptibility lists for chiP[E_stuff] and chiP[H_stuff]
+  // Since this info is copied to each chunk, we can just get it from the first chunk
+  size_t num_sus[2] = {0, 0};
+  susceptibility *Esus = chunks[0]->chiP[E_stuff];
+  while (Esus) {
+    num_sus[0] += 1;
+    Esus = Esus->next;
+  }
+  susceptibility *Hsus = chunks[0]->chiP[H_stuff];
+  while (Hsus) {
+    num_sus[1] += 1;
+    Hsus = Hsus->next;
   }
 
-  // Write susceptibility list sizes
-  write_num_susceptibilites(&file, "num_E_sus", &my_num_sus[0]);
-  write_num_susceptibilites(&file, "num_H_sus", &my_num_sus[1]);
+  {
+    // Write the number of susceptibilites
+    size_t len = 2;
+    file.create_data("num_sus", 1, &len);
+    if (am_master()) {
+      size_t start = 0;
+      size_t ntot = 2;
+      file.write_chunk(1, &start, &ntot, num_sus);
+    }
+  }
   file.prevent_deadlock();
 
-  // Get number of non-null sigma entries for each susceptibility of each chiP
+  // Get number of non-null sigma entries for each chiP in each chunk.
+  // Assumes each susceptibility in the chiP[E_stuff] list has the
+  // same number of non-null sigma elements. Likewise for chiP[H_stuff]
+  size_t *my_num_sigmas[2];
   size_t *num_sigmas[2];
-  for (int i = 0; i < 2; ++i) {
-    num_sigmas[i] = new size_t[my_num_sus[i]];
-    memset(num_sigmas[i], 0, sizeof(size_t) * my_num_sus[i]);
-  }
-
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine()) {
-      for (int ft = 0; ft < 2; ++ft) {
-        susceptibility *sus = chunks[i]->chiP[ft];
-        size_t n = 0;
-        while (sus) {
-          for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
-            for (int d = 0; d < 5; ++d) {
-              if (sus->sigma[c][d]) {
-                num_sigmas[ft][n] += 1;
-              }
-            }
-          }
-          n++;
-          sus = sus->next;
-        }
-      }
-    }
-  }
-
-  // Write num_sigmas data
-  write_num_sigmas(&file, "num_E_sigmas", my_num_sus[E_stuff], num_sigmas[E_stuff]);
-  write_num_sigmas(&file, "num_H_sigmas", my_num_sus[H_stuff], num_sigmas[H_stuff]);
-
-  // Get component and direction of non-null sigmas
-  size_t **sigma_cd[2] = {NULL, NULL};
   for (int ft = 0; ft < 2; ++ft) {
-    sigma_cd[ft] = new size_t*[my_num_sus[ft]];
-    for (size_t i = 0; i < my_num_sus[ft]; ++i) {
-      sigma_cd[ft][i] = new size_t[num_sigmas[ft][i] * 2];
-      memset(sigma_cd[ft][i], 0, sizeof(size_t) * num_sigmas[ft][i] * 2);
-    }
+    my_num_sigmas[ft] = new size_t[num_chunks];
+    num_sigmas[ft] = new size_t[num_chunks];
+    memset(my_num_sigmas[ft], 0, sizeof(size_t) * num_chunks);
+    memset(num_sigmas[ft], 0, sizeof(size_t) * num_chunks);
   }
 
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->is_mine()) {
       for (int ft = 0; ft < 2; ++ft) {
         susceptibility *sus = chunks[i]->chiP[ft];
-        size_t n = 0;
-        while (sus) {
-          int j = 0;
+        if (sus) {
           for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
             for (int d = 0; d < 5; ++d) {
               if (sus->sigma[c][d]) {
-                sigma_cd[ft][n][j] = c;
-                sigma_cd[ft][n][j + 1] = d;
-                j += 2;
+                my_num_sigmas[ft][i] += 1;
               }
             }
           }
-          sus = sus->next;
-          n++;
         }
       }
     }
   }
 
-  write_component_direction_data(&file, "sigma_cd_E", my_num_sus, num_sigmas, sigma_cd, E_stuff);
-  write_component_direction_data(&file, "sigma_cd_H", my_num_sus, num_sigmas, sigma_cd, H_stuff);
+  // Write num_sigmas data.
+  {
+    size_t ntot = num_chunks * 2;
+    file.create_data("num_sigmas", 1, &ntot);
 
-  write_sigma_data(&file, "E_sigma", my_num_sus, num_sigmas, E_stuff);
-  write_sigma_data(&file, "H_sigma", my_num_sus, num_sigmas, H_stuff);
+    for (int i = 0; i < num_chunks; ++i) {
+      if (chunks[i]->is_mine()) {
+        for (int ft = 0; ft < 2; ++ft) {
+          size_t start = ft * num_chunks + i;
+          size_t count = 1;
+          file.write_chunk(1, &start, &count, &my_num_sigmas[ft][i]);
+        }
+      }
+    }
+    file.prevent_deadlock();
+  }
+
+  for (int ft = 0; ft < 2; ++ft) {
+    sum_to_all(my_num_sigmas[ft], num_sigmas[ft], num_chunks);
+  }
+
+  size_t num_E_sigmas = 0;
+  size_t num_H_sigmas = 0;
+  for (int i = 0; i < num_chunks; ++i) {
+    if (num_sigmas[E_stuff][i] != 0) {
+      num_E_sigmas = num_sigmas[E_stuff][i];
+    }
+    if (num_sigmas[H_stuff][i] != 0) {
+      num_H_sigmas = num_sigmas[H_stuff][i];
+    }
+  }
+
+  // Allocate space for component and direction of non-null sigmas
+  size_t *sigma_cd[2] = {NULL, NULL}; 
+  sigma_cd[E_stuff] = new size_t[num_E_sigmas * 2];
+  memset(sigma_cd[E_stuff], 0, sizeof(size_t) * num_E_sigmas * 2);
+  sigma_cd[H_stuff] = new size_t[num_H_sigmas * 2];
+  memset(sigma_cd[H_stuff], 0, sizeof(size_t) * num_H_sigmas * 2);
+
+  // Find component and direction of non-null sigmas
+  {
+    for (int ft = 0; ft < 2; ++ft) {
+      int j = 0;
+      bool done = false;
+      for (int i = 0; i < num_chunks; ++i) {
+        if (done) {
+          break;
+        }
+        if (chunks[i]->is_mine()) {
+          susceptibility *sus = chunks[i]->chiP[E_stuff];
+          if (sus) {
+            for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
+              for (int d = 0; d < 5; ++d) {
+                if (sus->sigma[c][d]) {
+                  sigma_cd[E_stuff][j] = c;
+                  sigma_cd[E_stuff][j + 1] = d;
+                  j += 2;
+                  done = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    sum_to_all(sigma_cd[E_stuff], sigma_cd[E_stuff], num_E_sigmas * 2);
+    sum_to_all(sigma_cd[H_stuff], sigma_cd[H_stuff], num_H_sigmas * 2);
+  }
+
+  // Write location (component and direction) data of non-null sigmas (sigma[c][d])
+  {
+    size_t len = (num_E_sigmas + num_H_sigmas) * 2;
+    file.create_data("sigma_cd", 1, &len);
+    size_t start = 0;
+    for (int ft = 0; ft < 2; ++ft) {
+      if (am_master()) {
+        size_t count = (ft == 0 ? num_E_sigmas : num_H_sigmas) * 2;
+        file.write_chunk(1, &start, &count, sigma_cd[ft]);
+        start += count;
+      }
+    }
+    file.prevent_deadlock();
+  }
+
+  // Write the actual data in a particular non-null sigma[c][d] for each susceptibility in this
+  // chunk's chiP lists.
+  size_t nsig[2] = {num_E_sigmas, num_H_sigmas};
+  for (int i = 0; i < num_chunks; ++i) {
+    for (int ft = 0; ft < 2; ++ft) {
+      if (nsig[ft] != 0 && num_sigmas[ft][i]) {
+        for (size_t j = 0; j < nsig[ft] * 2; j += 2) {
+          char dname[20];
+          int c = sigma_cd[ft][j];
+          int d = sigma_cd[ft][j + 1];
+          snprintf(dname, 20, "%c_%d_sigma_%d_%d", ft == 0 ? 'E' : 'H', i, c, d);
+          size_t ntot = chunks[i]->gv.ntot() * num_sus[ft];
+          file.prevent_deadlock();
+          broadcast(i, &ntot, 1);
+          file.create_data(dname, 1, &ntot);
+          if (chunks[i]->is_mine()) {
+            susceptibility *sus = chunks[i]->chiP[ft];
+            size_t start = 0;
+            while (sus) {
+              size_t count = chunks[i]->gv.ntot();
+              file.write_chunk(1, &start, &count, sus->sigma[c][d]);
+              sus = sus->next;
+              start += count;
+            }
+          }
+        }
+      }
+    }
+  }
 
   write_susceptibility_params(&file, "E_params", E_stuff);
   write_susceptibility_params(&file, "H_params", H_stuff);
 
   for (int ft = 0; ft < 2; ++ft) {
-    for (size_t i = 0; i < my_num_sus[ft]; ++i) {
-      delete[] sigma_cd[ft][i];
-    }
     delete[] sigma_cd[ft];
     delete[] num_sigmas[ft];
+    delete[] my_num_sigmas[ft];
   }
 }
 
 // Reconstruct the chiP lists of susceptibilities from the params hdf5 data
-susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t *start, size_t dims[3], size_t ntot) {
+susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3], size_t ntot) {
   susceptibility *sus = NULL;
   susceptibility *res = NULL;
-  while (*start < dims[0] - 1) {
+  size_t start = 0;
+
+  while (start < dims[0]) {
     size_t num_params_dims[3] = {1, 0, 0};
     realnum num_params;
-    file->read_chunk(rank, start, num_params_dims, &num_params);
-    *start += num_params_dims[0];
+    file->read_chunk(rank, &start, num_params_dims, &num_params);
+    start += num_params_dims[0];
 
     if (num_params == 4) {
       // This is a lorentzian_susceptibility and the next 4 values in the dataset
       // are id, omega_0, gamma, and no_omega_0_denominator.
       size_t lorentzian_dims[3] = {4, 0, 0};
       realnum lorentzian_params[4];
-      file->read_chunk(rank, start, lorentzian_dims, lorentzian_params);
-      *start += lorentzian_dims[0];
+      file->read_chunk(rank, &start, lorentzian_dims, lorentzian_params);
+      start += lorentzian_dims[0];
 
       int id = (int)lorentzian_params[0];
       double omega_0 = lorentzian_params[1];
@@ -332,8 +363,8 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t *start,
       // are id, noise_amp, omega_0, gamma, and no_omega_0_denominator.
       size_t noisy_lorentzian_dims[3] = {5, 0, 0};
       realnum noisy_lorentzian_params[5];
-      file->read_chunk(rank, start, noisy_lorentzian_dims, noisy_lorentzian_params);
-      *start += noisy_lorentzian_dims[0];
+      file->read_chunk(rank, &start, noisy_lorentzian_dims, noisy_lorentzian_params);
+      start += noisy_lorentzian_dims[0];
 
       int id = (int)noisy_lorentzian_params[0];
       double noise_amp = noisy_lorentzian_params[1];
@@ -364,7 +395,6 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t *start,
 void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type ft) {
   int rank = 0;
   size_t dims[3] = {0, 0, 0};
-  size_t start = 0;
 
   file->read_size(dataset, &rank, dims, 1);
   if (rank != 1)
@@ -372,123 +402,9 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
 
   if (dims[0] != 0) {
     for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        chunks[i]->chiP[ft] = make_sus_list_from_params(file, rank, &start, dims, chunks[i]->gv.ntot());
-      }
+      chunks[i]->chiP[ft] = make_sus_list_from_params(file, rank, dims, chunks[i]->gv.ntot());
     }
   }
-}
-
-// Read the number of susceptibilities in the chiP lists.
-size_t structure::read_num_susceptibilities(h5file *file, const char *dname) {
-  size_t result = 0;
-  int rank = 0;
-  size_t dims[] = {0, 0, 0};
-  file->read_size(dname, &rank, dims, 1);
-  if (dims[0] > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        size_t start = i;
-        size_t count = 1;
-        file->read_chunk(rank, &start, &count, &result);
-      }
-    }
-  }
-  file->prevent_deadlock();
-
-  return result;
-}
-
-// Read the num_sigma data that was created by write_num_sigmas
-size_t *structure::read_num_sigmas(h5file *file, const char *dname, size_t num_sus) {
-  size_t *result = new size_t[num_sus];
-  size_t start = partial_sum_to_all(num_sus) - num_sus;
-
-  int rank = 0;
-  size_t dims[] = {0, 0, 0};
-  file->read_size(dname, &rank, dims, 1);
-  if (dims[0] != num_chunks * num_sus)
-    abort("inconsistent data size in structure::load");
-
-  if (num_sus > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        file->read_chunk(rank, &start, &num_sus, result);
-      }
-    }
-  }
-
-  file->prevent_deadlock();
-  return result;
-}
-
-// Read the cd data created by write_component_direction_data
-size_t **structure::read_component_direction_data(h5file *file, const char *dname, size_t num_sus,
-                                                  size_t *num_sigmas) {
-  size_t **result = new size_t*[num_sus];
-  for (size_t i = 0; i < num_sus; ++i) {
-    result[i] = new size_t[num_sigmas[i] * 2];
-  }
-
-  size_t num_pairs = 0;
-  for (size_t i = 0; i < num_sus; ++i) {
-    num_pairs += num_sigmas[i];
-  }
-
-  size_t start = partial_sum_to_all(num_pairs * 2) - num_pairs * 2;
-
-  int rank = 0;
-  size_t dims[] = {0, 0, 0};
-  file->read_size(dname, &rank, dims, 1);
-
-  if (num_sus > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        for (size_t j = 0; j < num_sus; ++j) {
-          size_t count = num_sigmas[j] * 2;
-          file->read_chunk(rank, &start, &count, result[j]);
-          start += count;
-        }
-      }
-    }
-  }
-  file->prevent_deadlock();
-  return result;
-}
-
-// Read the sigma data into the non-null sigma[c][d] entries for each susceptibility
-// in this chunk's chiP list.
-void structure::read_sigma(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas, size_t **sigma_cd,
-                           int EorH) {
-  size_t my_ntot = 0;
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->is_mine() && chunks[i]->chiP[EorH]) {
-      for (size_t j = 0; j < num_sus; ++j) {
-        my_ntot += num_sigmas[j] * chunks[i]->chiP[EorH]->ntot;
-      }
-    }
-  }
-
-  size_t start = partial_sum_to_all(my_ntot) - my_ntot;
-
-  // Load sigma data into susceptibilites
-  int rank = 0;
-  size_t dims[3] = {0, 0, 0};
-  file->read_size(dname, &rank, dims, 1);
-  if (dims[0] > 0) {
-    for (int i = 0; i < num_chunks; ++i) {
-      if (chunks[i]->is_mine()) {
-        susceptibility *sus = chunks[i]->chiP[EorH];
-        size_t n = 0;
-        while (sus) {
-          sus->load(file, &start, num_sigmas[n], sigma_cd[n]);
-          sus = sus->next;
-          n++;
-        }
-      }
-    }
-  }
-  file->prevent_deadlock();
 }
 
 void structure::load(const char *filename) {
@@ -550,36 +466,146 @@ void structure::load(const char *filename) {
               my_start += ntot;
             }
     }
-
   // Create susceptibilites from params datasets
   set_chiP_from_file(&file, "E_params", E_stuff);
   set_chiP_from_file(&file, "H_params", H_stuff);
 
-  // Get number of H and E susceptibilites on this processor
-  size_t my_num_E_sus = read_num_susceptibilities(&file, "num_E_sus");
-  size_t my_num_H_sus = read_num_susceptibilities(&file, "num_H_sus");
+  // Read the number of susceptibilities in the chiP lists.
+  size_t num_sus[] = {0, 0};
+  {
+    int rank = 0;
+    size_t dims[] = {0, 0, 0};
+    file.read_size("num_sus", &rank, dims, 1);
+    if (dims[0] > 0) {
+      if (am_master()) {
+        size_t start = 0;
+        size_t count = 2;
+        file.read_chunk(rank, &start, &count, num_sus);
+      }
+    }
+    file.prevent_deadlock();
+    broadcast(0, num_sus, 2);
+  }
 
   // Allocate and read non-null sigma entry data
-  size_t *num_E_sigmas = read_num_sigmas(&file, "num_E_sigmas", my_num_E_sus);
-  size_t *num_H_sigmas = read_num_sigmas(&file, "num_H_sigmas", my_num_H_sus);
+  size_t *num_sigmas[2] = {NULL, NULL};
+  num_sigmas[E_stuff] = new size_t[num_chunks];
+  memset(num_sigmas[E_stuff], 0, sizeof(size_t) * num_chunks);
+  num_sigmas[H_stuff] = new size_t[num_chunks];
+  memset(num_sigmas[H_stuff], 0, sizeof(size_t) * num_chunks);
 
-  // Allocate and read component and direction data of the non-null susceptibilities
-  size_t **sigma_cd_E = read_component_direction_data(&file, "sigma_cd_E", my_num_E_sus, num_E_sigmas);
-  size_t **sigma_cd_H = read_component_direction_data(&file, "sigma_cd_H", my_num_H_sus, num_H_sigmas);
+  // Read num_sigmas data
+  {
+    int rank = 0;
+    size_t dims[] = {0, 0, 0};
+    file.read_size("num_sigmas", &rank, dims, 1);
+    if (dims[0] != (size_t)num_chunks * 2) {
+      abort("inconsistent data size in structure::load");
+    }
+    if (am_master()) {
+      size_t start = 0;
+      size_t count = num_chunks;
+      file.read_chunk(rank, &start, &count, num_sigmas[E_stuff]);
+      start += count;
+      file.read_chunk(rank, &start, &count, num_sigmas[H_stuff]);
+    }
+    file.prevent_deadlock();
+    broadcast(0, num_sigmas[E_stuff], num_chunks);
+    broadcast(0, num_sigmas[H_stuff], num_chunks);
+  }
+
+  // Allocate space for component and direction data of the non-null susceptibilities
+  size_t *sigma_cd[2] = {NULL, NULL};
+
+  size_t nsig[2] = {0, 0};
+  for (int ft = 0; ft < 2; ++ft) {
+    for (int i = 0; i < num_chunks; ++i) {
+      if (num_sigmas[ft][i] != 0) {
+        nsig[ft] = num_sigmas[ft][i];
+      }
+    }
+  }
+
+  sigma_cd[E_stuff] = new size_t[nsig[E_stuff] * 2];
+  memset(sigma_cd[E_stuff], 0, sizeof(size_t) * nsig[E_stuff] * 2);
+  sigma_cd[H_stuff] = new size_t[nsig[H_stuff] * 2];
+  memset(sigma_cd[H_stuff], 0, sizeof(size_t) * nsig[H_stuff] * 2);
+
+  // Read the component/direction data
+  {
+    int rank;
+    size_t dims[] = {0, 0, 0};
+    file.read_size("sigma_cd", &rank, dims, 1);
+    if (dims[0] != 2 * (nsig[E_stuff] + nsig[H_stuff])) {
+      abort("inconsistent data size in structure::load");
+    }
+
+    if (am_master()) {
+      size_t start = 0;
+      for (int ft = 0; ft < 2; ++ft) {
+        size_t count = nsig[ft] * 2;
+        file.read_chunk(rank, &start, &count, sigma_cd[ft]);
+        start += count;
+      }
+    }
+    file.prevent_deadlock();
+    broadcast(0, sigma_cd[E_stuff], nsig[E_stuff] * 2);
+    broadcast(0, sigma_cd[H_stuff], nsig[H_stuff] * 2);
+  }
+
+  for (int ft = 0; ft < 2; ++ft) {
+    for (int i = 0; i < num_chunks; ++i) {
+      for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
+        for (int d = 0; d < 5; ++d) {
+          susceptibility * sus = chunks[i]->chiP[ft];
+          while (sus) {
+            for (size_t j = 0; j < nsig[ft] * 2; j += 2) {
+              int _c = sigma_cd[ft][j];
+              int _d = sigma_cd[ft][j + 1];
+              sus->trivial_sigma[_c][_d] = false;
+            }
+            sus = sus->next;
+          }
+        }
+      }
+    }
+  }
 
   // Load sigma data
-  read_sigma(&file, "E_sigma", my_num_E_sus, num_E_sigmas, sigma_cd_E, E_stuff);
-  read_sigma(&file, "H_sigma", my_num_H_sus, num_H_sigmas, sigma_cd_H, H_stuff);
+  for (int ft = 0; ft < 2; ++ft) {
+    for (int i = 0; i < num_chunks; ++i) {
+      for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
+        for (int d = 0; d < 5; ++d) {
+          char dname[20];
+          snprintf(dname, 20, "%c_%d_sigma_%d_%d", ft == 0 ? 'E' : 'H', i, c, d);
+          if (file.dataset_exists(dname)) {
+            int rank;
+            size_t dims[3] = {0, 0, 0};
+            file.read_size(dname, &rank, dims, 1);
+            if (num_sigmas[ft][i] && chunks[i]->is_mine()) {
+              susceptibility *sus = chunks[i]->chiP[ft];
+              size_t start = 0;
+              while (sus) {
+                size_t count = chunks[i]->gv.ntot();
+                if (sus->sigma[c][d]) {
+                  delete[] sus->sigma[c][d];
+                }
+                sus->sigma[c][d] = new realnum[count];
+                sus->trivial_sigma[c][d] = false;
+                file.read_chunk(rank, &start, &count, sus->sigma[c][d]);
+                sus = sus->next;
+                start += count;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
-  delete[] num_E_sigmas;
-  delete[] num_H_sigmas;
-  for (size_t i = 0; i < my_num_E_sus; ++i) {
-    delete[] sigma_cd_E[i];
+  for (int ft = 0; ft < 2; ++ft) {
+    delete[] num_sigmas[ft];
+    delete[] sigma_cd[ft];
   }
-  for (size_t i = 0; i < my_num_H_sus; ++i) {
-    delete[] sigma_cd_H[i];
-  }
-  delete[] sigma_cd_E;
-  delete[] sigma_cd_H;
 }
 } // namespace meep
