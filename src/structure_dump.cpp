@@ -54,49 +54,6 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
   }
 }
 
-// TODO: temp
-void structure::print_disp_materials(const char *filename, int rank) {
-  if (my_rank() == rank) {
-    char fname[15];
-    snprintf(fname, 15, "%s_%d.txt", filename, rank);
-    FILE *f = fopen(fname, "w");
-    for (int ft = 0; ft < 2; ++ft) {
-      for (int i = 0; i < num_chunks; ++i) {
-        fprintf(f, "chunk: %d\n", i);
-        lorentzian_susceptibility *sus = (lorentzian_susceptibility*)chunks[i]->chiP[ft];
-        int n = 0;
-        while (sus) {
-          fprintf(f, " sus: %d\n", n);
-          fprintf(f, " omega: %e\n", sus->omega_0);
-          fprintf(f, " gamma: %e\n", sus->gamma);
-          fprintf(f, " drude: %s\n", sus->no_omega_0_denominator ? "true" : "false");
-          fprintf(f, " ntot: %zu\n", sus->ntot);
-          fprintf(f, " id: %d\n", sus->get_id());
-          for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
-            for (int d = 0; d < 5; ++d) {
-              if (!sus->trivial_sigma[c][d]) {
-                fprintf(f, " non-trivial sigma: [%d][%d]\n", c, d);
-              }
-              if (sus->sigma[c][d]) {
-                fprintf(f, " sigma[%d][%d], ntot: %zu", c, d, sus->ntot);
-                for (size_t j = 0; j < sus->ntot; ++j) {
-                  if (j % 10 == 0) fprintf(f, "\n   ");
-                  fprintf(f, "%g, ", sus->sigma[c][d][j]);
-                }
-                fprintf(f, "\n\n");
-              }
-            }
-          }
-          fprintf(f, "\n");
-          sus = (lorentzian_susceptibility*)sus->next;
-          n++;
-        }
-      }
-    }
-    fclose(f);
-  }
-}
-
 void structure::dump(const char *filename) {
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.
@@ -146,12 +103,12 @@ void structure::dump(const char *filename) {
   size_t num_sus[2] = {0, 0};
   susceptibility *Esus = chunks[0]->chiP[E_stuff];
   while (Esus) {
-    num_sus[0] += 1;
+    num_sus[E_stuff] += 1;
     Esus = Esus->next;
   }
   susceptibility *Hsus = chunks[0]->chiP[H_stuff];
   while (Hsus) {
-    num_sus[1] += 1;
+    num_sus[H_stuff] += 1;
     Hsus = Hsus->next;
   }
 

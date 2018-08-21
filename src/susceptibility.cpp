@@ -90,28 +90,6 @@ bool susceptibility::needs_W_notowned(component c,
   return false;
 }
 
-void susceptibility::dump(h5file *h5f, size_t *start) {
-  for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-    for (int d = 0; d < 5; ++d)
-      if (sigma[c][d]) {
-        h5f->write_chunk(1, start, &ntot, sigma[c][d]);
-        *start += ntot;
-      }
-}
-
-void susceptibility::load(h5file *h5f, size_t *start, size_t num_sigmas, size_t *cd_vals) {
-  for (size_t i = 0; i < num_sigmas; ++i) {
-    size_t c = cd_vals[i * 2];
-    size_t d = cd_vals[(i * 2) + 1];
-    sigma[c][d] = new realnum[ntot];
-    trivial_sigma[c][d] = false;
-
-    // Populate sigma[c][d]
-    h5f->read_chunk(1, start, &ntot, sigma[c][d]);
-    *start += ntot;
-  }
-}
-
 typedef struct {
   size_t sz_data;
   size_t ntot;

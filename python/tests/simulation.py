@@ -6,7 +6,7 @@ import warnings
 import h5py
 import numpy as np
 import meep as mp
-from utils import compare_arrays
+
 
 try:
     unicode
@@ -298,14 +298,12 @@ class TestSimulation(unittest.TestCase):
 
     def test_load_dump_structure(self):
         from materials_library import Al
-
         resolution = 50
         cell = mp.Vector3(5, 5)
-
-        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(),
-                            component=mp.Ez)
-        geometry = [mp.Block(material=Al, center=mp.Vector3(-1.5, -1.5), size=mp.Vector3(1, 1, mp.inf))]
-
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(), component=mp.Ez)
+        one_by_one = mp.Vector3(1, 1, mp.inf)
+        geometry = [mp.Block(material=Al, center=mp.Vector3(-1.5, -1.5), size=one_by_one),
+                    mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1.5, 1.5), size=one_by_one)]
         pml_layers = [mp.PML(0.5)]
 
         sim = mp.Simulation(resolution=resolution,
@@ -327,8 +325,8 @@ class TestSimulation(unittest.TestCase):
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
-                            sources=[sources],
                             boundary_layers=pml_layers,
+                            sources=[sources],
                             load_structure=dump_fn)
 
         field_points = []

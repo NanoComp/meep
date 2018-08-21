@@ -153,9 +153,7 @@ public:
     (void) inotowned; (void) n; (void) c; (void) cmp; (void) P_internal_data;
     return 0; }
 
-  void dump(h5file *h5f, size_t *start);
   virtual void dump_params(h5file *h5f, size_t *start) { (void)h5f; (void)start; }
-  virtual void load(h5file *h5f, size_t *start, size_t num_sigmas, size_t *cd_vals);
   virtual int get_num_params() { return 0; }
   // This should only be used when dumping and loading susceptibility data to hdf5
   void set_id(int new_id) { id = new_id; };
@@ -212,7 +210,7 @@ public:
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 4; }
 
-// protected:
+protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
 };
@@ -670,7 +668,6 @@ class structure {
   double get_eps(const vec &loc) const;
   double get_mu(const vec &loc) const;
   double max_eps() const;
-  void print_disp_materials(const char *filename, int rank);
 
   friend class boundary_region;
 
@@ -684,16 +681,7 @@ class structure {
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
   void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
-  void write_num_susceptibilites(h5file *file, const char *dname, size_t *source);
-  void write_num_sigmas(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas);
-  void write_component_direction_data(h5file *file, const char* dname, size_t *num_sus, size_t **num_sigmas,
-                                      size_t ***sigma_cd, int EorH);
-  void write_sigma_data(h5file *file, const char *dname, size_t *num_sus, size_t **num_sigmas, int EorH);
   void write_susceptibility_params(h5file *file, const char *dname, int EorH);
-  size_t read_num_susceptibilities(h5file *file, const char *dname);
-  size_t *read_num_sigmas(h5file *file, const char *dname, size_t num_sus);
-  size_t **read_component_direction_data(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas);
-  void read_sigma(h5file *file, const char *dname, size_t num_sus, size_t *num_sigmas, size_t **sigma_cd, int EorH);
 };
 
 class src_vol;
