@@ -274,13 +274,17 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
   return d->P[c][cmp] + n;
 }
 
-void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
-  size_t num_params = 5;
-  size_t params_dims[1] = {num_params};
-  double params_data[] = {4, (double)get_id(), omega_0, gamma, (double)no_omega_0_denominator};
-  h5f->write_chunk(1, start, params_dims, params_data);
-  *start += num_params;
+double lorentzian_susceptibility::chi1(double freq, double sigma) {
+  if (no_omega_0_denominator)
+  {
+    // Drude model
+    return sigma * omega_0*omega_0 / (omega_0*omega_0 - freq*freq - sqrt(-1)*gamma*freq);
+  }else{
+    // Standard Lorentzian model
+    return sigma * omega_0*omega_0 / (-freq*freq - sqrt(-1)*gamma*freq);
+  }
 }
+
 
 void noisy_lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
