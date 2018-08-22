@@ -53,6 +53,11 @@ susceptibility *susceptibility::clone() const {
   return sus;
 }
 
+// generic base class definition.
+double susceptibility::chi1(double freq, double sigma) {
+  return 0;
+}
+
 void susceptibility::delete_internal_data(void *data) const {
   free(data);
 }
@@ -275,8 +280,7 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
 }
 
 double lorentzian_susceptibility::chi1(double freq, double sigma) {
-  if (no_omega_0_denominator)
-  {
+  if (no_omega_0_denominator){
     // Drude model
     return sigma * omega_0*omega_0 / ( -freq*freq - sqrt(-1)*gamma*freq);
   }else{

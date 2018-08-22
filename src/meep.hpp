@@ -72,6 +72,7 @@ public:
   int get_id() const { return id; }
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
+  // Returns the 1st order nonlinear susceptibility (generic)
   virtual double chi1(double freq, double sigma=1);
 
   // update all of the internal polarization state given the W field
