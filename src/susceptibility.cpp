@@ -278,10 +278,10 @@ double lorentzian_susceptibility::chi1(double freq, double sigma) {
   if (no_omega_0_denominator)
   {
     // Drude model
-    return sigma * omega_0*omega_0 / (omega_0*omega_0 - freq*freq - sqrt(-1)*gamma*freq);
+    return sigma * omega_0*omega_0 / ( -freq*freq - sqrt(-1)*gamma*freq);
   }else{
     // Standard Lorentzian model
-    return sigma * omega_0*omega_0 / (-freq*freq - sqrt(-1)*gamma*freq);
+    return sigma * omega_0*omega_0 / (omega_0*omega_0 - freq*freq - sqrt(-1)*gamma*freq);
   }
 }
 
