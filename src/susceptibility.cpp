@@ -274,6 +274,17 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
   return d->P[c][cmp] + n;
 }
 
+double lorentzian_susceptibility::chi1(double freq, double sigma) {
+  if (no_omega_0_denominator)
+  {
+    // Drude model
+    return sigma * omega_0*omega_0 / (omega_0*omega_0 - freq*freq - sqrt(-1)*gamma*freq);
+  }else{
+    // Standard Lorentzian model
+    return sigma * omega_0*omega_0 / (-freq*freq - sqrt(-1)*gamma*freq);
+  }
+}
+
 
 void noisy_lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
