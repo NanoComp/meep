@@ -74,6 +74,8 @@ public:
   int get_id() const { return id; }
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
+  virtual double chi1(double freq, double sigma=1);
+
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -185,6 +187,8 @@ public:
   lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false) : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
+
+  virtual double chi1(double freq, double sigma=1);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
