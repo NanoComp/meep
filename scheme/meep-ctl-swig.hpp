@@ -31,7 +31,8 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 
 void do_get_eigenmode_coefficients(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
                                    int *bands, int num_bands, int parity, std::complex<double> *coeffs,
-                                   double *vgrp, double eig_resolution, double eigensolver_tol);
+                                   double *vgrp, double eig_resolution, double eigensolver_tol,
+                                   meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);

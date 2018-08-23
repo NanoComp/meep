@@ -60,6 +60,14 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   return std::complex<double>(cret.re, cret.im);
 }
 
+static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
+  SCM scm_res = gh_call2((SCM)user_data, ctl_convert_number_to_scm(freq),
+                         ctl_convert_number_to_scm(mode));
+  vector3 v3 = ctl_convert_vector3_to_c(scm_res);
+  meep::vec result(v3.x, v3.y, v3.z);
+  return result;
+}
+
 %}
 
 %typecheck(SWIG_TYPECHECK_COMPLEX) std::complex<double> {
@@ -196,6 +204,17 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
 %typemap(freearg) (int *bands, int num_bands) {
   if ($1) {
     delete[] $1;
+  }
+}
+
+%typemap(in) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
+  if (SCM_NFALSEP(scm_procedure_p($input))) {
+    $1 = my_kpoint_func;
+    $2 = (void*)$input;
+  }
+  else {
+    $1 = NULL;
+    $2 = NULL;
   }
 }
 
