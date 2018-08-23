@@ -515,6 +515,8 @@
   (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
+(define mode-region flux-region)
+
 (define (fields-add-fluxish-stuff add-dft-stuff fields fcen df nfreq stufflist)
   (define vl '()) ; volume_list of flux regions
   (map (lambda (f)
@@ -578,6 +580,26 @@
 (define (load-minus-flux fname flux)
   (load-flux fname flux)
   (meep-dft-flux-scale-dfts flux -1.0))
+
+; ****************************************************************
+; Mode monitor
+
+(define mode-region flux-region)
+
+(define (fields-add-mode-monitor fields fcen df nfreq . fluxes)
+  (if (not (= (length fluxes) 1)) (error "add-mode-monitor expected just one mode-region."))
+  (let* ((region (car fluxes))
+         (v (volume (center (object-property-value region 'center))
+                    (size (object-property-value region 'size))))
+         (d0 (object-property-value region 'direction))
+         (d (if (< d0 0)
+                (meep-fields-normal-direction fields v)
+                d0)))
+    (meep-fields-add-mode-monitor fields d v (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
+
+(define (add-mode-monitor fcen df nfreq . fluxes)
+  (if (null? fields) (init-fields))
+  (apply fields-add-mode-monitor (append (list fields fcen df nfreq) fluxes)))
 
 ; ****************************************************************
 ; Force spectra (from stress tensor) - very similar interface to flux spectra
@@ -1083,6 +1105,31 @@
 (define harminv-results '())
 (define (harminv c pt fcen df . mxbands)
   (harminv! harminv-data harminv-data-dt harminv-results c pt fcen df mxbands))
+
+
+; ****************************************************************
+; get-eigenmode-coefficients
+
+(define (get-keyword-value args keyword default)
+  (let ((kv (memq keyword args)))
+    (if (and kv (>= (length kv) 2))
+        (cadr kv)
+        default)))
+
+(define (get-eigenmode-coefficients flux bands . args)
+  (if (null? fields)
+      (error "init-fields is required before using get-eigenmode-coefficients"))
+  (let ((eig-parity (get-keyword-value args #:eig-parity NO-PARITY))
+        (eig-vol (get-keyword-value args #:eig-vol (meep-dft-flux-where-get flux)))
+        (eig-resolution (get-keyword-value args #:eig-resolution 0))
+        (eig-tolerance (get-keyword-value args #:eig-tolerance 1e-7))
+        (num-bands (length bands)))
+        ;; TODO: (kpoint-func (get-keyword-value args #:kpoint-func '())))
+    (begin
+      (define coeffs (make-typed-array 'c64 '0 num-bands (meep-dft-flux-Nfreq-get flux) 2))
+      (define vgrp (make-typed-array 'f64 '0 num-bands (meep-dft-flux-Nfreq-get flux)))
+      (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp eig-resolution eig-tolerance)
+      (list coeffs vgrp '()))))
 
 ; ****************************************************************
 ; dft-ldos step function

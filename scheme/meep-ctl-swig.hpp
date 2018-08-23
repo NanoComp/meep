@@ -23,11 +23,15 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double global_D_conductivity_diag_,
 				double global_B_conductivity_diag_);
 
-ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
+ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 				double fmin, double fmax, int maxbands,
                                 double spectral_density, double Q_thresh,
                                 double rel_err_thresh, double err_thresh,
                                 double rel_amp_thresh, double amp_thresh);
+
+void do_get_eigenmode_coefficients(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
+                                   int *bands, int num_bands, int parity, std::complex<double> *coeffs,
+                                   double *vgrp, double eig_resolution, double eigensolver_tol);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);

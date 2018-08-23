@@ -33,7 +33,7 @@ void ctl_export_hook(void)
 
 /**************************************************************************/
 
-ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
+ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 				double fmin, double fmax, int maxbands,
                                 double spectral_density, double Q_thresh,
                                 double rel_err_thresh, double err_thresh,
@@ -64,6 +64,14 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
   delete[] freq_re;
   delete[] amp;
   return res;
+}
+
+void do_get_eigenmode_coefficients(fields *f, dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
+                                   int parity, std::complex<double> *coeffs, double *vgrp, double eig_resolution,
+                                   double eigensolver_tol)
+{
+  f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
+                                eigensolver_tol, coeffs, vgrp);
 }
 
 /**************************************************************************/

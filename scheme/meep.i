@@ -66,16 +66,16 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   $1 = SwigComplex_Check($input);
 }
 
-%typemap(guile,out) complex, std::complex<double>, std::complex<double> {
+%typemap(out) complex, std::complex<double>, std::complex<double> {
   $result = scm_make_rectangular(ctl_convert_number_to_scm($1.real()),
 				 ctl_convert_number_to_scm($1.imag()));
 }
-%typemap(guile,in) complex, std::complex<double>, std::complex<double> {
+%typemap(in) complex, std::complex<double>, std::complex<double> {
   cnumber cnum = ctl_convert_cnumber_to_c($input);
   $1 = std::complex<double>(cnum.re, cnum.im);
 }
 
-%typemap(guile,in) std::complex<double>(*)(meep::vec const &) {
+%typemap(in) std::complex<double>(*)(meep::vec const &) {
   my_complex_func_scm = $input;
   $1 = my_complex_func;
 }
@@ -83,7 +83,7 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) std::complex<double>(*)(std::complex<double>) {
+%typemap(in) std::complex<double>(*)(std::complex<double>) {
   my_complex_func3_scm = $input;
   $1 = my_complex_func3;
 }
@@ -91,7 +91,7 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) (std::complex<double> (*func)(double t, void *), void *data) {
+%typemap(in) (std::complex<double> (*func)(double t, void *), void *data) {
   $1 = my_complex_func2;
   $2 = (void *) $input; // input is SCM pointer to Scheme function
 }
@@ -99,13 +99,13 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) meep::vec {
+%typemap(in) meep::vec {
   $1 = vector3_to_vec(ctl_convert_vector3_to_c($input));
 }
-%typemap(guile,out) meep::vec {
+%typemap(out) meep::vec {
   $result = ctl_convert_vector3_to_scm(vec_to_vector3($1));
 }
-%typemap(guile,in) meep::vec const & %{
+%typemap(in) meep::vec const & %{
   meep::vec vec__$1 = vector3_to_vec(ctl_convert_vector3_to_c($input));
   $1 = &vec__$1;
 %}
@@ -115,7 +115,7 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
 
 /* field_function arguments are passed as a cons pair of (components . func)
    in order to set all four arguments at once. */
-%typemap(guile,in) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) (my_field_func_data data) {
+%typemap(in) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) (my_field_func_data data) {
   $1 = list_length(gh_car($input));
   $2 = new meep::component[$1];
   for (int i = 0; i < $1; ++i)
@@ -137,7 +137,7 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
 /* integrate2 arguments are passed as a cons pair of
    ((components1 . components2) . func)
    in order to set all six arguments at once. */
-%typemap(guile,in) (int num_fields1, const meep::component *components1, int num_fields2, const meep::component *components2, meep::field_function integrand, void *integrand_data_) (my_field_func_data data) {
+%typemap(in) (int num_fields1, const meep::component *components1, int num_fields2, const meep::component *components2, meep::field_function integrand, void *integrand_data_) (my_field_func_data data) {
   $1 = list_length(gh_car(gh_car($input)));
   $2 = new meep::component[$1];
   for (int i = 0; i < $1; ++i)
@@ -180,6 +180,43 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   if ($1) {
     delete[] $1;
   }
+}
+
+// do_get_eigenmode_coefficients
+
+%typemap(in) (int *bands, int num_bands) {
+  $2 = list_length($input);
+  $1 = new int[$2];
+
+  for (int i = 0; i < $2; ++i) {
+    $1[i] = integer_list_ref($input, i);
+  }
+}
+
+%typemap(freearg) (int *bands, int num_bands) {
+  if ($1) {
+    delete[] $1;
+  }
+}
+
+%typemap(in, noblock=1) std::complex<double> *coeffs {
+  scm_t_array_handle coeffs_handle;
+  scm_array_get_handle($input, &coeffs_handle);
+  $1 = (std::complex<double>*)scm_array_handle_uniform_writable_elements(&coeffs_handle);
+}
+
+%typemap(in, noblock=1) double *vgrp {
+  scm_t_array_handle vgrp_handle;
+  scm_array_get_handle($input, &vgrp_handle);
+  $1 = (double*)scm_array_handle_uniform_writable_elements(&vgrp_handle);
+}
+
+%typemap(freearg) std::complex<double> *coeffs {
+  scm_array_handle_release(&coeffs_handle);
+}
+
+%typemap(freearg) double *vgrp {
+  scm_array_handle_release(&vgrp_handle);
 }
 
 // Need to tell SWIG about any method that returns a new object
