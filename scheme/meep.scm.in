@@ -515,8 +515,6 @@
   (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
-(define mode-region flux-region)
-
 (define (fields-add-fluxish-stuff add-dft-stuff fields fcen df nfreq stufflist)
   (define vl '()) ; volume_list of flux regions
   (map (lambda (f)
