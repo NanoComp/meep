@@ -1128,9 +1128,9 @@
     (begin
       (define coeffs (make-typed-array 'c64 '0 num-bands (meep-dft-flux-Nfreq-get flux) 2))
       (define vgrp (make-typed-array 'f64 '0 num-bands (meep-dft-flux-Nfreq-get flux)))
-      (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp
-                                     eig-resolution eig-tolerance kpoint-func)
-      (list coeffs vgrp '()))))
+      (define kpoints (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp
+                                                     eig-resolution eig-tolerance kpoint-func))
+      (list coeffs vgrp kpoints))))
 
 ; ****************************************************************
 ; dft-ldos step function

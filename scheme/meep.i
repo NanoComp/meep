@@ -238,6 +238,16 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
   scm_array_handle_release(&vgrp_handle);
 }
 
+%typemap(out) kpoint_list {
+  int i;
+  list cur_list = SCM_EOL;
+  for (i = $1.n - 1; i >= 0; --i) {
+    cur_list = gh_cons(vector32scm(vec_to_vector3($1.kpoints[i])), cur_list);
+  }
+  $result = cur_list;
+  delete[] $1.kpoints;
+}
+
 // Need to tell SWIG about any method that returns a new object
 // which needs to be garbage-collected.
 %newobject meep::fields::open_h5file;

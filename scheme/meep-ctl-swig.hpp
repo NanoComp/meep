@@ -5,6 +5,11 @@
 #ifndef MEEP_CTL_SWIG_HPP
 #define MEEP_CTL_SWIG_HPP 1
 
+struct kpoint_list {
+    meep::vec *kpoints;
+    size_t n;
+};
+
 vector3 vec_to_vector3(const meep::vec &);
 meep::vec vector3_to_vec(const vector3 v3);
 void set_dimensions(int dims);
@@ -29,7 +34,7 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
                                 double rel_err_thresh, double err_thresh,
                                 double rel_amp_thresh, double amp_thresh);
 
-void do_get_eigenmode_coefficients(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
+kpoint_list do_get_eigenmode_coefficients(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
                                    int *bands, int num_bands, int parity, std::complex<double> *coeffs,
                                    double *vgrp, double eig_resolution, double eigensolver_tol,
                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data);

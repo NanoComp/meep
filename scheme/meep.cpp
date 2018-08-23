@@ -66,13 +66,20 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
   return res;
 }
 
-void do_get_eigenmode_coefficients(fields *f, dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
+kpoint_list do_get_eigenmode_coefficients(fields *f, dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                    int parity, std::complex<double> *coeffs, double *vgrp, double eig_resolution,
                                    double eigensolver_tol, meep::kpoint_func user_kpoint_func,
                                    void *user_kpoint_data)
 {
-  f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
-                                eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data);
+  size_t num_kpoints = num_bands * flux.Nfreq;
+  meep::vec *kpoints = new meep::vec[num_kpoints];
+
+  f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
+                                coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints);
+
+  kpoint_list res = {kpoints, num_kpoints};
+
+  return res;
 }
 
 /**************************************************************************/

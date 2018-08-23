@@ -68,8 +68,11 @@
                (tolerance 5.0e-3)
                (c0 (array-ref alpha (- mode-num 1) 0 0)))  ; coefficient of forward-traveling wave for mode # mode_num
 
-               ;; self.assertTrue(kpoints[0].close(mp.Vector3(0.604301, 0, 0)))
-               ;; self.assertTrue(kpoints[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
+          (if (or (not (vector3-close? (first kpoints) (vector3 0.604301 0 0) 1e-7))
+                  (not (vector3-close? (second kpoints) (vector3 0.494353 0 0) 1e-2)))
+              (begin
+                (print "Test failed")
+                (exit 1)))
 
           (map (lambda (nm)
                  (if (not (= mode-num nm))
