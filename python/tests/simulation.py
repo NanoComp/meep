@@ -297,7 +297,7 @@ class TestSimulation(unittest.TestCase):
         sim.field_energy_in_box(v)
 
     def test_load_dump_structure(self):
-        from materials_library import Al
+        from meep.materials_library import Al
         resolution = 50
         cell = mp.Vector3(5, 5)
         sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(), component=mp.Ez)
