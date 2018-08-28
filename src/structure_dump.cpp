@@ -96,7 +96,6 @@ void structure::dump(const char *filename) {
               my_start += ntot;
             }
     }
-  file.prevent_deadlock();
 
   // Get the sizes of susceptibility lists for chiP[E_stuff] and chiP[H_stuff]
   // Since this info is copied to each chunk, we can just get it from the first chunk
@@ -122,7 +121,6 @@ void structure::dump(const char *filename) {
       file.write_chunk(1, &start, &ntot, num_sus);
     }
   }
-  file.prevent_deadlock();
 
   // Get number of non-null sigma entries for each chiP in each chunk.
   // Assumes each susceptibility in the chiP[E_stuff] list has the
@@ -167,9 +165,9 @@ void structure::dump(const char *filename) {
         }
       }
     }
-    file.prevent_deadlock();
   }
 
+  file.prevent_deadlock();
   for (int ft = 0; ft < 2; ++ft) {
     sum_to_all(my_num_sigmas[ft], num_sigmas[ft], num_chunks);
   }
@@ -234,7 +232,6 @@ void structure::dump(const char *filename) {
         start += count;
       }
     }
-    file.prevent_deadlock();
   }
 
   // Write the actual data in a particular non-null sigma[c][d] for each susceptibility in this
