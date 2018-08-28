@@ -54,8 +54,8 @@ susceptibility *susceptibility::clone() const {
 }
 
 // generic base class definition.
-double susceptibility::chi1(double freq, double sigma) {
-  return 0;
+std::complex<double> susceptibility::chi1(double freq, double sigma) {
+  return std::complex<double>(0,0);
 }
 
 void susceptibility::delete_internal_data(void *data) const {
@@ -279,16 +279,15 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
   return d->P[c][cmp] + n;
 }
 
-double lorentzian_susceptibility::chi1(double freq, double sigma) {
+std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) {
   if (no_omega_0_denominator){
     // Drude model
-    return sigma * omega_0*omega_0 / ( -freq*freq - sqrt(-1)*gamma*freq);
+    return sigma * omega_0*omega_0 / std::complex<double>(-freq*freq, -gamma*freq);
   }else{
     // Standard Lorentzian model
-    return sigma * omega_0*omega_0 / (omega_0*omega_0 - freq*freq - sqrt(-1)*gamma*freq);
+    return sigma * omega_0*omega_0 / std::complex<double>(omega_0*omega_0 - freq*freq, -gamma*freq);
   }
 }
-
 
 void noisy_lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
