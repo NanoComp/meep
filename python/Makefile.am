@@ -64,6 +64,7 @@ TESTS =                                   \
     $(MDPYTEST)                           \
     $(MPBPYTEST)                          \
     $(TEST_DIR)/mode_coeffs.py            \
+    $(TEST_DIR)/mode_decomposition.py     \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/refl_angular.py           \
