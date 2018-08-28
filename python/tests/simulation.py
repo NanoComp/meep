@@ -14,10 +14,6 @@ except NameError:
     unicode = str
 
 
-examples_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
-sys.path.insert(0, examples_dir)
-
-
 class TestSimulation(unittest.TestCase):
 
     fname = 'simulation-ez-000200.00.h5'
@@ -482,10 +478,10 @@ class TestSimulation(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from materials_library import Si
+            from meep.materials_library import Si
             self.assertEqual(len(w), 0)
 
-        from materials_library import Mo
+        from meep.materials_library import Mo
         geom = [mp.Sphere(radius=0.2, material=Mo)]
         sim = self.init_simple_simulation(geometry=geom)
         with warnings.catch_warnings(record=True) as w:
@@ -494,7 +490,7 @@ class TestSimulation(unittest.TestCase):
             self.assertGreater(len(w), 0)
             self.assertIn("Epsilon", str(w[0].message))
 
-        from materials_library import SiO2
+        from meep.materials_library import SiO2
         geom = [mp.Sphere(radius=0.2, material=SiO2)]
         sim = self.init_simple_simulation(geometry=geom)
         with warnings.catch_warnings(record=True) as w:

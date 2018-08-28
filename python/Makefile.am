@@ -8,7 +8,7 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/material_data.hpp
 
 BUILT_SOURCES = meep-python.cpp mpb-python.cpp __init__.py mpb.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py mpb_data.py examples tests
+EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py mpb_data.py materials_library.py examples tests
 
 CLEANFILES = $(BUILT_SOURCES) meep.py
 
@@ -81,7 +81,7 @@ TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
   pympbdir = $(pkgpythondir)/mpb
-  pkgpython_PYTHON = geom.py __init__.py source.py simulation.py
+  pkgpython_PYTHON = geom.py __init__.py source.py simulation.py materials_library.py
   pkgpyexec_LTLIBRARIES = _meep.la
   pympb_DATA = mpb.py solver.py mpb_data.py
   pympb_LTLIBRARIES = _mpb.la
@@ -130,11 +130,12 @@ MPB_PY = $(srcdir)/mpb.py
 
 endif # MAINTAINER_MODE
 
-PY_PKG_FILES =               \
-    $(INIT_PY)               \
-    $(srcdir)/geom.py        \
-    $(srcdir)/simulation.py  \
-    $(srcdir)/source.py      \
+PY_PKG_FILES =                      \
+    $(INIT_PY)                      \
+    $(srcdir)/geom.py               \
+    $(srcdir)/simulation.py         \
+    $(srcdir)/source.py             \
+    $(srcdir)/materials_library.py  \
     .libs/_meep.so
 
 meep: _meep.la _mpb.la __init__.py
