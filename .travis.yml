@@ -7,7 +7,7 @@ sudo: false
 ##################################################
 addons:
   apt:
-    packages:
+    packages: &common_deps
     - guile-2.0-dev
     - libgsl0-dev
     - libfftw3-dev
@@ -17,7 +17,7 @@ addons:
     - libopenmpi-dev
     - mpi-default-bin
     - openmpi-bin
-install:
+install: &install
   - pip install numpy mpi4py scipy
 
 ##################################################
@@ -52,48 +52,60 @@ matrix:
     addons:
       apt:
         packages:
+          - *common_deps
           - libhdf5-serial-dev
     install:
+      - *install
       - pip install h5py
   - python: "2.7"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
     addons:
       apt:
         packages:
+          - *common_deps
           - libhdf5-serial-dev
     install:
+      - *install
       - pip install h5py
   - python: "2.7"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
     addons:
       apt:
         packages:
+          - *common_deps
           - libhdf5-openmpi-dev
     install:
+      - *install
       - pip install --no-binary=h5py h5py
   - python: "3.4"
     env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}" MKCHECKFLAGS="-j 2"
     addons:
       apt:
         packages:
+          - *common_deps
           - libhdf5-serial-dev
     install:
+      - *install
       - pip install h5py
   - python: "3.4"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
     addons:
       apt:
         packages:
+          - *common_deps
           - libhdf5-serial-dev
     install:
+      - *install
       - pip install h5py
   - python: "3.4"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
     addons:
       apt:
         packages:
+          - *common_deps
           - libhdf5-openmpi-dev
     install:
+      - *install
       - pip install --no-binary=h5py h5py
 
 
