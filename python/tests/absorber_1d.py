@@ -2,7 +2,7 @@ from __future__ import division
 
 import unittest
 import meep as mp
-from meep.materials_library import Al
+from meep.materials import Al
 
 
 class TestAbsorber(unittest.TestCase):
