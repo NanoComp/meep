@@ -62,7 +62,6 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - *install
       - pip install numpy mpi4py scipy h5py
   - python: "2.7"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
@@ -72,7 +71,6 @@ matrix:
           - *common_deps
           - libhdf5-openmpi-dev
     install:
-      - *install
       - pip install numpy mpi4py scipy
       - pip install --no-binary=h5py h5py
   - python: "3.4"
