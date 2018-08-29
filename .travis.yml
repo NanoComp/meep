@@ -14,12 +14,11 @@ addons:
     - gfortran
     - liblapack-dev
     - swig
-    - libhdf5-serial-dev
     - libopenmpi-dev
     - mpi-default-bin
     - openmpi-bin
 install:
-  - pip install numpy mpi4py h5py scipy
+  - pip install numpy mpi4py scipy
 
 ##################################################
 # environment variables applied to all build cases
@@ -50,12 +49,53 @@ matrix:
   include:
   - python: "2.7"
     env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}" MKCHECKFLAGS="-j 2"
+    addons:
+      apt:
+        packages:
+          - libhdf5-serial-dev
+    install:
+      - pip install h5py
   - python: "2.7"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS=""
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
+    addons:
+      apt:
+        packages:
+          - libhdf5-serial-dev
+    install:
+      - pip install h5py
+  - python: "2.7"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
+    addons:
+      apt:
+        packages:
+          - libhdf5-openmpi-dev
+    install:
+      - pip install --no-binary=h5py h5py
   - python: "3.4"
     env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}" MKCHECKFLAGS="-j 2"
+    addons:
+      apt:
+        packages:
+          - libhdf5-serial-dev
+    install:
+      - pip install h5py
   - python: "3.4"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS=""
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
+    addons:
+      apt:
+        packages:
+          - libhdf5-serial-dev
+    install:
+      - pip install h5py
+  - python: "3.4"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
+    addons:
+      apt:
+        packages:
+          - libhdf5-openmpi-dev
+    install:
+      - pip install --no-binary=h5py h5py
+
 
 ##################################################
 # build/test instructions
