@@ -184,7 +184,13 @@ void structure::dump(const char *filename) {
   }
 
   // Allocate space for component and direction of non-null sigmas
-  size_t *sigma_cd[2] = {NULL, NULL}; 
+  size_t *my_sigma_cd[2] = {NULL, NULL};
+  my_sigma_cd[E_stuff] = new size_t[num_E_sigmas * 2];
+  memset(my_sigma_cd[E_stuff], 0, sizeof(size_t) * num_E_sigmas * 2);
+  my_sigma_cd[H_stuff] = new size_t[num_H_sigmas * 2];
+  memset(my_sigma_cd[H_stuff], 0, sizeof(size_t) * num_H_sigmas * 2);
+
+  size_t *sigma_cd[2] = {NULL, NULL};
   sigma_cd[E_stuff] = new size_t[num_E_sigmas * 2];
   memset(sigma_cd[E_stuff], 0, sizeof(size_t) * num_E_sigmas * 2);
   sigma_cd[H_stuff] = new size_t[num_H_sigmas * 2];
@@ -205,8 +211,8 @@ void structure::dump(const char *filename) {
             for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
               for (int d = 0; d < 5; ++d) {
                 if (sus->sigma[c][d]) {
-                  sigma_cd[E_stuff][j] = c;
-                  sigma_cd[E_stuff][j + 1] = d;
+                  my_sigma_cd[E_stuff][j] = c;
+                  my_sigma_cd[E_stuff][j + 1] = d;
                   j += 2;
                   done = true;
                 }
@@ -216,8 +222,8 @@ void structure::dump(const char *filename) {
         }
       }
     }
-    sum_to_all(sigma_cd[E_stuff], sigma_cd[E_stuff], num_E_sigmas * 2);
-    sum_to_all(sigma_cd[H_stuff], sigma_cd[H_stuff], num_H_sigmas * 2);
+    sum_to_all(my_sigma_cd[E_stuff], sigma_cd[E_stuff], num_E_sigmas * 2);
+    sum_to_all(my_sigma_cd[H_stuff], sigma_cd[H_stuff], num_H_sigmas * 2);
   }
 
   // Write location (component and direction) data of non-null sigmas (sigma[c][d])
@@ -269,6 +275,7 @@ void structure::dump(const char *filename) {
 
   for (int ft = 0; ft < 2; ++ft) {
     delete[] sigma_cd[ft];
+    delete[] my_sigma_cd[ft];
     delete[] num_sigmas[ft];
     delete[] my_num_sigmas[ft];
   }
