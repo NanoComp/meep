@@ -189,8 +189,7 @@ geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, 
 meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer, double zmin, double zmax)
 {
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
-  meep::ndim di = ((zmin==0.0 && zmax==0.0) ? meep::D2 : meep::D3);
-di = meep::D2;
+  meep::ndim di = ( ( ((float)zmin)==0.0 && ((float)zmax)==0.0) ? meep::D2 : meep::D3 );
   meep::vec max_corner=meep::zero_vec(di), min_corner=meep::zero_vec(di);
   get_polygon_bounding_box(polygon, max_corner, min_corner);
   max_corner.set_direction(meep::Z, zmax);
