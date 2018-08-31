@@ -1,5 +1,3 @@
-(include "/path/to/materials_library.scm")
-
 (set-param! resolution 400) ; pixels/um
 
 (define-param sz 10)

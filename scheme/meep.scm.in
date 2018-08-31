@@ -113,6 +113,9 @@
 ; (one specifications file can include another specifications file)
 (include "@LIBCTL_DIR@/utils/geom.scm")
 
+; Include materials library
+(include "materials.scm")
+
 (if (defined? 'meep-component-Ex) (include "meep-enums.scm"))
 
 (define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords

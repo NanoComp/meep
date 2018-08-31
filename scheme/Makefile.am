@@ -1,5 +1,5 @@
 bin_PROGRAMS = meep
-EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch examples
+EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm materials.scm meep_wrap.patch examples
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
@@ -62,7 +62,7 @@ MY_DEFS = -DHAVE_CTL_HOOKS=1 -DHAVE_CTL_EXPORT_HOOK=1
 
 PROGRAM_NAME = meep
 SPECIFICATION_FILE = $(PROGRAM_NAME).scm
-nodist_pkgdata_DATA = $(SPECIFICATION_FILE) meep-enums.scm casimir.scm
+nodist_pkgdata_DATA = $(SPECIFICATION_FILE) meep-enums.scm casimir.scm materials.scm
 
 ##############################################################################
 
