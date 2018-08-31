@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import meep as mp
-
-import sys
-sys.path.insert(0, '/path/to/materials_library/')
-from materials_library import *
+from meep.materials import fused_quartz
 
 resolution = 200  # pixels/μm
 
@@ -20,7 +17,7 @@ fmax = 1/wvl_min
 fcen = 0.5*(fmax+fmin)
 df = fmax-fmin
 nfreq = 50
-        
+
 sources = [ mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ex, center=mp.Vector3(0,0,-0.5*sz+dpml)) ]
 
 sim = mp.Simulation(cell_size=cell_size,
@@ -37,7 +34,7 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(),
 empty_flux = mp.get_fluxes(refl)
 empty_data = sim.get_flux_data(refl)
 sim.reset_meep()
-    
+
 geometry = [ mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=fused_quartz) ]
 
 sim = mp.Simulation(cell_size=cell_size,
@@ -49,7 +46,7 @@ sim = mp.Simulation(cell_size=cell_size,
 
 refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 sim.load_minus_flux_data(refl, empty_data)
-    
+
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(), 1e-9))
 
 refl_flux = mp.get_fluxes(refl)

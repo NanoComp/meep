@@ -63,6 +63,7 @@ pages:
     - Tutorial/Optical Forces: 'Python_Tutorials/Optical_Forces.md'
     - Tutorial/Frequency-Domain Solver: 'Python_Tutorials/Frequency_Domain_Solver.md'
     - Tutorial/Mode Decomposition: 'Python_Tutorials/Mode_Decomposition.md'
+    - Tutorial/BidirectionalCoupler: 'Python_Tutorials/BidirectionalCoupler.md'
 - Scheme Interface:
     - User Interface: 'Scheme_User_Interface.md'
     - Tutorial/Basics: 'Scheme_Tutorials/Basics.md'

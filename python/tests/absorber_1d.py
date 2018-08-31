@@ -1,15 +1,9 @@
 from __future__ import division
 
-import math
 import unittest
 import meep as mp
+from meep.materials import Al
 
-import os
-import sys
-matlib_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
-                          '..', 'examples')
-sys.path.insert(0, matlib_dir)
-from materials_library import *
 
 class TestAbsorber(unittest.TestCase):
 
@@ -56,6 +50,7 @@ class TestAbsorber(unittest.TestCase):
         p = sim.get_field_point(mp.Hz, v)
 
         self.assertAlmostEqual(-4.058476603571745e-11, p.real)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -369,7 +369,7 @@ Polygonal prism type.
 
 **`vertices` [list of `vector3`]**
 —
-The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell.
+The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. Though the `center` property is required (since the prism is a sublcass of `geometric-object`), it is currently unused.
 
 **`height` [`number`]**
 —
@@ -377,7 +377,7 @@ The prism thickness, extruded in the direction of `axis`. `infinity` can be used
 
 **`axis` [`vector3`]**
 —
-The axis perpendicular to the prism. Defaults to `(0,0,1)`.
+Defaults to `(vector3 0 0 1)`, which is currently the only supported axis for the prism.
 
 These are some examples of geometric objects created using the above classes:
 
@@ -420,8 +420,9 @@ These are some examples of geometric objects created using the above classes:
                  (vector3 1 0 0)
                  (vector3 0.5 (/ (sqrt 3) -2) 0)
                  (vector3 -0.5 (/ (sqrt 3) -2) 0)))
-	 (height 1.5)
-	 (material cSi))))
+         (height 1.5)
+         (center (vector3 0 0))
+         (material cSi))))
 ```
 
 ### symmetry

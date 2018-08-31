@@ -54,6 +54,8 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
+class h5file;
+
 /* generic base class, only used by subclassing: represents susceptibility
    polarizability vector P = chi(omega) W  (where W = E or H). */
 class susceptibility {
@@ -154,6 +156,11 @@ public:
     (void) inotowned; (void) n; (void) c; (void) cmp; (void) P_internal_data;
     return 0; }
 
+  virtual void dump_params(h5file *h5f, size_t *start) { (void)h5f; (void)start; }
+  virtual int get_num_params() { return 0; }
+  // This should only be used when dumping and loading susceptibility data to hdf5
+  void set_id(int new_id) { id = new_id; };
+
   susceptibility *next;
   size_t ntot;
   realnum *sigma[NUM_FIELD_COMPONENTS][5];
@@ -204,6 +211,10 @@ public:
   virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
 					  int n,
 					  void *P_internal_data) const;
+
+  virtual void dump_params(h5file *h5f, size_t *start);
+  virtual int get_num_params() { return 4; }
+
 protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
@@ -221,6 +232,9 @@ public:
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 			double dt, const grid_volume &gv,
 			void *P_internal_data) const;
+
+  virtual void dump_params(h5file *h5f, size_t *start);
+  virtual int get_num_params() { return 5; }
 
 protected:
   double noise_amp;
@@ -330,6 +344,8 @@ public:
   const char *file_name() const { return filename; }
 
   void prevent_deadlock(); // hackery for exclusive mode
+  bool dataset_exists(const char *name);
+
 private:
   access_mode mode;
   char *filename;
@@ -668,6 +684,9 @@ class structure {
 			     const boundary_region &br, const symmetry &s);
   void check_chunks();
   void changing_chunks();
+  // Helper methods for dumping and loading susceptibilities
+  void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
+  void write_susceptibility_params(h5file *file, const char *dname, int EorH);
 };
 
 class src_vol;

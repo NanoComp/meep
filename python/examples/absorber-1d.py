@@ -1,10 +1,9 @@
 from __future__ import division
 
 import argparse
-import math
 import meep as mp
+from meep.materials import Al
 
-from materials_library import *
 
 def main(args):
 
