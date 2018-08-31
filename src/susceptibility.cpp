@@ -274,6 +274,13 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
   return d->P[c][cmp] + n;
 }
 
+void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
+  size_t num_params = 5;
+  size_t params_dims[1] = {num_params};
+  double params_data[] = {4, (double)get_id(), omega_0, gamma, (double)no_omega_0_denominator};
+  h5f->write_chunk(1, start, params_dims, params_data);
+  *start += num_params;
+}
 
 void noisy_lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -299,4 +306,11 @@ void noisy_lorentzian_susceptibility::update_P
   }
 }
 
+void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
+  size_t num_params = 6;
+  size_t params_dims[1] = {num_params};
+  double params_data[] = {5, (double)get_id(), noise_amp, omega_0, gamma, (double)no_omega_0_denominator};
+  h5f->write_chunk(1, start, params_dims, params_data);
+  *start += num_params;
+}
 } // namespace meep
