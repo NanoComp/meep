@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import meep as mp
-from meep.materials_library import fused_quartz
+from meep.materials import fused_quartz
 
 resolution = 200  # pixels/μm
 

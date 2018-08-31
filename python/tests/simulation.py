@@ -488,10 +488,10 @@ class TestSimulation(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from meep.materials_library import Si
+            from meep.materials import Si
             self.assertEqual(len(w), 0)
 
-        from meep.materials_library import Mo
+        from meep.materials import Mo
         geom = [mp.Sphere(radius=0.2, material=Mo)]
         sim = self.init_simple_simulation(geometry=geom)
         with warnings.catch_warnings(record=True) as w:
@@ -500,7 +500,7 @@ class TestSimulation(unittest.TestCase):
             self.assertGreater(len(w), 0)
             self.assertIn("Epsilon", str(w[0].message))
 
-        from meep.materials_library import SiO2
+        from meep.materials import SiO2
         geom = [mp.Sphere(radius=0.2, material=SiO2)]
         sim = self.init_simple_simulation(geometry=geom)
         with warnings.catch_warnings(record=True) as w:
