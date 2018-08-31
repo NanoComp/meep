@@ -88,7 +88,7 @@ Here's a sample run:
 
 This produces the file `coupler2D.s0.1.r21.0.out`:
 
-![coupler_data.png][coupler_data.png]
+![coupler_data.png](coupler_data.png)
 
 Here's the full python script:
 
