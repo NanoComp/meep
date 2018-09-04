@@ -1152,7 +1152,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 ### Load and Dump Structure
 
-These functions dump the raw ε data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same chunks (i.e. the same grid, number of processors, symmetries, and PML). Currently only stores ε and μ, and not nonlinear coefficients or polarizability. Additional geometry can be added to a simulation that loads a structure via the normal `geometry` argument to the `Simulation` constructor, assuming it does not overlap with any objects that were loaded from disk.
+These functions dump the raw ε data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same chunks (i.e. the same grid, number of processors, symmetries, and PML). Currently only stores ε and μ, and not nonlinear coefficients or polarizability. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
 **`Simulation.dump_structure(fname)`**
 —
