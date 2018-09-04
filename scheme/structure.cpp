@@ -1148,11 +1148,11 @@ static bool susceptibility_equiv(const susceptibility *o0,
 				 const susceptibility *o)
 {
 if (o0->which_subclass != o->which_subclass) return 0;
-#if 0
+// #if 0 -- AWC
 if (o0->which_subclass == susceptibility::MULTILEVEL_ATOM) {
 if (!multilevel_atom_equal(o0->subclass.multilevel_atom_data, o->subclass.multilevel_atom_data)) return 0;
 }
-#endif
+// #endif -- AWC
 else if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
 if (!drude_susceptibility_equal(o0->subclass.drude_susceptibility_data, o->subclass.drude_susceptibility_data)) return 0;
 }
@@ -1215,7 +1215,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
     material_type_destroy(material);
 }
 
-#if 0
+// #if 0 -- AWC
 /* make multilevel_susceptibility from scheme input data */
 static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
   if (!d || d->transitions.num_items == 0) return NULL;
@@ -1249,8 +1249,8 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
   for (int t = 0; t < d->transitions.num_items; ++t) {
     int i = d->transitions.items[t].from_level - minlev;
     int j = d->transitions.items[t].to_level - minlev;
-    Gamma[i*L+i] += d->transitions.items[t].transition_rate;
-    Gamma[j*L+i] -= d->transitions.items[t].transition_rate;
+    Gamma[i*L+i] += + d->transitions.items[t].transition_rate + d->transitions.items[t].pumping_rate;
+    Gamma[j*L+i] -= + d->transitions.items[t].transition_rate + d->transitions.items[t].pumping_rate;
   }
 
   // initial populations of each level
@@ -1264,6 +1264,9 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
   meep::realnum *omega = new meep::realnum[T];
   meep::realnum *gamma = new meep::realnum[T];
   meep::realnum *sigmat = new meep::realnum[T * 5];
+
+  const double pi = 3.14159265358979323846264338327950288; // We need pi below. -- AWC
+
   for (int t = 0, tr = 0; t < d->transitions.num_items; ++t)
     if (d->transitions.items[t].frequency != 0) {
       omega[tr] = d->transitions.items[t].frequency; // no 2*pi here
@@ -1280,8 +1283,8 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
       }
       int i = d->transitions.items[t].from_level - minlev;
       int j = d->transitions.items[t].to_level - minlev;
-      alpha[i * T + tr] = -1.0 / omega[tr];
-      alpha[j * T + tr] = +1.0 / omega[tr];
+      alpha[i * T + tr] = -1.0 / (2*pi*omega[tr]); // but we *do* need the 2*pi here. -- AWC
+      alpha[j * T + tr] = +1.0 / (2*pi*omega[tr]); 
       ++tr;
     }
 
@@ -1297,7 +1300,7 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
 
   return s;
 }
-#endif
+// #endif -- AWC
 
 // add a polarization to the list if it is not already there
 static pol *add_pol(pol *pols, const susceptibility *user_s)
@@ -1384,13 +1387,13 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
 	}
 	break;
       }
-#if 0
+// #if 0 -- AWC
       case susceptibility::MULTILEVEL_ATOM: {
 	multilevel_atom *d = p->user_s.subclass.multilevel_atom_data;
 	sus = make_multilevel_sus(d);
 	break;
       }
-#endif
+// #endif -- AWC
       default:
 	meep::abort("unknown susceptibility type");
     }
