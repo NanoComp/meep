@@ -206,13 +206,13 @@ void structure::dump(const char *filename) {
           break;
         }
         if (chunks[i]->is_mine()) {
-          susceptibility *sus = chunks[i]->chiP[E_stuff];
+          susceptibility *sus = chunks[i]->chiP[ft];
           if (sus) {
             for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
               for (int d = 0; d < 5; ++d) {
                 if (sus->sigma[c][d]) {
-                  my_sigma_cd[E_stuff][j] = c;
-                  my_sigma_cd[E_stuff][j + 1] = d;
+                  my_sigma_cd[ft][j] = c;
+                  my_sigma_cd[ft][j + 1] = d;
                   j += 2;
                   done = true;
                 }
@@ -222,8 +222,8 @@ void structure::dump(const char *filename) {
         }
       }
     }
-    sum_to_all(my_sigma_cd[E_stuff], sigma_cd[E_stuff], num_E_sigmas * 2);
-    sum_to_all(my_sigma_cd[H_stuff], sigma_cd[H_stuff], num_H_sigmas * 2);
+    bw_or_to_all(my_sigma_cd[E_stuff], sigma_cd[E_stuff], num_E_sigmas * 2);
+    bw_or_to_all(my_sigma_cd[H_stuff], sigma_cd[H_stuff], num_H_sigmas * 2);
   }
 
   // Write location (component and direction) data of non-null sigmas (sigma[c][d])

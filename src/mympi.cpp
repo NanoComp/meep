@@ -451,6 +451,14 @@ void or_to_all(const int *in, int *out, int size) {
 #endif
 }
 
+void bw_or_to_all(const size_t *in, size_t *out, int size) {
+#ifdef HAVE_MPI
+  MPI_Allreduce((void*) in, out, size, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, MPI_BOR, mycomm);
+#else
+  memcpy(out, in, sizeof(size_t) * size);
+#endif
+}
+
 bool and_to_all(bool in) {
   int in2 = in, out;
 #ifdef HAVE_MPI
