@@ -87,6 +87,7 @@ void sum_to_all(const size_t *in, size_t *out, int size);
 void sum_to_master(const size_t *in, size_t *out, int size);
 bool or_to_all(bool in);
 void or_to_all(const int *in, int *out, int size);
+void bw_or_to_all(const size_t *in, size_t *out, int size);
 bool and_to_all(bool in);
 void and_to_all(const int *in, int *out, int size);
 
