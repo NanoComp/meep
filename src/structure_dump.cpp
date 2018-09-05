@@ -252,8 +252,6 @@ void structure::dump(const char *filename) {
           int d = sigma_cd[ft][j + 1];
           snprintf(dname, 20, "%c_%d_sigma_%d_%d", ft == 0 ? 'E' : 'H', i, c, d);
           size_t ntot = chunks[i]->gv.ntot() * num_sus[ft];
-          file.prevent_deadlock();
-          broadcast(i, &ntot, 1);
           file.create_data(dname, 1, &ntot);
           if (chunks[i]->is_mine()) {
             susceptibility *sus = chunks[i]->chiP[ft];
