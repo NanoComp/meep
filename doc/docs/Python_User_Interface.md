@@ -1182,6 +1182,8 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### GDSII Support
 
+This functionality is only available if Meep was built with [libGDSII](https://github.com/HomerReid/libGDSII). See the sample [build script](Build_From_Source#ubuntu-1604-and-1804) for installation instructions.
+
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —
 Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer `layer` of a GDSII file `gdsii_filename`.

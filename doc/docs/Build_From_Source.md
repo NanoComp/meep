@@ -304,6 +304,13 @@ cd mpb/
 sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make && sudo make install
 
+# Support for loading GDSII files (optional)
+cd ~/install
+git clone https://github.com/HomerReid/libGDSII.git
+cd libGDSII/
+sh autogen.sh
+make && sudo make install
+
 sudo pip3 install --upgrade pip
 # If pip3 doesn't work on ubuntu 18.04, just use pip
 pip3 install --user --no-cache-dir mpi4py
@@ -458,6 +465,12 @@ sh autogen.sh --enable-shared CC=/usr/local/bin/mpicc LDFLAGS="${MY_LDFLAGS}" CP
 make -j
 sudo make -j install
 
+# Support for loading GDSII files (optional)
+cd ~/install
+git clone https://github.com/HomerReid/libGDSII.git
+cd libGDSII/
+sh autogen.sh
+sudo make -j install
 
 cd ~/install
 wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.0.tar.gz
