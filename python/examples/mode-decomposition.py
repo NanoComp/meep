@@ -25,7 +25,7 @@ lcen = 6.67
 fcen = 1/lcen
 
 symmetries = [mp.Mirror(mp.Y)]
-    
+
 for m in range(5):
     Lt = 2**m
     sx = dpml_x+Lw+Lt+Lw+dpml_x
