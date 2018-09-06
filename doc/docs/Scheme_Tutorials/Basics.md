@@ -408,7 +408,7 @@ Creating an oblique planewave source typically requires specifying two parameter
 
 In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
-The simulation script is below and in [refl-angular.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-angular.ctl)
+The simulation script is in [refl-angular.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-angular.ctl)
 
 ```scm
 (set-param! resolution 200)         ; pixels/um

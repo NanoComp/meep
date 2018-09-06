@@ -19,28 +19,27 @@ The structure, which can be viewed as a [two-port network](https://en.wikipedia.
 
 The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor`, which is an alias for `add_flux`, is not optimized for symmetry.
 
-At the end of the simulation, the reflectance of the fundamental mode computed using the two methods are displayed. The simulation script is shown below and in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
+At the end of the simulation, the reflectance of the fundamental mode computed using the two methods are displayed. The simulation script is in [mode-decomposition.py](https://github.com/stevengj/meep/blob/master/python/examples/mode-decomposition.py).
 
 ```py
 import meep as mp
 
-resolution = 60   # pixels/μm
+resolution = 61   # pixels/μm
 
 w1 = 1            # width of waveguide 1
 w2 = 2            # width of waveguide 2
 Lw = 10           # length of waveguide 1/2
 
 dair = 3.0        # length of air region
-dpml = 5.0        # length of PML
+dpml_x = 6.0      # length of PML in x direction
+dpml_y = 2.0      # length of PML in y direction
 
-sy = dpml+dair+w2+dair+dpml
-
-half_w1 = 0.5*w1
-half_w2 = 0.5*w2
+sy = dpml_y+dair+w2+dair+dpml_y
 
 Si = mp.Medium(epsilon=12.0)
 
-boundary_layers = [mp.PML(dpml)]
+boundary_layers = [mp.PML(dpml_x,direction=mp.X),
+                   mp.PML(dpml_y,direction=mp.Y)]
 
 # mode wavelength
 lcen = 6.67
@@ -48,28 +47,25 @@ lcen = 6.67
 fcen = 1/lcen
 
 symmetries = [mp.Mirror(mp.Y)]
-
-for m in range(5):    
+    
+for m in range(4,5):
     Lt = 2**m
-    sx = dpml+Lw+Lt+Lw+dpml
+    sx = dpml_x+Lw+Lt+Lw+dpml_x
     cell_size = mp.Vector3(sx,sy,0)
 
-    prism_x = sx+1
-    half_Lt = 0.5*Lt
-
-    src_pt = mp.Vector3(-0.5*sx+dpml+0.2*Lw,0,0)
+    src_pt = mp.Vector3(-0.5*sx+dpml_x+0.2*Lw,0,0)
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                                   component=mp.Ez,
                                   center=src_pt,
-                                  size=mp.Vector3(0,sy-2*dpml,0),
+                                  size=mp.Vector3(0,sy-2*dpml_y,0),
                                   eig_match_freq=True,
                                   eig_parity=mp.ODD_Z+mp.EVEN_Y)]
-    
+
     # straight waveguide
-    vertices = [mp.Vector3(-prism_x,half_w1),
-                mp.Vector3(prism_x,half_w1),
-                mp.Vector3(prism_x,-half_w1),
-                mp.Vector3(-prism_x,-half_w1)]
+    vertices = [mp.Vector3(-0.5*sx-1,0.5*w1),
+                mp.Vector3(0.5*sx+1,0.5*w1),
+                mp.Vector3(0.5*sx+1,-0.5*w1),
+                mp.Vector3(-0.5*sx-1,-0.5*w1)]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -77,28 +73,29 @@ for m in range(5):
                         geometry=[mp.Prism(vertices,height=mp.inf,material=Si)],
                         sources=sources,
                         symmetries=symmetries)
+    
+    mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw,0,0)
+    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml_y,0)))
 
-    mon_pt = mp.Vector3(-0.5*sx+dpml+0.5*Lw,0,0)
-    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml,0)))
-
-    sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,src_pt,1e-9))
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(100,mp.Ez,mon_pt,1e-10))
 
     incident_coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
     incident_flux = mp.get_fluxes(flux)
     incident_flux_data = sim.get_flux_data(flux)
-
+    print("incident:, {}, {:.8f}, {:.8f}".format(Lt,abs(incident_coeffs[0,0,0])**2,incident_flux[0]))
+    
     sim.reset_meep()    
     
     # linear taper
-    vertices = [mp.Vector3(-prism_x,half_w1),
-                mp.Vector3(-half_Lt,half_w1),
-                mp.Vector3(half_Lt,half_w2),
-                mp.Vector3(prism_x,half_w2),
-                mp.Vector3(prism_x,-half_w2),
-                mp.Vector3(half_Lt,-half_w2),
-                mp.Vector3(-half_Lt,-half_w1),
-                mp.Vector3(-prism_x,-half_w1)]
-
+    vertices = [mp.Vector3(-0.5*sx-1,0.5*w1),
+                mp.Vector3(-0.5*Lt,0.5*w1),
+                mp.Vector3(0.5*Lt,0.5*w2),
+                mp.Vector3(0.5*sx+1,0.5*w2),
+                mp.Vector3(0.5*sx+1,-0.5*w2),
+                mp.Vector3(0.5*Lt,-0.5*w2),
+                mp.Vector3(-0.5*Lt,-0.5*w1),
+                mp.Vector3(-0.5*sx-1,-0.5*w1)]
+    
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
@@ -106,10 +103,10 @@ for m in range(5):
                         sources=sources,
                         symmetries=symmetries)
 
-    refl_flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml,0)))
+    refl_flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml_y,0)))
     sim.load_minus_flux_data(refl_flux,incident_flux_data)
     
-    sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,src_pt,1e-9))
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(100,mp.Ez,mon_pt,1e-10))
         
     coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
     taper_flux = mp.get_fluxes(refl_flux)
@@ -153,7 +150,7 @@ Diffraction Spectrum of a Binary Grating
 
 The mode-decomposition feature can also be applied to planewaves in homogeneous media with scalar permittivity/permeability (i.e., no anisotropy). This will be demonstrated in this example to compute the diffraction spectrum of a binary phase [grating](https://en.wikipedia.org/wiki/Diffraction_grating). The unit cell geometry of the grating is shown in the schematic below. The grating is periodic in the $y$ direction with periodicity `gp` and has a rectangular profile of height `gh` and duty cycle `gdc`. The grating parameters are `gh`=0.5 μm, `gdc`=0.5, and `gp`=10 μm. There is a semi-infinite substrate of thickness `dsub` adjacent to the grating. The substrate and grating are glass with a constant refractive index of 1.5. The surrounding is air/vacuum. Perfectly matched layers (PML) of thickness `dpml` are used in the $\pm x$ boundaries. A pulsed planewave with E<sub>z</sub> polarization spanning wavelengths of 0.4 to 0.6 μm is normally incident on the grating from the glass substrate. The eigenmode monitor is placed in the air region. We will use mode decomposition to compute the transmittance &mdash; the ratio of the power in the $+x$ direction of the diffracted mode relative to that of the incident planewave &mdash; for the first ten diffraction orders. Two simulations are required: (1) an empty cell of homogeneous glass to obtain the incident power of the source, and (2) the grating structure to obtain the diffraction orders. At the end of the simulation, the wavelength, angle, and transmittance for each diffraction order are computed.
 
-The simulation script is shown below and in [binary_grating.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating.py).
+The simulation script is in [binary_grating.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating.py).
 
 <center>
 ![](../images/grating.png)
@@ -241,7 +238,7 @@ for nm in range(nmode):
       print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
 ```
 
-Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarzation. `EVEN_Y` is necessary since each diffraction order m (an integer) with |m|>0 and a given k<sub>x</sub> consists of two modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. Additionally, the total transmittance must be halved in this case to obtain the transmittance for either the +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the sine mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Specifying the `eig_parity` parameter this way ensures that the ordering of the modes corresponds to only the non-degenerate diffraction orders. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
+Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarzation. `EVEN_Y` is necessary since each diffraction order which is based on a given k<sub>x</sub> consists of *two* modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. As a result, the total transmittance must be halved in this case to obtain the transmittance for either the +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the sine mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Specifying the `eig_parity` parameter this way ensures that the ordering of the modes corresponds to only the non-degenerate diffraction orders. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
 
 The simulation is run and the results piped to a file (the grating data is extracted to a separate file for plotting) using the following shell script:
 
@@ -293,7 +290,7 @@ Each diffraction order corresponds to a single angle. In the figure below, this 
 
 The transmittance of each diffraction order should ideally be a constant. The slight wavelength dependence shown in the figure is a numerical artifact which can be mitigated by (1) increasing the resolution or (2) time-stepping for a longer duration to ensure that the fields have sufficiently decayed away.
 
-The diffraction orders/modes are a finite set of propagating planewaves. The wavevector k<sub>x</sub> of these modes can be computed analytically: for a frequency of ω (in c=1 units), these propagating modes are the **real** solutions of sqrt(ω²n²-(k<sub>y</sub>+2πm/Λ)²) where m is the diffraction order (an integer) and Λ is the periodicity of the grating. In this example, n=1, k<sub>y</sub>=0, and Λ=10 μm. Thus, as an example, at a wavelength of 0.5 μm there are 20 diffraction orders (though we only computed the first ten). The wavevector k<sub>x</sub> is used to compute the angle of the diffraction order as cos<sup>-1</sup>(k<sub>x</sub>/ω). Evanescent modes, those with an imaginary k<sub>x</sub>, exist for |m|>20 but these modes carry no power. Note that currently Meep does not compute the number of propagating modes for you. If the mode number passed to `get_eigenmode_coefficients` is larger than the number of propagating modes at a given frequency/wavelength, MPB's Newton solver will fail to converge and will return zero for the mode coefficient. It is therefore a good idea to know beforehand the number of propagating modes.
+The diffraction orders/modes are a finite set of propagating planewaves. The wavevector k<sub>x</sub> of these modes can be computed analytically: for a frequency of ω (in c=1 units), these propagating modes are the **real** solutions of sqrt(ω²n²-(k<sub>y</sub>+2πm/Λ)²) where m is the diffraction order (an integer), Λ is the periodicity of the grating, and n is the refractive index of the propagating medium. In this example, n=1, k<sub>y</sub>=0, and Λ=10 μm. Thus, as an example, at a wavelength of 0.5 μm there are 20 diffraction orders (though we only computed the first ten). The wavevector k<sub>x</sub> is used to compute the angle of the diffraction order as cos<sup>-1</sup>(k<sub>x</sub>/ω). Evanescent modes, those with an imaginary k<sub>x</sub>, exist for |m|>20 but these modes carry no power. Note that currently Meep does not compute the number of propagating modes for you. If the mode number passed to `get_eigenmode_coefficients` is larger than the number of propagating modes at a given frequency/wavelength, MPB's Newton solver will fail to converge and will return zero for the mode coefficient. It is therefore a good idea to know beforehand the number of propagating modes.
 
 <center>
 ![](../images/grating_diffraction_spectra.png)

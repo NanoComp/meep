@@ -18,7 +18,7 @@ The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.
 
 The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the quartz to obtain the reflected power. The details of this type of calculation are described in [Tutorial/Basics](Basics/#transmittance-spectrum-of-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](Materials/#numerical-stability). Coarse resolutions may lead to field instabilities.
 
-The simulation script is below and in [refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
+The simulation script is in [refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
 
 ```scm
 (include "/path/to/materials-library.scm")
