@@ -19,20 +19,22 @@ SOURCE_LAYER       = 5
 UPPER_BRANCH_LAYER = 31
 LOWER_BRANCH_LAYER = 32
 
-file_separation    = 0.3   # separation between coupler branches in GDSII file
+# values of the (minimum) separation between coupler branches
+file_separation    = 0.3   # separation for geometry as imported from `coupler.gds`
 separation         = 0.3   # user's requested separation
 
-oxide_thickness    = 1.0   # thicknesses in Z-direction (only for 3D calculation)
+# layer permittivities and thicknesses (only for 3D calculation)
+oxide_thickness    = 0.5
 silicon_thickness  = 0.22
-air_thickness      = 0.78
+air_thickness      = 0.28
 
 eps_oxide          = 2.25
 eps_silicon        = 12  
 
 # other computational parameters
-dpml=1
-resolution=21
-three_d  = False;
+dpml       = 0.5
+resolution = 21
+three_d    = False;
 
 # frequency range
 lmin      = 1.50
@@ -43,10 +45,10 @@ fmin      = 1.0/lmax
 fcen      = 1.0/lcen
 fmax      = 1.0/lmin
 df_source = fmax-fmin
-mode_num  = 1
+mode_num  = 1        # index of incoming eigenmode
 
 df_flux  = df_source
-nfreq    = 50
+nfreq    = 50        # number of frequencies at which to compute flux
 
 ##################################################
 # utility routine to extract center and size of a
@@ -83,31 +85,33 @@ separation  = args.separation
 gdsII_file  = args.gdsIIfile
 three_d     = args.three_d;
 
-cell_thickness = dpml + oxide_thickness + silicon_thickness + air_thickness + dpml
-cell_zmax =  0.5*cell_thickness if three_d else 0.0
-cell_zmin = -0.5*cell_thickness if three_d else 0.0
-si_zmin   = 0.0
-si_zmax   = silicon_thickness if three_d else 0.0
-print "cell_zmax={}".format(cell_zmax)
-print "cell_zmin={}".format(cell_zmin)
-print "si_zmin={}".format(si_zmin)
-print "si_zmax={}".format(si_zmax)
+# set min, max z coordinates for computational cell and individual layers
+cell_thickness = cell_zmax = cell_zmin = si_zmin = si_zmax = 0.0
+if three_d:
+    cell_thickness = dpml + oxide_thickness + silicon_thickness + air_thickness + dpml
+    cell_zmax      =  0.5*cell_thickness
+    cell_zmin      = -0.5*cell_thickness
+    si_zmin        = 0.0
+    si_zmax        = silicon_thickness
 
-# read cell size, volumes for source region and flux monitors,
-# and coupler geometry from GDSII file
+# read size of computational cell from GDSII file
+(dummy,cell_size)     = get_center_and_size(mp.get_GDSII_volume(gdsII_file,CELL_LAYER, cell_zmin, cell_zmax))
+
+# read upper and lower branches of coupler geometry from GDSII file
 silicon=mp.Medium(epsilon=eps_silicon)
 upper_branch = mp.get_GDSII_prisms(silicon, gdsII_file, UPPER_BRANCH_LAYER, si_zmin, si_zmax)
 lower_branch = mp.get_GDSII_prisms(silicon, gdsII_file, LOWER_BRANCH_LAYER, si_zmin, si_zmax)
 
-(dummy,cell_size)     = get_center_and_size(mp.get_GDSII_volume(gdsII_file,CELL_LAYER, cell_zmin, cell_zmax))
+# read locations and sizes of volumes defining source region and ports
 (p1_center,p1_size)   = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT1_LAYER, si_zmin, si_zmax))
 (p2_center,p2_size)   = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT2_LAYER, si_zmin, si_zmax))
 (p3_center,p3_size)   = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT3_LAYER, si_zmin, si_zmax))
 (p4_center,p4_size)   = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT4_LAYER, si_zmin, si_zmax))
 (src_center,src_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,SOURCE_LAYER, si_zmin, si_zmax))
 
-# displace upper and lower branches of coupler (and source, flux regions)
-# symmetrically to achieve requested minimum separation
+# if the requested branch--branch separation differs from the default
+# value in the file, displace upper and lower branches of coupler
+# (together with source and flux regions) symmetrically to yield requested separation
 if separation!=file_separation:
     delta_y     = 0.5*(separation-file_separation)
     delta       = mp.Vector3(0, delta_y, 0)
@@ -119,36 +123,28 @@ if separation!=file_separation:
     cell_size  += 2.0*delta;
     for np in range(0,len(lower_branch)):
         lower_branch[np].center -= delta;
-        for nv in range(0,len(lower_branch[np].vertices)):
-            lower_branch[np].vertices[nv] -= delta
     for np in range(0,len(upper_branch)):
         upper_branch[np].center += delta;
-        for nv in range(0,len(upper_branch[np].vertices)):
-            upper_branch[np].vertices[nv] += delta
 
 geometry = upper_branch + lower_branch
+
+# add oxide layer for 3D calculations
 if three_d:
     oxide          = mp.Medium(epsilon=eps_oxide)
     oxide_center   = mp.Vector3(0,0,-0.5*oxide_thickness)
     oxide_size     = mp.Vector3(cell_size.x, cell_size.y, oxide_thickness)
-    print oxide_size
     oxide_layer    = [mp.Block(material=oxide, center=oxide_center, size=oxide_size)]
     geometry       = geometry + oxide_layer
 
-sources = [mp.EigenModeSource( src=mp.GaussianSource(fcen, fwidth=df_source),
-                               size=src_size, center=src_center,
-                               eig_band=mode_num
-                             )
-          ]
-
+# create the geometry
 sim = mp.Simulation(resolution=resolution, cell_size=cell_size,
-                    boundary_layers=[mp.PML(dpml)], sources=sources,
-                    geometry=geometry
-                   )
+                    boundary_layers=[mp.PML(dpml)], geometry=geometry)
 
-sim.init_sim()
-mp.output_epsilon(sim)
+# add eigenmode source at port 1
+sim.sources = [mp.EigenModeSource( src=mp.GaussianSource(fcen, fwidth=df_source),
+                                   size=src_size, center=src_center, eig_band=mode_num)]         
 
+# add flux monitors at all four ports
 p1_region = mp.FluxRegion(center=p1_center, size=p1_size)
 flux1     = sim.add_flux(fcen, df_flux, nfreq, p1_region)
 
@@ -161,13 +157,19 @@ flux3     = sim.add_flux(fcen, df_flux, nfreq, p3_region)
 p4_region = mp.FluxRegion(center=p4_center, size=p4_size)
 flux4     = sim.add_flux(fcen, df_flux, nfreq, p4_region)
 
+sim.init_sim()
+mp.output_epsilon(sim)
+
+# timestep 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(25, mp.Ez, p3_center, 1e-8))
 
+# fetch arrays of power flux vs. frequency at all four ports
 p1_flux = mp.get_fluxes(flux1)
 p2_flux = mp.get_fluxes(flux2)
 p3_flux = mp.get_fluxes(flux3)
 p4_flux = mp.get_fluxes(flux4)
 
+# write flux vs. frequency to output file
 if mp.am_master():
   dimstr = "3D" if three_d else "2D"
   filename = "coupler" + dimstr + ".s{}.r{}.out".format(separation,resolution)
@@ -175,5 +177,4 @@ if mp.am_master():
   freqs = mp.get_flux_freqs(flux1)
   for nf in range(0,nfreq):
       outfile.write('%e %e %e %e %e\n' % (freqs[nf],p1_flux[nf],p2_flux[nf],p3_flux[nf],p4_flux[nf]))
-
   outfile.close()
