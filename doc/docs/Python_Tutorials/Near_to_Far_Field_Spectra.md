@@ -16,7 +16,7 @@ In this example, we use the near-to-far-field transformation feature to compute 
 ![](../images/Near2far_simulation_geometry.png)
 </center>
 
-We use the `get_farfield` routine to compute the far fields by looping over a set of points along the circumference of the circle. The simulation script is below and in [antenna-radiation.py](https://github.com/stevengj/meep/blob/master/python/examples/antenna-radiation.py).
+We use the `get_farfield` routine to compute the far fields by looping over a set of points along the circumference of the circle. The simulation script is in [antenna-radiation.py](https://github.com/stevengj/meep/blob/master/python/examples/antenna-radiation.py).
 
 ```py
 import meep as mp
