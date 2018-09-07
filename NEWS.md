@@ -1,5 +1,39 @@
 # Meep Release Notes
 
+## Meep 1.6
+
+9/7/2018
+
+ * Python interface to import GDSII files (#392).
+
+ * New binary grating tutorial (#376).
+
+ * Get source amplitude from HDF5 file (#388).
+
+ * get_eigenmode_coefficients now returns group velocity and kpoints (#396).
+
+ * New tutorial for visualizing 3d structures (#416).
+
+ * Mode decomposition feature supports symmetries (#417).
+
+ * Support for Guile >= 2.0.12 (#419). Merged upstream to SWIG repo (#1288).
+
+ * Python get_eigenmode function and EigenmodeData class (#422)
+
+ * Symmetry support in dft arrays (#427).
+
+ * Python 3.7 support (#456).
+
+ * get-eigenmode-coefficients added to Scheme API (#477).
+
+ * materials_library.py now part of Python package (e.g., from meep.materials import Al) (#479).
+
+ * materials-library.scm automatically available in Meep scripts (#483).
+
+ * Structure dump/load feature now supports dispersive materials (#454).
+
+ * Various bug fixes, documentation improvements, etc.
+
 ## Meep 1.5
 
 6/7/2018
