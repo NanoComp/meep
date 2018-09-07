@@ -430,22 +430,10 @@ AC_SUBST(LIBCTLGEOM_LIBS)
 
 ##############################################################################
 # check for libGDSII
-AC_ARG_WITH(libGDSII, [AC_HELP_STRING([--without-libGDSII],[do not enable GDSII file support])], ok=$withval, ok=yes)
-LIBGDSII_LIBS=""
-if test "$ok" = "yes"; then
-    AC_CHECK_HEADER(libGDSII.h, [have_gdsii=maybe], [have_gdsii=no])
-    if test $have_gdsii = maybe; then
-        AC_CHECK_LIB(GDSII, libGDSIIExists, have_gdsii=yes, have_gdsii=no)
-    fi
-    if test "$have_gdsii" = "no"; then
-        AC_MSG_WARN([Disabling GDSII file support because libGDSII was not found])
-    else
-        AC_DEFINE(HAVE_LIBGDSII, 1, [Define if we have & link libGDSII])
-        LIBGDSII_LIBS="-lGDSII"
-    fi
-
+AC_CHECK_HEADER(libGDSII.h, [have_gdsii=maybe], [have_gdsii=no])
+if test $have_gdsii = maybe; then
+  AC_CHECK_LIB(GDSII, libGDSIIExists)
 fi
-AC_SUBST(LIBGDSII_LIBS)
 
 ##############################################################################
 # The following function is used only for debugging.  Note that
