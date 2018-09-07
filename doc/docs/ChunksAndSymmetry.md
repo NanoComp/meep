@@ -71,7 +71,7 @@ to yield a 40 &times; 30 grid.
 In a single-processor run, `libmeep` subdivides this geometry
 into 9 chunks (click for larger image):
 
-<p align="center"> <a href="/images/Chunks_NP1.png"><img src="/images/Chunks_NP1.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
+<p align="center"> <a href="../images/Chunks_NP1.png"><img src="../images/Chunks_NP1.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
 (The width of the 8 chunks around the perimeter is set by the PML thickness.)
 
@@ -91,7 +91,7 @@ chunk, these are represented by `ivecs` named `is` and `ie`
 Here's an example of how this looks for chunk 3 in the figure
 above:
 
-<p align="center"> <a href="/images/ChunkStatistics.png"><img src="/images/ChunkStatistics.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
+<p align="center"> <a href="../images/ChunkStatistics.png"><img src="../images/ChunkStatistics.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
 In this case we have `is=(29,-29)` and `ie=(39,-19)`.
 
@@ -103,7 +103,7 @@ can be assigned to different processors.
 For example, on a run with 8 processors, the 9 chunks identified
 in the single-processor case become 24 chunks:
 
-<p align="center"> <a href="/images/Chunks_NP8.png"><img src="/images/Chunks_NP8.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
+<p align="center"> <a href="../images/Chunks_NP8.png"><img src="../images/Chunks_NP8.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
 In this image, grid points with different $z$ coordinates (different
 heights off the $xy$ plane) are handled by different processors,
@@ -174,14 +174,14 @@ symmetry (symmetry under reflection about the $x$-axis) eliminates
 points in the upper half-plane $(y>0)$; the points that remain are
 now subdivided into 6 chunks (in the single-processor case):
 
-<p align="center"> <a href="/images/Chunks_YSymmetry.png"><img src="/images/Chunks_YSymmetry.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
+<p align="center"> <a href="../images/Chunks_YSymmetry.png"><img src="../images/Chunks_YSymmetry.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
 Adding an *X* mirror symmetry on top of this (so that now the geometry has
 both *X* and *Y* mirror symmetry) reduces the number of stored grid points by an
 additional factor of 2; now the geometry is subdivided into just 4 chunks
 in the single-processor case:
 
-<p align="center"> <a href="/images/Chunks_XYSymmetry.png"><img src="/images/Chunks_XYSymmetry.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
+<p align="center"> <a href="../images/Chunks_XYSymmetry.png"><img src="../images/Chunks_XYSymmetry.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
 In these figures, points in shaded regions are "children"---that is, points
 for which meep stores no field components, since they are related by symmetry
