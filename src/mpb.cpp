@@ -98,6 +98,8 @@ typedef struct eigenmode_data
    double group_velocity;
  } eigenmode_data;
 
+#define TWOPI 6.2831853071795864769252867665590057683943388
+
 /*******************************************************************/
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
@@ -133,8 +135,13 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   int nz = n[2];
   double r[3] = {0,0,0};
   vec p0(p - center);
-  LOOP_OVER_DIRECTIONS(p.dim, d)
-   r[d%3] = p0.in_direction(d) / s[d%3] + 0.5;
+  double phase = 0;
+  LOOP_OVER_DIRECTIONS(p.dim, d) {
+    double pd = p0.in_direction(d);
+    int i = d%3;
+    phase += edata->Gk[i] * pd; // k dot p
+    r[i] = pd / s[i] + 0.5;
+  }
   double rx = r[0], ry = r[1], rz = r[2];
 
   /* linearly interpolate the amplitude from MPB at point p */
@@ -173,7 +180,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
 #undef D
 
   return (complex<double>(double(real(ret)), double(imag(ret)))
-	  * amp_func(p));
+	  * amp_func(p)) * std::polar(1.0, TWOPI*phase);
 }
 
 /***************************************************************/
