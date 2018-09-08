@@ -34,17 +34,20 @@
 ;; restricted to a two-level gain medium, as it simulates the populations of every individual
 ;; atomic energy level.
 
-;; If you are using a 2 level gain model, one can compare against
+;; If you are using a 2 level gain model, you can compare against
 ;; results which only simulate the atomic inversion, using the definitions
 ;; gamma_parallel = pumping-rate + rate-21
 ;; D_0 = (pumping-rate - rate-21)/(pumping-rate + rate-21) * N0
+
+;; In fact, even if you arn't using a 2 level gain model, you can compare against an effective
+;; two level model using the formula provided in Cerjan et al., Opt. Express 20, 474 (2012).
 
 ;; Here, D_0 as written above is not yet in "SALT" units. To make this conversion,
 ;; D_0 (SALT) = theta^2/(hbar*gamma_perp) * D_0 (as written above)
 
 ;; Finally, note the lack of 4*pi in the above conversion that is written in many published SALT papers.
 ;; This 4*pi comes from using Gaussian units, in which the displacement field, D = E + 4*pi*P, whereas
-;; in SI units, D = eps0*E + P.
+;; in SI units, D = eps0*E + P, which is what MEEP uses.
 
 ;; Gain medium pump and decay rates are specified in units of c/a.
 
@@ -71,7 +74,7 @@
 			      (lambda (p) (if (= (vector3-z p) (+ (* -0.5 sz) (* 0.5 Lcav))) 1 0)))
 
 ;; Specify the end time:
-(define-param endt 5000)
+(define-param endt 7000)
 ;; Note that the total number of time steps run is endt*resolution*2. This is the origin of the extra
 ;; factor of 2 in the definition of dt in fieldfft_meep.m.
 

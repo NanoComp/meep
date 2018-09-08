@@ -23,8 +23,6 @@
 #include "meep_internals.hpp"
 #include "config.h"
 
-using namespace std;
-
 namespace meep {
 
 multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
@@ -306,7 +304,7 @@ void multilevel_susceptibility::update_P
       }
       EdP32 *= 0.03125; /* divide by 32 */
       EPave64 *= 0.015625; /* divide by 64 (extra factor of 1/2 is from P_current + P_previous) */ 
-      for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T + t] * EdP32; // + alpha[l*T + t]*gperpdt*EPave64 -- FIX
+      for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T+t]*EdP32 + alpha[l*T+t]*gperpdt*EPave64;
     }
 
     // N = GammaInv * Ntmp
@@ -318,11 +316,11 @@ void multilevel_susceptibility::update_P
 
   // each P is updated as a damped harmonic oscillator
   for (int t = 0; t < T; ++t) {
-    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi;
-    const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
+    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi, gperp = gamma[t]*pi;
+    const double omega0dtsqrCorrected = omega2pi*omega2pi*dt*dt + gperp*gperp*dt*dt;
     const double gamma1inv = 1 / (1 + g2pi*dt2), gamma1 = (1 - g2pi*dt2);
     const double dtsqr = dt*dt;
-    // note that gamma[t]*2pi = 2*gamma_perp as one would usually write it in SALT. -- AWC
+    // note that gamma[t]*2*pi = 2*gamma_perp as one would usually write it in SALT. -- AWC
     
     // figure out which levels this transition couples
     int lp = -1, lm = -1;
@@ -364,9 +362,9 @@ void multilevel_susceptibility::update_P
 	    // dNi is population inversion for this transition
 	    double dNi = 0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
 				 -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
-	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqr)
+	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqrCorrected) 
 				- gamma1 * pp[i]
-				- dtsqr * (st * s[i] * w[i]) * dNi); // FIX gammaPerp^2 term
+				- dtsqr * (st * s[i] * w[i]) * dNi);
 	    pp[i] = pcur;
 	  }
 	}
