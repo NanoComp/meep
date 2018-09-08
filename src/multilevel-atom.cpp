@@ -23,8 +23,6 @@
 #include "meep_internals.hpp"
 #include "config.h"
 
-using namespace std;
-
 namespace meep {
 
 multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
@@ -259,9 +257,10 @@ void multilevel_susceptibility::update_P
 
     // Ntmp = (I - Gamma * dt/2) * N
     for (int l1 = 0; l1 < L; ++l1) {
-      Ntmp[l1] = (1.0 - Gamma[l1*L + l1]*dt2) * N[l1]; // diagonal term
-      for (int l2 = 0; l2 < l1; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
-      for (int l2 = l1+1; l2 < L; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
+      Ntmp[l1] = 0;
+      for (int l2 = 0; l2 < L; ++l2) {
+	Ntmp[l1] += ((l1 == l2) - Gamma[l1*L+l2]*dt2) * N[l2];
+      }
     }
 
     // compute E*8 at point i
@@ -281,22 +280,31 @@ void multilevel_susceptibility::update_P
 
     // Ntmp = Ntmp + alpha * E * dP
     for (int t = 0; t < T; ++t) {
-      // compute 32 * E * dP at point i
+      // compute 32 * E * dP and 64 * E * P at point i
       double EdP32 = 0;
+      double EPave64 = 0;
+      double gperpdt = gamma[t]*pi*dt;
       for (idot = 0; idot < 3 && cdot[idot] != Dielectric; ++idot) {
 	realnum *p = d->P[cdot[idot]][0][t], *pp = d->P_prev[cdot[idot]][0][t];
 	realnum dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
 	  - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
+	realnum Pave2 = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
+	  + (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
 	EdP32 += dP * E8[idot][0];
+	EPave64 += Pave2 * E8[idot][0];
 	if (d->P[cdot[idot]][1]) {
 	  p = d->P[cdot[idot]][1][t]; pp = d->P_prev[cdot[idot]][1][t];
 	  dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
+	    - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
+	  Pave2 = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
 	    + (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
 	  EdP32 += dP * E8[idot][1];
+	  EPave64 += Pave2 * E8[idot][1];
 	}
       }
       EdP32 *= 0.03125; /* divide by 32 */
-      for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T + t] * EdP32;
+      EPave64 *= 0.015625; /* divide by 64 (extra factor of 1/2 is from P_current + P_previous) */ 
+      for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T+t]*EdP32 + alpha[l*T+t]*gperpdt*EPave64;
     }
 
     // N = GammaInv * Ntmp
@@ -308,10 +316,12 @@ void multilevel_susceptibility::update_P
 
   // each P is updated as a damped harmonic oscillator
   for (int t = 0; t < T; ++t) {
-    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi;
-    const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
-    const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
-
+    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi, gperp = gamma[t]*pi;
+    const double omega0dtsqrCorrected = omega2pi*omega2pi*dt*dt + gperp*gperp*dt*dt;
+    const double gamma1inv = 1 / (1 + g2pi*dt2), gamma1 = (1 - g2pi*dt2);
+    const double dtsqr = dt*dt;
+    // note that gamma[t]*2*pi = 2*gamma_perp as one would usually write it in SALT. -- AWC
+    
     // figure out which levels this transition couples
     int lp = -1, lm = -1;
     for (int l = 0; l < L; ++l) {
@@ -350,11 +360,11 @@ void multilevel_susceptibility::update_P
 	    realnum pcur = p[i];
 	    const realnum *Ni = N + i*L;
 	    // dNi is population inversion for this transition
-	    double dNi = -0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
-				  -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
-	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqr)
+	    double dNi = 0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
+				 -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
+	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqrCorrected) 
 				- gamma1 * pp[i]
-				+ omega0dtsqr * (st * s[i] * w[i])) * dNi;
+				- dtsqr * (st * s[i] * w[i]) * dNi);
 	    pp[i] = pcur;
 	  }
 	}
