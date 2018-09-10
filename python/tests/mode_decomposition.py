@@ -49,7 +49,8 @@ class TestModeDecomposition(unittest.TestCase):
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, src_pt, 1e-9))
 
-        incident_coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(flux, [1], eig_parity=mp.ODD_Z + mp.EVEN_Y)
+        res = sim.get_eigenmode_coefficients(flux, [1], eig_parity=mp.ODD_Z + mp.EVEN_Y)
+        incident_coeffs = res.alpha
         incident_flux = mp.get_fluxes(flux)
         incident_flux_data = sim.get_flux_data(flux)
 
@@ -76,7 +77,8 @@ class TestModeDecomposition(unittest.TestCase):
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, src_pt, 1e-9))
 
-        coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(refl_flux, [1], eig_parity=mp.ODD_Z + mp.EVEN_Y)
+        res = sim.get_eigenmode_coefficients(refl_flux, [1], eig_parity=mp.ODD_Z + mp.EVEN_Y)
+        coeffs = res.alpha
         taper_flux = mp.get_fluxes(refl_flux)
 
         self.assertAlmostEqual(abs(coeffs[0, 0, 1])**2 / abs(incident_coeffs[0, 0, 0])**2,
