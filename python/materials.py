@@ -269,18 +269,24 @@ Ag_f4 = 0.840
 Ag_frq4 = 9.083*eV_um_scale      # 0.137 um
 Ag_gam4 = 0.916*eV_um_scale
 Ag_sig4 = Ag_f4*Ag_plasma_frq**2/Ag_frq4**2
+Ag_f5 = 5.646
+Ag_frq5 = 20.29*eV_um_scale      # 0.137 um
+Ag_gam5 = 2.419*eV_um_scale
+Ag_sig5 = Ag_f5*Ag_plasma_frq**2/Ag_frq5**2
 
 Ag_susc = [mp.DrudeSusceptibility(frequency=Ag_frq0, gamma=Ag_gam0, sigma=Ag_sig0),
            mp.LorentzianSusceptibility(frequency=Ag_frq1, gamma=Ag_gam1, sigma=Ag_sig1),
            mp.LorentzianSusceptibility(frequency=Ag_frq2, gamma=Ag_gam2, sigma=Ag_sig2),
            mp.LorentzianSusceptibility(frequency=Ag_frq3, gamma=Ag_gam3, sigma=Ag_sig3),
-           mp.LorentzianSusceptibility(frequency=Ag_frq4, gamma=Ag_gam4, sigma=Ag_sig4)]
+           mp.LorentzianSusceptibility(frequency=Ag_frq4, gamma=Ag_gam4, sigma=Ag_sig4),
+           mp.LorentzianSusceptibility(frequency=Ag_frq5, gamma=Ag_gam5, sigma=Ag_sig5)]
 
 Ag = mp.Medium(epsilon=1.0, E_susceptibilities=Ag_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
 
 # gold (Au)
+au_range = mp.FreqRange(min=um_scale/6.1992, max=um_scale/0.24797)
 
 Au_plasma_frq = 9.03*eV_um_scale
 Au_f0 = 0.760
@@ -303,14 +309,19 @@ Au_f4 = 0.601
 Au_frq4 = 4.304*eV_um_scale      # 0.288 um
 Au_gam4 = 2.494*eV_um_scale
 Au_sig4 = Au_f4*Au_plasma_frq**2/Au_frq4**2
+Au_f5 = 4.384
+Au_frq5 = 13.32*eV_um_scale      # 0.288 um
+Au_gam5 = 2.214*eV_um_scale
+Au_sig5 = Au_f5*Au_plasma_frq**2/Au_frq5**2
 
 Au_susc = [mp.DrudeSusceptibility(frequency=Au_frq0, gamma=Au_gam0, sigma=Au_sig0),
            mp.LorentzianSusceptibility(frequency=Au_frq1, gamma=Au_gam1, sigma=Au_sig1),
            mp.LorentzianSusceptibility(frequency=Au_frq2, gamma=Au_gam2, sigma=Au_sig2),
            mp.LorentzianSusceptibility(frequency=Au_frq3, gamma=Au_gam3, sigma=Au_sig3),
-           mp.LorentzianSusceptibility(frequency=Au_frq4, gamma=Au_gam4, sigma=Au_sig4)]
+           mp.LorentzianSusceptibility(frequency=Au_frq4, gamma=Au_gam4, sigma=Au_sig4),
+           mp.LorentzianSusceptibility(frequency=Au_frq5, gamma=Au_gam5, sigma=Au_sig5)]
 
-Au = mp.Medium(epsilon=1.0, E_susceptibilities=Au_susc, valid_freq_range=metal_range)
+Au = mp.Medium(epsilon=1.0, E_susceptibilities=Au_susc, valid_freq_range=au_range)
 
 #------------------------------------------------------------------
 
@@ -643,7 +654,7 @@ Au_JC_visible = mp.Medium(epsilon=6.1599, E_susceptibilities=Au_JC_visible_susc)
 #------------------------------------------------------------------
 
 # gold (Au)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Au_visible_frq0 = 1/(0.0473629248511456*um_scale)
 Au_visible_gam0 = 1/(0.255476199605166*um_scale)
 Au_visible_sig0 = 1
@@ -662,7 +673,7 @@ Au_visible = mp.Medium(epsilon=0.6888, E_susceptibilities=Au_visible_susc, valid
 ## WARNING: unstable; field divergence may occur
 
 # silver (Au)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Ag_visible_frq0 = 1/(0.142050162130618*um_scale)
 Ag_visible_gam0 = 1/(18.0357292925015*um_scale)
 Ag_visible_sig0 = 1
@@ -681,7 +692,7 @@ Ag_visible = mp.Medium(epsilon=0.0067526, E_susceptibilities=Ag_visible_susc, va
 ## WARNING: unstable; field divergence may occur
 
 # aluminum (Al)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Al_visible_frq0 = 1/(0.0625841659042985*um_scale)
 Al_visible_gam0 = 1/(0.606007002962666*um_scale)
 Al_visible_sig0 = 1
@@ -698,7 +709,7 @@ Al_visible = mp.Medium(epsilon=0.13313, E_susceptibilities=Al_visible_susc, vali
 #------------------------------------------------------------------
 
 # chroimium (Cr)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Cr_visible_frq0 = 1/(0.118410119507342*um_scale)
 Cr_visible_gam0 = 1/(0.628596264869804*um_scale)
 Cr_visible_sig0 = 1
@@ -717,7 +728,7 @@ Cr_visible = mp.Medium(epsilon=2.7767, E_susceptibilities=Cr_visible_susc, valid
 ## WARNING: unstable; field divergence may occur
 
 # titanium (Ti)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 Ti_visible_frq0 = 1/(0.101331651921602*um_scale)
 Ti_visible_gam0 = 1/(0.365743382258719*um_scale)
 Ti_visible_sig0 = 1
@@ -1004,4 +1015,3 @@ CLS_sig1 = 1.124
 CLS_susc = [mp.LorentzianSusceptibility(frequency=CLS_frq1, gamma=CLS_gam1, sigma=CLS_sig1)]
 
 CLS = mp.Medium(epsilon=1.0, E_susceptibilities=CLS_susc, valid_freq_range=CLS_range)
-
