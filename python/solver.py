@@ -969,6 +969,9 @@ class ModeSolver(object):
 
         return try_all_and_repeat(k0) if n(k0) < n(k) else try_all_and_repeat(k)
 
+    def get_dominant_planewave(self, band):
+        return self.mode_solver.get_dominant_planewave(band)
+
 
 # Predefined output functions (functions of the band index), for passing to `run`
 

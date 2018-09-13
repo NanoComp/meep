@@ -180,6 +180,8 @@ struct mode_solver {
                                  field_integral_energy_func energy_func,
                                  void *py_func);
 
+  vector3 get_dominant_planewave(int band);
+
 private:
   int kpoint_index;
   scalar_complex *curfield;
