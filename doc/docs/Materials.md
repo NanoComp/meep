@@ -116,6 +116,40 @@ Magnetic Permeability μ
 
 All of the above features that are supported for the electric permittivity ε are also supported for the magnetic permeability μ. That is, Meep supports μ with dispersion from magnetic conductivity and Lorentzian resonances, as well as magnetic $\chi^{(2)}$ and $\chi^{(3)}$ nonlinearities. The description of these is exactly the same as above, so we won't repeat it here &mdash; just take the above descriptions and replace ε, **E**, **D**, and σ<sub>D</sub> by μ, **H**, **B**, and σ<sub>B</sub>, respectively.
 
+Saturable Gain and Absorption
+-----------------------------
+
+For some problems, simply adding gain or loss using a [conductivity term](Materials.md#conductivity-and-complex) does not correctly model the real system, and will lead to unphysical results. For example, attempting to model a laser using a conductivity gain model will yield a diverging electric field, as the conductivity gain cannot saturate, and will continue to amplify stronger and stronger electric fields within the laser cavity. Instead, such systems must be modeled using a saturable gain medium, in which the available gain is reduced for stronger electric fields, which prohibits the electric field from diverging in this manner.
+
+Meep supports saturable gain and aborbing media through the use of an additional set of auxiliary equations which model the population densities of the energy levels in an atomic gain medium and are coupled to the polarization. The form of the polarization equation is slightly different for saturable media,
+$$\frac{d^2\mathbf{P}_n}{dt^2} + \Gamma_n \frac{d\mathbf{P}_n}{dt} + \left(\omega_n^2 + \left(\frac{\Gamma_n}{2} \right)^2 \right) \mathbf{P}_n = -\sigma_n \Delta N(\mathbf{x},t) \mathbf{E}(\mathbf{x},t)$$
+in which $\Delta N(\mathbf{x},t) = N_{\textrm{upper}} - N_{\textrm{lower}}$ is the inversion of the two atomic energy levels which comprise the $n$th lasing transition, $\omega_n$ is the central frequency of the atomic transition, $\Gamma_n$ is the full width half-maximum of the width of the transition, and $\sigma_n$ is the strength of the coupling between the electric field and the atomic medium. The atomic level population densities, $N_i(\mathbf{x},t)$, each satisfy a rate equation of the form
+$$\frac{\partial N_i}{\partial t} = - \sum_j \gamma_{ij} N_i + \sum_j \gamma_{ji} N_j + \left[ \pm \frac{1}{\omega_n \hbar} \mathbf{E}(\mathbf{x},t) \cdot \left( \frac{\partial \mathbf{P}}{\partial t} + \frac{\Gamma_n}{2} \mathbf{P} \right) \right]$$
+in which $\gamma_{ij}$ is the non-radiative decay or pumping rate from level $i$ to level $j$. The final term in brackets is only included if level $i$ is either the upper or lower level of the $n$th transition, where being the upper atomic level corresponds to $+$, and being the lower level corresponds to $-$.
+
+In Meep, one can specify an arbitrary number of atomic levels with any number of lasing transitions between them, enabling one to realize common two- and four-level saturable media, as well as entire manifolds of levels and transitions found in realistic models of saturable media. When assigning the necessary transition frequencies, $\omega_n$, and widths, $\Gamma_n$, of the atomic transition in Meep, these are specified in units of $c/2\pi a$ as $f_n = \omega_n / 2\pi$ and $\Gamma_n / 2\pi$. However, the pumping and decay rates, $\gamma_{ij}$, are instead specified in units of $c/a$. Finally, as part of initializing a saturable medium, the total atomic density, $N_0$, must be specified.
+
+Although Meep is using an oscillator model equation for the atomic polarization and level populations, instead of the Bloch equations, Meep retains the two terms usually approximated to zero when deriving the oscillator model equations from the Bloch equations, and so these equations are exactly equivalent to the Bloch equations. See Section 6.4.1 of [Nonlinear Optics (third edition)](https://www.amazon.com/Nonlinear-Optics-Third-Robert-Boyd/dp/0123694701) by R. W. Boyd for more details.
+
+To verify this equivalence between the different equations for modeling the polarization, as well as confirm that saturable media have been properly implemented in Meep, we compare results between Meep, an independent FDTD using the Bloch equations and the frequency domain steady-state *ab initio* laser theory (SALT), using a 1D, one-sided, Fabry-Perot cavity containing a two-level gain medium that is made to exhibit steady-state lasing. The cavity has a length of $a = 1$, a background index of $n = 1.5$, an atomic transition frequency of $\omega_n = 40$, with width $\Gamma_n = 8$, the decay rate from level $2$ to $1$ is $\gamma_{21} = 0.005$, the pumping rate from $1$ to $2$ is $\gamma_{12} = 0.0051$, and the total atomic density of the system was varied to produce different amounts of gain in the absence of an electric field (in many parts of the literature, this is refered to as $D_0$). Both close to the initial lasing threshold,
+![Near threshold comparison](images/meep_salt_comparison_thresh.png)
+and past the third lasing threshold,
+![Near threshold comparison](images/meep_salt_comparison_full.png)
+excellent agreement is seen between all three methods. Note that for this two-level atomic gain model, we can calculate $D_0$ as
+$$ D_0 = \frac{\gamma_{12} - \gamma_{21}}{\gamma_{12} + \gamma_{21}} N_0$$
+and analogous relationships can be found for systems with more than two atomic levels in [Optics Express, Vol. 20, pp. 474, 2012](https://www.osapublishing.org/oe/abstract.cfm?URI=oe-20-1-474).
+
+For the ease of convenience in attempting to convert between different variable naming conventions found in different references, we note that:
+$$ \omega_n \; (\textrm{Meep}) = \omega_{ba} \; (\textrm{Boyd}) = \omega_a \; (\textrm{SALT}) $$
+$$ \Gamma_n \; (\textrm{Meep}) = \frac{2}{T_2} \; (\textrm{Boyd}) = 2\gamma_\perp \; (\textrm{SALT}) $$
+$$ \sigma_n \; (\textrm{Meep}) = \frac{2 \omega_{ba} |\mu_{ba}|^2}{\hbar} \; (\textrm{Boyd}) = \frac{2 \omega_a |\theta|^2}{\hbar} \; (\textrm{SALT}) $$
+
+Further reading on SALT, both as an introduction and for details on atomic media with an arbitrary number of levels can be found in [Optics Express, Vol. 23, pp. 6455, 2015](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-23-5-6455). To convert Meep outputs to SALT units, use
+$$ D_0 \; (\textrm{SALT}) = \frac{|\theta|^2}{\hbar \gamma_\perp} D_0 \; (\textrm{Meep}) $$
+and
+$$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{\gamma_\perp \gamma_\parallel}} \mathbf{E} \; (\textrm{Meep}) $$
+and for a two level gain medium, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$.
+
 Materials Library
 -----------------
 
