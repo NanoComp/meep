@@ -29,19 +29,6 @@ lcen = 1.55
 fcen = 1/lcen
 df = 0.2*fcen
 
-# extract center and size of meep::volume
-def get_center_and_size(v):
-    rmin = v.get_min_corner()
-    rmax = v.get_max_corner()
-    v3rmin = mp.Vector3(rmin.x(),rmin.y(),rmin.z())
-    v3rmax = mp.Vector3(rmax.x(),rmax.y(),rmax.z())
-    if v.dim<mp.D3:
-      v3rmin.z = v3rmax.z=0
-    if v.dim<mp.D2:
-      v3rmin.y = v3rmax.y=0
-    center = 0.5*(v3rmin+v3rmax)
-    size = v3rmax-v3rmin
-    return (center,size)
 
 def main(args):
     d  = args.d
@@ -57,12 +44,12 @@ def main(args):
     upper_branch = mp.get_GDSII_prisms(silicon, gdsII_file, UPPER_BRANCH_LAYER, si_zmin, si_zmax)
     lower_branch = mp.get_GDSII_prisms(silicon, gdsII_file, LOWER_BRANCH_LAYER, si_zmin, si_zmax)
 
-    (cell_center,cell_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,CELL_LAYER, cell_zmin, cell_zmax))
-    (p1_center,p1_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT1_LAYER, si_zmin, si_zmax))
-    (p2_center,p2_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT2_LAYER, si_zmin, si_zmax))
-    (p3_center,p3_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT3_LAYER, si_zmin, si_zmax))
-    (p4_center,p4_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT4_LAYER, si_zmin, si_zmax))
-    (src_center,src_size) = get_center_and_size(mp.get_GDSII_volume(gdsII_file,SOURCE_LAYER, si_zmin, si_zmax))
+    (cell_center,cell_size) = mp.get_center_and_size(mp.get_GDSII_volume(gdsII_file,CELL_LAYER, cell_zmin, cell_zmax))
+    (p1_center,p1_size) = mp.get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT1_LAYER, si_zmin, si_zmax))
+    (p2_center,p2_size) = mp.get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT2_LAYER, si_zmin, si_zmax))
+    (p3_center,p3_size) = mp.get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT3_LAYER, si_zmin, si_zmax))
+    (p4_center,p4_size) = mp.get_center_and_size(mp.get_GDSII_volume(gdsII_file,PORT4_LAYER, si_zmin, si_zmax))
+    (src_center,src_size) = mp.get_center_and_size(mp.get_GDSII_volume(gdsII_file,SOURCE_LAYER, si_zmin, si_zmax))
 
     # displace upper and lower branches of coupler (as well as source and flux regions)
     if d != default_d:
