@@ -975,13 +975,12 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 **`get_eigenmode(omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                  parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False)`**
 —
-...
-Returns an `EigenmodeData` instance with the following fields:
-+ `band_num`: ...
-+ `omega`: ...
-+ `group_velocity`: ...
-+ `k`: ...
-+ `amplitude(point, component)`: ...
+The parameters of this routine are the same as that of `get_eigenmode_coefficients` or eigenmode sources, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
++ `band_num`: same as the `band_num` parameter
++ `omega`: the computed freuqency, same as `omega_src` if `match_frequency=True`
++ `group_velocity`: the group velocity of the mode in `direction`
++ `k`: the Bloch wavevector of the mode in `direction`
++ `amplitude(point, component)`: the (complex) value of the given E or H field `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in space (interpreted with Bloch-periodic boundary conditions if you give a point outside the original `eig_vol`).
 
 **`get_eigenmode_freqs(flux)`**
 —
