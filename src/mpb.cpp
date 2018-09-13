@@ -213,7 +213,8 @@ void *fields::get_eigenmode(double omega_src,
                             int parity,
                             double resolution,
                             double eigensolver_tol,
-                            bool verbose)
+                            bool verbose,
+                            double *kdom)
 {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
@@ -486,6 +487,10 @@ void *fields::get_eigenmode(double omega_src,
   edata->band_num       = band_num;
   edata->omega          = omega_src;
   edata->group_velocity = (double) vgrp;
+
+  if (kdom)
+    maxwell_dominant_planewave(mdata, H, band_num, kdom);
+
   return (void *)edata;
 }
 
@@ -618,7 +623,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints)
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom_list)
 {
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -643,10 +648,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
+      double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       void *mode_data
        = get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint,
-                       match_frequency, parity, eig_resolution, eigensolver_tol);
+                       match_frequency, parity, eig_resolution, eigensolver_tol, false, kdom);
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2*nb*num_freqs + 2*nf] = coeffs[2*nb*num_freqs + 2*nf + 1] = 0;
         if (vgrp) vgrp[nb*num_freqs + nf] = 0;
@@ -657,6 +663,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       double vg=get_group_velocity(mode_data);
       if (vgrp) vgrp[nb*num_freqs + nf]=vg;
       if (kpoints) kpoints[nb*num_freqs + nf]=get_k(mode_data);
+      if (kdom) kdom_list[nb] = vec(kdom[0], kdom[1], kdom[2]);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/

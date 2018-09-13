@@ -50,7 +50,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         std::complex<double> *coeffs,
                                         double *vgrp,
                                         kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data)
+                                        void *user_kpoint_data,
+                                        vec *kdom_list)
 ```
 The following are the parameters:
 
@@ -80,6 +81,7 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
++ `kdom_list` is a user allocated array of `num_bands` `meep::vec` objects. If non-null, this array is filled in with the dominant planewave vectors for bands 1 to `num_bands` (index `i` is band `i + 1`).
 
 ```c++
  int num_bands = bands.size();

@@ -71,7 +71,9 @@ freqs = mp.get_eigenmode_freqs(mode_mon)
 
 nmode = 10
 for nm in range(nmode):
-  coeffs, vgrps, kpoints = sim.get_eigenmode_coefficients(mode_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+  res = sim.get_eigenmode_coefficients(mode_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
+  coeffs = res.alpha
+  kpoints = res.kpoints
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
     mode_angle = math.degrees(math.acos(kpoints[nf].x/freqs[nf]))

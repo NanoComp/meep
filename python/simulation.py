@@ -24,6 +24,7 @@ except NameError:
     basestring = str
 
 
+EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom'])
 FluxData = namedtuple('FluxData', ['E', 'H'])
 ForceData = namedtuple('ForceData', ['offdiag1', 'offdiag2', 'diag'])
 NearToFarData = namedtuple('NearToFarData', ['F'])
@@ -1362,7 +1363,7 @@ class Simulation(object):
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
         vgrp = np.zeros(num_bands * flux.Nfreq)
 
-        kpoints = mp.get_eigenmode_coefficients_and_kpoints(
+        kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
             self.fields,
             flux.swigobj,
             eig_vol,
@@ -1375,7 +1376,7 @@ class Simulation(object):
             kpoint_func
         )
 
-        return np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints
+        return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
 
     def get_eigenmode(self, omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False):
