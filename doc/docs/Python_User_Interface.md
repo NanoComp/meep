@@ -979,6 +979,16 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
+**`get_eigenmode(omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
+                 parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False)`**
+—
+The parameters of this routine are the same as that of `get_eigenmode_coefficients` or eigenmode sources, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
++ `band_num`: same as the `band_num` parameter
++ `omega`: the computed freuqency, same as `omega_src` if `match_frequency=True`
++ `group_velocity`: the group velocity of the mode in `direction`
++ `k`: the Bloch wavevector of the mode in `direction`
++ `amplitude(point, component)`: the (complex) value of the given E or H field `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in space (interpreted with Bloch-periodic boundary conditions if you give a point outside the original `eig_vol`).
+
 **`get_eigenmode_freqs(flux)`**
 —
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
