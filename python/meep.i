@@ -450,10 +450,10 @@ struct py_eigenmode_data {
 
 py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                  const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
-                                 bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                 bool verbose) {
+                                 bool match_frequency, int parity, double resolution, double eigensolver_tol, 
+                                 double width, bool verbose) {
     void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
-                                    parity, resolution, eigensolver_tol, verbose);
+                                    parity, resolution, eigensolver_tol, width, verbose);
     meep::eigenmode_data *emdata = (meep::eigenmode_data *)data;
 
     py_eigenmode_data result = {};
@@ -1166,7 +1166,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                  const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                  bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                 bool verbose);
+                                 double width, bool verbose);
 
 %ignore eps_func;
 %ignore inveps_func;

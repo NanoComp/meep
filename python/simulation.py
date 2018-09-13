@@ -1378,7 +1378,7 @@ class Simulation(object):
         return np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints
 
     def get_eigenmode(self, omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
-                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False):
+                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False, width=0.0):
 
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode")
@@ -1391,7 +1391,7 @@ class Simulation(object):
 
         swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
         emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
-                                   match_frequency, parity, resolution, eigensolver_tol, verbose)
+                                   match_frequency, parity, resolution, eigensolver_tol, width, verbose)
 
         return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk, emdata.data)
 

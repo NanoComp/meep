@@ -213,7 +213,7 @@ void *fields::get_eigenmode(double omega_src,
                             int parity,
                             double resolution,
                             double eigensolver_tol,
-                            bool verbose)
+                            double width, bool verbose)
 {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
@@ -462,6 +462,18 @@ void *fields::get_eigenmode(double omega_src,
   for (int n = 0; n < NFFT; ++n)
    efield[n] *= scale;
 
+  /*--------------------------------------------------------------*/
+  /*- renormalize the overall amplitude to yield unit total flux  */
+  /*--------------------------------------------------------------*/
+  if (width!=0.0)
+   { double factor = 2.0/(width*sqrt(vgrp));
+     cdouble *efield=(cdouble *)fft_data_E, *hfield=(cdouble *)(mdata->fft_data);
+     for (int n = 0; n < NFFT; ++n)
+      { efield[n] *= factor;
+        hfield[n] *= factor;
+      }
+   }
+
   maxwell_compute_e_from_d(mdata, fft_data_E, 1);
 
   /*--------------------------------------------------------------*/
@@ -486,6 +498,7 @@ void *fields::get_eigenmode(double omega_src,
   edata->band_num       = band_num;
   edata->omega          = omega_src;
   edata->group_velocity = (double) vgrp;
+
   return (void *)edata;
 }
 
@@ -550,7 +563,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
                                     eig_vol, band_num,
                                     kpoint, match_frequency,
                                     parity, resolution,
-                                    eigensolver_tol);
+                                    eigensolver_tol,
+                                    src.get_width());
 
   /* add_volume_source amp_fun coordinates are relative to where.center();
      this is not the default in get_eigenmode because where-relative coordinates
@@ -645,8 +659,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       double freq  = freq_min + nf*dfreq;
       if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       void *mode_data
-       = get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint,
-                       match_frequency, parity, eig_resolution, eigensolver_tol);
+       = get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint, match_frequency,
+                       parity, eig_resolution, eigensolver_tol);
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2*nb*num_freqs + 2*nf] = coeffs[2*nb*num_freqs + 2*nf + 1] = 0;
         if (vgrp) vgrp[nb*num_freqs + nf] = 0;
@@ -686,12 +700,13 @@ void *fields::get_eigenmode(double omega_src,
                             const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution,
-                            double eigensolver_tol, bool verbose) {
-
+                            double eigensolver_tol, 
+                            double width, bool verbose) 
+{
   (void) omega_src; (void) d; (void) where; (void) eig_vol;
   (void) band_num;  (void) kpoint; (void) match_frequency;
   (void) parity; (void) resolution; (void) eigensolver_tol;
-  (void) verbose;
+  (void) width; (void) verbose;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
@@ -719,9 +734,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints)
 
-{ (void) flux; (void) eig_vol; (void) bands; (void)num_bands;
-  (void) parity; (void) eig_resolution; (void) eigensolver_tol;
-  (void) coeffs; (void) vgrp; (void) kpoints; (void) user_kpoint_func; (void) user_kpoint_data;
+{ (void) flux; (void) eig_vol; (void) bands; (void)num_bands; (void) parity;
+  (void) eig_resolution; (void) eigensolver_tol; (void) coeffs; (void) vgrp;
+  (void) kpoints; (void) user_kpoint_func; (void) user_kpoint_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 

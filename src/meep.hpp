@@ -741,6 +741,7 @@ class src_time {
   virtual bool is_equal(const src_time &t) const { (void)t; return 1; }
   virtual std::complex<double> frequency() const { return 0.0; }
   virtual void set_frequency(std::complex<double> f) { (void) f; }
+  virtual double get_width() const { return 0.0; }
 
  private:
   double current_time;
@@ -762,6 +763,7 @@ class gaussian_src_time : public src_time {
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
+  virtual double get_width() const { return width; }
 
  private:
   double freq, width, peak_time, cutoff;
@@ -782,6 +784,7 @@ class continuous_src_time : public src_time {
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
   virtual void set_frequency(std::complex<double> f) { freq = f; }
+  virtual double get_width() const { return width; }
 
  private:
   std::complex<double> freq;
@@ -1496,7 +1499,8 @@ class fields {
                       const volume eig_vol, int band_num,
                       const vec &kpoint, bool match_frequency,
                       int parity, double resolution,
-                      double eigensolver_tol, bool verbose=false);
+                      double eigensolver_tol, double width=0.0,
+                      bool verbose=false);
 
   void add_eigenmode_source(component c, const src_time &src,
 	  		    direction d, const volume &where,
@@ -1514,7 +1518,6 @@ class fields {
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func=0,
                                   void *user_kpoint_data=0, vec *kpoints=0);
-
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
