@@ -775,6 +775,10 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
 
+**`meep.get_center_and_size(vol)`**
+—
+Utility function that takes a `meep::volume` `vol` and returns the center and size of the volume as a tuple of `Vector3`.
+
 Miscellaneous Functions
 -----------------------
 

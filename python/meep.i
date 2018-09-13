@@ -1256,6 +1256,7 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         dft_ldos,
         display_progress,
         during_sources,
+        get_center_and_size,
         get_flux_freqs,
         get_fluxes,
         get_eigenmode_freqs,
