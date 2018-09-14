@@ -112,7 +112,7 @@ You can import any arbitrary complex permittivity profile via n and k values int
 
 ### Does Meep support importing GDSII files?
 
-Yes. The [`get_GDSII_prisms`](Python_User_Interface/#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+Yes. The [`get_GDSII_prisms`](../Python_User_Interface/#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. See [Tutorial/GDSII Import](https://meep.readthedocs.io/en/latest/Python_Tutorials/GDSII_Import/) for an example. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
 
 ### Checking convergence
 

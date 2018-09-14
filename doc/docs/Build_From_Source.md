@@ -76,8 +76,35 @@ If you are installing on your personal Linux or BSD machine, then precompiled bi
 
 One thing to watch out for is that libraries like LAPACK, Guile, HDF5, etcetera, will often come split up into two or more packages: e.g. a `guile` package and a `guile-devel` package. You need to install **both** of these to compile software using the library.
 
-BLAS and LAPACK
----------------
+Required Dependencies
+---------------------
+
+### libctl
+
+[libctl](https://libctl.readthedocs.io) is required to use the Python or Scheme interfaces. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
+
+If you only want the Python interface, it is possible to install libctl without having Scheme/Guile by configuring libctl with `--without-guile`.
+
+Instead of using Guile directly in our Scheme interface, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
+
+If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
+
+### Python
+
+If you have Python on your system, then the Meep compilation scripts
+automatically build and install the `meep` Python module, which works
+with both the serial and parallel (MPI) versions of Meep.
+
+By default, Meep's Python module is installed for the program `python`
+on your system.  If you want to install using a different Python
+program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the
+Meep `configure` script.   An Anaconda (`conda`) package for Meep
+is also available on some systems.
+
+Optional Dependencies
+---------------------
+
+### BLAS and LAPACK
 
 BLAS and LAPACK libraries are required in order to install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
@@ -111,74 +138,46 @@ Note that Meep looks for LAPACK by linking with `-llapack`. This means that the 
 
 We currently recommend installing OpenBLAS which includes LAPACK so you do not need to install it separately.
 
-Harminv
--------
+### Harminv
 
 To use Meep to extract resonant frequencies and decay rates, you must install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) which requires BLAS and LAPACK.
 
 See the [Harminv installation](https://github.com/stevengj/harminv/blob/master/doc/installation.md) instructions.
 
-Python
-------
-
-If you have Python on your system, then the Meep compilation scripts
-automatically build and install the `meep` Python module, which works
-with both the serial and parallel (MPI) versions of Meep.
-
-By default, Meep's Python module is installed for the program `python`
-on your system.  If you want to install using a different Python
-program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the
-Meep `configure` script.   An Anaconda (`conda`) package for Meep
-is also available on some systems.
-
-Guile
------
-
-Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
-
-Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
-
-- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312). However, Meep contains a workaround for newer versions of Guile.
-
-libctl
-------
-
-[libctl](https://libctl.readthedocs.io) is required to use the Scheme or the Python interfaces, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
-
-(If you only want the Python interface, it is possible to install libctl without having Scheme/Guile by configuring libctl with `--without-guile`.)
-
-Instead of using Guile directly in our Scheme interface, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
-
-If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
-
-MPI
----
+### MPI
 
 Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). Most supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
 
 In order for the MPI version of the Python and Scheme interface to run successfully, we have a slightly nonstandard requirement: each process must be able to read from the disk. This way, Python and Guile can boot for each process and they can all read your simulation file in parallel. Most supercomputers satisfy this requirement. On the other hand, the C++ interface to Meep does not have this requirement.
 
-If you use Meep with MPI, you should compile HDF5 with MPI support as well (see below).
+If you use Meep with MPI, you should compile HDF5 with MPI support as well (see [below](#hdf5)).
 
-As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep` (for the Scheme interface), so it overwrites any serial installation. There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun -np 6 meep`).
+As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep` (for the Scheme interface), so it overwrites any serial installation. There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch six processes involves `mpirun -np 6 meep`).
 
-HDF5
-----
+### HDF5
 
-Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields.
+Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields. [HDF](https://www.hdfgroup.org) is a widely-used, free, portable library and file format for multi-dimensional scientific data. There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) utilities.
 
-[HDF](https://www.hdfgroup.org) is a widely-used, free, portable library and file format for multi-dimensional scientific data. There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) utilities.
-
-HDF5 includes parallel I/O support under MPI, which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other.
-
-We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large HPG clusters we strongly recommend using the parallel HDF5.
+HDF5 supports parallel I/O under MPI which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other. We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large HPC clusters we strongly recommend using the parallel HDF5.
 
 **Note:** If you have a version of HDF5 compiled with MPI parallel I/O support, then you need to use the MPI compilers to link to it, even when you are compiling the serial versions of Meep or MPB.  Just use `./configure CC=mpicc CXX=mpic++` or whatever your MPI compilers are when configuring.
+
+### libGDSII
+
+[libGDSII](https://github.com/HomerReid/libGDSII) is a library for reading [GDSII](https://en.wikipedia.org/wiki/GDSII) binary data files. GDSII is a widely-used format for modeling 2d/planar geometries using [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.) for fabrication in semiconductor foundries.
+
+### Guile
+
+Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
+
+Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
+
+- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package.
 
 Meep
 ----
 
-Once you've installed all of the prerequisites, you can install Meep via:
+Once you've installed all of the dependencies, you can install Meep via:
 
 ```sh
 ./configure
@@ -241,7 +240,7 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 
 ### Building From Source
 
-The following instructions are for building parallel PyMeep from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
 
 #### Ubuntu 16.04 and 18.04
 
@@ -304,7 +303,6 @@ cd mpb/
 sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make && sudo make install
 
-# Support for loading GDSII files (optional)
 cd ~/install
 git clone https://github.com/HomerReid/libGDSII.git
 cd libGDSII/
@@ -465,7 +463,6 @@ sh autogen.sh --enable-shared CC=/usr/local/bin/mpicc LDFLAGS="${MY_LDFLAGS}" CP
 make -j
 sudo make -j install
 
-# Support for loading GDSII files (optional)
 cd ~/install
 git clone https://github.com/HomerReid/libGDSII.git
 cd libGDSII/

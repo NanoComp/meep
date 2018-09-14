@@ -34,7 +34,7 @@ which reads `foo.ctl` and executes it, saving the output to the file `foo.out`. 
 Fields in a Waveguide
 ---------------------
 
-For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. The waveguide will have frequency-independent ε=12 and width 1 μm. The unit length in this example is 1 μm. See also [Units](Introduction.md#units-in-meep).
+For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. The waveguide will have frequency-independent ε=12 and width 1 μm. The unit length in this example is 1 μm. See also [Units](../Introduction.md#units-in-meep).
 
 ### A Straight Waveguide
 

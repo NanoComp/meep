@@ -20,7 +20,7 @@
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   **GDSII** file import for planar geometries.
 -   **Materials library** containing predefined broadband, complex refractive indices.
--   Field analyses including Poynting flux, near to far transformations, mode decomposition, frequency extraction, local density of states (LDOS), modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
+-   Field analyses including Poynting flux, mode decomposition, near to far transformations, frequency extraction, local density of states (LDOS), modal volume, Maxwell stress tensor, arbitrary functions; completely programmable.
 
 Time-Domain Simulation
 ----------------------

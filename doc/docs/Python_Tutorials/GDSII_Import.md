@@ -8,7 +8,7 @@ This tutorial demonstrates how to set up a simulation based on importing a GDSII
 ## GDSII File
 ---
 
-The directional coupler geometry we will investigate is described by the GDSII file [`coupler.gds`](https://github.com/stevengj/meep/blob/master/python/examples/examples/coupler.gds). A snapshot of this file open using the free and open-source tool [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two
+The directional coupler geometry we will investigate is described by the GDSII file [`coupler.gds`](https://github.com/stevengj/meep/blob/master/python/examples/examples/coupler.gds). A snapshot of this file viewed using the free and open-source tool [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two
 identical waveguides which are adiabatically tapered to lie close together such that their modes couple evanescently. An input pulse from Port 1 is split in two and exits through Ports 3 and 4. The focus is to find the separation distance (d) which maximizes power in Port 4 at the telecommunication wavelength of 1.55 μm. More generally, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide sections in the two regions where the two waveguides are closest and farthest away from each other, and (2) the length of the tapered section (the taper profile is often described by a hyperbolic tangent (tanh) function).
 
 <center>
@@ -25,7 +25,7 @@ The GDSII file is based on the [SiEPIC EBeam PDK](https://github.com/lukasc-ubc/
 
 + the eigenmode source and flux monitors are each defined on separate layers (1-5)
 
-Note that the volume regions of the source and flux monitors could have been specified in the simulation script rather than as part of the GDSII file.
+As an alternative, the volume regions of the source and flux monitors could have been specified in the simulation script rather than as part of the GDSII file.
 
 ---
 ## Simulation Script
@@ -170,13 +170,13 @@ We compute the coupler properties for a range of separation distances, 0.02 μm 
 
 ```
 for d in `seq 0.02 0.02 0.30`; do
-    mpirun -np 2 python coupler.py -d ${d} >> directional_coupler.out;
+    mpirun -np 2 python coupler.py -d ${d} |tee -a directional_coupler.out;
 done
 
 grep data: directional_coupler.out |cut -d , -f2- > directional_coupler.dat;
 ```
 
-The results are plotted below. When the two branches are sufficiently separated (`d` > 0.2 μm), practically all of the power from the source in Port 1 is transferred to Port 3. Some of the input power is lost due to scattering in the tapered sections. For separation distances less than approximately 0.2 μm, evanescent coupling of the modes in the two branches transfers some of the input signal into Port 4. At a distance of 0.06 μm, the power in Port 4 is maximized. For distances less than 0.06 μm, the evanescent coupling becomes ineffective. Note that there is no power in Port 2.
+The results are plotted below. When the two branches are sufficiently separated (`d` > 0.2 μm), practically all of the power from the source in Port 1 is transferred to Port 3. Some of the input power is lost due to scattering in the tapered sections where the translational symmetry of the incident waveguide structure is broken. For separation distances less than approximately 0.2 μm, evanescent coupling of the modes in the two branches transfers some of the input signal into Port 4. At a `d` of 0.06 μm, the power in Port 4 is maximized. For `d` less than 0.06 μm, the evanescent coupling becomes ineffective. Note that there is no power in Port 2.
 
 <center>
 ![](../images/directional_coupler_flux.png)

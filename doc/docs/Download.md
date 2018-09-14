@@ -2,15 +2,15 @@
 # Download
 ---
 
-The latest development source is available on [GitHub](https://github.com/stevengj/meep).
+The source repository is available on [GitHub](https://github.com/stevengj/meep).
 
-The current stable release is **version 1.5** which can be downloaded from:
+The current stable release is **version 1.6** which can be downloaded from:
 
 -   <https://github.com/stevengj/meep/releases>
 
-Refer to the [NEWS file](https://github.com/stevengj/meep/blob/master/NEWS.md) to see what's new in this version, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
+Refer to [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md) for a list of the latest changes, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
 
-Please subscribe to the **meep-announce** mailing list to receive notifications when new versions are released:
+Subscribe to the **meep-announce** mailing list to receive notifications when new versions are released:
 
 -   [meep-announce mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce)
 

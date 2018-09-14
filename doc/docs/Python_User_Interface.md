@@ -1199,7 +1199,7 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### GDSII Support
 
-This functionality is only available if Meep was built with [libGDSII](https://github.com/HomerReid/libGDSII). See the sample [build script](Build_From_Source#ubuntu-1604-and-1804) for installation instructions.
+This feature is only available if Meep is built with [libGDSII](../Build_From_Source/#libgdsii).
 
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —
@@ -1294,7 +1294,7 @@ More generally, it is possible to output an arbitrary function of position and z
 —
 Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
 
-See also [Field Function Examples](Field_Function_Examples.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+See also [Field Function Examples](Field_Functions.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 #### Array Slices
 
