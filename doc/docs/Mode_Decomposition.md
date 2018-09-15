@@ -1,6 +1,6 @@
 # Mode Decomposition
 
-Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. Tutorial examples are provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. Tutorial examples are provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 [TOC]
 
