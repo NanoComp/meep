@@ -1199,7 +1199,7 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### GDSII Support
 
-This feature is only available if Meep is built with [libGDSII](../Build_From_Source.md#libgdsii).
+This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii).
 
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —

@@ -9,7 +9,7 @@ This tutorial demonstrates the mode-decomposition feature which is used to decom
 Reflectance of a Waveguide Taper
 --------------------------------
 
-This example involves computing the reflectance &mdash; the fraction of the incident power which is reflected &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance using two differerent methods produces nearly identical results: (1) mode decomposition and (2) directly from the fields via its [Poynting flux](../../Introduction.md#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This example involves computing the reflectance &mdash; the fraction of the incident power which is reflected &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance using two differerent methods produces nearly identical results: (1) mode decomposition and (2) directly from the fields via its [Poynting flux](../Introduction.md#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
