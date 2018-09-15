@@ -10,7 +10,7 @@ The current stable release is **version 1.6** which can be downloaded from:
 
 Refer to [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md) for a list of the latest changes, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
 
-Subscribe to the **meep-announce** mailing list to receive notifications when new versions are released:
+To receive notifications when new versions are released:, subscribe to the **meep-announce** mailing list:
 
 -   [meep-announce mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce)
 
