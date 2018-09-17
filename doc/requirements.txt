@@ -1,1 +1,3 @@
+mkdocs==1.0.3
 python-markdown-math
+mkdocs-material

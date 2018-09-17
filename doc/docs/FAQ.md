@@ -54,7 +54,7 @@ Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft
 
 ### Are there precompiled binary packages for Ubuntu?
 
-Yes but these packages which can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu) are for version 1.3 which is out of date. An up to date package is being prepared. In the meantime, you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the source repository.
+Yes. These packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the current packages are for version 1.3 which is out of date. Up to date packages are being prepared. In the meantime, you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the source repository.
 
 ### Guile is installed, but configure complains that it can't find `guile`
 

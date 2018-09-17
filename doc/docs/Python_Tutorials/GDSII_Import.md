@@ -17,11 +17,11 @@ identical waveguides which are adiabatically tapered to be in close proximity su
 
 The GDSII file is adapted from the [SiEPIC EBeam PDK](https://github.com/lukasc-ubc/SiEPIC_EBeam_PDK) with four major modifications:
 
-+ the computational cell is centered at the origin of the XY plane and defined as a separate layer (0)
++ the computational cell is centered at the origin of the XY plane and defined on layer 0
 
-+ the eigenmode source and flux monitors are each defined on separate layers (1-5)
++ the eigenmode source and flux monitors are each defined on layers 1-5
 
-+ the lower and upper branches of the coupler are also defined on separate layers (31 and 32)
++ the lower and upper branches of the coupler are each defined on layers 31 and 32
 
 + the straight waveguide sections are perfectly flat
 
