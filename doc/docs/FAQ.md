@@ -52,6 +52,10 @@ Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, 
 
 Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
+### Are there precompiled binary packages for Ubuntu?
+
+Yes but these packages which can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu) are for version 1.3 which is out of date. An up to date package is being prepared. In the meantime, you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the source repository.
+
 ### Guile is installed, but configure complains that it can't find `guile`
 
 With most Linux distributions as well as Cygwin, packages like [Guile](http://www.gnu.org/software/guile) are split into two parts: a `guile` package that just contains the libraries and executables, and a `guile-dev` or `guile-devel` package that contains the header files and other things needed to compile programs using Guile. Usually, the former is installed by default but the latter is not. You need to install both, which means that you probably need to install `guile-dev`. Similarly for any other library packages needed by Meep.

@@ -11,7 +11,7 @@ To improve the accuracy for computations involving both electric and magnetic fi
 Synchronization Functions
 -------------------------
 
-All of this process is handled for you in Meep by a single step function: `synchronized-magnetic`. By wrapping this around your step functions, it ensures that those step functions are called with synchronized electric and magnetic fields (to second-order accuracy), while restoring the magnetic fields automatically for subsequent timestepping.
+All of this process is handled for you in Meep by a single step function: `synchronized_magnetic` (Python) or `synchronized-magnetic` (Scheme). By wrapping this around your step functions, it ensures that those step functions are called with synchronized electric and magnetic fields (to second-order accuracy), while restoring the magnetic fields automatically for subsequent timestepping.
 
 For example, if you do:
 

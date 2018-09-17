@@ -164,7 +164,7 @@ HDF5 supports parallel I/O under MPI which can be enabled by configuring it with
 
 ### libGDSII
 
-[libGDSII](https://github.com/HomerReid/libGDSII) is a library for reading [GDSII](https://en.wikipedia.org/wiki/GDSII) binary data files. GDSII is a widely-used format for modeling 2d/planar geometries using [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.) for fabrication in semiconductor foundries.
+[libGDSII](https://github.com/HomerReid/libGDSII) is a library for reading [GDSII](https://en.wikipedia.org/wiki/GDSII) binary data files. GDSII is a widely-used format for 2d/planar geometries supported by [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.) and semiconductor foundries.
 
 ### Guile
 
@@ -396,7 +396,6 @@ cd swig-rel-3.0.12
 make -j
 sudo make -j install
 
-
 cd ~/install
 wget https://ftp.gnu.org/gnu/guile/guile-2.0.11.tar.gz
 tar xvf guile-2.0.11.tar.gz
@@ -404,7 +403,6 @@ cd guile-2.0.11
 ./configure
 make -j
 sudo make -j install
-
 
 cd ~/install
 wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tgz
@@ -414,7 +412,6 @@ cd Python-3.6.5
 make -j
 sudo make -j install
 
-
 cd ~/install
 wget https://download.open-mpi.org/release/open-mpi/v2.1/openmpi-2.1.1.tar.gz
 tar xvf openmpi-2.1.1.tar.gz
@@ -422,7 +419,6 @@ cd openmpi-2.1.1/
 ./configure
 make -j all
 sudo make -j install
-
 
 cd ~/install
 git clone https://bitbucket.hdfgroup.org/scm/hdffv/hdf5.git
@@ -432,7 +428,6 @@ git checkout tags/hdf5-1_10_2
 make -j
 sudo make -j install
 
-
 cd ~/install
 git clone https://github.com/stevengj/harminv.git
 cd harminv/
@@ -440,14 +435,12 @@ sh autogen.sh --enable-shared
 make -j
 sudo make -j install
 
-
 cd ~/install
 git clone https://github.com/stevengj/libctl.git
 cd libctl/
 sh autogen.sh  --enable-shared
 make -j
 sudo make -j install
-
 
 cd ~/install
 git clone https://github.com/stevengj/h5utils.git
@@ -476,7 +469,6 @@ cd mpi4py-3.0.0/
 python3 setup.py build
 sudo /usr/local/bin/python3 setup.py install
 
-
 cd ~/install
 wget https://github.com/h5py/h5py/archive/2.8.0.tar.gz
 tar xvf 2.8.0.tar.gz
@@ -484,7 +476,6 @@ cd h5py-2.8.0/
 python3 setup.py configure --mpi
 python3 setup.py build
 sudo /usr/local/bin/python3 setup.py install
-
 
 cd ~/install
 git clone https://github.com/stevengj/meep.git
@@ -499,13 +490,13 @@ Meep for Developers
 
 If you want to modify the source code, you will want to have a number of additional packages, most importantly the [Git](https://git-scm.com/) version-control system.
 
-Once you have Git, you can grab the latest development version of Meep with:
+Once you have Git, you can obtain a copy of the source repository from GitHub:
 
 ```sh
  git clone https://github.com/stevengj/meep.git
 ```
 
-This gives you a fresh, up-to-date repository in a directory `meep`. See the [Git manual](https://git-scm.com/doc) for more information on using Git. Perhaps the most useful command is `git pull` which you can execute periodically to get any new updates to the development version.
+This command clones the repository in a local directory `meep`. See the [Git manual](https://git-scm.com/doc) for more information on using Git. Perhaps the most useful command is `git pull` which you can execute periodically to get any new updates to the development version.
 
 Git will give you an absolutely minimal set of sources; to create a usable directory, you should run:
 
