@@ -1241,6 +1241,19 @@ static bool susceptibility_equiv(const susceptibility *o0,
   if (o0->drude     != o->drude)     return 0;
   if (o0->is_file   != o->is_file)   return 0;
 
+  if (o0->transitions.size() != o->transitions.size()) return 0;
+  if (o0->initial_populations.size() != o->initial_populations.size()) return 0;
+
+  for (size_t i = 0; i < o0->transitions.size(); ++i) {
+    if (o0->transitions[i] != o->transitions[i])
+      return 0;
+  }
+
+  for (size_t i = 0; i < o0->initial_populations.size(); ++i) {
+    if (o0->initial_populations[i] != o->initial_populations[i])
+      return 0;
+  }
+
   return 1;
 }
 
@@ -1291,6 +1304,91 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
     }
   }
   material_gc(mat);
+}
+
+/* make multilevel_susceptibility from python input data */
+static meep::susceptibility *make_multilevel_sus(const susceptibility_struct *d) {
+  if (!d || d->transitions.size() == 0) return NULL;
+
+  // the user can number the levels however she wants, but we
+  // will renumber them to 0...(L-1)
+  int minlev = d->transitions[0].to_level;
+  int maxlev = minlev;
+  for (size_t t = 0; t < d->transitions.size(); ++t) {
+    if (minlev > d->transitions[t].from_level)
+      minlev = d->transitions[t].from_level;
+    if (minlev > d->transitions[t].to_level)
+      minlev = d->transitions[t].to_level;
+    if (maxlev < d->transitions[t].from_level)
+      maxlev = d->transitions[t].from_level;
+    if (maxlev < d->transitions[t].to_level)
+      maxlev = d->transitions[t].to_level;
+  }
+  size_t L = maxlev - minlev + 1; // number of atom levels
+
+  // count number of radiative transitions
+  int T = 0;
+  for (size_t t = 0; t < d->transitions.size(); ++t)
+    if (d->transitions[t].frequency != 0)
+      ++T;
+  if (T == 0) return NULL; // don't bother if there is no radiative coupling
+
+  // non-radiative transition-rate matrix Gamma
+  meep::realnum *Gamma = new meep::realnum[L * L];
+  memset(Gamma, 0, sizeof(meep::realnum) * (L*L));
+  for (size_t t = 0; t < d->transitions.size(); ++t) {
+    int i = d->transitions[t].from_level - minlev;
+    int j = d->transitions[t].to_level - minlev;
+    Gamma[i*L+i] += + d->transitions[t].transition_rate + d->transitions[t].pumping_rate;
+    Gamma[j*L+i] -= + d->transitions[t].transition_rate + d->transitions[t].pumping_rate;
+  }
+
+  // initial populations of each level
+  meep::realnum *N0 = new meep::realnum[L];
+  memset(N0, 0, sizeof(meep::realnum) * L);
+  for (size_t p = 0; p < d->initial_populations.size() && p < L; ++p)
+    N0[p] = d->initial_populations[p];
+
+  meep::realnum *alpha = new meep::realnum[L * T];
+  memset(alpha, 0, sizeof(meep::realnum) * (L * T));
+  meep::realnum *omega = new meep::realnum[T];
+  meep::realnum *gamma = new meep::realnum[T];
+  meep::realnum *sigmat = new meep::realnum[T * 5];
+
+  const double pi = 3.14159265358979323846264338327950288; // need pi below.
+
+  for (size_t t = 0, tr = 0; t < d->transitions.size(); ++t)
+    if (d->transitions[t].frequency != 0) {
+      omega[tr] = d->transitions[t].frequency; // no 2*pi here
+      gamma[tr] = d->transitions[t].gamma;
+      if (dim == meep::Dcyl) {
+        sigmat[5*tr + meep::R] = d->transitions[t].sigma_diag.x;
+        sigmat[5*tr + meep::P] = d->transitions[t].sigma_diag.y;
+        sigmat[5*tr + meep::Z] = d->transitions[t].sigma_diag.z;
+      }
+      else {
+        sigmat[5*tr + meep::X] = d->transitions[t].sigma_diag.x;
+        sigmat[5*tr + meep::Y] = d->transitions[t].sigma_diag.y;
+        sigmat[5*tr + meep::Z] = d->transitions[t].sigma_diag.z;
+      }
+      int i = d->transitions[t].from_level - minlev;
+      int j = d->transitions[t].to_level - minlev;
+      alpha[i * T + tr] = -1.0 / (2*pi*omega[tr]); // but we *do* need the 2*pi here. -- AWC
+      alpha[j * T + tr] = +1.0 / (2*pi*omega[tr]);
+      ++tr;
+    }
+
+  meep::multilevel_susceptibility *s
+    = new meep::multilevel_susceptibility(L, T, Gamma, N0, alpha, omega, gamma, sigmat);
+
+  delete[] Gamma;
+  delete[] N0;
+  delete[] alpha;
+  delete[] omega;
+  delete[] gamma;
+  delete[] sigmat;
+
+  return s;
 }
 
 // add a polarization to the list if it is not already there
@@ -1350,24 +1448,38 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
     if (ss->is_file)
      meep::abort("unknown susceptibility");
     bool noisy = (ss->noise_amp!=0.0);
+    meep::susceptibility *sus;
 
-    meep::susceptibility *sus =
-     noisy ? new meep::noisy_lorentzian_susceptibility(ss->noise_amp,
-                                                       ss->frequency,
-                                                       ss->gamma,
-                                                       ss->drude
-                                                      )
-           : new meep::lorentzian_susceptibility(ss->frequency,
-                                                 ss->gamma,
-                                                 ss->drude
-                                                );
+    if (ss->transitions.size() != 0 || ss->initial_populations.size() != 0) {
+      // multilevel atom
+      sus = make_multilevel_sus(ss);
+      master_printf("multilevel atom susceptibility\n");
+    }
+    else {
+      if (noisy) {
+        sus = new meep::noisy_lorentzian_susceptibility(
+          ss->noise_amp,
+          ss->frequency,
+          ss->gamma,
+          ss->drude
+        );
+      }
+      else {
+        sus = new meep::lorentzian_susceptibility(
+          ss->frequency,
+          ss->gamma,
+          ss->drude
+        );
+      }
+      master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
+                    noisy     ? "noisy " : "",
+                    ss->drude ? "drude"  : "lorentzian",
+                    ss->frequency, ss->gamma);
+      if (noisy)
+        master_printf(" amp=%g ",ss->noise_amp);
+      master_printf("\n");
+    }
 
-    master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
-                  noisy     ? "noisy " : "",
-                  ss->drude ? "drude"  : "lorentzian",
-                  ss->frequency, ss->gamma);
-    if(noisy) master_printf(" amp=%g ",ss->noise_amp);
-    master_printf("\n");
 
     current_pol = p;
     if(sus) {

@@ -300,6 +300,19 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_XDECREF(py_attr);
+    return 1;
+}
+
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -317,13 +330,59 @@ static int get_attr_material(PyObject *po, material_type *m) {
     return 1;
 }
 
-static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s) {
-    if (!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
-       !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag") ||
-       !get_attr_dbl(po, &s->frequency, "frequency") ||
-       !get_attr_dbl(po, &s->gamma, "gamma")) {
+static int pytransition_to_transition(PyObject *py_trans, transition *trans) {
+
+    int from, to;
+    double trans_rate, freq, gamma, pump_rate;
+    vector3 sigma_diag;
+
+    if (!get_attr_int(py_trans, &from, "from_level")            ||
+        !get_attr_int(py_trans, &to, "to_level")                ||
+        !get_attr_dbl(py_trans, &trans_rate, "transition_rate") ||
+        !get_attr_dbl(py_trans, &freq, "frequency")             ||
+        !get_attr_dbl(py_trans, &gamma, "gamma")                ||
+        !get_attr_dbl(py_trans, &pump_rate, "pumping_rate")     ||
+        !get_attr_v3(py_trans, &sigma_diag, "sigma_diag")) {
 
         return 0;
+    }
+
+    trans->from_level = from;
+    trans->to_level = to;
+    trans->transition_rate = trans_rate;
+    trans->frequency = freq;
+    trans->gamma = gamma;
+    trans->pumping_rate = pump_rate;
+    trans->sigma_diag.x = sigma_diag.x;
+    trans->sigma_diag.y = sigma_diag.y;
+    trans->sigma_diag.z = sigma_diag.z;
+
+    return 1;
+}
+
+static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s) {
+    if (!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
+        !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag")) {
+
+        return 0;
+    }
+
+    s->frequency = 0;
+    s->gamma = 0;
+    s->noise_amp = 0;
+    s->transitions.resize(0);
+    s->initial_populations.resize(0);
+
+    if (PyObject_HasAttrString(po, "frequency")) {
+        if(!get_attr_dbl(po, &s->frequency, "frequency")) {
+            return 0;
+        }
+    }
+
+    if (PyObject_HasAttrString(po, "gamma")) {
+        if(!get_attr_dbl(po, &s->gamma, "gamma")) {
+            return 0;
+        }
     }
 
     if (PyObject_HasAttrString(po, "noise_amp")) {
@@ -331,8 +390,34 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
             return 0;
         }
     }
-    else {
-        s->noise_amp = 0;
+
+    if (PyObject_HasAttrString(po, "transitions")) {
+        // MultilevelAtom
+        PyObject *py_trans = PyObject_GetAttrString(po, "transitions");
+        if (!py_trans) {
+            return 0;
+        }
+        int length = PyList_Size(py_trans);
+        s->transitions.resize(length);
+
+        for (int i = 0; i < length; ++i) {
+            if (!pytransition_to_transition(PyList_GetItem(py_trans, i), &s->transitions[i])) {
+                return 0;
+            }
+        }
+        Py_DECREF(py_trans);
+
+        PyObject *py_pop = PyObject_GetAttrString(po, "initial_populations");
+        if (!py_pop) {
+            return 0;
+        }
+        length = PyList_Size(py_pop);
+        s->initial_populations.resize(length);
+
+        for (int i = 0; i < length; ++i) {
+            s->initial_populations[i] = PyFloat_AsDouble(PyList_GetItem(py_pop, i));
+        }
+        Py_DECREF(py_pop);
     }
 
     std::string class_name = py_class_name_as_string(po);
@@ -359,17 +444,9 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
     sl->items = new susceptibility_struct[length];
 
     for(int i = 0; i < length; i++) {
-        susceptibility_struct s;
-        if (!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &s)) {
+        if (!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &sl->items[i])) {
             return 0;
         }
-        sl->items[i].sigma_diag = s.sigma_diag;
-        sl->items[i].sigma_offdiag = s.sigma_offdiag;
-        sl->items[i].frequency = s.frequency;
-        sl->items[i].gamma = s.gamma;
-        sl->items[i].noise_amp = s.noise_amp;
-        sl->items[i].drude = s.drude;
-        sl->items[i].is_file = s.is_file;
     }
 
     return 1;

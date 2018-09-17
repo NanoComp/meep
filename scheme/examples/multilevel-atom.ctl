@@ -67,7 +67,7 @@
 ;; Specify the cavity geometry:
 (set! geometry (list (make block (center 0 0 (+ (* -0.5 sz) (* 0.5 Lcav)))
 			   (size infinity infinity Lcav) (material two-level))))
-			   
+
 ;; Initialize the fields, has to be non-zero, doesn't really matter what.
 (init-fields)
 (meep-fields-initialize-field fields Ex
