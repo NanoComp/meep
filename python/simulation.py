@@ -2211,3 +2211,22 @@ def interpolate(n, nums):
     return res + [nums[-1]]
 
 
+# extract center and size of a meep::volume
+def get_center_and_size(v):
+    rmin = v.get_min_corner()
+    rmax = v.get_max_corner()
+    v3rmin = mp.Vector3(rmin.x(), rmin.y(), rmin.z())
+    v3rmax = mp.Vector3(rmax.x(), rmax.y(), rmax.z())
+
+    if v.dim == mp.D2:
+        v3rmin.z = 0
+        v3rmax.z = 0
+    elif v.dim == mp.D1:
+        v3rmin.x = 0
+        v3rmin.y = 0
+        v3rmin.y = 0
+        v3rmax.y = 0
+
+    center = 0.5 * (v3rmin + v3rmax)
+    size = v3rmax - v3rmin
+    return center, size
