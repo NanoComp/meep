@@ -72,20 +72,8 @@ typedef struct {
     int num_components;
 } py_field_func_data;
 
+
 #include "typemap_utils.cpp"
-
-static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
-    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
-
-    if (!py_attr) {
-        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-        return 0;
-    }
-
-    *result = PyInteger_AsLong(py_attr);
-    Py_XDECREF(py_attr);
-    return 1;
-}
 
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
@@ -421,6 +409,8 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int
 struct kpoint_list {
     meep::vec *kpoints;
     size_t n;
+    meep::vec *kdom;
+    size_t num_bands;
 };
 
 kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
@@ -431,11 +421,12 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 
     size_t num_kpoints = num_bands * flux.Nfreq;
     meep::vec *kpoints = new meep::vec[num_kpoints];
+    meep::vec *kdom = new meep::vec[num_bands];
 
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints);
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom);
 
-    kpoint_list res = {kpoints, num_kpoints};
+    kpoint_list res = {kpoints, num_kpoints, kdom, (size_t)num_bands};
 
     return res;
 }
@@ -509,13 +500,20 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(out) kpoint_list {
 
-    $result = PyList_New($1.n);
+    PyObject *py_kpoints = PyList_New($1.n);
+    PyObject *py_kdom = PyList_New($1.num_bands);
 
     for (size_t i = 0; i < $1.n; ++i) {
-        PyList_SetItem($result, i, vec2py($1.kpoints[i], true));
+        PyList_SetItem(py_kpoints, i, vec2py($1.kpoints[i], true));
+    }
+    for (size_t i = 0; i < $1.num_bands; ++i) {
+        PyList_SetItem(py_kdom, i, vec2py($1.kdom[i], true));
     }
 
+    $result = Py_BuildValue("(O,O)", py_kpoints, py_kdom);
+
     delete[] $1.kpoints;
+    delete[] $1.kdom;
 }
 
 // Typemap suite for do_harminv
@@ -1201,11 +1199,13 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         LorentzianSusceptibility,
         Matrix,
         Medium,
+        MultilevelAtom,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,
         Prism,
         Sphere,
         Susceptibility,
+        Transition,
         Vector3,
         Wedge,
         check_nonnegative,
@@ -1246,6 +1246,7 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         dft_ldos,
         display_progress,
         during_sources,
+        get_center_and_size,
         get_flux_freqs,
         get_fluxes,
         get_eigenmode_freqs,

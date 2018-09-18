@@ -2500,6 +2500,13 @@ number mode_solver::compute_energy_integral(field_integral_func field_func,
   return cnumber_re(compute_field_integral(field_func, energy_func, py_func));
 }
 
+vector3 mode_solver::get_dominant_planewave(int band) {
+  double kdom[3];
+  maxwell_dominant_planewave(mdata, H, band, kdom);
+  vector3 result = {kdom[0], kdom[1], kdom[2]};
+  return result;
+}
+
 // Used in MPBData python class
 
 /* A macro to set x = fractional part of x input, xi = integer part,

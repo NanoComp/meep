@@ -1496,7 +1496,7 @@ class fields {
                       const volume eig_vol, int band_num,
                       const vec &kpoint, bool match_frequency,
                       int parity, double resolution,
-                      double eigensolver_tol, bool verbose=false);
+                      double eigensolver_tol, bool verbose=false, double *kdom=0);
 
   void add_eigenmode_source(component c, const src_time &src,
 	  		    direction d, const volume &where,
@@ -1513,7 +1513,7 @@ class fields {
                                   double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func=0,
-                                  void *user_kpoint_data=0, vec *kpoints=0);
+                                  void *user_kpoint_data=0, vec *kpoints=0, vec *kdom=0);
 
 
   // initialize.cpp:

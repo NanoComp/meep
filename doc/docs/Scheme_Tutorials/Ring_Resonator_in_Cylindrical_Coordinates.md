@@ -2,7 +2,7 @@
 # Ring Resonator in Cylindrical Coordinates
 ---
 
-In [Tutorial/Basics/Modes of a Ring Resonator](Basics/#modes-of-a-ring-resonator), we computed the modes of a ring resonator by performing a 2d simulation. Here, we will simulate the *same* structure while [exploiting](../Exploiting_Symmetry.md) the fact that the system has *continuous* rotational symmetry, by performing the simulation in [cylindrical coordinates](../Cylindrical_Coordinates.md). See also [ring-cyl.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/ring-cyl.ctl).
+In [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator), we computed the modes of a ring resonator by performing a 2d simulation. Here, we will simulate the *same* structure while [exploiting](../Exploiting_Symmetry.md) the fact that the system has *continuous* rotational symmetry, by performing the simulation in [cylindrical coordinates](../Cylindrical_Coordinates.md). See also [ring-cyl.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/ring-cyl.ctl).
 
 [TOC]
 

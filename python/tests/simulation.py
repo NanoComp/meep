@@ -518,6 +518,22 @@ class TestSimulation(unittest.TestCase):
         with self.assertRaises(TypeError):
             sim.get_filename_prefix()
 
+    def test_get_center_and_size(self):
+        v1d = mp.volume(mp.vec(-2), mp.vec(2))
+        center, size = mp.get_center_and_size(v1d)
+        self.assertTrue(center.close(mp.Vector3()))
+        self.assertTrue(size.close(mp.Vector3(z=4)))
+
+        v2d = mp.volume(mp.vec(-1, -1), mp.vec(1, 1))
+        center, size = mp.get_center_and_size(v2d)
+        self.assertTrue(center.close(mp.Vector3()))
+        self.assertTrue(size.close(mp.Vector3(2, 2)))
+
+        v3d = mp.volume(mp.vec(-1, -1, -1), mp.vec(1, 1, 1))
+        center, size = mp.get_center_and_size(v3d)
+        self.assertTrue(center.close(mp.Vector3()))
+        self.assertTrue(size.close(mp.Vector3(2, 2, 2)))
+
 
 if __name__ == '__main__':
     unittest.main()

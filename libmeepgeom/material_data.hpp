@@ -37,6 +37,30 @@ namespace meep_geom {
   limited to C functionality.  These types, especially the material types,
   should be proper C++ classes */
 
+struct transition {
+  int from_level;
+  int to_level;
+  double transition_rate;
+  double frequency;
+  vector3 sigma_diag;
+  double gamma;
+  double pumping_rate;
+
+  bool operator==(const transition &other) const {
+    return (from_level == other.from_level              &&
+            to_level == other.to_level                  &&
+            transition_rate == other.transition_rate    &&
+            frequency == other.frequency                &&
+            vector3_equal(sigma_diag, other.sigma_diag) &&
+            gamma == other.gamma                        &&
+            pumping_rate == other.pumping_rate);
+  }
+
+  bool operator!=(const transition &other) const {
+    return !(*this == other);
+  }
+};
+
 typedef struct susceptibility_struct {
   vector3 sigma_offdiag;
   vector3 sigma_diag;
@@ -45,6 +69,8 @@ typedef struct susceptibility_struct {
   double noise_amp;
   bool drude;
   bool is_file;
+  std::vector<transition> transitions;
+  std::vector<double> initial_populations;
 } susceptibility;
 
 struct susceptibility_list {

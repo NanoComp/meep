@@ -240,12 +240,19 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 
 %typemap(out) kpoint_list {
   int i;
-  list cur_list = SCM_EOL;
+  list kpoint_list = SCM_EOL;
+  list kdom_list = SCM_EOL;
   for (i = $1.n - 1; i >= 0; --i) {
-    cur_list = gh_cons(vector32scm(vec_to_vector3($1.kpoints[i])), cur_list);
+    kpoint_list = gh_cons(vector32scm(vec_to_vector3($1.kpoints[i])), kpoint_list);
   }
-  $result = cur_list;
+  for (i = $1.num_bands - 1; i >= 0; --i) {
+    kdom_list = gh_cons(vector32scm(vec_to_vector3($1.kdom[i])), kdom_list);
+  }
+
+  $result = scm_list_2(kpoint_list, kdom_list);
+
   delete[] $1.kpoints;
+  delete[] $1.kdom;
 }
 
 // Need to tell SWIG about any method that returns a new object

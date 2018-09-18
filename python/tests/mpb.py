@@ -282,6 +282,8 @@ class TestModeSolver(unittest.TestCase):
         ms = self.init_solver()
         ms.run_te()
 
+        kdom = ms.get_dominant_planewave(1)
+
         self.check_band_range_data(expected_brd, ms.band_range_data)
         for e, r in zip(expected_freqs, ms.all_freqs[-1]):
             self.assertAlmostEqual(e, r, places=3)

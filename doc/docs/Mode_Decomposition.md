@@ -1,12 +1,12 @@
 # Mode Decomposition
 
-Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure using the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides a description of the analytical as well as implementation details of this feature. Tutorial examples are provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure via its integration with the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides an overview of the theory and implementation of this feature. Tutorial examples are provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 [TOC]
 
 ## Theoretical Background
 
-The analytical theory for waveguide mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
+The theory underlying mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
 
 Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse direction $\vec\rho=(y,z)$. For a given angular frequency ω we can solve for the eigenmodes of the structure. Thus, arbitrary fields of the form $\mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-i\omega t}$ and $\mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-i\omega t}$ can be decomposed into a basis of these eigenmodes:
 
@@ -27,7 +27,7 @@ $$
 
 β$_n$ are the propagation wavevectors and α$^{\pm}_n$ are the basis coefficients. Mode decomposition involves solving for these unknown quantities. The following steps are involved in the computation:
 
-1.  In Meep, compute the Fourier-transformed fields $\mathbf{E}(\mathbf{r})$ and $\mathbf{H}(\mathbf{r})$ on a surface that is transverse to the waveguide and stored in a `dft_flux` object.
+1.  In Meep, compute the Fourier-transformed fields $\mathbf{E}(\mathbf{r})$ and $\mathbf{H}(\mathbf{r})$ on a surface which is transverse to the waveguide and stored in a `dft_flux` object.
 
 2.  In MPB, compute the eigenmodes $\mathbf{E}^\pm_n$ and $\mathbf{H}^\pm_n$ as well as the propagation wavevectors β$_n$ for the same cross-sectional structure.
 
@@ -37,7 +37,7 @@ This is all done automatically in Meep using the `get_eigenmode_coefficients` ro
 
 ## Function Description
 
-The mode-decomposition feature is available via the `meep::fields::get_eigenmode_coefficients` function callable from Python or C++. This function makes use of several lower-level functions which are described in more detail below. The C++ prototype for this routine is:
+The mode-decomposition feature is available via the `meep::fields::get_eigenmode_coefficients` function callable from Python or C++. This function makes use of several lower-level functions which are described in more detail below. The C++ header for this function is:
 
 ```c++
 void fields::get_eigenmode_coefficients(dft_flux flux,
@@ -50,19 +50,20 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         std::complex<double> *coeffs,
                                         double *vgrp,
                                         kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data)
+                                        void *user_kpoint_data,
+                                        vec *kdom_list)
 ```
 The following are the parameters:
 
 + `flux` is a `dft_flux` object containing the frequency-domain fields on a cross-sectional slice perpendicular to the waveguide axis
 
-+ `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
++ `eig_vol` is the `volume` passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
 
 + `bands` is an array of integers corresponding to the mode indices
 
 + `num_bands` is the length of the `bands` array
 
-+ `parity` is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
++ `parity` is the parity of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
 
 + `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations
 
@@ -70,7 +71,7 @@ The following are the parameters:
 
 + `coeffs` is a user-allocated array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
 
-+ `vgrp` is an optional user-allocated `double`-valued array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
++ `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
 
 + `user_kpoint_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
 
@@ -80,12 +81,13 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
++ `kdom_list` is a user allocated array of `meep::vec` objects of length `num_bands`. If non-null, this array is filled in with the dominant planewave vectors for bands 1 to `num_bands` (note: index `i` corresponds to band `i + 1`).
 
 ```c++
  int num_bands = bands.size();
  int num_freqs = Flux->Nfreq;
 
- std::vector<cdouble> coeffs(2 * num_bands * num_freqs);
+ std::vector<cdouble> coeffs(2*num_bands*num_freqs);
  f.get_eigenmode_coefficients(...);
 
  for(int nb=0; nb<num_bands; nb++)
@@ -93,20 +95,20 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
    { 
      // get coefficients of forward- and backward-traveling
      // waves in eigenmode bands[nb] at frequency #nf
-     cdouble AlphaPlus  = coeffs[2*nb*num_freqs + nf + 0];
-     cdouble AlphaMinus = coeffs[2*nb*num_freqs + nf + 1];
+     cdouble AlphaPlus = coeffs[2*nb*num_freqs+nf+0];
+     cdouble AlphaMinus = coeffs[2*nb*num_freqs+nf+1];
      ...
 ```
 
 ## Normalization
 
-The α coefficients computed by `get_eigenmode_coefficients` are normalized to ensure that their squared magnitude equals the power carried by the corresponding eigenmode:
+The α coefficients computed by `get_eigenmode_coefficients` are normalized such that their squared magnitude equals the power carried by the corresponding eigenmode:
 
 $$|\alpha_n^\pm|^2 = P_n^\pm$$
 
-where P$_n^\pm$ is the power carried by $\pm$-traveling eigenmode n. This is discussed in more detail [below](#HowItWorks).
+where P$_n^\pm$ is the power carried by the traveling eigenmode n in the forward (+) or backward (-) direction. This is discussed in more detail below.
 
-## Related Computational Routines
+## Related Functions
 
 Besides `get_eigenmode_coefficients,` there are a few computational routines in `libmeep` that you may find useful for problems like those considered above.
 
@@ -122,7 +124,7 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               double eigensolver_tol);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L187-L485).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
 
 ### Working with MPB Eigenmodes
 
@@ -153,7 +155,7 @@ These are implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/
 
 `output_mode_fields` is similar, but instead exports the components of the eigenmode described by `mode_data` which should be the return value of a call to `get_eigenmode`.
 
-These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1077-L1088).
+These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1070-L1092).
 
 ### Computing Overlap Integrals
 ````
@@ -172,9 +174,8 @@ These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/
 
 `get_mode_mode_overlap` is similar, but computes the overlap integral between two eigenmodes. `mode1_data` and `mode2_data` may be identical, in which case you get the inner product of the mode with itself. This should equal the group velocity of the mode based on the MPB's normalization convention.
 
-These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp).
+These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1133-L1144).
 
-<a name="HowItWorks"></a>
 ## How Mode Decomposition Works
 
 The theoretical basis of the mode-decomposition algorithm is the orthogonality relation satisfied by the normal modes:
@@ -232,8 +233,8 @@ $$ \textit{power} = \frac{|a_n^\pm|^2 v_n A_S}{2S_x} $$
 
 or alternatively,
 
-$$ \textit{power} = |\alpha_n^\pm|^2 $$
+$$ \textit{power} = |\tilde{\alpha_n^\pm}|^2 $$
 
-where we have defined $\alpha_n^\pm \equiv \sqrt{v_n A_S}/\left({2S_x}\right)a_n^\pm$. These coefficients $\alpha_n^\pm$ are the quantities computed by `get_eigenmode_coefficients.`
+where $\tilde{\alpha_n^\pm} \equiv \sqrt{v_n A_S/\left({2S_x}\right)}a_n^\pm$. $\tilde{\alpha_n^\pm}$ are the eigenmode coefficients returned by `get_eigenmode_coefficients`.
 
 

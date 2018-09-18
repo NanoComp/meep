@@ -59,20 +59,22 @@ class TestModeCoeffs(unittest.TestCase):
         sim.run(until_after_sources=100)
 
         modes_to_check = [1, 2]  # indices of modes for which to compute expansion coefficients
-        alpha, vgrp, kpoints = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
+        res = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
 
-        self.assertTrue(kpoints[0].close(mp.Vector3(0.604301, 0, 0)))
-        self.assertTrue(kpoints[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
+        self.assertTrue(res.kpoints[0].close(mp.Vector3(0.604301, 0, 0)))
+        self.assertTrue(res.kpoints[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
+        self.assertTrue(res.kdom[0].close(mp.Vector3(0.604301, 0, 0)))
+        self.assertTrue(res.kdom[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
 
         mode_power = mp.get_fluxes(mode_flux)[0]
 
         TestPassed = True
         TOLERANCE = 5.0e-3
-        c0 = alpha[mode_num - 1, 0, 0] # coefficient of forward-traveling wave for mode #mode_num
+        c0 = res.alpha[mode_num - 1, 0, 0] # coefficient of forward-traveling wave for mode #mode_num
         for nm in range(1, len(modes_to_check)+1):
             if nm != mode_num:
-                cfrel = np.abs(alpha[nm - 1, 0, 0]) / np.abs(c0)
-                cbrel = np.abs(alpha[nm - 1, 0, 1]) / np.abs(c0)
+                cfrel = np.abs(res.alpha[nm - 1, 0, 0]) / np.abs(c0)
+                cbrel = np.abs(res.alpha[nm - 1, 0, 1]) / np.abs(c0)
                 if cfrel > TOLERANCE or cbrel > TOLERANCE:
                     TestPassed = False
 

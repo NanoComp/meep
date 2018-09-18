@@ -57,11 +57,12 @@ for m in range(5):
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    incident_coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    incident_coeffs = res.alpha
     incident_flux = mp.get_fluxes(flux)
     incident_flux_data = sim.get_flux_data(flux)
 
-    sim.reset_meep()    
+    sim.reset_meep()
 
     # linear taper
     vertices = [mp.Vector3(-0.5*sx-1,0.5*w1),
@@ -85,6 +86,7 @@ for m in range(5):
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    coeffs, vgrp, kpoints = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    res = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    coeffs = res.alpha
     taper_flux = mp.get_fluxes(refl_flux)
     print("refl:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2,-taper_flux[0]/incident_flux[0]))

@@ -59,19 +59,22 @@
 
         (run-sources+ 100)
 
-        (let* ((alpha-vgrp-kpoints (get-eigenmode-coefficients mflux modes-to-check #:kpoint-func kpoint-func))
-               (alpha (first alpha-vgrp-kpoints))
-               (vgrp (second alpha-vgrp-kpoints))
-               (kpoints (third alpha-vgrp-kpoints))
+        (let* ((result (get-eigenmode-coefficients mflux modes-to-check #:kpoint-func kpoint-func))
+               (alpha (first result))
+               (vgrp (second result))
+               (kpoints (third result))
+               (kdom (fourth result))
                (mode-power (car (get-fluxes mode-flux)))
                (test-passed #t)
                (tolerance 5.0e-3)
                (c0 (array-ref alpha (- mode-num 1) 0 0)))  ; coefficient of forward-traveling wave for mode # mode_num
 
           (if (or (not (vector3-close? (first kpoints) (vector3 0.604301 0 0) 1e-7))
-                  (not (vector3-close? (second kpoints) (vector3 0.494353 0 0) 1e-2)))
+                  (not (vector3-close? (second kpoints) (vector3 0.494353 0 0) 1e-2))
+                  (not (vector3-close? (first kdom) (vector3 0.604301 0 0) 1e-7))
+                  (not (vector3-close? (second kdom) (vector3 0.494353 0 0) 1e-2)))
               (begin
-                (print "Test failed")
+                (print "Test failed")(newline)
                 (exit 1)))
 
           (map (lambda (nm)
@@ -85,13 +88,13 @@
           ;; test 1: coefficient of excited mode >> coeffs of all other modes
           (if (not test-passed)
               (begin
-                (print "Test failed")
+                (print "Test failed")(newline)
                 (exit 1)))
 
           ;; test 2: |mode coeff|^2 = power
           (if (> (abs (- 1 (/ mode-power (* (magnitude c0) (magnitude c0))))) 0.1)
               (begin
-                (print "Test failed")
+                (print "Test failed")(newline)
                 (exit 1)))))))
 
 (run-test 1 '())

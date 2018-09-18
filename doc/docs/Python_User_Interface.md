@@ -775,6 +775,10 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
 
+**`meep.get_center_and_size(vol)`**
+—
+Utility function that takes a `meep::volume` `vol` and returns the center and size of the volume as a tuple of `Vector3`.
+
 Miscellaneous Functions
 -----------------------
 
@@ -962,7 +966,14 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 **`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
 —
-Given a flux object and list of band indices, return a tuple of (1) the eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)), (2) the group velocity as a NumPy array, and (3) a list of kpoints as `mp.Vector3`s. The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition/).
+Given a flux object and list of band indices, return a `namedtuple` with the following fields:
+
++ `alpha`: the eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2` (modes in + and - directions)).
++ `vgrp`: the group velocity as a NumPy array.
++ `kpoints`: a list of kpoints as `mp.Vector3`s.
++ `kdom`: a list of `len(bands)` `mp.Vector3`s representing the dominant planewave vector for each band.
+
+The flux object must be created using `add_mode_monitor` (an alias for `add_flux`). `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-7`. For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with nonmonotonic dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.)
 
@@ -971,6 +982,16 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
+
+**`get_eigenmode(omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
+                 parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False)`**
+—
+The parameters of this routine are the same as that of `get_eigenmode_coefficients` or eigenmode sources, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
++ `band_num`: same as the `band_num` parameter
++ `omega`: the computed freuqency, same as `omega_src` if `match_frequency=True`
++ `group_velocity`: the group velocity of the mode in `direction`
++ `k`: the Bloch wavevector of the mode in `direction`
++ `amplitude(point, component)`: the (complex) value of the given E or H field `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in space (interpreted with Bloch-periodic boundary conditions if you give a point outside the original `eig_vol`).
 
 **`get_eigenmode_freqs(flux)`**
 —
@@ -1182,7 +1203,7 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### GDSII Support
 
-This functionality is only available if Meep was built with [libGDSII](https://github.com/HomerReid/libGDSII). See the sample [build script](Build_From_Source#ubuntu-1604-and-1804) for installation instructions.
+This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii).
 
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —
@@ -1277,7 +1298,7 @@ More generally, it is possible to output an arbitrary function of position and z
 —
 Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
 
-See also [Field Function Examples](Field_Function_Examples.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+See also [Field Function Examples](Field_Functions.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 #### Array Slices
 

@@ -34,7 +34,7 @@ which reads `foo.ctl` and executes it, saving the output to the file `foo.out`. 
 Fields in a Waveguide
 ---------------------
 
-For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. The waveguide will have frequency-independent ε=12 and width 1 μm. The unit length in this example is 1 μm. See also [Units](Introduction.md#units-in-meep).
+For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. The waveguide will have frequency-independent ε=12 and width 1 μm. The unit length in this example is 1 μm. See also [Units](../Introduction.md#units-in-meep).
 
 ### A Straight Waveguide
 
@@ -46,7 +46,7 @@ Before we define the structure, however, we have to define the computational cel
 
 The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported. `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter indicates that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
 
-We can add the waveguide. Most commonly, the structure is specified by a `list` of [`geometric-object`s](../Scheme_User_Interface/#geometric-object), stored in the `geometry` variable.
+We can add the waveguide. Most commonly, the structure is specified by a `list` of [`geometric-object`s](../Scheme_User_Interface.md#geometric-object), stored in the `geometry` variable.
 
 ```scm
 (set! geometry (list
@@ -58,7 +58,7 @@ The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
-We have the structure and need to specify the current sources using the [`sources`](../Scheme_User_Interface/#source) object. The simplest thing is to add a single point source $J_z$:
+We have the structure and need to specify the current sources using the [`sources`](../Scheme_User_Interface.md#source) object. The simplest thing is to add a single point source $J_z$:
 
 ```scm
 (set! sources (list
@@ -76,7 +76,7 @@ As for boundary conditions, we want to add absorbing boundaries around our cell.
 (set! pml-layers (list (make pml (thickness 1.0))))
 ```
 
-`pml-layers` is a list of [`pml`](../Scheme_User_Interface/#pml) objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. We note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
+`pml-layers` is a list of [`pml`](../Scheme_User_Interface.md#pml) objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. We note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
 
 Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/μm, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-index material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a 160×80 cell.
 
@@ -402,7 +402,7 @@ Angular Reflectance Spectrum of a Planar Interface
 
 We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance spectrum of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum (n=1) everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. For each angle of the incident planewave, a separate simulation is necessary.
 
-A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Scheme_User_Interface/#source) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields remaining in the cell (due to absorption by the PMLs) via the [run function](../Scheme_User_Interface/#run-functions) `stop-when-fields-decayed`, similar to the previous example.
+A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ.md#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Scheme_User_Interface.md#source) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields remaining in the cell (due to absorption by the PMLs) via the [run function](../Scheme_User_Interface.md#run-functions) `stop-when-fields-decayed`, similar to the previous example.
 
 Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k-point`, and (2) the source amplitude function `amp-func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/scheme/examples/pw-source.ctl) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the minimum frequency of the pulse which excludes the 2π factor). Note that a fixed wavevector only applies to a single frequency. Any broadband source is therefore incident at a specified angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
@@ -674,7 +674,7 @@ In this case, we actually have a lot more symmetry that we could potentially exp
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on 1d or 2d structures which can be visualized using [h5topng](https://github.com/stevengj/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
+The previous examples were based on 1d or 2d structures which can be visualized using [h5topng](https://github.com/stevengj/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
 
 ```scm
 (set-param! resolution 50)

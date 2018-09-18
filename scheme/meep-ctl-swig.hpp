@@ -8,6 +8,8 @@
 struct kpoint_list {
     meep::vec *kpoints;
     size_t n;
+    meep::vec *kdom;
+    size_t num_bands;
 };
 
 vector3 vec_to_vector3(const meep::vec &);
