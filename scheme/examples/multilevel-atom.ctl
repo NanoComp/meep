@@ -21,10 +21,10 @@
 ;; this transformation explicitly.
 
 (define-param omega-a 40)                        ; omega_a in SALT
-(define freq-21 (/ omega-a (* 2 pi)))            ; emission frequency  (units of 2\pia/c)
+(define freq-21 (/ omega-a (* 2 pi)))            ; emission frequency  (units of 2\pi a/c)
 
 (define-param gamma-perp 4)                      ; HWHM in angular frequency, SALT
-(define gamma-21 (/ (* 2 gamma-perp) (* 2 pi)))  ; FWHM emission linewidth in sec^-1 (units of 2\pia/c)
+(define gamma-21 (/ (* 2 gamma-perp) (* 2 pi)))  ; FWHM emission linewidth in sec^-1  (units of 2\pi a/c)
 					         ; Note that 2*pi*gamma-21 = 2*gamma_perp in SALT.
 
 (define-param theta 1)                           ; theta, the off-diagonal dipole matrix element, in SALT
@@ -52,7 +52,7 @@
 ;; Gain medium pump and decay rates are specified in units of c/a.
 
 (define-param rate-21 0.005)                     ; non-radiative rate  (units of c/a)
-(define-param N0 28)                             ; initial population density of ground state
+(define-param N0 37)                             ; initial population density of ground state
 (define-param Rp 0.0051)                         ; pumping rate of ground to excited state
 ;; so for example, these parameters have D_0 (SALT) = 0.0693.
 
