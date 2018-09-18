@@ -39,7 +39,7 @@ cell = mp.Vector3(16, 8, 0)
 ```
 The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
 
-Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface/#geometricobject) stored in the `geometry` object.
+Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface.md#geometricobject) stored in the `geometry` object.
 
 ```py
 geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
@@ -59,7 +59,7 @@ sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
                      center=mp.Vector3(-7,0))]
 ```
 
-We gave the source a frequency of 0.15, and specified a [`ContinuousSource`](../Python_User_Interface/#continuoussource) which is just a fixed-frequency sinusoid $\exp(-i \omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of 2πc, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about 1/0.15=6.67 μm, or a wavelength of about 2 μm in the ε=12 material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a J<sub>z</sub>, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at (-7,0), which is 1 μm to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+We gave the source a frequency of 0.15, and specified a [`ContinuousSource`](../Python_User_Interface.md#continuoussource) which is just a fixed-frequency sinusoid $\exp(-i \omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of 2πc, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about 1/0.15=6.67 μm, or a wavelength of about 2 μm in the ε=12 material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a J<sub>z</sub>, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at (-7,0), which is 1 μm to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
 As for boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash;  which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 μm around all sides of the cell, we do:
 
@@ -67,7 +67,7 @@ As for boundary conditions, we want to add absorbing boundaries around our cell.
 pml_layers = [mp.PML(1.0)]
 ```
 
-`pml_layers` is a set of [`PML`](../Python_User_Interface/#pml) objects &mdash; you may have more than one `PML` object if you want PML layers only on certain sides of the cell, e.g. `mp.PML(thickness=1.0,direction=mp.X,side=mp.high)` specifies a PML layer on only the $+x$ side. An important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
+`pml_layers` is a set of [`PML`](../Python_User_Interface.md#pml) objects &mdash; you may have more than one `PML` object if you want PML layers only on certain sides of the cell, e.g. `mp.PML(thickness=1.0,direction=mp.X,side=mp.high)` specifies a PML layer on only the $+x$ side. An important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
 
 Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/μm, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-index material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a 160×80 cell.
 
@@ -75,7 +75,7 @@ Meep will discretize this structure in space and time, and that is specified by 
 resolution = 10
 ```
 
-The final object to specify is [`Simulation`](../Python_User_Interface/#the-simulation-class) which is based on all the previously defined objects.
+The final object to specify is [`Simulation`](../Python_User_Interface.md#the-simulation-class) which is based on all the previously defined objects.
 
 ```py
 sim = mp.Simulation(cell_size=cell,
@@ -98,7 +98,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 ```
 
-We will first create an image of the dielectric function ε. This involves obtaining a slice of the data using the [`get_array`](../Python_User_Interface/#array-slices) routine which outputs to a NumPy array and then display the results.
+We will first create an image of the dielectric function ε. This involves obtaining a slice of the data using the [`get_array`](../Python_User_Interface.md#array-slices) routine which outputs to a NumPy array and then display the results.
 
 ```py
 eps_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric)
@@ -149,7 +149,7 @@ Note that we have *two* blocks, both off-center to produce the bent waveguide st
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
-There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface/#eigenmodesource) can also be used which is described in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at t=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface.md#eigenmodesource) can also be used which is described in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at t=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(wavelength=2*(11**0.5), width=20),
@@ -172,7 +172,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
         until=200)
 ```
 
-We are outputting the dielectric function ε but have wrapped its output function which would otherwise run at every time step in `at_beginning`, which does just what it says. There are [several other such functions](../Python_User_Interface/#run-and-step-functions) to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
+We are outputting the dielectric function ε but have wrapped its output function which would otherwise run at every time step in `at_beginning`, which does just what it says. There are [several other such functions](../Python_User_Interface.md#run-and-step-functions) to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
 
 Instead of running `output_efield_z` only at the end of the simulation, however, we run it at every 0.6 time units (about 10 times per period) via `mp.at_every(0.6, mp.output_efield_z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature to output to a *single* 3d HDF5 file, where the third dimension is time. `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
@@ -426,7 +426,7 @@ Angular Reflectance Spectrum of a Planar Interface
 
 We turn to a similar but slightly different example for which there exists an analytic solution via the [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations): computing the broadband reflectance spectrum of a planar air-dielectric interface for an incident planewave over a range of angles. Similar to the previous example, we will need to run two simulations: (1) an empty cell with air/vacuum (n=1) everywhere to obtain the incident flux, and (2) with the dielectric (n=3.5) interface to obtain the reflected flux. For each angle of the incident planewave, a separate simulation is necessary.
 
-A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ/#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Python_User_Interface/#continuoussource) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields remaining in the cell (due to absorption by the PMLs) via the [run function](../Python_User_Interface/#run-functions) `stop_when_fields_decayed`, similar to the previous example.
+A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ.md#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Python_User_Interface.md#continuoussource) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields remaining in the cell (due to absorption by the PMLs) via the [run function](../Python_User_Interface.md#run-functions) `stop_when_fields_decayed`, similar to the previous example.
 
 Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k_point`, and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the minimum frequency of the pulse which excludes the 2π factor). Note that a fixed wavevector only applies to a single frequency. Any broadband source is therefore incident at a specified angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
@@ -732,16 +732,16 @@ This tells Meep to exploit a mirror-symmetry plane through the origin perpendicu
 
 Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast.
 
-In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface](../Python_User_Interface/#symmetry) for more symmetry possibilities.
+In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface](../Python_User_Interface.md#symmetry) for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on 1d or 2d structures which can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface/#prism) with index 3.5 perforated by a [conical](../Python_User_Interface/#cone) hole. There are no other simulation parameters specified. The permittivity data is visualized using an isosurface plot via the [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d) module. A snapshot of this plot is shown below. For visualization of the vector fields in 3d, you can use the [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d) module.
+The previous examples were based on 1d or 2d structures which can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface.md#prism) with index 3.5 perforated by a [conical](../Python_User_Interface.md#cone) hole. There are no other simulation parameters specified. The permittivity data is visualized using an isosurface plot via the [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d) module. A snapshot of this plot is shown below. For visualization of the vector fields in 3d, you can use the [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d) module.
 
-Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](Python_User_Interface/#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
+Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/stevengj/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/stevengj/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
 
 ```py
 import meep as mp

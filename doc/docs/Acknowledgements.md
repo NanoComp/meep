@@ -5,12 +5,12 @@
 Authors
 -------
 
-Meep originated as part of graduate research at [MIT](https://en.wikipedia.org/wiki/Massachusetts_Institute_of_Technology) with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep). [Christopher Hogan](https://github.com/ChristopherHogan) and [M.T. Homer Reid](http://homerreid.dyndns.org/) have lead the development of the [Python interface](Python_User_Interface), mode-decomposition feature, and GDSII import routines.
+Meep originated as part of graduate research at [MIT](https://en.wikipedia.org/wiki/Massachusetts_Institute_of_Technology) with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep). [Christopher Hogan](https://github.com/ChristopherHogan) and [M.T. Homer Reid](http://homerreid.dyndns.org/) have lead the development of the [Python interface](Python_User_Interface.md), [mode-decomposition feature](Python_Tutorials/Mode_Decomposition.md), and [GDSII import routines](Python_Tutorials/GDSII_Import.md). [Alex Cerjan](http://www.alexcerjan.com/) assisted with adding support for saturable absorption via [multilevel atomic gain media](Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md).
 
 Referencing
 -----------
 
-We kindly request that you cite the following technical reference in any work for which you use Meep:
+We request that you cite the following technical reference in any work for which you use Meep:
 
 - A.F. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)).
 

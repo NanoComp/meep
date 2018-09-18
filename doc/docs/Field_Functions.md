@@ -22,7 +22,7 @@ def f(r, ex, hz, eps):
    (- (+ (* (vector3-x r) (vector3-norm r)) ex) (* eps hz)))
 ```
 
-Note that the argument `r` is a [`Vector3`](Python_User_Interface/#vector3) (Python) or [`vector3`](https://libctl.readthedocs.io/en/latest/User_Reference) (Scheme) object.
+Note that the argument `r` is a [`Vector3`](Python_User_Interface.md#vector3) (Python) or [`vector3`](https://libctl.readthedocs.io/en/latest/User_Reference) (Scheme) object.
 
 Now, suppose we want to compute the integral of this function, over the whole computational cell. We can do this by calling the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme), as follows:
 

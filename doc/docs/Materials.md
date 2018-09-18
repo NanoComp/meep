@@ -19,7 +19,7 @@ Physically, material dispersion arises because the polarization of the material 
 
 $$\mathbf{D} = \varepsilon_\infty \mathbf{E} + \mathbf{P}$$
 
-where ε$_\infty$, which [must be positive](FAQ/#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω).
+where ε$_\infty$, which [must be positive](FAQ.md#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω).
 
 **Note:** Meep's definition of ω uses a sign convention $\exp(-i\omega t)$ for the time dependence; ε formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of γ and ω as-is for loss; don't be confused by the difference in ω sign convention and flip the sign of the parameters.
 

@@ -2,14 +2,14 @@
 # Parallel Meep
 ---
 
-Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.org/wiki/MPI). This allows it to scale up from small dual-processor machines to supercomputers, and to work on very large problems that may not fit into the memory of one machine. Meep simulations can use hundreds of processors. Of course, your problem must be sufficiently large in order to [benefit from many processors](FAQ/#should-i-expect-linear-speedup-from-the-parallel-meep).
+Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.org/wiki/MPI). This allows it to scale up from small dual-processor machines to supercomputers, and to work on very large problems that may not fit into the memory of one machine. Meep simulations can use hundreds of processors. Of course, your problem must be sufficiently large in order to [benefit from many processors](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep).
 
 Installing Parallel Meep
 ------------------------
 
-To install the parallel version of Meep, you must have a version of MPI installed on your system. See [Installation](Installation/#mpi).
+To install the parallel version of Meep, you must have a version of MPI installed on your system. See [Installation](Installation.md#mpi).
 
-We also strongly recommend installing the [HDF5 package](Installation/#hdf5) with parallel I/O support if you are going to run with more than a few processors. HDF5 needs to be configured with the flag `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose to install either the serial or the parallel Meep, but not both.
+We also strongly recommend installing the [HDF5 package](Installation.md#hdf5) with parallel I/O support if you are going to run with more than a few processors. HDF5 needs to be configured with the flag `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose to install either the serial or the parallel Meep, but not both.
 
 If you don't install HDF5 with parallel I/O support, you can still do I/O from MPI &mdash; Meep has some hacks to let it write HDF5 files using serial I/O from multiple processes, one at a time. However, this does not scale very well to many processors. We've also observed some MPI implementations to freeze under the strain of trying to write from many processes at once.
 
