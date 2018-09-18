@@ -1,20 +1,24 @@
 This is the documentation tree for MEEP.
 
-Markdown (.md) files for MEEP documentation live in $(top_src_dir)/doc/docs.
+markdown (.md) files are in the doc/docs/.
 
 To build and visualize the HTML documentation locally using the
-mkdocs package (useful for verifying on your local machine before
-committing), install the `mkdocs` package, then run the 
-following command from the top-level MEEP repository tree:
+mkdocs package (useful for verifying changes on your local machine
+before committing), first install `mkdocs` (version 0.17.5) as
+well as two auxiliary packages via e.g.:
+
+% pip3 install --user mkdocs=0.17.5 python-markdown-math mkdocs-material
+
+Next, run the following command from the top-level MEEP repository tree:
 
 % mkdocs serve
 
-and then open the following URL in a browser window:
+Finally, open the following address in a browser window:
 
 http://127.0.0.1:8000
 
-This launches a little web server on your local machine
+This launches a web server on your local machine
 plus a filesystem hook for rebuilding the documentation
-tree automatically whenever any .md file is modified, so
-you can see what the actual HTML documentation looks
-like in real time as you edit the source.
+tree automatically whenever any .md file is modified.
+This enables viewing the HTML documentation in real time
+as the source files are edited.
