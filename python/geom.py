@@ -234,6 +234,34 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
         self.noise_amp = noise_amp
 
 
+class MultilevelAtom(Susceptibility):
+
+    def __init__(self, initial_populations=[], transitions=[], **kwargs):
+        super(MultilevelAtom, self).__init__(**kwargs)
+        self.initial_populations = initial_populations
+        self.transitions = transitions
+
+
+class Transition(object):
+
+    def __init__(self,
+                 from_level,
+                 to_level,
+                 transition_rate=0,
+                 frequency=0,
+                 sigma_diag=Vector3(1, 1, 1),
+                 gamma=0,
+                 pumping_rate=0):
+
+        self.from_level = check_nonnegative('from_level', from_level)
+        self.to_level = check_nonnegative('to_level', to_level)
+        self.transition_rate = transition_rate
+        self.frequency = frequency
+        self.sigma_diag = sigma_diag
+        self.gamma = gamma
+        self.pumping_rate = pumping_rate
+
+
 class GeometricObject(object):
 
     def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):

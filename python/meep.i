@@ -72,20 +72,8 @@ typedef struct {
     int num_components;
 } py_field_func_data;
 
+
 #include "typemap_utils.cpp"
-
-static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
-    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
-
-    if (!py_attr) {
-        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-        return 0;
-    }
-
-    *result = PyInteger_AsLong(py_attr);
-    Py_XDECREF(py_attr);
-    return 1;
-}
 
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
@@ -438,7 +426,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
                                   coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom);
 
-    kpoint_list res = {kpoints, num_kpoints, kdom, num_bands};
+    kpoint_list res = {kpoints, num_kpoints, kdom, (size_t)num_bands};
 
     return res;
 }
@@ -1211,11 +1199,13 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         LorentzianSusceptibility,
         Matrix,
         Medium,
+        MultilevelAtom,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,
         Prism,
         Sphere,
         Susceptibility,
+        Transition,
         Vector3,
         Wedge,
         check_nonnegative,
