@@ -1241,18 +1241,8 @@ static bool susceptibility_equiv(const susceptibility *o0,
   if (o0->drude     != o->drude)     return 0;
   if (o0->is_file   != o->is_file)   return 0;
 
-  if (o0->transitions.size() != o->transitions.size()) return 0;
-  if (o0->initial_populations.size() != o->initial_populations.size()) return 0;
-
-  for (size_t i = 0; i < o0->transitions.size(); ++i) {
-    if (o0->transitions[i] != o->transitions[i])
-      return 0;
-  }
-
-  for (size_t i = 0; i < o0->initial_populations.size(); ++i) {
-    if (o0->initial_populations[i] != o->initial_populations[i])
-      return 0;
-  }
+  if (o0->transitions != o->transitions) return 0;
+  if (o0->initial_populations != o->initial_populations) return 0;
 
   return 1;
 }
