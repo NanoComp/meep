@@ -34,7 +34,7 @@ To understand the need for the high resolution above, let us calculate the centr
 $$ \frac{\lambda}{L} = \frac{2 \pi c}{n \omega_a L} = \frac{2 \pi}{1.5 \cdot 40} \approx 0.1047 $$
 i.e., the cavity contains roughly $10$ wavelengths. (Yes, this is an unphysically small cavity.) Thus, to ensure that the electric field within the cavity is properly resolved, we have chosen roughly $40$ pixels per wavelength, yielding a resolution of 400.
 
-Next, we need to specify the details of the two-level atomic medium we're using, and initialize the saturable gain medium
+Next, we need to specify the details of the two-level atomic medium we're using.
 ```scm
 (define-param rate-21 0.005)                     ; non-radiative rate  (units of c/a)
 (define-param N0 37)                             ; initial population density of ground state
@@ -51,7 +51,7 @@ For a two-level atomic gain medium, the effective inversion that this choice of 
 $$ D_0 \; (\textrm{SALT}) = \frac{|\theta|^2}{\hbar \gamma_\perp} \left( \frac{\gamma_{12} - \gamma_{21}}{\gamma_{12} + \gamma_{21}} N_0 \right) \approx 0.0916 $$
 where the term in parenthesis on the right-hand side is the definition of $D_0$ in normal units, and the additional factor of $|\theta|^2 / \hbar \gamma_\perp$ converts to SALT's units.
 
-Definition of the two-level medium involves the `multilevel-atom` sub-class of the `E-susceptibilities` material type. Each radiative and non-radiative `transition` is specified separately. Note here that internally, Meep treats `pumping-rate` and `transition-rate` identically, and you can use them interchangeably, but it is important to specify the `from-level` and `to-level` parameters correctly, otherwise the results will be undefined. The choice of these parameters requires some care. For example, choosing a pumping rate that lies far beyond the first lasing threshold will yield large inversion which is not realistic, as most physical devices will overheat before reaching such a regime. (Meep will still produce accurate results in this regime though.) Additionally, choosing the total simulation time is especially important when operating near the threshold of a lasing mode, as the fields contain relaxation oscillations and require sufficient time to reach steady state. 
+Definition of the two-level medium involves the `multilevel-atom` sub-class of the `E-susceptibilities` material type. Each radiative and non-radiative `transition` is specified separately. Note that internally, Meep treats `pumping-rate` and `transition-rate` identically, and you can use them interchangeably, but it is important to specify the `from-level` and `to-level` parameters correctly, otherwise the results will be undefined. Moreover, the choice of these parameters requires some care. For example, choosing a pumping rate that lies far beyond the first lasing threshold will yield large inversion, and thus large gain, which is not realistic, as most physical devices will overheat before reaching such a regime. (Meep will still produce accurate results in this regime though.) Additionally, choosing the total simulation time is especially important when operating near the threshold of a lasing mode, as the fields contain relaxation oscillations and require sufficient time to reach steady state. 
 
 The field within the cavity is initialized to arbitrary non-zero values and a fictitious source is used to pump the cavity at a fixed rate. The fields are time stepped until reaching steady state. Near the end of the time stepping, we output the electric field outside of the cavity.
 
@@ -74,7 +74,7 @@ To analyze this data, we plot its spectra
 <center>
 ![Multilevel meep spectra](../images/multilevel_meep_n0_37_spectra.png)
 </center>
-where we see there are two lasing modes above threshold in the vicinity of the center transition frequency, $\omega_a = 40$, as we would expect. Here, we have also converted the electric field to SALT units, using 
+where we see there are two lasing modes above threshold in the vicinity of the center transition frequency, $\omega_a = 40$, as we would expect. Remember, when finding the frequency axis that Meep uses a Courant factor of $\Delta t = 0.5 \Delta x$. Here, we have also converted the electric field to SALT units, using 
 $$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{\gamma_\perp \gamma_\parallel}} \mathbf{E} \; (\textrm{Meep}) $$
 with $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. We can also verify that the system is not exhibiting relaxation oscillations by directly plotting the electric field as a function of time and looking for very long time-scale oscillations. In the continuum limit, these modes would appear as Dirac delta functions in the spectra. The discretized model, however, produces peaks with finite width. Thus, we need to integrate a fixed number of points around each peak to calculate the correct modal intensity. By varying $N_0$ (or $R_p$), we can change the total gain available in the cavity, and thus find the laser's modal intensities as a function of the strength of the gain, which we can compare against SALT and an independent FDTD using the Maxwell-Bloch equations to find excellent agreement both close to the first lasing threshold, 
 <center>
