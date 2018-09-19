@@ -111,7 +111,7 @@ script:
   - export MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
   - mkdir -p build && pushd build
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
-  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+  - travis_wait make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
 
 after_script:
   - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build
