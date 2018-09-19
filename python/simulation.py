@@ -156,40 +156,40 @@ class Volume(object):
 
 class FluxRegion(object):
 
-    def __init__(self, center, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0):
-        self.center = center
-        self.size = size
+    def __init__(self, center=None, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0, volume=None):
+        if center is None and volume is None:
+            raise ValueError("Either center or volume required")
+
+        if volume:
+            self.center = volume.center
+            self.size = volume.size
+        else:
+            self.center = center
+            self.size = size
+
         self.direction = direction
         self.weight = complex(weight)
 
 
 ModeRegion = FluxRegion
-
-
-class ForceRegion(object):
-
-    def __init__(self, center, direction, size=mp.Vector3(), weight=1.0):
-        self.center = center
-        self.direction = direction
-        self.size = size
-        self.weight = complex(weight)
-
-
-class Near2FarRegion(object):
-
-    def __init__(self, center, size=mp.Vector3(), direction=mp.AUTOMATIC, weight=1.0):
-        self.center = center
-        self.size = size
-        self.direction = direction
-        self.weight = complex(weight)
+Near2FarRegion = FluxRegion
+ForceRegion = FluxRegion
 
 
 class FieldsRegion(object):
 
     def __init__(self, where=None, center=None, size=None):
+        if center is None and where is None:
+            raise ValueError("Either center or volume required")
+
+        if where:
+            self.center = where.center
+            self.size = where.size
+        else:
+            self.center = center
+            self.size = size
+
         self.where = where
-        self.center = center
-        self.size = size
 
 
 class DftObj(object):
@@ -2230,3 +2230,18 @@ def get_center_and_size(v):
     center = 0.5 * (v3rmin + v3rmax)
     size = v3rmax - v3rmin
     return center, size
+
+
+def GDSII_vol(fname, layer, zmin, zmax):
+    meep_vol = mp.get_GDSII_volume(fname, layer, zmin, zmax)
+    dims = meep_vol.dim + 1
+    is_cyl = False
+
+    if dims == 4:
+        # cylindrical
+        dims = 2
+        is_cyl = True
+
+    center, size = get_center_and_size(meep_vol)
+
+    return Volume(center, size, dims, is_cyl)
