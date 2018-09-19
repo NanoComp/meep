@@ -1216,6 +1216,14 @@ This feature is only available if Meep is built with [libGDSII](Build_From_Sourc
 —
 Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer `layer` of a GDSII file `gdsii_filename`.
 
+**`mp.GDSII_vol(fname, layer, zmin, zmax)`**
+—
+Returns a `mp.Volume` read from a GDSII file `fname` on `layer` with `zmin` and `zmax`. This function is useful for creating a `FluxRegion` from a GDSII file as follows
+
+```python
+fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
+```
+
 Run and Step Functions
 ----------------------
 
