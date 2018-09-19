@@ -179,9 +179,6 @@ ForceRegion = FluxRegion
 class FieldsRegion(object):
 
     def __init__(self, where=None, center=None, size=None):
-        if center is None and where is None:
-            raise ValueError("Either center or volume required")
-
         if where:
             self.center = where.center
             self.size = where.size
