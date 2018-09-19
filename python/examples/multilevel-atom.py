@@ -27,11 +27,11 @@ pml_layers = [mp.PML(dpml, side=mp.High)]
 # this transformation explicitly.
 
 omega_a = 40                           # omega_a in SALT
-freq_21 = omega_a / (2 * math.pi)       # emission frequency  (units of 2\pia/c)
+freq_21 = omega_a / (2 * math.pi)       # emission frequency  (units of 2\pi a/c)
 
 gamma_perp = 4                         # HWHM in angular frequency, SALT
-gamma_21 = (2 * gamma_perp) / (2 * math.pi)  # FWHM emission linewidth in sec^-1 (units of 2\pia/c)
-# Note that 2*pi*gamma-21 = 2*gamma_perp in SALT.
+gamma_21 = (2 * gamma_perp) / (2 * math.pi)  # FWHM emission linewidth in sec^-1 (units of 2\pi a/c)
+# Note that 2*pi*gamma_21 = 2*gamma_perp in SALT.
 
 theta = 1                                # theta, the off-diagonal dipole matrix element, in SALT
 sigma_21 = 2 * theta * theta * omega_a   # dipole coupling strength (hbar = 1)
@@ -55,16 +55,16 @@ sigma_21 = 2 * theta * theta * omega_a   # dipole coupling strength (hbar = 1)
 # This 4*pi comes from using Gaussian units, in which the displacement field, D = E + 4*pi*P, whereas
 # in SI units, D = eps0*E + P, which is what MEEP uses.
 
-# Gain medium pump and decay rates are specified in units of c/a.
+# Gain medium pump and decay rates are specified in units of a/c.
 
-rate_21 = 0.005        # non-radiative rate  (units of c/a)
+rate_21 = 0.005        # non-radiative rate  (units of a/c)
 N0 = 37                # initial population density of ground state
 Rp = 0.0051            # pumping rate of ground to excited state
 # so for example, these parameters have D_0 (SALT) = 0.0693.
 
 # Make the actual medium in MEEP:
 transitions = [mp.Transition(1, 2, pumping_rate=Rp, frequency=freq_21, gamma=gamma_21,
-                             sigma_diag=mp.Vector3(sigma_21, sigma_21, sigma_21)),
+                             sigma_diag=mp.Vector3(sigma_21, 0, 0)),
                mp.Transition(2, 1, transition_rate=rate_21)]
 ml_atom = mp.MultilevelAtom(sigma=1, transitions=transitions, initial_populations=[N0])
 two_level = mp.Medium(index=ncav, E_susceptibilities=[ml_atom])

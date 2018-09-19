@@ -49,16 +49,16 @@
 ;; This 4*pi comes from using Gaussian units, in which the displacement field, D = E + 4*pi*P, whereas
 ;; in SI units, D = eps0*E + P, which is what MEEP uses.
 
-;; Gain medium pump and decay rates are specified in units of c/a.
+;; Gain medium pump and decay rates are specified in units of a/c.
 
-(define-param rate-21 0.005)                     ; non-radiative rate  (units of c/a)
+(define-param rate-21 0.005)                     ; non-radiative rate  (units of a/c)
 (define-param N0 37)                             ; initial population density of ground state
 (define-param Rp 0.0051)                         ; pumping rate of ground to excited state
 ;; so for example, these parameters have D_0 (SALT) = 0.0693.
 
 ;; Make the actual medium in MEEP:
 (define two-level (make medium (index ncav)
-			(E-susceptibilities (make multilevel-atom (sigma 1)
+			(E-susceptibilities (make multilevel-atom (sigma-diag 1 0 0)
 			  (transitions (make transition (from-level 1) (to-level 2) (pumping-rate Rp)
 					     (frequency freq-21) (gamma gamma-21) (sigma sigma-21))
 				       (make transition (from-level 2) (to-level 1) (transition-rate rate-21)))

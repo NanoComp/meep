@@ -19,7 +19,7 @@ First, the cavity consists of a high-index medium, $n = 1.5$, with a perfect-met
 ```
 Note that the resolution for this simulation is quite large, we'll discuss this further below.
 
-The properties of the polarization of the saturable gain are determined by the central transition frequency, $\omega_a$, its full-width half-maximum, $\Gamma$, and the coupling constant between the polarization and the electric field, $\boldsymbol{\sigma}$. In Meep, the first two of these are specified in units of $c/2\pi a$. As this example compares Meep against results found using the steady-state *ab initio* laser theory (SALT), we show explicitly how to convert between the different variable nomenclature used in each method.
+The properties of the polarization of the saturable gain are determined by the central transition frequency, $\omega_a$, its full-width half-maximum, $\Gamma$, and the coupling constant between the polarization and the electric field, $\boldsymbol{\sigma}$. In Meep, the first two of these are specified in units of $2\pi a / c$. As this example compares Meep against results found using the steady-state *ab initio* laser theory (SALT), we show explicitly how to convert between the different variable nomenclature used in each method.
 ```scm
 (define-param omega-a 40)                        ; omega_a in SALT
 (define freq-21 (/ omega-a (* 2 pi)))            ; emission frequency  (units of 2\pi a/c)
@@ -34,31 +34,34 @@ To understand the need for the high resolution above, let us calculate the centr
 $$ \frac{\lambda}{L} = \frac{2 \pi c}{n \omega_a L} = \frac{2 \pi}{1.5 \cdot 40} \approx 0.1047 $$
 i.e., the cavity contains roughly $10$ wavelengths. (Yes, this is an unphysically small cavity.) Thus, to ensure that the electric field within the cavity is properly resolved, we have chosen roughly $40$ pixels per wavelength, yielding a resolution of 400.
 
-Next, we need to specify the details of the two-level atomic medium we're using.
+Next, we need to specify the non-radiative transition rates of the two-level atomic medium we're using, as well as the total number of gain atoms in the system, $N_0$. The non-radiative transition rates are specified in units of $a/c$.
 ```scm
-(define-param rate-21 0.005)                     ; non-radiative rate  (units of c/a)
+(define-param rate-21 0.005)                     ; non-radiative rate  (units of a/c)
 (define-param N0 37)                             ; initial population density of ground state
 (define-param Rp 0.0051)                         ; pumping rate of ground to excited state
-
-(define two-level (make medium (index ncav)
-        (E-susceptibilities (make multilevel-atom (sigma 1)
-          (transitions (make transition (from-level 1) (to-level 2) (pumping-rate Rp)
-                             (frequency freq-21) (gamma gamma-21) (sigma sigma-21))
-                       (make transition (from-level 2) (to-level 1) (transition-rate rate-21)))
-          (initial-populations N0)))))
 ```
 For a two-level atomic gain medium, the effective inversion that this choice of parameters corresponds to in SALT units can be calculated as
 $$ D_0 \; (\textrm{SALT}) = \frac{|\theta|^2}{\hbar \gamma_\perp} \left( \frac{\gamma_{12} - \gamma_{21}}{\gamma_{12} + \gamma_{21}} N_0 \right) \approx 0.0916 $$
 where the term in parenthesis on the right-hand side is the definition of $D_0$ in normal units, and the additional factor of $|\theta|^2 / \hbar \gamma_\perp$ converts to SALT's units.
 
-Definition of the two-level medium involves the `multilevel-atom` sub-class of the `E-susceptibilities` material type. Each radiative and non-radiative `transition` is specified separately. Note that internally, Meep treats `pumping-rate` and `transition-rate` identically, and you can use them interchangeably, but it is important to specify the `from-level` and `to-level` parameters correctly, otherwise the results will be undefined. Moreover, the choice of these parameters requires some care. For example, choosing a pumping rate that lies far beyond the first lasing threshold will yield large inversion, and thus large gain, which is not realistic, as most physical devices will overheat before reaching such a regime. (Meep will still produce accurate results in this regime though.) Additionally, choosing the total simulation time is especially important when operating near the threshold of a lasing mode, as the fields contain relaxation oscillations and require sufficient time to reach steady state. 
+```scm
+(define two-level (make medium (index ncav)
+        (E-susceptibilities (make multilevel-atom (sigma-diag 1 0 0)
+          (transitions (make transition (from-level 1) (to-level 2) (pumping-rate Rp)
+                             (frequency freq-21) (gamma gamma-21) (sigma sigma-21))
+                       (make transition (from-level 2) (to-level 1) (transition-rate rate-21)))
+          (initial-populations N0)))))
+
+(set! geometry (list (make block (center 0 0 (+ (* -0.5 sz) (* 0.5 Lcav)))
+                           (size infinity infinity Lcav) (material two-level))))			   
+```
+Definition of the two-level medium involves the `multilevel-atom` sub-class of the `E-susceptibilities` material type. Each radiative and non-radiative `transition` is specified separately. Note that internally, Meep treats `pumping-rate` and `transition-rate` identically, and you can use them interchangeably, but it is important to specify the `from-level` and `to-level` parameters correctly, otherwise the results will be undefined. Moreover, the choice of these parameters requires some care. For example, choosing a pumping rate that lies far beyond the first lasing threshold will yield large inversion, and thus large gain, which is not realistic, as most physical devices will overheat before reaching such a regime. (Meep will still produce accurate results in this regime though.) Additionally, choosing the total simulation time is especially important when operating near the threshold of a lasing mode, as the fields contain relaxation oscillations and require sufficient time to reach steady state.
+
+It is also in specifying the full two-level medium that it becomes clear how $\boldsymbol{\sigma}$ is defined. When invoking the `multilevel-atom` sub-class of the `E-susceptibilities` material type, we need to specify the three components of `sigma-diag`, which is the direction $\boldsymbol{\sigma}/|\sigma|$ points in. The magnitude, $|\sigma|$, is specified in the appropriate transition by `sigma`. Internally, Meep defines $\boldsymbol{\sigma}$ as `(sigma sigma-21) * (sigma-diag 1 0 0)`. Thus, this saturable gain media will only couple to, and amplify, the $E_x$ component of the electric field.
 
 The field within the cavity is initialized to arbitrary non-zero values and a fictitious source is used to pump the cavity at a fixed rate. The fields are time stepped until reaching steady state. Near the end of the time stepping, we output the electric field outside of the cavity.
 
 ```scm
-(set! geometry (list (make block (center 0 0 (+ (* -0.5 sz) (* 0.5 Lcav)))
-                           (size infinity infinity Lcav) (material two-level))))
-			   
 (init-fields)
 (meep-fields-initialize-field fields Ex
              (lambda (p) (if (= (vector3-z p) (+ (* -0.5 sz) (* 0.5 Lcav))) 1 0)))
