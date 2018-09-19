@@ -111,7 +111,11 @@ script:
   - export MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
   - mkdir -p build && pushd build
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
-  - travis_wait make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+  # Output something every 9 minutes so travis doesn't kill the job
+  - while sleep 540; do echo "still running"; done &
+  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+  # Kill background sleep loop
+  - kill %1
 
 after_script:
   - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build
