@@ -115,4 +115,3 @@ if __name__ == '__main__':
     parser.add_argument('--three_d',action='store_true',default=False,help='3d calculation? (default: false)')
     args = parser.parse_args()
     main(args)
-# data:, 0.1, 0.004594682631286235, 0.32820244305824947, 0.6386871233593739
