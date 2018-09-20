@@ -1099,6 +1099,10 @@ Output the relative permeability function μ. Note that this only outputs the fr
 —
 Output the Fourier-transformed fields in `dft-fields` (created by `add-dft-fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `volume` `where` defaults to the entire computational cell.
 
+**`output-poynting`**
+—
+Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+
 **`output-hpwr`**
 —
 Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
