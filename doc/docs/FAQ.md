@@ -100,7 +100,7 @@ Usage
 
 ### Is there a Python interface?
 
-Yes. An official Python interface was released in January 2018 with Version 1.4. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which is not compatible with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
+Yes. An official Python interface was released in January 2018 with version 1.4. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which is not compatible with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
 ### What are the different ways to define the material geometry?
 
@@ -174,3 +174,7 @@ No. Meep does not support grids with spatially varying resolution. One possible 
 ### How do I visualize the structure and fields in 3d?
 
 You can use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
+
+### Can Meep be used to investigate lasing phenomena?
+
+Yes. Meep can be used to model saturable absorption and gain via multilevel atomic susceptibility. For details, see [Materials](Materials.md#saturable-gain-andabsorption).

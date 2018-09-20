@@ -11,11 +11,11 @@
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](https://meep.readthedocs.io/en/latest/Python_Tutorials/Basics/), [Scheme](https://meep.readthedocs.io/en/latest/Scheme_Tutorials/Basics), or [C++](https://meep.readthedocs.io/en/master/C++_Tutorial/) APIs.
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard.
+-   Distributed memory **parallelism** on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
 -   **Precompiled binary packages** of official releases and nightly builds via [Conda](https://meep.readthedocs.io/en/latest/Installation/#conda-packages).
--   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
--   **PML** absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
+-   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, and **saturable** gain/absorption..
+-   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   Arbitrary current sources including a guided-mode launcher.
 -   Frequency-domain solver for finding the response to a [continuous-wave (CW)](https://en.wikipedia.org/wiki/Continuous_wave) source.
