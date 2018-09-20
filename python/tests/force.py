@@ -20,7 +20,7 @@ class TestForce(unittest.TestCase):
                                  boundary_layers=[pml_layers],
                                  sources=[sources])
 
-        fr = mp.ForceRegion(mp.Vector3(y=1.27), mp.Y, size=mp.Vector3(4.38))
+        fr = mp.ForceRegion(mp.Vector3(y=1.27), direction=mp.Y, size=mp.Vector3(4.38))
         self.myforce = self.sim.add_force(fcen, 0, 1, fr)
 
     def test_force(self):

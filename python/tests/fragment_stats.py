@@ -66,7 +66,7 @@ class TestFragmentStats(unittest.TestCase):
         dft_vecs = make_dft_vecs(
             [mp.FluxRegion(mp.Vector3(z=-10), size=mp.Vector3(z=10))],
             [mp.Near2FarRegion(mp.Vector3(), size=mp.Vector3(z=10))],
-            [mp.ForceRegion(mp.Vector3(z=10), mp.X, size=mp.Vector3(z=10))]
+            [mp.ForceRegion(mp.Vector3(z=10), direction=mp.X, size=mp.Vector3(z=10))]
         )
 
         fs = self.get_fragment_stats(mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs, sym=sym)
@@ -198,7 +198,7 @@ class TestFragmentStats(unittest.TestCase):
         dft_vecs = make_dft_vecs(
             [mp.FluxRegion(mp.Vector3(-10, 10), size=mp.Vector3(10, 10))],
             [mp.Near2FarRegion(mp.Vector3(0, 10), size=mp.Vector3(10, 10))],
-            [mp.ForceRegion(mp.Vector3(10, 10), mp.X, size=mp.Vector3(10, 10))]
+            [mp.ForceRegion(mp.Vector3(10, 10), direction=mp.X, size=mp.Vector3(10, 10))]
         )
         fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2, dft_vecs=dft_vecs, sym=sym)
 
@@ -340,7 +340,7 @@ class TestFragmentStats(unittest.TestCase):
         dft_vecs = make_dft_vecs(
             [mp.FluxRegion(mp.Vector3(-10, -10, -10), size=mp.Vector3(10, 10, 10))],
             [mp.Near2FarRegion(mp.Vector3(-10, -10, 0), size=mp.Vector3(10, 10, 10))],
-            [mp.ForceRegion(mp.Vector3(-10, -10, 10), mp.X, size=mp.Vector3(10, 10, 10))]
+            [mp.ForceRegion(mp.Vector3(-10, -10, 10), direction=mp.X, size=mp.Vector3(10, 10, 10))]
         )
         fs = self.get_fragment_stats(mp.Vector3(10, 10, 10), mp.Vector3(30, 30, 30), 3, dft_vecs=dft_vecs, sym=sym)
 
@@ -406,7 +406,7 @@ class TestFragmentStats(unittest.TestCase):
         dft_vecs = make_dft_vecs(
             [mp.FluxRegion(mp.Vector3(-10, z=10), size=mp.Vector3(10, z=10))],
             [mp.Near2FarRegion(mp.Vector3(0, z=10), size=mp.Vector3(10, z=10))],
-            [mp.ForceRegion(mp.Vector3(10, z=10), mp.X, size=mp.Vector3(10, z=10))]
+            [mp.ForceRegion(mp.Vector3(10, z=10), direction=mp.X, size=mp.Vector3(10, z=10))]
         )
         fs = self.get_fragment_stats(mp.Vector3(10, 0, 10), mp.Vector3(30, 0, 30),
                                      mp.CYLINDRICAL, dft_vecs=dft_vecs)

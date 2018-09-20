@@ -114,8 +114,8 @@ sim.change_sources(new_sources)
 flx_reg = mp.FluxRegion(direction=mp.Z, center=mp.Vector3(), size=mp.Vector3(1.2 * (2 * a + s), 1.2 * a))
 wvg_pwr = sim.add_flux(f, 0, 1, flx_reg)
 
-frc_reg1 = mp.ForceRegion(mp.Vector3(0.5 * s), mp.X, weight=1.0, size=mp.Vector3(y=a))
-frc_reg2 = mp.ForceRegion(mp.Vector3(0.5 * s + a), mp.X, weight=-1.0, size=mp.Vector3(y=a))
+frc_reg1 = mp.ForceRegion(mp.Vector3(0.5 * s), direction=mp.X, weight=1.0, size=mp.Vector3(y=a))
+frc_reg2 = mp.ForceRegion(mp.Vector3(0.5 * s + a), direction=mp.X, weight=-1.0, size=mp.Vector3(y=a))
 wvg_force = sim.add_force(f, 0, 1, frc_reg1, frc_reg2)
 
 runtime = 5000

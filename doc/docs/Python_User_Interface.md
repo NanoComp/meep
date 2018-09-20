@@ -769,6 +769,9 @@ Properties:
 **`weight` [`complex`]**
 —A weight factor to multiply the flux by when it is computed. Default is 1.0.
 
+**`volume` [`Volume`]**
+—A `meep.Volume` can be used to specify the flux region instead of a center and a size.
+
 Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
 
 ### Volume
@@ -1031,6 +1034,10 @@ The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). U
 —
 A weight factor to multiply the force by when it is computed. Default is 1.0.
 
+**`volume` [`Volume`]**
+—
+A `meep.Volume` can be used to specify the force region instead of a center and a size.
+
 In most circumstances, you should define a set of `ForceRegion`s whose union is a closed surface lying in vacuum and enclosing the object that is experiencing the force.
 
 **`Simulation.add_force(fcen, df, nfreq, ForceRegions...)`**
@@ -1208,6 +1215,14 @@ This feature is only available if Meep is built with [libGDSII](Build_From_Sourc
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —
 Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer `layer` of a GDSII file `gdsii_filename`.
+
+**`mp.GDSII_vol(fname, layer, zmin, zmax)`**
+—
+Returns a `mp.Volume` read from a GDSII file `fname` on `layer` with `zmin` and `zmax`. This function is useful for creating a `FluxRegion` from a GDSII file as follows
+
+```python
+fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
+```
 
 Run and Step Functions
 ----------------------
