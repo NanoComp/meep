@@ -149,14 +149,19 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   double dx, dy, dz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = pmod( int(rx * nx), nx );
-  y = pmod( int(ry * ny), ny );
-  z = pmod( int(rz * nz), nz );
+  x = int(rx * nx);
+  y = int(ry * ny);
+  z = int(rz * nz);
 
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x;
   dy = ry * ny - y;
   dz = rz * nz - z;
+
+  /* wrap around to 0..n-1, assuming periodic boundaries */
+  x = pmod( x, nx );
+  y = pmod( x, ny );
+  z = pmod( x, nz );
 
   /* get the other closest point in the grid, with periodic boundaries: */
   x2 = pmod( (dx >= 0.0 ? x + 1 : x - 1), nx );
