@@ -213,34 +213,55 @@ double fields::get_chi1inv(component c, direction d,
 }
 
 double fields_chunk::get_chi1inv(component c, direction d,
-			     const ivec &iloc) const {
+			     const ivec &iloc, double omega) const {
   double res = 0.0;
-  if (is_mine()) res = s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
-		   : (d == component_direction(c) ? 1.0 : 0);
+  if (is_mine()) {
+     res = s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
+      : (d == component_direction(c) ? 1.0 : 0);
+
+     if (res != 0){
+       // Get instaneous dielectric (epsilon)
+       std::complex<double> eps(1 / res,0);
+       // Loop through and add up susceptibility contributions
+       // locate correct susceptibility list
+       susceptibility Esus = chiP[E_stuff];
+       while (Esus) {
+         eps += Esus.chi1(omega,sigma[c][d])
+         Esus = Esus->next;
+       }
+      // Account for conductivity term
+      if (has_conductivity(c)){
+        eps = std::complex<double> eps(1,conductivity[c][d]) * eps
+      }
+    }
+    // Return chi1 inverse, take the real part since no support for loss
+    // TODO: Add support for loss within mode solver
+    res = 1 / std::complex::real(eps)
+  }
   return broadcast(n_proc(), res);
 }
 
 double fields::get_chi1inv(component c, direction d,
-			  const vec &loc) const {
+			  const vec &loc, double omega) const {
   ivec ilocs[8];
   double w[8];
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
   gv.interpolate(c, loc, ilocs, w);
   for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_chi1inv(c,d,ilocs[argh]);
+    val[argh] = w[argh]*get_chi1inv(c,d,ilocs[argh],omega);
   dumbsort(val);
   double res = 0.0;
   for (int i=0;i<8;i++) res += val[i];
   return res;
 }
 
-double fields::get_eps(const vec &loc) const {
+double fields::get_eps(const vec &loc, double omega) const {
   double tr = 0;
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c)
     if (gv.has_field(c)) {
-      tr += get_chi1inv(c, component_direction(c), loc);
+      tr += get_chi1inv(c, component_direction(c), loc, omega);
       ++nc;
     }
   return nc / tr;
@@ -258,14 +279,14 @@ double fields::get_mu(const vec &loc) const {
 }
 
 double structure::get_chi1inv(component c, direction d,
-			     const ivec &origloc) const {
+			     const ivec &origloc, double omega) const {
   ivec iloc = origloc;
   for (int sn=0;sn<S.multiplicity();sn++)
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->gv.contains(S.transform(iloc,sn))) {
 	signed_direction ds = S.transform(d,sn);
         return chunks[i]->get_chi1inv(S.transform(c,sn), ds.d,
-				      S.transform(iloc,sn))
+				      S.transform(iloc,sn),omega)
 	  * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
 		? -1 : 1);
       }
@@ -273,34 +294,55 @@ double structure::get_chi1inv(component c, direction d,
 }
 
 double structure_chunk::get_chi1inv(component c, direction d,
-				    const ivec &iloc) const {
+				    const ivec &iloc, double omega) const {
   double res = 0.0;
-  if (is_mine()) res = chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)]
-		   : (d == component_direction(c) ? 1.0 : 0);
+  if (is_mine()) {
+     res = s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
+      : (d == component_direction(c) ? 1.0 : 0);
+
+     if (res != 0){
+       // Get instaneous dielectric (epsilon)
+       std::complex<double> eps(1 / res,0);
+       // Loop through and add up susceptibility contributions
+       // locate correct susceptibility list
+       susceptibility Esus = chiP[E_stuff];
+       while (Esus) {
+         eps += Esus.chi1(omega,sigma[c][d])
+         Esus = Esus->next;
+       }
+      // Account for conductivity term
+      if (has_conductivity(c)){
+        eps = std::complex<double> eps(1,conductivity[c][d]) * eps
+      }
+    }
+    // Return chi1 inverse, take the real part since no support for loss
+    // TODO: Add support for loss within mode solver
+    res = 1 / std::complex::real(eps)
+  }
   return broadcast(n_proc(), res);
 }
 
 double structure::get_chi1inv(component c, direction d,
-			      const vec &loc) const {
+			      const vec &loc, double omega) const {
   ivec ilocs[8];
   double w[8];
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
   gv.interpolate(c, loc, ilocs, w);
   for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_chi1inv(c,d,ilocs[argh]);
+    val[argh] = w[argh]*get_chi1inv(c,d,ilocs[argh],omega);
   dumbsort(val);
   double res = 0.0;
   for (int i=0;i<8;i++) res += val[i];
   return res;
 }
 
-double structure::get_eps(const vec &loc) const {
+double structure::get_eps(const vec &loc, double omega) const {
   double tr = 0;
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c)
     if (gv.has_field(c)) {
-      tr += get_chi1inv(c, component_direction(c), loc);
+      tr += get_chi1inv(c, component_direction(c), loc, omega);
       ++nc;
     }
   return nc / tr;
