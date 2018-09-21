@@ -502,9 +502,9 @@ class structure_chunk {
   void remove_susceptibilities();
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &iloc) const;
-  double get_inveps(component c, direction d, const ivec &iloc) const {
-    return get_chi1inv(c, d, iloc); }
+  double get_chi1inv(component, direction, const ivec &iloc, double omega) const;
+  double get_inveps(component c, direction d, const ivec &iloc, double omega) const {
+    return get_chi1inv(c, d, iloc, omega); }
   double max_eps() const;
  private:
   double pml_fmin;
@@ -659,13 +659,13 @@ class structure {
   void load(const char *filename);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc) const;
-  double get_chi1inv(component, direction, const vec &loc) const;
-  double get_inveps(component c, direction d, const ivec &origloc) const {
-    return get_chi1inv(c, d, origloc); }
-  double get_inveps(component c, direction d, const vec &loc) const {
-    return get_chi1inv(c, d, loc); }
-  double get_eps(const vec &loc) const;
+  double get_chi1inv(component, direction, const ivec &origloc, double omega) const;
+  double get_chi1inv(component, direction, const vec &loc, double omega) const;
+  double get_inveps(component c, direction d, const ivec &origloc, double omega) const {
+    return get_chi1inv(c, d, origloc, omega); }
+  double get_inveps(component c, direction d, const vec &loc, double omega) const {
+    return get_chi1inv(c, d, loc, omega); }
+  double get_eps(const vec &loc, double omega) const;
   double get_mu(const vec &loc) const;
   double max_eps() const;
 
@@ -1181,7 +1181,7 @@ class fields_chunk {
   volume get_field_gv(component) const;
   std::complex<double> get_field(component, const vec &) const;
 
-  double get_chi1inv(component, direction, const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega) const;
 
   void backup_component(component c);
   void average_with_backup(component c);
@@ -1657,11 +1657,11 @@ class fields {
   dft_near2far add_dft_near2far(const volume_list *where,
                                 double freq_min, double freq_max, int Nfreq);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc) const;
-  double get_inveps(component c, direction d, const vec &loc) const {
-    return get_chi1inv(c, d, loc);
+  double get_chi1inv(component, direction, const vec &loc, double omega) const;
+  double get_inveps(component c, direction d, const vec &loc, double omega) const {
+    return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc) const;
+  double get_eps(const vec &loc, double omega) const;
   double get_mu(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
@@ -1751,7 +1751,7 @@ class fields {
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc) const;
-  double get_chi1inv(component, direction, const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
 };
