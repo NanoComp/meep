@@ -196,7 +196,7 @@ complex<double> fields_chunk::get_field(component c, const vec &loc) const {
 }
 
 double fields::get_chi1inv(component c, direction d,
-			  const ivec &origloc) const {
+			  const ivec &origloc, double omega) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
   locate_point_in_user_volume(&iloc, &aaack);
@@ -205,7 +205,7 @@ double fields::get_chi1inv(component c, direction d,
       if (chunks[i]->gv.contains(S.transform(iloc,sn))) {
       	signed_direction ds = S.transform(d,sn);
         return chunks[i]->get_chi1inv(S.transform(c,sn), ds.d,
-                        				      S.transform(iloc,sn))
+                        				      S.transform(iloc,sn), omega)
         	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
             	 ? -1 : 1);
       }
@@ -216,27 +216,29 @@ double fields_chunk::get_chi1inv(component c, direction d,
 			     const ivec &iloc, double omega) const {
   double res = 0.0;
   if (is_mine()) {
-     res = s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
+   res = s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
       : (d == component_direction(c) ? 1.0 : 0);
-
-     if (res != 0){
-       // Get instaneous dielectric (epsilon)
-       std::complex<double> eps(1 / res,0);
-       // Loop through and add up susceptibility contributions
-       // locate correct susceptibility list
-       susceptibility Esus = chiP[E_stuff];
-       while (Esus) {
-         eps += Esus.chi1(omega,sigma[c][d])
-         Esus = Esus->next;
-       }
-      // Account for conductivity term
-      if (has_conductivity(c)){
-        eps = std::complex<double> eps(1,conductivity[c][d]) * eps
+    if (res != 0){
+      // Get instaneous dielectric (epsilon)
+      std::complex<double> eps(1 / res,0);
+      // Loop through and add up susceptibility contributions
+      // locate correct susceptibility list
+      susceptibility *Esus = s->chiP[E_stuff];
+      while (Esus) {
+        double sigma = 0;
+        if (Esus->sigma[c][d]) sigma = Esus->sigma[c][d][gv.index(c, iloc)];
+        eps += Esus->chi1(omega,sigma);
+        Esus = Esus->next;
       }
-    }
-    // Return chi1 inverse, take the real part since no support for loss
-    // TODO: Add support for loss within mode solver
-    res = 1 / std::complex::real(eps)
+      // Account for conductivity term
+       if (s->conductivity[c][d]) {
+         double conductivity = s->conductivity[c][d][gv.index(c, iloc)];
+         eps = std::complex<double>(1.0, (conductivity/omega)) * eps;
+       }
+      // Return chi1 inverse, take the real part since no support for metals
+      // TODO: Add support for metals
+      res = 1 / (eps.real());
+   }
   }
   return broadcast(n_proc(), res);
 }
@@ -297,27 +299,26 @@ double structure_chunk::get_chi1inv(component c, direction d,
 				    const ivec &iloc, double omega) const {
   double res = 0.0;
   if (is_mine()) {
-     res = s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
-      : (d == component_direction(c) ? 1.0 : 0);
+     res = chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)]
+       : (d == component_direction(c) ? 1.0 : 0);
 
      if (res != 0){
        // Get instaneous dielectric (epsilon)
        std::complex<double> eps(1 / res,0);
        // Loop through and add up susceptibility contributions
        // locate correct susceptibility list
-       susceptibility Esus = chiP[E_stuff];
+       susceptibility *Esus = chiP[E_stuff];
        while (Esus) {
-         eps += Esus.chi1(omega,sigma[c][d])
+         eps += Esus->chi1(omega,*Esus->sigma[c][d]);
          Esus = Esus->next;
        }
-      // Account for conductivity term
-      if (has_conductivity(c)){
-        eps = std::complex<double> eps(1,conductivity[c][d]) * eps
-      }
+       // Account for conductivity term
+       eps = std::complex<double>(1.0,*conductivity[c][d]) * eps;
+       // Return chi1 inverse, take the real part since no support for loss
+       // TODO: Add support for loss within mode solver
+       res = 1 / (std::sqrt(eps).real() *  std::sqrt(eps).real());
     }
-    // Return chi1 inverse, take the real part since no support for loss
-    // TODO: Add support for loss within mode solver
-    res = 1 / std::complex::real(eps)
+
   }
   return broadcast(n_proc(), res);
 }
