@@ -322,6 +322,40 @@ The loss rate $γ_n / 2\pi$.
 
 Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
+### MultilevelAtom
+
+Specifies a multievel atomic susceptibility for modeling saturable gain and absorption. This is a subclass of `E_susceptibilities` which contains two objects: (1) `transitions`: a list of atomic `Transition`s (defined below), and (2) `initial_populations`: a list of numbers defining the initial population of each atomic level. See [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
+
+#### Transition
+
+**`frequency` [`number`]**
+—
+The radiative transition frequency $f = \omega / 2\pi$.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma = \gamma / 2\pi$.
+
+**`sigma_diag` [`Vector3`]**
+—
+The per-polarization coupling strength $\sigma$.
+
+**`from_level` [`number`]**
+—
+The atomic level from which the transition occurs.
+
+**`to_level` [`number`]**
+—
+The atomic level to which the transition occurs.
+
+**`transition_rate` [`number`]**
+—
+The non-radiative transition rate $f = \omega / 2\pi$. Default is 0.
+
+**`pumping_rate` [`number`]**
+—
+The pumping rate $f = \omega / 2\pi$. Default is 0.
+
 ### NoisyLorentzianSusceptibility or NoisyDrudeSusceptibility
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
@@ -1018,19 +1052,19 @@ The usage is similar to the flux spectra: you define a set of `ForceRegion` obje
 
 A region (volume, plane, line, or point) in which to compute the integral of the stress tensor of the Fourier-transformed fields. Its properties are:
 
-**`center [ Vector3 ]`**
+**`center` [ `Vector3` ]**
 —
 The center of the force region (no default).
 
-**`size [ Vector3 ]`**
+**`size` [ `Vector3` ]**
 —
 The size of the force region along each of the coordinate axes. Default is `(0,0,0)` (a single point).
 
-**`direction [ direction constant ]`**
+**`direction` [ `direction constant` ]**
 —
 The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). Unlike `FluxRegion`, you must specify this explicitly, because there is not generally any relationship between the direction of the force and the orientation of the force region.
 
-**`weight [ complex ]`**
+**`weight` [ `complex` ]**
 —
 A weight factor to multiply the force by when it is computed. Default is 1.0.
 

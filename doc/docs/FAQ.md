@@ -177,4 +177,4 @@ You can use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an
 
 ### Can Meep be used to investigate lasing phenomena?
 
-Yes. Meep can be used to model saturable absorption and gain via multilevel atomic susceptibility. For details, see [Materials](Materials.md#saturable-gain-andabsorption).
+Yes. Meep can be used to model saturable gain and absorption via multilevel atomic susceptibility. This feature may be used to investigate optically-pumped lasing phenomena such as [raman lasers](https://en.wikipedia.org/wiki/Raman_laser). For details, see [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).

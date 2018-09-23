@@ -1,5 +1,4 @@
-;; This file realizes a 1D, one-sided Fabry-Perot laser, as described in Fig. 2 of Cerjan et al.,
-;; Opt. Express 20, 474 (2012).
+;; This file realizes a 1D, one-sided Fabry-Perot laser, as described in Fig. 2 of Optics Express, Vol. 20, pp. 474-88, 2012.
 
 ;; Cavity definitions
 (set-param! resolution 400)
@@ -21,10 +20,10 @@
 ;; this transformation explicitly.
 
 (define-param omega-a 40)                        ; omega_a in SALT
-(define freq-21 (/ omega-a (* 2 pi)))            ; emission frequency  (units of 2\pi a/c)
+(define freq-21 (/ omega-a (* 2 pi)))            ; emission frequency  (units of 2πc/a)
 
 (define-param gamma-perp 4)                      ; HWHM in angular frequency, SALT
-(define gamma-21 (/ (* 2 gamma-perp) (* 2 pi)))  ; FWHM emission linewidth in sec^-1  (units of 2\pi a/c)
+(define gamma-21 (/ (* 2 gamma-perp) (* 2 pi)))  ; FWHM emission linewidth in sec^-1  (units of 2πc/a)
 					         ; Note that 2*pi*gamma-21 = 2*gamma_perp in SALT.
 
 (define-param theta 1)                           ; theta, the off-diagonal dipole matrix element, in SALT
@@ -49,9 +48,9 @@
 ;; This 4*pi comes from using Gaussian units, in which the displacement field, D = E + 4*pi*P, whereas
 ;; in SI units, D = eps0*E + P, which is what MEEP uses.
 
-;; Gain medium pump and decay rates are specified in units of a/c.
+;; Gain medium pump and decay rates are specified in units of c/a.
 
-(define-param rate-21 0.005)                     ; non-radiative rate  (units of a/c)
+(define-param rate-21 0.005)                     ; non-radiative rate  (units of c/a)
 (define-param N0 37)                             ; initial population density of ground state
 (define-param Rp 0.0051)                         ; pumping rate of ground to excited state
 ;; so for example, these parameters have D_0 (SALT) = 0.0693.
@@ -68,7 +67,6 @@
 (set! geometry (list (make block (center 0 0 (+ (* -0.5 sz) (* 0.5 Lcav)))
 			   (size infinity infinity Lcav) (material two-level))))
 
-;; Initialize the fields, has to be non-zero, doesn't really matter what.
 (init-fields)
 (meep-fields-initialize-field fields Ex
 			      (lambda (p) (if (= (vector3-z p) (+ (* -0.5 sz) (* 0.5 Lcav))) 1 0)))
@@ -78,7 +76,7 @@
 ;; Note that the total number of time steps run is endt*resolution*2. This is the origin of the extra
 ;; factor of 2 in the definition of dt in fieldfft_meep.m.
 
-;; Run it:
 (define print-field (lambda () (print "field:, " (meep-time) ", "
 	       (real-part (get-field-point Ex (vector3 0 0 (+ (* -0.5 sz) Lcav (* 0.5 dpad))))) "\n")))
+
 (run-until endt (after-time (- endt 250) print-field))

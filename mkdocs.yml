@@ -56,6 +56,7 @@ pages:
     - 'Tutorial/Near-to-Far Field Spectra': 'Python_Tutorials/Near_to_Far_Field_Spectra.md'
     - 'Tutorial/Local Density of States': 'Python_Tutorials/Local_Density_of_States.md'
     - 'Tutorial/Optical Forces': 'Python_Tutorials/Optical_Forces.md'
+    - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'    
     - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
