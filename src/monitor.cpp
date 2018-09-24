@@ -22,7 +22,9 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 #if defined(HAVE_LIBFFTW3)
 #  include <fftw3.h>
 #elif defined(HAVE_LIBDFFTW)

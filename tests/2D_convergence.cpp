@@ -1,6 +1,8 @@
 #include <meep.hpp>
 using namespace meep;
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 using namespace std;
 
 const double diameter = 0.8;

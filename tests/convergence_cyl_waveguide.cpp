@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <meep.hpp>
 using namespace meep;
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 using namespace std;
 
 double eps(const vec &pt) { return ((pt.r() < 0.5+1e-6) ? 9.0 : 1.0); }

@@ -21,7 +21,9 @@
 #include "meep/mympi.hpp"
 #include "bicgstab.hpp"
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 /* bicgstab() implements an iterative solver for non-symmetric linear
    operators, using the algorithm described in:

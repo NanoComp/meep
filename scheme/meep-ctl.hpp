@@ -6,7 +6,9 @@
 
 #include "meep-ctl-const.hpp"
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 #include "ctl-io.h"
 
 #include "meep-ctl-swig.hpp"
