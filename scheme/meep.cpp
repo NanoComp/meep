@@ -73,12 +73,12 @@ kpoint_list do_get_eigenmode_coefficients(fields *f, dft_flux flux, const volume
 {
   size_t num_kpoints = num_bands * flux.Nfreq;
   meep::vec *kpoints = new meep::vec[num_kpoints];
-  meep::vec *kdom = new meep::vec[num_bands];
+  meep::vec *kdom = new meep::vec[num_kpoints];
 
   f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
                                 coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom);
 
-  kpoint_list res = {kpoints, num_kpoints, kdom, num_bands};
+  kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
   return res;
 }
