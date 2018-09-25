@@ -160,8 +160,8 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
 
   /* wrap around to 0..n-1, assuming periodic boundaries */
   x = pmod( x, nx );
-  y = pmod( x, ny );
-  z = pmod( x, nz );
+  y = pmod( y, ny );
+  z = pmod( z, nz );
 
   /* get the other closest point in the grid, with periodic boundaries: */
   x2 = pmod( (dx >= 0.0 ? x + 1 : x - 1), nx );
@@ -461,7 +461,7 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
   /* do a second round of post-processing to tabulate E-fields   -*/
   /* on a (separate) internal storage buffer.  (Previously       -*/
-  /* there was only one internal buffer which held either E-field */
+  /* there was only one internal buffer which held either E-field *
   /* or H-field data, but this is inconvenient for cases in which */
   /* you want the E and H fields of an eigenmode simultaneously.) */
   /*--------------------------------------------------------------*/
