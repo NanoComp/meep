@@ -6,8 +6,8 @@ We'll go through several examples using the Python interface that demonstrate th
 
 [TOC]
 
-The Meep Python Library
------------------------
+The Meep Library
+----------------
 
 Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [Matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality and will also be demonstrated. Much of the functionality of the low-level C++ interface has been abstracted in Python which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available where necessary.
 
@@ -26,7 +26,7 @@ For our first example, let's examine the field pattern excited by a localized [C
 
 ### A Straight Waveguide
 
-The first thing to do always is to load the Meep library module:
+The first thing to do always is to load the Meep library:
 
 ```py
 import meep as mp
@@ -432,7 +432,7 @@ Creating an oblique planewave source typically requires specifying two parameter
 
 In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
-The simulation script is in [refl-angular.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-angular.py)
+The simulation script is [refl-angular.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-angular.py)
 
 ```py
 import meep as mp
@@ -530,7 +530,7 @@ for i in `seq 0 5 80`; do
 done
 ```
 
-Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Python script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the source wavelength λ and Bloch-periodic wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a particular angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results. [Brewster's angle](https://en.wikipedia.org/wiki/Brewster%27s_angle) (where the transmittance is 1 and the reflectance is 0) is tan<sup>-1</sup>(3.5/1)=74.1°, which is also verified by the simulated results.
+Two-dimensional plots of the angular reflectance spectrum based on the simulated data and the analytic [Fresnel equations](https://en.wikipedia.org/wiki/Fresnel_equations) are generated using the Python script below. The plots are shown in the accompanying figure with four insets. The top left inset shows the simulated and analytic reflectance spectra at a wavelength of 0.6 μm. The top right inset shows the simulated reflectance spectrum as a function of the source wavelength λ and Bloch-periodic wavevector $k_x$: $R(\lambda, k_x)$. The lower left inset is a transformation of $R(\lambda, k_x)$ into $R(\lambda, \theta)$. Note how the range of angles depends on the wavelength. For a particular angle, the reflectance is a constant for all wavelengths due to the dispersionless dielectric. The lower right inset is the analytic reflectance spectrum computed using the Fresnel equations. There is agreement between the simulated and analytic results. The [Brewster's angle](https://en.wikipedia.org/wiki/Brewster%27s_angle), where the transmittance is 1 and the reflectance is 0, is tan<sup>-1</sup>(3.5/1)=74.1°. This is also verified by the simulated results.
 
 In order to generate results for the missing portion of the reflectance spectrum (i.e., the white region), we will need to rerun the simulations for different wavelength spectra.
 

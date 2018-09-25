@@ -4,6 +4,8 @@
 
 This page is a listing of the functions exposed by the Scheme interface. For a gentler introduction, see [Tutorial/Basics](Scheme_Tutorials/Basics.md). This page does not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). Also, note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users. See also the instructions for [parallel Meep](Parallel_Meep.md).
 
+**Note:** The Scheme interface is being deprecated. We highly recommend using the [Python interface](Python_User_Interface.md).
+
 [TOC]
 
 Input Variables

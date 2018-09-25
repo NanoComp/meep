@@ -1,9 +1,8 @@
-import argparse
-import os
 import meep as mp
+import os
+import argparse
 
-
-resolution = 25 # pixels/um
+resolution = 25    # pixels/um
 examples_dir = os.path.realpath(os.path.dirname(__file__))
 gdsII_file = os.path.join(examples_dir, 'coupler.gds')
 CELL_LAYER = 0
@@ -30,7 +29,6 @@ dpml = 1
 lcen = 1.55
 fcen = 1/lcen
 df = 0.2*fcen
-
 
 def main(args):
     d  = args.d
@@ -100,7 +98,7 @@ def main(args):
     p4_region = mp.FluxRegion(volume=p4)
     flux4 = sim.add_flux(fcen,0,1,p4_region)
 
-    sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,p3.center,1e-8))
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,p3.center,1e-9))
 
     p1_flux = mp.get_fluxes(flux1)
     p2_flux = mp.get_fluxes(flux2)
@@ -112,6 +110,6 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d',type=float,default=0.1,help='branch separation (default: 0.1 um)')
-    parser.add_argument('--three_d',action='store_true',default=False,help='3d calculation? (default: false)')
+    parser.add_argument('--three_d',action='store_true',default=False,help='3d calculation? (default: False)')
     args = parser.parse_args()
     main(args)

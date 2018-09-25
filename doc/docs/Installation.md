@@ -9,9 +9,9 @@ Building from Source
 
 Building Meep directly from the source code can be challenging for users unfamiliar with building Unix software, mainly because of the many prerequisites that must be installed combined with the need to tell Meep's build scripts where to find these prerequisites.
 
-Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/wiki/GNU_Build_System) `./configure && make && make install` machinery, but requires a number of prerequisites in order to obtain a full-featured Meep installation: [MPB](http://mpb.readthedocs.io/en/latest/), [Libctl](https://github.com/stevengj/libctl), [Harminv](https://github.com/stevengj/harminv), [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface), [HDF5](https://support.hdfgroup.org/HDF5/), [Python](https://www.python.org/), [GNU Guile](https://www.gnu.org/software/guile/). MPB and Harminv, in turn, require [LAPACK and BLAS](http://www.netlib.org/lapack/lug/node11.html) and [FFTW](http://fftw.org/) to be installed.
+Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/wiki/GNU_Build_System) `./configure && make && make install` machinery, but requires a number of prerequisites in order to obtain a full-featured Meep installation: [MPB](http://mpb.readthedocs.io/en/latest/), [Libctl](https://github.com/stevengj/libctl), [Harminv](https://github.com/stevengj/harminv), [libGDSII](https://github.com/HomerReid/libGDSII), [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface), [HDF5](https://support.hdfgroup.org/HDF5/), [Python](https://www.python.org/), and [Guile](https://www.gnu.org/software/guile/). MPB and Harminv, in turn, require [LAPACK and BLAS](http://www.netlib.org/lapack/lug/node11.html) and [FFTW](http://fftw.org/) to be installed.
 
-Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases), and you can also do a `git clone` of the bleeding-edge [Meep on Github](https://github.com/stevengj/meep) if you have the GNU Autotools installed. See [Build From Source](Build_From_Source) for more information.
+Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases), and you can also do a `git clone` of the master branch of the [Meep repository on Github](https://github.com/stevengj/meep) if you have Autotools installed. For more information, see [Build From Source](Build_From_Source.md).
 
 The latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
@@ -61,7 +61,7 @@ mpirun -np 4 python <script_name>.py
 
 If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
 
-*Note:* For pymeep-parallel on macOS, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
+**Note:** For pymeep-parallel on macOS, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
 
 ```bash
 [laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad
@@ -118,9 +118,9 @@ Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [
 ./configure && make && make install
 ```
 
-Use the same commands for [libctl](https://libctl.readthedocs.io), then [MPB](https://mpb.readthedocs.io), then Meep. See [Build From Source](Build_From_Source) for more detailed information.
+Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
 
-You are done, and can now run Meep just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
+You are done, and can now run Meep (Scheme interface) just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 
 To build the latest version of Meep from source on macOS Sierra, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 

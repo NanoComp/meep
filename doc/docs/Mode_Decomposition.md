@@ -235,6 +235,6 @@ or alternatively,
 
 $$ \textit{power} = |\tilde{\alpha_n^\pm}|^2 $$
 
-where $\tilde{\alpha_n^\pm} \equiv \sqrt{v_n A_S/\left({2S_x}\right)}a_n^\pm$. $\tilde{\alpha_n^\pm}$ are the eigenmode coefficients returned by `get_eigenmode_coefficients`.
+where $\tilde{\alpha_n^\pm} \equiv \sqrt{v_n A_S/\left({2S_x}\right)}a_n^\pm$. The $\tilde{\alpha_n^\pm}$ are the eigenmode coefficients returned by `get_eigenmode_coefficients`.
 
 

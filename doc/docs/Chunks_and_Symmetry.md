@@ -1,5 +1,5 @@
 ---
-# Field chunks, DFT chunks, symmetries, and all that
+# Chunks and Symmetry
 ---
 
 As discussed in the

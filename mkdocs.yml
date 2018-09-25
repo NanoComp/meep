@@ -76,5 +76,5 @@ pages:
     - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
 - 'C++ Interface':
     - 'Developer Information': 'C++_Developer_Information.md'
+    - 'Chunks and Symmetry': 'Chunks_and_Symmetry.md'
     - 'Tutorial/Basics': 'C++_Tutorial.md'
-    - 'Chunks and Symmetry': 'ChunksAndSymmetry.md'
