@@ -199,7 +199,11 @@ class Medium(object):
     def get_eps(self,freq):
 
         # Clean the input
-        freq = np.squeeze(freq)
+        freq = np.squeeze([freq])
+
+        # Compensate for scalar inputs
+        if len(freq.shape) == 0:
+            freq = np.array([freq])
 
         # Initialize with instantaneous dielectric tensor, use numpy arrays for
         # convenience and speed.

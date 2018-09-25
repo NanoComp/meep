@@ -282,11 +282,11 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
 std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) {
   if (no_omega_0_denominator) {
     // Drude model
-    return (sigma * omega_0*omega_0) / std::complex<double>(-freq*freq, -gamma*freq);
+    return std::complex<double>(sigma * omega_0*omega_0,0) / std::complex<double>(-freq*freq, -gamma*freq);
   }
   else{
     // Standard Lorentzian model
-    return (sigma * omega_0*omega_0) / std::complex<double>(omega_0*omega_0 - freq*freq, -gamma*freq);
+    return std::complex<double>(sigma * omega_0*omega_0,0) / std::complex<double>(omega_0*omega_0 - freq*freq, -gamma*freq);
   }
 }
 
