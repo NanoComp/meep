@@ -657,13 +657,14 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
         coeffs[2*nb*num_freqs + 2*nf] = coeffs[2*nb*num_freqs + 2*nf + 1] = 0;
         if (vgrp) vgrp[nb*num_freqs + nf] = 0;
         if (kpoints) kpoints[nb*num_freqs + nf] = vec(0.0,0.0,0.0);
+        if (kdom_list) kdom_list[nb*num_freqs + nf] = vec(0.0,0.0,0.0);
         continue;
       }
 
       double vg=get_group_velocity(mode_data);
       if (vgrp) vgrp[nb*num_freqs + nf]=vg;
       if (kpoints) kpoints[nb*num_freqs + nf]=get_k(mode_data);
-      if (kdom) kdom_list[nb] = vec(kdom[0], kdom[1], kdom[2]);
+      if (kdom_list) kdom_list[nb*num_freqs + nf] = vec(kdom[0], kdom[1], kdom[2]);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -693,12 +694,12 @@ void *fields::get_eigenmode(double omega_src,
                             const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution,
-                            double eigensolver_tol, bool verbose) {
+                            double eigensolver_tol, bool verbose, double *kdom) {
 
   (void) omega_src; (void) d; (void) where; (void) eig_vol;
   (void) band_num;  (void) kpoint; (void) match_frequency;
   (void) parity; (void) resolution; (void) eigensolver_tol;
-  (void) verbose;
+  (void) verbose (void) kdom;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
