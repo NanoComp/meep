@@ -15,24 +15,24 @@ All of this process is handled for you in Meep by a single step function: `synch
 
 For example, if you do:
 
-*Python*
+**Python**
 ```py
 meep.Simulation.run(meep.output_poynting,meep.output_tot_pwr,until=200)
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 (run-until 200 output-poynting output-tot-pwr)
 ```
 
 it outputs the Poynting vector and the total energy density in the electric and magnetic fields at each timestep, but it only does so to first-order accuracy because those computations combine unsynchronized electric and magnetic fields. Instead, if you do
 
-*Python*
+**Python**
 ```py
 meep.Simulation.run(meep.synchronized_magnetic(meep.output_poynting,meep.output_tot_pwr,until=200))
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 (run-until 200 (synchronized-magnetic output-poynting output-tot-pwr))
 ```

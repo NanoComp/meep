@@ -4,6 +4,8 @@
 
 This page is a listing of the functions exposed by the Scheme interface. For a gentler introduction, see [Tutorial/Basics](Scheme_Tutorials/Basics.md). This page does not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). Also, note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users. See also the instructions for [parallel Meep](Parallel_Meep.md).
 
+**Note:** The Scheme interface is being deprecated. We highly recommend using the [Python interface](Python_User_Interface.md).
+
 [TOC]
 
 Input Variables
@@ -286,6 +288,40 @@ The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a re
 The loss rate $γ_n / 2\pi$.
 
 Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
+
+### multilevel-atom
+
+Specifies a multievel atomic susceptibility for modeling saturable gain and absorption. This is a subclass of `E-susceptibilities` which contains two objects: (1) `transitions`: a list of atomic `transition`s (defined below), and (2) `initial-populations`: a list of numbers defining the initial population of each atomic level. See [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
+
+#### transition
+
+**`frequency` [`number`]**
+—
+The radiative transition frequency $f = \omega / 2\pi$.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma = \gamma / 2\pi$.
+
+**`sigma` [`number`]**
+—
+The coupling strength $\sigma$.
+
+**`from-level` [`number`]**
+—
+The atomic level from which the transition occurs.
+
+**`to-level` [`number`]**
+—
+The atomic level to which the transition occurs.
+
+**`transition-rate` [`number`]**
+—
+The non-radiative transition rate $f = \omega / 2\pi$. Default is 0.
+
+**`pumping-rate` [`number`]**
+—
+The pumping rate $f = \omega / 2\pi$. Default is 0.
 
 ### noisy-lorentzian-susceptibility or noisy-drude-susceptibility
 

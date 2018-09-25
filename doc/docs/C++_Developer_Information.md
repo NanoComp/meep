@@ -2,13 +2,9 @@
 # C++ Developer Information
 ---
 
-Meep Design
------------
-
 An overview of Meep's inner workings is summarized in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
 
-See also the page ["Field chunks, DFT chunks, symmetries, and all that](/ChunksAndSymmetry.md)
-for more details on chunking and the implementation of symmetries.
+For more details, see [Chunks and Symmetry](Chunks_and_Symmetry.md)
 
 [TOC]
 
