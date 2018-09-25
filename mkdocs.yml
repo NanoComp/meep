@@ -9,7 +9,7 @@ site_dir: 'doc/site'
 
 theme:
    name: readthedocs
-   custom_dir: 'doc/meep-mkdocs-theme'
+   # custom_dir: 'doc/meep-mkdocs-theme'
 
 markdown_extensions:
     - wikilinks
