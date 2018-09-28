@@ -223,7 +223,7 @@ sim = mp.Simulation(resolution=resolution,
 
 mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(mon_pt.x,0,0), 1e-9))
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
 freqs = mp.get_eigenmode_freqs(mode_mon)
 
