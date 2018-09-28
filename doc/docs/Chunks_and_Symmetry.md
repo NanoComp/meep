@@ -2,34 +2,26 @@
 # Chunks and Symmetry
 ---
 
-As discussed in the
-[meep paper](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf),
-meep subdivides geometries into "chunks." Each chunk is a contiguous region
-of space&mdash;a line, rectangle, or parallelepiped for 1D, 2D, or 3D
-Cartesian geometries, or an annular section in a cylindrical geometry&mdash;whose
-sizes are automatically determined by `libmeep.`
-In [parallel meep calculations](/Parallel_Meep.md), each chunk is assigned,
-in its entirety, to precisely one process---that is, no chunk exists partly
-on one processor and partly on another.
+As described in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf),
+Meep subdivides geometries into **chunks**. Each chunk is a contiguous region of space &mdash; a line, rectangle, or parallelepiped for 1d/2d/3d Cartesian geometries, or an annular section in a cylindrical geometry&mdash;whose sizes are automatically determined by `libmeep.` In [parallel calculations](Parallel_Meep.md), each chunk is assigned, in its entirety, to precisely one process &mdash; that is, no chunk exists partly on one processor and partly on another.
 
-Many internal operations in meep boil down to looping over points in the
-finite-difference grid, generally performing some operation involving the field
+Many internal operations in Meep consist of looping over points in the
+[Yee grid](Yee_Lattice.md), generally performing some operation involving the field
 components and material parameters at each point.
-In principle, this is just the CS 101 task of writing
-1-, 2-, or 3-dimensional nested `for` loops; in practice,
+In principle, this involves nested `for` loops; in practice,
 it is complicated by several factors, including the following:
 
-+ For calculations that [exploit symmetry](/Exploiting_Symmetry.md), only a
++ For calculations that [exploit symmetry](Exploiting_Symmetry.md), only a
 portion of the full grid is actually stored in memory, and obtaining values
 for field components at a point that *isn't* stored requires a tricky
-procedure (discussed [below](#HandlingSymmetries)).
+procedure discussed below.
 
 + Similarly, for Bloch-periodic geometries, only grid points in the unit cell
 are stored, but we may want the fields at a point lying outside the unit cell,
 again requiring a bit of a shell game to process correctly.
 
-+ Because of the staggered nature of the [Yee grid](/Yee_Lattice.md),
-"looping over grid points" can mean multiple things---are we visiting
++ Because of the staggered nature of the [Yee grid](Yee_Lattice.md),
+"looping over grid points" can mean multiple things &mdash; are we visiting
 only **E**-field sites, or only **H**-field sites, or both? Either
 way, obtaining a full set of field-component values at any one grid point
 necessarily involves a certain average over neighboring grid points.
@@ -42,7 +34,7 @@ detail below.
 
 [TOC]
 
-## Chunk data structures
+## Chunk Data Structures
 
 For each chunk in a geometry, `libmeep` creates instances of
 the data structures `structure_chunk` (storing data on the
@@ -59,27 +51,25 @@ covered by a `dft_chunk` may be only a subset of the volume
 covered by its parent `fields_chunk`, and not all `fields_chunks`
 have `dft_chunks` associated with them.
 
-## Chunking of a 2-dimensional geometry
+## Chunking of a 2d Geometry
 
-Our running example throughout this page will be a 2D geometry,
+Our running example throughout this page will be a 2d geometry,
 of dimensions $(L_x, L_y)=(8,6)$, with PML layers of thickness 1
 on all sides, discretized with 5 points per unit length
 to yield a 40 &times; 30 grid.
 
-### Chunking in the single-processor case
+### Chunking in the Single-Processor Case
 
 In a single-processor run, `libmeep` subdivides this geometry
 into 9 chunks (click for larger image):
 
 <p align="center"> <a href="../images/Chunks_NP1.png"><img src="../images/Chunks_NP1.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
-(The width of the 8 chunks around the perimeter is set by the PML thickness.)
+The width of the 8 chunks around the perimeter is set by the PML thickness.
 
-Note that the chunks are not of uniform sizes and that their
-*ordering* is somewhat arbitrary; in particular,
-consecutive chunks are not necessarily adjacent.
+Note that the chunks are not of uniform sizes and that their ordering is somewhat arbitrary. In particular, consecutive chunks are *not* necessarily adjacent.
 
-#### Some per-chunk statistics
+#### Chunk Statistics
 
 As noted above, each chunk is a contiguous region of space defined
 by a Cartesian product of intervals for each coordinate; to specify
@@ -88,14 +78,14 @@ of the interval for each coordinate, or equivalently the coordinates
 of the lower-left and upper-right grid points in the chunk. For each
 chunk, these are represented by `ivecs` named `is` and `ie`
 (stored in the `fields_chunk` and `dft_chunk` structures).
-Here's an example of how this looks for chunk 3 in the figure
-above:
+
+Here's an example of how this looks for chunk 3 in the figure above:
 
 <p align="center"> <a href="../images/ChunkStatistics.png"><img src="../images/ChunkStatistics.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
 In this case we have `is=(29,-29)` and `ie=(39,-19)`.
 
-### Chunking in the multiprocessor case
+### Chunking in the Multiprocessor Case
 
 When running in parallel mode, each of the chunks identified for the
 single-processor case may be further subdivided into new chunks which
@@ -111,16 +101,13 @@ while points with the same $z$ coordinate but different colors
 live in different chunks. In this case, processes 0, 2, 5, and 7
 each own 4 chunks, while processes 1, 3, 4, and 6 each own 2 chunks.
 
-<a name="HandlingSymmetries"></a>
-## Handling of symmetries
+## Symmetries
 
 Meep's approach to handling symmetries is discussed
-from the user's perspective in the
-["Exploiting Symmetry" section of the meep manual](/Exploiting_Symmetry.md)
-and from a high-level algorithmic perspective in the
-[meep</span> paper](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
-Here we'll give a brief synopsys of the implementation of this
-feature.
+from the user's perspective in [Exploiting Symmetry](Exploiting_Symmetry.md)
+and from a high-level algorithmic perspective in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
+
+The following is a brief synopsis of the implementation of this feature.
 
 + The action of the symmetry group classifies grid points into *orbits,*
   sets of grid points that transform into one another under symmetry
@@ -150,47 +137,47 @@ feature.
   (including the identity transformation). On the $m$th visit to a given
   parent point $\mathbf{x}_p$, we
 
-    **1)** look up the components of the fields $\mathbf{E}_p, \mathbf{H}_p$
-           stored in memory for $\mathbf{x}_p$,
+    **(1)** look up the components of the fields $\mathbf{E}_p, \mathbf{H}_p$
+            stored in memory for $\mathbf{x}_p$,
 
-    **2)** apply the transformation $\mathcal{S}_m$ to both the grid-point
-           coordinates and the field components of the parent point to yield
-           the coordinates and field components of the $m$th child point, i.e.
-           $$       \mathbf{x}_{cm} = \mathcal{S}_m \mathbf{x}_p,
-             \quad \mathbf{E}_{cm} = \mathcal{S}_m \mathbf{E}_p,
-             \quad \mathbf{H}_{cm} = \mathcal{S}_m \mathbf{H}_p.
-           $$
-          [If the materials are anisotropic (i.e. the permittivity and/or permeability
-           are tensors) we must transform those appropriately too.]
+    **(2)** apply the transformation $\mathcal{S}_m$ to both the grid-point
+            coordinates and the field components of the parent point to yield
+            the coordinates and field components of the $m$th child point, i.e.
+            $$       \mathbf{x}_{cm} = \mathcal{S}_m \mathbf{x}_p,
+              \quad \mathbf{E}_{cm} = \mathcal{S}_m \mathbf{E}_p,
+              \quad \mathbf{H}_{cm} = \mathcal{S}_m \mathbf{H}_p.
+            $$
+           If the materials are anisotropic (i.e. the permittivity and/or permeability
+           are tensors) we must transform those appropriately as well.
 
-    **3)** use the coordinates and field components of the child point to carry
-           out the operation in question.
+    **(3)** use the coordinates and field components of the child point to carry
+            out the operation in question.
 
-### Chunking in the presence of symmetries
+### Chunking in the Presence of Symmetries
 
 As noted above, in the presence of symmetries only a portion of the
-full grid is actually stored in memory. For example, adding a *Y* mirror
+full grid is actually stored in memory. For example, adding a $y$ mirror
 symmetry (symmetry under reflection about the $x$-axis) eliminates
 points in the upper half-plane $(y>0)$; the points that remain are
 now subdivided into 6 chunks (in the single-processor case):
 
 <p align="center"> <a href="../images/Chunks_YSymmetry.png"><img src="../images/Chunks_YSymmetry.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
-Adding an *X* mirror symmetry on top of this (so that now the geometry has
-both *X* and *Y* mirror symmetry) reduces the number of stored grid points by an
+Adding an $x$ mirror symmetry on top of this (so that now the geometry has
+both $x$ and $y$ mirror symmetry) reduces the number of stored grid points by an
 additional factor of 2; now the geometry is subdivided into just 4 chunks
 in the single-processor case:
 
 <p align="center"> <a href="../images/Chunks_XYSymmetry.png"><img src="../images/Chunks_XYSymmetry.png" style='height: 100%; width: 100%; object-fit: contain'/></a></p>
 
-In these figures, points in shaded regions are "children"---that is, points
-for which meep stores no field components, since they are related by symmetry
+In these figures, points in shaded regions are "children" &mdash; that is, points
+for which Meep stores no field components, since they are related by symmetry
 to "parent" points in the unshaded region. In the second figure we have
 indicated one complete orbit: parent point $\mathbf{x}_a$ is carried to
 child points $\{\mathbf{x}_b, \mathbf{x}_c, \mathbf{x}_d\}$ under the
 operations of the symmetry group.
 
-### Getting coordinates and field components for symmetry-reduced points
+### Coordinates and Field Components of Symmetry-Reduced Points
 
 Symmetry transformations in `libmeep` are described by a class called
 simply `symmetry,` which offers class methods for transforming grid
@@ -212,7 +199,7 @@ points and field components:
   component cparent = S.transform(cchild, -1); // corresponding component at parent point
 ```
 
-## The `loop_in_chunks` routine
+## The `loop_in_chunks` Routine
 
 To allow developers to implement loops over grid points without
 stressing out over the various complications outlined above,
@@ -235,7 +222,7 @@ of utility macros and API functions that operate on the arguments to your functi
 to yield quantities of interest: grid-point coordinates, field-component
 values, etc.
 
-### The chunk loop function
+### The Chunk Loop Function
 
 The chunk-loop function that you write and pass to `loop_in_chunks`
 has the following prototype:
@@ -261,8 +248,7 @@ constructor of `chunkloop_field_components`). You can fill in the rest of the lo
 to do whatever you want with `ichild,` `rchild,` and `data.values,` and the
 results will be identical whether or not you declare symmetries when
 defining your geometry. (Well, the results will be identical assuming
-the physical problem you're considering really is symmetric, which
-[meep does not check](/Exploiting_Symmetry.md).)
+the physical problem you're considering really is symmetric, which Meep [does not check](Exploiting_Symmetry.md).)
 
 ```c++
 void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec ie,
@@ -296,14 +282,14 @@ void my_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ivec is, ivec i
 }
 ```
 
-## Is there a version `loop_in_chunks` for `dft_chunks`?
+## Is There a Version of `loop_in_chunks` for `dft_chunks`?
 
 No, but the routine `process_dft_component()` in `src/dft.cpp` effectively
 implements such a routine for a hard-coded set of operations on DFT
 components (namely: outputting to HDF5, fetching DFT array slices,
 and computing mode-overlap coefficients).
 
-## How the pictures were drawn
+## How the Images were Created
 
 The images above were obtained with the help of a simple C++ code
 called `WriteChunkInfo` that calls `libmeep` API functions to

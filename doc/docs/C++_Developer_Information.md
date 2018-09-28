@@ -2,48 +2,49 @@
 # C++ Developer Information
 ---
 
-An overview of Meep's inner workings is summarized in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
+An overview of Meep's inner workings is provided in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
 
-For more details, see [Chunks and Symmetry](Chunks_and_Symmetry.md)
+For additional details, see [Chunks and Symmetry](Chunks_and_Symmetry.md)
 
 [TOC]
 
 ### Data Structures and Chunks
 
-Meep employs several data structures declared in `meep.hpp`. The principal data structure element is the **chunk**. A chunk is a contiguous rectangular portion of the computational grid. For example, when Meep runs on a parallel system, each process gets one or more disjoint chunks of the grid. There are several different types of chunks:
+Meep's data structures are defined in `meep.hpp`. The principal data structure element is the **chunk**. A chunk is a contiguous rectangular portion of the computational grid. For example, when Meep runs on a parallel system, each process gets one or more disjoint chunks of the grid.
+
+There are several different types of chunks:
 
 -   `fields` and `fields_chunks`
 -   `structure` and `structure_chunks`
 -   `dft` and `dft_chunks`
 
-As an example, the `fields` class encapsulates the simulated fields over the entire grid, and one of its members is an array of `fields_chunk` variables that the grid is divided into. The `fields_chunk` variables are where the field is actually stored. Every parallel process has a nearly-identical fields variable with a nearly-identical list of chunks. Chunks on one process which have been assigned to another process do not store their fields arrays, and are just placeholders.
+As an example, the `fields` class encapsulates the fields over the entire grid, and one of its members is an array of `fields_chunk` variables that divides the grid. The `fields_chunk` variables store the actual field information. Every parallel process has a nearly-identical fields variable with a nearly-identical list of chunks. Chunks on one process which have been assigned to another process do not store their fields arrays; they are just placeholders.
 
 If a given material or field is not present in a given chunk, it need not be stored. For this reason, the PML boundary regions are separated into their own chunks, even on one processor, in order that the extra data for PML need not be stored for the whole grid.
 
 In the future, we may implement support for different chunks with different resolution, to allow nonuniform spatial resolution.
 
-Similarly for `structure` and `structure_chunks`, except that it is only for materials parameters such as epsilon, etc. and not for simulated fields.
+Similarly for `structure` and `structure_chunks`, except that it is only for materials parameters such as epsilon, etc. and not for the fields.
 
 `dft_chunk` stores accumulated Fourier-transformed fields corresponding to a given chunk.
 
 ### `grid_volume` and `volume`
 
-The `volume` class declared in `meep/vec.hpp` represents a rectangular box-like region, parallel to the $XYZ$ axes, in "continuous space" &mdash; i.e. the corners can be at any points, not necessarily grid points. This is used, for example, whenever you want to specify the integral of some quantity (e.g., flux, energy) in a box-like region, and Meep interpolates from the grid as necessary to give an illusion of continuity.
+The `volume` class declared in `meep/vec.hpp` represents a rectilinear region, parallel to the $xyz$ axes, in "continuous space" &mdash; i.e. the corners can be at any points, not necessarily grid points. This is used, for example, whenever you want to specify the integral of some quantity (e.g., flux, energy) in a box-like region, and Meep interpolates from the grid as necessary to give an illusion of continuity.
 
-The `grid_volume` class declared in `meep/vec.hpp` is a box of pixels. It stores the resolution, the number of pixels in each direction, the origin, etcetera. Given a `grid_volume`, there are functions to get the `volume` corresponding to the bounding box, etcetera. There is a `grid_volume` object associated with the whole computational grid, and with each chunk in the grid. There are various tricky aspects to the `grid_volume`. One is associated with the Yee grid: it has to know about different field components stored at different points. Another is associated with the fact that boundary conditions, not only the overall grid boundaries but also boundaries between chunks, are handled by an extra layer of "not-owned" pixels around the boundaries. So each chunk's `grid_volume` has "owned" grid points that the chunk is responsible for updating, and "not-owned" grid points that are updated using the boundary conditions. And thanks to the Yee grid which complicates everything in FDTD, unfortunately, the set of owned and not-owned coordinates is different for each field component. The `grid_volume` class keeps track of all this.
+The `grid_volume` class declared in `meep/vec.hpp` is a box of pixels. It stores the resolution, the number of pixels in each direction, the origin, etcetera. Given a `grid_volume`, there are functions to get the `volume` corresponding to the bounding box, etcetera. There is a `grid_volume` object associated with the whole computational grid, and with each chunk in the grid. There are various tricky aspects to the `grid_volume`. One is associated with the Yee grid: it has to know about different field components stored at different points. Another is associated with the fact that boundary conditions, not only the overall grid boundaries but also boundaries between chunks, are handled by an extra layer of "not-owned" pixels around the boundaries. So each chunk's `grid_volume` has "owned" grid points that the chunk is responsible for updating, and "not-owned" grid points that are updated using the boundary conditions. Due to the Yee grid which complicates everything in FDTD, unfortunately, the set of owned and not-owned coordinates is different for each field component. The `grid_volume` class keeps track of all this.
 
 ### File Organization
 
 The core Meep C++ simulation code (all of the physics) is located in the `src/` directory, with C++
 tests in the `tests/` directory.  The `libmeepgeom/` directory provides a C++ library to specify Meep
 geometries in terms of a list of geometric objects (spheres, cylinders, boxes) with various
-material properties (via [libctl](https://github.com/stevengj/libctl)'s geometry library), and is
+material properties (via [libctl](https://libctl.readthedocs.io)'s geometry library), and is
 also used by the Python interface.
 
-The Scheme and Python interfaces are found in the `scheme/` and `python/` directories, respectively;
-both of them use [SWIG](http://www.swig.org/) to generate wrapper code from the C++ header files,
+The Scheme and Python interfaces are found in the `scheme/` and `python/` directories. Both interfaces use [SWIG](http://www.swig.org/) to generate wrapper code from the C++ header files,
 but also have hand-written Scheme/Python code to provide a higher-level interface.  The `libpympb/`
-directory contains a Python interface to MPB, which will eventually be moved to the MPB repository.
+directory contains a Python interface to MPB (which may, in the future, be moved to the MPB repository).
 
 The following table briefly describes the purpose of some of the source files:
 
@@ -95,7 +96,7 @@ Next, we compile `meep-python.cpp`, rename `meep.py` to `__init__.py` and put th
 
 <center>![](images/pypackage_creation.png)</center>
 
-`__init__.py` contains "proxy" classes for all public `meep` objects. They hold a `this` pointer that dispatches to the appropriate C++ functions in the `_meep.so` extension module. The interface this package exposes is basically the same as the C++ interface. That is, a simulation written in this low-level Python interface would not look much different from the same simulation written in C++. By implementing a high-level interface on top of the basic SWIG wrappers, we can abstract away many of the low details of setting up a simulation, take advantage of Python language features like keyword arguments, and gain productivity from libraries like numpy.
+`__init__.py` contains "proxy" classes for all public `meep` objects. They hold a `this` pointer that dispatches to the appropriate C++ functions in the `_meep.so` extension module. The interface this package exposes is basically the same as the C++ interface. That is, a simulation written in this low-level Python interface would not look much different from the same simulation written in C++. By implementing a high-level interface on top of the basic SWIG wrappers, we can abstract away many of the low details of setting up a simulation, take advantage of Python language features like keyword arguments, and gain productivity from libraries like NumPy.
 
 ## Package Organization
 
@@ -108,7 +109,7 @@ meep
 ├── simulation.py
 └── source.py
 ```
-Fow now, the Python `MPB` interface is also included in the `meep` package. It's constructed in the same manner as the `meep` package. The low-level interface is in `meep/mpb/__init__.py` and `meep/mpb/_mpb.so`, and the high-level interface is in `solver.py`. Here is a view of the complete package.
+The Python MPB interface is also included in the `meep` package. It's constructed in the same manner as the `meep` package. The low-level interface is in `meep/mpb/__init__.py` and `meep/mpb/_mpb.so`, and the high-level interface is in `solver.py`. Here is a view of the complete package.
 ```bash
 meep
 ├── mpb
@@ -135,7 +136,7 @@ SWIG interface file for `vec.hpp`. Included into `meep.i`. SWIG warnings are dis
 
 ### `numpy.i`
 
-Typemaps for `numpy` arrays (taken from the numpy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i)). See the [documentation](https://docs.scipy.org/doc/numpy-1.13.0/reference/swig.interface-file.html) for instructions on using these typemaps.
+Typemaps for `numpy` arrays (taken from the NumPy [Github repository](https://github.com/numpy/numpy/blob/master/tools/swig/numpy.i)). See the [documentation](https://docs.scipy.org/doc/numpy-1.13.0/reference/swig.interface-file.html) for instructions on using these typemaps.
 
 ### `typemap_utils.cpp`
 
