@@ -301,4 +301,146 @@ The diffraction orders/modes are a finite set of propagating planewaves. The wav
 
 In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is (2/(mπ))<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π. The phase differerence/contrast is (2π/λ)(n-1)s where λ is the wavelength, n is the refractive index of the grating, and s is the propagation distance in the grating (`gh` in the simulation script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above.
 
-To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the analytic results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm (for which the scalar theory is valid) for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3942, 0.04371, 0.0154, and 0.0077. This corresponds to relative errors of approximately 1.4%, 2.3%, 2.0%, and 3.1% which indicates good agreement.
+To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the analytic results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm (for which the scalar theory is valid) for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
+
+As an additional validation of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle must necessarily sum to unity. Also, the summed reflectance and transmittance values must be equivalent to those computed via the Poynting flux (similar to the [first example](#reflectance-of-a-waveguide-taper) involving a single-mode waveguide). The following script, which is adapted from the previous binary grating example involving a normally-incident planewave, sets up this test. The total reflectance, transmittance, and their sum are displayed at the end of the simulation as two separate lines prefixed by `mode-coeff:` (mode coefficients) and `poynting-flux:` (Poynting flux).
+
+The script is in [binary_grating_oblique.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique.py).
+
+```py
+import meep as mp
+import math
+import cmath
+import numpy as np
+
+resolution = 50        # pixels/μm
+
+dpml = 2.0             # PML thickness
+dsub = 3.0             # substrate thickness
+dpad = 3.0             # length of padding between grating and pml
+gp = 10.0              # grating period
+gh = 0.5               # grating height
+gdc = 0.5              # grating duty cycle
+
+sx = dpml+dsub+gh+dpad+dpml
+sy = gp
+
+cell_size = mp.Vector3(sx,sy,0)
+
+# replace anisotropic PML with isotropic Absorber to attenuate parallel-directed fields of oblique source
+abs_layers = [mp.Absorber(thickness=dpml,direction=mp.X)] 
+
+wvl = 0.5              # center wavelength
+fcen = 1/wvl           # center frequency
+df = 0.05*fcen         # frequency width
+
+ng = 1.5
+glass = mp.Medium(index=ng)
+
+# rotation angle of incident planewave; CCW about Y axis, 0 degrees along +X axis
+theta_in = math.radians(10.7)
+
+# k (in source medium) with correct length (plane of incidence: XY)
+k = mp.Vector3(math.cos(theta_in),math.sin(theta_in),0).scale(fcen*ng)
+
+symmetries = []
+eig_parity = mp.ODD_Z
+if theta_in == 0:
+  k = mp.Vector3(0,0,0)
+  symmetries = [mp.Mirror(mp.Y)]
+  eig_parity += mp.EVEN_Y
+  
+def pw_amp(k,x0):
+  def _pw_amp(x):
+    return cmath.exp(1j*2*math.pi*k.dot(x+x0))
+  return _pw_amp
+
+src_pt = mp.Vector3(-0.5*sx+dpml+0.3*dsub,0,0)
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                     component=mp.Ez,
+                     center=src_pt,
+                     size=mp.Vector3(0,sy,0),
+                     amp_func=pw_amp(k,src_pt))]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=abs_layers,
+                    k_point=k,
+                    default_material=glass,
+                    sources=sources,
+                    symmetries=symmetries)
+
+refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
+refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
+
+sim.run(until_after_sources=1000)
+  
+input_flux = mp.get_fluxes(refl_flux)
+input_flux_data = sim.get_flux_data(refl_flux)
+
+sim.reset_meep()
+
+geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+            mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=abs_layers,
+                    geometry=geometry,
+                    k_point=k,
+                    sources=sources,
+                    symmetries=symmetries)
+
+refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
+sim.load_minus_flux_data(refl_flux,input_flux_data)
+
+tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
+
+sim.run(until_after_sources=3000)
+
+nm_r = np.floor((fcen*ng-k.y)*gp)-np.ceil((-fcen*ng-k.y)*gp) # number of reflected orders
+if theta_in == 0:
+  nm_r = nm_r*0.5 # since eig_parity removes degeneracy in y-direction
+Rsum = 0
+for nm in range(int(nm_r)):
+  res = sim.get_eigenmode_coefficients(refl_flux, [nm+1], eig_parity=eig_parity)
+  r_coeffs = res.alpha
+  r_kdom = res.kdom[0]
+  Rmode = (abs(r_coeffs[0,0,1])**2)/input_flux[0]
+  r_angle = np.sign(r_kdom.y)*math.acos(r_kdom.x/(ng*fcen))
+  print("refl:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
+  Rsum += Rmode
+    
+nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)       # number of transmitted orders
+if theta_in == 0:
+  nm_t = nm_t*0.5 # since eig_parity removes degeneracy in y-direction
+Tsum = 0
+for nm in range(int(nm_t)):
+  res = sim.get_eigenmode_coefficients(tran_flux, [nm+1], eig_parity=eig_parity)
+  t_coeffs = res.alpha
+  t_kdom = res.kdom[0]
+  Tmode = (abs(t_coeffs[0,0,0])**2)/input_flux[0]
+  t_angle = np.sign(t_kdom.y)*math.acos(t_kdom.x/fcen)
+  print("tran:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
+  Tsum += Tmode
+  
+print("mode-coeff:, {:.6f}, {:.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
+
+r_flux = mp.get_fluxes(refl_flux)
+t_flux = mp.get_fluxes(tran_flux)
+Rflux = -r_flux[0]/input_flux[0]
+Tflux =  t_flux[0]/input_flux[0]
+print("poynting-flux:, {:.6f}, {:.6f}, {:.6f}".format(Rflux,Tflux,Rflux+Tflux))
+```
+
+Results are computed for a single wavelength of 0.5 μm. This speeds up the simulation slightly since the field monitors contain just one frequency bin. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function (`amp_func`). There are two requirements related to mitigating numerical discretization effects of oblique planewave sources which are necessary to ensure that the fields decay away: (1) the pulse is narrowband and (2) the anisotropic `PML` is replaced with an isotropic `Absorber`. As a general rule of thumb, the more oblique the planewave, the narrower the pulse and the thicker the `Absorber` needs to be. Also, the `stop_when_fields_decayed` termination criteria of the original simulation is replaced with `until_after_sources` having an arbitrarily long time duration which is more effective. The angle of each mode, which can be positive or negative, is computed in addition to its reflectance and transmittace values. Since the oblique source breaks the symmetry in the $y$ direction, all of the diffracted orders must be computed separately. There are 59 reflected and 39 transmitted orders which as described previously can be computed analytically.
+
+The two main lines of the output are:
+
+```
+mode-coeff:, 0.060892, 0.938891, 0.999783
+poynting-flux:, 0.060885, 0.938560, 0.999445
+```
+
+The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to four decimal places. Also, the total reflectance and transmittance sum to unity.
