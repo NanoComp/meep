@@ -81,7 +81,7 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
-+ `kdom_list` is a user allocated array of `meep::vec` objects of length `num_bands`. If non-null, this array is filled in with the dominant planewave vectors for bands 1 to `num_bands` (note: index `i` corresponds to band `i + 1`).
++ `kdom_list` is a user allocated array of `meep::vec` objects of length (`num_bands` * `num_freqs`). If non-null, this array is filled in with the dominant planewave vectors for bands 1 to (`num_bands` * `num_freqs`). `kdom_list[nb*num_freqs + nf]` is the dominant planewave of the mode with frequency `nf` and band index `nb.`. Defaults to `NULL`.
 
 ```c++
  int num_bands = bands.size();
