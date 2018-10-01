@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import meep as mp
 import math
 import cmath
@@ -91,26 +93,32 @@ sim.run(until_after_sources=3000)
 
 nm_r = np.floor((fcen*ng-k.y)*gp)-np.ceil((-fcen*ng-k.y)*gp) # number of reflected orders
 if theta_in == 0:
-  nm_r = nm_r*0.5 # since eig_parity removes degeneracy in y-direction
+  nm_r = nm_r/2 # since eig_parity removes degeneracy in y-direction
+nm_r = int(nm_r)
+
+res = sim.get_eigenmode_coefficients(refl_flux, range(1,nm_r+1), eig_parity=eig_parity)
+r_coeffs = res.alpha
+
 Rsum = 0
-for nm in range(int(nm_r)):
-  res = sim.get_eigenmode_coefficients(refl_flux, [nm+1], eig_parity=eig_parity)
-  r_coeffs = res.alpha
-  r_kdom = res.kdom[0]
-  Rmode = (abs(r_coeffs[0,0,1])**2)/input_flux[0]
+for nm in range(nm_r):
+  r_kdom = res.kdom[nm]
+  Rmode = abs(r_coeffs[nm,0,1])**2/input_flux[0]
   r_angle = np.sign(r_kdom.y)*math.acos(r_kdom.x/(ng*fcen))
   print("refl:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
   Rsum += Rmode
     
 nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)       # number of transmitted orders
 if theta_in == 0:
-  nm_t = nm_t*0.5 # since eig_parity removes degeneracy in y-direction
+  nm_t = nm_t/2 # since eig_parity removes degeneracy in y-direction
+nm_t = int(nm_t)
+
+res = sim.get_eigenmode_coefficients(tran_flux, range(1,nm_t+1), eig_parity=eig_parity)
+t_coeffs = res.alpha
+
 Tsum = 0
-for nm in range(int(nm_t)):
-  res = sim.get_eigenmode_coefficients(tran_flux, [nm+1], eig_parity=eig_parity)
-  t_coeffs = res.alpha
-  t_kdom = res.kdom[0]
-  Tmode = (abs(t_coeffs[0,0,0])**2)/input_flux[0]
+for nm in range(nm_t):
+  t_kdom = res.kdom[nm]
+  Tmode = abs(t_coeffs[nm,0,0])**2/input_flux[0]
   t_angle = np.sign(t_kdom.y)*math.acos(t_kdom.x/fcen)
   print("tran:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
   Tsum += Tmode

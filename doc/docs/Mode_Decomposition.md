@@ -57,19 +57,19 @@ The following are the parameters:
 
 + `flux` is a `dft_flux` object containing the frequency-domain fields on a cross-sectional slice perpendicular to the waveguide axis
 
-+ `eig_vol` is the `volume` passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
++ `eig_vol` is the `volume` passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation. In most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
 
-+ `bands` is an array of integers corresponding to the mode indices
++ `bands` is an array of integers corresponding to the mode indices (equivalent to $n$ in the two formulas above)
 
 + `num_bands` is the length of the `bands` array
 
-+ `parity` is the parity of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
++ `parity` is the parity of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `ODD_Z+EVEN_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
 
 + `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations
 
-+ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance
++ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing by less than this fractional tolerance
 
-+ `coeffs` is a user-allocated array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
++ `coeffs` is a user-allocated array of type `std::complex<double>` (shortened hereafter to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
 
 + `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
 
@@ -106,7 +106,7 @@ The α coefficients computed by `get_eigenmode_coefficients` are normalized such
 
 $$|\alpha_n^\pm|^2 = P_n^\pm$$
 
-where P$_n^\pm$ is the power carried by the traveling eigenmode n in the forward (+) or backward (-) direction. This is discussed in more detail below.
+where P$_n^\pm$ is the power carried by the traveling eigenmode $n$ in the forward (+) or backward (-) direction. This is discussed in more detail below.
 
 ## Related Functions
 
