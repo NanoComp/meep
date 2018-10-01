@@ -121,10 +121,12 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               const vec &kpoint, bool match_frequency,
                               int parity,
                               double resolution,
-                              double eigensolver_tol);
+                              double eigensolver_tol,
+                              bool verbose,
+                              double *kdom);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
 
 ### Working with MPB Eigenmodes
 

@@ -488,8 +488,11 @@ void *fields::get_eigenmode(double omega_src,
   edata->omega          = omega_src;
   edata->group_velocity = (double) vgrp;
 
-  if (kdom)
+  if (kdom) {
     maxwell_dominant_planewave(mdata, H, band_num, kdom);
+    if (!quiet)
+      master_printf("Dominant planewave for band %d: (%f,%f,%f)\n", band_num, kdom[0], kdom[1], kdom[2]);
+  }
 
   return (void *)edata;
 }
