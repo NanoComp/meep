@@ -69,7 +69,7 @@ static void meep_mpb_eps(symmetric_matrix *eps,
 /* prototype for position-dependent amplitude function passed */
 /* to add_volume_source                                       */
 /**************************************************************/
-typedef complex<double> (*amplitude_function)(const vec &);
+//typedef complex<double> (*amplitude_function)(const vec &);
 
 // default implementation of amplitude_function
 static complex<double> default_amp_func(const vec &pt)

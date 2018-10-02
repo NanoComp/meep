@@ -567,6 +567,8 @@ bool am_really_master() {
   return (my_global_rank() == 0);
 }
 
+void be_quiet(bool _quiet) { quiet=_quiet; }
+
 void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);

@@ -1606,6 +1606,35 @@ class Simulation(object):
         self.fields.get_source_slice(v, component ,arr)
         return arr
 
+    def get_array_metadata(self, vol=None, center=None, size=None):
+        v = self._volume_from_kwargs(vol, center, size)
+        dim_sizes = np.zeros(3, dtype=np.uintp)
+        self.fields.get_array_slice_dimensions(v, dim_sizes)
+        dims = [s for s in dim_sizes if s != 0]
+        return np.reshape( self.fields.get_array_metadata(v), dims + [4] )
+
+    # same as previous routine, but with empty dimensions collapsed
+    def get_dft_array_metadata(self, vol=None, center=None, size=None):
+        xyzw=self.get_array_metadata(vol=vol,center=center,size=size)
+
+        dims=np.shape(xyzw)
+        if len(dims)==4 and np.count_nonzero(size)<3: # collapse 3D --> 2D
+            if   size.x==0 and dims[0]==2:
+               xyzw = xyzw[0,:,:,:] + xyzw[1,:,:,:]
+            elif size.y==0 and dims[1]==2:
+               xyzw = xyzw[:,0,:,:] + xyzw[:,1,:,:]
+            else: # size.z==0 and dims[2]==2
+               xyzw = xyzw[:,:,0,:] + xyzw[:,:,1,:]
+            xyzw[:,:,0:3] = 0.5*xyzw[:,:,0:3]
+            dims=np.shape(xyzw)
+        if len(dims)==3 and np.count_nonzero(size)<2: # collapse 2D --> 1D
+            if size.x>0:
+                xyzw = xyzw[:,0,:] + xyzw[:,1,:]
+            else:
+                xyzw = xyzw[0,:,:] + xyzw[1,:,:]
+            xyzw[:,0:3] = 0.5*xyzw[:,0:3]
+        return xyzw
+
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
         if self.fields is None:
