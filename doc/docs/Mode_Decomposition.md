@@ -81,7 +81,7 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
-+ `kdom_list` is a user allocated array of `meep::vec` objects of length `num_bands`. If non-null, this array is filled in with the dominant planewave vectors for bands 1 to `num_bands` (note: index `i` corresponds to band `i + 1`).
++ `kdom_list` is a user allocated array of `meep::vec` objects of length `num_bands`. If non-null, this array is filled in with the wavevectors of the dominant planewave in the Fourier series expansion for bands 1 to `num_bands` (note: index `i` corresponds to band `i + 1`).  This is especially useful for interpreting the modes computed in a uniform medium, because those modes are exactly planewaves proportional to $exp(2\pi i \mathrm{kdom}\cdot \vec{x})$ where `kdom` is the wavevector.
 
 ```c++
  int num_bands = bands.size();
@@ -126,7 +126,7 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               double *kdom);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
 
 ### Working with MPB Eigenmodes
 
