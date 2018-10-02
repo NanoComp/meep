@@ -1106,6 +1106,8 @@ typedef struct polarization_state_s {
   struct polarization_state_s *next; // linked list
 } polarization_state;
 
+typedef std::complex<double> (*amplitude_function)(const vec &);
+
 class fields_chunk {
  public:
   realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
@@ -1240,7 +1242,8 @@ class fields_chunk {
   void calc_sources(double time);
 
   // initialize.cpp
-  void initialize_field(component, std::complex<double> f(const vec &));
+  //void initialize_field(component, std::complex<double> f(const vec &));
+  void initialize_field(component, amplitude_function f);
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
@@ -1444,10 +1447,12 @@ class fields {
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,
                            std::vector<component> components,
-                           field_function fun,
-                           field_rfunction rfun,
-                           void *fun_data,
-                           void *vslice);
+                           field_function fun, field_rfunction rfun,
+                           void *fun_data, void *vslice);
+
+  // utility routine in loop_in_chunks.cpp to construct metadata for
+  // the arrays returned by get_array_slice and get_dft_array
+  std::vector<double> get_array_metadata(const volume &where);
 
   // step.cpp methods:
   double last_step_output_wall_time;
@@ -1517,7 +1522,8 @@ class fields {
 
 
   // initialize.cpp:
-  void initialize_field(component, std::complex<double> f(const vec &));
+  //void initialize_field(component, std::complex<double> f(const vec &));
+  void initialize_field(component, amplitude_function f);
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int ntot);

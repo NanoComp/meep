@@ -111,7 +111,6 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->min_corner = min(data->min_corner, min(isS, ieS));
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
-
 }
 
 /***************************************************************/
