@@ -437,14 +437,17 @@ struct py_eigenmode_data {
     double omega;
     double group_velocity;
     PyObject *Gk;
+    PyObject *kdom;
 };
 
 py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                  const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                  bool match_frequency, int parity, double resolution, double eigensolver_tol,
                                  bool verbose) {
+
+    double kdom[3];
     void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
-                                    parity, resolution, eigensolver_tol, verbose);
+                                  parity, resolution, eigensolver_tol, verbose, kdom);
     meep::eigenmode_data *emdata = (meep::eigenmode_data *)data;
 
     py_eigenmode_data result = {};
@@ -454,10 +457,13 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
     result.group_velocity = emdata->group_velocity;
 
     PyObject *v3_class = py_vector3_object();
-    PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
-    result.Gk = PyObject_Call(v3_class, args, NULL);
+    PyObject *Gk_args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
+    PyObject *kdom_args = Py_BuildValue("(ddd)", kdom[0], kdom[1], kdom[2]);
+    result.Gk = PyObject_Call(v3_class, Gk_args, NULL);
+    result.kdom = PyObject_Call(v3_class, kdom_args, NULL);
 
-    Py_DECREF(args);
+    Py_DECREF(Gk_args);
+    Py_DECREF(kdom_args);
 
     return result;
 }
@@ -1148,6 +1154,7 @@ struct py_eigenmode_data {
     double omega;
     double group_velocity;
     PyObject *Gk;
+    PyObject *kdom;
 };
 
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);

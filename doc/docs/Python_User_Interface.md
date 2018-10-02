@@ -1028,6 +1028,7 @@ The parameters of this routine are the same as that of `get_eigenmode_coefficien
 + `omega`: the computed freuqency, same as `omega_src` if `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
++ `kdom`: the dominant planewave of mode `band_num`
 + `amplitude(point, component)`: the (complex) value of the given E or H field `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in space (interpreted with Bloch-periodic boundary conditions if you give a point outside the original `eig_vol`).
 
 **`get_eigenmode_freqs(flux)`**
