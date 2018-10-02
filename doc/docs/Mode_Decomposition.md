@@ -81,7 +81,7 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
-+ `kdom_list` is a user allocated array of `meep::vec` objects of length (`num_bands` * `num_freqs`). If non-null, this array is filled in with the wavevectors of the dominant planewave in the Fourier series expansion for bands 1 to (`num_bands` * `num_freqs`). `kdom_list[nb*num_freqs + nf]` is the dominant planewave of the mode with frequency `nf` and band index `nb`. (Defaults to `NULL`.)  This is especially useful for interpreting the modes computed in a uniform medium, because those modes are exactly planewaves proportional to $exp(2\pi i \mathrm{kdom}\cdot \vec{x})$ where `kdom` is the wavevector.
++ `kdom_list` is a user allocated array of `meep::vec` objects of length (`num_bands` * `num_freqs`). If non-null, this array is filled in with the wavevectors of the dominant planewave in the Fourier series expansion for each band from 1 to (`num_bands` * `num_freqs`). `kdom_list[nb*num_freqs + nf]` is the dominant planewave of the mode with frequency `nf` and band index `nb`. (Defaults to `NULL`.)  This is especially useful for interpreting the modes computed in a uniform medium, because those modes are exactly planewaves proportional to $exp(2\pi i \mathrm{kdom}\cdot \vec{x})$ where `kdom` is the wavevector.
 
 ```c++
  int num_bands = bands.size();
