@@ -41,8 +41,8 @@ class TestWvgSrc(unittest.TestCase):
         flux1 = self.sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(-6.0), size=mp.Vector3(1.8, 6)))
         flux2 = self.sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(6.0), size=mp.Vector3(1.8, 6)))
 
-        self.assertAlmostEqual(flux1 / -1.8, 6.372086032775481e-06)
-        self.assertAlmostEqual(flux2 / 1.8, 0.2874654567549529)
+        self.assertAlmostEqual(flux1 / -1.8, 7.125912849303947e-5)
+        self.assertAlmostEqual(flux2 / 1.8, 0.2898407833272916)
 
 if __name__ == '__main__':
     unittest.main()
