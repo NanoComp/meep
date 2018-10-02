@@ -416,6 +416,7 @@
 	       (volume (center ecen) (size esz))
 	       (object-property-value s 'eig-band)
 	       (object-property-value s 'eig-kpoint)
+	       (object-property-value s 'eig-match-freq?)
 	       (object-property-value s 'eig-parity)
 	       (object-property-value s 'eig-resolution)
 	       (object-property-value s 'eig-tolerance)
