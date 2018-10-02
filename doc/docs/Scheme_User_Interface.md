@@ -591,9 +591,9 @@ The parity (= polarization in 2d) of the mode to calculate, assuming the structu
 —
 The spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels.
 
-**`eig-tolerance` [`number`, defaults to 10<sup>–7</sup> ]**
+**`eig-tolerance` [`number`, defaults to 10<sup>–12</sup> ]**
 —
-The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.
+The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.)
 
 **`component` [as above, but defaults to `ALL-COMPONENTS`]**
 —

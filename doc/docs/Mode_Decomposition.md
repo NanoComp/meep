@@ -57,19 +57,19 @@ The following are the parameters:
 
 + `flux` is a `dft_flux` object containing the frequency-domain fields on a cross-sectional slice perpendicular to the waveguide axis
 
-+ `eig_vol` is the `volume` passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation; in most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
++ `eig_vol` is the `volume` passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation. In most cases this will simply be the volume over which the frequency-domain fields are tabulated (i.e. `flux.where`).
 
-+ `bands` is an array of integers corresponding to the mode indices
++ `bands` is an array of integers corresponding to the mode indices (equivalent to $n$ in the two formulas above)
 
 + `num_bands` is the length of the `bands` array
 
-+ `parity` is the parity of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
++ `parity` is the parity of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry in the source region. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `ODD_Z+EVEN_Y`. This is especially useful in 2d simulations to restrict yourself to a desired polarization
 
 + `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations
 
-+ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance
++ `eigensolver_tol` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing by less than this fractional tolerance
 
-+ `coeffs` is a user-allocated array of type `std::complex<double>` (shortened to `vector<cdouble>`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
++ `coeffs` is a user-allocated array of type `std::complex<double>` (shortened hereafter to `cdouble`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
 
 + `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
 
@@ -81,7 +81,7 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`
 
-+ `kdom_list` is a user allocated array of `meep::vec` objects of length `num_bands`. If non-null, this array is filled in with the dominant planewave vectors for bands 1 to `num_bands` (note: index `i` corresponds to band `i + 1`).
++ `kdom_list` is a user allocated array of `meep::vec` objects of length (`num_bands` * `num_freqs`). If non-null, this array is filled in with the wavevectors of the dominant planewave in the Fourier series expansion for each band from 1 to (`num_bands` * `num_freqs`). `kdom_list[nb*num_freqs + nf]` is the dominant planewave of the mode with frequency `nf` and band index `nb`. (Defaults to `NULL`.)  This is especially useful for interpreting the modes computed in a uniform medium, because those modes are exactly planewaves proportional to $exp(2\pi i \mathrm{kdom}\cdot \vec{x})$ where `kdom` is the wavevector.
 
 ```c++
  int num_bands = bands.size();
@@ -106,7 +106,7 @@ The α coefficients computed by `get_eigenmode_coefficients` are normalized such
 
 $$|\alpha_n^\pm|^2 = P_n^\pm$$
 
-where P$_n^\pm$ is the power carried by the traveling eigenmode n in the forward (+) or backward (-) direction. This is discussed in more detail below.
+where P$_n^\pm$ is the power carried by the traveling eigenmode $n$ in the forward (+) or backward (-) direction. This is discussed in more detail below.
 
 ## Related Functions
 
@@ -121,10 +121,12 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               const vec &kpoint, bool match_frequency,
                               int parity,
                               double resolution,
-                              double eigensolver_tol);
+                              double eigensolver_tol,
+                              bool verbose,
+                              double *kdom);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
 
 ### Working with MPB Eigenmodes
 

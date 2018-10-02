@@ -379,7 +379,7 @@
   (define-property eig-match-freq? true 'boolean)
   (define-property eig-parity NO-PARITY 'integer)
   (define-property eig-resolution 0 'integer non-negative?)
-  (define-property eig-tolerance 1e-7 'number positive?))
+  (define-property eig-tolerance 1e-12 'number positive?))
 
 (define (add-source s f) ; add source s to fields f
   (define (dflt v v0 vd) (if (vector3= v v0) vd v))
@@ -416,6 +416,7 @@
 	       (volume (center ecen) (size esz))
 	       (object-property-value s 'eig-band)
 	       (object-property-value s 'eig-kpoint)
+	       (object-property-value s 'eig-match-freq?)
 	       (object-property-value s 'eig-parity)
 	       (object-property-value s 'eig-resolution)
 	       (object-property-value s 'eig-tolerance)
@@ -1124,7 +1125,7 @@
   (let ((eig-parity (get-keyword-value args #:eig-parity NO-PARITY))
         (eig-vol (get-keyword-value args #:eig-vol (meep-dft-flux-where-get flux)))
         (eig-resolution (get-keyword-value args #:eig-resolution 0))
-        (eig-tolerance (get-keyword-value args #:eig-tolerance 1e-7))
+        (eig-tolerance (get-keyword-value args #:eig-tolerance 1e-12))
         (num-bands (length bands))
         (kpoint-func (get-keyword-value args #:kpoint-func '())))
     (begin

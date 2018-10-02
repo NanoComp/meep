@@ -70,14 +70,15 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9)
 freqs = mp.get_eigenmode_freqs(mode_mon)
 
 nmode = 10
+res = sim.get_eigenmode_coefficients(mode_mon, range(1,nmode+1), eig_parity=mp.ODD_Z+mp.EVEN_Y)
+coeffs = res.alpha
+kpoints = res.kpoints
+
 for nm in range(nmode):
-  res = sim.get_eigenmode_coefficients(mode_mon, [nm+1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
-  coeffs = res.alpha
-  kpoints = res.kpoints
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(math.acos(kpoints[nf].x/freqs[nf]))
-    mode_tran = abs(coeffs[0,nf,0])**2/input_flux[nf]
+    mode_angle = math.degrees(math.acos(kpoints[nm*nfreq+nf].x/freqs[nf]))
+    mode_tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
     if nm != 0:
       mode_tran = 0.5*mode_tran
     print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))

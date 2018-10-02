@@ -85,21 +85,24 @@ class TestModeCoeffs(unittest.TestCase):
         # test 2: |mode coeff|^2 = power
         self.assertAlmostEqual(mode_power / abs(c0**2), 1.0, places=1)
 
+        return res
+
     def test_modes(self):
         self.run_mode_coeffs(1, None)
-        self.run_mode_coeffs(2, None)
+        res = self.run_mode_coeffs(2, None)
 
         # Test mp.get_eigenmode and EigenmodeData
         vol = mp.Volume(center=mp.Vector3(5), size=mp.Vector3(y=7))
         emdata = self.sim.get_eigenmode(0.2, mp.X, vol, 2, mp.Vector3())
         self.assertEqual(emdata.omega, 0.2)
         self.assertEqual(emdata.band_num, 2)
+        self.assertTrue(emdata.kdom.close(res.kdom[1]))
 
         eval_point = mp.Vector3(0.7, -0.2, 0.3)
         ex_at_eval_point = emdata.amplitude(eval_point, mp.Ex)
         hz_at_eval_point = emdata.amplitude(eval_point, mp.Hz)
-        self.assertAlmostEqual(ex_at_eval_point, 2.4827383502368017e-05 + 0.16095103621219753j, places=2)
-        self.assertAlmostEqual(hz_at_eval_point, 1.1381993864995965-3.7330585912764835e-06j, places=2)
+        self.assertAlmostEqual(ex_at_eval_point, 0.10591314723115094+0.12458333138964374j, places=2)
+        self.assertAlmostEqual(hz_at_eval_point, 0.8681206797182762-0.737695596449452j, places=2)
 
     def test_kpoint_func(self):
 

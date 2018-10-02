@@ -339,12 +339,13 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 class EigenmodeData(object):
 
-    def __init__(self, band_num, omega, group_velocity, k, swigobj):
+    def __init__(self, band_num, omega, group_velocity, k, swigobj, kdom):
         self.band_num = band_num
         self.omega = omega
         self.group_velocity = group_velocity
         self.k = k
         self.swigobj = swigobj
+        self.kdom = kdom
 
     def amplitude(self, point, component):
         swig_point = mp.vec(point.x, point.y, point.z)
@@ -1378,7 +1379,7 @@ class Simulation(object):
         return xyzw
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY,
-                                   eig_vol=None, eig_resolution=0, eig_tolerance=1e-7, kpoint_func=None):
+                                   eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
@@ -1406,7 +1407,7 @@ class Simulation(object):
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
 
     def get_eigenmode(self, omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
-                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-7, verbose=False):
+                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False):
 
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode")
@@ -1421,7 +1422,8 @@ class Simulation(object):
         emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
                                    match_frequency, parity, resolution, eigensolver_tol, verbose)
 
-        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk, emdata.data)
+        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk,
+                             emdata.data, emdata.kdom)
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:

@@ -98,6 +98,8 @@ typedef struct eigenmode_data
    double group_velocity;
  } eigenmode_data;
 
+#define TWOPI 6.2831853071795864769252867665590057683943388
+
 /*******************************************************************/
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
@@ -133,8 +135,13 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   int nz = n[2];
   double r[3] = {0,0,0};
   vec p0(p - center);
-  LOOP_OVER_DIRECTIONS(p.dim, d)
-   r[d%3] = p0.in_direction(d) / s[d%3] + 0.5;
+  double phase = 0;
+  LOOP_OVER_DIRECTIONS(p.dim, d) {
+    double pd = p0.in_direction(d);
+    int i = d%3;
+    phase += edata->Gk[i] * pd; // k dot p
+    r[i] = pd / s[i] + 0.5;
+  }
   double rx = r[0], ry = r[1], rz = r[2];
 
   /* linearly interpolate the amplitude from MPB at point p */
@@ -142,14 +149,19 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
   double dx, dy, dz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = pmod( int(rx * nx), nx );
-  y = pmod( int(ry * ny), ny );
-  z = pmod( int(rz * nz), nz );
+  x = int(rx * nx);
+  y = int(ry * ny);
+  z = int(rz * nz);
 
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x;
   dy = ry * ny - y;
   dz = rz * nz - z;
+
+  /* wrap around to 0..n-1, assuming periodic boundaries */
+  x = pmod( x, nx );
+  y = pmod( y, ny );
+  z = pmod( z, nz );
 
   /* get the other closest point in the grid, with periodic boundaries: */
   x2 = pmod( (dx >= 0.0 ? x + 1 : x - 1), nx );
@@ -173,7 +185,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
 #undef D
 
   return (complex<double>(double(real(ret)), double(imag(ret)))
-	  * amp_func(p));
+	  * amp_func(p)) * std::polar(1.0, TWOPI*phase);
 }
 
 /***************************************************************/
@@ -449,7 +461,7 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
   /* do a second round of post-processing to tabulate E-fields   -*/
   /* on a (separate) internal storage buffer.  (Previously       -*/
-  /* there was only one internal buffer which held either E-field */
+  /* there was only one internal buffer which held either E-field *
   /* or H-field data, but this is inconvenient for cases in which */
   /* you want the E and H fields of an eigenmode simultaneously.) */
   /*--------------------------------------------------------------*/
@@ -488,8 +500,11 @@ void *fields::get_eigenmode(double omega_src,
   edata->omega          = omega_src;
   edata->group_velocity = (double) vgrp;
 
-  if (kdom)
+  if (kdom) {
     maxwell_dominant_planewave(mdata, H, band_num, kdom);
+    if (!quiet)
+      master_printf("Dominant planewave for band %d: (%f,%f,%f)\n", band_num, kdom[0], kdom[1], kdom[2]);
+  }
 
   return (void *)edata;
 }
