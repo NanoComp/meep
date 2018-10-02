@@ -339,12 +339,13 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 class EigenmodeData(object):
 
-    def __init__(self, band_num, omega, group_velocity, k, swigobj):
+    def __init__(self, band_num, omega, group_velocity, k, swigobj, kdom):
         self.band_num = band_num
         self.omega = omega
         self.group_velocity = group_velocity
         self.k = k
         self.swigobj = swigobj
+        self.kdom = kdom
 
     def amplitude(self, point, component):
         swig_point = mp.vec(point.x, point.y, point.z)
@@ -1391,7 +1392,8 @@ class Simulation(object):
         emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
                                    match_frequency, parity, resolution, eigensolver_tol, verbose)
 
-        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk, emdata.data)
+        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk,
+                             emdata.data, emdata.kdom)
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
