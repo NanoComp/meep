@@ -91,7 +91,7 @@ class EigenModeSource(Source):
                  eig_match_freq=True,
                  eig_parity=mp.NO_PARITY,
                  eig_resolution=0,
-                 eig_tolerance=1e-7,
+                 eig_tolerance=1e-12,
                  **kwargs):
 
         super(EigenModeSource, self).__init__(src, component, center, **kwargs)
