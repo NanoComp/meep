@@ -1357,7 +1357,8 @@ class Simulation(object):
     # same as previous routine, but with empty dimensions collapsed
     def get_dft_array_metadata(self, vol=None, center=None, size=None):
         xyzw=self.get_array_metadata(vol=vol,center=center,size=size)
-
+        if size is None:
+            size=vol.size
         dims=np.shape(xyzw)
         if len(dims)==4 and np.count_nonzero(size)<3: # collapse 3D --> 2D
             if   size.x==0 and dims[0]==2:
