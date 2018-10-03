@@ -33,7 +33,9 @@ env:
 # common installations performed before all build cases
 ##################################################
 before_script:
-  - if [[ ${DO_FULL_BUILD} != true ]]; then echo "Documentation PR. Skipping build"; exit 0; fi
+  - echo ${CHANGED_FILES}
+  - echo ${DO_FULL_BUILD}
+  - if [ -z "${DO_FULL_BUILD}" ]; then echo "Documentation PR. Skipping build"; exit 0; fi
   - git clone https://github.com/stevengj/libctl libctl-src
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
   - git clone https://github.com/stevengj/harminv
