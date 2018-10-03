@@ -50,6 +50,7 @@ TESTS =                                   \
     $(TEST_DIR)/absorber_1d.py            \
     $(TEST_DIR)/antenna_radiation.py      \
     $(TEST_DIR)/bend_flux.py              \
+    $(TEST_DIR)/binary_grating.py         \
     $(TEST_DIR)/cavity_arrayslice.py      \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
