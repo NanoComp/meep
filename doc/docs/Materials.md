@@ -177,10 +177,10 @@ from meep.materials import Al
 ```
 Then, the material can be simply used as `geometry = [meep.Cylinder(material=Al, ...]`.
 
-In Scheme, the materials library is already included when meep is run, so you can use it without any initialization:
+In Scheme, the materials library is already included when Meep is run, so you can use it without any initialization:
 
 ```scm
 (set! geometry (list (make cylinder (material Al) ...)))
 ```
 
-Note: for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting accuracy) by removing from the material definitions those Lorentzian suspeptibility terms which are far outside the spectral region of interest.
+**Note:** for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting accuracy) by removing from the material definitions those Lorentzian suspeptibility terms which are far outside the spectral region of interest.

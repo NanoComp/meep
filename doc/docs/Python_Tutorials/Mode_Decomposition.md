@@ -184,7 +184,7 @@ fcen = 0.5*(fmin+fmax)  # center frequency
 df = fmax-fmin          # frequency width
 
 src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
-sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0))]
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0))]
 
 k_point = mp.Vector3(0,0,0)
 
@@ -223,7 +223,7 @@ sim = mp.Simulation(resolution=resolution,
 
 mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(xm,0,0), 1e-9))
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
 freqs = mp.get_eigenmode_freqs(mode_mon)
 
@@ -306,9 +306,9 @@ To convert the diffraction efficiency into transmittance in the *x* direction (i
 
 As an additional demonstration of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle must necessarily sum to unity. Also, the total reflectance and transmittance must be equivalent to values computed using the Poynting flux. This is similar to the [single-mode waveguide example](#reflectance-of-a-waveguide-taper).
 
-The following script is adapted from the previous binary-grating example involving a normally-incident planewave. The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two different lines prefixed by `mode-coeff:` and `poynting-flux:`.
+The following script is adapted from the previous binary-grating example involving a normally-incident planewave. The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two different lines prefixed by `mode-coeff:` and `poynting-flux:`. The script is in [binary_grating_oblique.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique.py).
 
-The script is in [binary_grating_oblique.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique.py).
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7° (`theta_in`). Its spatial profile is defined using the source amplitude function (`pw_amp`). This function takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which returns the planewave amplitude at that point. Two modifications to the original simulation are necessary for mitigating the intrinsic discretization effects of the Yee grid for oblique planewaves: (1) the pulse bandwidth is narrowed and (2) the anisotropic `PML` is replaced with an isotropic `Absorber`. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. Note that there is a second line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
 ```py
 import meep as mp
@@ -340,7 +340,7 @@ df = 0.05*fcen         # frequency width
 ng = 1.5
 glass = mp.Medium(index=ng)
 
-# rotation angle of incident planewave; CCW about Y axis, 0 degrees along +X axis
+# rotation angle of incident planewave; CCW about Z axis, 0 degrees along +X axis
 theta_in = math.radians(10.7)
 
 # k (in source medium) with correct length (plane of incidence: XY)
@@ -376,7 +376,7 @@ sim = mp.Simulation(resolution=resolution,
 refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
 refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=200)
+sim.run(until_after_sources=100)
   
 input_flux = mp.get_fluxes(refl_flux)
 input_flux_data = sim.get_flux_data(refl_flux)
@@ -400,7 +400,7 @@ sim.load_minus_flux_data(refl_flux,input_flux_data)
 tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
 tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=400)
+sim.run(until_after_sources=200)
 
 nm_r = np.floor((fcen*ng-k.y)*gp)-np.ceil((-fcen*ng-k.y)*gp) # number of reflected orders
 if theta_in == 0:
@@ -442,8 +442,6 @@ Rflux = -r_flux[0]/input_flux[0]
 Tflux =  t_flux[0]/input_flux[0]
 print("poynting-flux:, {:.6f}, {:.6f}, {:.6f}".format(Rflux,Tflux,Rflux+Tflux))
 ```
-
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7° (`theta_in`). Its spatial profile is defined using the source amplitude function (`pw_amp`). This function takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which returns the planewave amplitude at that point. Two modifications to the original simulation are necessary for mitigating the intrinsic discretization effects of the Yee grid for oblique planewaves: (1) the pulse bandwidth is narrowed and (2) the anisotropic `PML` is replaced with an isotropic `Absorber`. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. Note that there is a second line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
 The following are several of the lines from the output for eight of the reflected and transmitted orders. The first numerical column is the mode number, the second is the mode angle (in degrees), and the third is the fraction of the input power that is concentrated in the mode. Note that the thirteenth transmitted order at 19.18° contains nearly 38% of the input power.
 
