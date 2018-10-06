@@ -10,7 +10,7 @@ class TestEigCoeffs(unittest.TestCase):
 
   def run_binary_grating_oblique(self, theta):
   
-    resolution = 30        # pixels/μm
+    resolution = 30        # pixels/um
 
     dpml = 1.0             # PML thickness
     dsub = 1.0             # substrate thickness
