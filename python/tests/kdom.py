@@ -8,13 +8,13 @@ class TestKdom(unittest.TestCase):
 
   def run_kdom(self, theta, num_band):
 
-    resolution = 20        # pixels/μm
+    resolution = 20        # pixels/um
 
     sx = 5
     sy = 10
     cell_size = mp.Vector3(sx,sy,0)
 
-    fcen = 1               # center frequency (wavelength = 1 μm)
+    fcen = 1               # center frequency (wavelength = 1 um)
     ng = 1.5
     glass = mp.Medium(index=ng)
 
