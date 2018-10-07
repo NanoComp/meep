@@ -1481,6 +1481,25 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 + `num_freq`: The index of the frequency: (an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.)
 
+**`get_array_metadata(vol=None, center=None, size=None)**`
+**`get_dft_array_metadata(vol=None, center=None, size=None)**`
+
+These routines provide geometric information useful for interpreting the data returned by `get_array` and `get_dft_array`.
+If xk$
+The `array_metadata` is itself an array of the same dimensions 
+
+These routines the Cartesian coordinates and interpolation/integration weights for the points of the arrays
+returned
+
+More specifically, if the array returned by `get_array`/`get_dft_array`
+has dimensions $(N_1, \cdots, N_D)$, then the return value of `get_array_metadata`/`get_dft_array_metadata` is an
+array of dimensions $(N_1, \cdots, N_D, 4)$, with the
+
+More specifically, the return value
+
++ `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If `None` (default), then a `size` and `center` must be specified.
++ `center`, `size` : `Vector3`; if both are specified, the library will construct an apporpriate `Volume`. This is a convenience feature and alternative to supplying a `Volume`.
+
 #### Source slices
 
 **`get_source_slice(component, vol=None, center=None, size=None)`**
