@@ -183,7 +183,6 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p,
 	 ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
 	  (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
 #undef D
-
   return (complex<double>(double(real(ret)), double(imag(ret)))
 	  * amp_func(p)) * std::polar(1.0, TWOPI*phase);
 }
