@@ -61,6 +61,7 @@ TESTS =                                   \
     $(TEST_DIR)/geom.py                   \
     $(TEST_DIR)/holey_wvg_bands.py        \
     $(TEST_DIR)/holey_wvg_cavity.py       \
+    $(TEST_DIR)/kdom.py                   \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
     $(MPBPYTEST)                          \
