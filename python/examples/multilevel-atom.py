@@ -68,7 +68,7 @@ ml_atom = mp.MultilevelAtom(sigma=1, transitions=transitions, initial_population
 two_level = mp.Medium(index=ncav, E_susceptibilities=[ml_atom])
 
 # Specify the cavity geometry:
-geometry = [mp.Block(center=mp.Vector3(z=-0.5*sz+0.5*Lcav)),
+geometry = [mp.Block(center=mp.Vector3(z=-0.5*sz+0.5*Lcav),
                      size=mp.Vector3(mp.inf,mp.inf,Lcav), material=two_level)]
 
 sim = mp.Simulation(cell_size=cell_size,
