@@ -523,6 +523,16 @@ else
         AC_CHECK_HEADER([numpy/arrayobject.h],[],[
           AC_MSG_WARN([disabling Python wrappers])
           have_python=no],[#include <Python.h>])
+
+        AC_MSG_CHECKING([for coverage module])
+        $PYTHON -c 'import coverage'
+        if test $? = 0; then
+          AC_MSG_RESULT([yes])
+          have_coverage=yes
+        else
+          AC_MSG_RESULT([no])
+          have_coverage=no
+        fi
       fi
 
       CPPFLAGS=$save_CPPFLAGS
@@ -533,6 +543,7 @@ fi # with_python
 
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
+AM_CONDITIONAL(WITH_COVERAGE, test x"$have_coverage" = "xyes")
 
 # Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds
 AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)

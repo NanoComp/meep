@@ -74,14 +74,14 @@ matrix:
       - pip install numpy mpi4py scipy
       - pip install --no-binary=h5py h5py
   - python: "3.4"
-    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}" MKCHECKFLAGS="-j 2"
+    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}" MKCHECKFLAGS="-j 2" RUN_COVERAGE="1"
     addons:
       apt:
         packages:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py
+      - pip install numpy mpi4py scipy h5py coverage coveralls
   - python: "3.4"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
     addons:
@@ -114,8 +114,20 @@ script:
   # Output something every 9 minutes so travis doesn't kill the job
   - while sleep 540; do echo "still running"; done &
   - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+  - >
+    if [[ "${RUN_COVERAGE}" = "1" ]]; then
+      make ${MKCHECKFLAGS} &&
+      pushd python &&
+      echo "[run]" > .coveragerc &&
+      echo "data_file = ${TRAVIS_BUILD_DIR}/.coverage" >> .coveragerc &&
+      make ${MKCHECKFLAGS} check &&
+      popd;
+    fi
   # Kill background sleep loop
   - kill %1
+
+after_success:
+  - if [[ "${RUN_COVERAGE}" = "1" ]]; then cd ${TRAVIS_BUILD_DIR} && coveralls; fi
 
 after_script:
   - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build

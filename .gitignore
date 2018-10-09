@@ -43,6 +43,7 @@ test-driver
 gen-ctl-io
 ctl-io.c
 ctl-io.h
+*.coverage
 scheme/ctl-io.cpp
 scheme/ctl-io.i
 scheme/geom.cpp

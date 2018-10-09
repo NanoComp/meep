@@ -10,7 +10,7 @@ HPPFILES=                                    \
 BUILT_SOURCES = meep-python.cpp mpb-python.cpp __init__.py mpb.py
 EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py mpb_data.py materials.py examples tests
 
-CLEANFILES = $(BUILT_SOURCES) meep.py
+CLEANFILES = $(BUILT_SOURCES) meep.py .coverage
 
 if WITH_MPB
   PYMPBINCLUDE=-I$(top_srcdir)/libpympb
@@ -78,8 +78,13 @@ TESTS =                                   \
     $(TEST_DIR)/user_defined_material.py  \
     $(TEST_DIR)/wvg_src.py
 
+if WITH_COVERAGE
+  PY_LOG_COMPILER = coverage run -a --omit=$(top_srcdir)/python/tests/*,${HOME}/virtualenv/*,$(top_srcdir)/python/examples/*
+else
+  PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
+endif
+
 TEST_EXTENSIONS = .py
-PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
