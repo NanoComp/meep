@@ -26,11 +26,11 @@ env:
   - CPPFLAGS=-I${HOME}/local/include 
   - LDFLAGS=-L${HOME}/local/lib
   - HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5
-  - HDF5_SERIAL_CPPFLAGS=-I${HDF5_BASE_CPPFLAGS}/serial
-  - HDF5_PARALLEL_CPPFLAGS=-I${HDF5_BASE_CPPFLAGS}/openmpi
+  - HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial
+  - HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi
   - HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5
-  - HDF5_SERIAL_LDFLAGS=-L${HDF5_BASE_LDFLAGS}/serial
-  - HDF5_PARALLEL_LDFLAGS=-L${HDF5_BASE_LDFLAGS}/openmpi
+  - HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial
+  - HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi
   - GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io
 
 ##################################################
