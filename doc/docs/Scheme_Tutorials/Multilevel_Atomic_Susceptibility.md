@@ -29,7 +29,7 @@ The properties of the polarization of the saturable gain are determined by the c
 (define-param theta 1)                           ; off-diagonal dipole matrix element
 (define sigma-21 (* 2 theta theta omega-a))      ; dipole coupling strength (hbar = 1)
 ```
-To understand the need for the high resolution, let us calculate the central wavelength of the transition inside the high-index cavity relative to the cavity length:
+To understand the need for the high resolution, let us calculate the central wavelength of the lasing transition inside the high-index cavity relative to the cavity length:
 
 $$ \frac{\lambda}{L} = \frac{2 \pi c}{n \omega_a L} = \frac{2 \pi}{1.5 \cdot 40} \approx 0.1047 $$
 

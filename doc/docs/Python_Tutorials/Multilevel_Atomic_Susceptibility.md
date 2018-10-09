@@ -29,7 +29,7 @@ gamma_21 = (2*gamma_perp)/(2*math.pi)    # FWHM emission linewidth in sec^-1 (un
 theta = 1                                # theta, the off-diagonal dipole matrix element, in SALT
 sigma_21 = 2*theta*theta*omega_a         # dipole coupling strength (hbar = 1)
 ```
-To understand the need for the high resolution, let us calculate the central wavelength of the transition inside the high-index cavity relative to the cavity length:
+To understand the need for the high resolution, let us calculate the central wavelength of the lasing transition inside the high-index cavity relative to the cavity length:
 
 $$ \frac{\lambda}{L} = \frac{2 \pi c}{n \omega_a L} = \frac{2 \pi}{1.5 \cdot 40} \approx 0.1047 $$
 
