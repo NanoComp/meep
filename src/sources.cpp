@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <memory.h>
 #include <complex>
 
 #include "meep.hpp"
@@ -279,6 +280,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   LOOP_OVER_DIRECTIONS(is.dim, d)
     npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   ptrdiff_t *index_array = new ptrdiff_t[npts];
+  memset(index_array, 0, sizeof(ptrdiff_t) * npts);
   complex<double> *amps_array = new complex<double>[npts];
 
   complex<double> amp = data->amp * conj(shift_phase);
