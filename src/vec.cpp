@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex>
+#include <map>
 
 #include "meep_internals.hpp"
 
@@ -1471,5 +1472,84 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
 }
 
 /***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+ivec_loop_counter::ivec_loop_counter(grid_volume gv, ivec is, ivec ie)
+ : dim(gv.dim), inva(gv.inva)
+{
+   idx0=0;
+   for(int i=0; i<3; i++)
+    { loop_is[i] = is.yucky_val(i);
+      loop_n[i]  = (ie.yucky_val(i) - loop_is[i]) / 2 + 1;
+      loop_d[i]  = gv.yucky_direction(i);
+      loop_s[i]  = gv.stride(loop_d[i]);
+      idx0 += (is - gv.little_corner()).yucky_val(i)/2 * loop_s[i];
+    }
+   loop_n12  = loop_n[1]*loop_n[2]; 
+   num_iters = loop_n[0]*loop_n12;
+}
+
+ptrdiff_t ivec_loop_counter::update(size_t niter, size_t loop_i[3])
+{ 
+  ptrdiff_t idx=idx0;
+  if (loop_n[0]>1)
+   { loop_i[0]=niter/loop_n12;
+     niter%=loop_n12;
+     idx+=loop_i[0]*loop_s[0];
+   }
+  if (loop_n[1]>1) 
+   { loop_i[1]=niter/loop_n[2]; 
+     niter%=loop_n[2]; 
+     idx+=loop_i[1]*loop_s[1];
+   }
+  if (loop_n[2]>1)
+   { loop_i[2]=niter;
+     idx+=loop_i[2]*loop_s[2];
+   }
+  return idx;
+}
+
+ivec ivec_loop_counter::get_iloc(size_t loop_i[3])
+{ ivec iloc(dim);
+  for(int i=0; i<3; i++)
+   if (has_direction(dim,loop_d[i]))
+    iloc.set_direction(loop_d[i],loop_is[i]+2*loop_i[i]);
+  return iloc;
+}
+
+vec ivec_loop_counter::get_loc(size_t loop_i[3])
+{ vec loc(dim);
+  for(int i=0; i<3; i++)
+   if (has_direction(dim,loop_d[i]))
+    loc.set_direction(loop_d[i],(0.5*loop_is[i]+loop_i[i])*inva);
+  return loc;
+}
+
+typedef std::pair<int,double> loop_time;
+typedef std::map<int,double> loop_time_map;
+static loop_time_map loop_times;
+size_t checkpoint(int which_loop)
+{ 
+  static int current_loop=0;
+  static double current_loop_start_time=0.0;
+
+  if (which_loop==0)
+   { if (loop_times.find(current_loop)!=loop_times.end())
+      loop_times[current_loop] += wall_time() - current_loop_start_time;
+   }
+  else
+   { if (loop_times.find(which_loop)==loop_times.end())
+      { loop_times[which_loop]=0.0;
+        printf("Loop %i encountered.\n",which_loop);
+      }
+     current_loop=which_loop;
+     current_loop_start_time=wall_time();
+   }
+  return 0;
+}
+void print_loop_stats(double meep_time)
+{ for(loop_time_map::iterator it=loop_times.begin(); it!=loop_times.end(); ++it)
+   printf("Loop %i: %e s (%e) \n",it->first,it->second,it->second/meep_time);
+}
 
 } // namespace meep

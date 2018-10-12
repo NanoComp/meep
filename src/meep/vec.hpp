@@ -23,6 +23,8 @@
 #include <stddef.h>
 
 namespace meep {
+size_t checkpoint(int which_loop=0);
+void print_loop_stats(double meep_time=1.0);
 
 const int NUM_FIELD_COMPONENTS = 20;
 const int NUM_FIELD_TYPES = 8;
@@ -120,7 +122,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
+   for(ptrdiff_t loop_is1 = (is).yucky_val(0)+checkpoint(__LINE__), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -173,7 +175,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0)+checkpoint(__LINE__), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -934,6 +936,38 @@ public:
   std::complex<double> weight;
   volume_list *next;
 };
+
+/**************************************************/
+/**************************************************/
+/**************************************************/
+class ivec_loop_counter
+ {
+public:
+    ivec_loop_counter(grid_volume gv, ivec is, ivec ie);
+    ptrdiff_t update(size_t niter, size_t loop_i[3]);
+    ivec get_iloc(size_t loop_i[3]);
+    vec get_loc(size_t loop_i[3]);
+
+//private:
+    ndim dim;
+    double inva;
+    ptrdiff_t loop_is[3], loop_n[3], loop_s[3], idx0;
+    direction loop_d[3];
+    size_t loop_n12, num_iters;
+ };
+
+#define STRINGIZE(a) #a
+
+#define PLOOP_OVER_IVECS(gv, is, ie, idx, ilc, NT) 					\
+ ivec_loop_counter ilc(gv,is,ie);                  					\
+ _Pragma( STRINGIZE("omp parallel for schedule(dynamic,1), num_threads(NT) ") )		\
+ for(size_t iters=0, idx=ilc.idx0, loop_i[3]={0,0,0}; iters<ilc.num_iters; idx=ilc.update(++iters,loop_i))
+
+#define IVEC_PLOOP_ILOC(ilc,iloc) ivec iloc=ilc.get_iloc(loop_i)
+#define IVEC_PLOOP_LOC(ilc,iloc) vec loc=ilc.get_loc(loop_i)
+
+#define PLOOP_OVER_VOL_OWNED0(gv, c, idx) \
+  PLOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx, ilc ## __LINE__)
 
 } /* namespace meep */
 

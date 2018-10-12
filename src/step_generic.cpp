@@ -96,6 +96,9 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     	}
       }
       else { // no conductivity
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+//double ttt=wall_time();
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
     	if (g2) {
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
@@ -104,6 +107,9 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
     	}
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+//printf(" %e s\n",wall_time()-ttt);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
       }
     }
     else { // fu update, no PML in f update
@@ -231,6 +237,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
   }
+checkpoint();
 }
 
 /* field-update equation f += betadt * g (plus variants for conductivity
@@ -313,6 +320,7 @@ void step_beta(RPR f, component c, const RPR g,
       }
     }
   }
+checkpoint();
 }
 
 /* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so

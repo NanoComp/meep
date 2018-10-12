@@ -30,6 +30,36 @@ using namespace std;
 
 namespace meep {
 
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+#define NUM_CHECKPOINTS 24
+#define CHECKPOINT(n) \
+ { wt1=wall_time(); RunTimes[n]+=(wt1-wt0); wt0=wt1;}
+double RunTimes[NUM_CHECKPOINTS]={
+ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+};
+double LastMeepTime=0.0, MeepTime;
+double ReportInterval=20.0;
+double NextReportTime=20.0;
+double MeepRes;
+void ReportRunTimes(bool Reset)
+ { 
+   if (!am_master()) return;
+   FILE *f=fopen("/tmp/RunTimes","a");
+   double DeltaMeep=MeepTime - LastMeepTime;
+   fprintf(f,"\n\n## Meep time interval %g --> %g (%g)\n",LastMeepTime,MeepTime,DeltaMeep);
+   fprintf(f,"## item   wall_time    wall_time/meep_time\n");     
+   for(int n=0; n<NUM_CHECKPOINTS; n++)
+    { fprintf(f,"%g %2i %g %.4e %.4e \n",MeepRes,n,RunTimes[n],RunTimes[n]/DeltaMeep);
+      if (Reset) RunTimes[n]=0.0;
+    }
+   fclose(f);
+   if (Reset) LastMeepTime=MeepTime;
+   NextReportTime+=ReportInterval;
+ }
+
 void fields::step() {
   // however many times the fields have been synched, we want to restore now
   int save_synchronized_magnetic_fields = synchronized_magnetic_fields;
@@ -52,40 +82,70 @@ void fields::step() {
       master_printf("  (doing expensive timestepping of synched fields)\n");
     last_step_output_wall_time = wall_time();
     last_step_output_t = t;
+print_loop_stats(round_time());
   }
 
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+double wt0=wall_time(), wt1;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   phase_material();
+CHECKPOINT(0)
 
   // update cached conductivity-inverse array, if needed
   for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
-
   calc_sources(time()); // for B sources
+CHECKPOINT(1)
   step_db(B_stuff);
+CHECKPOINT(2)
   step_source(B_stuff);
+CHECKPOINT(3)
   step_boundaries(B_stuff);
+CHECKPOINT(4)
   calc_sources(time() + 0.5*dt); // for integrated H sources
+CHECKPOINT(5)
   update_eh(H_stuff);
+CHECKPOINT(6)
   step_boundaries(WH_stuff);
+CHECKPOINT(7)
   update_pols(H_stuff);
+CHECKPOINT(8)
   step_boundaries(PH_stuff);
+CHECKPOINT(9)
   step_boundaries(H_stuff);
+CHECKPOINT(10)
 
   if (fluxes) fluxes->update_half();
+CHECKPOINT(11)
 
   calc_sources(time() + 0.5*dt); // for D sources
+CHECKPOINT(12)
   step_db(D_stuff);
+CHECKPOINT(13)
   step_source(D_stuff);
+CHECKPOINT(14)
   step_boundaries(D_stuff);
+CHECKPOINT(15)
   calc_sources(time() + dt); // for integrated E sources
+CHECKPOINT(16)
   update_eh(E_stuff);
+CHECKPOINT(17)
   step_boundaries(WE_stuff);
+CHECKPOINT(18)
   update_pols(E_stuff);
+CHECKPOINT(19)
   step_boundaries(PE_stuff);
+CHECKPOINT(20)
   step_boundaries(E_stuff);
+CHECKPOINT(21)
 
   if (fluxes) fluxes->update();
+CHECKPOINT(22)
   t += 1;
   update_dfts();
+CHECKPOINT(23)
+MeepTime=round_time();
+MeepRes=1.0/gv.inva;
+if(MeepTime>NextReportTime) ReportRunTimes(false);
   finished_working();
 
   // re-synch magnetic fields if they were previously synchronized

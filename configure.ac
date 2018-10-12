@@ -93,6 +93,18 @@ for flg in $CXXFLAGS; do
 done
 AC_SUBST(ARCHFLAG)
 
+##################################################
+# check for OpenMP to enable shared-memory parallelism
+##################################################
+AC_ARG_WITH(openmp, [AC_HELP_STRING([--without-openmp],[do not use OpenMP directives for parallelism])], with_openmp=$withval, with_openmp=yesdefault)
+
+if test "x$with_openmp" = xyesdefault; then with_openmp=yes; fi
+if test "x$with_openmp" = xyes; then
+   AC_DEFINE([USE_OPENMP], [1], [Define to use OpenMP threading.])
+   AX_OPENMP([], [AC_MSG_ERROR([Could not find OpenMP flag; configure with --without-openmp])])
+   CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+fi
+
 ##############################################################################
 # More checks
 
