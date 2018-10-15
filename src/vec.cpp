@@ -20,8 +20,7 @@
 #include <math.h>
 #include <complex>
 #include <map>
-
-#include <omp.h>
+#include <limits.h>
 
 #include "meep_internals.hpp"
 
@@ -1503,24 +1502,29 @@ void print_loop_stats(double meep_time)
 }
 
 /***************************************************************/
-/***************************************************************/
+/* construct / reinitialize to loop from _is to _ie in gv,     */
+/* handling only the nt-th out of NT chunks if NT>1.           */
 /***************************************************************/
 ivec_loop_counter::ivec_loop_counter(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
 { init(gv, _is, _ie, nt, NT); } 
 
 void ivec_loop_counter::init(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
 { 
-  if (is==_is && ie==_ie && inva==gv.inva) return; // no need to reinitialize
+  if (is==_is && ie==_ie && gvlc==gv.little_corner() && inva==gv.inva)
+   return; // no need to reinitialize
 
-  is=_is;
-  ie=_ie;
-  inva=gv.inva;
-  idx0=0;
-  active_rank=0;
-  size_t num_iters=1;
+  is   = _is;
+  gvlc = gv.little_corner();
+  ie   = _ie;
+  inva = gv.inva;
+
+  // tabulate 'active' dimensions, i.e. those in which loop is non-empty
+  idx0             = 0;
+  active_rank      = 0;
+  size_t num_iters = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d)
    { ptrdiff_t stride = gv.stride(d);
-     idx0 += stride * ((is - gv.little_corner()).in_direction(d)/2);
+     idx0 += stride * ((is - gvlc).in_direction(d)/2);
      ptrdiff_t count  = (ie-is).in_direction(d)/2 + 1;
      if (count>1)
       { active_dir[active_rank]    = d;
@@ -1530,74 +1534,117 @@ void ivec_loop_counter::init(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
         active_rank++;
       }
    }
-  idx_step     = active_stride[active_rank-1];
+  idx_step = active_stride[active_rank-1];
 
-  if (NT<1) NT=1;
-  min_iter     = (nt*num_iters) / NT;
-  max_iter     = ((nt+1)*num_iters) / NT;
-}
-  
-void ivec_loop_counter::start()
-{ iter         = min_iter;
-  finished     = false;
-  update();
+  //
+  //
+  //
+  if (NT<1) {nt=0; NT=1;}
+  min_iter = (nt*num_iters) / NT;
+  max_iter = ((nt+1)*num_iters) / NT;
+  niter_to_narray(min_iter, active_n_min);
+  niter_to_narray(max_iter, active_n_max);
 }
 
-void ivec_loop_counter::update()
+/***************************************************************/
+/* initialize computation of 'k' index into PML sigma arrays   */
+/* for up to two distinct directions                           */
+/***************************************************************/
+void ivec_loop_counter::init_k(direction dsig1, direction dsig2)
 { 
-  if (iter>=max_iter)
-   finished=true;
-  else
-   { ptrdiff_t n[3];
-     idx_start = get_idx(n, iter);
-     next_iter = iter + (active_count[active_rank-1] - n[active_rank-1]);
-     if (next_iter>max_iter) next_iter=max_iter;
+  for(int nd=0; nd<2; nd++)
+   { direction dsig = (nd==0 ? dsig1 : dsig2);
+     if (dsig==NO_DIRECTION)
+      { k0[nd]=INT_MAX; k_start[nd]=k_step[nd]=0; }
+     else
+      { k0[nd]=(is-gvlc).in_direction(dsig);
+        for(int r=0; r<active_rank; r++)
+         k_stride[nd][r] = (active_dir[r]==dsig ? 2 : 0);
+        k_step[nd]=k_stride[nd][active_rank-1];
+      }
    }
 }
 
-ptrdiff_t ivec_loop_counter::get_idx(ptrdiff_t *n, size_t niter)
-{ if (niter==SIZE_MAX) niter=iter;
-  ptrdiff_t idx=idx0, nbuffer[3]; if (n==0) n=nbuffer;
-  n[0]=n[1]=n[2]=0;
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+ptrdiff_t ivec_loop_counter::start(direction dsig1, direction dsig2)
+{ 
+  init_k(dsig1, dsig2);
+  complete = false;
+  return update(min_iter);
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+ptrdiff_t ivec_loop_counter::update(size_t new_iter)
+{ 
+  if (new_iter!=SIZE_MAX) current_iter=new_iter;
+
+  if (current_iter>=max_iter)
+   { complete=true;
+     return idx0;
+   }
+
+  ptrdiff_t idx = niter_to_narray(current_iter, active_n);
+  inner_iters= (active_count[active_rank-1] - active_n[active_rank-1]);
+  if (current_iter+inner_iters>max_iter) inner_iters=max_iter-current_iter;
+
+  for(int nd=0; nd<2; nd++)
+   { if (k0[nd]==INT_MAX) continue;
+     k_start[nd]=k0[nd];
+     for(int r=0; r<active_rank; r++)
+      k_start[nd] += k_stride[nd][r]*active_n[r];
+   }
+  return idx;
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void ivec_loop_counter::advance()
+{ current_iter++;
   for(int r=active_rank-1; r>=0; r--)
-   { n[r] = niter%active_count[r];
-     idx += n[r]*active_stride[r];
-     niter/=active_count[r];
+   { if ( ++active_n[r] < active_n_max[r] )
+      return;
+     active_n[r]=active_n_min[r];
    }
-  return idx;
-/*
-  if (active_rank==1)
-   n[0] = niter;
-  else if (active_rank==2)
-   { n[1] = niter % active_count[0];
-     n[0] = niter / active_count[0];
-   }
-  else // (active_rank==3)
-   { n[2] = niter % active_count[1];
-     niter /= active_count[1];
-     n[1] = niter % active_count[0];
-     n[0] = niter / active_count[0];
-   }
-  ptrdiff_t idx=idx0;
-  for(int r=0; r<active_rank; r++)
-  return idx;
-*/
+  current_iter=min_iter;
+  complete=true;
 }
 
-void ivec_loop_counter::get_loop_i(ptrdiff_t loop_i[3])
-{ loop_i[0]=loop_i[1]=loop_i[2]=0;
-  ptrdiff_t n[3];
-  get_idx(n);
+ptrdiff_t ivec_loop_counter::operator++()
+{ advance();
+  ptrdiff_t idx = idx0;
   for(int r=0; r<active_rank; r++)
-   loop_i[ ((int)active_dir[r]) % 3 ] = n[r];
+   idx += active_n[r]*active_stride[r];
+  return idx;
+}
+
+ptrdiff_t ivec_loop_counter::niter_to_narray(size_t iter, size_t *narray)
+{ 
+  ptrdiff_t idx=idx0;
+  for(int r=active_rank-1; r>=0; r--)
+   { narray[r] = iter%active_count[r];
+     iter/=active_count[r];
+     idx      += narray[r]*active_stride[r];
+   }
+  return idx;
+}
+
+int ivec_loop_counter::get_k(int nd)
+{ if (k0[nd]==INT_MAX) return 0;
+  int k=k0[nd];
+  for(int r=0; r<active_rank; r++)
+   k+=active_n[r]*k_stride[nd][r];
+  return k;
 }
 
 ivec ivec_loop_counter::get_iloc()
-{ ptrdiff_t n[3];
-  get_idx(n);
-  ivec iloc=is;
+{ ivec iloc=is;
   for(int r=0; r<active_rank; r++)
-   iloc.set_direction(active_dir[r], is.in_direction(active_dir[r]) + 2*n[r]);
+   iloc.set_direction(active_dir[r], is.in_direction(active_dir[r]) + 2*active_n[r]);
   return iloc;
 }
 

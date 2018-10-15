@@ -198,7 +198,7 @@ double fields::flux_in_box_wrongH(direction d, const volume &where) {
   if (coordinate_mismatch(gv.dim, d))
     return 0.0;
 
-  component cE[2], cH[2];
+  component cE[2]={Ey,Ez}, cH[2]={Hz,Hy};
   switch (d) {
   case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
   case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;

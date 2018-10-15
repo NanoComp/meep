@@ -175,9 +175,9 @@ component first_field_component(field_type ft);
 
 #define STRINGIZE(s) #s
 #if defined(__INTEL_COMPILER)
-  #define IVDEP STRINGIZE("ivdep")
+  #define IVDEP STRINGIZE(ivdep)
 #elif (defined(__GNUC__) || defined(__GNUG__))
-  #define IVDEP STRINGIZE("GCC ivdep")
+  #define IVDEP STRINGIZE(GCC ivdep)
 #endif
 
 // loop over indices idx from is to ie (inclusive) in gv
@@ -950,25 +950,62 @@ public:
 class ivec_loop_counter
  {
 public:
+
+    /***************************************************************/
+    /* initialize to handle loops from _is to _ie in gv.           */
+    /* if NT>1 and nt \in [0,NT), the loop is subdivided into NT   */
+    /* equal chunks and the loop counter handles only chunk #nt.   */
+    /***************************************************************/
     ivec_loop_counter(grid_volume gv, ivec _is, ivec _ie, int nt=0, int NT=1);
     void init(grid_volume gv, ivec _is, ivec _ie, int nt=0, int NT=1);
-    void start();
-    void update();
-    ptrdiff_t get_idx(ptrdiff_t *n=0, size_t niter=SIZE_MAX);
-    ptrdiff_t get_idx(size_t niter) { return get_idx(0,niter); }
-    void get_loop_i(ptrdiff_t loop_i[3]);
+
+    /***************************************************************/
+    /* Set the loop counter at the beginning of the loop. The      */
+    /* return value is 'idx' (index into field arrays) for the first*/
+    /* loop iteration. The optional direction arguments request    */
+    /* computation of 'k' indices into PML Sigma arrays for up to  */
+    /* two distinct directions.                                    */
+    /***************************************************************/
+    ptrdiff_t start(direction dsig=NO_DIRECTION, direction dsig2=NO_DIRECTION);
+
+    /***************************************************************/
+    /* Update all internal state variables to their values for     */
+    /* loop iteration #new_iter (if specified) or this->current_iter*/
+    /* (if not). Return value is 'idx' for that loop iteration.    */
+    /***************************************************************/
+    ptrdiff_t update(size_t new_iter=SIZE_MAX);
+
+    /***************************************************************/
+    /* Advance the loop one iteration. The return value is 'idx'.  */
+    /* The internal class field 'complete' will be set to true if  */
+    /* this was the final loop iteration.                          */
+    /***************************************************************/
+    ptrdiff_t operator++();
+
+    /***************************************************************/
+    /***************************************************************/
+    /***************************************************************/
+    int get_k(int nd);
     ivec get_iloc();
     vec get_loc();
 
-//private:
-    ivec is, ie;
+//private
+// internal class methods
+    void init_k(direction dsig1, direction dsig2);
+    void advance();
+    ptrdiff_t niter_to_narray(size_t iter, size_t *narray);
+
+// class data fields
+    ivec is, ie, gvlc;
     double inva;
     direction active_dir[3];
     ptrdiff_t active_stride[3], active_count[3];
+    size_t active_n_min[3], active_n_max[3], active_n[3];
     int active_rank;
-    ptrdiff_t idx0, idx_start, idx_end, idx_step;
-    size_t min_iter, max_iter, iter, next_iter;
-    bool finished;
+    ptrdiff_t idx0, idx_step;
+    size_t min_iter, max_iter, current_iter, inner_iters;
+    int k0[2], k_start[2], k_stride[2][3], k_step[2];
+    bool complete;
  };
 
 } // namespace meep

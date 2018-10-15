@@ -40,7 +40,7 @@ void structure::set_output_directory(const char *name) {
     // Link already exists.
     unlink(symlink_name);
   }
-  symlink(name, symlink_name);
+  int status=symlink(name, symlink_name); (void)status; // unused
   outdir = name;
 }
 

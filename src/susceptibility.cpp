@@ -155,12 +155,14 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
    algebra from this to get the condition for a root with |z| > 1.
 
    FIXME: this test seems to be too conservative (issue #12) */
+#if 0 // function not currently used, remove to avoid error message
 static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   double w = 2*pi*omega_0, g = 2*pi*gamma;
   double g2 = g*dt/2, w2 = (w*dt)*(w*dt);
   double b = (1 - w2/2) / (1 + g2), c = (1 - g2) / (1 + g2);
   return b*b > c && 2*b*b - c + 2*fabs(b)*sqrt(b*b - c) > 1;
 }
+#endif
 
 #define SWAP(t,a,b) { t SWAP_temp = a; a = b; b = SWAP_temp; }
 

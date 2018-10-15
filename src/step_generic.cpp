@@ -122,8 +122,9 @@ else
 {
 #pragma omp parallel for schedule(static), num_threads(meep_threads)
   for(int nt=0; nt<meep_threads; nt++)
-   for(ilc[nt].start(); !(ilc[nt].finished); ilc[nt].update() )
-    for(ptrdiff_t i=ilc[nt].idx_start; ilc[nt].iter<ilc[nt].next_iter; ilc[nt].iter++, i+=ilc[nt].idx_step)
+   for(ptrdiff_t i=ilc[nt].start(); !(ilc[nt].complete); i=ilc[nt].update() )
+#pragma GCC ivdep
+    for(size_t n=0; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step)
       f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
 }
     	} // if (g2)
@@ -159,13 +160,29 @@ checkpoint(__FILE__,__LINE__);
       }
       else { // no conductivity
     	if (g2) {
+
 checkpoint(__FILE__,__LINE__);
+if (meep_threads==0)
+{
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    DEF_ku; double fprev = fu[i];
     	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
     	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
     	  }
-    	}
+}
+else
+{
+#pragma omp parallel for schedule(static), num_threads(meep_threads)
+  for(int nt=0; nt<meep_threads; nt++)
+   for(ptrdiff_t i=ilc[nt].start(dsigu); !(ilc[nt].complete); i=ilc[nt].update() )
+#pragma GCC ivdep
+    for(size_t n=0, ku=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, ku+=ilc[nt].k_step[0])
+     { double fprev = fu[i];
+       fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+       f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+     }
+}
+    	} /*if (g2)*/
     	else {
 checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
@@ -206,12 +223,24 @@ checkpoint(__FILE__,__LINE__);
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
 checkpoint(__FILE__,__LINE__);
+if (meep_threads==0)
+ {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    f[i] = ((kap[k] - sig[k]) * f[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	  }
-	}
+ }
+else
+{
+#pragma omp parallel for schedule(static), num_threads(meep_threads)
+  for(int nt=0; nt<meep_threads; nt++)
+   for(ptrdiff_t i=ilc[nt].start(dsig); !(ilc[nt].complete); i=ilc[nt].update() )
+#pragma GCC ivdep
+    for(size_t n=0, k=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, k+=ilc[nt].k_step[0])
+     f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+}
+	}/*if(g2)*/
 	else {
 checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
@@ -253,13 +282,28 @@ checkpoint(__FILE__,__LINE__);
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
 checkpoint(__FILE__,__LINE__);
+if (meep_threads==0)
+ {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
-	}
+ }
+else
+ {
+#pragma omp parallel for schedule(static), num_threads(meep_threads)
+  for(int nt=0; nt<meep_threads; nt++)
+   for(ptrdiff_t i=ilc[nt].start(dsig, dsigu); !(ilc[nt].complete); i=ilc[nt].update() )
+#pragma GCC ivdep
+    for(size_t n=0, k=ilc[nt].k_start[0], ku=ilc[nt].k_start[1]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, k+=ilc[nt].k_step[0], ku+=ilc[nt].k_step[1])
+     { double fprev = fu[i];
+       fu[i] = ((kap[k] - sig[k]) * fu[i] - dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+       f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+     }
+ }
+	} /*if(g2)*/
 	else {
 checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
@@ -405,6 +449,19 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     SWAP(ptrdiff_t, s1, s2);
   }
 
+  // preallocate loop-counter structures for all threads
+  static bool initialized=false;
+  static std::vector<ivec_loop_counter> ilc;
+  ivec is=gv.little_owned_corner(fc), ie=gv.big_corner();
+  if (!initialized)
+   { initialized=true;
+     for(int nt=0; nt<meep_threads; nt++)
+      ilc.push_back(ivec_loop_counter(gv,is,ie,nt,meep_threads));
+   }
+  else
+   for(int nt=0; nt<meep_threads; nt++)
+    ilc[nt].init(gv,is,ie,nt,meep_threads);
+
   // stable averaging of offdiagonal components
 #define OFFDIAG(u,g,sx) (0.25 * ((g[i]+g[i-sx])*u[i] \
 		   	       + (g[i+s]+g[(i+s)-sx])*u[i+s]))
@@ -416,6 +473,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     KSTRIDE_DEF(dsigw, kw, gv.little_owned_corner0(fc));
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
+checkpoint(__FILE__,__LINE__);
 	//////////////////// MOST GENERAL CASE //////////////////////
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
@@ -430,6 +488,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	/////////////////////////////////////////////////////////////
       }
       else {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
@@ -440,6 +499,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
@@ -451,6 +511,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
@@ -465,6 +526,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
@@ -476,6 +538,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  }
 	}
 	else if (g1) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
@@ -489,6 +552,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double gs = g[i]; double us = u[i];
 	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
@@ -498,6 +562,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else if (u) {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
@@ -506,17 +571,35 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
+checkpoint(__FILE__,__LINE__);
+if (meep_threads==0)
+ {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = g[i];
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
+ }
+else
+ {
+#pragma omp parallel for schedule(static), num_threads(meep_threads)
+  for(int nt=0; nt<meep_threads; nt++)
+   for(ptrdiff_t i=ilc[nt].start(dsigw); !(ilc[nt].complete); i=ilc[nt].update() )
+#pragma GCC ivdep
+    for(size_t n=0, kw=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, kw+=ilc[nt].k_step[0])
+     { double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+       fw[i] = g[i];
+       f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
+     }
+
+ }
       }
     }
   }
   else { /////////////// no PML (no fw) ///////////////////
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
@@ -527,6 +610,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
@@ -535,6 +619,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
@@ -544,6 +629,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1));
@@ -556,6 +642,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
@@ -565,6 +652,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  }
 	}
 	else if (g1) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
@@ -576,6 +664,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double gs = g[i]; double us = u[i];
 	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
@@ -583,15 +672,31 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else if (u) {
+checkpoint(__FILE__,__LINE__);
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us);
 	}
       }
-      else
+      else {
+checkpoint(__FILE__,__LINE__);
+if (meep_threads==0)
+ {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) f[i] = g[i];
+ }
+else
+ {
+#pragma omp parallel for schedule(static), num_threads(meep_threads)
+  for(int nt=0; nt<meep_threads; nt++)
+   for(ptrdiff_t i=ilc[nt].start(); !(ilc[nt].complete); i=ilc[nt].update() )
+#pragma GCC ivdep
+    for(size_t n=0; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step)
+     f[i]=g[i];
+ }
     }
+   }
   }
+checkpoint();
 }
 
 } // namespace meep

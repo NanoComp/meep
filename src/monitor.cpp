@@ -165,12 +165,19 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
    largest box in which you can interpolate the fields without communication.
    It is *not* necessarily non-overlapping with other chunks. */
 volume fields_chunk::get_field_gv(component c) const {
+
+// rewriting to eliminate compiler warning about falling through case statement
+ if (c==Dielectric || c==Permeability)
+  c=gv.eps_component();
+ return volume(gv.loc(c, 0), gv.loc(c, gv.ntot() - 1));
+#if 0
   switch (c) {
   case Dielectric: case Permeability:
     c = gv.eps_component();
   default:
     return volume(gv.loc(c, 0), gv.loc(c, gv.ntot() - 1));
   }
+#endif
 }
 
 /* Non-collective, zero-communication get_field... loc *must*
