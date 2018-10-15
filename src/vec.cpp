@@ -21,6 +21,8 @@
 #include <complex>
 #include <map>
 
+#include <omp.h>
+
 #include "meep_internals.hpp"
 
 using namespace std;
@@ -1474,82 +1476,138 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
 /***************************************************************************/
 /***************************************************************************/
 /***************************************************************************/
-ivec_loop_counter::ivec_loop_counter(grid_volume gv, ivec is, ivec ie)
- : dim(gv.dim), inva(gv.inva)
-{
-   idx0=0;
-   for(int i=0; i<3; i++)
-    { loop_is[i] = is.yucky_val(i);
-      loop_n[i]  = (ie.yucky_val(i) - loop_is[i]) / 2 + 1;
-      loop_d[i]  = gv.yucky_direction(i);
-      loop_s[i]  = gv.stride(loop_d[i]);
-      idx0 += (is - gv.little_corner()).yucky_val(i)/2 * loop_s[i];
-    }
-   loop_n12  = loop_n[1]*loop_n[2]; 
-   num_iters = loop_n[0]*loop_n12;
-}
-
-ptrdiff_t ivec_loop_counter::update(size_t niter, size_t loop_i[3])
-{ 
-  ptrdiff_t idx=idx0;
-  if (loop_n[0]>1)
-   { loop_i[0]=niter/loop_n12;
-     niter%=loop_n12;
-     idx+=loop_i[0]*loop_s[0];
-   }
-  if (loop_n[1]>1) 
-   { loop_i[1]=niter/loop_n[2]; 
-     niter%=loop_n[2]; 
-     idx+=loop_i[1]*loop_s[1];
-   }
-  if (loop_n[2]>1)
-   { loop_i[2]=niter;
-     idx+=loop_i[2]*loop_s[2];
-   }
-  return idx;
-}
-
-ivec ivec_loop_counter::get_iloc(size_t loop_i[3])
-{ ivec iloc(dim);
-  for(int i=0; i<3; i++)
-   if (has_direction(dim,loop_d[i]))
-    iloc.set_direction(loop_d[i],loop_is[i]+2*loop_i[i]);
-  return iloc;
-}
-
-vec ivec_loop_counter::get_loc(size_t loop_i[3])
-{ vec loc(dim);
-  for(int i=0; i<3; i++)
-   if (has_direction(dim,loop_d[i]))
-    loc.set_direction(loop_d[i],(0.5*loop_is[i]+loop_i[i])*inva);
-  return loc;
-}
-
-typedef std::pair<int,double> loop_time;
-typedef std::map<int,double> loop_time_map;
+typedef std::pair<string,double> loop_time;
+typedef std::map<string,double> loop_time_map;
 static loop_time_map loop_times;
-size_t checkpoint(int which_loop)
+size_t checkpoint(const char *file, int line)
 { 
-  static int current_loop=0;
+  static string current_loop;
   static double current_loop_start_time=0.0;
 
-  if (which_loop==0)
+  if (file==0)
    { if (loop_times.find(current_loop)!=loop_times.end())
       loop_times[current_loop] += wall_time() - current_loop_start_time;
    }
   else
-   { if (loop_times.find(which_loop)==loop_times.end())
-      { loop_times[which_loop]=0.0;
-        printf("Loop %i encountered.\n",which_loop);
-      }
-     current_loop=which_loop;
+   { current_loop = string(file) + ":" + to_string(line);
+     if (loop_times.find(current_loop)==loop_times.end())
+      loop_times[current_loop]=0.0;
      current_loop_start_time=wall_time();
    }
   return 0;
 }
+
 void print_loop_stats(double meep_time)
 { for(loop_time_map::iterator it=loop_times.begin(); it!=loop_times.end(); ++it)
-   printf("Loop %i: %e s (%e) \n",it->first,it->second,it->second/meep_time);
+   printf("Loop %s: %e s (%e) \n",it->first.c_str(),it->second,it->second/meep_time);
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+ivec_loop_counter::ivec_loop_counter(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
+{ init(gv, _is, _ie, nt, NT); } 
+
+void ivec_loop_counter::init(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
+{ 
+  if (is==_is && ie==_ie && inva==gv.inva) return; // no need to reinitialize
+
+  is=_is;
+  ie=_ie;
+  inva=gv.inva;
+  idx0=0;
+  active_rank=0;
+  size_t num_iters=1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d)
+   { ptrdiff_t stride = gv.stride(d);
+     idx0 += stride * ((is - gv.little_corner()).in_direction(d)/2);
+     ptrdiff_t count  = (ie-is).in_direction(d)/2 + 1;
+     if (count>1)
+      { active_dir[active_rank]    = d;
+        active_stride[active_rank] = stride;
+        active_count[active_rank]  = count;
+        num_iters                 *= count;
+        active_rank++;
+      }
+   }
+  idx_step     = active_stride[active_rank-1];
+
+  if (NT<1) NT=1;
+  min_iter     = (nt*num_iters) / NT;
+  max_iter     = ((nt+1)*num_iters) / NT;
+}
+  
+void ivec_loop_counter::start()
+{ iter         = min_iter;
+  finished     = false;
+  update();
+}
+
+void ivec_loop_counter::update()
+{ 
+  if (iter>=max_iter)
+   finished=true;
+  else
+   { ptrdiff_t n[3];
+     idx_start = get_idx(n, iter);
+     next_iter = iter + (active_count[active_rank-1] - n[active_rank-1]);
+     if (next_iter>max_iter) next_iter=max_iter;
+   }
+}
+
+ptrdiff_t ivec_loop_counter::get_idx(ptrdiff_t *n, size_t niter)
+{ if (niter==SIZE_MAX) niter=iter;
+  ptrdiff_t idx=idx0, nbuffer[3]; if (n==0) n=nbuffer;
+  n[0]=n[1]=n[2]=0;
+  for(int r=active_rank-1; r>=0; r--)
+   { size_t count = (r==0 ? 1 : active_count[r-1]);
+     n[r] = niter % count;
+     idx += n[r]*active_stride[r];
+     niter/=count;
+   }
+  return idx;
+/*
+  if (active_rank==1)
+   n[0] = niter;
+  else if (active_rank==2)
+   { n[1] = niter % active_count[0];
+     n[0] = niter / active_count[0];
+   }
+  else // (active_rank==3)
+   { n[2] = niter % active_count[1];
+     niter /= active_count[1];
+     n[1] = niter % active_count[0];
+     n[0] = niter / active_count[0];
+   }
+  ptrdiff_t idx=idx0;
+  for(int r=0; r<active_rank; r++)
+  return idx;
+*/
+}
+
+void ivec_loop_counter::get_loop_i(ptrdiff_t loop_i[3])
+{ loop_i[0]=loop_i[1]=loop_i[2]=0;
+  ptrdiff_t n[3];
+  get_idx(n);
+  for(int r=0; r<active_rank; r++)
+   loop_i[ ((int)active_dir[r]) % 3 ] = n[r];
+}
+
+ivec ivec_loop_counter::get_iloc()
+{ ptrdiff_t n[3];
+  get_idx(n);
+  ivec iloc=is;
+  for(int r=0; r<active_rank; r++)
+   iloc.set_direction(active_dir[r], is.in_direction(active_dir[r]) + 2*n[r]);
+  return iloc;
+}
+
+vec ivec_loop_counter::get_loc()
+{ ivec iloc=get_iloc();
+  vec loc(iloc.dim);
+  LOOP_OVER_DIRECTIONS(iloc.dim,d)
+   loc.set_direction(d, iloc.in_direction(d) * 0.5 * inva);
+  return loc;
 }
 
 } // namespace meep

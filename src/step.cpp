@@ -41,8 +41,10 @@ double RunTimes[NUM_CHECKPOINTS]={
  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 };
 double LastMeepTime=0.0, MeepTime;
-double ReportInterval=20.0;
-double NextReportTime=20.0;
+double WallTimeStepping=0.0;
+int MeepSteps;
+double ReportInterval=2.0;
+double NextReportTime=2.0;
 double MeepRes;
 void ReportRunTimes(bool Reset)
  { 
@@ -50,9 +52,10 @@ void ReportRunTimes(bool Reset)
    FILE *f=fopen("/tmp/RunTimes","a");
    double DeltaMeep=MeepTime - LastMeepTime;
    fprintf(f,"\n\n## Meep time interval %g --> %g (%g)\n",LastMeepTime,MeepTime,DeltaMeep);
+   fprintf(f,"\n\n## Avg wall time per MEEP time step= %f\n", WallTimeStepping/(MeepSteps-2));
    fprintf(f,"## item   wall_time    wall_time/meep_time\n");     
    for(int n=0; n<NUM_CHECKPOINTS; n++)
-    { fprintf(f,"%g %2i %g %.4e %.4e \n",MeepRes,n,RunTimes[n],RunTimes[n]/DeltaMeep);
+    { fprintf(f,"%g %2i %.4e %.4e \n",MeepRes,n,RunTimes[n],RunTimes[n]/MeepSteps);
       if (Reset) RunTimes[n]=0.0;
     }
    fclose(f);
@@ -86,7 +89,7 @@ print_loop_stats(round_time());
   }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-double wt0=wall_time(), wt1;
+double step_start_time=wall_time(), wt0=step_start_time, wt1;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   phase_material();
 CHECKPOINT(0)
@@ -145,6 +148,9 @@ CHECKPOINT(22)
 CHECKPOINT(23)
 MeepTime=round_time();
 MeepRes=1.0/gv.inva;
+MeepSteps=t;
+if (MeepSteps>2)
+ WallTimeStepping+=(wall_time()-step_start_time);
 if(MeepTime>NextReportTime) ReportRunTimes(false);
   finished_working();
 

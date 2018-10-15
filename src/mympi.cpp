@@ -22,6 +22,10 @@
 #include "meep.hpp"
 #include "config.h"
 
+#ifdef USE_OPENMP
+  #include <omp.h>
+#endif
+
 #ifdef HAVE_MPI
 #  ifdef NEED_UNDEF_SEEK_FOR_MPI
 // undef'ing SEEK_* is needed for MPICH, possibly other MPI versions
@@ -76,6 +80,8 @@ namespace meep {
 #endif
 
 bool quiet = false; // defined in meep.h
+int meep_threads = 0; // defined in mympi.cpp
+int ploop_strategy = 1;
 
 initialize::initialize(int &argc, char** &argv) {
 #ifdef HAVE_MPI
@@ -274,6 +280,8 @@ ivec max_to_all(const ivec &pt) {
   for (int i=0; i<5; ++i) in[i] = out[i] = pt.in_direction(direction(i));
 #ifdef HAVE_MPI
   MPI_Allreduce(&in,&out,5,MPI_INT,MPI_MAX,mycomm);
+#else
+  (void) in;
 #endif
   ivec ptout(pt.dim);
   for (int i=0; i<5; ++i) ptout.set_direction(direction(i), out[i]);
@@ -730,6 +738,20 @@ int my_global_rank() {
 #else
   return 0;
 #endif
+}
+
+void set_meep_threads(int num_threads, int new_ploop_strategy)
+{
+/*
+#ifdef USE_OPENMP
+  if (num_threads==0)
+   num_threads=omp_get_num_threads();
+  printf("omp_get_num_threads=%i (thread_num=%i)\n",omp_get_num_threads(),omp_get_thread_num());
+#endif
+  if (num_threads==0) num_threads=1;
+*/
+  meep_threads=num_threads;
+  if (new_ploop_strategy!=-1) ploop_strategy=new_ploop_strategy;
 }
 
 } // namespace meep

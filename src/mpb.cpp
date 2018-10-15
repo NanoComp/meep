@@ -460,7 +460,7 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
   /* do a second round of post-processing to tabulate E-fields   -*/
   /* on a (separate) internal storage buffer.  (Previously       -*/
-  /* there was only one internal buffer which held either E-field *
+  /* there was only one internal buffer which held either E-field */
   /* or H-field data, but this is inconvenient for cases in which */
   /* you want the E and H fields of an eigenmode simultaneously.) */
   /*--------------------------------------------------------------*/

@@ -73,6 +73,19 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     dtdx = -dtdx; // need to flip derivative sign
   }
 
+  // preallocate loop-counter structures for all threads
+  static bool initialized=false;
+  static std::vector<ivec_loop_counter> ilc;
+  ivec is=gv.little_owned_corner0(c), ie=gv.big_corner();
+  if (!initialized)
+   { initialized=true;
+     for(int nt=0; nt<meep_threads; nt++)
+      ilc.push_back(ivec_loop_counter(gv,is,ie,nt,meep_threads));
+   }
+  else
+   for(int nt=0; nt<meep_threads; nt++)
+    ilc[nt].init(gv,is,ie,nt,meep_threads);
+
   /* The following are a bunch of special cases of the "MOST GENERAL CASE"
      loop below.  We make copies of the loop for each special case in
      order to keep the innermost loop efficient.  This is especially
@@ -85,31 +98,40 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
     	double dt2 = dt * 0.5;
     	if (g2) {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] = ((1 - dt2 * cnd[i]) * f[i] -
     		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
     	}
     	else {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] = ((1 - dt2 * cnd[i]) * f[i]
     		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
     	}
       }
       else { // no conductivity
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-//double ttt=wall_time();
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
     	if (g2) {
+checkpoint(__FILE__,__LINE__);
+if (meep_threads==0)
+ {
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-    	}
+ }
+else
+{
+#pragma omp parallel for schedule(static), num_threads(meep_threads)
+  for(int nt=0; nt<meep_threads; nt++)
+   for(ilc[nt].start(); !(ilc[nt].finished); ilc[nt].update() )
+    for(ptrdiff_t i=ilc[nt].idx_start; ilc[nt].iter<ilc[nt].next_iter; ilc[nt].iter++, i+=ilc[nt].idx_step)
+      f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+}
+    	} // if (g2)
     	else {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
     	}
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-//printf(" %e s\n",wall_time()-ttt);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
       }
     }
     else { // fu update, no PML in f update
@@ -117,6 +139,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
     	double dt2 = dt * 0.5;
     	if (g2) {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    DEF_ku; double fprev = fu[i];
     	    fu[i] = ((1 - dt2 * cnd[i]) * fprev -
@@ -125,6 +148,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     	  }
     	}
     	else {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    DEF_ku; double fprev = fu[i];
     	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
@@ -135,6 +159,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity
     	if (g2) {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    DEF_ku; double fprev = fu[i];
     	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
@@ -142,6 +167,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     	  }
     	}
     	else {
+checkpoint(__FILE__,__LINE__);
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    DEF_ku; double fprev = fu[i];
     	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
@@ -157,6 +183,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    realnum fcnd_prev = fcnd[i];
@@ -166,6 +193,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    realnum fcnd_prev = fcnd[i];
@@ -177,6 +205,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    f[i] = ((kap[k] - sig[k]) * f[i] -
@@ -184,6 +213,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
@@ -197,6 +227,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	double dt2 = dt * 0.5;
 	if (g2) {
 	  //////////////////// MOST GENERAL CASE //////////////////////
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
@@ -208,6 +239,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  /////////////////////////////////////////////////////////////
 	}
 	else {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
@@ -220,6 +252,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] -
@@ -228,6 +261,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
+checkpoint(__FILE__,__LINE__);
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];

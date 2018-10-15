@@ -23,7 +23,7 @@
 #include <stddef.h>
 
 namespace meep {
-size_t checkpoint(int which_loop=0);
+size_t checkpoint(const char *code=0, int line=0);
 void print_loop_stats(double meep_time=1.0);
 
 const int NUM_FIELD_COMPONENTS = 20;
@@ -122,7 +122,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define LOOP_OVER_IVECS(gv, is, ie, idx) \
-   for(ptrdiff_t loop_is1 = (is).yucky_val(0)+checkpoint(__LINE__), \
+   for(ptrdiff_t loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -175,7 +175,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0)+checkpoint(__LINE__), \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -943,32 +943,26 @@ public:
 class ivec_loop_counter
  {
 public:
-    ivec_loop_counter(grid_volume gv, ivec is, ivec ie);
-    ptrdiff_t update(size_t niter, size_t loop_i[3]);
-    ivec get_iloc(size_t loop_i[3]);
-    vec get_loc(size_t loop_i[3]);
+    ivec_loop_counter(grid_volume gv, ivec _is, ivec _ie, int nt=0, int NT=1);
+    void init(grid_volume gv, ivec _is, ivec _ie, int nt=0, int NT=1);
+    void start();
+    void update();
+    ptrdiff_t get_idx(ptrdiff_t *n=0, size_t niter=SIZE_MAX);
+    ptrdiff_t get_idx(size_t niter) { return get_idx(0,niter); }
+    void get_loop_i(ptrdiff_t loop_i[3]);
+    ivec get_iloc();
+    vec get_loc();
 
 //private:
-    ndim dim;
+    ivec is, ie;
     double inva;
-    ptrdiff_t loop_is[3], loop_n[3], loop_s[3], idx0;
-    direction loop_d[3];
-    size_t loop_n12, num_iters;
+    direction active_dir[3];
+    ptrdiff_t active_stride[3], active_count[3];
+    int active_rank;
+    ptrdiff_t idx0, idx_start, idx_end, idx_step;
+    size_t min_iter, max_iter, iter, next_iter;
+    bool finished;
  };
 
-#define STRINGIZE(a) #a
-
-#define PLOOP_OVER_IVECS(gv, is, ie, idx, ilc, NT) 					\
- ivec_loop_counter ilc(gv,is,ie);                  					\
- _Pragma( STRINGIZE("omp parallel for schedule(dynamic,1), num_threads(NT) ") )		\
- for(size_t iters=0, idx=ilc.idx0, loop_i[3]={0,0,0}; iters<ilc.num_iters; idx=ilc.update(++iters,loop_i))
-
-#define IVEC_PLOOP_ILOC(ilc,iloc) ivec iloc=ilc.get_iloc(loop_i)
-#define IVEC_PLOOP_LOC(ilc,iloc) vec loc=ilc.get_loc(loop_i)
-
-#define PLOOP_OVER_VOL_OWNED0(gv, c, idx) \
-  PLOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx, ilc ## __LINE__)
-
-} /* namespace meep */
-
+} // namespace meep
 #endif /* MEEP_VEC_H */
