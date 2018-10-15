@@ -33,7 +33,8 @@ namespace meep {
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-#define NUM_CHECKPOINTS 24
+#define NUM_CHECKPOINTS 30
+double step_start_time, wt0, wt1;
 #define CHECKPOINT(n) \
  { wt1=wall_time(); RunTimes[n]+=(wt1-wt0); wt0=wt1;}
 double RunTimes[NUM_CHECKPOINTS]={
@@ -89,7 +90,7 @@ print_loop_stats(round_time());
   }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-double step_start_time=wall_time(), wt0=step_start_time, wt1;
+step_start_time=wall_time(); wt0=step_start_time;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   phase_material();
 CHECKPOINT(0)
@@ -103,19 +104,19 @@ CHECKPOINT(2)
   step_source(B_stuff);
 CHECKPOINT(3)
   step_boundaries(B_stuff);
-CHECKPOINT(4)
+CHECKPOINT(29)
   calc_sources(time() + 0.5*dt); // for integrated H sources
 CHECKPOINT(5)
   update_eh(H_stuff);
 CHECKPOINT(6)
   step_boundaries(WH_stuff);
-CHECKPOINT(7)
+CHECKPOINT(29)
   update_pols(H_stuff);
 CHECKPOINT(8)
   step_boundaries(PH_stuff);
-CHECKPOINT(9)
+CHECKPOINT(29)
   step_boundaries(H_stuff);
-CHECKPOINT(10)
+CHECKPOINT(29)
 
   if (fluxes) fluxes->update_half();
 CHECKPOINT(11)
@@ -127,19 +128,19 @@ CHECKPOINT(13)
   step_source(D_stuff);
 CHECKPOINT(14)
   step_boundaries(D_stuff);
-CHECKPOINT(15)
+CHECKPOINT(29)
   calc_sources(time() + dt); // for integrated E sources
 CHECKPOINT(16)
   update_eh(E_stuff);
 CHECKPOINT(17)
   step_boundaries(WE_stuff);
-CHECKPOINT(18)
+CHECKPOINT(29)
   update_pols(E_stuff);
 CHECKPOINT(19)
   step_boundaries(PE_stuff);
-CHECKPOINT(20)
+CHECKPOINT(29)
   step_boundaries(E_stuff);
-CHECKPOINT(21)
+CHECKPOINT(29)
 
   if (fluxes) fluxes->update();
 CHECKPOINT(22)
@@ -233,8 +234,9 @@ void fields::step_boundaries(field_type ft) {
       	}
       }
     }
-
+CHECKPOINT(4)
   boundary_communications(ft);
+CHECKPOINT(7)
 
   // Finally, copy incoming data to the fields themselves, multiplying phases:
   for (int i=0;i<num_chunks;i++)
@@ -263,6 +265,7 @@ void fields::step_boundaries(field_type ft) {
       	    = comm_blocks[ft][pair][n0 + n];
       }
     }
+CHECKPOINT(9)
 
   finished_working();
 }

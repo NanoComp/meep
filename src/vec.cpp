@@ -1560,9 +1560,9 @@ ptrdiff_t ivec_loop_counter::get_idx(ptrdiff_t *n, size_t niter)
   ptrdiff_t idx=idx0, nbuffer[3]; if (n==0) n=nbuffer;
   n[0]=n[1]=n[2]=0;
   for(int r=active_rank-1; r>=0; r--)
-   { n[r]   = (r==0 ? niter : niter%active_count[r-1]);
+   { n[r] = niter%active_count[r];
      idx += n[r]*active_stride[r];
-     if (r>0) niter/=active_count[r-1];
+     niter/=active_count[r];
    }
   return idx;
 /*
