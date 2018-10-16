@@ -959,54 +959,74 @@ public:
     ivec_loop_counter(grid_volume gv, ivec _is, ivec _ie, int nt=0, int NT=1);
     void init(grid_volume gv, ivec _is, ivec _ie, int nt=0, int NT=1);
 
+    /*--------------------------------------------------------------*/
+    /* The start() and increment() routines implement a stateful    */
+    /* paradigm in which the current state of the loop is stored in */
+    /* internal class variables. In this case we have separate      */
+    /* ivec_loop_counter structures for each thread, each covering  */
+    /* a fraction of the total loop.                                */
+    /*--------------------------------------------------------------*/
+
     /***************************************************************/
-    /* Set the loop counter at the beginning of the loop. The      */
-    /* return value is 'idx' (index into field arrays) for the first*/
-    /* loop iteration. The optional direction arguments request    */
-    /* computation of 'k' indices into PML Sigma arrays for up to  */
-    /* two distinct directions.                                    */
+    /* Set the loop counter at the beginning of our chunk of the   */
+    /* loop. The return value is 'idx' (index into field arrays),  */
+    /* The optional direction arguments request computation of 'k' */
+    /* indices into PML sigma arrays for up to two directions.     */
     /***************************************************************/
+    void init_k(int nd, direction dsig);
     ptrdiff_t start(direction dsig=NO_DIRECTION, direction dsig2=NO_DIRECTION);
 
     /***************************************************************/
-    /* Update all internal state variables to their values for     */
-    /* loop iteration #new_iter (if specified) or this->current_iter*/
-    /* (if not). Return value is 'idx' for that loop iteration.    */
-    /***************************************************************/
-    ptrdiff_t update(size_t new_iter=SIZE_MAX);
-
-    /***************************************************************/
-    /* Advance the loop one iteration. The return value is 'idx'.  */
+    /* Advance the loop one iteration. The return value is idx.    */
     /* The internal class field 'complete' will be set to true if  */
     /* this was the final loop iteration.                          */
     /***************************************************************/
-    ptrdiff_t operator++();
+    ptrdiff_t increment();
+    ptrdiff_t operator++() { return increment(); }
+    void advance();
+
+    /*--------------------------------------------------------------*/
+    /*- The niter_to_narray() routine implements an alternative,    */
+    /*- fully stateless, model. In this case we will have only one  */
+    /*- ivec_loop_counter structure used by *all* threads with no   */
+    /*- thread-specific data stored in the structure.               */
+    /*--------------------------------------------------------------*/
+    ptrdiff_t niter_to_narray(size_t niter, size_t narray[3]);
 
     /***************************************************************/
+    /* The following routines are used in both the state-ful model */
+    /* (in which case they should be called with no arguments, to  */
+    /* indicate that internal class variables should be used) and  */
+    /* in the stateless approach, in which case the caller should  */
+    /* supply an narray argument filled in by niter_to_narray.     */
     /***************************************************************/
-    /***************************************************************/
-    int get_k(int nd);
-    ivec get_iloc();
-    vec get_loc();
+    ptrdiff_t get_idx(size_t *narray=0);
+    int get_k(int nd, size_t *narray=0);
+    ivec get_iloc(size_t *narray=0);
+    vec get_loc(size_t *narray=0);
 
 //private
-// internal class methods
-    void init_k(direction dsig1, direction dsig2);
-    void advance();
-    ptrdiff_t niter_to_narray(size_t iter, size_t *narray);
 
 // class data fields
+
+    // fields used for both state-ful and stateless usage models
     ivec is, ie, gvlc;
     double inva;
-    direction active_dir[3];
-    ptrdiff_t active_stride[3], active_count[3];
-    size_t active_n_min[3], active_n_max[3], active_n[3];
-    int active_rank;
-    ptrdiff_t idx0, idx_step;
-    size_t min_iter, max_iter, current_iter, inner_iters;
-    int k0[2], k_start[2], k_stride[2][3], k_step[2];
+    direction loop_dir[3];
+    ptrdiff_t idx_stride[3];
+    size_t N[3];
+    int rank;
+    ptrdiff_t idx0;
+    size_t min_iter, max_iter;
+    int k0[2], k_stride[2][3]; 
+
+    // fields used only for the state-ful model
+    size_t n[3], N_inner;
+    size_t current_iter;
+    int k_step[2];
     bool complete;
  };
 
 } // namespace meep
+
 #endif /* MEEP_VEC_H */

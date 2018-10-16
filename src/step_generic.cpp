@@ -113,20 +113,20 @@ checkpoint(__FILE__,__LINE__);
       else { // no conductivity
     	if (g2) {
 checkpoint(__FILE__,__LINE__);
-if (meep_threads==0)
- {
+//if (meep_threads==0)
+// {
     	  LOOP_OVER_VOL_OWNED0(gv, c, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
- }
-else
-{
-#pragma omp parallel for schedule(static), num_threads(meep_threads)
-  for(int nt=0; nt<meep_threads; nt++)
-   for(ptrdiff_t i=ilc[nt].start(); !(ilc[nt].complete); i=ilc[nt].update() )
-#pragma GCC ivdep
-    for(size_t n=0; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step)
-      f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-}
+// }
+//else
+//{
+//#pragma omp parallel for schedule(static), num_threads(meep_threads)
+//  for(int nt=0; nt<meep_threads; nt++)
+//   for(ptrdiff_t i=ilc[nt].start(); !(ilc[nt].complete); i=ilc[nt].update() )
+//#pragma GCC ivdep
+//    for(size_t n=0; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step)
+//      f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+//}
     	} // if (g2)
     	else {
 checkpoint(__FILE__,__LINE__);
@@ -162,26 +162,26 @@ checkpoint(__FILE__,__LINE__);
     	if (g2) {
 
 checkpoint(__FILE__,__LINE__);
-if (meep_threads==0)
-{
+//if (meep_threads==0)
+//{
     	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    DEF_ku; double fprev = fu[i];
     	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
     	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
     	  }
-}
-else
-{
-#pragma omp parallel for schedule(static), num_threads(meep_threads)
-  for(int nt=0; nt<meep_threads; nt++)
-   for(ptrdiff_t i=ilc[nt].start(dsigu); !(ilc[nt].complete); i=ilc[nt].update() )
-#pragma GCC ivdep
-    for(size_t n=0, ku=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, ku+=ilc[nt].k_step[0])
-     { double fprev = fu[i];
-       fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-       f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
-     }
-}
+//}
+//else
+//{
+//#pragma omp parallel for schedule(static), num_threads(meep_threads)
+//  for(int nt=0; nt<meep_threads; nt++)
+//   for(ptrdiff_t i=ilc[nt].start(dsigu); !(ilc[nt].complete); i=ilc[nt].update() )
+//#pragma GCC ivdep
+//    for(size_t n=0, ku=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, ku+=ilc[nt].k_step[0])
+//     { double fprev = fu[i];
+//       fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+//       f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+//     }
+//}
     	} /*if (g2)*/
     	else {
 checkpoint(__FILE__,__LINE__);
@@ -223,13 +223,14 @@ checkpoint(__FILE__,__LINE__);
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
 checkpoint(__FILE__,__LINE__);
-if (meep_threads==0)
- {
+//if (meep_threads==0)
+// {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    f[i] = ((kap[k] - sig[k]) * f[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	  }
+#if 0
  }
 else
 {
@@ -240,6 +241,7 @@ else
     for(size_t n=0, k=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, k+=ilc[nt].k_step[0])
      f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 }
+#endif
 	}/*if(g2)*/
 	else {
 checkpoint(__FILE__,__LINE__);
@@ -282,27 +284,27 @@ checkpoint(__FILE__,__LINE__);
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
 checkpoint(__FILE__,__LINE__);
-if (meep_threads==0)
- {
+//if (meep_threads==0)
+// {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
- }
-else
- {
-#pragma omp parallel for schedule(static), num_threads(meep_threads)
-  for(int nt=0; nt<meep_threads; nt++)
-   for(ptrdiff_t i=ilc[nt].start(dsig, dsigu); !(ilc[nt].complete); i=ilc[nt].update() )
-#pragma GCC ivdep
-    for(size_t n=0, k=ilc[nt].k_start[0], ku=ilc[nt].k_start[1]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, k+=ilc[nt].k_step[0], ku+=ilc[nt].k_step[1])
-     { double fprev = fu[i];
-       fu[i] = ((kap[k] - sig[k]) * fu[i] - dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
-       f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
-     }
- }
+// }
+//else
+// {
+//#pragma omp parallel for schedule(static), num_threads(meep_threads)
+//  for(int nt=0; nt<meep_threads; nt++)
+//   for(ptrdiff_t i=ilc[nt].start(dsig, dsigu); !(ilc[nt].complete); i=ilc[nt].update() )
+//#pragma GCC ivdep
+//    for(size_t n=0, k=ilc[nt].k_start[0], ku=ilc[nt].k_start[1]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, k+=ilc[nt].k_step[0], ku+=ilc[nt].k_step[1])
+//     { double fprev = fu[i];
+//       fu[i] = ((kap[k] - sig[k]) * fu[i] - dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+//       f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+//     }
+// }
 	} /*if(g2)*/
 	else {
 checkpoint(__FILE__,__LINE__);
@@ -572,27 +574,27 @@ checkpoint(__FILE__,__LINE__);
       }
       else {
 checkpoint(__FILE__,__LINE__);
-if (meep_threads==0)
- {
+//if (meep_threads==0)
+// {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = g[i];
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
- }
-else
- {
-#pragma omp parallel for schedule(static), num_threads(meep_threads)
-  for(int nt=0; nt<meep_threads; nt++)
-   for(ptrdiff_t i=ilc[nt].start(dsigw); !(ilc[nt].complete); i=ilc[nt].update() )
-#pragma GCC ivdep
-    for(size_t n=0, kw=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, kw+=ilc[nt].k_step[0])
-     { double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
-       fw[i] = g[i];
-       f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
-     }
+// }
+//else
+// {
+//#pragma omp parallel for schedule(static), num_threads(meep_threads)
+//  for(int nt=0; nt<meep_threads; nt++)
+//   for(ptrdiff_t i=ilc[nt].start(dsigw); !(ilc[nt].complete); i=ilc[nt].update() )
+//#pragma GCC ivdep
+//    for(size_t n=0, kw=ilc[nt].k_start[0]; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step, kw+=ilc[nt].k_step[0])
+//     { double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+//       fw[i] = g[i];
+//       f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
+//     }
 
- }
+ //}
       }
     }
   }
@@ -680,19 +682,19 @@ checkpoint(__FILE__,__LINE__);
       }
       else {
 checkpoint(__FILE__,__LINE__);
-if (meep_threads==0)
- {
+//if (meep_threads==0)
+// {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) f[i] = g[i];
- }
-else
- {
-#pragma omp parallel for schedule(static), num_threads(meep_threads)
-  for(int nt=0; nt<meep_threads; nt++)
-   for(ptrdiff_t i=ilc[nt].start(); !(ilc[nt].complete); i=ilc[nt].update() )
-#pragma GCC ivdep
-    for(size_t n=0; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step)
-     f[i]=g[i];
- }
+// }
+//else
+// {
+//#pragma omp parallel for schedule(static), num_threads(meep_threads)
+//  for(int nt=0; nt<meep_threads; nt++)
+//   for(ptrdiff_t i=ilc[nt].start(); !(ilc[nt].complete); i=ilc[nt].update() )
+//#pragma GCC ivdep
+//    for(size_t n=0; n<ilc[nt].inner_iters; n++, ilc[nt].current_iter++, i+=ilc[nt].idx_step)
+//     f[i]=g[i];
+// }
     }
    }
   }
