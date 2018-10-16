@@ -945,7 +945,7 @@ Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc, valid_freq_range=Si_rang
 
 # poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
-# wavelength range: 0.437-1.052 um
+# wavelength range: 0.437 - 1.052 um
 
 PMMA_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -961,7 +961,7 @@ PMMA = mp.Medium(epsilon=1.0, E_susceptibilities=PMMA_susc, valid_freq_range=PMM
 
 # polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
-# wavelength range: 0.437-1.052 um
+# wavelength range: 0.437 - 1.052 um
 
 PC_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -977,7 +977,7 @@ PC = mp.Medium(epsilon=1.0, E_susceptibilities=PC_susc, valid_freq_range=PC_rang
 
 # polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
-# wavelength range: 0.437-1.052 um
+# wavelength range: 0.437 - 1.052 um
 
 PS_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -993,7 +993,7 @@ PS = mp.Medium(epsilon=1.0, E_susceptibilities=PS_susc, valid_freq_range=PS_rang
 
 # cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
-# wavelength range: 0.437-1.052 um
+# wavelength range: 0.437 - 1.052 um
 
 CLS_range = mp.FreqRange(min=um_scale/1.052, max=um_scale/0.437)
 
@@ -1005,3 +1005,331 @@ CLS_susc = [mp.LorentzianSusceptibility(frequency=CLS_frq1, gamma=CLS_gam1, sigm
 
 CLS = mp.Medium(epsilon=1.0, E_susceptibilities=CLS_susc, valid_freq_range=CLS_range)
 
+#------------------------------------------------------------------
+# barium borate (BaB2O4), beta phase, from G. Tamosauskas et al., Optical Materials Express, Vol. 8, pp. 1410-18, 2018
+# ref: https://refractiveindex.info/?shelf=main&book=BaB2O4&page=Tamosauskas-o
+# ref: https://refractiveindex.info/?shelf=main&book=BaB2O4&page=Tamosauskas-e
+# wavelength range: 0.188 - 5.2 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+BaB2O4_range = mp.FreqRange(min=um_scale/5.2, max=um_scale/0.188)
+
+BaB2O4_frq1 = 1/(0.06265780079128216*um_scale)
+BaB2O4_gam1 = 0
+BaB2O4_sig1 = 0.90291
+BaB2O4_frq2 = 1/(0.13706202975295528*um_scale)
+BaB2O4_gam2 = 0
+BaB2O4_sig2 = 0.83155
+BaB2O4_frq3 = 1/(7.746612162745725*um_scale)
+BaB2O4_gam3 = 0
+BaB2O4_sig3 = 0.76536
+
+BaB2O4_susc_o = [mp.LorentzianSusceptibility(frequency=BaB2O4_frq1, gamma=BaB2O4_gam1, sigma_diag=BaB2O4_sig1*mp.Vector3(1,1,0)),
+                 mp.LorentzianSusceptibility(frequency=BaB2O4_frq2, gamma=BaB2O4_gam2, sigma_diag=BaB2O4_sig2*mp.Vector3(1,1,0)),
+                 mp.LorentzianSusceptibility(frequency=BaB2O4_frq3, gamma=BaB2O4_gam3, sigma_diag=BaB2O4_sig3*mp.Vector3(1,1,0))]
+
+BaB2O4_frq1 = 1/(0.0845103543951864*um_scale)
+BaB2O4_gam1 = 0
+BaB2O4_sig1 = 1.151075
+BaB2O4_frq2 = 1/(0.15029970059850417*um_scale)
+BaB2O4_gam2 = 0
+BaB2O4_sig2 = 0.21803
+BaB2O4_frq3 = 1/(16.217274740226856*um_scale)
+BaB2O4_gam3 = 0
+BaB2O4_sig3 = 0.656
+
+BaB2O4_susc_e = [mp.LorentzianSusceptibility(frequency=BaB2O4_frq1, gamma=BaB2O4_gam1, sigma_diag=BaB2O4_sig1*mp.Vector3(0,0,1)),
+                 mp.LorentzianSusceptibility(frequency=BaB2O4_frq2, gamma=BaB2O4_gam2, sigma_diag=BaB2O4_sig2*mp.Vector3(0,0,1)),
+                 mp.LorentzianSusceptibility(frequency=BaB2O4_frq3, gamma=BaB2O4_gam3, sigma_diag=BaB2O4_sig3*mp.Vector3(0,0,1))]
+
+BaB2O4 = mp.Medium(epsilon=1.0, E_susceptibilities=BaB2O4_susc_o+BaB2O4_susc_e, valid_freq_range=BaB2O4_range)
+
+#------------------------------------------------------------------
+# lithium niobate (LiNbO3) from D.E. Zelmon et al., J. Optical Society of America B, Vol. 14, pp. 3319-22, 1997
+# ref: https://refractiveindex.info/?shelf=main&book=LiNbO3&page=Zelmon-o
+# ref: https://refractiveindex.info/?shelf=main&book=LiNbO3&page=Zelmon-e
+# wavelength range: 0.4 - 5.0 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+LiNbO3_range = mp.FreqRange(min=um_scale/5.0, max=um_scale/0.4)
+
+LiNbO3_frq1 = 1/(0.13281566172707193*um_scale)
+LiNbO3_gam1 = 0
+LiNbO3_sig1 = 2.6734
+LiNbO3_frq2 = 1/(0.24318717071424636*um_scale)
+LiNbO3_gam2 = 0
+LiNbO3_sig2 = 1.2290
+LiNbO3_frq3 = 1/(21.78531615561271*um_scale)
+LiNbO3_gam3 = 0
+LiNbO3_sig3 = 12.614
+
+LiNbO3_susc_o = [mp.LorentzianSusceptibility(frequency=LiNbO3_frq1, gamma=LiNbO3_gam1, sigma_diag=LiNbO3_sig1*mp.Vector3(1,1,0)),
+                 mp.LorentzianSusceptibility(frequency=LiNbO3_frq2, gamma=LiNbO3_gam2, sigma_diag=LiNbO3_sig2*mp.Vector3(1,1,0)),
+                 mp.LorentzianSusceptibility(frequency=LiNbO3_frq3, gamma=LiNbO3_gam3, sigma_diag=LiNbO3_sig3*mp.Vector3(1,1,0))]
+
+LiNbO3_frq1 = 1/(0.14307340773183533*um_scale)
+LiNbO3_gam1 = 0
+LiNbO3_sig1 = 2.9804
+LiNbO3_frq2 = 1/(0.2580697580112788*um_scale)
+LiNbO3_gam2 = 0
+LiNbO3_sig2 = 0.5981
+LiNbO3_frq3 = 1/(20.39803912144498*um_scale)
+LiNbO3_gam3 = 0
+LiNbO3_sig3 = 8.9543
+
+LiNbO3_susc_e = [mp.LorentzianSusceptibility(frequency=LiNbO3_frq1, gamma=LiNbO3_gam1, sigma_diag=LiNbO3_sig1*mp.Vector3(0,0,1)),
+                 mp.LorentzianSusceptibility(frequency=LiNbO3_frq2, gamma=LiNbO3_gam2, sigma_diag=LiNbO3_sig2*mp.Vector3(0,0,1)),
+                 mp.LorentzianSusceptibility(frequency=LiNbO3_frq3, gamma=LiNbO3_gam3, sigma_diag=LiNbO3_sig3*mp.Vector3(0,0,1))]
+
+LiNbO3 = mp.Medium(epsilon=1.0, E_susceptibilities=LiNbO3_susc_o+LiNbO3_susc_e, valid_freq_range=LiNbO3_range)
+
+#------------------------------------------------------------------
+# calcium tungstate (CaWO4) from W.L. Bond, J. Applied Physics, Vol. 36, pp. 1674-77, 1965
+# ref: https://refractiveindex.info/?shelf=main&book=CaWO4&page=Bond-o
+# ref: https://refractiveindex.info/?shelf=main&book=CaWO4&page=Bond-e
+# wavelength range: 0.45 - 4.0 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+CaWO4_range = mp.FreqRange(min=um_scale/4.0, max=um_scale/0.45)
+
+CaWO4_frq1 = 1/(0.1347*um_scale)
+CaWO4_gam1 = 0
+CaWO4_sig1 = 2.5493
+CaWO4_frq2 = 1/(10.815*um_scale)
+CaWO4_gam2 = 0
+CaWO4_sig2 = 0.9200
+
+CaWO4_susc_o = [mp.LorentzianSusceptibility(frequency=CaWO4_frq1, gamma=CaWO4_gam1, sigma_diag=CaWO4_sig1*mp.Vector3(1,1,0)),
+                mp.LorentzianSusceptibility(frequency=CaWO4_frq2, gamma=CaWO4_gam2, sigma_diag=CaWO4_sig2*mp.Vector3(1,1,0))]
+
+CaWO4_frq1 = 1/(0.1379*um_scale)
+CaWO4_gam1 = 0
+CaWO4_sig1 = 2.6041
+CaWO4_frq2 = 1/(21.371*um_scale)
+CaWO4_gam2 = 0
+CaWO4_sig2 = 4.1237
+
+CaWO4_susc_e = [mp.LorentzianSusceptibility(frequency=CaWO4_frq1, gamma=CaWO4_gam1, sigma_diag=CaWO4_sig1*mp.Vector3(0,0,1)),
+                mp.LorentzianSusceptibility(frequency=CaWO4_frq2, gamma=CaWO4_gam2, sigma_diag=CaWO4_sig2*mp.Vector3(0,0,1))]
+
+CaWO4 = mp.Medium(epsilon=1.0, E_susceptibilities=CaWO4_susc_o+CaWO4_susc_e, valid_freq_range=CaWO4_range)
+
+#------------------------------------------------------------------
+# calcium carbonate (CaCO3) from G. Ghosh, Optics Communication, Vol. 163, pp. 95-102, 1999
+# ref: https://refractiveindex.info/?shelf=main&book=CaCO3&page=Ghosh-o
+# ref: https://refractiveindex.info/?shelf=main&book=CaCO3&page=Ghosh-e
+# wavelength range: 0.204 - 2.172 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+CaCO3_range = mp.FreqRange(min=um_scale/2.172, max=um_scale/0.204)
+
+CaCO3_frq1 = 1/(0.13940057496294625*um_scale)
+CaCO3_gam1 = 0
+CaCO3_sig1 = 0.96464345
+CaCO3_frq2 = 1/(10.954451150103322*um_scale)
+CaCO3_gam2 = 0
+CaCO3_sig2 = 1.82831454
+
+CaCO3_susc_o = [mp.LorentzianSusceptibility(frequency=CaCO3_frq1, gamma=CaCO3_gam1, sigma_diag=CaCO3_sig1*mp.Vector3(1,1,0)),
+                mp.LorentzianSusceptibility(frequency=CaCO3_frq2, gamma=CaCO3_gam2, sigma_diag=CaCO3_sig2*mp.Vector3(1,1,0))]
+
+CaCO3_frq1 = 1/(0.1032906302623815*um_scale)
+CaCO3_gam1 = 0
+CaCO3_sig1 = 0.82427830
+CaCO3_frq2 = 1/(10.954451150103322*um_scale)
+CaCO3_gam2 = 0
+CaCO3_sig2 = 0.14429128
+
+CaCO3_susc_e = [mp.LorentzianSusceptibility(frequency=CaCO3_frq1, gamma=CaCO3_gam1, sigma_diag=CaCO3_sig1*mp.Vector3(0,0,1)),
+                mp.LorentzianSusceptibility(frequency=CaCO3_frq2, gamma=CaCO3_gam2, sigma_diag=CaCO3_sig2*mp.Vector3(0,0,1))]
+
+CaCO3 = mp.Medium(epsilon_diag=mp.Vector3(1.73358749,1.73358749,1.35859695), E_susceptibilities=CaCO3_susc_o+CaCO3_susc_e, valid_freq_range=CaCO3_range)
+
+#------------------------------------------------------------------
+# silicon dioxide (SiO2) from G. Ghosh, Optics Communication, Vol. 163, pp. 95-102, 1999
+# ref: https://refractiveindex.info/?shelf=main&book=SiO2&page=Ghosh-o
+# ref: https://refractiveindex.info/?shelf=main&book=SiO2&page=Ghosh-e
+# wavelength range: 0.198 - 2.0531 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+SiO2_range = mp.FreqRange(min=um_scale/2.0531, max=um_scale/0.198)
+
+SiO2_frq1 = 1/(0.10029257051247614*um_scale)
+SiO2_gam1 = 0
+SiO2_sig1 = 1.07044083
+SiO2_frq2 = 1/(10*um_scale)
+SiO2_gam2 = 0
+SiO2_sig2 = 1.10202242
+
+SiO2_susc_o = [mp.LorentzianSusceptibility(frequency=SiO2_frq1, gamma=SiO2_gam1, sigma_diag=SiO2_sig1*mp.Vector3(1,1,0)),
+               mp.LorentzianSusceptibility(frequency=SiO2_frq2, gamma=SiO2_gam2, sigma_diag=SiO2_sig2*mp.Vector3(1,1,0))]
+
+SiO2_frq1 = 1/(0.10104546699382412*um_scale)
+SiO2_gam1 = 0
+SiO2_sig1 = 1.09509924
+SiO2_frq2 = 1/(10*um_scale)
+SiO2_gam2 = 0
+SiO2_sig2 = 1.15662475
+
+SiO2_susc_e = [mp.LorentzianSusceptibility(frequency=SiO2_frq1, gamma=SiO2_gam1, sigma_diag=SiO2_sig1*mp.Vector3(0,0,1)),
+               mp.LorentzianSusceptibility(frequency=SiO2_frq2, gamma=SiO2_gam2, sigma_diag=SiO2_sig2*mp.Vector3(0,0,1))]
+
+SiO2_aniso = mp.Medium(epsilon_diag=mp.Vector3(1.28604141,1.28604141,1.28851804), E_susceptibilities=SiO2_susc_o+SiO2_susc_e, valid_freq_range=SiO2_range)
+
+#------------------------------------------------------------------
+# gallium nitride (GaN), alpha phase (wurtzite), from A.S. Barker Jr. and M. Ilegems, Physical Review B, Vol. 7, pp. 743-50, 1973
+# ref: https://refractiveindex.info/?shelf=main&book=GaN&page=Barker-o
+# ref: https://refractiveindex.info/?shelf=main&book=GaN&page=Barker-e
+# wavelength range: 0.35 - 10 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+GaN_range = mp.FreqRange(min=um_scale/10.0, max=um_scale/0.35)
+
+GaN_frq1 = 1/(0.256*um_scale)
+GaN_gam1 = 0
+GaN_sig1 = 1.75
+GaN_frq2 = 1/(17.86*um_scale)
+GaN_gam2 = 0
+GaN_sig2 = 4.1
+
+GaN_susc_o = [mp.LorentzianSusceptibility(frequency=GaN_frq1, gamma=GaN_gam1, sigma_diag=GaN_sig1*mp.Vector3(1,1,0)),
+              mp.LorentzianSusceptibility(frequency=GaN_frq2, gamma=GaN_gam2, sigma_diag=GaN_sig2*mp.Vector3(1,1,0))]
+
+GaN_frq1 = 1/(18.76*um_scale)
+GaN_gam1 = 0
+GaN_sig1 = 5.08
+
+GaN_susc_e = [mp.LorentzianSusceptibility(frequency=GaN_frq1, gamma=GaN_gam1, sigma_diag=GaN_sig1*mp.Vector3(0,0,1))]
+
+GaN = mp.Medium(epsilon_diag=mp.Vector3(3.6,3.6,5.35), E_susceptibilities=GaN_susc_o+GaN_susc_e, valid_freq_range=GaN_range)
+
+#------------------------------------------------------------------
+# aluminum nitride (AlN) from J. Pastrnak and L. Roskovcova, Physica Status Solidi, Vol. 14, K5-8, 1966
+# ref: https://refractiveindex.info/?shelf=main&book=AlN&page=Pastrnak-o
+# ref: https://refractiveindex.info/?shelf=main&book=AlN&page=Pastrnak-e
+# wavelength range: 0.22 - 5 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+AlN_range = mp.FreqRange(min=um_scale/5.0, max=um_scale/0.22)
+
+AlN_frq1 = 1/(0.1715*um_scale)
+AlN_gam1 = 0
+AlN_sig1 = 1.3786
+AlN_frq2 = 1/(15.03*um_scale)
+AlN_gam2 = 0
+AlN_sig2 = 3.861
+
+AlN_susc_o = [mp.LorentzianSusceptibility(frequency=AlN_frq1, gamma=AlN_gam1, sigma_diag=AlN_sig1*mp.Vector3(1,1,0)),
+              mp.LorentzianSusceptibility(frequency=AlN_frq2, gamma=AlN_gam2, sigma_diag=AlN_sig2*mp.Vector3(1,1,0))]
+
+AlN_frq1 = 1/(0.1746*um_scale)
+AlN_gam1 = 0
+AlN_sig1 = 1.6173
+AlN_frq2 = 1/(15.03*um_scale)
+AlN_gam2 = 0
+AlN_sig2 = 4.139
+
+AlN_susc_e = [mp.LorentzianSusceptibility(frequency=AlN_frq1, gamma=AlN_gam1, sigma_diag=AlN_sig1*mp.Vector3(0,0,1)),
+              mp.LorentzianSusceptibility(frequency=AlN_frq2, gamma=AlN_gam2, sigma_diag=AlN_sig2*mp.Vector3(0,0,1))]
+
+AlN_aniso = mp.Medium(epsilon_diag=mp.Vector3(3.1399,3.1399,3.0729), E_susceptibilities=AlN_susc_o+AlN_susc_e, valid_freq_range=AlN_range)
+
+#------------------------------------------------------------------
+# alumina/sapphire (Al2O3) from I.H. Malitson and M.J. Dodge, J. Optical Society of America, Vol. 62, pp. 1405, 1972
+# ref: https://refractiveindex.info/?shelf=main&book=Al2O3&page=Malitson-o
+# ref: https://refractiveindex.info/?shelf=main&book=Al2O3&page=Malitson-e
+# wavelength range: 0.2 - 5 um
+
+## NOTE: ordinary (o) axes in X and Y, extraordinary (e) axis in Z
+
+Al2O3_range = mp.FreqRange(min=um_scale/5.0, max=um_scale/0.2)
+
+Al2O3_frq1 = 1/(0.0726631*um_scale)
+Al2O3_gam1 = 0
+Al2O3_sig1 = 1.4313493
+Al2O3_frq2 = 1/(0.1193242*um_scale)
+Al2O3_gam2 = 0
+Al2O3_sig2 = 0.65054713
+Al2O3_frq3 = 1/(18.02825*um_scale)
+Al2O3_gam3 = 0
+Al2O3_sig3 = 5.3414021
+
+Al2O3_susc_o = [mp.LorentzianSusceptibility(frequency=Al2O3_frq1, gamma=Al2O3_gam1, sigma_diag=Al2O3_sig1*mp.Vector3(1,1,0)),
+                mp.LorentzianSusceptibility(frequency=Al2O3_frq2, gamma=Al2O3_gam2, sigma_diag=Al2O3_sig2*mp.Vector3(1,1,0)),
+                mp.LorentzianSusceptibility(frequency=Al2O3_frq3, gamma=Al2O3_gam3, sigma_diag=Al2O3_sig3*mp.Vector3(1,1,0))]
+
+Al2O3_frq1 = 1/(0.0740288*um_scale)
+Al2O3_gam1 = 0
+Al2O3_sig1 = 1.5039759
+Al2O3_frq2 = 1/(0.1216529*um_scale)
+Al2O3_gam2 = 0
+Al2O3_sig2 = 0.55069141
+Al2O3_frq3 = 1/(20.072248*um_scale)
+Al2O3_gam3 = 0
+Al2O3_sig3 = 6.5927379
+
+Al2O3_susc_e = [mp.LorentzianSusceptibility(frequency=Al2O3_frq1, gamma=Al2O3_gam1, sigma_diag=Al2O3_sig1*mp.Vector3(0,0,1)),
+                mp.LorentzianSusceptibility(frequency=Al2O3_frq2, gamma=Al2O3_gam2, sigma_diag=Al2O3_sig2*mp.Vector3(0,0,1)),
+                mp.LorentzianSusceptibility(frequency=Al2O3_frq3, gamma=Al2O3_gam3, sigma_diag=Al2O3_sig3*mp.Vector3(0,0,1))]
+
+Al2O3_aniso = mp.Medium(epsilon=1, E_susceptibilities=Al2O3_susc_o+Al2O3_susc_e, valid_freq_range=Al2O3_range)
+
+#------------------------------------------------------------------
+# yttrium oxide (Y2O3) from Y. Nigara, Japanese J. of Applied Physics, Vol. 7, pp. 404-8, 1968
+# ref: https://refractiveindex.info/?shelf=main&book=Y2O3&page=Nigara
+# wavelength range: 0.25 - 9.6 um
+
+Y2O3_range = mp.FreqRange(min=um_scale/9.6, max=um_scale/0.25)
+
+Y2O3_frq1 = 1/(0.1387*um_scale)
+Y2O3_gam1 = 0
+Y2O3_sig1 = 2.578
+Y2O3_frq2 = 1/(22.936*um_scale)
+Y2O3_gam2 = 0
+Y2O3_sig2 = 3.935
+
+Y2O3_susc = [mp.LorentzianSusceptibility(frequency=Y2O3_frq1, gamma=Y2O3_gam1, sigma=Y2O3_sig1),
+             mp.LorentzianSusceptibility(frequency=Y2O3_frq2, gamma=Y2O3_gam2, sigma=Y2O3_sig2)]
+
+Y2O3 = mp.Medium(epsilon=1.0, E_susceptibilities=Y2O3_susc, valid_freq_range=Y2O3_range)
+
+#------------------------------------------------------------------
+# undoped yttrium aluminum garnet (YAG) from D.E. Zelmon et al., Applied Optics, Vol. 37, 4933-5, 1998
+# ref: https://refractiveindex.info/?shelf=main&book=Y3Al5O12&page=Zelmon
+# wavelength range: 0.4 - 5.0 um
+
+YAG_range = mp.FreqRange(min=um_scale/5.0, max=um_scale/0.4)
+
+YAG_frq1 = 1/(0.1088577052853862*um_scale)
+YAG_gam1 = 0
+YAG_sig1 = 2.28200
+YAG_frq2 = 1/(16.814695953242804*um_scale)
+YAG_gam2 = 0
+YAG_sig2 = 3.27644
+
+YAG_susc = [mp.LorentzianSusceptibility(frequency=YAG_frq1, gamma=YAG_gam1, sigma=YAG_sig1),
+            mp.LorentzianSusceptibility(frequency=YAG_frq2, gamma=YAG_gam2, sigma=YAG_sig2)]
+
+YAG = mp.Medium(epsilon=1.0, E_susceptibilities=YAG_susc, valid_freq_range=YAG_range)
+
+#------------------------------------------------------------------
+# cadmium telluride (CdTe) from D.T.F. Marple, J. Applied Physics, Vol. 35, pp. 539-42, 1964
+# ref: https://refractiveindex.info/?shelf=main&book=CdTe&page=Marple
+# wavelength range: 0.86 - 2.5 um
+
+CdTe_range = mp.FreqRange(min=um_scale/2.5, max=um_scale/0.86)
+
+CdTe_frq1 = 1/(0.6049793384901669*um_scale)
+CdTe_gam1 = 0
+CdTe_sig1 = 1.53
+
+CdTe_susc = [mp.LorentzianSusceptibility(frequency=CdTe_frq1, gamma=CdTe_gam1, sigma=CdTe_sig1)]
+
+CdTe = mp.Medium(epsilon=5.68, E_susceptibilities=CdTe_susc, valid_freq_range=CdTe_range)
