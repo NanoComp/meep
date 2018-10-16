@@ -109,10 +109,6 @@ void end_divide_parallel(void);
 int my_global_rank(void);
 void be_quiet(bool _quiet=true);
 
-extern int meep_threads;
-extern int ploop_strategy;
-void set_meep_threads(int num_threads=0, int new_ploop_strategy=-1);
-
 } /* namespace meep */
 
 #endif /* MEEP_MY_MPI_H */

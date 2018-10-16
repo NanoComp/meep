@@ -7,9 +7,11 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp
 
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
-bicgstab.hpp
+bicgstab.hpp multithreading.hpp
 
-libmeep_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
+libmeep_la_SOURCES = multithreading.cpp 		\
+step_multithreaded.cpp step_multithreaded_stride1.cpp	\
+array_slice.cpp anisotropic_averaging.cpp 		\
 bands.cpp boundaries.cpp bicgstab.cpp casimir.cpp 	\
 control_c.cpp cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
 fields.cpp loop_in_chunks.cpp h5fields.cpp h5file.cpp 	\
@@ -32,5 +34,8 @@ sphere-quad.h:
 
 step_generic_stride1.cpp: step_generic.cpp
 	(echo $(PRELUDE); echo; sed 's/LOOP_OVER/S1LOOP_OVER/g' $(top_srcdir)/src/step_generic.cpp | sed 's/step_curl/step_curl_stride1/' | sed 's/step_update_EDHB/step_update_EDHB_stride1/' | sed 's/step_beta/step_beta_stride1/') > $@
+
+step_multithreaded_stride1.cpp: step_multithreaded.cpp
+	(echo $(PRELUDE); echo; sed 's/LOOP_OVER/S1LOOP_OVER/g' $(top_srcdir)/src/step_multithreaded.cpp | sed 's/step_curl/step_curl_stride1/' | sed 's/step_update_EDHB/step_update_EDHB_stride1/' | sed 's/step_beta/step_beta_stride1/') > $@
 
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)

@@ -42,7 +42,6 @@ typedef float realnum;
 typedef double realnum;
 #endif
 
-void ReportRunTimes(bool Reset=true);
 extern bool quiet; // if true, suppress all non-error messages from Meep
 
 const double pi = 3.141592653589793238462643383276;

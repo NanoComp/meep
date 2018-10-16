@@ -24,45 +24,13 @@
 
 #include "config.h"
 
+#include "multithreading.hpp"
+
 #define RESTRICT
 
 using namespace std;
 
 namespace meep {
-
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-#define NUM_CHECKPOINTS 30
-double step_start_time, wt0, wt1;
-#define CHECKPOINT(n) \
- { wt1=wall_time(); RunTimes[n]+=(wt1-wt0); wt0=wt1;}
-double RunTimes[NUM_CHECKPOINTS]={
- 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
- 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-};
-double LastMeepTime=0.0, MeepTime;
-double WallTimeStepping=0.0;
-int MeepSteps;
-double ReportInterval=2.0;
-double NextReportTime=2.0;
-double MeepRes;
-void ReportRunTimes(bool Reset)
- { 
-   if (!am_master()) return;
-   FILE *f=fopen("/tmp/RunTimes","a");
-   double DeltaMeep=MeepTime - LastMeepTime;
-   fprintf(f,"\n\n## Meep time interval %g --> %g (%g)\n",LastMeepTime,MeepTime,DeltaMeep);
-   fprintf(f,"\n\n## Avg wall time per MEEP time step= %f\n", WallTimeStepping/(MeepSteps-2));
-   fprintf(f,"## item   wall_time    wall_time/meep_time\n");     
-   for(int n=0; n<NUM_CHECKPOINTS; n++)
-    { fprintf(f,"%g %2i %.4e %.4e \n",MeepRes,n,RunTimes[n],RunTimes[n]/MeepSteps);
-      if (Reset) RunTimes[n]=0.0;
-    }
-   fclose(f);
-   if (Reset) LastMeepTime=MeepTime;
-   NextReportTime+=ReportInterval;
- }
 
 void fields::step() {
   // however many times the fields have been synched, we want to restore now
@@ -86,73 +54,66 @@ void fields::step() {
       master_printf("  (doing expensive timestepping of synched fields)\n");
     last_step_output_wall_time = wall_time();
     last_step_output_t = t;
-print_loop_stats(round_time());
+print_benchmarks();
   }
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-step_start_time=wall_time(); wt0=step_start_time;
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+checkpoint("phase_material");
   phase_material();
-CHECKPOINT(0)
+checkpoint("calc_sources");
 
   // update cached conductivity-inverse array, if needed
   for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
   calc_sources(time()); // for B sources
-CHECKPOINT(1)
+checkpoint("step_db B");
   step_db(B_stuff);
-CHECKPOINT(2)
+checkpoint("step_source B");
   step_source(B_stuff);
-CHECKPOINT(3)
+checkpoint("step_boundaries B");
   step_boundaries(B_stuff);
-CHECKPOINT(29)
+checkpoint("calc_sources 2");
   calc_sources(time() + 0.5*dt); // for integrated H sources
-CHECKPOINT(5)
+checkpoint("update_eh H");
   update_eh(H_stuff);
-CHECKPOINT(6)
+checkpoint("step_boundaries WH");
   step_boundaries(WH_stuff);
-CHECKPOINT(29)
+checkpoint("update_pols H");
   update_pols(H_stuff);
-CHECKPOINT(8)
+checkpoint("step_boundaries PH");
   step_boundaries(PH_stuff);
-CHECKPOINT(29)
+checkpoint("step_boundaries H");
   step_boundaries(H_stuff);
-CHECKPOINT(29)
 
+checkpoint("fluxes 1");
   if (fluxes) fluxes->update_half();
-CHECKPOINT(11)
 
+checkpoint("calc_sources 3");
   calc_sources(time() + 0.5*dt); // for D sources
-CHECKPOINT(12)
+checkpoint("step_db D");
   step_db(D_stuff);
-CHECKPOINT(13)
+checkpoint("step_source D");
   step_source(D_stuff);
-CHECKPOINT(14)
+checkpoint("step_boundaries D");
   step_boundaries(D_stuff);
-CHECKPOINT(29)
+checkpoint("calc_sources 4");
   calc_sources(time() + dt); // for integrated E sources
-CHECKPOINT(16)
+checkpoint("update_eh E");
   update_eh(E_stuff);
-CHECKPOINT(17)
+checkpoint("step_boundaries WE");
   step_boundaries(WE_stuff);
-CHECKPOINT(29)
+checkpoint("update_pols E");
   update_pols(E_stuff);
-CHECKPOINT(19)
+checkpoint("step_boundaries PE");
   step_boundaries(PE_stuff);
-CHECKPOINT(29)
+checkpoint("step_boundaries E");
   step_boundaries(E_stuff);
-CHECKPOINT(29)
 
+checkpoint("fluxes 2");
   if (fluxes) fluxes->update();
-CHECKPOINT(22)
+checkpoint("dft");
   t += 1;
   update_dfts();
-CHECKPOINT(23)
-MeepTime=round_time();
-MeepRes=1.0/gv.inva;
-MeepSteps=t;
-if (MeepSteps>2)
- WallTimeStepping+=(wall_time()-step_start_time);
-if(MeepTime>NextReportTime) ReportRunTimes(false);
+checkpoint();
+
   finished_working();
 
   // re-synch magnetic fields if they were previously synchronized
@@ -234,9 +195,7 @@ void fields::step_boundaries(field_type ft) {
       	}
       }
     }
-CHECKPOINT(4)
   boundary_communications(ft);
-CHECKPOINT(7)
 
   // Finally, copy incoming data to the fields themselves, multiplying phases:
   for (int i=0;i<num_chunks;i++)
@@ -265,7 +224,6 @@ CHECKPOINT(7)
       	    = comm_blocks[ft][pair][n0 + n];
       }
     }
-CHECKPOINT(9)
 
   finished_working();
 }
