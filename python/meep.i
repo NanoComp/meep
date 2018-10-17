@@ -24,6 +24,7 @@
 #include <complex>
 #include <string>
 
+#include "config.h"
 #include "meep/vec.hpp"
 #include "meep.hpp"
 #include "meep/mympi.hpp"
@@ -459,6 +460,16 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
     Py_DECREF(args);
     return result;
 }
+
+#else
+void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                                     bool verbose, double kdom[3]) {
+    (void) f; (void) omega_src; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
+    (void) match_frequency; (void) parity; (void) resolution; (void) eigensolver_tol;
+    (void) verbose; (void) kdom;
+    meep::abort("Must compile Meep with MPB for get_eigenmode");
 #endif
 %}
 
