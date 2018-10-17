@@ -30,24 +30,34 @@
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
-#include "mpb.h"
+
+#ifdef WITH_MPB
+    #include "mpb.h"
+
+    namespace meep {
+    struct eigenmode_data {
+        maxwell_data *mdata;
+        scalar_complex *fft_data_H, *fft_data_E;
+        evectmatrix H;
+        int n[3];
+        double s[3];
+        double Gk[3];
+        vec center;
+        amplitude_function amp_func;
+        int band_num;
+        double omega;
+        double group_velocity;
+    };
+    }
+#else
+    namespace meep {
+        struct eigenmode_data {};
+    }
+#endif
 
 namespace meep {
 size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
 typedef std::complex<double> (*amplitude_function)(const vec &);
-struct eigenmode_data {
-    maxwell_data *mdata;
-    scalar_complex *fft_data_H, *fft_data_E;
-    evectmatrix H;
-    int n[3];
-    double s[3];
-    double Gk[3];
-    vec center;
-    amplitude_function amp_func;
-    int band_num;
-    double omega;
-    double group_velocity;
-};
 }
 
 using namespace meep;
@@ -431,6 +441,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     return res;
 }
 
+#ifdef WITH_MPB
 meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                  const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                  bool match_frequency, int parity, double resolution, double eigensolver_tol,
@@ -448,6 +459,7 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
     Py_DECREF(args);
     return result;
 }
+#endif
 %}
 
 %numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
@@ -1135,6 +1147,7 @@ struct geom_box {
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
+#ifdef WITH_MPB
 namespace meep {
 struct eigenmode_data {
     maxwell_data *mdata;
@@ -1149,6 +1162,11 @@ struct eigenmode_data {
     double omega;
     double group_velocity;
 };
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                                     bool verbose, double kdom[3]);
+PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 }
 
 %extend meep::eigenmode_data {
@@ -1156,6 +1174,7 @@ struct eigenmode_data {
         meep::destroy_eigenmode_data($self);
     }
 }
+#endif // WITH_MPB
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
@@ -1165,11 +1184,6 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
-                                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
-                                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                     bool verbose, double kdom[3]);
-PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 
 %ignore eps_func;
 %ignore inveps_func;
