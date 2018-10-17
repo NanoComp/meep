@@ -368,6 +368,7 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
         output_efield_z,
         output_charge_density,
         output_bpwr,
+        output_hpwr,
         output_dpwr,
         output_tot_pwr,
         output_dpwr_in_objects,
