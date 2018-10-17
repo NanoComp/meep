@@ -139,15 +139,18 @@ MPB_PY = $(srcdir)/mpb.py
 
 endif # MAINTAINER_MODE
 
-PY_PKG_FILES =                      \
-    $(INIT_PY)                      \
-    $(srcdir)/geom.py               \
-    $(srcdir)/simulation.py         \
-    $(srcdir)/source.py             \
-    $(srcdir)/materials.py  \
+HL_IFACE =                  \
+    $(srcdir)/geom.py       \
+    $(srcdir)/simulation.py \
+    $(srcdir)/source.py     \
+    $(srcdir)/materials.py
+
+PY_PKG_FILES =      \
+    $(INIT_PY)      \
+    $(HL_IFACE)     \
     .libs/_meep.so
 
-meep: _meep.la _mpb.la __init__.py
+meep: _meep.la _mpb.la __init__.py $(HL_IFACE)
 	mkdir -p meep/mpb
 	cp $(PY_PKG_FILES) meep
 	cp .libs/_mpb.so meep/mpb
