@@ -167,13 +167,8 @@ script:
     fi
   - >
     if [[ "${BUILD_WITHOUT_MPB}" == "1" ]]; then
-      ../configure
-        --enable-maintainer-mode
-        --prefix=$HOME/local
-        --with-libctl=$HOME/local/share/libctl
-        ${MPICONF}
-        ac_cv_header_mpb_h=no &&
-      make
+      ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF} ac_cv_header_mpb_h=no &&
+      make;
     fi
   # Kill background sleep loop
   - kill %1
