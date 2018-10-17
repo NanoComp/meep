@@ -31,7 +31,7 @@
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
 
-#ifdef WITH_MPB
+#ifdef HAVE_MPB
     #include "mpb.h"
 
     namespace meep {
@@ -441,7 +441,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     return res;
 }
 
-#ifdef WITH_MPB
+#ifdef HAVE_MPB
 meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                  const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                  bool match_frequency, int parity, double resolution, double eigensolver_tol,
@@ -1147,7 +1147,7 @@ struct geom_box {
 %rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
-#ifdef WITH_MPB
+#ifdef HAVE_MPB
 namespace meep {
 struct eigenmode_data {
     maxwell_data *mdata;
@@ -1174,7 +1174,7 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
         meep::destroy_eigenmode_data($self);
     }
 }
-#endif // WITH_MPB
+#endif // HAVE_MPB
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
