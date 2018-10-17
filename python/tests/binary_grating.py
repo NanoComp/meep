@@ -125,8 +125,8 @@ class TestEigCoeffs(unittest.TestCase):
     Rflux = -r_flux[0]/input_flux[0]
     Tflux =  t_flux[0]/input_flux[0]
 
-    self.assertAlmostEqual(Rsum,Rflux,places=3)
-    self.assertAlmostEqual(Tsum,Tflux,places=3)
+    self.assertAlmostEqual(Rsum,Rflux,places=2)
+    self.assertAlmostEqual(Tsum,Tflux,places=2)
 
   def test_kdom(self):
     self.run_binary_grating_oblique(0)
