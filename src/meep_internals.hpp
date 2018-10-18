@@ -16,6 +16,7 @@
 */
 
 #include "meep.hpp"
+#include "multithreading.hpp"
 
 namespace meep {
 

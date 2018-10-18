@@ -1,7 +1,6 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 #include "config.h"
-#include "multithreading.hpp"
 
 #define DPR double * restrict
 #define RPR realnum * restrict
@@ -250,7 +249,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
   }
-checkpoint();
+CHECKPOINT(0,0)
 }
 
 void step_beta_multithreaded(RPR f, component c, const RPR g,
@@ -345,7 +344,7 @@ void step_beta(RPR f, component c, const RPR g,
       }
     }
   }
-checkpoint();
+CHECKPOINT(0,0)
 }
 
 /* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so
@@ -601,7 +600,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
     }
    }
   }
-checkpoint();
+CHECKPOINT(0,0)
 }
 
 } // namespace meep

@@ -54,65 +54,65 @@ void fields::step() {
       master_printf("  (doing expensive timestepping of synched fields)\n");
     last_step_output_wall_time = wall_time();
     last_step_output_t = t;
-print_benchmarks();
+    print_benchmarks(round_time());
   }
 
-checkpoint("phase_material");
+CHECKPOINT("phase_material",0);
   phase_material();
-checkpoint("calc_sources");
+CHECKPOINT("calc_sources",0);
 
   // update cached conductivity-inverse array, if needed
   for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
   calc_sources(time()); // for B sources
-checkpoint("step_db B");
+CHECKPOINT("step_db B",0);
   step_db(B_stuff);
-checkpoint("step_source B");
+CHECKPOINT("step_source B",0);
   step_source(B_stuff);
-checkpoint("step_boundaries B");
+CHECKPOINT("step_boundaries B",0);
   step_boundaries(B_stuff);
-checkpoint("calc_sources 2");
+CHECKPOINT("calc_sources 2",0);
   calc_sources(time() + 0.5*dt); // for integrated H sources
-checkpoint("update_eh H");
+CHECKPOINT("update_eh H",0);
   update_eh(H_stuff);
-checkpoint("step_boundaries WH");
+CHECKPOINT("step_boundaries WH",0);
   step_boundaries(WH_stuff);
-checkpoint("update_pols H");
+CHECKPOINT("update_pols H",0);
   update_pols(H_stuff);
-checkpoint("step_boundaries PH");
+CHECKPOINT("step_boundaries PH",0);
   step_boundaries(PH_stuff);
-checkpoint("step_boundaries H");
+CHECKPOINT("step_boundaries H",0);
   step_boundaries(H_stuff);
 
-checkpoint("fluxes 1");
+CHECKPOINT("fluxes 1",0);
   if (fluxes) fluxes->update_half();
 
-checkpoint("calc_sources 3");
+CHECKPOINT("calc_sources 3",0);
   calc_sources(time() + 0.5*dt); // for D sources
-checkpoint("step_db D");
+CHECKPOINT("step_db D",0);
   step_db(D_stuff);
-checkpoint("step_source D");
+CHECKPOINT("step_source D",0);
   step_source(D_stuff);
-checkpoint("step_boundaries D");
+CHECKPOINT("step_boundaries D",0);
   step_boundaries(D_stuff);
-checkpoint("calc_sources 4");
+CHECKPOINT("calc_sources 4",0);
   calc_sources(time() + dt); // for integrated E sources
-checkpoint("update_eh E");
+CHECKPOINT("update_eh E",0);
   update_eh(E_stuff);
-checkpoint("step_boundaries WE");
+CHECKPOINT("step_boundaries WE",0);
   step_boundaries(WE_stuff);
-checkpoint("update_pols E");
+CHECKPOINT("update_pols E",0);
   update_pols(E_stuff);
-checkpoint("step_boundaries PE");
+CHECKPOINT("step_boundaries PE",0);
   step_boundaries(PE_stuff);
-checkpoint("step_boundaries E");
+CHECKPOINT("step_boundaries E",0);
   step_boundaries(E_stuff);
 
-checkpoint("fluxes 2");
+CHECKPOINT("fluxes 2",0);
   if (fluxes) fluxes->update();
-checkpoint("dft");
+CHECKPOINT("dft",0);
   t += 1;
   update_dfts();
-checkpoint();
+CHECKPOINT(0,0);
 
   finished_working();
 

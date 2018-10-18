@@ -22,6 +22,11 @@
 
 using namespace std;
 
+/***************************************************************/
+double EDHBTime=0.0;
+int EDHBCount=0;
+/***************************************************************/
+
 namespace meep {
 
 void fields::update_eh(field_type ft, bool skip_w_components) {
@@ -164,13 +169,19 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       memcpy(f_w_prev[ec][cmp], f_w[ec][cmp] ? f_w[ec][cmp] : f[ec][cmp],
 	     sizeof(realnum) * gv.ntot());
     }
-
+/***************************************************************/
+double t0=wall_time();
+/***************************************************************/
     if (f[ec][cmp] != f[dc][cmp])
       STEP_UPDATE_EDHB(f[ec][cmp], ec, gv,
 		       dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
 		       s->chi1inv[ec][d_ec], dmp[dc_1][cmp]?s->chi1inv[ec][d_1]:NULL, dmp[dc_2][cmp]?s->chi1inv[ec][d_2]:NULL,
 		       s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
 		       f_w[ec][cmp], dsigw, s->sig[dsigw], s->kap[dsigw]);
+/***************************************************************/
+EDHBTime+=(wall_time()-t0);
+EDHBCount++;
+/***************************************************************/
   }
 
   /* Do annoying special cases for r=0 in cylindrical coords.  Note

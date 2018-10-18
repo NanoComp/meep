@@ -1,28 +1,9 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 #include "config.h"
-#include "multithreading.hpp"
 
 #define DPR double * restrict
 #define RPR realnum * restrict
-
-/* These macros get into the guts of the LOOP_OVER_VOL loops to
-   efficiently construct the index k into a PML sigma array.
-   Basically, k needs to increment by 2 for each increment of one of
-   LOOP's for-loops, starting at the appropriate corner of the grid_volume,
-   and these macros define the relevant strides etc. for each loop.
-   KSTRIDE_DEF defines the relevant strides etc. and goes outside the
-   LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
-#define KSTRIDE_DEF(dsig, k, corner)				\
-     const int k##0 = corner.in_direction(dsig)			\
-                      - gv.little_corner().in_direction(dsig);	\
-     const int s##k##1 = gv.yucky_direction(0) == dsig ? 2 : 0; \
-     const int s##k##2 = gv.yucky_direction(1) == dsig ? 2 : 0; \
-     const int s##k##3 = gv.yucky_direction(2) == dsig ? 2 : 0
-#define KDEF(k,dsig) const int k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
-#define DEF_k KDEF(k,dsig)
-#define DEF_ku KDEF(ku,dsigu)
-#define DEF_kw KDEF(kw,dsigw)
 
 using namespace std;
 
@@ -71,11 +52,17 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
 	       double dt,
 	       const RPR cnd, const RPR cndinv, RPR fcnd)
 {
+  update_ilcs(gv);
+
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
     SWAP(ptrdiff_t, s1, s2);
     dtdx = -dtdx; // need to flip derivative sign
   }
+
+  /* endpoints of grid loop */
+  ivec is0 = gv.little_owned_corner0(c);
+  ivec ie  = gv.big_corner();
 
   /* The following are a bunch of special cases of the "MOST GENERAL CASE"
      loop below.  We make copies of the loop for each special case in
@@ -89,42 +76,41 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
     	double dt2 = dt * 0.5;
     	if (g2) {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  PLOOP_OVER_IVECS(gv, is0, ie, i)
     	    f[i] = ((1 - dt2 * cnd[i]) * f[i] -
     		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
     	}
     	else {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  PLOOP_OVER_IVECS(gv, is0, ie, i)
     	    f[i] = ((1 - dt2 * cnd[i]) * f[i]
     		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
     	}
       }
       else { // no conductivity
     	if (g2) {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  PLOOP_OVER_IVECS(gv, is0, ie, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
     	}
     	else {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  PLOOP_OVER_IVECS(gv, is0, ie, i)
     	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
     	}
       }
     }
     else { // fu update, no PML in f update
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
     	double dt2 = dt * 0.5;
     	if (g2) {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-    	    DEF_ku; double fprev = fu[i];
+    	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsigu, ku) {
+    	            double fprev = fu[i];
     	    fu[i] = ((1 - dt2 * cnd[i]) * fprev -
     		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
     	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
     	  }
     	}
     	else {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-    	    DEF_ku; double fprev = fu[i];
+    	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsigu, ku) {
+    	            double fprev = fu[i];
     	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
     		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
     	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
@@ -133,15 +119,15 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity
     	if (g2) {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-    	    DEF_ku; double fprev = fu[i];
+    	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsigu, ku) {
+    	            double fprev = fu[i];
     	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
     	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
     	  }
     	} /*if (g2)*/
     	else {
-    	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-    	    DEF_ku; double fprev = fu[i];
+    	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsigu, ku) {
+    	            double fprev = fu[i];
     	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
     	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
     	  }
@@ -150,13 +136,11 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
     }
   }
   else { /* PML in f update */
-    KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k;
+	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsig, k) {
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
@@ -164,8 +148,7 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k;
+	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsig, k) {
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
@@ -175,28 +158,25 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k;
+	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsig, k) {
 	    f[i] = ((kap[k] - sig[k]) * f[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	  }
 	}/*if(g2)*/
 	else {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k;
+	  PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsig, k) {
 	    f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
 	  }
 	}
       }
     }
     else { // fu update + PML in f update
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
 	  //////////////////// MOST GENERAL CASE //////////////////////
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k; DEF_ku; double fprev = fu[i];
+	  PLOOP_OVER_IVECS_DD(gv, is0, ie, i, dsig, k, dsigu, ku) {
+	    double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
@@ -206,8 +186,8 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
 	  /////////////////////////////////////////////////////////////
 	}
 	else {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k; DEF_ku; double fprev = fu[i];
+	  PLOOP_OVER_IVECS_DD(gv, is0, ie, i, dsig, k, dsigu, ku) {
+	    double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
@@ -218,16 +198,16 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k; DEF_ku; double fprev = fu[i];
+	  PLOOP_OVER_IVECS_DD(gv, is0, ie, i, dsig, k, dsigu, ku) {
+	    double fprev = fu[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	} /*if(g2)*/
 	else {
-	  BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_k; DEF_ku; double fprev = fu[i];
+	  PLOOP_OVER_IVECS_DD(gv, is0, ie, i, dsig, k, dsigu, ku) {
+	    double fprev = fu[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
 	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
@@ -235,7 +215,7 @@ void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
   }
-checkpoint();
+CHECKPOINT(0,0);
 }
 
 /* field-update equation f += betadt * g (plus variants for conductivity
@@ -248,15 +228,19 @@ void step_beta_multithreaded(RPR f, component c, const RPR g,
 	       RPR fu, direction dsigu, const DPR siginvu,
 	       const RPR cndinv, RPR fcnd)
 { 
+  update_ilcs(gv);
+
+  /* endpoints of grid loop */
+  ivec is0 = gv.little_owned_corner0(c);
+  ivec ie  = gv.big_corner();
+
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
-    KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
     if (dsigu != NO_DIRECTION) { // PML in f + fu
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity + PML
 	//////////////////// MOST GENERAL CASE //////////////////////
-	BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	  DEF_k; DEF_ku; double df;
+	PLOOP_OVER_IVECS_DD(gv, is0, ie, i, dsig, k, dsigu, ku) {
+	  double df;
 	  double dfcnd = betadt * g[i] * cndinv[i];
 	  fcnd[i] += dfcnd;
 	  fu[i] += (df = dfcnd * siginv[k]);
@@ -265,8 +249,8 @@ void step_beta_multithreaded(RPR f, component c, const RPR g,
 	/////////////////////////////////////////////////////////////
       }
       else { // PML only
-	BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	  DEF_k; DEF_ku; double df;
+	PLOOP_OVER_IVECS_DD(gv, is0, ie, i, dsig, k, dsigu, ku) {
+	  double df;
 	  fu[i] += (df = betadt * g[i] * siginv[k]);
 	  f[i] += siginvu[ku] * df;
 	}
@@ -274,16 +258,14 @@ void step_beta_multithreaded(RPR f, component c, const RPR g,
     }
     else { // PML in f, no fu
       if (cndinv) { // conductivity + PML
-	BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	  DEF_k;
+	PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsig, k) {
 	  double dfcnd = betadt * g[i] * cndinv[i];
 	  fcnd[i] += dfcnd;
 	  f[i] += dfcnd * siginv[k];
 	}
       }
       else { // PML only
-	BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	  DEF_k;
+	PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsig, k) {
 	  f[i] += betadt * g[i] * siginv[k];
 	}
       }
@@ -291,17 +273,16 @@ void step_beta_multithreaded(RPR f, component c, const RPR g,
   }
   else { // no PML in f update
     if (dsigu != NO_DIRECTION) { // fu, no PML in f
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity, no PML
-	BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	  DEF_ku; double df;
+	PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsigu, ku) {
+	  double df;
 	  fu[i] += (df = betadt * g[i] * cndinv[i]);
 	  f[i] += siginvu[ku] * df;
 	}
       }
       else { // no conductivity or PML
-	BLOOP_OVER_VOL_OWNED0(gv, c, i) {
-	  DEF_ku; double df;
+	PLOOP_OVER_IVECS_D(gv, is0, ie, i, dsigu, ku) {
+	  double df;
 	  fu[i] += (df = betadt * g[i]);
 	  f[i] += siginvu[ku] * df;
 	}
@@ -309,16 +290,16 @@ void step_beta_multithreaded(RPR f, component c, const RPR g,
     }
     else { // no PML, no fu
       if (cndinv) { // conductivity, no PML
-	BLOOP_OVER_VOL_OWNED0(gv, c, i)
+	PLOOP_OVER_IVECS(gv, is0, ie, i)
 	  f[i] += betadt * g[i] * cndinv[i];
       }
       else { // no conductivity or PML
-	BLOOP_OVER_VOL_OWNED0(gv, c, i)
+	PLOOP_OVER_IVECS(gv, is0, ie, i)
 	  f[i] += betadt * g[i];
       }
     }
   }
-checkpoint();
+CHECKPOINT(0,0);
 }
 
 /* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so
@@ -364,6 +345,8 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 		      const RPR chi2, const RPR chi3,
 		      RPR fw, direction dsigw, const DPR sigw, const DPR kapw)
 {
+  update_ilcs(gv);
+
   if (!f) return;
 
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
@@ -371,6 +354,10 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
     SWAP(const RPR, u1, u2);
     SWAP(ptrdiff_t, s1, s2);
   }
+  
+  // endpoints of grid loop
+  ivec is = gv.little_owned_corner(fc);
+  ivec ie = gv.big_corner();
 
   // stable averaging of offdiagonal components
 #define OFFDIAG(u,g,sx) (0.25 * ((g[i]+g[i-sx])*u[i] \
@@ -380,15 +367,15 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
      of the "MOST GENERAL CASE" loop with various terms thrown out. */
 
   if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
-    KSTRIDE_DEF(dsigw, kw, gv.little_owned_corner0(fc));
+    //KSTRIDE_DEF(dsigw, kw, gv.little_owned_corner0(fc));
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
 	//////////////////// MOST GENERAL CASE //////////////////////
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	  double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2))
 	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
 			       gs, us, chi2[i], chi3[i]);
@@ -397,9 +384,9 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	/////////////////////////////////////////////////////////////
       }
       else {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	  double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
@@ -407,10 +394,10 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	  double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1))
 	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
 			       gs, us, chi2[i], chi3[i]);
@@ -418,9 +405,9 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	  double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1));
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
@@ -432,21 +419,21 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
     else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
-	  BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	  PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	    double gs = g[i]; double us = u[i];
-	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	    double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs+0.0625*(g1s*g1s+g2s*g2s),
 					     gs, us, chi2[i], chi3[i]);
 	    f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	  }
 	}
 	else if (g1) {
-	  BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	  PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
-	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	    double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g1s*g1s),
 					     gs, us, chi2[i], chi3[i]);
 	    f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
@@ -456,25 +443,25 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
-	  BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	  PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	    double gs = g[i]; double us = u[i];
-	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	    double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
 	    f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	  }
 	}
       }
       else if (u) {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	  double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us);
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
       }
       else {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
-	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+	PLOOP_OVER_IVECS_D(gv, is, ie, i, dsigw, kw) {
+	  double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = g[i];
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
@@ -484,7 +471,7 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
   else { /////////////// no PML (no fw) ///////////////////
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS(gv, is, ie, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
@@ -494,7 +481,7 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS(gv, is, ie, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
 	}
@@ -502,7 +489,7 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS(gv, is, ie, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1))
@@ -511,7 +498,7 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS(gv, is, ie, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1));
 	}
@@ -523,7 +510,7 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
     else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
-	  BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	  PLOOP_OVER_IVECS(gv, is, ie, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	    double gs = g[i]; double us = u[i];
@@ -532,7 +519,7 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	  }
 	}
 	else if (g1) {
-	  BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	  PLOOP_OVER_IVECS(gv, is, ie, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
 	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g1s*g1s),
@@ -543,24 +530,24 @@ void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
-	  BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	  PLOOP_OVER_IVECS(gv, is, ie, i) {
 	    double gs = g[i]; double us = u[i];
 	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
 	  }
 	}
       }
       else if (u) {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) {
+	PLOOP_OVER_IVECS(gv, is, ie, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us);
 	}
       }
       else {
-	BLOOP_OVER_VOL_OWNED(gv, fc, i) f[i] = g[i];
+	PLOOP_OVER_IVECS(gv, is, ie, i) f[i] = g[i];
     }
    }
   }
-checkpoint();
+CHECKPOINT(0,0);
 }
 
-} // namespace meep
+}// namespace meep

@@ -158,7 +158,7 @@ component first_field_component(field_type ft);
 	loop_ibound++) \
      LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-#define LOOPS_ARE_STRIDE1(gv) ((gv).stride((gv).yucky_direction(2)) == 1)
+#define LOOPS_ARE_STRIDE1(gv) (use_stride1 && ((gv).stride((gv).yucky_direction(2)) == 1))
 
 // The following work identically to the LOOP_* macros above,
 // but assume that the inner loop is stride-1: LOOPS_ARE_STRIDE1(gv) *must*
@@ -178,7 +178,9 @@ component first_field_component(field_type ft);
   #define IVDEP STRING(ivdep)
 #endif
 
+// for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma(IVDEP)
 // loop over indices idx from is to ie (inclusive) in gv
+
 #define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
   for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
@@ -195,7 +197,7 @@ component first_field_component(field_type ft);
                 + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma(IVDEP) \
+    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)			\
       for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
 

@@ -22,6 +22,11 @@
 #include <map>
 #include <limits.h>
 
+#include <utility>
+#include <map>
+#include <vector>
+#include <algorithm>
+
 #include "multithreading.hpp"
 
 using namespace std;
@@ -31,55 +36,81 @@ namespace meep {
 /***************************************************************************/
 /* simple benchmarking: call checkpoint(__FILE__,__LINE) upon entering a   */
 /* section of code, then call checkpoint() upon leaving it. periodically   */
-/* call print_stats() to dump results to file and/or console.              */
+/* call print_benchmarks() to dump results to file and/or console.         */
 /***************************************************************************/
-typedef std::pair<string,double> snippet_time;
-typedef std::map<string,double> snippet_time_map;
-static snippet_time_map snippet_times;
-typedef std::map<string,int> snippet_count_map;
-static snippet_count_map snippet_counts;
-size_t checkpoint(const char *name, int line)
-{ 
+std::map<string,double> snippet_times;
+std::map<string,int> snippet_counts;
+double t0=HUGE_VAL;
+void checkpoint(const char *name, int line)
+{
   static string current_snippet;
   static double current_start_time=0.0;
 
-  if (!current_snippet.empty() && snippet_times.find(current_snippet)!=snippet_times.end())
+  if (name==0 && line==-1)
+   { snippet_times.clear();
+     snippet_counts.clear();
+     current_snippet.clear();
+     t0=HUGE_VAL;
+     return;
+   }
+ 
+  if (t0==HUGE_VAL) t0=wall_time();
+
+  if (!current_snippet.empty() && snippet_times.count(current_snippet) )
    { snippet_times[current_snippet]  += wall_time() - current_start_time;
      snippet_counts[current_snippet] ++;
    }
   current_snippet.clear();
 
-  if (name==0)
-   return 0;
+  if (name==0) return;
 
-  current_snippet = string(name) + (line==0 ? "" : ":" + to_string(line));
-  if (snippet_times.find(current_snippet)==snippet_times.end())
+  if (!strcmp(name,"step_generic.cpp"))
+   current_snippet=string("s_g.cpp");
+  else if (!strcmp(name,"step_generic_stride1.cpp"))
+   current_snippet=string("s_g_s1.cpp");
+  else if (!strcmp(name,"step_multithreaded.cpp"))
+   current_snippet=string("s_m.cpp");
+  else if (!strcmp(name,"step_multithreaded_stride1.cpp"))
+   current_snippet=string("s_m_s1.cpp");
+  else 
+   current_snippet = string(name);
+  if (line!=0) current_snippet += ":" + to_string(line);
+
+  if (snippet_times.count(current_snippet)==0)
    { snippet_times[current_snippet]=0.0;
      snippet_counts[current_snippet]=0;
    }
   current_start_time=wall_time();
-  return 0;
 }
 
-void print_benchmarks()
-{ for(snippet_time_map::iterator it=snippet_times.begin(); it!=snippet_times.end(); ++it)
-   printf("%30s: %4ix  %.6es total   %.3es avg\n", it->first.c_str(),
-           snippet_counts[it->first], it->second,it->second/snippet_counts[it->first]);
+double next_benchmark_time=10000.0;
+void print_benchmarks(double meep_time, char *FileName)
+{
+#ifndef BENCHMARK
+  return;
+#endif
+  if (meep_time < next_benchmark_time) return;
+
+  double ttot=wall_time()-t0;
+  FILE *f = FileName ? fopen(FileName,"a") : stdout;
+  fprintf(f,"\n\nNT %i WT %e  MT %e   MT/WT %e\n",meep_threads,ttot,meep_time,meep_time/ttot);
+  for(auto it=snippet_times.begin(); it!=snippet_times.end(); ++it)
+   fprintf(f,"NT %i %20s: %8ix  %.1e s tot (%.2f %%) %.3es avg\n",meep_threads,
+            it->first.c_str(),snippet_counts[it->first],it->second,
+            it->second/ttot,it->second/snippet_counts[it->first]);
+  if (FileName) fclose(f);
 }
 
 /***************************************************************/
 /* implementation of ivec_loop_counter                         */
 /***************************************************************/
-ivec_loop_counter::ivec_loop_counter()
- { init(grid_volume(), ivec(), ivec()); }
-
-ivec_loop_counter::ivec_loop_counter(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
+ivec_loop_counter::ivec_loop_counter(const grid_volume &gv, const ivec &_is, const ivec &_ie, int nt, int NT)
 { init(gv, _is, _ie, nt, NT); } 
 
-int ivec_loop_counter::init(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
+void ivec_loop_counter::init(const grid_volume &gv, const ivec &_is, const ivec &_ie, int nt, int NT)
 { 
   if (is==_is && ie==_ie && gvlc==gv.little_corner() && inva==gv.inva)
-   return 0; // no need to reinitialize
+   return; // no need to reinitialize
 
   is   = _is;
   gvlc = gv.little_corner();
@@ -101,12 +132,12 @@ int ivec_loop_counter::init(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
         rank++;
       }
    }
-  N_inner = N[rank-1];
+  N_inner  = N[rank-1];
+  idx_step = idx_stride[rank-1];
 
   if (NT<1) {nt=0; NT=1;}
   min_iter = (nt*num_iters) / NT;
   max_iter = ((nt+1)*num_iters) / NT;
-  return 0;
 }
 
 /***************************************************************/
@@ -117,33 +148,45 @@ int ivec_loop_counter::init(grid_volume gv, ivec _is, ivec _ie, int nt, int NT)
 void ivec_loop_counter::init_k(int nd, direction dsig)
 { 
   if (dsig==NO_DIRECTION)
-   k0[nd]=INT_MAX;
+   { k0[nd]=INT_MAX;
+     k_step[nd]=0;
+   }
   else
    { k0[nd]=(is-gvlc).in_direction(dsig);
      for(int r=0; r<rank; r++)
       k_stride[nd][r] = (loop_dir[r]==dsig ? 2 : 0);
+     k_step[nd]=k_stride[nd][rank-1];
    }
 }
 
-ptrdiff_t ivec_loop_counter::start(direction dsig1, int *k1, direction dsig2, int *k2)
+ptrdiff_t ivec_loop_counter::start(direction dsig1, direction dsig2)
 {
   complete = false;
-  N_inner=N[rank-1];
-  current_iter=min_iter;
-  size_t idx=niter_to_narray(current_iter, n);
-
   init_k(0, dsig1);
   init_k(1, dsig2);
-  get_k(k1,k2);
 
+  current_iter=min_iter;
+  N_inner=N[rank-1];
+  if (current_iter + N_inner > max_iter)
+   N_inner = max_iter - current_iter;
+
+  ptrdiff_t idx=niter_to_narray(current_iter, n);
+  idx_max = idx + N_inner*idx_step;
   return idx;
 }
 
-ptrdiff_t ivec_loop_counter::start(size_t *k1, direction dsig1, size_t *k2, direction dsig2)
-{ int ik1, ik2;
-  ptrdiff_t idx = start(dsig1, k1 ? &ik1 : 0, dsig2, k2 ? &ik2 : 0);
-  if (k1) *k1=ik1; 
-  if (k2) *k2=ik2; 
+ptrdiff_t ivec_loop_counter::start(const grid_volume &gv, const ivec &_is, const ivec &_ie, int nt, int NT,
+                                   direction dsig1, direction dsig2)
+{ init(gv, _is, _ie, nt, NT);
+  return start(dsig1, dsig2);
+}
+
+ptrdiff_t ivec_loop_counter::update_outer()
+{ current_iter += N_inner;
+  size_t idx = niter_to_narray(current_iter, n);
+  if (current_iter + N_inner > max_iter)
+   N_inner = max_iter - current_iter;
+  idx_max = idx + N_inner*idx_step;
   return idx;
 }
 
@@ -188,8 +231,8 @@ ptrdiff_t ivec_loop_counter::get_idx(size_t *narray)
 }
 
 int ivec_loop_counter::get_k(int nd, size_t *narray)
-{ if (narray==0) narray=n;
-  if (k0[nd]==INT_MAX) return 0;
+{ if (k0[nd]==INT_MAX) return 0;
+  if (narray==0) narray=n;
   int k=k0[nd];
   for(int r=0; r<rank; r++)
    k+=narray[r]*k_stride[nd][r];
@@ -218,23 +261,31 @@ vec ivec_loop_counter::get_loc(size_t *narray)
   return loc;
 }
 
-
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-vector<ivec_loop_counter> ilc;
+vector<ivec_loop_counter> ilcs;
 int meep_threads=0;
 int thread_strategy=0;
+bool use_stride1=false;
 void set_meep_threads(int num_threads, int new_strategy)
 { 
   meep_threads=num_threads;
-  if (meep_threads != ilc.size()) 
-   { ilc.clear();
-     while(num_threads--)
-      ilc.push_back(ivec_loop_counter());
-printf("meep_threads=%i, ilc.size=%i\n",meep_threads, ilc.size());
-   }
   if (new_strategy!=-1) thread_strategy=new_strategy;
+
+  char *s=getenv("MEEP_USE_STRIDE1");
+  use_stride1=(s && s[0]=='1');
+  printf("%s #pragma ivdep for stride-1 loops.\n",use_stride1 ? "Using" : "Not using");
+}
+
+void update_ilcs(const grid_volume &gv)
+{
+  if (meep_threads==0 || ((int)ilcs.size())==meep_threads)
+   return;
+  ilcs.clear();
+  ivec is(gv.dim);
+  for(int nt=0; nt<meep_threads; nt++)
+   ilcs.push_back(ivec_loop_counter(gv,is,is,nt,meep_threads));
 }
 
 } // namespace meep
