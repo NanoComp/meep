@@ -54,6 +54,7 @@ void fields::step() {
       master_printf("  (doing expensive timestepping of synched fields)\n");
     last_step_output_wall_time = wall_time();
     last_step_output_t = t;
+    meep_steps=t;
     print_benchmarks(round_time());
   }
 

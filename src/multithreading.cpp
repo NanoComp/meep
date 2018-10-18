@@ -43,10 +43,14 @@ std::map<string,int> snippet_counts;
 double t0=HUGE_VAL;
 double benchmark_interval=5.0;
 double next_benchmark_time=benchmark_interval;
+bool checkpoint_started=false;
 void checkpoint(const char *name, int line)
-{
+{ 
+  if (meep_steps < 5) return;
   static string current_snippet;
   static double current_start_time=0.0;
+
+  if (!checkpoint_started) return;
 
   if (name==0 && line==-1)
    { snippet_times.clear();
@@ -92,12 +96,12 @@ void print_benchmarks(double meep_time, char *FileName)
 #ifndef BENCHMARK
   return;
 #endif
-  if (meep_time < next_benchmark_time) return;
+  if (meep_time<next_benchmark_time) return;
   next_benchmark_time += benchmark_interval;
 
   double ttot=wall_time()-t0;
   FILE *f = FileName ? fopen(FileName,"a") : stdout;
-  fprintf(f,"\n\nNT %i WT %e  MT %e   MT/WT %e\n",meep_threads,ttot,meep_time,meep_time/ttot);
+  fprintf(f,"\n\nNT %i   STEPS %i   WALL(TOT) %e  WALL(PER) %e\n",meep_threads,meep_steps,ttot,ttot/meep_steps);
   for(auto it=snippet_times.begin(); it!=snippet_times.end(); ++it)
    fprintf(f,"NT %i %20s: %8ix  %.1e s tot (%.2f %%) %.3es avg\n",meep_threads,
             it->first.c_str(),snippet_counts[it->first],it->second,
@@ -273,6 +277,7 @@ vector<ivec_loop_counter> ilcs;
 int meep_threads=0;
 int thread_strategy=0;
 bool use_stride1=false;
+int meep_steps=0;
 void set_meep_threads(int num_threads, int new_strategy)
 { 
   meep_threads=num_threads;

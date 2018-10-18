@@ -172,6 +172,7 @@ extern int thread_strategy;
 extern bool use_stride1;
 extern double benchmark_interval;
 extern double next_benchmark_time;
+extern int meep_steps;
 void set_meep_threads(int num_threads=0, int new_strategy=-1);
 void update_ilcs(const grid_volume &gv);
 
