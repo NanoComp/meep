@@ -156,7 +156,8 @@ public:
     // fields used only for the state-ful model
     size_t n[3], N_inner;
     size_t current_iter;
-    size_t idx_max, idx_step, k_step[2];
+    ptrdiff_t idx_max, idx_step;
+    int k_step[2];
     bool complete;
 
  }; // class ivec_loop_counter
@@ -185,6 +186,7 @@ void update_ilcs(const grid_volume &gv);
 /**************************************************/
 #define _NT meep_threads
 
+#if 0
 #define PLOOP_OVER_IVECS(gv, is, ie, idx) 							\
  CHECKPOINT(__FILE__,__LINE__)									\
 _Pragma("omp parallel for schedule(guided), num_threads(_NT)")					\
@@ -202,30 +204,53 @@ _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
 _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
  for(int nt=0; nt<_NT; nt++)								\
   for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT,d1,d2), k1=ilcs[nt].get_k(0), k2=ilcs[nt].get_k(1); !(ilcs[nt].complete); idx=ilcs[nt].increment(&k1,&k2))
+#endif
+
+#define PLOOP_OVER_IVECS(gv, is, ie, idx)						\
+ CHECKPOINT(__FILE__,__LINE__)								\
+_Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
+ for(int nt=0; nt<_NT; nt++)								\
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+   for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step; idx<idx_max; idx+=idx_step)
+
+#define PLOOP_OVER_IVECS_D(gv, is, ie, idx, d, k)					\
+ CHECKPOINT(__FILE__,__LINE__)								\
+_Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
+ for(int nt=0; nt<_NT; nt++)								\
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT,d); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+   for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step, k=ilcs[nt].get_k(0), k_step=ilcs[nt].k_step[0]; idx<idx_max; idx+=idx_step, k+=k_step)
+
+#define PLOOP_OVER_IVECS_DD(gv, is, ie, idx, d1, k1, d2, k2)				\
+ CHECKPOINT(__FILE__,__LINE__)								\
+_Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
+ for(int nt=0; nt<_NT; nt++)								\
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+   for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step, k1=ilcs[nt].get_k(0), k1_step=ilcs[nt].k_step[0], k2=ilcs[nt].get_k(1), k2_step=ilcs[nt].k_step[1]; idx<idx_max; idx+=idx_step, k1+=k1_step, k2+=k2_step)
 
 #define S1PLOOP_OVER_IVECS(gv, is, ie, idx)						\
  CHECKPOINT(__FILE__,__LINE__)								\
 _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
  for(int nt=0; nt<_NT; nt++)								\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
 _Pragma(IVDEP)										\
-   for(; idx<ilcs[nt].idx_max; idx+=ilcs[nt].idx_step)
+   for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step; idx<idx_max; idx+=idx_step)
 
 #define S1PLOOP_OVER_IVECS_D(gv, is, ie, idx, d, k)					\
  CHECKPOINT(__FILE__,__LINE__)								\
 _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
  for(int nt=0; nt<_NT; nt++)								\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT, d); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT,d); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
 _Pragma(IVDEP)										\
-   for(int k=ilcs[nt].get_k(0); idx<ilcs[nt].idx_max; idx+=ilcs[nt].idx_step, k+=ilcs[nt].k_step[0])
+   for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step, k=ilcs[nt].get_k(0), k_step=ilcs[nt].k_step[0]; idx<idx_max; idx+=idx_step, k+=k_step)
 
 #define S1PLOOP_OVER_IVECS_DD(gv, is, ie, idx, d1, k1, d2, k2)				\
  CHECKPOINT(__FILE__,__LINE__)								\
 _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
  for(int nt=0; nt<_NT; nt++)								\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT, d1, d2); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
 _Pragma(IVDEP)										\
-   for(int k1=ilcs[nt].get_k(0), k2=ilcs[nt].get_k(1); idx<ilcs[nt].idx_max; idx+=ilcs[nt].idx_step, k1+=ilcs[nt].k_step[0], k2+=ilcs[nt].k_step[1])
+   for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step, k1=ilcs[nt].get_k(0), k1_step=ilcs[nt].k_step[0], k2=ilcs[nt].get_k(1), k2_step=ilcs[nt].k_step[1]; idx<idx_max; idx+=idx_step, k1+=k1_step, k2+=k2_step)
+
 
 #if 0
 #define S1PLOOP_OVER_IVECS(gv, is, ie, idx)						\

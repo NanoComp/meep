@@ -182,8 +182,11 @@ ptrdiff_t ivec_loop_counter::start(const grid_volume &gv, const ivec &_is, const
 }
 
 ptrdiff_t ivec_loop_counter::update_outer()
-{ current_iter += N_inner;
-  size_t idx = niter_to_narray(current_iter, n);
+{ 
+  current_iter += N_inner;
+  if (current_iter>=max_iter)
+   { complete=true; return idx0; }
+  ptrdiff_t idx = niter_to_narray(current_iter, n);
   if (current_iter + N_inner > max_iter)
    N_inner = max_iter - current_iter;
   idx_max = idx + N_inner*idx_step;
@@ -214,9 +217,12 @@ ptrdiff_t ivec_loop_counter::increment(size_t *k1, size_t *k2)
 }
 
 ptrdiff_t ivec_loop_counter::niter_to_narray(size_t niter, size_t narray[3])
-{ for(int r=rank-1; r>=0; niter/=N[r--])
-   narray[r] = niter%N[r];
-  return get_idx(narray);
+{ ptrdiff_t idx=idx0;
+  for(int r=rank-1; r>=0; niter/=N[r--])
+   { narray[r] = niter%N[r];
+     idx += narray[r]*idx_stride[r];
+   }
+  return idx;
 }
 
 /***************************************************************/
