@@ -33,80 +33,6 @@ using namespace std;
 
 namespace meep {
 
-/***************************************************************************/
-/* simple benchmarking: call checkpoint(__FILE__,__LINE) upon entering a   */
-/* section of code, then call checkpoint() upon leaving it. periodically   */
-/* call print_benchmarks() to dump results to file and/or console.         */
-/***************************************************************************/
-std::map<string,double> snippet_times;
-std::map<string,int> snippet_counts;
-double t0=HUGE_VAL;
-double benchmark_interval=5.0;
-double next_benchmark_time=benchmark_interval;
-bool checkpoint_started=false;
-void checkpoint(const char *name, int line)
-{ 
-  if (meep_steps < 5) return;
-  static string current_snippet;
-  static double current_start_time=0.0;
-
-  if (name==0 && line==-1)
-   { snippet_times.clear();
-     snippet_counts.clear();
-     current_snippet.clear();
-     t0=HUGE_VAL;
-     benchmark_interval=5.0;
-     next_benchmark_time=benchmark_interval;
-     return;
-   }
- 
-  if (t0==HUGE_VAL) t0=wall_time();
-
-  if (!current_snippet.empty() && snippet_times.count(current_snippet) )
-   { snippet_times[current_snippet]  += wall_time() - current_start_time;
-     snippet_counts[current_snippet] ++;
-   }
-  current_snippet.clear();
-
-  if (name==0) return;
-
-  if (!strcmp(name,"step_generic.cpp"))
-   current_snippet=string("s_g.cpp");
-  else if (!strcmp(name,"step_generic_stride1.cpp"))
-   current_snippet=string("s_g_s1.cpp");
-  else if (!strcmp(name,"step_multithreaded.cpp"))
-   current_snippet=string("s_m.cpp");
-  else if (!strcmp(name,"step_multithreaded_stride1.cpp"))
-   current_snippet=string("s_m_s1.cpp");
-  else 
-   current_snippet = string(name);
-  if (line!=0) current_snippet += ":" + to_string(line);
-
-  if (snippet_times.count(current_snippet)==0)
-   { snippet_times[current_snippet]=0.0;
-     snippet_counts[current_snippet]=0;
-   }
-  current_start_time=wall_time();
-}
-
-void print_benchmarks(double meep_time, char *FileName)
-{
-#ifndef BENCHMARK
-  return;
-#endif
-  if (meep_time<next_benchmark_time) return;
-  next_benchmark_time += benchmark_interval;
-
-  double ttot=wall_time()-t0;
-  FILE *f = FileName ? fopen(FileName,"a") : stdout;
-  fprintf(f,"\n\nNT %i   STEPS %i   WALL(TOT) %e  WALL(PER) %e\n",meep_threads,meep_steps,ttot,ttot/meep_steps);
-  for(auto it=snippet_times.begin(); it!=snippet_times.end(); ++it)
-   fprintf(f,"NT %i %20s: %8ix  %.1e s tot (%.2f %%) %.3es avg\n",meep_threads,
-            it->first.c_str(),snippet_counts[it->first],it->second,
-            it->second/ttot,it->second/snippet_counts[it->first]);
-  if (FileName) fclose(f);
-}
-
 /***************************************************************/
 /* implementation of ivec_loop_counter                         */
 /***************************************************************/
@@ -188,9 +114,7 @@ ptrdiff_t ivec_loop_counter::update_outer()
   if (current_iter>=max_iter)
    { complete=true; return idx0; }
   ptrdiff_t idx = niter_to_narray(current_iter, n);
-  N_inner = N[rank-1] - n[rank-1];
-  if (current_iter + N_inner > max_iter)
-   N_inner = max_iter - current_iter;
+  N_inner = std::min( N[rank-1]-n[rank-1], max_iter-current_iter );
   idx_max = idx + N_inner*idx_step;
   return idx;
 }
@@ -217,6 +141,8 @@ ptrdiff_t ivec_loop_counter::increment(size_t *k1, size_t *k2)
   return idx;
 }
 
+// given the overall index of a loop iteration (between 0 and N[0]*...*N[rank-1]),
+// resolve the loop indices in each dimension
 ptrdiff_t ivec_loop_counter::niter_to_narray(size_t niter, size_t narray[3])
 { ptrdiff_t idx=idx0;
   for(int r=rank-1; r>0; niter/=N[r--])
@@ -269,20 +195,21 @@ vec ivec_loop_counter::get_loc(size_t *narray)
 }
 
 /***************************************************************/
-/***************************************************************/
+/* global variables related to threads and benchmarking, plus  */
+/* a routine for setting their values via environment variables*/
 /***************************************************************/
 vector<ivec_loop_counter> ilcs;
 int meep_threads=0;
-int thread_strategy=0;
-bool use_stride1=false;
-int meep_steps=0;
-void set_meep_threads(int num_threads, int new_strategy)
+bool use_stride1=true;
+void init_meep_threads()
 { 
-  meep_threads=num_threads;
-  if (new_strategy!=-1) thread_strategy=new_strategy;
+  char *s=getenv("MEEP_NUM_THREADS");
+  if (s) 
+   sscanf(s,"%i",&meep_threads);
+  printf("Using %i meep threads.\n",meep_threads);
 
-  char *s=getenv("MEEP_USE_STRIDE1");
-  use_stride1=(s && s[0]=='1');
+  s=getenv("MEEP_IGNORE_STRIDE1");
+  use_stride1 = !s || s[0]!='1';
   printf("%s #pragma ivdep for stride-1 loops.\n",use_stride1 ? "Using" : "Not using");
 
   s=getenv("MEEP_BENCHMARK_INTERVAL");
@@ -301,6 +228,83 @@ void update_ilcs(const grid_volume &gv)
   ivec is(gv.dim);
   for(int nt=0; nt<meep_threads; nt++)
    ilcs.push_back(ivec_loop_counter(gv,is,is,nt,meep_threads));
+}
+
+/***************************************************************************/
+/* simple benchmarking: call checkpoint(__FILE__,__LINE) upon entering a   */
+/* section of code, then call checkpoint() upon leaving it. periodically   */
+/* call print_benchmarks() to dump results to file and/or console. The     */
+/* call print_benchmarks() to dump results to file and/or console. The     */
+/* entire mechanism is disabled by default; #define BENCHMARK in           */
+/* multithreading.hpp to enable it.                                        */
+/***************************************************************************/
+double t0=HUGE_VAL;
+int meep_steps=0;
+double benchmark_interval=5.0;
+double next_benchmark_time=benchmark_interval;
+std::map<string,double> snippet_times;
+std::map<string,int> snippet_counts;
+void checkpoint(const char *name, int line)
+{ 
+  if (meep_steps < 5) return;
+  static string current_snippet;
+  static double current_start_time=0.0;
+
+  if (name==0 && line==-1)
+   { snippet_times.clear();
+     snippet_counts.clear();
+     current_snippet.clear();
+     t0=HUGE_VAL;
+     benchmark_interval=5.0;
+     next_benchmark_time=benchmark_interval;
+     return;
+   }
+ 
+  if (t0==HUGE_VAL) t0=wall_time();
+
+  if (!current_snippet.empty() && snippet_times.count(current_snippet) )
+   { snippet_times[current_snippet]  += wall_time() - current_start_time;
+     snippet_counts[current_snippet] ++;
+   }
+  current_snippet.clear();
+
+  if (name==0) return;
+
+  if (!strcmp(name,"step_generic.cpp"))
+   current_snippet=string("s_g.cpp");
+  else if (!strcmp(name,"step_generic_stride1.cpp"))
+   current_snippet=string("s_g_s1.cpp");
+  else if (!strcmp(name,"step_multithreaded.cpp"))
+   current_snippet=string("s_m.cpp");
+  else if (!strcmp(name,"step_multithreaded_stride1.cpp"))
+   current_snippet=string("s_m_s1.cpp");
+  else 
+   current_snippet = string(name);
+  if (line!=0) current_snippet += ":" + to_string(line);
+
+  if (snippet_times.count(current_snippet)==0)
+   { snippet_times[current_snippet]=0.0;
+     snippet_counts[current_snippet]=0;
+   }
+  current_start_time=wall_time();
+}
+
+void print_benchmarks(double meep_time, char *FileName)
+{
+#ifndef BENCHMARK
+  return;
+#endif
+  if (meep_time<next_benchmark_time) return;
+  next_benchmark_time += benchmark_interval;
+
+  double ttot=wall_time()-t0;
+  FILE *f = FileName ? fopen(FileName,"a") : stdout;
+  fprintf(f,"\n\nNT %i   STEPS %i   WALL(TOT) %e  WALL(PER) %e\n",meep_threads,meep_steps,ttot,ttot/meep_steps);
+  for(auto it=snippet_times.begin(); it!=snippet_times.end(); ++it)
+   fprintf(f,"NT %i %20s: %8ix  %.1e s tot (%.2f %%) %.3es avg\n",meep_threads,
+            it->first.c_str(),snippet_counts[it->first],it->second,
+            it->second/ttot,it->second/snippet_counts[it->first]);
+  if (FileName) fclose(f);
 }
 
 } // namespace meep

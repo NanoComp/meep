@@ -29,38 +29,6 @@ using namespace std;
 namespace meep { 
 
 /**************************************************/
-/* loop execution benchmarking                    */
-/**************************************************/
-void checkpoint(const char *code=0, int line=0);
-void print_benchmarks(double meep_time, char *FileName=0);
-
-#define BENCHMARK
-
-#ifdef BENCHMARK
-  #define CHECKPOINT(a,b) checkpoint(a,b);
-#else
-  #define CHECKPOINT(a,b)
-#endif
-
-// benchmarked versions of (non-multithreaded) grid-loop primitives
-#define BLOOP_OVER_VOL_OWNED(gv, c, idx)  	\
-  CHECKPOINT(__FILE__,__LINE__) 	  	\
-  LOOP_OVER_VOL_OWNED(gv,c,idx)          
-
-#define BLOOP_OVER_VOL_OWNED0(gv, c, idx) 	\
-  CHECKPOINT(__FILE__,__LINE__);	  	\
-  LOOP_OVER_VOL_OWNED0(gv,c,idx)
-
-#define BS1LOOP_OVER_VOL_OWNED(gv, c, idx)	\
-  CHECKPOINT(__FILE__,__LINE__) 	  	\
-  S1LOOP_OVER_VOL_OWNED(gv,c,idx)          
-
-#define BS1LOOP_OVER_VOL_OWNED0(gv, c, idx)	\
-  CHECKPOINT(__FILE__,__LINE__);	  	\
-  S1LOOP_OVER_VOL_OWNED0(gv,c,idx)
-
-
-/**************************************************/
 /* ivec_loop_counter is a class that replaces the */
 /* LOOP_OVER_IVECS() macro and its derivatives to */
 /* facilitate shared-memory loop parallelization. */
@@ -164,50 +132,24 @@ public:
 
 /**************************************************/
 /* global array of ivec_loop_counters, one per    */
-/* thread, initialized by set_meep_threads()      */
+/* thread, initialized by init_meep_threads()     */
 /**************************************************/
 extern vector<ivec_loop_counter> ilcs;
 extern int meep_threads;
-extern int thread_strategy;
 extern bool use_stride1;
-extern double benchmark_interval;
-extern double next_benchmark_time;
-extern int meep_steps;
-void set_meep_threads(int num_threads=0, int new_strategy=-1);
+void init_meep_threads();
 void update_ilcs(const grid_volume &gv);
 
-/**************************************************/
-/* macros for multithreaded grid loops. The basic */
-/* grid loop is PLOOP_OVER_IVECS. Versions with   */
-/* _D and _DD suffixes are cases requiring one    */
-/* or two 'k' indices into PML sigma arrays of    */
-/* specific dimentions. S1PLOOP_ versions break   */
-/* out the innermost loop dimension as a separate */
-/* loop to allow compiler optimization using      */
-/* #pragma ivdep (intel compilers) or             */
-/* #pragma gcc ivdep (GNU compilers).             */
-/**************************************************/
+/************************************************************/
+/* macros for multithreaded grid loops. The basic grid loop */
+/* is PLOOP_OVER_IVECS. Versions with _D or _DD suffixes are*/
+/* for cases requiring one or two 'k' indices into PML sigma*/
+/* arrays in specific directions. S1PLOOP_ versions break   */
+/* out the innermost loop as a separate loop to allow       */
+/* compiler optimization using #pragma ivdep (intel         */
+/* compilers or #pragma gcc ivdep (GNU compilers).          */
+/************************************************************/
 #define _NT meep_threads
-
-#if 0
-#define PLOOP_OVER_IVECS(gv, is, ie, idx) 							\
- CHECKPOINT(__FILE__,__LINE__)									\
-_Pragma("omp parallel for schedule(guided), num_threads(_NT)")					\
- for(int nt=0; nt<_NT; nt++)									\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=++ilcs[nt])
-
-#define PLOOP_OVER_IVECS_D(gv, is, ie, idx, d, k) 					\
- CHECKPOINT(__FILE__,__LINE__)								\
-_Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
- for(int nt=0; nt<_NT; nt++)								\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT,d), k=ilcs[nt].get_k(0); !(ilcs[nt].complete); idx=ilcs[nt].increment(&k))
-
-#define PLOOP_OVER_IVECS_DD(gv, is, ie, idx, d1, k1, d2, k2) 				\
- CHECKPOINT(__FILE__,__LINE__)								\
-_Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
- for(int nt=0; nt<_NT; nt++)								\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT,d1,d2), k1=ilcs[nt].get_k(0), k2=ilcs[nt].get_k(1); !(ilcs[nt].complete); idx=ilcs[nt].increment(&k1,&k2))
-#endif
 
 #define PLOOP_OVER_IVECS(gv, is, ie, idx)						\
  CHECKPOINT(__FILE__,__LINE__)								\
@@ -254,38 +196,39 @@ _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
 _Pragma(IVDEP)										\
    for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step, k1=ilcs[nt].get_k(0), k1_step=ilcs[nt].k_step[0], k2=ilcs[nt].get_k(1), k2_step=ilcs[nt].k_step[1]; idx<idx_max; idx+=idx_step, k1+=k1_step, k2+=k2_step)
 
+/**************************************************/
+/* loop execution benchmarking                    */
+/**************************************************/
+extern double benchmark_interval;
+extern double next_benchmark_time;
+extern int meep_steps;
+void checkpoint(const char *code=0, int line=0);
+void print_benchmarks(double meep_time, char *FileName=0);
 
-#if 0
-#define S1PLOOP_OVER_IVECS(gv, is, ie, idx)						\
- CHECKPOINT(__FILE__,__LINE__)								\
-_Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
- for(int nt=0; nt<_NT; nt++)								\
-  for(size_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); /*empty*/ )	\
-_Pragma(IVDEP)										\
-   for(size_t n_inner=0; n_inner<ilcs[nt].N_inner; n_inner++, idx=++ilcs[nt])
+#undef BENCHMARK
 
-#define S1PLOOP_OVER_IVECS_D(gv, is, ie, idx, d, k)						\
- CHECKPOINT(__FILE__,__LINE__)									\
-_Pragma("omp parallel for schedule(guided), num_threads(_NT)")					\
- for(int nt=0; nt<_NT; nt++)									\
-  for(size_t k=0, idx=ilcs[nt].start(gv,is,ie,nt,_NT, d, &k); !(ilcs[nt].complete); /*empty*/) 	\
-_Pragma(IVDEP)											\
-   for(size_t n_inner=0; n_inner<ilcs[nt].N_inner; n_inner++, idx=ilcs[nt].incremen(&k))
-
-#define S1PLOOP_OVER_IVECS_DD(gv, is, ie, idx, d1, k1, d2, k2)					\
- CHECKPOINT(__FILE__,__LINE__)									\
-_Pragma("omp parallel for schedule(guided), num_threads(_NT)")					\
- for(int nt=0; nt<_NT; nt++)									\
-  for(size_t k1=0, k2=0, idx=ilcs[nt].start(gv,is,ie,nt,_NT, d1, &k1, d2, &k2); !(ilcs[nt].complete); /*empty*/) \
-_Pragma(IVDEP)											\
-   for(size_t n_inner=0; n_inner<ilcs[nt].N_inner; n_inner++, idx=ilcs[nt].increment(&k1,&k2))
+#ifdef BENCHMARK
+  #define CHECKPOINT(a,b) checkpoint(a,b);
+#else
+  #define CHECKPOINT(a,b)
 #endif
 
-#define IVEC_PLOOP_LOC(loc)		\
- vec loc=ilcs[nt].get_loc();
+// benchmarked versions of (non-multithreaded) grid-loop primitives
+#define BLOOP_OVER_VOL_OWNED(gv, c, idx)  	\
+  CHECKPOINT(__FILE__,__LINE__) 	  	\
+  LOOP_OVER_VOL_OWNED(gv,c,idx)          
 
-#define IVEC_PLOOP_ILOC(iloc)		\
- ivec iloc=ilcs[nt].get_iloc();
+#define BLOOP_OVER_VOL_OWNED0(gv, c, idx) 	\
+  CHECKPOINT(__FILE__,__LINE__);	  	\
+  LOOP_OVER_VOL_OWNED0(gv,c,idx)
+
+#define BS1LOOP_OVER_VOL_OWNED(gv, c, idx)	\
+  CHECKPOINT(__FILE__,__LINE__) 	  	\
+  S1LOOP_OVER_VOL_OWNED(gv,c,idx)          
+
+#define BS1LOOP_OVER_VOL_OWNED0(gv, c, idx)	\
+  CHECKPOINT(__FILE__,__LINE__);	  	\
+  S1LOOP_OVER_VOL_OWNED0(gv,c,idx)
 
 } // namespace meep
 
