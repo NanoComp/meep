@@ -170,6 +170,8 @@ extern vector<ivec_loop_counter> ilcs;
 extern int meep_threads;
 extern int thread_strategy;
 extern bool use_stride1;
+extern double benchmark_interval;
+extern double next_benchmark_time;
 void set_meep_threads(int num_threads=0, int new_strategy=-1);
 void update_ilcs(const grid_volume &gv);
 
@@ -224,7 +226,7 @@ _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
  CHECKPOINT(__FILE__,__LINE__)								\
 _Pragma("omp parallel for schedule(guided), num_threads(_NT)")				\
  for(int nt=0; nt<_NT; nt++)								\
-  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
+  for(ptrdiff_t idx=ilcs[nt].start(gv,is,ie,nt,_NT,d1,d2); !(ilcs[nt].complete); idx=ilcs[nt].update_outer()) \
    for(ptrdiff_t idx_max=ilcs[nt].idx_max, idx_step=ilcs[nt].idx_step, k1=ilcs[nt].get_k(0), k1_step=ilcs[nt].k_step[0], k2=ilcs[nt].get_k(1), k2_step=ilcs[nt].k_step[1]; idx<idx_max; idx+=idx_step, k1+=k1_step, k2+=k2_step)
 
 #define S1PLOOP_OVER_IVECS(gv, is, ie, idx)						\

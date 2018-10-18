@@ -41,6 +41,8 @@ namespace meep {
 std::map<string,double> snippet_times;
 std::map<string,int> snippet_counts;
 double t0=HUGE_VAL;
+double benchmark_interval=5.0;
+double next_benchmark_time=benchmark_interval;
 void checkpoint(const char *name, int line)
 {
   static string current_snippet;
@@ -51,6 +53,8 @@ void checkpoint(const char *name, int line)
      snippet_counts.clear();
      current_snippet.clear();
      t0=HUGE_VAL;
+     benchmark_interval=5.0;
+     next_benchmark_time=benchmark_interval;
      return;
    }
  
@@ -83,13 +87,13 @@ void checkpoint(const char *name, int line)
   current_start_time=wall_time();
 }
 
-double next_benchmark_time=10000.0;
 void print_benchmarks(double meep_time, char *FileName)
 {
 #ifndef BENCHMARK
   return;
 #endif
   if (meep_time < next_benchmark_time) return;
+  next_benchmark_time += benchmark_interval;
 
   double ttot=wall_time()-t0;
   FILE *f = FileName ? fopen(FileName,"a") : stdout;
@@ -109,8 +113,8 @@ ivec_loop_counter::ivec_loop_counter(const grid_volume &gv, const ivec &_is, con
 
 void ivec_loop_counter::init(const grid_volume &gv, const ivec &_is, const ivec &_ie, int nt, int NT)
 { 
-  //if (is==_is && ie==_ie && gvlc==gv.little_corner() && inva==gv.inva)
-  // return; // no need to reinitialize
+  if (is==_is && ie==_ie && gvlc==gv.little_corner() && inva==gv.inva)
+   return; // no need to reinitialize
 
   is   = _is;
   gvlc = gv.little_corner();
@@ -166,13 +170,8 @@ ptrdiff_t ivec_loop_counter::start(direction dsig1, direction dsig2)
   init_k(1, dsig2);
 
   current_iter=min_iter;
-  N_inner=N[rank-1];
-  if (current_iter + N_inner > max_iter)
-   N_inner = max_iter - current_iter;
-
-  ptrdiff_t idx=niter_to_narray(current_iter, n);
-  idx_max = idx + N_inner*idx_step;
-  return idx;
+  N_inner=0;
+  return update_outer();
 }
 
 ptrdiff_t ivec_loop_counter::start(const grid_volume &gv, const ivec &_is, const ivec &_ie, int nt, int NT,
@@ -187,6 +186,7 @@ ptrdiff_t ivec_loop_counter::update_outer()
   if (current_iter>=max_iter)
    { complete=true; return idx0; }
   ptrdiff_t idx = niter_to_narray(current_iter, n);
+  N_inner = N[rank-1] - n[rank-1];
   if (current_iter + N_inner > max_iter)
    N_inner = max_iter - current_iter;
   idx_max = idx + N_inner*idx_step;
@@ -199,7 +199,6 @@ void ivec_loop_counter::advance()
     if ( ++n[r] < N[r] )
      return;
   complete=true;
-  N_inner=0; // to break out of inner loop
 }
 
 ptrdiff_t ivec_loop_counter::increment(int *k1, int *k2)
@@ -218,11 +217,12 @@ ptrdiff_t ivec_loop_counter::increment(size_t *k1, size_t *k2)
 
 ptrdiff_t ivec_loop_counter::niter_to_narray(size_t niter, size_t narray[3])
 { ptrdiff_t idx=idx0;
-  for(int r=rank-1; r>=0; niter/=N[r--])
-   { narray[r] = niter%N[r];
-     idx += narray[r]*idx_stride[r];
+  for(int r=rank-1; r>0; niter/=N[r--])
+   { narray[r] = niter % N[r];
+     idx+=narray[r]*idx_stride[r];
    }
-  return idx;
+  narray[0]=niter;
+  return idx+narray[0]*idx_stride[0];
 }
 
 /***************************************************************/
@@ -254,13 +254,12 @@ ivec ivec_loop_counter::get_iloc(size_t *narray)
 { if (narray==0) narray=n;
   ivec iloc=is;
   for(int r=0; r<rank; r++)
-   iloc.set_direction(loop_dir[r], is.in_direction(loop_dir[r]) + 2*n[r]);
+   iloc.set_direction(loop_dir[r], is.in_direction(loop_dir[r]) + 2*narray[r]);
   return iloc;
 }
 
 vec ivec_loop_counter::get_loc(size_t *narray)
-{ if(narray==0) narray=n;
-  ivec iloc=get_iloc();
+{ ivec iloc=get_iloc(narray);
   vec loc(iloc.dim);
   LOOP_OVER_DIRECTIONS(iloc.dim,d)
    loc.set_direction(d, iloc.in_direction(d) * 0.5 * inva);

@@ -575,7 +575,6 @@ class ivec {
   };
 
   bool operator==(const ivec &a) const {
-    if (dim!=a.dim) return false;
     LOOP_OVER_DIRECTIONS(dim, d) if (t[d] != a.t[d]) return false;
     return true;
   };
