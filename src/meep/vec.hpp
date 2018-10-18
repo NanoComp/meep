@@ -171,11 +171,10 @@ component first_field_component(field_type ft);
 // should only use these macros where that is true!  (Basically,
 // all of this is here to support performance hacks of step_generic.)
 
-#define STRING(text) #text
 #if !defined(__INTEL_COMPILER) && (defined(__GNUC__) || defined(__GNUG__))
-  #define IVDEP STRING(GCC ivdep)
+  #define IVDEP "GCC ivdep"
 #else
-  #define IVDEP STRING(ivdep)
+  #define IVDEP "ivdep"
 #endif
 
 // loop over indices idx from is to ie (inclusive) in gv
