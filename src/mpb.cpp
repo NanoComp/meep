@@ -739,11 +739,12 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints)
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom_list)
 
 { (void) flux; (void) eig_vol; (void) bands; (void)num_bands;
   (void) parity; (void) eig_resolution; (void) eigensolver_tol;
   (void) coeffs; (void) vgrp; (void) kpoints; (void) user_kpoint_func; (void) user_kpoint_data;
+  (void) kdom_list;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
