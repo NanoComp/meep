@@ -396,6 +396,12 @@ class Matrix(object):
         else:
             raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
 
+    def __add__(self, m):
+        return Matrix(self.c1 + m.c1, self.c2 + m.c2, self.c3 + m.c3)
+
+    def __sub__(self, m):
+        return Matrix(self.c1 - m.c1, self.c2 - m.c2, self.c3 - m.c3)
+
     def __repr__(self):
         return "<{}\n {}\n {}>".format(self.c1, self.c2, self.c3)
 
@@ -434,8 +440,14 @@ class Matrix(object):
         ])
         return sum1 - sum2
 
+    def conj(self):
+        return Matrix(self.c1.conj(), self.c2.conj(), self.c3.conj())
+
     def transpose(self):
         return Matrix(self.row(0), self.row(1), self.row(2))
+
+    def adjoint(self):
+        return self.transpose().conj()
 
     def inverse(self):
         v1x = self[1][1] * self[2][2] - self[1][2] * self[2][1]
@@ -707,3 +719,11 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
 
     return newton(x_guess, pick_bound(lambda aa: aa < 0),
                   pick_bound(lambda aa: aa > 0), x_max - x_min)
+
+
+def get_rotation_matrix(axis, theta):
+    """ Returns the rotation matrix for rotating by theta around axis """
+
+    return Matrix(Vector3(x=1).rotate(axis, theta),
+                  Vector3(y=1).rotate(axis, theta),
+                  Vector3(z=1).rotate(axis, theta))

@@ -1226,6 +1226,7 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         cartesian_to_reciprocal,
         reciprocal_to_cartesian,
         find_root_deriv,
+        get_rotation_matrix,
     )
     from .simulation import (
         Absorber,
