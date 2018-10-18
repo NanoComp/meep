@@ -109,8 +109,8 @@ ivec_loop_counter::ivec_loop_counter(const grid_volume &gv, const ivec &_is, con
 
 void ivec_loop_counter::init(const grid_volume &gv, const ivec &_is, const ivec &_ie, int nt, int NT)
 { 
-  if (is==_is && ie==_ie && gvlc==gv.little_corner() && inva==gv.inva)
-   return; // no need to reinitialize
+  //if (is==_is && ie==_ie && gvlc==gv.little_corner() && inva==gv.inva)
+  // return; // no need to reinitialize
 
   is   = _is;
   gvlc = gv.little_corner();

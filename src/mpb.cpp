@@ -713,7 +713,7 @@ void *fields::get_eigenmode(double omega_src,
   (void) omega_src; (void) d; (void) where; (void) eig_vol;
   (void) band_num;  (void) kpoint; (void) match_frequency;
   (void) parity; (void) resolution; (void) eigensolver_tol;
-  (void) verbose (void) kdom;
+  (void) verbose; (void) kdom;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
