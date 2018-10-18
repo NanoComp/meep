@@ -525,7 +525,7 @@ else
           have_python=no],[#include <Python.h>])
 
         AC_MSG_CHECKING([for coverage module])
-        $PYTHON -c 'import coverage'
+        $PYTHON -c 'import coverage' 2>/dev/null
         if test $? = 0; then
           AC_MSG_RESULT([yes])
           have_coverage=yes
