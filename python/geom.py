@@ -403,7 +403,17 @@ class Matrix(object):
         return Matrix(self.c1 - m.c1, self.c2 - m.c2, self.c3 - m.c3)
 
     def __repr__(self):
-        return "<{}\n {}\n {}>".format(self.c1, self.c2, self.c3)
+        r0 = self.row(0)
+        r1 = self.row(1)
+        r2 = self.row(2)
+        return "<<{} {} {}>\n <{} {} {}>\n <{} {} {}>>".format(r0[0], r0[1], r0[2],
+                                                               r1[0], r1[1], r1[2],
+                                                               r2[0], r2[1], r2[2])
+
+    def __array__(self):
+        return np.array([self.row(0).__array__(),
+                         self.row(1).__array__(),
+                         self.row(2).__array__()])
 
     def row(self, i):
         return Vector3(self.c1[i], self.c2[i], self.c3[i])
@@ -446,7 +456,7 @@ class Matrix(object):
     def transpose(self):
         return Matrix(self.row(0), self.row(1), self.row(2))
 
-    def adjoint(self):
+    def H(self):
         return self.transpose().conj()
 
     def inverse(self):

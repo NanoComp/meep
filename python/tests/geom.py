@@ -547,10 +547,17 @@ class TestMatrix(unittest.TestCase):
 
     def test_adjoint(self):
         m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
-        result = m.adjoint()
+        result = m.H()
         self.assertEqual(result.c1, mp.Vector3(1-1j, 1-1j, 1-1j))
         self.assertEqual(result.c2, mp.Vector3())
         self.assertEqual(result.c3, mp.Vector3())
+
+    def test_to_numpy_array(self):
+        m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
+        adjoint = m.H()
+        m_arr = np.matrix(m)
+        np_adjoint = m_arr.H
+        np.testing.assert_allclose(adjoint, np_adjoint)
 
 
 if __name__ == '__main__':
