@@ -11,6 +11,7 @@ CTLHDRS = $(LIBHDRS) $(srcdir)/meep-ctl.hpp $(top_builddir)/config.h $(srcdir)/m
 meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
 nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h ctl-io.i
 meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
+meep_CPPFLAGS = -Wno-unused-parameter -Wno-unused-variable -Wno-empty-body
 
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i meep-enums.scm meep_wrap.cxx
 
