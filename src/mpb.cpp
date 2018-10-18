@@ -461,7 +461,7 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
   /* do a second round of post-processing to tabulate E-fields   -*/
   /* on a (separate) internal storage buffer.  (Previously       -*/
-  /* there was only one internal buffer which held either E-field *
+  /* there was only one internal buffer which held either E-field */
   /* or H-field data, but this is inconvenient for cases in which */
   /* you want the E and H fields of an eigenmode simultaneously.) */
   /*--------------------------------------------------------------*/
@@ -714,7 +714,7 @@ void *fields::get_eigenmode(double omega_src,
   (void) omega_src; (void) d; (void) where; (void) eig_vol;
   (void) band_num;  (void) kpoint; (void) match_frequency;
   (void) parity; (void) resolution; (void) eigensolver_tol;
-  (void) verbose (void) kdom;
+  (void) verbose; (void) kdom;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
@@ -740,11 +740,12 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints)
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom)
 
 { (void) flux; (void) eig_vol; (void) bands; (void)num_bands;
   (void) parity; (void) eig_resolution; (void) eigensolver_tol;
-  (void) coeffs; (void) vgrp; (void) kpoints; (void) user_kpoint_func; (void) user_kpoint_data;
+  (void) coeffs; (void) vgrp; (void) kpoints; (void) user_kpoint_func;
+  (void) user_kpoint_data; (void) kdom;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 

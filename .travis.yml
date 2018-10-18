@@ -57,6 +57,7 @@ matrix:
       - MKCHECKFLAGS="-j 2"
       - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - BUILD_WITHOUT_MPB="1"
     addons:
       apt:
         packages:
@@ -163,6 +164,12 @@ script:
       echo "data_file = ${TRAVIS_BUILD_DIR}/.coverage" >> .coveragerc &&
       make ${MKCHECKFLAGS} check &&
       popd;
+    fi
+  - >
+    if [[ "${BUILD_WITHOUT_MPB}" == "1" ]]; then
+      ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF} ac_cv_header_mpb_h=no &&
+      make clean &&
+      make;
     fi
   # Kill background sleep loop
   - kill %1
