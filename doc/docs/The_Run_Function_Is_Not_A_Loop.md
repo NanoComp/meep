@@ -11,13 +11,13 @@ Hello World
 
 Let's consider a "Hello World" example.  Suppose we start with a control file that runs for 200 time units and outputs $E_z$ on each time step:
 
-*Python*
+**Python**
 ```py
 sim = meep.Simulation(...)
 sim.run(meep.output_efield_z, until=200)
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 (run-until 200 output-efield-z)
 ```
@@ -29,26 +29,26 @@ The Wrong Way
 
 Many users will naively write:
 
-*Python*
+**Python**
 ```py
 sim.run(meep.output_efield_z, print("Hello World!"), until=200)
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 (run-until 200 output-efield-z (print "Hello World!\n"))     
 ```
 
 **This is wrong.**  It will output "Hello World!" *once*, then give an error.  What is going on? The problem is that you are thinking of `run` (Python) or `run-until` (Scheme) in the wrong way, as if it were a loop:
 
-*Python*
+**Python**
 ```py
 for time < 200:
     meep.output_efield_z
     print("Hello World!")
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 for time < 200 do
     output-efield-z
@@ -77,14 +77,14 @@ What we should have passed to `run` (Python) or `run-until` (Scheme), instead of
 
 First, we could explicitly define a function, call it `my_hello` (Python) or `my-hello` (Scheme), that does what we want:
 
-*Python*
+**Python**
 ```py
 def my_hello(sim):
     print("Hello World!")
 sim.run(meep.output_efield_z, my_hello, until=200)
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 (define (my-hello) (print "Hello World!\n"))
 (run-until 200 output-efield-z my-hello)
@@ -94,12 +94,12 @@ Notice two things. First, `my_hello` (Python) or `my-hello` (Scheme) is a functi
 
 A second possibility in Scheme is that we could use Python or Scheme's `lambda` construct to define our function in-line. The `lambda` syntax in Python or Scheme allows you to define anonymous functions without assigning them a name via `def` (Python) or `define` (Scheme), and to stick the function definition right into another expression. It works like this:
 
-*Python*
+**Python**
 ```py
 sim.run(meep.output_efield_z, lambda sim: print("Hello World!"), until=200)
 ```
 
-*Scheme*
+**Scheme**
 ```scm
 (run-until 200 output-efield-z (lambda () (print "Hello World!\n")))
 ```

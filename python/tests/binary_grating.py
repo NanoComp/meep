@@ -128,7 +128,7 @@ class TestEigCoeffs(unittest.TestCase):
     self.assertAlmostEqual(Rsum,Rflux,places=2)
     self.assertAlmostEqual(Tsum,Tflux,places=2)
 
-  def test_kdom(self):
+  def test_binary_grating(self):
     self.run_binary_grating_oblique(0)
     self.run_binary_grating_oblique(10.7)
 

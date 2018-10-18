@@ -50,6 +50,7 @@
 %warnfilter(451) meep::structure::outdir;
 %warnfilter(451) meep::fields_chunk::outdir;
 %warnfilter(325) meep::h5file::extending_s;
+%warnfilter(509) _get_eigenmode;
 
 // Renaming python builtins
 %rename(meep_type) meep::type;

@@ -38,7 +38,7 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The source repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available in [Releases](https://github.com/stevengj/meep/releases). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
+The source repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are in [Releases](https://github.com/stevengj/meep/releases). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------

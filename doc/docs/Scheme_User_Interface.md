@@ -39,7 +39,7 @@ Holds the default material that is used for points not in any object of the geom
 
 **`epsilon-input-file` [`string`]**
 —
-If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default-material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need not match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
+If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default-material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need *not* match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
 
 **`dimensions` [`integer`]**
 —
@@ -130,10 +130,12 @@ A predefined material type corresponding to a perfect magnetic conductor at the 
 A material that, effectively, punches a hole through other objects to the background (`default-material`).
 
 **`infinity` [`number`]**
-—A big number (10<sup>20</sup>) to use for "infinite" dimensions of objects.
+—
+A big number (10<sup>20</sup>) to use for "infinite" dimensions of objects.
 
 **`pi` [`number`]**
-—π (3.14159...).
+—
+π (3.14159...).
 
 Constants (Enumerated Types)
 ----------------------------
@@ -179,7 +181,7 @@ The size of the computational cell. Defaults to unit lengths.
 
 If any dimension has the special size `no-size`, then the dimensionality of the problem is essentially reduced by one. Strictly speaking, the dielectric function is taken to be uniform along that dimension.
 
-Because Maxwell's equations are scale invariant, you can use any units of distance you want to specify the cell size: nanometers, microns, centimeters. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units](Introduction.md#units-in-meep).
+Because Maxwell's equations are scale invariant, you can use any units of distance you want to specify the cell size: nanometers, microns, centimeters, etc. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units](Introduction.md#units-in-meep).
 
 ### material
 
@@ -247,7 +249,7 @@ A function of one argument, the position `vector3`, that returns the material at
 
 Instead of `material-func`, you can use `epsilon-func`: give it a function of position that returns the dielectric constant at that point.
 
-**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* γ<sub>*n*</sub> and μ<sub>*n*</sub> values, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously and a matching σ<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously.
+**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* values of γ<sub>*n*</sub> and ω<sub>*n*</sub>, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously and a matching σ<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously.
 
 **Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the [conductivity](Materials.md#conductivity-and-complex). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex ε and/or μ, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `lorentzian-susceptibility` or `drude-susceptibility` classes below.
 
@@ -405,7 +407,7 @@ Polygonal prism type.
 
 **`vertices` [list of `vector3`]**
 —
-The vertices that define the *bottom* of the prism (with the top of the prism being at the same coordinates shifted by `height*axis`). They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. Though the `center` property is required (since the prism is a sublcass of `geometric-object`), it is currently unused.
+The vertices that define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. Though the `center` property is required (since the prism is a sublcass of `geometric-object`), it is currently unused.
 
 **`height` [`number`]**
 —
@@ -531,8 +533,8 @@ The `absorber` class does *not* implement a perfectly matched layer (PML), howev
 
 The main reason to use `absorber` is if you have **a case in which PML fails:**
 
--   No true PML exists for *periodic* media, and a scalar absorber is cheaper and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
--   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can easily happen in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601, 2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
+-   No true PML exists for *periodic* media, and a scalar absorber is computationally less expensive and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+-   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can readily occur in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601, 2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
 -   PML can fail if you have a waveguide hitting the edge of your computational cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
 
 ### source
@@ -581,7 +583,7 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`X`, `Y`, or `Z;` default `AUTOMATIC`], `eig-match-freq?` [`boolean;` default `true`], `eig-kpoint` [`vector3`]**
 —
-By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig-match-freq?` is `false`, you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/$a$).  (By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`.) Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig-match-freq?` is `false`, you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/$a$). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig-parity` [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]**
 —
@@ -613,7 +615,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**
 —
-The frequency *f* in units of $c$/distance or ω in units of $2\pi c$/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of $c$/distance or ω in units of 2π$c$/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`start-time` [`number`]**
 —
@@ -637,7 +639,7 @@ A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^
 
 **`frequency` [`number`]**
 —
-The center frequency $f$ in units of $c$/distance (or ω in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The center frequency $f$ in units of $c$/distance (or ω in units of 2π$c$/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`width` [`number`]**
 —
@@ -846,7 +848,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflecttance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
+Given a bunch of `flux-region` objects (see [above](#flux-region)), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**
 —
@@ -1179,7 +1181,7 @@ Output the field function `func` to an HDF5 file in the datasets named *`name`*`
 —
 As `output-field-function`, but only outputs the real part of `func` to the dataset given by the string `name`.
 
-See also [Field Function Examples](Field_Functions.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 #### Harminv
 

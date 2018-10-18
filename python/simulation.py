@@ -1389,11 +1389,13 @@ class Simulation(object):
             eig_vol = self._volume_from_kwargs(vol=eig_vol)
 
         swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
+        kdom = np.zeros(3)
         emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
-                                   match_frequency, parity, resolution, eigensolver_tol, verbose)
+                                   match_frequency, parity, resolution, eigensolver_tol, verbose, kdom)
+        Gk = mp._get_eigenmode_Gk(emdata)
 
-        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk,
-                             emdata.data, emdata.kdom)
+        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, Gk,
+                             emdata, mp.Vector3(kdom[0], kdom[1], kdom[2]))
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
