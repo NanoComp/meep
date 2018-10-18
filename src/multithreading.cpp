@@ -50,8 +50,6 @@ void checkpoint(const char *name, int line)
   static string current_snippet;
   static double current_start_time=0.0;
 
-  if (!checkpoint_started) return;
-
   if (name==0 && line==-1)
    { snippet_times.clear();
      snippet_counts.clear();
@@ -286,6 +284,12 @@ void set_meep_threads(int num_threads, int new_strategy)
   char *s=getenv("MEEP_USE_STRIDE1");
   use_stride1=(s && s[0]=='1');
   printf("%s #pragma ivdep for stride-1 loops.\n",use_stride1 ? "Using" : "Not using");
+
+  s=getenv("MEEP_BENCHMARK_INTERVAL");
+  if (s)
+   { sscanf(s,"%le",&benchmark_interval);
+     printf("Benchmarking at intervals of %g.\n",benchmark_interval);
+   }
 }
 
 void update_ilcs(const grid_volume &gv)
