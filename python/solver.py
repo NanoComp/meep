@@ -1055,6 +1055,12 @@ def output_efield_z(ms, which_band):
     ms.output_field_z()
 
 
+def output_hpwr(ms, which_band):
+    ms.get_hfield(which_band, False)
+    ms.compute_field_energy()
+    ms.output_field()
+
+
 def output_bpwr(ms, which_band):
     ms.get_bfield(which_band, False)
     ms.compute_field_energy()
