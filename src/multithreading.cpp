@@ -288,6 +288,7 @@ void set_meep_threads(int num_threads, int new_strategy)
   s=getenv("MEEP_BENCHMARK_INTERVAL");
   if (s)
    { sscanf(s,"%le",&benchmark_interval);
+     next_benchmark_time=benchmark_interval;
      printf("Benchmarking at intervals of %g.\n",benchmark_interval);
    }
 }
