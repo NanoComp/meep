@@ -396,6 +396,14 @@ class Matrix(object):
         else:
             raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
 
+    def __rmul__(self, left_arg):
+        if type(left_arg) is Vector3:
+            return self.mv_mult(left_arg)
+        elif isinstance(left_arg, Number):
+            return self.scale(left_arg)
+        else:
+            raise TypeError("No operation known for 'Matrix * {}'".format(type(left_arg)))
+
     def __add__(self, m):
         return Matrix(self.c1 + m.c1, self.c2 + m.c2, self.c3 + m.c3)
 

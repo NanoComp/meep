@@ -496,6 +496,9 @@ class TestMatrix(unittest.TestCase):
                         mp.Vector3(9.0, 12.0, 15.0))
         self.matrix_eq(exp, res)
 
+        self.matrix_eq(exp, m * 0.5)
+        self.matrix_eq(exp, 0.5 * m)
+
     def test_determinant(self):
         m = mp.Matrix(mp.Vector3(2),
                       mp.Vector3(y=2),
