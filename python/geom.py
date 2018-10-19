@@ -397,9 +397,7 @@ class Matrix(object):
             raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
 
     def __rmul__(self, left_arg):
-        if type(left_arg) is Vector3:
-            return self.mv_mult(left_arg)
-        elif isinstance(left_arg, Number):
+        if isinstance(left_arg, Number):
             return self.scale(left_arg)
         else:
             raise TypeError("No operation known for 'Matrix * {}'".format(type(left_arg)))
