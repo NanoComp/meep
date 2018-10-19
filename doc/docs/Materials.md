@@ -53,6 +53,8 @@ $$\frac{i \sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega (\gamma_n - i\omega)}$$
 
 which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, ω$_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
 
+For a wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented using the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation), the two coefficients (B<sub>n</sub> and C<sub>n</sub>) contained within a single term &mdash; B<sub>n</sub>λ<sup>2</sup>/(λ<sup>2</sup>-C<sub>n</sub>) where λ is the vacuum wavelength &mdash; can be directly transferred to a Lorentzian oscillator resonance using a simple substitution of variables: ω<sub>n</sub>=1/$\sqrt{C_n}$, γ<sub>n</sub>=0, and σ<sub>n</sub>=B<sub>n</sub>.
+
 Numerical Stability
 -------------------
 
