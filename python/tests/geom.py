@@ -465,6 +465,19 @@ class TestMatrix(unittest.TestCase):
 
         self.matrix_eq(exp, res)
 
+    def test_add(self):
+        result = self.identity + self.identity
+        self.assertEqual(result.row(0), mp.Vector3(x=2))
+        self.assertEqual(result.row(1), mp.Vector3(y=2))
+        self.assertEqual(result.row(2), mp.Vector3(z=2))
+
+    def test_sub(self):
+        ones_matrix = mp.Matrix(ones(), ones(), ones())
+        result = ones_matrix - ones_matrix
+        self.assertEqual(result.row(0), zeros())
+        self.assertEqual(result.row(1), zeros())
+        self.assertEqual(result.row(2), zeros())
+
     def test_mv_mult(self):
         lattice = mp.Lattice(size=mp.Vector3(1, 7),
                              basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
@@ -518,6 +531,35 @@ class TestMatrix(unittest.TestCase):
                         mp.Vector3(-0.0, -0.0, 1.0))
 
         self.matrix_close(exp, res)
+
+    def test_get_rotation_matrix(self):
+        result = mp.get_rotation_matrix(ones(), 5)
+        self.assertTrue(result.c1.close(mp.Vector3(0.5224414569754843, -0.3148559165969717, 0.7924144596214877)))
+        self.assertTrue(result.c2.close(mp.Vector3(0.7924144596214877, 0.5224414569754843, -0.3148559165969717)))
+        self.assertTrue(result.c3.close(mp.Vector3(-0.3148559165969717, 0.7924144596214877, 0.5224414569754843)))
+
+    def test_conj(self):
+        m = mp.Matrix(mp.Vector3(x=1+1j), mp.Vector3(y=1+1j), mp.Vector3(z=1+1j))
+        result = m.conj()
+        self.assertEqual(result.c1, mp.Vector3(x=1-1j))
+        self.assertEqual(result.c2, mp.Vector3(y=1-1j))
+        self.assertEqual(result.c3, mp.Vector3(z=1-1j))
+
+    def test_adjoint(self):
+        m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
+        getH_result = m.getH()
+        H_result = m.H
+        self.assertEqual(getH_result.c1, mp.Vector3(1-1j, 1-1j, 1-1j))
+        self.assertEqual(getH_result.c2, mp.Vector3())
+        self.assertEqual(getH_result.c3, mp.Vector3())
+        np.testing.assert_allclose(getH_result, H_result)
+
+    def test_to_numpy_array(self):
+        m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
+        adjoint = m.H
+        m_arr = np.matrix(m)
+        np_adjoint = m_arr.H
+        np.testing.assert_allclose(adjoint, np_adjoint)
 
 
 if __name__ == '__main__':

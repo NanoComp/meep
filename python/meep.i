@@ -1258,6 +1258,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         cartesian_to_reciprocal,
         reciprocal_to_cartesian,
         find_root_deriv,
+        get_rotation_matrix,
     )
     from .simulation import (
         Absorber,

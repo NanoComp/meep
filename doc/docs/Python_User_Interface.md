@@ -577,6 +577,46 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 
 ```
 
+### 3x3 Matrix
+
+**`Matrix`(c1 [`Vector3`], c2 [`Vector3`], c3 [`Vector3`])**
+The `Matrix` class represents a 3x3 matrix with c1, c2 and c3 as its columns.
+
+```
+m.transpose()
+m.getH() or m.H
+m.determinant()
+m.inverse()
+```
+
+Return the transpose, adjoint (conjugate transpose), determinant, or inverse of the given matrix.
+
+```
+m1 + m2
+m1 - m2
+m1 * m2
+```
+
+Return the sum, difference, or product of the given matrices.
+
+```
+v * m
+m * v
+```
+
+Returns the (3-vector) product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
+
+```
+s * m
+m * s
+```
+
+Scales the matrix `m` by the number `s`.
+
+**`meep.get_rotation_matrix`(axis [`Vector3`], theta)**
+
+Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result as `v.rotate(axis, theta)`.
+
 ### Symmetry
 
 This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the computational cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting Symmetry](Exploiting_Symmetry.md). This is the base class of the specific symmetries below, so normally you don't create it directly. However, it has two properties which are shared by all symmetries:
