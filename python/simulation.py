@@ -1237,7 +1237,9 @@ class Simulation(object):
     def solve_cw(self, tol=1e-8, maxiters=10000, L=2):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using solve_cw')
-        return self.fields.solve_cw(tol, maxiters, L)
+        res = self.fields.solve_cw(tol, maxiters, L)
+        self._evaluate_dft_objects()
+        return res
 
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
         vol_list = None
