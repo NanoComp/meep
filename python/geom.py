@@ -456,7 +456,7 @@ class Matrix(object):
     def transpose(self):
         return Matrix(self.row(0), self.row(1), self.row(2))
 
-    def H(self):
+    def getH(self):
         return self.transpose().conj()
 
     def inverse(self):
@@ -478,6 +478,8 @@ class Matrix(object):
         m = Matrix(v1, v2, v3)
 
         return m.scale(1 / self.determinant())
+
+    H = property(getH, None)
 
 
 class Lattice(object):
