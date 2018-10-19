@@ -592,7 +592,7 @@ The `Matrix` class represents a 3x3 matrix with c1, c2 and c3 as its columns.
 
 ```
 m.transpose()
-m.H()
+m.getH() or m.H
 m.determinant()
 m.inverse()
 ```
