@@ -18,7 +18,7 @@ The wavelength λ is in units of microns. This equation is valid from 0.21 to 6.
 
 The simulation involves a 1d cell. A planewave current source with a pulsed profile spanning visible wavelengths of 0.4 to 0.8 μm is normally incident on the quartz from air. The reflectance is computed using the convention of two separate runs: (1) an empty cell to obtain the incident power, and (2) with the quartz to obtain the reflected power. The details of this type of calculation are described in [Tutorial/Basics](Basics.md#transmittance-spectrum-of-a-waveguide-bend). The grid resolution, and by direct extension the time resolution via the [Courant condition](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition), must be made sufficiently fine to obtain agreement with the analytic results and to ensure [numerical stability](../Materials.md#numerical-stability). Coarse resolutions may lead to field instabilities.
 
-The simulation script is in [refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
+The simulation script is in [examples/refl-quartz.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/refl-quartz.ctl).
 
 ```scm
 (set-param! resolution 200) ; pixels/μm
@@ -97,7 +97,7 @@ We will model a *uniform medium* of an artificial dispersive material. From the 
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
-We will then compare this with the analytical ε(ω) that we specified. The simulation script is in [material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/material-dispersion.ctl).
+We will then compare this with the analytical ε(ω) that we specified. The simulation script is in [examples/material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/material-dispersion.ctl).
 
 Since this is a uniform medium, our computational cell can actually be of *zero* size (i.e. one pixel), where we will use Bloch-periodic boundary conditions to specify the wavevector *k*.
 

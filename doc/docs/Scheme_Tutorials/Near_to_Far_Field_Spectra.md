@@ -16,7 +16,7 @@ In this example, we use the near-to-far-field transformation feature to compute 
 ![](../images/Near2far_simulation_geometry.png)
 </center>
 
-We use the `get-farfield` routine to compute the far fields by looping over a set of points along the circumference of the circle. The simulation script is in [antenna-radiation.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/antenna-radiation.ctl).
+We use the `get-farfield` routine to compute the far fields by looping over a set of points along the circumference of the circle. The simulation script is in [examples/antenna-radiation.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/antenna-radiation.ctl).
 
 ```scm
 (set-param! resolution 50)

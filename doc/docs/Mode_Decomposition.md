@@ -143,7 +143,7 @@ double get_group_velocity(void *vedata);
 void destroy_eigenmode_data(void *vedata);
 ````
 
-These are implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp).
+These functions are implemented in [src/mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp).
 
 ### Exporting Frequency-Domain Fields
 
@@ -157,7 +157,7 @@ These are implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/
 
 `output_mode_fields` is similar, but instead exports the components of the eigenmode described by `mode_data` which should be the return value of a call to `get_eigenmode`.
 
-These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1070-L1092).
+These functions are implemented in [src/dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1070-L1092).
 
 ### Computing Overlap Integrals
 ````
@@ -176,7 +176,7 @@ These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/
 
 `get_mode_mode_overlap` is similar, but computes the overlap integral between two eigenmodes. `mode1_data` and `mode2_data` may be identical, in which case you get the inner product of the mode with itself. This should equal the group velocity of the mode based on the MPB's normalization convention.
 
-These are implemented in [dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1133-L1144).
+These functions are implemented in [src/dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1133-L1144).
 
 ## How Mode Decomposition Works
 

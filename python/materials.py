@@ -11,7 +11,7 @@ eV_um_scale = um_scale/1.23984193
 
 #------------------------------------------------------------------
 
-# crystalline silicon (cSi) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+# crystalline silicon (c-Si) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
 # based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
 # wavelength range: 0.4 - 1.0 um
 
