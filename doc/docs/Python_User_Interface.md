@@ -1029,6 +1029,15 @@ Load the Fourier-transformed fields into the given flux object (replacing any va
 —
 As `load_flux_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
+**`save_mode`**
+**`load_mode`**
+**`load_minus_mode`**
+**`get_mode_data`**
+**`load_mode_data`**
+**`load_minus_mode_data`**
+—
+Aliases for the corresponding "flux" methods.
+
 **`scale_flux_fields(s, flux)`**
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.

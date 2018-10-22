@@ -1170,26 +1170,38 @@ class Simulation(object):
 
         flux.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
+    load_mode = load_flux
+
     def save_flux(self, fname, flux):
         if self.fields is None:
             self.init_sim()
 
         flux.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
+    save_mode = save_flux
+
     def load_minus_flux(self, fname, flux):
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
+    load_minus_mode = load_minus_flux
+
     def get_flux_data(self, flux):
         return FluxData(E=self.get_dft_data(flux.E), H=self.get_dft_data(flux.H))
+
+    get_mode_data = get_flux_data
 
     def load_flux_data(self, flux, fdata):
         mp._load_dft_data(flux.E, fdata.E)
         mp._load_dft_data(flux.H, fdata.H)
 
+    load_mode_data = load_flux_data
+
     def load_minus_flux_data(self, flux, fdata):
         self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
+
+    load_minus_mode_data = load_minus_flux_data
 
     def flux_in_box(self, d, box=None, center=None, size=None):
         if self.fields is None:
