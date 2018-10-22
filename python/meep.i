@@ -366,12 +366,20 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     int dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
+    size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
     for (int i = 0; i < rank; ++i) {
         arr_dims[i] = dims[i];
+        length *= dims[i];
     }
 
-    PyObject *py_arr = PyArray_SimpleNewFromData(rank, arr_dims, NPY_CDOUBLE, dft_arr);
+    // Allocate our own version of dft_arr with malloc because
+    // numpy will eventually call free on it.
+    std::complex<double> *my_dft_arr = (std::complex<double> *)malloc(sizeof(std::complex<double>) * length);
+    memcpy(my_dft_arr, dft_arr, sizeof(std::complex<double>) * length);
+    delete[] dft_arr;
+
+    PyObject *py_arr = PyArray_SimpleNewFromData(rank, arr_dims, NPY_CDOUBLE, my_dft_arr);
     PyArray_ENABLEFLAGS((PyArrayObject*)py_arr, NPY_ARRAY_OWNDATA);
     delete[] arr_dims;
 
