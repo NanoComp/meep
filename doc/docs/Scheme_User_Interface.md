@@ -519,7 +519,7 @@ A strength (default is 1.0) to multiply the PML absorption coefficient by. A str
 
 **`R-asymptotic` [`number`]**
 —
-The asymptotic reflection in the limit of infinite resolution or infinite PML thickness, for refections from air (an upper bound for other media with index &gt; 1). For a finite resolution or thickness, the reflection will be *much larger*, due to the discretization of Maxwell's equation. Default value is 10<sup>−15</sup>, which should suffice for most purposes. You want to set this to be small enough so that waves propagating within the PML are attenuated sufficiently, but making `R-asymptotic` too small will increase the numerical reflection due to discretization.
+The asymptotic reflection in the limit of infinite resolution or infinite PML thickness, for reflections from air (an upper bound for other media with index &gt; 1). For a finite resolution or thickness, the reflection will be *much larger*, due to the discretization of Maxwell's equation. Default value is 10<sup>−15</sup>, which should suffice for most purposes. You want to set this to be small enough so that waves propagating within the PML are attenuated sufficiently, but making `R-asymptotic` too small will increase the numerical reflection due to discretization.
 
 **`pml-profile` [`function`]**
 —
@@ -772,7 +772,7 @@ Equivalent to `(get-field-point Dielectric pt)`.
 
 **`(add-dft-fields cs freq-min freq-max nfreq [where])`**
 —
-Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire computationall cell).
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire computational cell).
 
 **`(flux-in-box dir box)`**
 —
@@ -978,7 +978,7 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 
 **`(dft-ldos fcen df nfreq)`**
 —
-Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwith `df` centered at `fcen`, at `nfreq` frequency points.
+Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points.
 
 **`(get-ldos-freqs ldos)`**
 —
