@@ -56,7 +56,7 @@ endif # WITH_MPB
 endif # WITH_MPI
 
 if WITH_MPB
-  BINARY_GRATING_TEST = # $(TEST_DIR)/binary_grating.py
+  BINARY_GRATING_TEST = $(TEST_DIR)/binary_grating.py
   KDOM_TEST = $(TEST_DIR)/kdom.py
   MODE_COEFFS_TEST = $(TEST_DIR)/mode_coeffs.py
   MODE_DECOMPOSITION_TEST = $(TEST_DIR)/mode_decomposition.py
