@@ -337,8 +337,9 @@ void *fields::get_eigenmode(double omega_src,
 
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 				     local_N, N_start, alloc_N);
+  unsigned seed = 0; // use the same initialization on all processes
   for (int i = 0; i < H.n * H.p; ++i) {
-    ASSIGN_SCALAR(H.data[i], rand() * 1.0/RAND_MAX, rand() * 1.0/RAND_MAX);
+    ASSIGN_SCALAR(H.data[i], rand_r(&seed) * 1.0/RAND_MAX, rand_r(&seed) * 1.0/RAND_MAX);
   }
 
   mpb_real *eigvals = new mpb_real[band_num];
