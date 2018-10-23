@@ -375,7 +375,6 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_CDOUBLE);
     memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
-    PyArray_ENABLEFLAGS((PyArrayObject*)py_arr, NPY_ARRAY_OWNDATA);
     delete[] dft_arr;
     delete[] arr_dims;
 
