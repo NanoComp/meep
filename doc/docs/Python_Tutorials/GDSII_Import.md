@@ -8,7 +8,7 @@ This tutorial demonstrates how to set up a simulation based on importing a [GDSI
 ## GDSII File
 ---
 
-The directional coupler geometry we will investigate is described by the GDSII file [`coupler.gds`](https://github.com/stevengj/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical strip waveguides which are positioned close together via an adiabatic taper such that their modes couple evanescently. An input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance (`d`) which maximizes power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section (the taper profile is described by a hyperbolic tangent (tanh) function).
+The directional coupler geometry we will investigate is described by the GDSII file [examples/coupler.gds](https://github.com/stevengj/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical strip waveguides which are positioned close together via an adiabatic taper such that their modes couple evanescently. An input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance (`d`) which maximizes power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section (the taper profile is described by a hyperbolic tangent (tanh) function).
 
 <center>
 ![](../images/klayout_schematic.png)
@@ -30,7 +30,7 @@ Rather than being specified as part of the GDSII file, the volume regions of the
 ## Simulation Script
 ---
 
-The simulation script is [`coupler.py`](https://github.com/stevengj/meep/blob/master/python/examples/coupler.py).
+The simulation script is in [examples/coupler.py](https://github.com/stevengj/meep/blob/master/python/examples/coupler.py).
 
 ```python
 import meep as mp
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     main(args)
 ```
 
-For a given waveguide separation distance (`d`), the simulation computes the fraction of the input power exiting Ports 2-4. Note that there is a flux monitor at Port 1 to compute the input power from the adjacent eigenmode source. Each of the eight layers of the GDSII file is converted into a simulation object: the upper and lower branches are defined as a [Prism](https://meep.readthedocs.io/en/latest/Python_User_Interface.md#prism), the rectilinear source and flux monitor regions as a [Volume](https://meep.readthedocs.io/en/latest/Python_User_Interface.md#volume) and [FluxRegion](https://meep.readthedocs.io/en/latest/Python_User_Interface.md#fluxregion). The default simulation is 2d. An optional parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the Z direction and adding an oxide layer beneath. A schematic of the 3d design is shown below.
+For a given waveguide separation distance (`d`), the simulation computes the fraction of the input power exiting Ports 2-4. Note that there is a flux monitor at Port 1 to compute the input power from the adjacent eigenmode source. Each of the eight layers of the GDSII file is converted into a simulation object: the upper and lower branches are defined as a [Prism](../Python_User_Interface.md#prism), the rectilinear source and flux monitor regions as a [Volume](../Python_User_Interface.md#volume) and [FluxRegion](../Python_User_Interface.md#fluxregion). The default simulation is 2d. An optional parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the Z direction and adding an oxide layer beneath. A schematic of the 3d design is shown below.
 
 We compute the coupler properties for a range of separation distances from 0.02 μm to 0.30 μm with increments of 0.02 μm.
 

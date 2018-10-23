@@ -10,8 +10,7 @@ um_scale = 1.0
 eV_um_scale = um_scale/1.23984193
 
 #------------------------------------------------------------------
-
-# crystalline silicon (cSi) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+# crystalline silicon (c-Si) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
 # based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
 # wavelength range: 0.4 - 1.0 um
 
@@ -34,7 +33,6 @@ cSi_susc = [mp.LorentzianSusceptibility(frequency=cSi_frq1, gamma=cSi_gam1, sigm
 cSi = mp.Medium(epsilon=1.0, E_susceptibilities=cSi_susc, valid_freq_range=cSi_range)
 
 #------------------------------------------------------------------
-
 # amorphous silicon (a-Si) from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 0.83 um
@@ -50,7 +48,6 @@ aSi_susc = [mp.LorentzianSusceptibility(frequency=aSi_frq1, gamma=aSi_gam1, sigm
 aSi = mp.Medium(epsilon=3.109, E_susceptibilities=aSi_susc, valid_freq_range=aSi_range)
 
 #------------------------------------------------------------------
-
 # hydrogenated amorphous silicon (a-Si:H) from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 0.83 um
@@ -66,7 +63,6 @@ aSi_H_susc = [mp.LorentzianSusceptibility(frequency=aSi_H_frq1, gamma=aSi_H_gam1
 aSi_H = mp.Medium(epsilon=3.22, E_susceptibilities=aSi_H_susc, valid_freq_range=aSi_H_range)
 
 #------------------------------------------------------------------
-
 # indium tin oxide (ITO) from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 0.83 um
@@ -82,7 +78,6 @@ ITO_susc = [mp.LorentzianSusceptibility(frequency=ITO_frq1, gamma=ITO_gam1, sigm
 ITO = mp.Medium(epsilon=1.0, E_susceptibilities=ITO_susc, valid_freq_range=ITO_range)
 
 #------------------------------------------------------------------
-
 # alumina (Al2O3) from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 2.07 um
@@ -98,7 +93,6 @@ Al2O3_susc = [mp.LorentzianSusceptibility(frequency=Al2O3_frq1, gamma=Al2O3_gam1
 Al2O3 = mp.Medium(epsilon=1.0, E_susceptibilities=Al2O3_susc, valid_freq_range=Al2O3_range)
 
 #------------------------------------------------------------------
-
 # aluminum nitride (AlN) from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.26 - 1.65 um
@@ -114,7 +108,6 @@ AlN_susc = [mp.LorentzianSusceptibility(frequency=AlN_frq1, gamma=AlN_gam1, sigm
 AlN = mp.Medium(epsilon=1.0, E_susceptibilities=AlN_susc, valid_freq_range=AlN_range)
 
 #------------------------------------------------------------------
-
 # aluminum arsenide (AlAs) from R.E. Fern and A. Onton, J. Applied Physics, Vol. 42, pp. 3499-500, 1971
 # ref: https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
 # wavelength range: 0.56 - 2.2 um
@@ -134,7 +127,6 @@ AlAs_susc = [mp.LorentzianSusceptibility(frequency=AlAs_frq1, gamma=AlAs_gam1, s
 AlAs = mp.Medium(epsilon=2.0792, E_susceptibilities=AlAs_susc, valid_freq_range=AlAs_range)
 
 #------------------------------------------------------------------
-
 # borosilicate glass (BK7) from SCHOTT Zemax catalog 2017-01-20b
 # ref: https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
 # wavelength range: 0.3 - 2.5 um
@@ -158,7 +150,6 @@ BK7_susc = [mp.LorentzianSusceptibility(frequency=BK7_frq1, gamma=BK7_gam1, sigm
 BK7 = mp.Medium(epsilon=1.0, E_susceptibilities=BK7_susc, valid_freq_range=BK7_range)
 
 #------------------------------------------------------------------
-
 # fused quartz (silica) from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
 # ref: https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
 # wavelength range: 0.21 - 6.7 um
@@ -182,7 +173,6 @@ fused_quartz_susc = [mp.LorentzianSusceptibility(frequency=fused_quartz_frq1, ga
 fused_quartz = mp.Medium(epsilon=1.0, E_susceptibilities=fused_quartz_susc, valid_freq_range=fused_quartz_range)
 
 #------------------------------------------------------------------
-
 # gallium arsenide (GaAs) from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
 # ref: https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
 # wavelength range: 0.97 - 17 um
@@ -206,8 +196,8 @@ GaAs_susc = [mp.LorentzianSusceptibility(frequency=GaAs_frq1, gamma=GaAs_gam1, s
 GaAs = mp.Medium(epsilon=5.372514, E_susceptibilities=GaAs_susc, valid_freq_range=GaAs_range)
 
 #------------------------------------------------------------------
-# stoichiometric silicon nitride (Si3N4) from H. R. Philipp, Optical properties of silicon nitride, J. Electrochem. Soc. 120, 295-300, 1973
-# fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
+# silicon nitride (Si3N4) from H. R. Philipp, J. Electrochemical Society 120, 295-300, 1973
+# ref: https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
 # wavelength range: 0.207 - 1.24 um
 
 Si3N4_VISNIR_range = mp.FreqRange(min=um_scale/1.24, max=um_scale/0.207)
@@ -221,8 +211,8 @@ Si3N4_VISNIR_susc = [mp.LorentzianSusceptibility(frequency=Si3N4_VISNIR_frq1, ga
 Si3N4_VISNIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_VISNIR_susc, valid_freq_range=Si3N4_VISNIR_range)
 
 #------------------------------------------------------------------
-# stoichiometric silicon nitride (Si3N4) from K. Luke, et. al., Broadband mid-infrared frequency comb generation in a Si3N4 microresonator, Opt. Lett. 40, 4823-4826, 2015
-# fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
+# silicon nitride (Si3N4) from K. Luke, et. al., Optics Letters, Vol. 40, pp. 4823-26, 2015
+# ref: https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
 # wavelength range: 0.310 - 5.504 um
 
 Si3N4_NIR_range = mp.FreqRange(min=um_scale/5.504, max=um_scale/0.310)
@@ -240,7 +230,6 @@ Si3N4_NIR_susc = [mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq1, gamma=Si
 Si3N4_NIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_NIR_susc, valid_freq_range=Si3N4_NIR_range)
 
 #------------------------------------------------------------------
-
 # elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um
 
@@ -279,7 +268,6 @@ Ag_susc = [mp.DrudeSusceptibility(frequency=Ag_frq0, gamma=Ag_gam0, sigma=Ag_sig
 Ag = mp.Medium(epsilon=1.0, E_susceptibilities=Ag_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # gold (Au)
 
 Au_plasma_frq = 9.03*eV_um_scale
@@ -313,7 +301,6 @@ Au_susc = [mp.DrudeSusceptibility(frequency=Au_frq0, gamma=Au_gam0, sigma=Au_sig
 Au = mp.Medium(epsilon=1.0, E_susceptibilities=Au_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # copper (Cu)
 
 Cu_plasma_frq = 10.83*eV_um_scale
@@ -347,7 +334,6 @@ Cu_susc = [mp.DrudeSusceptibility(frequency=Cu_frq0, gamma=Cu_gam0, sigma=Cu_sig
 Cu = mp.Medium(epsilon=1.0, E_susceptibilities=Cu_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # aluminum (Al)
 
 Al_plasma_frq = 14.98*eV_um_scale
@@ -381,7 +367,6 @@ Al_susc = [mp.DrudeSusceptibility(frequency=Al_frq0, gamma=Al_gam0, sigma=Al_sig
 Al = mp.Medium(epsilon=1.0, E_susceptibilities=Al_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # beryllium (Be)
 
 Be_plasma_frq = 18.51*eV_um_scale
@@ -415,7 +400,6 @@ Be_susc = [mp.DrudeSusceptibility(frequency=Be_frq0, gamma=Be_gam0, sigma=Be_sig
 Be = mp.Medium(epsilon=1.0, E_susceptibilities=Be_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # chromium (Cr)
 
 Cr_plasma_frq = 10.75*eV_um_scale
@@ -449,7 +433,6 @@ Cr_susc = [mp.DrudeSusceptibility(frequency=Cr_frq0, gamma=Cr_gam0, sigma=Cr_sig
 Cr = mp.Medium(epsilon=1.0, E_susceptibilities=Cr_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # nickel (Ni)
 
 Ni_plasma_frq = 15.92*eV_um_scale
@@ -483,7 +466,6 @@ Ni_susc = [mp.DrudeSusceptibility(frequency=Ni_frq0, gamma=Ni_gam0, sigma=Ni_sig
 Ni = mp.Medium(epsilon=1.0, E_susceptibilities=Ni_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # palladium (Pd)
 
 Pd_plasma_frq = 9.72*eV_um_scale
@@ -517,7 +499,6 @@ Pd_susc = [mp.DrudeSusceptibility(frequency=Pd_frq0, gamma=Pd_gam0, sigma=Pd_sig
 Pd = mp.Medium(epsilon=1.0, E_susceptibilities=Pd_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # platinum (Pt)
 
 Pt_plasma_frq = 9.59*eV_um_scale
@@ -551,7 +532,6 @@ Pt_susc = [mp.DrudeSusceptibility(frequency=Pt_frq0, gamma=Pt_gam0, sigma=Pt_sig
 Pt = mp.Medium(epsilon=1.0, E_susceptibilities=Pt_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # titanium (Ti)
 
 Ti_plasma_frq = 7.29*eV_um_scale
@@ -585,7 +565,6 @@ Ti_susc = [mp.DrudeSusceptibility(frequency=Ti_frq0, gamma=Ti_gam0, sigma=Ti_sig
 Ti = mp.Medium(epsilon=1.0, E_susceptibilities=Ti_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # tungsten (W)
 
 W_plasma_frq = 13.22*eV_um_scale
@@ -619,7 +598,6 @@ W_susc = [mp.DrudeSusceptibility(frequency=W_frq0, gamma=W_gam0, sigma=W_sig0),
 W = mp.Medium(epsilon=1.0, E_susceptibilities=W_susc, valid_freq_range=metal_range)
 
 #------------------------------------------------------------------
-
 # metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996, 2015
 # wavelength range: 0.4 - 0.8 um
 
@@ -627,6 +605,7 @@ metal_visible_range = mp.FreqRange(min=um_scale/0.8, max=um_scale/0.4)
 
 # gold (Au)
 # fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9, 1972
+
 Au_JC_visible_frq0 = 1/(0.139779231751333*um_scale)
 Au_JC_visible_gam0 = 1/(26.1269913352870*um_scale)
 Au_JC_visible_sig0 = 1
@@ -641,9 +620,9 @@ Au_JC_visible_susc = [mp.DrudeSusceptibility(frequency=Au_JC_visible_frq0, gamma
 Au_JC_visible = mp.Medium(epsilon=6.1599, E_susceptibilities=Au_JC_visible_susc)
 
 #------------------------------------------------------------------
-
 # gold (Au)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+
 Au_visible_frq0 = 1/(0.0473629248511456*um_scale)
 Au_visible_gam0 = 1/(0.255476199605166*um_scale)
 Au_visible_sig0 = 1
@@ -658,11 +637,11 @@ Au_visible_susc = [mp.DrudeSusceptibility(frequency=Au_visible_frq0, gamma=Au_vi
 Au_visible = mp.Medium(epsilon=0.6888, E_susceptibilities=Au_visible_susc, valid_freq_range=metal_visible_range)
 
 #------------------------------------------------------------------
-
 ## WARNING: unstable; field divergence may occur
 
 # silver (Au)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+
 Ag_visible_frq0 = 1/(0.142050162130618*um_scale)
 Ag_visible_gam0 = 1/(18.0357292925015*um_scale)
 Ag_visible_sig0 = 1
@@ -677,11 +656,11 @@ Ag_visible_susc = [mp.DrudeSusceptibility(frequency=Ag_visible_frq0, gamma=Ag_vi
 Ag_visible = mp.Medium(epsilon=0.0067526, E_susceptibilities=Ag_visible_susc, valid_freq_range=metal_visible_range)
 
 #------------------------------------------------------------------
-
 ## WARNING: unstable; field divergence may occur
 
 # aluminum (Al)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+
 Al_visible_frq0 = 1/(0.0625841659042985*um_scale)
 Al_visible_gam0 = 1/(0.606007002962666*um_scale)
 Al_visible_sig0 = 1
@@ -696,9 +675,9 @@ Al_visible_susc = [mp.DrudeSusceptibility(frequency=Al_visible_frq0, gamma=Al_vi
 Al_visible = mp.Medium(epsilon=0.13313, E_susceptibilities=Al_visible_susc, valid_freq_range=metal_visible_range)
 
 #------------------------------------------------------------------
-
 # chroimium (Cr)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+
 Cr_visible_frq0 = 1/(0.118410119507342*um_scale)
 Cr_visible_gam0 = 1/(0.628596264869804*um_scale)
 Cr_visible_sig0 = 1
@@ -713,11 +692,11 @@ Cr_visible_susc = [mp.DrudeSusceptibility(frequency=Cr_visible_frq0, gamma=Cr_vi
 Cr_visible = mp.Medium(epsilon=2.7767, E_susceptibilities=Cr_visible_susc, valid_freq_range=metal_visible_range)
 
 #------------------------------------------------------------------
-
 ## WARNING: unstable; field divergence may occur
 
 # titanium (Ti)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+
 Ti_visible_frq0 = 1/(0.101331651921602*um_scale)
 Ti_visible_gam0 = 1/(0.365743382258719*um_scale)
 Ti_visible_sig0 = 1
@@ -732,7 +711,6 @@ Ti_visible_susc = [mp.DrudeSusceptibility(frequency=Ti_visible_frq0, gamma=Ti_vi
 Ti_visible = mp.Medium(epsilon=-5.4742e7, E_susceptibilities=Ti_visible_susc, valid_freq_range=metal_visible_range)
 
 #------------------------------------------------------------------
-
 # aluminum (Al) from Horiba Technical Note 09: Drude Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.19 - 0.83 um
@@ -748,7 +726,6 @@ Al_drude_susc = [mp.DrudeSusceptibility(frequency=Al_drude_frq, gamma=Al_drude_g
 Al_drude = mp.Medium(epsilon=1.0, E_susceptibilities=Al_drude_susc, valid_freq_range=Al_drude_range)
 
 #------------------------------------------------------------------
-
 # cobalt (Co) from Horiba Technical Note 09: Drude Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.26 - 1.65 um
@@ -764,7 +741,6 @@ Co_susc = [mp.DrudeSusceptibility(frequency=Co_frq, gamma=Co_gam, sigma=Co_sig)]
 Co = mp.Medium(epsilon=3.694, E_susceptibilities=Co_susc, valid_freq_range=Co_range)
 
 #------------------------------------------------------------------
-
 ## WARNING: unstable; field divergence may occur
 
 # molybdenum (Mo) from Horiba Technical Note 09: Drude Dispersion Model
@@ -782,7 +758,6 @@ Mo_susc = [mp.DrudeSusceptibility(frequency=Mo_frq, gamma=Mo_gam, sigma=Mo_sig)]
 Mo = mp.Medium(epsilon=-1.366, E_susceptibilities=Mo_susc, valid_freq_range=Mo_range)
 
 #------------------------------------------------------------------
-
 # nickel chrome (NiCr) from Horiba Technical Note 09: Drude Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.25 - 0.83 um
@@ -798,7 +773,6 @@ NiCr_susc = [ mp.DrudeSusceptibility(frequency=NiCr_frq, gamma=NiCr_gam, sigma=N
 NiCr = mp.Medium(epsilon=1.0, E_susceptibilities=NiCr_susc, valid_freq_range=NiCr_range)
 
 #------------------------------------------------------------------
-
 # nickel iron (NiFe) from Horiba Technical Note 09: Drude Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.25 - 0.83 um
@@ -814,7 +788,6 @@ NiFe_susc = [mp.DrudeSusceptibility(frequency=NiFe_frq, gamma=NiFe_gam, sigma=Ni
 NiFe = mp.Medium(epsilon=1.0, E_susceptibilities=NiFe_susc, valid_freq_range=NiFe_range)
 
 #------------------------------------------------------------------
-
 # titanium (Ti) from Horiba Technical Note 09: Drude Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 # wavelength range: 0.21 - 1.24 um
@@ -830,7 +803,6 @@ Ti_drude_susc = [mp.DrudeSusceptibility(frequency=Ti_drude_frq, gamma=Ti_drude_g
 Ti_drude = mp.Medium(epsilon=1.0, E_susceptibilities=Ti_drude_susc, valid_freq_range=Ti_drude_range)
 
 #------------------------------------------------------------------
-
 # silicon nitride (SiN), non-stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.21 - 2.07 um
@@ -846,7 +818,6 @@ SiN_susc = [mp.LorentzianSusceptibility(frequency=SiN_frq1, gamma=SiN_gam1, sigm
 SiN = mp.Medium(epsilon=2.320, E_susceptibilities=SiN_susc, valid_freq_range=SiN_range)
 
 #------------------------------------------------------------------
-
 # silicon nitride (Si3N4), stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.23 - 0.83 um
@@ -862,7 +833,6 @@ Si3N4_susc = [mp.LorentzianSusceptibility(frequency=Si3N4_frq1, gamma=Si3N4_gam1
 Si3N4 = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_susc, valid_freq_range=Si3N4_range)
 
 #------------------------------------------------------------------
-
 # silicon dioxide (SiO2) from Horiba Technical Note 08: Lorentz Dispersion Model
 # ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 # wavelength range: 0.25 - 1.77 um
@@ -878,8 +848,7 @@ SiO2_susc = [mp.LorentzianSusceptibility(frequency=SiO2_frq1, gamma=SiO2_gam1, s
 SiO2 = mp.Medium(epsilon=1.0, E_susceptibilities=SiO2_susc, valid_freq_range=SiO2_range)
 
 #------------------------------------------------------------------
-
-# indium phosphide (InP) from Handbook of Optics, 2nd edition, Vol. 2., McGraw-Hill, 1994
+# indium phosphide (InP) from Handbook of Optics, 2nd edition, Vol. 2, McGraw-Hill, 1994
 # ref: https://refractiveindex.info/?shelf=main&book=InP&page=Pettit
 # wavelength range: 0.95 - 10 um
 
@@ -898,7 +867,6 @@ InP_susc = [mp.LorentzianSusceptibility(frequency=InP_frq1, gamma=InP_gam1, sigm
 InP = mp.Medium(epsilon=7.255, E_susceptibilities=InP_susc, valid_freq_range=InP_range)
 
 #------------------------------------------------------------------
-
 # germanium (Ge) from N. P. Barnes and M. S. Piltch, J. Optical Society America, Vol. 69, pp. 178-180, 1979
 # ref: https://refractiveindex.info/?shelf=main&book=Ge&page=Icenogle
 # wavelength range: 2.5 - 12 um
@@ -918,7 +886,6 @@ Ge_susc = [mp.LorentzianSusceptibility(frequency=Ge_frq1, gamma=Ge_gam1, sigma=G
 Ge = mp.Medium(epsilon=9.28156, E_susceptibilities=Ge_susc, valid_freq_range=Ge_range)
 
 #------------------------------------------------------------------
-
 # silicon (Si) from C. D. Salzberg and J. J. Villa, , J. Optical Society America, Vol. 47, pp. 244-246, 1957
 # ref: https://refractiveindex.info/?shelf=main&book=Si&page=Salzberg
 # wavelength range: 1.36 - 11 um
@@ -942,7 +909,6 @@ Si_susc = [mp.LorentzianSusceptibility(frequency=Si_frq1, gamma=Si_gam1, sigma=S
 Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc, valid_freq_range=Si_range)
 
 #------------------------------------------------------------------
-
 # poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
@@ -958,7 +924,6 @@ PMMA_susc = [mp.LorentzianSusceptibility(frequency=PMMA_frq1, gamma=PMMA_gam1, s
 PMMA = mp.Medium(epsilon=1.0, E_susceptibilities=PMMA_susc, valid_freq_range=PMMA_range)
 
 #------------------------------------------------------------------
-
 # polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
@@ -974,7 +939,6 @@ PC_susc = [mp.LorentzianSusceptibility(frequency=PC_frq1, gamma=PC_gam1, sigma=P
 PC = mp.Medium(epsilon=1.0, E_susceptibilities=PC_susc, valid_freq_range=PC_range)
 
 #------------------------------------------------------------------
-
 # polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
@@ -990,7 +954,6 @@ PS_susc = [mp.LorentzianSusceptibility(frequency=PS_frq1, gamma=PS_gam1, sigma=P
 PS = mp.Medium(epsilon=1.0, E_susceptibilities=PS_susc, valid_freq_range=PS_range)
 
 #------------------------------------------------------------------
-
 # cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 # ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
 # wavelength range: 0.437 - 1.052 um

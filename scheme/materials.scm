@@ -7,8 +7,7 @@
 (define eV-um-scale (/ um-scale 1.23984193))
 
 ;------------------------------------------------------------------
-
-; crystaline silicon (cSi) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
+; crystaline silicon (c-Si) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
 ; based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
 ; wavelength range: 0.4 - 1.0 um
 
@@ -34,7 +33,6 @@
     (frequency cSi-frq3) (gamma cSi-gam3) (sigma cSi-sig3)))))
 
 ;------------------------------------------------------------------
-
 ; amorphous silicon (a-Si) from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.21 - 0.83 um
@@ -49,7 +47,6 @@
     (frequency aSi-frq1) (gamma aSi-gam1) (sigma aSi-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; hydrogenated amorphous silicon (a-Si:H) from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.21 - 0.83 um
@@ -64,7 +61,6 @@
     (frequency aSi-H-frq1) (gamma aSi-H-gam1) (sigma aSi-H-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; indium tin oxide (ITO) from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.21 - 0.83 um
@@ -79,7 +75,6 @@
     (frequency ITO-frq1) (gamma ITO-gam1) (sigma ITO-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; alumina (Al2O3) from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.21 - 2.07 um
@@ -94,7 +89,6 @@
     (frequency Al2O3-frq1) (gamma Al2O3-gam1) (sigma Al2O3-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; aluminum nitride (AlN) from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.26 - 1.65 um
@@ -109,9 +103,8 @@
     (frequency AlN-frq1) (gamma AlN-gam1) (sigma AlN-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; aluminum arsenide (AlAs) from R.E. Fern and A. Onton, J. Applied Physics, Vol. 42, pp. 3499-500, 1971
-; fit from https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
+; ref: https://refractiveindex.info/?shelf=main&book=AlAs&page=Fern
 ; wavelength range: 0.56 - 2.2 um
 
 (define AlAs-frq1 (/ (* 0.2822 um-scale)))
@@ -130,9 +123,8 @@
     (frequency AlAs-frq2) (gamma AlAs-gam2) (sigma AlAs-sig2)))))
 
 ;------------------------------------------------------------------
-
 ; borosilicate glass (BK7) from SCHOTT Zemax catalog 2017-01-20b
-; fit from https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
+; ref: https://refractiveindex.info/?shelf=glass&book=BK7&page=SCHOTT
 ; wavelength range: 0.3 - 2.5 um
 
 (define BK7-frq1 (/ (* 0.07746417668832478 um-scale)))
@@ -155,9 +147,8 @@
     (frequency BK7-frq3) (gamma BK7-gam3) (sigma BK7-sig3)))))
 
 ;------------------------------------------------------------------
-
 ; fused quartz (silica) from I.H. Malitson, J. Optical Society of America, Vol. 55, pp. 1205-9, 1965
-; fit from https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
+; ref: https://refractiveindex.info/?shelf=glass&book=fused_silica&page=Malitson
 ; wavelength range: 0.21 - 6.7 um
 
 (define fused-quartz-frq1 (/ (* 0.0684043 um-scale)))
@@ -180,9 +171,8 @@
     (frequency fused-quartz-frq3) (gamma fused-quartz-gam3) (sigma fused-quartz-sig3)))))
 
 ;------------------------------------------------------------------
-
 ; gallium arsenide (GaAs) from T. Skauli et al., J. Applied Physics, Vol. 94, pp. 6447-55, 2003
-; fit from https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
+; ref: https://refractiveindex.info/?shelf=main&book=GaAs&page=Skauli
 ; wavelength range: 0.97 - 17 um
 
 (define GaAs-frq1 (/ (* 0.4431307 um-scale)))
@@ -205,9 +195,8 @@
     (frequency GaAs-frq3) (gamma GaAs-gam3) (sigma GaAs-sig3)))))
 
 ;------------------------------------------------------------------
-
-; stoichiometric silicon nitride (Si3N4) from H. R. Philipp, Optical properties of silicon nitride, J. Electrochem. Soc. 120, 295-300, 1973
-; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
+; silicon nitride (Si3N4) from H. R. Philipp, J. Electrochemical Society, Vol. 120, pp. 295-300, 1973
+; ref: https://refractiveindex.info/?shelf=main&book=Si3N4&page=Philipp
 ; wavelength range: 0.207 - 1.24 um
 
 (define Si3N4-VISNIR-frq1 (/ (* 0.13967 um-scale)))
@@ -220,9 +209,8 @@
     (frequency Si3N4-VISNIR-frq1) (gamma Si3N4-VISNIR-gam1) (sigma Si3N4-VISNIR-sig1)))))
 
 ;------------------------------------------------------------------
-
-; stoichiometric silicon nitride (Si3N4) from K. Luke, et. al., Broadband mid-infrared frequency comb generation in a Si3N4 microresonator, Opt. Lett. 40, 4823-4826, 2015
-; fit from https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
+; silicon nitride (Si3N4) from K. Luke, et. al., Optics Letters, Vol. 40, pp. 4823-4826, 2015
+; ref: https://refractiveindex.info/?shelf=main&book=Si3N4&page=Luke
 ; wavelength range: 0.310 - 5.504 um
 
 (define Si3N4-NIR-frq1 (/ (* 0.1353406 um-scale)))
@@ -240,7 +228,6 @@
     (frequency Si3N4-NIR-frq2) (gamma Si3N4-NIR-gam2) (sigma Si3N4-NIR-sig2)))))
 
 ;------------------------------------------------------------------
-
 ; elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 ; wavelength range: 0.2 - 12.4 um
 
@@ -287,7 +274,6 @@
        (frequency Ag-frq4) (gamma Ag-gam4) (sigma Ag-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; gold (Au)
 
 (define Au-plasma-frq (* 9.03 eV-um-scale))
@@ -331,7 +317,6 @@
        (frequency Au-frq4) (gamma Au-gam4) (sigma Au-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; copper (Cu)
 
 (define Cu-plasma-frq (* 10.83 eV-um-scale))
@@ -375,7 +360,6 @@
        (frequency Cu-frq4) (gamma Cu-gam4) (sigma Cu-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; aluminum (Al)
 
 (define Al-plasma-frq (* 14.98 eV-um-scale))
@@ -419,7 +403,6 @@
        (frequency Al-frq4) (gamma Al-gam4) (sigma Al-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; beryllium (Be)
 
 (define Be-plasma-frq (* 18.51 eV-um-scale))
@@ -463,7 +446,6 @@
        (frequency Be-frq4) (gamma Be-gam4) (sigma Be-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; chromium (Cr)
 
 (define Cr-plasma-frq (* 10.75 eV-um-scale))
@@ -507,7 +489,6 @@
        (frequency Cr-frq4) (gamma Cr-gam4) (sigma Cr-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; nickel (Ni)
 
 (define Ni-plasma-frq (* 15.92 eV-um-scale))
@@ -551,7 +532,6 @@
        (frequency Ni-frq4) (gamma Ni-gam4) (sigma Ni-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; palladium (Pd)
 
 (define Pd-plasma-frq (* 9.72 eV-um-scale))
@@ -595,7 +575,6 @@
        (frequency Pd-frq4) (gamma Pd-gam4) (sigma Pd-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; platinum (Pt)
 
 (define Pt-plasma-frq (* 9.59 eV-um-scale))
@@ -639,7 +618,6 @@
        (frequency Pt-frq4) (gamma Pt-gam4) (sigma Pt-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; titanium (Ti)
 
 (define Ti-plasma-frq (* 7.29 eV-um-scale))
@@ -683,7 +661,6 @@
        (frequency Ti-frq4) (gamma Ti-gam4) (sigma Ti-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; tungsten (W)
 
 (define W-plasma-frq (* 13.22 eV-um-scale))
@@ -727,12 +704,12 @@
        (frequency W-frq4) (gamma W-gam4) (sigma W-sig4)))))
 
 ;------------------------------------------------------------------
-
 ; metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996, 2015
 ; wavelength range: 0.4 - 0.8 um
 
 ; gold (Au)
 ; fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9, 1972
+
 (define Au-JC-visible-frq0 (/ (* 0.139779231751333 um-scale)))
 (define Au-JC-visible-gam0 (/ (* 26.1269913352870 um-scale)))
 (define Au-JC-visible-sig0 1)
@@ -748,10 +725,10 @@
    (make lorentzian-susceptibility
      (frequency Au-JC-visible-frq1) (gamma Au-JC-visible-gam1) (sigma Au-JC-visible-sig1)))))
 
-;------------------------------------------------------------------                       
-
+;------------------------------------------------------------------
 ; gold (Au)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+
 (define Au-visible-frq0 (/ (* 0.0473629248511456 um-scale)))
 (define Au-visible-gam0 (/ (* 0.255476199605166 um-scale)))
 (define Au-visible-sig0 1)
@@ -768,10 +745,11 @@
      (frequency Au-visible-frq1) (gamma Au-visible-gam1) (sigma Au-visible-sig1)))))
 
 ;------------------------------------------------------------------                       
-
 ;; UNSTABLE: field divergence may occur
 
+; silver (Au)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+
 (define Ag-visible-frq0 (/ (* 0.142050162130618 um-scale)))
 (define Ag-visible-gam0 (/ (* 18.0357292925015 um-scale)))
 (define Ag-visible-sig0 1)
@@ -787,12 +765,12 @@
    (make lorentzian-susceptibility
      (frequency Ag-visible-frq1) (gamma Ag-visible-gam1) (sigma Ag-visible-sig1)))))
 
-;------------------------------------------------------------------                       
-
+;------------------------------------------------------------------
 ;; UNSTABLE: field divergence may occur
 
 ; aluminum (Al)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+
 (define Al-visible-frq0 (/ (* 0.0625841659042985 um-scale)))
 (define Al-visible-gam0 (/ (* 0.606007002962666 um-scale)))
 (define Al-visible-sig0 1)
@@ -808,10 +786,10 @@
    (make lorentzian-susceptibility
      (frequency Al-visible-frq1) (gamma Al-visible-gam1) (sigma Al-visible-sig1)))))
 
-;------------------------------------------------------------------                       
-
+;------------------------------------------------------------------
 ; chromium (Cr)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+
 (define Cr-visible-frq0 (/ (* 0.118410119507342 um-scale)))
 (define Cr-visible-gam0 (/ (* 0.628596264869804 um-scale)))
 (define Cr-visible-sig0 1)
@@ -827,12 +805,12 @@
    (make lorentzian-susceptibility
      (frequency Cr-visible-frq1) (gamma Cr-visible-gam1) (sigma Cr-visible-sig1)))))
 
-;------------------------------------------------------------------                       
-
+;------------------------------------------------------------------
 ;; UNSTABLE: field divergence may occur
 
 ; titanium (Ti)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
+
 (define Ti-visible-frq0 (/ (* 0.101331651921602 um-scale)))
 (define Ti-visible-gam0 (/ (* 0.365743382258719 um-scale)))
 (define Ti-visible-sig0 1)
@@ -849,7 +827,6 @@
      (frequency Ti-visible-frq1) (gamma Ti-visible-gam1) (sigma Ti-visible-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; aluminum (Al) from Horiba Technical Note 09: Drude Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 ; wavelength range: 0.19 - 0.83 um
@@ -864,7 +841,6 @@
      (frequency Al-drude-frq) (gamma Al-drude-gam) (sigma Al-drude-sig)))))
 
 ;------------------------------------------------------------------
-
 ; cobalt (Co) from Horiba Technical Note 09: Drude Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 ; wavelength range: 0.26 - 1.65 um
@@ -879,7 +855,6 @@
      (frequency Co-frq) (gamma Co-gam) (sigma Co-sig)))))
 
 ;------------------------------------------------------------------
-
 ;; WARNING: unstable; field divergence may occur
 
 ; molybdenum (Mo) from Horiba Technical Note 09: Drude Dispersion Model
@@ -896,7 +871,6 @@
      (frequency Mo-frq) (gamma Mo-gam) (sigma Mo-sig)))))
 
 ;------------------------------------------------------------------
-
 ; nickel chrome (NiCr) from Horiba Technical Note 09: Drude Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 ; wavelength range: 0.25 - 0.83 um
@@ -911,7 +885,6 @@
      (frequency NiCr-frq) (gamma NiCr-gam) (sigma NiCr-sig)))))
 
 ;------------------------------------------------------------------
-
 ; nickel iron (NiFe) from Horiba Technical Note 09: Drude Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 ; wavelength range: 0.25 - 0.83 um
@@ -926,7 +899,6 @@
      (frequency NiFe-frq) (gamma NiFe-gam) (sigma NiFe-sig)))))
 
 ;------------------------------------------------------------------
-
 ; titanium (Ti) from Horiba Technical Note 09: Drude Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Drude_Dispersion_Model.pdf
 ; wavelength range: 0.21 - 1.24 um
@@ -941,7 +913,6 @@
      (frequency Ti-drude-frq) (gamma Ti-drude-gam) (sigma Ti-drude-sig)))))
 
 ;------------------------------------------------------------------
-
 ; silicon nitride (SiN), non-stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.21 - 2.07 um
@@ -956,7 +927,6 @@
     (frequency SiN-frq1) (gamma SiN-gam1) (sigma SiN-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; silicon nitride (Si3N4), stoichiometric, from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.23 - 0.83 um
@@ -971,7 +941,6 @@
     (frequency Si3N4-frq1) (gamma Si3N4-gam1) (sigma Si3N4-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; silicon dioxide (SiO2) from Horiba Technical Note 08: Lorentz Dispersion Model
 ; ref: http://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 ; wavelength range: 0.25 - 1.77 um
@@ -986,8 +955,7 @@
     (frequency SiO2-frq1) (gamma SiO2-gam1) (sigma SiO2-sig1)))))
 
 ;------------------------------------------------------------------
-
-; indium phosphide (InP) from Handbook of Optics, 2nd edition, Vol. 2., McGraw-Hill, 1994
+; indium phosphide (InP) from Handbook of Optics, 2nd edition, Vol. 2, McGraw-Hill, 1994
 ; ref: https://refractiveindex.info/?shelf=main&book=InP&page=Pettit
 ; wavelength range: 0.95 - 10 um
 
@@ -1007,7 +975,6 @@
     (frequency InP-frq2) (gamma InP-gam2) (sigma InP-sig2)))))
 
 ;------------------------------------------------------------------
-
 ; germanium (Ge) from N. P. Barnes and M. S. Piltch, J. Optical Society America, Vol. 69, pp. 178-180, 1979
 ; ref: https://refractiveindex.info/?shelf=main&book=Ge&page=Icenogle
 ; wavelength range: 2.5 - 12 um
@@ -1028,7 +995,6 @@
     (frequency Ge-frq2) (gamma Ge-gam2) (sigma Ge-sig2)))))
 
 ;------------------------------------------------------------------
-
 ; silicon (Si) from C. D. Salzberg and J. J. Villa, , J. Optical Society America, Vol. 47, pp. 244-246, 1957
 ; ref: https://refractiveindex.info/?shelf=main&book=Si&page=Salzberg
 ; wavelength range: 1.36 - 11 um
@@ -1055,7 +1021,6 @@
     (frequency Si-frq3) (gamma Si-gam3) (sigma Si-sig3)))))
 
 ;------------------------------------------------------------------
-
 ; poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
 ; wavelength range: 0.437 - 1.052 um
@@ -1070,7 +1035,6 @@
     (frequency PMMA-frq1) (gamma PMMA-gam1) (sigma PMMA-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
 ; wavelength range: 0.437 - 1.052 um
@@ -1085,7 +1049,6 @@
     (frequency PC-frq1) (gamma PC-gam1) (sigma PC-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
 ; wavelength range: 0.437 - 1.052 um
@@ -1100,7 +1063,6 @@
     (frequency PS-frq1) (gamma PS-gam1) (sigma PS-sig1)))))
 
 ;------------------------------------------------------------------
-
 ; cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
 ; ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
 ; wavelength range: 0.437 - 1.052 um
