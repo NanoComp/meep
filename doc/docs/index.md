@@ -2,7 +2,7 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
+ **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
 
 **Features**
 
