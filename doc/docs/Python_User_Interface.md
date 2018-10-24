@@ -1186,7 +1186,7 @@ Compute the power spectrum of the sources (usually a single point dipole source)
 —
 Given an ldos object, returns a list of the frequencies that it is computing the spectrum for.
 
-The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `dft_ldos_data` global variable after the `run` is complete.
+The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `ldos_data` variable of the `Simulation` object after the `run` is complete.
 
 Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
 
