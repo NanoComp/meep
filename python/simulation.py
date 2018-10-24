@@ -512,6 +512,7 @@ class Simulation(object):
         self.epsilon_func = epsilon_func
         self.load_structure_file = load_structure
         self.dft_objects = []
+        self._is_initialized = False
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -737,6 +738,8 @@ class Simulation(object):
         self.structure.dump(fname)
 
     def init_sim(self):
+        if self._is_initialized:
+            return
 
         materials = [g.material for g in self.geometry if isinstance(g.material, mp.Medium)]
         if isinstance(self.default_material, mp.Medium):
@@ -786,6 +789,8 @@ class Simulation(object):
 
         for hook in self.init_sim_hooks:
             hook()
+
+        self._is_initialized = True
 
     def init_fields(self):
         warnings.warn('init_fields is deprecated. Please use init_sim instead', DeprecationWarning)
@@ -1451,6 +1456,7 @@ class Simulation(object):
 
             if needs_complex_fields and self.fields.is_real:
                 self.fields = None
+                self._is_initialized = False
                 self.init_sim()
             else:
                 if self.k_point:
@@ -1467,12 +1473,14 @@ class Simulation(object):
         self.fields = None
         self.structure = None
         self.dft_objects = []
+        self._is_initialized = False
 
     def restart_fields(self):
         if self.fields is not None:
             self.fields.t = 0
             self.fields.zero_fields()
         else:
+            self._is_initialized = False
             self.init_sim()
 
     def run(self, *step_funcs, **kwargs):
