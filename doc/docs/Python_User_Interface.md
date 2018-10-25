@@ -1178,13 +1178,17 @@ As `load_force_data`, but negates the Fourier-transformed fields after they are 
 
 Meep can also calculate the LDOS (local density of states) spectrum, as described in [Tutorial/Local Density of States](Python_Tutorials/Local_Density_of_States.md). To do this, you simply pass the following step function to your `run` command:
 
-**`dft_ldos(fcen, df, nfreq)`**
+**`dft_ldos(fcen=None, df=None, nfreq=None, ldos=None)`**
 —
-Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points.
+Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points. One can also pass in an `ldos` created with `DftLdos` as `dft_ldos(ldos=my_ldos)`. This is useful for passing to `get_ldos_freqs` or accessing C++ properties like `ldos.omega_min`.
+
+**`DftLdos(fcen, df, nfreq)`**
+—
+Create a `dft_ldos` C++ instance with frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points.
 
 **`get_ldos_freqs(ldos)`**
 —
-Given an ldos object, returns a list of the frequencies that it is computing the spectrum for.
+Given an ldos object created with `DftLdos`, returns a list of the frequencies that it is computing the spectrum for.
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `ldos_data` variable of the `Simulation` object after the `run` is complete.
 

@@ -2166,8 +2166,15 @@ def get_ldos_freqs(f):
     return np.linspace(start, stop, num=f.Nomega, endpoint=False).tolist()
 
 
-def dft_ldos(fcen, df, nfreq):
-    ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+def DftLdos(fcen, df, nfreq):
+    return mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+
+
+def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
+    if ldos is None:
+        if fcen is None or df is None or nfreq is None:
+            raise ValueError("fcen, df, and nfreq are required for dft_ldos")
+        ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
     def _ldos(sim, todo):
         if todo == 'step':

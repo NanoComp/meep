@@ -1266,6 +1266,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     )
     from .simulation import (
         Absorber,
+        DftLdos,
         FluxRegion,
         ForceRegion,
         Harminv,
