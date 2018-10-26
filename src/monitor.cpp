@@ -235,9 +235,9 @@ double fields_chunk::get_chi1inv(component c, direction d,
          double conductivityCur = s->conductivity[c][d][gv.index(c, iloc)];
          eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
        }
-      // Return chi1 inverse, take the real part since no support for metals
+      // Return chi1 inverse, take the real part since no support for loss in mpb yet
       // TODO: Add support for metals
-      res = 1 / (eps.real());
+      res = 1 / (sqrt(eps).real() * sqrt(eps).real());
    }
   }
   return broadcast(n_proc(), res);
@@ -318,9 +318,9 @@ double structure_chunk::get_chi1inv(component c, direction d,
          double conductivityCur = conductivity[c][d][gv.index(c, iloc)];
          eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
        }
-      // Return chi1 inverse, take the real part since no support for metals
+      // Return chi1 inverse, take the real part since no support for loss
       // TODO: Add support for metals
-      res = 1 / (eps.real());
+      res = 1 / (sqrt(eps).real() * sqrt(eps).real());
     }
   }
   return broadcast(n_proc(), res);
