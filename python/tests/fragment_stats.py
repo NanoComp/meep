@@ -25,7 +25,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fragment.num_nonzero_conductivity_pixels, cond)
 
     def get_fragment_stats(self, block_size, cell_size, dims, box_center=mp.Vector3(), dft_vecs=None,
-                           def_mat=mp.air, sym=[]):
+                           def_mat=mp.air, sym=[], geom=None):
         mat = mp.Medium(
             epsilon=12,
             epsilon_offdiag=mp.Vector3(z=1),
@@ -38,7 +38,8 @@ class TestFragmentStats(unittest.TestCase):
             B_conductivity_diag=mp.Vector3(x=1, z=1)
         )
 
-        geom = [mp.Block(size=block_size, center=box_center, material=mat)]
+        if geom is None:
+            geom = [mp.Block(size=block_size, center=box_center, material=mat)]
         sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims,
                             default_material=def_mat, symmetries=sym)
 
@@ -248,6 +249,23 @@ class TestFragmentStats(unittest.TestCase):
 
     def test_2d(self):
         self._test_2d([])
+
+    def test_no_geometry(self):
+        mat = mp.Medium(
+            epsilon=12,
+            epsilon_offdiag=mp.Vector3(x=1),
+            mu_offdiag=mp.Vector3(x=20),
+            E_chi2_diag=mp.Vector3(1, 1),
+            H_chi3_diag=mp.Vector3(x=1),
+            E_susceptibilities=[mp.LorentzianSusceptibility(), mp.NoisyLorentzianSusceptibility()],
+            H_susceptibilities=[mp.DrudeSusceptibility()],
+            D_conductivity_diag=mp.Vector3(y=1),
+            B_conductivity_diag=mp.Vector3(x=1, z=1)
+        )
+        fs = self.get_fragment_stats(mp.Vector3(), mp.Vector3(10, 10), 2, def_mat=mat, geom=[])
+
+        self.assertEqual(len(fs), 1)
+        self.check_stats(fs[0], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
 
     def test_2d_with_symmetry(self):
         self._test_2d([mp.Mirror(mp.X), mp.Mirror(mp.Y)])

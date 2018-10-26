@@ -1926,6 +1926,11 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
 
 void fragment_stats::compute_stats(geometric_object_list *geom) {
 
+  if (geom->num_items == 0) {
+    // If there is no geometry, count the default material for the whole fragment
+    update_stats_from_material((material_type)default_material, num_pixels_in_box);
+  }
+
   for (int i = 0; i < geom->num_items; ++i) {
     geometric_object *go = &geom->items[i];
     double overlap = box_overlap_with_object(box, *go, tol, maxeval);
