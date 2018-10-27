@@ -232,12 +232,21 @@ double fields_chunk::get_chi1inv(component c, direction d,
       }
       // Account for conductivity term
        if (s->conductivity[c][d]) {
+<<<<<<< HEAD
          double conductivity = s->conductivity[c][d][gv.index(c, iloc)];
          eps = std::complex<double>(1.0, (conductivity/omega)) * eps;
        }
       // Return chi1 inverse, take the real part since no support for metals
       // TODO: Add support for metals
       res = 1 / (eps.real());
+=======
+         double conductivityCur = s->conductivity[c][d][gv.index(c, iloc)];
+         eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
+       }
+      // Return chi1 inverse, take the real part since no support for loss in mpb yet
+      // TODO: Add support for metals
+      res = 1 / (std::sqrt(eps).real() *  std::sqrt(eps).real());
+>>>>>>> e92022741e7bff1a11103b727809e9da94d4434c
    }
   }
   return broadcast(n_proc(), res);

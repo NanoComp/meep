@@ -196,6 +196,28 @@ class Medium(object):
         self.B_conductivity_diag = B_conductivity_diag
         self.valid_freq_range = valid_freq_range
 
+    def get_eps(self,freq):
+
+        # Clean the input
+        freq = np.squeeze([freq])
+
+        # Compensate for scalar inputs
+        if len(freq.shape) == 0:
+            freq = np.array([freq])
+
+        # Initialize with instantaneous dielectric tensor, use numpy arrays for
+        # convenience and speed.
+        eps = np.array([self.epsilon_diag.x,self.epsilon_diag.y,self.epsilon_diag.z],dtype='complex128')
+
+        # Iterate through and sum up susceptibilities
+        for k in range(len(self.E_susceptibilities)):
+            eps = eps + self.E_susceptibilities[k].eval_susceptibility(freq)
+
+        # Account for conductivity term
+        eps = (1 + 1j*np.array(
+            [self.D_conductivity_diag.x,self.D_conductivity_diag.y,self.D_conductivity_diag.z])/freq.reshape(-1,1)) * eps
+        return [Vector3(eps[row,0],eps[row,1],eps[row,2]) for row in range(freq.shape[0])]
+
 
 class Susceptibility(object):
 
@@ -211,6 +233,17 @@ class LorentzianSusceptibility(Susceptibility):
         self.frequency = frequency
         self.gamma = gamma
 
+    def eval_susceptibility(self,freq):
+
+        # Use numpy arrays for element-wise multiplication later
+        sigma = np.array([self.sigma_diag.x,self.sigma_diag.y,self.sigma_diag.z])
+        eps = np.zeros((freq.shape[0],3),dtype='complex128')
+
+        # Iterate through dimensions
+        for k in range(3):
+            eps[:,k] = (sigma[k]*self.frequency*self.frequency) / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq)
+        return eps
+
 
 class DrudeSusceptibility(Susceptibility):
 
@@ -219,6 +252,16 @@ class DrudeSusceptibility(Susceptibility):
         self.frequency = frequency
         self.gamma = gamma
 
+    def eval_susceptibility(self,freq):
+
+        # Use numpy arrays for element-wise multiplication later
+        sigma = np.array([self.sigma_diag.x,self.sigma_diag.y,self.sigma_diag.z])
+        eps = np.zeros((freq.shape[0],3),dtype='complex128')
+
+        # Iterate through dimensions
+        for k in range(3):
+            eps[:,k] = (-sigma[k]*self.frequency*self.frequency) / (freq*(freq + 1j*self.gamma))
+        return eps
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
 
