@@ -280,13 +280,22 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
 }
 
 std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) {
-  if (no_omega_0_denominator){
+  if (no_omega_0_denominator) {
     // Drude model
-    return sigma * omega_0*omega_0 / std::complex<double>(-freq*freq, -gamma*freq);
-  }else{
-    // Standard Lorentzian model
-    return sigma * omega_0*omega_0 / std::complex<double>(omega_0*omega_0 - freq*freq, -gamma*freq);
+    return std::complex<double>(sigma * omega_0*omega_0,0) / std::complex<double>(-freq*freq, -gamma*freq);
   }
+  else{
+    // Standard Lorentzian model
+    return std::complex<double>(sigma * omega_0*omega_0,0) / std::complex<double>(omega_0*omega_0 - freq*freq, -gamma*freq);
+  }
+}
+
+void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
+  size_t num_params = 5;
+  size_t params_dims[1] = {num_params};
+  double params_data[] = {4, (double)get_id(), omega_0, gamma, (double)no_omega_0_denominator};
+  h5f->write_chunk(1, start, params_dims, params_data);
+  *start += num_params;
 }
 
 void noisy_lorentzian_susceptibility::update_P
