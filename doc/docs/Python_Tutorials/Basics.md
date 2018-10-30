@@ -35,15 +35,15 @@ import meep as mp
 We can begin specifying each of the simulation objects starting with the computational cell. We're going to put a source at one end and watch the fields propagate down the waveguide in the *x* direction, so let's use a cell of length 16 μm in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries do not affect the waveguide mode; let's give it a size of 8 μm.
 
 ```py
-cell = mp.Vector3(16, 8, 0)
+cell = mp.Vector3(16,8,0)
 ```
 The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
 
 Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface.md#geometricobject) stored in the `geometry` object.
 
 ```py
-geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
-                     center=mp.Vector3(0, 0),
+geometry = [mp.Block(mp.Vector3(1e20,1,1e20),
+                     center=mp.Vector3(0,0),
                      material=mp.Medium(epsilon=12))]
 ```
 
@@ -134,12 +134,12 @@ import meep as mp
 Then let's set up the bent waveguide in a slightly larger computational cell:
 
 ```py
-cell = mp.Vector3(16, 16, 0)
-geometry = [mp.Block(mp.Vector3(12, 1, 1e20),
-                     center=mp.Vector3(-2.5, -3.5),
+cell = mp.Vector3(16,16,0)
+geometry = [mp.Block(mp.Vector3(12,1,1e20),
+                     center=mp.Vector3(-2.5,-3.5),
                      material=mp.Medium(epsilon=12)),
-            mp.Block(mp.Vector3(1, 12, 1e20),
-                     center=mp.Vector3(3.5, 2),
+            mp.Block(mp.Vector3(1,12,1e20),
+                     center=mp.Vector3(3.5,2),
                      material=mp.Medium(epsilon=12))]
 pml_layers = [mp.PML(1.0)]
 resolution = 10
@@ -207,8 +207,8 @@ Instead of doing an animation, another interesting possibility is to make an ima
 vals = []
 
 def get_slice(sim):
-    center = mp.Vector3(0, -3.5)
-    size = mp.Vector3(16, 0)
+    center = mp.Vector3(0,-3.5)
+    size = mp.Vector3(16,0)
     vals.append(sim.get_array(center=center, size=size, component=mp.Ez))
 
 sim.run(mp.at_beginning(mp.output_epsilon),

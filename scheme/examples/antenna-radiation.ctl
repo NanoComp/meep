@@ -19,13 +19,13 @@
 (define nearfield
   (add-near2far fcen 0 1
 		(make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
-		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1.0))
+		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
 		(make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
-		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1.0))))
+		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
 
-(define-param r (* 1000 (/ fcen))) ; 1000 wavelengths out from the source
+(define-param r (/* 1000 fcen))    ; 1000 wavelengths out from the source
 (define-param npts 100)            ; number of points in [0,2*pi) range of angles
 (map (lambda (n)
        (let ((ff (get-farfield nearfield (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
