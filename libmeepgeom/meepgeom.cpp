@@ -1852,7 +1852,7 @@ static size_t get_pixels_in_box(geom_box *b, int empty_pixel=1) {
                          (empty_y ? empty_pixel : (b->high.y - b->low.y) * fragment_stats::resolution) *
                          (empty_z ? empty_pixel : (b->high.z - b->low.z) * fragment_stats::resolution));
 
-  return total_pixels == 1 ? 0 : (size_t)ceil(total_pixels);
+  return (size_t)ceil(total_pixels);
 }
 
 static void center_box(geom_box *b) {
