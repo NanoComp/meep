@@ -16,19 +16,28 @@
 (if (= src-cmpt Ez)
     (set! symmetries (list (make mirror-sym (direction X)) (make mirror-sym (direction Y)))))
 
-(define nearfield
+(define nearfield-box
   (add-near2far fcen 0 1
 		(make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
 		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
 		(make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
 		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
+(define flux-box
+  (add-flux fcen 0 1
+	    (make flux-region (center 0 (* 0.5 sxy)) (size sxy 0))
+	    (make flux-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
+	    (make flux-region (center (* 0.5 sxy) 0) (size 0 sxy))
+	    (make flux-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
+
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
 
-(define-param r (/* 1000 fcen))    ; 1000 wavelengths out from the source
-(define-param npts 100)            ; number of points in [0,2*pi) range of angles
+(print "flux:, " (list-ref (get-fluxes flux-box) 0) "\n")
+
+(define-param r (/ 1000 fcen))    ; 1000 wavelengths out from the source
+(define-param npts 100)           ; number of points in [0,2*pi) range of angles
 (map (lambda (n)
-       (let ((ff (get-farfield nearfield (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
+       (let ((ff (get-farfield nearfield-box (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
 	 (print "farfield:, " (number->string n) ", " (number->string (* 2 pi (/ n npts))))
 	 (map (lambda (m)
 		(print ", " (number->string (list-ref ff m))))
