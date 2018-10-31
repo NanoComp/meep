@@ -1200,6 +1200,35 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
                     bool verbose, double kdom[3]);
 #endif // HAVE_MPB
 
+// Make omega members of meep::dft_ldos available as 'freq' in python
+%extend meep::dft_ldos {
+
+    double get_omega_min() {
+        return $self->omega_min;
+    }
+    double get_domega() {
+        return $self->domega;
+    }
+    int get_Nomega() {
+        return $self->Nomega;
+    }
+    %pythoncode %{
+        def freqs(self):
+            import math
+            import numpy as np
+            start = self.omega_min / (2 * math.pi)
+            stop = start + (self.domega / (2 * math.pi)) * self.Nomega
+            return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
+
+        __swig_getmethods__["freq_min"] = get_omega_min
+        __swig_getmethods__["nfreq"] = get_Nomega
+        __swig_getmethods__["dfreq"] = get_domega
+        if _newclass: freq_min = property(get_omega_min)
+        if _newclass: nfreq = property(get_Nomega)
+        if _newclass: dfreq = property(get_domega)
+    %}
+}
+
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
@@ -1266,7 +1295,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     )
     from .simulation import (
         Absorber,
-        DftLdos,
+        Ldos,
         FluxRegion,
         ForceRegion,
         Harminv,
@@ -1299,7 +1328,6 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         get_force_freqs,
         get_forces,
         get_near2far_freqs,
-        get_ldos_freqs,
         in_point,
         in_volume,
         interpolate,
