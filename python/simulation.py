@@ -656,7 +656,7 @@ class Simulation(object):
         return v1
 
     def _pml_to_vol_list_2d(self):
-        configuration_2d = {
+        side_thickness = {
             'top': 0,
             'bottom': 0,
             'left': 0,
@@ -668,26 +668,17 @@ class Simulation(object):
             s = pml.side
             if d == mp.X or d == mp.ALL:
                 if s == mp.High or s == mp.ALL:
-                    configuration_2d['right'] = pml.thickness
+                    side_thickness['right'] = pml.thickness
                 if s == mp.Low or s == mp.ALL:
-                    configuration_2d['left'] = pml.thickness
+                    side_thickness['left'] = pml.thickness
             if d == mp.Y or d == mp.ALL:
                 if s == mp.High or s == mp.ALL:
-                    configuration_2d['top'] = pml.thickness
+                    side_thickness['top'] = pml.thickness
                 if s == mp.Low or s == mp.ALL:
-                    configuration_2d['bottom'] = pml.thickness
+                    side_thickness['bottom'] = pml.thickness
 
-        added_2d = {
-            'top_left': False,
-            'top_right': False,
-            'bottom_left': False,
-            'bottom_right': False,
-        }
-
-        x = self.cell_size.x
-        y = self.cell_size.y
-        xmax = x / 2
-        ymax = y / 2
+        xmax = self.cell_size.x / 2
+        ymax = self.cell_size.y / 2
 
         v1 = []
         v2 = []
@@ -695,33 +686,31 @@ class Simulation(object):
         def add_overlap_0(side, d):
             if side == 'top' or side == 'bottom':
                 ydir = -1 if side == 'bottom' else 1
-                xsz = x - (configuration_2d['left'] + configuration_2d['right'])
+                xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
                 ysz = d
-                xcen = xmax - configuration_2d['right'] - (xsz / 2)
+                xcen = xmax - side_thickness['right'] - (xsz / 2)
                 ycen = ydir*ymax + (-ydir*0.5*d)
             elif side == 'left' or side == 'right':
                 xdir = 1 if side == 'right' else -1
                 xsz = d
-                ysz = y - (configuration_2d['top'] + configuration_2d['bottom'])
+                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
                 xcen = xdir*xmax + (-xdir*0.5*d)
-                ycen = ymax - configuration_2d['top'] - (ysz / 2)
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
 
             cen = mp.Vector3(xcen, ycen)
             sz = mp.Vector3(xsz, ysz)
             v1.append(self._volume_from_kwargs(center=cen, size=sz))
 
         def add_overlap_1(side1, side2, d):
-            if added_2d[side1 + '_' + side2] is False:
-                xdir = -1 if side2 == 'left' else 1
-                ydir = 1 if side1 == 'top' else -1
-                xcen = xdir*xmax + -xdir*0.5*configuration_2d[side2]
-                ycen = ydir*ymax + (-ydir*0.5*d)
-                cen = mp.Vector3(xcen, ycen)
-                sz = mp.Vector3(configuration_2d[side2], d)
-                v2.append(self._volume_from_kwargs(center=cen, size=sz))
-                added_2d[side1 + '_' + side2] = True
+            xdir = -1 if side2 == 'left' else 1
+            ydir = 1 if side1 == 'top' else -1
+            xcen = xdir*xmax + -xdir*0.5*side_thickness[side2]
+            ycen = ydir*ymax + (-ydir*0.5*d)
+            cen = mp.Vector3(xcen, ycen)
+            sz = mp.Vector3(side_thickness[side2], d)
+            v2.append(self._volume_from_kwargs(center=cen, size=sz))
 
-        for side, thickness in configuration_2d.items():
+        for side, thickness in side_thickness.items():
             if thickness == 0:
                 continue
 
