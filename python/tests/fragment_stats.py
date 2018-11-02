@@ -495,5 +495,91 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(stats.box.high.z, 0.5)
         self.assertEqual(stats.num_pixels_in_box, 1000)
 
+
+class TestPMLToVolList(unittest.TestCase):
+
+    def make_sim(self, cell, res, pml, dims):
+        return mp.Simulation(cell_size=cell, resolution=res, boundary_layers=pml, dimensions=dims)
+
+    def check1d(self, vol, expected_min, expected_max):
+        min_vec = vol.get_min_corner()
+        max_vec = vol.get_max_corner()
+        min_v3 = mp.Vector3(z=min_vec.z())
+        max_v3 = mp.Vector3(z=max_vec.z())
+        self.assertEqual(mp.Vector3(z=expected_min), min_v3)
+        self.assertEqual(mp.Vector3(z=expected_max), max_v3)
+
+    def check2d(self, vol, expected_min, expected_max):
+        min_vec = vol.get_min_corner()
+        max_vec = vol.get_max_corner()
+        min_v3 = mp.Vector3(min_vec.x(), min_vec.y())
+        max_v3 = mp.Vector3(max_vec.x(), max_vec.y())
+        self.assertEqual(expected_min, min_v3)
+        self.assertEqual(expected_max, max_v3)
+
+    def test_1d_all_sides(self):
+        sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1)], 1)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v2)
+        self.assertFalse(v3)
+        self.assertEqual(len(v1), 2)
+        self.check1d(v1[0], 4, 5)
+        self.check1d(v1[1], -5, -4)
+
+    def test_1d_high_side(self):
+        sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High)], 1)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v2)
+        self.assertFalse(v3)
+        self.assertEqual(len(v1), 1)
+        self.check1d(v1[0], 4, 5)
+
+    def test_1d_two_sides_different_thickness(self):
+        sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High), mp.PML(2, side=mp.Low)], 1)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v2)
+        self.assertFalse(v3)
+        self.assertEqual(len(v1), 2)
+        self.check1d(v1[0], 4, 5)
+        self.check1d(v1[1], -5, -3)
+
+    def test_2d_all_directions_all_sides(self):
+        sim = self.make_sim(mp.Vector3(10, 10), 10, [mp.PML(1)], 2)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v3)
+        # self.assertEqual(len(v1), 4)
+        # self.assertEqual(len(v2), 4)
+
+        # No overlap
+        self.check2d(v1[0], mp.Vector3(-4, 4), mp.Vector3(4, 5))
+        # self.check2d(v1[1], mp.Vector3(-4, -5), mp.Vector3(4, -4))
+        # self.check2d(v1[2], mp.Vector3(4, -4), mp.Vector3(5, 4))
+        # self.check2d(v1[3], mp.Vector3(-5, -4), mp.Vector3(-4, 4))
+
+        # Two PMLs overlap
+        self.check2d(v2[0], mp.Vector3(-5, 4), mp.Vector3(-4, 5))
+        self.check2d(v2[1], mp.Vector3(4, 4), mp.Vector3(5, 5))
+        # self.check2d(v2[2], mp.Vector3(4, -5), mp.Vector3(5, -4))
+        # self.check2d(v2[3], mp.Vector3(-5, -5), mp.Vector3(-4, -4))
+
+    def test_2d_all_sides_different_thickness(self):
+        # Thickness 1 on top and bottom, 3 on right, 2 on left
+        pmls = [
+            mp.PML(thickness=1, direction=mp.Y),
+            mp.PML(thickness=3, direction=mp.X, side=mp.High),
+            mp.PML(thickness=2, direction=mp.X, side=mp.Low)
+        ]
+        sim = self.make_sim(mp.Vector3(10, 10), 10, pmls, 2)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v3)
+        # self.assertEqal(len(v1), 4)
+        # self.assertEqal(len(v2), 4)
+
+
 if __name__ == '__main__':
     unittest.main()

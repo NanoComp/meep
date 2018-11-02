@@ -72,6 +72,15 @@ struct fragment_stats {
   size_t num_nonlinear_pixels;
   size_t num_susceptibility_pixels;
   size_t num_nonzero_conductivity_pixels;
+
+  // Pixels in single PML regions
+  size_t num_1d_pml_pixels;
+
+  // Pixels where 2 PML regions overlap
+  size_t num_2d_pml_pixels;
+
+  // Pixels where 3 PML regions overlap
+  size_t num_3d_pml_pixels;
   size_t num_dft_pixels;
   size_t num_pixels_in_box;
   geom_box box;
@@ -85,6 +94,9 @@ struct fragment_stats {
   void count_susceptibility_pixels(medium_struct *med, size_t pixels);
   void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
   void compute_dft_stats(std::vector<dft_data> *dft_data_list);
+  void compute_pml_stats(std::vector<meep::volume> pml_1d_vols,
+                         std::vector<meep::volume> pml_2d_vols,
+                         std::vector<meep::volume> pml_3d_vols);
   void print_stats();
 };
 
@@ -94,6 +106,9 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_center,
                                                    material_type default_mat,
                                                    std::vector<dft_data> dft_data_list,
+                                                   std::vector<meep::volume> pml_1d_vols,
+                                                   std::vector<meep::volume> pml_2d_vols,
+                                                   std::vector<meep::volume> pml_3d_vols,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,

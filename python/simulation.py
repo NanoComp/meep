@@ -638,6 +638,126 @@ class Simulation(object):
 
         return volumes
 
+    def _pml_to_vol_list(self):
+        if self.boundary_layers and isinstance(self.boundary_layers[0], Absorber):
+            return [], [], []
+
+        vols_no_overlap = []
+        vols_2_overlap = []
+        vols_3_overlap = []
+
+        configuration_2d = {
+            'top': 0,
+            'bottom': 0,
+            'left': 0,
+            'right': 0,
+        }
+
+        for pml in self.boundary_layers:
+            if pml.direction == mp.X or mp.ALL:
+                if pml.side == mp.High or mp.ALL:
+                    configuration_2d['right'] = pml.thickness
+                if pml.side == mp.Low or mp.ALL:
+                    configuration_2d['left'] = pml.thickness
+            if pml.direction == mp.Y or mp.ALL:
+                if pml.side == mp.High or mp.ALL:
+                    configuration_2d['top'] = pml.thickness
+                if pml.side == mp.Low or mp.ALL:
+                    configuration_2d['bottom'] = pml.thickness
+
+        added_2d = {
+            'top_left': False,
+            'top_right': False,
+            'bottom_left': False,
+            'bottom_right': False,
+        }
+
+        for side, thickness in configuration_2d.items():
+            if thickness == 0 or self.dimensions != 2:
+                continue
+
+            x = self.cell_size.x
+            y = self.cell_size.y
+            xmax = x / 2
+            ymax = y / 2
+
+            def add_top(side, d):
+                dir = 1 if side == 'right' else -1
+                xsz = x - (configuration_2d['left'] + configuration_2d['right'])
+                xcen = dir*xmax + (-dir*configuration_2d[side]) + -dir*(xsz / 2)
+                ycen = ymax - 0.5*d
+                cen = mp.Vector3(xcen, ycen)
+                sz = mp.Vector3(xsz, d)
+                vols_no_overlap.append(self._volume_from_kwargs(center=cen, size=sz))
+
+            def add_bottom(side, d):
+                pass
+
+            def add_top_2d(side1, side2, d):
+                if added_2d[side1 + '_' + side2] is False:
+                    dir = -1 if side2 == 'left' else 1
+                    xcen = dir*xmax + -dir*0.5*configuration_2d[side2]
+                    ycen = ymax - 0.5*d
+                    cen = mp.Vector3(xcen, ycen)
+                    sz = mp.Vector3(configuration_2d[side2], d)
+                    vols_2_overlap.append(self._volume_from_kwargs(center=cen, size=sz))
+                    added_2d[side1 + '_' + side2] = True
+
+            if side == 'top':
+                add_top('right', thickness)
+                add_top_2d('top', 'left', thickness)
+                add_top_2d('top', 'right', thickness)
+            elif side == 'bottom':
+                pass
+            elif side == 'left':
+                pass
+            elif side == 'right':
+                pass
+
+        for pml in self.boundary_layers:
+            if self.dimensions == 1:
+                cen = mp.Vector3(z=(self.cell_size.z / 2) - (0.5 * pml.thickness))
+                sz = mp.Vector3(z=pml.thickness)
+                if pml.side == mp.High or pml.side == mp.ALL:
+                    vols_no_overlap.append(self._volume_from_kwargs(center=cen, size=sz))
+                if pml.side == mp.Low or pml.side == mp.ALL:
+                    vols_no_overlap.append(self._volume_from_kwargs(center=-1 * cen, size=sz))
+            # elif self.dimensions == 2:
+            #     # TODO: cyllindrical
+            #     if pml.direction == mp.ALL:
+            #         if pml.side == mp.ALL:
+            #             # Regions with no overlap
+            #             top_center = mp.Vector3(y=(self.cell_size.y / 2) - (0.5 * pml.thickness))
+            #             right_center = mp.Vector3(x=(self.cell_size.x / 2) - (0.5 * pml.thickness))
+            #             bottom_center = -1 * top_center
+            #             left_center = -1 * right_center
+            #             ydir_size = mp.Vector3(self.cell_size.x - 2*pml.thickness, pml.thickness)
+            #             xdir_size = mp.Vector3(pml.thickness, self.cell_size.y - 2*pml.thickness)
+            #             vols_no_overlap.append(self._volume_from_kwargs(center=top_center, size=ydir_size))
+            #             vols_no_overlap.append(self._volume_from_kwargs(center=bottom_center, size=ydir_size))
+            #             vols_no_overlap.append(self._volume_from_kwargs(center=right_center, size=xdir_size))
+            #             vols_no_overlap.append(self._volume_from_kwargs(center=left_center, size=xdir_size))
+
+            #             # Regions where two PMLs overlap
+            #             top_right_center = mp.Vector3(x=(self.cell_size.x / 2) - (0.5 * pml.thickness),
+            #                                           y=(self.cell_size.y / 2) - (0.5 * pml.thickness))
+            #             top_left_center = mp.Vector3(x=-(self.cell_size.x / 2) + (0.5 * pml.thickness),
+            #                                          y=(self.cell_size.y / 2) - (0.5 * pml.thickness))
+            #             bottom_right_center = mp.Vector3(x=(self.cell_size.x / 2) - (0.5 * pml.thickness),
+            #                                              y=-(self.cell_size.y / 2) + (0.5 * pml.thickness))
+            #             bottom_left_center = mp.Vector3(x=-(self.cell_size.x / 2) + (0.5 * pml.thickness),
+            #                                             y=-(self.cell_size.y / 2) + (0.5 * pml.thickness))
+            #             size = mp.Vector3(pml.thickness, pml.thickness)
+            #             vols_2_overlap.append(self._volume_from_kwargs(center=top_right_center, size=size))
+            #             vols_2_overlap.append(self._volume_from_kwargs(center=top_left_center, size=size))
+            #             vols_2_overlap.append(self._volume_from_kwargs(center=bottom_right_center, size=size))
+            #             vols_2_overlap.append(self._volume_from_kwargs(center=bottom_left_center, size=size))
+
+            elif self.dimensions == 3:
+                pass
+
+        return vols_no_overlap, vols_2_overlap, vols_3_overlap
+
     def _compute_fragment_stats(self, gv):
 
         def convert_volumes(dft_obj):
@@ -650,6 +770,8 @@ class Simulation(object):
         dft_data_list = [mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o))
                          for o in self.dft_objects]
 
+        pml_1d_vols, pml_2d_vols, pml_3d_vols = self._pml_to_vol_list()
+
         stats = mp.compute_fragment_stats(
             self.geometry,
             gv,
@@ -657,6 +779,9 @@ class Simulation(object):
             mp.Vector3(),
             self.default_material,
             dft_data_list,
+            pml_1d_vols,
+            pml_2d_vols,
+            pml_3d_vols,
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity
@@ -670,6 +795,9 @@ class Simulation(object):
                 fs.num_nonlinear_pixels //= 2
                 fs.num_susceptibility_pixels //= 2
                 fs.num_nonzero_conductivity_pixels //= 2
+                fs.num_1d_pml_pixels //= 2
+                fs.num_2d_pml_pixels //= 2
+                fs.num_3d_pml_pixels //= 2
                 fs.num_pixels_in_box //= 2
 
         return stats

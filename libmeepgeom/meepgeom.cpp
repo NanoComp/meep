@@ -1852,7 +1852,7 @@ static size_t get_pixels_in_box(geom_box *b, int empty_pixel=1) {
                          (empty_y ? empty_pixel : (b->high.y - b->low.y) * fragment_stats::resolution) *
                          (empty_z ? empty_pixel : (b->high.z - b->low.z) * fragment_stats::resolution));
 
-  return total_pixels == 1 ? 0 : (size_t)ceil(total_pixels);
+  return (size_t)ceil(total_pixels);
 }
 
 static void center_box(geom_box *b) {
@@ -1893,6 +1893,9 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_center,
                                                    material_type default_mat,
                                                    std::vector<dft_data> dft_data_list,
+                                                   std::vector<meep::volume> pml_1d_vols,
+                                                   std::vector<meep::volume> pml_2d_vols,
+                                                   std::vector<meep::volume> pml_3d_vols,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
@@ -1905,6 +1908,7 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
   for (size_t i = 0; i < fragments.size(); ++i) {
     fragments[i].compute_stats(&geom);
     fragments[i].compute_dft_stats(&dft_data_list);
+    fragments[i].compute_pml_stats(pml_1d_vols, pml_2d_vols, pml_3d_vols);
   }
   return fragments;
 }
@@ -1915,6 +1919,9 @@ fragment_stats::fragment_stats(geom_box& bx, size_t pixels):
   num_nonlinear_pixels(0),
   num_susceptibility_pixels(0),
   num_nonzero_conductivity_pixels(0),
+  num_1d_pml_pixels(0),
+  num_2d_pml_pixels(0),
+  num_3d_pml_pixels(0),
   num_dft_pixels(0),
   num_pixels_in_box(pixels),
   box(bx) {
@@ -2080,6 +2087,12 @@ void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
       }
     }
   }
+}
+
+void fragment_stats::compute_pml_stats(std::vector<meep::volume> pml_1d_vols,
+                                       std::vector<meep::volume> pml_2d_vols,
+                                       std::vector<meep::volume> pml_3d_vols) {
+  return;
 }
 
 void fragment_stats::print_stats() {
