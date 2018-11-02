@@ -570,6 +570,14 @@ class TestPMLToVolList(unittest.TestCase):
         self.assertEqual(expected_min, min_v3)
         self.assertEqual(expected_max, max_v3)
 
+    def check3d(self, vol, expected_min, expected_max):
+        min_vec = vol.get_min_corner()
+        max_vec = vol.get_max_corner()
+        min_v3 = mp.Vector3(min_vec.x(), min_vec.y(), min_vec.z())
+        max_v3 = mp.Vector3(max_vec.x(), max_vec.y(), max_vec.z())
+        self.assertEqual(expected_min, min_v3)
+        self.assertEqual(expected_max, max_v3)
+
     def test_1d_all_sides(self):
         sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1)], 1)
         v1, v2, v3 = sim._pml_to_vol_list()
@@ -677,6 +685,52 @@ class TestPMLToVolList(unittest.TestCase):
         self.assertEqual(len(v1), 2)
         self.check2d(v1[0], mp.Vector3(-5, -5), mp.Vector3(-4, 5))
         self.check2d(v1[1], mp.Vector3(4, -5), mp.Vector3(5, 5))
+
+    def test_3d_all_directions_all_sides(self):
+        sim = self.make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1)], 3)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertEqual(len(v1), 6)
+        self.assertEqual(len(v2), 12)
+        self.assertEqual(len(v3), 8)
+
+        # No overlapping regions (cube faces)
+        # top
+        self.check3d(v1[0], mp.Vector3(-4, 4, -4), mp.Vector3(4, 5, 4))
+        # bottom
+        self.check3d(v1[1], mp.Vector3(-4, -5, -4), mp.Vector3(4, -4, 4))
+        # left
+        self.check3d(v1[2], mp.Vector3(-5, -4, -4), mp.Vector3(-4, 4, 4))
+        # right
+        self.check3d(v1[3], mp.Vector3(4, -4, -4), mp.Vector3(5, 4, 4))
+        # near
+        self.check3d(v1[4], mp.Vector3(-4, -4, 4), mp.Vector3(4, 4, 5))
+        # far
+        self.check3d(v1[5], mp.Vector3(-4, -4, -5), mp.Vector3(4, 4, -4))
+
+        # Two PMLs overlap (cube edges)
+        # self.check3d(v2[0], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[1], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[2], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[3], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[4], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[5], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[6], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[7], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[8], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[9], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[10], mp.Vector3(), mp.Vector3())
+        # self.check3d(v2[11], mp.Vector3(), mp.Vector3())
+
+        # Three PMLs overlap (cube corners)
+        # self.check3d(v3[0], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[1], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[2], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[3], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[4], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[5], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[6], mp.Vector3(), mp.Vector3())
+        # self.check3d(v3[7], mp.Vector3(), mp.Vector3())
 
 
 if __name__ == '__main__':

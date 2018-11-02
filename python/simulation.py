@@ -719,8 +719,104 @@ class Simulation(object):
         return v1, v2
 
     def _pml_to_vol_list_3d(self):
-        # TODO
-        return [], [], []
+        side_thickness = {
+            'top': 0,
+            'bottom': 0,
+            'left': 0,
+            'right': 0,
+            'near': 0,
+            'far': 0
+        }
+
+        for pml in self.boundary_layers:
+            d = pml.direction
+            s = pml.side
+            if d == mp.X or d == mp.ALL:
+                if s == mp.High or s == mp.ALL:
+                    side_thickness['right'] = pml.thickness
+                if s == mp.Low or s == mp.ALL:
+                    side_thickness['left'] = pml.thickness
+            if d == mp.Y or d == mp.ALL:
+                if s == mp.High or s == mp.ALL:
+                    side_thickness['top'] = pml.thickness
+                if s == mp.Low or s == mp.ALL:
+                    side_thickness['bottom'] = pml.thickness
+            if d == mp.Z or d == mp.ALL:
+                if s == mp.High or s == mp.ALL:
+                    side_thickness['far'] = pml.thickness
+                if s == mp.Low or s == mp.ALL:
+                    side_thickness['near'] = pml.thickness
+
+        xmax = self.cell_size.x / 2
+        ymax = self.cell_size.y / 2
+        zmax = self.cell_size.z / 2
+
+        def get_overlap_0(side, d):
+            if side == 'top' or side == 'bottom':
+                xcen = 0
+                xsz = 0
+                ycen = 0
+                ysz = 0
+                zcen = 0
+                zsz = 0
+            elif side == 'left' or side == 'right':
+                xcen = 0
+                xsz = 0
+                ycen = 0
+                ysz = 0
+                zcen = 0
+                zsz = 0
+            elif side == 'near' or side == 'far':
+                xcen = 0
+                xsz = 0
+                ycen = 0
+                ysz = 0
+                zcen = 0
+                zsz = 0
+
+            cen = mp.Vector3(xcen, ycen, zcen)
+            sz = mp.Vector3(xsz, ysz, zsz)
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        def get_overlap_1(side1, side2, d):
+            xcen = 0
+            ycen = 0
+            zcen = 0
+            cen = mp.Vector3(xcen, ycen, zcen)
+            sz = mp.Vector3()
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        def get_overlap_2(side1, side2, side3, d):
+            xcen = 0
+            ycen = 0
+            zcen = 0
+            cen = mp.Vector3(xcen, ycen, zcen)
+            sz = mp.Vector3()
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        v1 = []
+        v2 = []
+        v3 = []
+
+        for side, thickness in side_thickness.items():
+            if thickness == 0:
+                continue
+
+            v1.append(get_overlap_0(side, thickness))
+            if side == 'top' or side == 'bottom':
+                v2.append(get_overlap_1(side, 'left', thickness))
+                v2.append(get_overlap_1(side, 'right', thickness))
+                v2.append(get_overlap_1(side, 'near', thickness))
+                v2.append(get_overlap_1(side, 'far', thickness))
+                v3.append(get_overlap_2(side, 'left', 'near', thickness))
+                v3.append(get_overlap_2(side, 'right', 'near', thickness))
+                v3.append(get_overlap_2(side, 'left', 'far', thickness))
+                v3.append(get_overlap_2(side, 'right', 'far', thickness))
+            if side == 'near' or side == 'far':
+                v2.append(get_overlap_1(side, 'left', thickness))
+                v2.append(get_overlap_1(side, 'right', thickness))
+
+        return v1, v2, v3
 
     def _pml_to_vol_list_cyl(self):
         # TODO

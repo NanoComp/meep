@@ -2117,6 +2117,9 @@ void fragment_stats::print_stats() {
   master_printf("  num_nonlinear_pixels: %zd\n", num_nonlinear_pixels);
   master_printf("  num_susceptibility_pixels: %zd\n", num_susceptibility_pixels);
   master_printf("  num_nonzero_conductivity_pixels: %zd\n", num_nonzero_conductivity_pixels);
+  master_printf("  num_1d_pml_pixels: %zd\n", num_1d_pml_pixels);
+  master_printf("  num_2d_pml_pixels: %zd\n", num_2d_pml_pixels);
+  master_printf("  num_3d_pml_pixels: %zd\n", num_3d_pml_pixels);
   master_printf("  num_dft_pixels: %zd\n", num_dft_pixels);
   master_printf("  num_pixels_in_box: %zd\n", num_pixels_in_box);
   master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);
