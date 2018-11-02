@@ -551,22 +551,22 @@ class TestPMLToVolList(unittest.TestCase):
         v1, v2, v3 = sim._pml_to_vol_list()
 
         self.assertFalse(v3)
-        # self.assertEqual(len(v1), 4)
-        # self.assertEqual(len(v2), 4)
+        self.assertEqual(len(v1), 4)
+        self.assertEqual(len(v2), 4)
 
         # No overlap
         self.check2d(v1[0], mp.Vector3(-4, 4), mp.Vector3(4, 5))
-        # self.check2d(v1[1], mp.Vector3(-4, -5), mp.Vector3(4, -4))
-        # self.check2d(v1[2], mp.Vector3(4, -4), mp.Vector3(5, 4))
-        # self.check2d(v1[3], mp.Vector3(-5, -4), mp.Vector3(-4, 4))
+        self.check2d(v1[1], mp.Vector3(-4, -5), mp.Vector3(4, -4))
+        self.check2d(v1[2], mp.Vector3(-5, -4), mp.Vector3(-4, 4))
+        self.check2d(v1[3], mp.Vector3(4, -4), mp.Vector3(5, 4))
 
         # Two PMLs overlap
         self.check2d(v2[0], mp.Vector3(-5, 4), mp.Vector3(-4, 5))
         self.check2d(v2[1], mp.Vector3(4, 4), mp.Vector3(5, 5))
-        # self.check2d(v2[2], mp.Vector3(4, -5), mp.Vector3(5, -4))
-        # self.check2d(v2[3], mp.Vector3(-5, -5), mp.Vector3(-4, -4))
+        self.check2d(v2[2], mp.Vector3(-5, -5), mp.Vector3(-4, -4))
+        self.check2d(v2[3], mp.Vector3(4, -5), mp.Vector3(5, -4))
 
-    def test_2d_all_sides_different_thickness(self):
+    def test_2d_all_sides_different_thickness_in_X(self):
         # Thickness 1 on top and bottom, 3 on right, 2 on left
         pmls = [
             mp.PML(thickness=1, direction=mp.Y),
@@ -577,8 +577,53 @@ class TestPMLToVolList(unittest.TestCase):
         v1, v2, v3 = sim._pml_to_vol_list()
 
         self.assertFalse(v3)
-        # self.assertEqal(len(v1), 4)
-        # self.assertEqal(len(v2), 4)
+        self.assertEqual(len(v1), 4)
+        self.assertEqual(len(v2), 4)
+
+        # No overlap
+        self.check2d(v1[0], mp.Vector3(-3, 4), mp.Vector3(2, 5))
+        self.check2d(v1[1], mp.Vector3(-3, -5), mp.Vector3(2, -4))
+        self.check2d(v1[2], mp.Vector3(-5, -4), mp.Vector3(-3, 4))
+        self.check2d(v1[3], mp.Vector3(2, -4), mp.Vector3(5, 4))
+
+        # Two PMLs overlap
+        self.check2d(v2[0], mp.Vector3(-5, 4), mp.Vector3(-3, 5))
+        self.check2d(v2[1], mp.Vector3(2, 4), mp.Vector3(5, 5))
+        self.check2d(v2[2], mp.Vector3(-5, -5), mp.Vector3(-3, -4))
+        self.check2d(v2[3], mp.Vector3(2, -5), mp.Vector3(5, -4))
+
+    def test_2d_three_sides_different_thickness(self):
+        # Thickness 3 on top, 2 on left, 1 on right
+        pmls = [
+            mp.PML(3, mp.Y, mp.High),
+            mp.PML(2, mp.X, mp.Low),
+            mp.PML(1, mp.X, mp.High),
+        ]
+        sim = self.make_sim(mp.Vector3(10, 10), 10, pmls, 2)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v3)
+        self.assertEqual(len(v1), 3)
+        self.assertEqual(len(v2), 2)
+
+        # No overlap
+        self.check2d(v1[0], mp.Vector3(-3, 2), mp.Vector3(4, 5))
+        self.check2d(v1[1], mp.Vector3(-5, -5), mp.Vector3(-3, 2))
+        self.check2d(v1[2], mp.Vector3(4, -5), mp.Vector3(5, 2))
+
+        # Two PMLs overlap
+        self.check2d(v2[0], mp.Vector3(-5, 2), mp.Vector3(-3, 5))
+        self.check2d(v2[1], mp.Vector3(4, 2), mp.Vector3(5, 5))
+
+    def test_2d_two_sides(self):
+        sim = self.make_sim(mp.Vector3(10, 10), 10, [mp.PML(1, mp.X)], 2)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v2)
+        self.assertFalse(v3)
+        self.assertEqual(len(v1), 2)
+        self.check2d(v1[0], mp.Vector3(-5, -5), mp.Vector3(-4, 5))
+        self.check2d(v1[1], mp.Vector3(4, -5), mp.Vector3(5, 5))
 
 
 if __name__ == '__main__':
