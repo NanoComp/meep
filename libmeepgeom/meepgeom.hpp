@@ -94,9 +94,9 @@ struct fragment_stats {
   void count_susceptibility_pixels(medium_struct *med, size_t pixels);
   void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
   void compute_dft_stats(std::vector<dft_data> *dft_data_list);
-  void compute_pml_stats(std::vector<meep::volume> pml_1d_vols,
-                         std::vector<meep::volume> pml_2d_vols,
-                         std::vector<meep::volume> pml_3d_vols);
+  void compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
+                         const std::vector<meep::volume> &pml_2d_vols,
+                         const std::vector<meep::volume> &pml_3d_vols);
   void print_stats();
 };
 

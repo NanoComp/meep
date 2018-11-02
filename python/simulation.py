@@ -513,6 +513,7 @@ class Simulation(object):
         self.load_structure_file = load_structure
         self.dft_objects = []
         self._is_initialized = False
+        self._fragment_size = 10
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -638,10 +639,6 @@ class Simulation(object):
 
         return volumes
 
-    def _pml_to_vol_list_cyl(self):
-        # TODO
-        pass
-
     def _pml_to_vol_list_1d(self):
         v1 = []
 
@@ -680,10 +677,7 @@ class Simulation(object):
         xmax = self.cell_size.x / 2
         ymax = self.cell_size.y / 2
 
-        v1 = []
-        v2 = []
-
-        def add_overlap_0(side, d):
+        def get_overlap_0(side, d):
             if side == 'top' or side == 'bottom':
                 ydir = -1 if side == 'bottom' else 1
                 xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
@@ -699,31 +693,38 @@ class Simulation(object):
 
             cen = mp.Vector3(xcen, ycen)
             sz = mp.Vector3(xsz, ysz)
-            v1.append(self._volume_from_kwargs(center=cen, size=sz))
+            return self._volume_from_kwargs(center=cen, size=sz)
 
-        def add_overlap_1(side1, side2, d):
+        def get_overlap_1(side1, side2, d):
             xdir = -1 if side2 == 'left' else 1
             ydir = 1 if side1 == 'top' else -1
             xcen = xdir*xmax + -xdir*0.5*side_thickness[side2]
             ycen = ydir*ymax + (-ydir*0.5*d)
             cen = mp.Vector3(xcen, ycen)
             sz = mp.Vector3(side_thickness[side2], d)
-            v2.append(self._volume_from_kwargs(center=cen, size=sz))
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        v1 = []
+        v2 = []
 
         for side, thickness in side_thickness.items():
             if thickness == 0:
                 continue
 
-            add_overlap_0(side, thickness)
+            v1.append(get_overlap_0(side, thickness))
             if side == 'top' or side == 'bottom':
-                add_overlap_1(side, 'left', thickness)
-                add_overlap_1(side, 'right', thickness)
+                v2.append(get_overlap_1(side, 'left', thickness))
+                v2.append(get_overlap_1(side, 'right', thickness))
 
         return v1, v2
 
     def _pml_to_vol_list_3d(self):
         # TODO
         return [], [], []
+
+    def _pml_to_vol_list_cyl(self):
+        # TODO
+        return [], []
 
     def _pml_to_vol_list(self):
         if self.boundary_layers and isinstance(self.boundary_layers[0], Absorber):
@@ -736,7 +737,10 @@ class Simulation(object):
         if self.dimensions == 1:
             vols_no_overlap = self._pml_to_vol_list_1d()
         elif self.dimensions == 2:
-            vols_no_overlap, vols_2_overlap = self._pml_to_vol_list_2d()
+            if self.is_cylindrical:
+                vols_no_overlap, vols_2_overlap = self._pml_to_vol_list_cyl()
+            else:
+                vols_no_overlap, vols_2_overlap = self._pml_to_vol_list_2d()
         elif self.dimensions == 3:
             vols_no_overlap, vols_2_overlap, vols_3_overlap = self._pml_to_vol_list_3d()
 
@@ -768,7 +772,8 @@ class Simulation(object):
             pml_3d_vols,
             self.subpixel_tol,
             self.subpixel_maxeval,
-            self.ensure_periodicity
+            self.ensure_periodicity,
+            self._fragment_size
         )
 
         mirror_symmetries = [sym for sym in self.symmetries if isinstance(sym, Mirror)]

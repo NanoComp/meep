@@ -1,3 +1,5 @@
+from __future__ import division
+
 import unittest
 import meep as mp
 
@@ -25,7 +27,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fragment.num_nonzero_conductivity_pixels, cond)
 
     def get_fragment_stats(self, block_size, cell_size, dims, box_center=mp.Vector3(), dft_vecs=None,
-                           def_mat=mp.air, sym=[], geom=None):
+                           def_mat=mp.air, sym=[], geom=None, pml=[]):
         mat = mp.Medium(
             epsilon=12,
             epsilon_offdiag=mp.Vector3(z=1),
@@ -41,7 +43,7 @@ class TestFragmentStats(unittest.TestCase):
         if geom is None:
             geom = [mp.Block(size=block_size, center=box_center, material=mat)]
         sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims,
-                            default_material=def_mat, symmetries=sym)
+                            default_material=def_mat, symmetries=sym, boundary_layers=pml)
 
         if dft_vecs:
             if dft_vecs['flux_regions']:
@@ -59,7 +61,7 @@ class TestFragmentStats(unittest.TestCase):
 
         return stats
 
-    def _test_1d(self, sym):
+    def _test_1d(self, sym, pml=[]):
         # A z=30 cell, split into three fragments of size 10 each, with a block
         # covering the middle fragment.
 
@@ -70,7 +72,7 @@ class TestFragmentStats(unittest.TestCase):
             [mp.ForceRegion(mp.Vector3(z=10), direction=mp.X, size=mp.Vector3(z=10))]
         )
 
-        fs = self.get_fragment_stats(mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs, sym=sym)
+        fs = self.get_fragment_stats(mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs, sym=sym, pml=pml)
 
         self.assertEqual(len(fs), 3)
 
@@ -92,11 +94,24 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs[1].num_dft_pixels, 11792)
         self.assertEqual(fs[2].num_dft_pixels, 21824)
 
+        self.fs = fs
+
     def test_1d(self):
         self._test_1d([])
 
     def test_1d_with_symmetry(self):
         self._test_1d([mp.Mirror(mp.X)])
+
+    def test_1d_with_pml(self):
+        self._test_1d([], pml=[mp.PML(1)])
+
+        for i in range(3):
+            self.assertEqual(self.fs[i].num_2d_pml_pixels, 0)
+            self.assertEqual(self.fs[i].num_3d_pml_pixels, 0)
+
+        self.assertEqual(self.fs[0].num_1d_pml_pixels, 10)
+        self.assertEqual(self.fs[1].num_1d_pml_pixels, 0)
+        self.assertEqual(self.fs[2].num_1d_pml_pixels, 10)
 
     def test_1d_with_overlap(self):
         # A z=30 cell split into three fragments of size 10 each, with a block
@@ -190,7 +205,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs[1].num_dft_pixels, 80)
         self.assertEqual(fs[2].num_dft_pixels, 0)
 
-    def _test_2d(self, sym):
+    def _test_2d(self, sym, pml=[]):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
 
         # flux covering top-left fragment, near2far covering top-middle, force covering top-right
@@ -199,7 +214,8 @@ class TestFragmentStats(unittest.TestCase):
             [mp.Near2FarRegion(mp.Vector3(0, 10), size=mp.Vector3(10, 10))],
             [mp.ForceRegion(mp.Vector3(10, 10), direction=mp.X, size=mp.Vector3(10, 10))]
         )
-        fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2, dft_vecs=dft_vecs, sym=sym)
+        fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2,
+                                     dft_vecs=dft_vecs, sym=sym, pml=pml)
 
         self.assertEqual(len(fs), 9)
 
@@ -245,11 +261,48 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs[5].num_dft_pixels, 589600)
         self.assertEqual(fs[8].num_dft_pixels, 1091200)
 
+        self.fs = fs
+
     def test_2d(self):
         self._test_2d([])
 
     def test_2d_with_symmetry(self):
         self._test_2d([mp.Mirror(mp.X), mp.Mirror(mp.Y)])
+
+    def test_2d_with_pml_all_sides(self):
+        self._test_2d([], pml=[mp.PML(1, mp.Y), mp.PML(2, mp.X, mp.Low), mp.PML(3, mp.X, mp.High)])
+
+        # Center fragment has no PML pixels
+        self.assertEqual(self.fs[4].num_1d_pml_pixels, 0)
+        self.assertEqual(self.fs[4].num_2d_pml_pixels, 0)
+        self.assertEqual(self.fs[4].num_3d_pml_pixels, 0)
+
+        for i in range(len(self.fs)):
+            # No regions where 3 PMLs overlap
+            self.assertEqual(self.fs[i].num_3d_pml_pixels, 0)
+
+        for i in [1, 3, 5, 7]:
+            # No regions where 2 PMLs overlap
+            self.assertEqual(self.fs[i].num_2d_pml_pixels, 0)
+
+        for i in [0, 2]:
+            # Lower left and top left
+            self.assertEqual(self.fs[i].num_1d_pml_pixels, 2600)
+            self.assertEqual(self.fs[i].num_2d_pml_pixels, 200)
+
+        for i in [6, 8]:
+            # Lower right and top right
+            self.assertEqual(self.fs[i].num_1d_pml_pixels, 3400)
+            self.assertEqual(self.fs[i].num_2d_pml_pixels, 300)
+
+        for i in [3, 5]:
+            # bottom center, top center
+            self.assertEqual(self.fs[i].num_1d_pml_pixels, 1000)
+
+        # Right center
+        self.assertEqual(self.fs[7].num_1d_pml_pixels, 3000)
+        # Left center
+        self.assertEqual(self.fs[1].num_1d_pml_pixels, 2000)
 
     def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.

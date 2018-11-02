@@ -2089,10 +2089,25 @@ void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
   }
 }
 
-void fragment_stats::compute_pml_stats(std::vector<meep::volume> pml_1d_vols,
-                                       std::vector<meep::volume> pml_2d_vols,
-                                       std::vector<meep::volume> pml_3d_vols) {
-  return;
+void fragment_stats::compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
+                                       const std::vector<meep::volume> &pml_2d_vols,
+                                       const std::vector<meep::volume> &pml_3d_vols) {
+
+  const std::vector<meep::volume> *pml_vols[] = {&pml_1d_vols, &pml_2d_vols, &pml_3d_vols};
+  size_t *pml_pixels[] = {&num_1d_pml_pixels, &num_2d_pml_pixels, &num_3d_pml_pixels};
+
+  for (int j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < pml_vols[j]->size(); ++i) {
+      geom_box pml_box = gv2box((*pml_vols[j])[i]);
+
+      if (geom_boxes_intersect(&pml_box, &box)) {
+        geom_box overlap_box;
+        geom_box_intersection(&overlap_box, &pml_box, &box);
+        size_t overlap_pixels = get_pixels_in_box(&overlap_box, 1);
+        *pml_pixels[j] += overlap_pixels;
+      }
+    }
+  }
 }
 
 void fragment_stats::print_stats() {
