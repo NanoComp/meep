@@ -9,6 +9,7 @@ import subprocess
 import sys
 import warnings
 from collections import namedtuple
+from collections import OrderedDict
 from collections import Sequence
 
 import numpy as np
@@ -653,12 +654,11 @@ class Simulation(object):
         return v1
 
     def _pml_to_vol_list_2d(self, cyl=False):
-        side_thickness = {
-            'top': 0,
-            'bottom': 0,
-            'left': 0,
-            'right': 0,
-        }
+        side_thickness = OrderedDict()
+        side_thickness['top'] = 0
+        side_thickness['bottom'] = 0
+        side_thickness['left'] = 0
+        side_thickness['right'] = 0
 
         for pml in self.boundary_layers:
             d = pml.direction
@@ -719,7 +719,8 @@ class Simulation(object):
         v1 = []
         v2 = []
 
-        for side, thickness in side_thickness.items():
+        for side in side_thickness.keys():
+            thickness = side_thickness[side]
             if thickness == 0:
                 continue
 
@@ -731,14 +732,13 @@ class Simulation(object):
         return v1, v2
 
     def _pml_to_vol_list_3d(self):
-        side_thickness = {
-            'top': 0,
-            'bottom': 0,
-            'left': 0,
-            'right': 0,
-            'near': 0,
-            'far': 0
-        }
+        side_thickness = OrderedDict()
+        side_thickness['top'] = 0
+        side_thickness['bottom'] = 0
+        side_thickness['left'] = 0
+        side_thickness['right'] = 0
+        side_thickness['near'] = 0
+        side_thickness['far'] = 0
 
         for pml in self.boundary_layers:
             d = pml.direction
