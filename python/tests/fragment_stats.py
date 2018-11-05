@@ -800,6 +800,19 @@ class TestPMLToVolList(unittest.TestCase):
         # bottom right far
         self.check3d(v3[7], mp.Vector3(4, -5, 4), mp.Vector3(5, -4, 5))
 
+    def test_3d_X_direction_only(self):
+        sim = self.make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1, mp.X)], 3)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertEqual(len(v1), 2)
+        self.assertEqual(len(v2), 0)
+        self.assertEqual(len(v3), 0)
+
+        # left
+        self.check3d(v1[0], mp.Vector3(-5, -5, -5), mp.Vector3(-4, 5, 5))
+        # right
+        self.check3d(v1[1], mp.Vector3(4, -5, -5), mp.Vector3(5, 5, 5))
+
     def test_cylindrical_all_directions_all_sides(self):
         sim = self.make_sim(mp.Vector3(10, 0, 10), 10, [mp.PML(1)], mp.CYLINDRICAL)
         v1, v2, v3 = sim._pml_to_vol_list()
