@@ -383,7 +383,7 @@ class TestFragmentStats(unittest.TestCase):
             for i in [1, 3, 5, 7]:
                 self.assertEqual(fs[i].num_dft_pixels, 150000)
 
-    def _test_3d(self, sym):
+    def _test_3d(self, sym, pml=[]):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
         # into 27 10 x 10 x 10 fragments
 
@@ -394,7 +394,8 @@ class TestFragmentStats(unittest.TestCase):
             [mp.Near2FarRegion(mp.Vector3(-10, -10, 0), size=mp.Vector3(10, 10, 10))],
             [mp.ForceRegion(mp.Vector3(-10, -10, 10), direction=mp.X, size=mp.Vector3(10, 10, 10))]
         )
-        fs = self.get_fragment_stats(mp.Vector3(10, 10, 10), mp.Vector3(30, 30, 30), 3, dft_vecs=dft_vecs, sym=sym)
+        fs = self.get_fragment_stats(mp.Vector3(10, 10, 10), mp.Vector3(30, 30, 30), 3,
+                                     dft_vecs=dft_vecs, sym=sym, pml=pml)
 
         self.assertEqual(len(fs), 27)
 
@@ -419,11 +420,22 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs[1].num_dft_pixels, 29480000)
         self.assertEqual(fs[2].num_dft_pixels, 54560000)
 
+        self.fs = fs
+
     def test_3d(self):
         self._test_3d([])
 
     def test_3d_with_symmetry(self):
         self._test_3d([mp.Mirror(mp.X), mp.Mirror(mp.Y), mp.Mirror(mp.Z)])
+
+    def test_3d_with_pml(self):
+        self._test_3d([], pml=[mp.PML(1, mp.Y, mp.High), mp.PML(2, mp.Y, mp.Low), mp.PML(3, mp.X),
+                               mp.PML(1, mp.Z, mp.High), mp.PML(2, mp.Z, mp.Low)])
+
+        # bottom left near
+        self.assertEqual(self.fs[0].num_1d_pml_pixels, 416000)
+        self.assertEqual(self.fs[0].num_2d_pml_pixels, 124000)
+        self.assertEqual(self.fs[0].num_3d_pml_pixels, 12000)
 
     def test_3d_with_overlap(self):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split
@@ -552,7 +564,9 @@ class TestFragmentStats(unittest.TestCase):
 class TestPMLToVolList(unittest.TestCase):
 
     def make_sim(self, cell, res, pml, dims):
-        return mp.Simulation(cell_size=cell, resolution=res, boundary_layers=pml, dimensions=dims)
+        sim = mp.Simulation(cell_size=cell, resolution=res, boundary_layers=pml, dimensions=dims)
+        sim._create_grid_volume(False)
+        return sim
 
     def check1d(self, vol, expected_min, expected_max):
         min_vec = vol.get_min_corner()
@@ -567,6 +581,14 @@ class TestPMLToVolList(unittest.TestCase):
         max_vec = vol.get_max_corner()
         min_v3 = mp.Vector3(min_vec.x(), min_vec.y())
         max_v3 = mp.Vector3(max_vec.x(), max_vec.y())
+        self.assertEqual(expected_min, min_v3)
+        self.assertEqual(expected_max, max_v3)
+
+    def checkcyl(self, vol, expected_min, expected_max):
+        min_vec = vol.get_min_corner()
+        max_vec = vol.get_max_corner()
+        min_v3 = mp.Vector3(min_vec.r(), 0, min_vec.z())
+        max_v3 = mp.Vector3(max_vec.r(), 0, max_vec.z())
         self.assertEqual(expected_min, min_v3)
         self.assertEqual(expected_max, max_v3)
 
@@ -751,6 +773,26 @@ class TestPMLToVolList(unittest.TestCase):
         self.check3d(v3[6], mp.Vector3(-5, -5, 4), mp.Vector3(-4, -4, 5))
         # bottom right far
         self.check3d(v3[7], mp.Vector3(4, -5, 4), mp.Vector3(5, -4, 5))
+
+    def test_cyl_all_directions_all_sides(self):
+        sim = self.make_sim(mp.Vector3(10, 0, 10), 10, [mp.PML(1)], mp.CYLINDRICAL)
+        v1, v2, v3 = sim._pml_to_vol_list()
+
+        self.assertFalse(v3)
+        self.assertEqual(len(v1), 4)
+        self.assertEqual(len(v2), 4)
+
+        # No overlap
+        self.checkcyl(v1[0], mp.Vector3(-4, 0, 4), mp.Vector3(4, 0, 5))
+        self.checkcyl(v1[1], mp.Vector3(-4, 0, -5), mp.Vector3(4, 0, -4))
+        self.checkcyl(v1[2], mp.Vector3(-5, 0, -4), mp.Vector3(-4, 0, 4))
+        self.checkcyl(v1[3], mp.Vector3(4, 0, -4), mp.Vector3(5, 0, 4))
+
+        # Two PMLs overlap
+        self.checkcyl(v2[0], mp.Vector3(-5, 0, 4), mp.Vector3(-4, 0, 5))
+        self.checkcyl(v2[1], mp.Vector3(4, 0, 4), mp.Vector3(5, 0, 5))
+        self.checkcyl(v2[2], mp.Vector3(-5, 0, -5), mp.Vector3(-4, 0, -4))
+        self.checkcyl(v2[3], mp.Vector3(4, 0, -5), mp.Vector3(5, 0, -4))
 
 
 if __name__ == '__main__':
