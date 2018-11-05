@@ -753,45 +753,78 @@ class Simulation(object):
 
         def get_overlap_0(side, d):
             if side == 'top' or side == 'bottom':
-                xcen = 0
-                xsz = 0
-                ycen = 0
-                ysz = 0
-                zcen = 0
-                zsz = 0
+                ydir = 1 if side == 'top' else -1
+                xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
+                ysz = d
+                zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
+                xcen = xmax - side_thickness['right'] - (xsz / 2)
+                ycen = ydir*ymax + (-ydir*0.5*d)
+                zcen = zmax - side_thickness['far'] - (zsz / 2)
             elif side == 'left' or side == 'right':
-                xcen = 0
-                xsz = 0
-                ycen = 0
-                ysz = 0
-                zcen = 0
-                zsz = 0
+                xdir = 1 if side == 'right' else -1
+                xsz = d
+                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
+                zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
+                xcen = xdir*xmax + (-xdir*0.5*d)
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
+                zcen = zmax - side_thickness['far'] - (zsz / 2)
             elif side == 'near' or side == 'far':
-                xcen = 0
-                xsz = 0
-                ycen = 0
-                ysz = 0
-                zcen = 0
-                zsz = 0
+                zdir = 1 if side == 'far' else -1
+                xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
+                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
+                zsz = d
+                xcen = xmax - side_thickness['right'] - (xsz / 2)
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
+                zcen = zdir*zmax + (-zdir*0.5*d)
 
             cen = mp.Vector3(xcen, ycen, zcen)
             sz = mp.Vector3(xsz, ysz, zsz)
             return self._volume_from_kwargs(center=cen, size=sz)
 
         def get_overlap_1(side1, side2, d):
-            xcen = 0
-            ycen = 0
-            zcen = 0
+            if side1 == 'top' or side1 == 'bottom':
+                ydir = 1 if side1 == 'top' else -1
+                ysz = d
+                ycen = ydir*ymax + (-ydir*0.5*d)
+                if side2 == 'left' or side2 == 'right':
+                    xdir = 1 if side2 == 'right' else -1
+                    xsz = side_thickness[side2]
+                    zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
+                    xcen = xdir*xmax + (-xdir*0.5*side_thickness[side2])
+                    zcen = zmax - side_thickness['far'] - (zsz / 2)
+                elif side2 == 'near' or side2 == 'far':
+                    zdir = 1 if side2 == 'far' else -1
+                    xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
+                    zsz = side_thickness[side2]
+                    xcen = xmax - side_thickness['right'] - (xsz / 2)
+                    zcen = zdir*zmax + (-zdir*0.5*side_thickness[side2])
+            elif side1 == 'near' or side1 == 'far':
+                xdir = 1 if side2 == 'right' else -1
+                zdir = 1 if side1 == 'far' else -1
+                xsz = side_thickness[side2]
+                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
+                zsz = d
+                xcen = xdir*xmax + (-xdir*0.5*side_thickness[side2])
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
+                zcen = zdir*zmax + (-zdir*0.5*d)
+
             cen = mp.Vector3(xcen, ycen, zcen)
-            sz = mp.Vector3()
+            sz = mp.Vector3(xsz, ysz, zsz)
             return self._volume_from_kwargs(center=cen, size=sz)
 
         def get_overlap_2(side1, side2, side3, d):
-            xcen = 0
-            ycen = 0
-            zcen = 0
+            xdir = 1 if side2 == 'right' else -1
+            ydir = 1 if side1 == 'top' else -1
+            zdir = 1 if side3 == 'far' else -1
+            xsz = side_thickness[side2]
+            ysz = d
+            zsz = side_thickness[side3]
+            xcen = xdir*xmax + (-xdir*0.5*side_thickness[side2])
+            ycen = ydir*ymax + (-ydir*0.5*d)
+            zcen = zdir*zmax + (-zdir*0.5*side_thickness[side3])
+
             cen = mp.Vector3(xcen, ycen, zcen)
-            sz = mp.Vector3()
+            sz = mp.Vector3(xsz, ysz, zsz)
             return self._volume_from_kwargs(center=cen, size=sz)
 
         v1 = []

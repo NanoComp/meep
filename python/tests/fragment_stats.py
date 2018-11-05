@@ -704,33 +704,53 @@ class TestPMLToVolList(unittest.TestCase):
         # right
         self.check3d(v1[3], mp.Vector3(4, -4, -4), mp.Vector3(5, 4, 4))
         # near
-        self.check3d(v1[4], mp.Vector3(-4, -4, 4), mp.Vector3(4, 4, 5))
+        self.check3d(v1[4], mp.Vector3(-4, -4, -5), mp.Vector3(4, 4, -4))
         # far
-        self.check3d(v1[5], mp.Vector3(-4, -4, -5), mp.Vector3(4, 4, -4))
+        self.check3d(v1[5], mp.Vector3(-4, -4, 4), mp.Vector3(4, 4, 5))
 
         # Two PMLs overlap (cube edges)
-        # self.check3d(v2[0], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[1], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[2], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[3], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[4], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[5], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[6], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[7], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[8], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[9], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[10], mp.Vector3(), mp.Vector3())
-        # self.check3d(v2[11], mp.Vector3(), mp.Vector3())
+        # top left
+        self.check3d(v2[0], mp.Vector3(-5, 4, -4), mp.Vector3(-4, 5, 4))
+        # top right
+        self.check3d(v2[1], mp.Vector3(4, 4, -4), mp.Vector3(5, 5, 4))
+        # top near
+        self.check3d(v2[2], mp.Vector3(-4, 4, -5), mp.Vector3(4, 5, -4))
+        # top far
+        self.check3d(v2[3], mp.Vector3(-4, 4, 4), mp.Vector3(4, 5, 5))
+        # bottom left
+        self.check3d(v2[4], mp.Vector3(-5, -5, -4), mp.Vector3(-4, -4, 4))
+        # bottom right
+        self.check3d(v2[5], mp.Vector3(4, -5, -4), mp.Vector3(5, -4, 4))
+        # bottom near
+        self.check3d(v2[6], mp.Vector3(-4, -5, -5), mp.Vector3(4, -4, -4))
+        # bottom far
+        self.check3d(v2[7], mp.Vector3(-4, -5, 4), mp.Vector3(4, -4, 5))
+        # near left
+        self.check3d(v2[8], mp.Vector3(-5, -4, -5), mp.Vector3(-4, 4, -4))
+        # near right
+        self.check3d(v2[9], mp.Vector3(4, -4, -5), mp.Vector3(5, 4, -4))
+        # far left
+        self.check3d(v2[10], mp.Vector3(-5, -4, 4), mp.Vector3(-4, 4, 5))
+        # far right
+        self.check3d(v2[11], mp.Vector3(4, -4, 4), mp.Vector3(5, 4, 5))
 
         # Three PMLs overlap (cube corners)
-        # self.check3d(v3[0], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[1], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[2], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[3], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[4], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[5], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[6], mp.Vector3(), mp.Vector3())
-        # self.check3d(v3[7], mp.Vector3(), mp.Vector3())
+        # top left near
+        self.check3d(v3[0], mp.Vector3(-5, 4, -5), mp.Vector3(-4, 5, -4))
+        # top right near
+        self.check3d(v3[1], mp.Vector3(4, 4, -5), mp.Vector3(5, 5, -4))
+        # top left far
+        self.check3d(v3[2], mp.Vector3(-5, 4, 4), mp.Vector3(-4, 5, 5))
+        # top right far
+        self.check3d(v3[3], mp.Vector3(4, 4, 4), mp.Vector3(5, 5, 5))
+        # bottom left near
+        self.check3d(v3[4], mp.Vector3(-5, -5, -5), mp.Vector3(-4, -4, -4))
+        # bottom right near
+        self.check3d(v3[5], mp.Vector3(4, -5, -5), mp.Vector3(5, -4, -4))
+        # bottom left far
+        self.check3d(v3[6], mp.Vector3(-5, -5, 4), mp.Vector3(-4, -4, 5))
+        # bottom right far
+        self.check3d(v3[7], mp.Vector3(4, -5, 4), mp.Vector3(5, -4, 5))
 
 
 if __name__ == '__main__':
