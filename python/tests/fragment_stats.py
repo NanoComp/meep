@@ -304,6 +304,19 @@ class TestFragmentStats(unittest.TestCase):
         # Left center
         self.assertEqual(self.fs[1].num_1d_pml_pixels, 2000)
 
+    def test_2d_with_absorbers(self):
+        fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2,
+                                     geom=[], pml=[mp.Absorber(1)])
+
+        total_nonzero_cond_pixels = 0
+        for i in range(len(fs)):
+            self.assertEqual(fs[i].num_1d_pml_pixels, 0)
+            self.assertEqual(fs[i].num_2d_pml_pixels, 0)
+            self.assertEqual(fs[i].num_3d_pml_pixels, 0)
+            total_nonzero_cond_pixels += fs[i].num_nonzero_conductivity_pixels
+
+        self.assertEqual(total_nonzero_cond_pixels, 12000)
+
     def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.
 
@@ -436,6 +449,19 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(self.fs[0].num_1d_pml_pixels, 416000)
         self.assertEqual(self.fs[0].num_2d_pml_pixels, 124000)
         self.assertEqual(self.fs[0].num_3d_pml_pixels, 12000)
+
+    def test_3d_with_absorbers(self):
+        fs = self.get_fragment_stats(mp.Vector3(), mp.Vector3(30, 30, 30), 3,
+                                     geom=[], pml=[mp.Absorber(1)])
+
+        total_nonzero_cond_pixels = 0
+        for i in range(len(fs)):
+            self.assertEqual(fs[i].num_1d_pml_pixels, 0)
+            self.assertEqual(fs[i].num_2d_pml_pixels, 0)
+            self.assertEqual(fs[i].num_3d_pml_pixels, 0)
+            total_nonzero_cond_pixels += fs[i].num_nonzero_conductivity_pixels
+
+        self.assertEqual(total_nonzero_cond_pixels, 5400000)
 
     def test_3d_with_overlap(self):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split

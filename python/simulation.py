@@ -864,8 +864,10 @@ class Simulation(object):
         return v1, v2, v3
 
     def _pml_to_vol_list(self):
-        if self.boundary_layers and isinstance(self.boundary_layers[0], Absorber):
-            return [], [], []
+        """Returns three lists of meep::volume objects. The first represents the boundary
+           regions with no overlaps. The second is regions where two boundaries overlap, and
+           the third is regions where three boundaries overlap
+        """
 
         vols_no_overlap = []
         vols_2_overlap = []
@@ -892,7 +894,28 @@ class Simulation(object):
         dft_data_list = [mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o))
                          for o in self.dft_objects]
 
-        pml_1d_vols, pml_2d_vols, pml_3d_vols = self._pml_to_vol_list()
+        boundary_vols1, boundary_vols2, boundary_vols3 = self._pml_to_vol_list()
+
+        # Assumes PML and Absorber boundaries never coexist in the same Simulation
+        have_absorbers = True if self.boundary_layers and isinstance(self.boundary_layers[0], Absorber) else False
+
+        if have_absorbers:
+            absorber_vols1 = boundary_vols1
+            absorber_vols2 = boundary_vols2
+            absorber_vols3 = boundary_vols3
+        else:
+            absorber_vols1 = []
+            absorber_vols2 = []
+            absorber_vols3 = []
+
+        if self.boundary_layers and not have_absorbers:
+            pml_vols1 = boundary_vols1
+            pml_vols2 = boundary_vols2
+            pml_vols3 = boundary_vols3
+        else:
+            pml_vols1 = []
+            pml_vols2 = []
+            pml_vols3 = []
 
         stats = mp.compute_fragment_stats(
             self.geometry,
@@ -901,9 +924,12 @@ class Simulation(object):
             mp.Vector3(),
             self.default_material,
             dft_data_list,
-            pml_1d_vols,
-            pml_2d_vols,
-            pml_3d_vols,
+            pml_vols1,
+            pml_vols2,
+            pml_vols3,
+            absorber_vols1,
+            absorber_vols2,
+            absorber_vols3,
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,

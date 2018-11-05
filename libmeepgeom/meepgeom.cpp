@@ -1896,6 +1896,9 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    std::vector<meep::volume> pml_1d_vols,
                                                    std::vector<meep::volume> pml_2d_vols,
                                                    std::vector<meep::volume> pml_3d_vols,
+                                                   std::vector<meep::volume> absorber_1d_vols,
+                                                   std::vector<meep::volume> absorber_2d_vols,
+                                                   std::vector<meep::volume> absorber_3d_vols,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
@@ -1909,6 +1912,7 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
     fragments[i].compute_stats(&geom);
     fragments[i].compute_dft_stats(&dft_data_list);
     fragments[i].compute_pml_stats(pml_1d_vols, pml_2d_vols, pml_3d_vols);
+    fragments[i].compute_absorber_stats(absorber_1d_vols, absorber_2d_vols, absorber_3d_vols);
   }
   return fragments;
 }
@@ -2093,7 +2097,11 @@ void fragment_stats::compute_pml_stats(const std::vector<meep::volume> &pml_1d_v
                                        const std::vector<meep::volume> &pml_2d_vols,
                                        const std::vector<meep::volume> &pml_3d_vols) {
 
-  const std::vector<meep::volume> *pml_vols[] = {&pml_1d_vols, &pml_2d_vols, &pml_3d_vols};
+  const std::vector<meep::volume> *pml_vols[] = {
+      &pml_1d_vols,
+      &pml_2d_vols,
+      &pml_3d_vols
+  };
   size_t *pml_pixels[] = {&num_1d_pml_pixels, &num_2d_pml_pixels, &num_3d_pml_pixels};
 
   for (int j = 0; j < 3; ++j) {
@@ -2105,6 +2113,30 @@ void fragment_stats::compute_pml_stats(const std::vector<meep::volume> &pml_1d_v
         geom_box_intersection(&overlap_box, &pml_box, &box);
         size_t overlap_pixels = get_pixels_in_box(&overlap_box, 1);
         *pml_pixels[j] += overlap_pixels;
+      }
+    }
+  }
+}
+
+void fragment_stats::compute_absorber_stats(const std::vector<meep::volume> &absorber_1d_vols,
+                                            const std::vector<meep::volume> &absorber_2d_vols,
+                                            const std::vector<meep::volume> &absorber_3d_vols) {
+
+  const std::vector<meep::volume> *absorber_vols[] = {
+    &absorber_1d_vols,
+    &absorber_2d_vols,
+    &absorber_3d_vols
+  };
+
+  for (int j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < absorber_vols[j]->size(); ++i) {
+      geom_box absorber_box = gv2box((*absorber_vols[j])[i]);
+
+      if (geom_boxes_intersect(&absorber_box, &box)) {
+        geom_box overlap_box;
+        geom_box_intersection(&overlap_box, &absorber_box, &box);
+        size_t overlap_pixels = get_pixels_in_box(&overlap_box, 1);
+        num_nonzero_conductivity_pixels += overlap_pixels * (j + 1);
       }
     }
   }
