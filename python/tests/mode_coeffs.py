@@ -94,7 +94,7 @@ class TestModeCoeffs(unittest.TestCase):
         # Test mp.get_eigenmode and EigenmodeData
         vol = mp.Volume(center=mp.Vector3(5), size=mp.Vector3(y=7))
         emdata = self.sim.get_eigenmode(0.2, mp.X, vol, 2, mp.Vector3())
-        self.assertEqual(emdata.omega, 0.2)
+        self.assertEqual(emdata.freq, 0.2)
         self.assertEqual(emdata.band_num, 2)
         self.assertTrue(emdata.kdom.close(res.kdom[1]))
 

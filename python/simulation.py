@@ -339,9 +339,9 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 class EigenmodeData(object):
 
-    def __init__(self, band_num, omega, group_velocity, k, swigobj, kdom):
+    def __init__(self, band_num, freq, group_velocity, k, swigobj, kdom):
         self.band_num = band_num
-        self.omega = omega
+        self.freq = freq
         self.group_velocity = group_velocity
         self.k = k
         self.swigobj = swigobj
@@ -1394,7 +1394,7 @@ class Simulation(object):
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
 
-    def get_eigenmode(self, omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
+    def get_eigenmode(self, freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False):
 
         if self.fields is None:
@@ -1408,7 +1408,7 @@ class Simulation(object):
 
         swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
         kdom = np.zeros(3)
-        emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
+        emdata = mp._get_eigenmode(self.fields, freq, direction, where, eig_vol, band_num, swig_kpoint,
                                    match_frequency, parity, resolution, eigensolver_tol, verbose, kdom)
         Gk = mp._get_eigenmode_Gk(emdata)
 
