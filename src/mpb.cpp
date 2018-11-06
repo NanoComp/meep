@@ -432,6 +432,8 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
   complex<mpb_real> *cdata = (complex<mpb_real> *) mdata->fft_data;
 
+  broadcast(0, (double*) H.data,  2 * H.n * H.p);
+
   maxwell_compute_h_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   /* choose deterministic phase, maximizing power in real part;
      see fix_field_phase routine in MPB.*/
