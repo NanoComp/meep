@@ -231,6 +231,20 @@ class TestSimulation(unittest.TestCase):
             fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
             self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
+    def test_numpy_epsilon(self):
+        sim = self.init_simple_simulation()
+        eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
+        eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
+                                     '..', '..', 'libmeepgeom')
+        eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
+
+        with h5py.File(eps_input_path, 'r') as f:
+            sim.default_material = f['eps'].value
+
+        sim.run(until=200)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+
     def test_set_materials(self):
 
         def change_geom(sim):

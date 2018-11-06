@@ -746,8 +746,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     int py_material = PyObject_IsInstance($input, py_material_object());
     int user_material = PyFunction_Check($input);
     int file_material = IsPyString($input);
+    int numpy_material = PyArray_Check($input);
 
-    $1 = py_material || user_material || file_material;
+    $1 = py_material || user_material || file_material || numpy_material;
 }
 
 %typemap(in) material_type {
