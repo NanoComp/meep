@@ -989,17 +989,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for absorber_list
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep_geom::absorber_list {
-    $1 = PySequence_Check($input) || $input == Py_None;
+    $1 = PySequence_Check($input);
 }
 
 %typemap(in) meep_geom::absorber_list {
 
-    if ($input == Py_None) {
+    Py_ssize_t len = PyList_Size($input);
+
+    if (len == 0) {
         $1 = 0;
     } else {
         $1 = create_absorber_list();
-
-        Py_ssize_t len = PyList_Size($input);
 
         for (Py_ssize_t i = 0; i < len; i++) {
             absorber a;

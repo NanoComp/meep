@@ -97,9 +97,7 @@ struct fragment_stats {
   void compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
                          const std::vector<meep::volume> &pml_2d_vols,
                          const std::vector<meep::volume> &pml_3d_vols);
-  void compute_absorber_stats(const std::vector<meep::volume> &absorber_1d_vols,
-                              const std::vector<meep::volume> &absorber_2d_vols,
-                              const std::vector<meep::volume> &absorber_3d_vols);
+  void compute_absorber_stats(const std::vector<meep::volume> &absorber_vols);
   void print_stats();
 };
 
@@ -112,9 +110,7 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    std::vector<meep::volume> pml_1d_vols,
                                                    std::vector<meep::volume> pml_2d_vols,
                                                    std::vector<meep::volume> pml_3d_vols,
-                                                   std::vector<meep::volume> absorber_1d_vols,
-                                                   std::vector<meep::volume> absorber_2d_vols,
-                                                   std::vector<meep::volume> absorber_3d_vols,
+                                                   std::vector<meep::volume> absorber_vols,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,

@@ -315,7 +315,7 @@ class TestFragmentStats(unittest.TestCase):
             self.assertEqual(fs[i].num_3d_pml_pixels, 0)
             total_nonzero_cond_pixels += fs[i].num_nonzero_conductivity_pixels
 
-        self.assertEqual(total_nonzero_cond_pixels, 12000)
+        self.assertEqual(total_nonzero_cond_pixels, 11600)
 
     def test_2d_with_overlap(self):
         # A 30 x 30 cell, with a 20 x 20 block in the middle, split into 9 10 x 10 fragments.
@@ -396,6 +396,27 @@ class TestFragmentStats(unittest.TestCase):
             for i in [1, 3, 5, 7]:
                 self.assertEqual(fs[i].num_dft_pixels, 150000)
 
+    def test_2d_pml_and_absorber(self):
+        blayers = [mp.PML(1, mp.Y, mp.High), mp.PML(2, mp.Y, mp.Low),
+                   mp.Absorber(1, mp.X, mp.High), mp.Absorber(3, mp.X, mp.Low)]
+        fragments = self.get_fragment_stats(mp.Vector3(), mp.Vector3(30, 30), 2, pml=blayers, geom=[])
+
+        num_nonzero_cond = 0
+        num_pml_1d = 0
+        num_pml_2d = 0
+        num_pml_3d = 0
+
+        for f in fragments:
+            num_nonzero_cond += f.num_nonzero_conductivity_pixels
+            num_pml_1d += f.num_1d_pml_pixels
+            num_pml_2d += f.num_2d_pml_pixels
+            num_pml_3d += f.num_3d_pml_pixels
+
+        self.assertEqual(num_nonzero_cond, 12000)
+        self.assertEqual(num_pml_1d, 9000)
+        self.assertEqual(num_pml_2d, 0)
+        self.assertEqual(num_pml_3d, 0)
+
     def _test_3d(self, sym, pml=[]):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
         # into 27 10 x 10 x 10 fragments
@@ -461,7 +482,7 @@ class TestFragmentStats(unittest.TestCase):
             self.assertEqual(fs[i].num_3d_pml_pixels, 0)
             total_nonzero_cond_pixels += fs[i].num_nonzero_conductivity_pixels
 
-        self.assertEqual(total_nonzero_cond_pixels, 5400000)
+        self.assertEqual(total_nonzero_cond_pixels, 5048000)
 
     def test_3d_with_overlap(self):
         # A 30 x 30 x 30 cell with a 20 x 20 x 20 block placed at the center, split
@@ -628,7 +649,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_1d_all_sides(self):
         sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1)], 1)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
         self.assertFalse(v3)
@@ -638,7 +659,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_1d_high_side(self):
         sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High)], 1)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
         self.assertFalse(v3)
@@ -647,7 +668,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_1d_two_sides_different_thickness(self):
         sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High), mp.PML(2, side=mp.Low)], 1)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
         self.assertFalse(v3)
@@ -657,7 +678,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_2d_all_directions_all_sides(self):
         sim = self.make_sim(mp.Vector3(10, 10), 10, [mp.PML(1)], 2)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
         self.assertEqual(len(v1), 4)
@@ -683,7 +704,7 @@ class TestPMLToVolList(unittest.TestCase):
             mp.PML(thickness=2, direction=mp.X, side=mp.Low)
         ]
         sim = self.make_sim(mp.Vector3(10, 10), 10, pmls, 2)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
         self.assertEqual(len(v1), 4)
@@ -709,7 +730,7 @@ class TestPMLToVolList(unittest.TestCase):
             mp.PML(1, mp.X, mp.High),
         ]
         sim = self.make_sim(mp.Vector3(10, 10), 10, pmls, 2)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
         self.assertEqual(len(v1), 3)
@@ -726,7 +747,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_2d_two_sides(self):
         sim = self.make_sim(mp.Vector3(10, 10), 10, [mp.PML(1, mp.X)], 2)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
         self.assertFalse(v3)
@@ -736,7 +757,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_3d_all_directions_all_sides(self):
         sim = self.make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1)], 3)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertEqual(len(v1), 6)
         self.assertEqual(len(v2), 12)
@@ -802,7 +823,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_3d_X_direction_only(self):
         sim = self.make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1, mp.X)], 3)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertEqual(len(v1), 2)
         self.assertEqual(len(v2), 0)
@@ -815,7 +836,7 @@ class TestPMLToVolList(unittest.TestCase):
 
     def test_cylindrical_all_directions_all_sides(self):
         sim = self.make_sim(mp.Vector3(10, 0, 10), 10, [mp.PML(1)], mp.CYLINDRICAL)
-        v1, v2, v3 = sim._pml_to_vol_list()
+        v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
         self.assertEqual(len(v1), 4)

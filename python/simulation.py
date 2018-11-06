@@ -640,20 +640,20 @@ class Simulation(object):
 
         return volumes
 
-    def _pml_to_vol_list_1d(self):
+    def _boundaries_to_vols_1d(self, boundaries):
         v1 = []
 
-        for pml in self.boundary_layers:
-            cen = mp.Vector3(z=(self.cell_size.z / 2) - (0.5 * pml.thickness))
-            sz = mp.Vector3(z=pml.thickness)
-            if pml.side == mp.High or pml.side == mp.ALL:
+        for bl in boundaries:
+            cen = mp.Vector3(z=(self.cell_size.z / 2) - (0.5 * bl.thickness))
+            sz = mp.Vector3(z=bl.thickness)
+            if bl.side == mp.High or bl.side == mp.ALL:
                 v1.append(self._volume_from_kwargs(center=cen, size=sz))
-            if pml.side == mp.Low or pml.side == mp.ALL:
+            if bl.side == mp.Low or bl.side == mp.ALL:
                 v1.append(self._volume_from_kwargs(center=-1 * cen, size=sz))
 
         return v1
 
-    def _pml_to_vol_list_2d_3d(self, cyl=False):
+    def _boundaries_to_vols_2d_3d(self, boundaries, cyl=False):
         side_thickness = OrderedDict()
         side_thickness['top'] = 0
         side_thickness['bottom'] = 0
@@ -662,25 +662,25 @@ class Simulation(object):
         side_thickness['near'] = 0
         side_thickness['far'] = 0
 
-        for pml in self.boundary_layers:
-            d = pml.direction
-            s = pml.side
+        for bl in boundaries:
+            d = bl.direction
+            s = bl.side
             if d == mp.X or d == mp.ALL:
                 if s == mp.High or s == mp.ALL:
-                    side_thickness['right'] = pml.thickness
+                    side_thickness['right'] = bl.thickness
                 if s == mp.Low or s == mp.ALL:
-                    side_thickness['left'] = pml.thickness
+                    side_thickness['left'] = bl.thickness
             if d == mp.Y or d == mp.ALL:
                 if s == mp.High or s == mp.ALL:
-                    side_thickness['top'] = pml.thickness
+                    side_thickness['top'] = bl.thickness
                 if s == mp.Low or s == mp.ALL:
-                    side_thickness['bottom'] = pml.thickness
+                    side_thickness['bottom'] = bl.thickness
             if self.dimensions == 3:
                 if d == mp.Z or d == mp.ALL:
                     if s == mp.High or s == mp.ALL:
-                        side_thickness['far'] = pml.thickness
+                        side_thickness['far'] = bl.thickness
                     if s == mp.Low or s == mp.ALL:
-                        side_thickness['near'] = pml.thickness
+                        side_thickness['near'] = bl.thickness
 
         xmax = self.cell_size.x / 2
         ymax = self.cell_size.z / 2 if cyl else self.cell_size.y / 2
@@ -723,6 +723,9 @@ class Simulation(object):
             return self._volume_from_kwargs(center=cen, size=sz)
 
         def get_overlap_1(side1, side2, d):
+            if side_thickness[side2] == 0:
+                return []
+
             if side1 == 'top' or side1 == 'bottom':
                 ydir = 1 if side1 == 'top' else -1
                 ysz = d
@@ -758,15 +761,17 @@ class Simulation(object):
             return self._volume_from_kwargs(center=cen, size=sz)
 
         def get_overlap_2(side1, side2, side3, d):
+            if side_thickness[side2] == 0 or side_thickness[side3] == 0:
+                return []
             xdir = 1 if side2 == 'right' else -1
             ydir = 1 if side1 == 'top' else -1
             zdir = 1 if side3 == 'far' else -1
             xsz = side_thickness[side2]
             ysz = d
             zsz = side_thickness[side3]
-            xcen = xdir*xmax + (-xdir*0.5*side_thickness[side2])
+            xcen = xdir*xmax + (-xdir*0.5*xsz)
             ycen = ydir*ymax + (-ydir*0.5*d)
-            zcen = zdir*zmax + (-zdir*0.5*side_thickness[side3])
+            zcen = zdir*zmax + (-zdir*0.5*zsz)
 
             cen = mp.Vector3(xcen, ycen, zcen)
             sz = mp.Vector3(xsz, ysz, zsz)
@@ -795,24 +800,24 @@ class Simulation(object):
                 v2.append(get_overlap_1(side, 'left', thickness))
                 v2.append(get_overlap_1(side, 'right', thickness))
 
-        return v1, v2, v3
+        return [v for v in v1 if v], [v for v in v2 if v], [v for v in v3 if v]
 
-    def _pml_to_vol_list(self):
+    def _boundary_layers_to_vol_list(self, boundaries):
         """Returns three lists of meep::volume objects. The first represents the boundary
            regions with no overlaps. The second is regions where two boundaries overlap, and
            the third is regions where three boundaries overlap
         """
 
-        vols_no_overlap = []
-        vols_2_overlap = []
-        vols_3_overlap = []
+        vols1 = []
+        vols2 = []
+        vols3 = []
 
         if self.dimensions == 1:
-            vols_no_overlap = self._pml_to_vol_list_1d()
+            vols1 = self._boundaries_to_vols_1d(boundaries)
         else:
-            vols_no_overlap, vols_2_overlap, vols_3_overlap = self._pml_to_vol_list_2d_3d(self.is_cylindrical)
+            vols1, vols2, vols3 = self._boundaries_to_vols_2d_3d(boundaries, self.is_cylindrical)
 
-        return vols_no_overlap, vols_2_overlap, vols_3_overlap
+        return vols1, vols2, vols3
 
     def _compute_fragment_stats(self, gv):
 
@@ -826,28 +831,17 @@ class Simulation(object):
         dft_data_list = [mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o))
                          for o in self.dft_objects]
 
-        boundary_vols1, boundary_vols2, boundary_vols3 = self._pml_to_vol_list()
+        pmls = []
+        absorbers = []
+        for bl in self.boundary_layers:
+            if type(bl) is PML:
+                pmls.append(bl)
+            elif type(bl) is Absorber:
+                absorbers.append(bl)
 
-        # Assumes PML and Absorber boundaries never coexist in the same Simulation
-        have_absorbers = True if self.boundary_layers and isinstance(self.boundary_layers[0], Absorber) else False
-
-        if have_absorbers:
-            absorber_vols1 = boundary_vols1
-            absorber_vols2 = boundary_vols2
-            absorber_vols3 = boundary_vols3
-        else:
-            absorber_vols1 = []
-            absorber_vols2 = []
-            absorber_vols3 = []
-
-        if self.boundary_layers and not have_absorbers:
-            pml_vols1 = boundary_vols1
-            pml_vols2 = boundary_vols2
-            pml_vols3 = boundary_vols3
-        else:
-            pml_vols1 = []
-            pml_vols2 = []
-            pml_vols3 = []
+        pml_vols1, pml_vols2, pml_vols3 = self._boundary_layers_to_vol_list(pmls)
+        absorber_vols1, absorber_vols2, absorber_vols3 = self._boundary_layers_to_vol_list(absorbers)
+        absorber_vols = absorber_vols1 + absorber_vols2 + absorber_vols3
 
         stats = mp.compute_fragment_stats(
             self.geometry,
@@ -859,9 +853,7 @@ class Simulation(object):
             pml_vols1,
             pml_vols2,
             pml_vols3,
-            absorber_vols1,
-            absorber_vols2,
-            absorber_vols3,
+            absorber_vols,
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
@@ -891,10 +883,7 @@ class Simulation(object):
         sym = self._create_symmetries(gv)
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
-        if self.boundary_layers and type(self.boundary_layers[0]) is Absorber:
-            absorbers = self.boundary_layers
-        else:
-            absorbers = None
+        absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         if self.material_function:
             self.material_function.eps = False
@@ -921,7 +910,7 @@ class Simulation(object):
         if self.fields:
             self.fields.remove_susceptibilities()
 
-        have_absorbers = self.boundary_layers and type(self.boundary_layers[0]) is Absorber
+        absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         mp.set_materials_from_geometry(
             self.structure,
@@ -932,7 +921,7 @@ class Simulation(object):
             self.ensure_periodicity,
             False,
             default_material if default_material else self.default_material,
-            self.boundary_layers if have_absorbers else None,
+            absorbers,
             self.extra_materials
         )
 
