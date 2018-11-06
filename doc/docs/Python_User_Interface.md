@@ -4,7 +4,7 @@
 
 This page is a listing of the functions exposed by the Python interface. For a gentler introduction, see [Tutorial/Basics](Python_Tutorials/Basics.md). Note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from the Python module, but not all of these functions are documented or intended for end users. See also the instructions for [parallel Meep](Parallel_Meep.md).
 
-The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script.  If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section.   You typically import the `meep` module in Python via `import meep as mp`.
+The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script. If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section. You typically import the `meep` module in Python via `import meep as mp`.
 
 [TOC]
 

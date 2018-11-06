@@ -163,6 +163,12 @@ In general, you will need large simulations to benefit from lots of processors. 
 
 Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
 
+### `Harminv` is unable to find the resonant modes of my structure
+
+There are three things which might explain why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) you didn't run for a long enough time, and the decay rate is so small that you are just looking at noise, (2) you forgot to wrap your `Harminv` call in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps your sources it will get confused because the sources are not exponentially decaying fields, or (3) you are encountering some instability and the fields are actually blowing up slowly which may result in `Harminv` returning a quality factor with negative value.
+
+The simplest approach is always to run with a narrower bandwidth source around your frequency of interest and/or for a longer time.
+
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
 Only the real, frequency-independent part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to adjust the `epsilon` value.
