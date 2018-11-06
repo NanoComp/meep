@@ -2,7 +2,7 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's near-to-far-field transformation feature using two examples. This feature uses the fields from a "near" bounding surface <i>inside</i> the computational cell to compute the resulting "far" fields <i>outside</i> the cell via an analytical transformation. Note that this only works if the "near" surface and the "far" region lie in a single, homogeneous, non-periodic 2d or 3d medium. The analytical transformation is based on the principle of equivalence which is described in Section 4.2.1 in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. The use of the Fourier-transformed fields for this operation is similar to that for the flux and force spectra: we specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at each frequency for the desired far-field points.
+We demonstrate Meep's [near-to-far-field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature using two examples. This feature uses the fields from a "near" bounding surface <i>inside</i> the computational cell to compute the resulting "far" fields <i>outside</i> the cell via an analytical transformation. Note that this only works if the "near" surface and the "far" region lie in a single, homogeneous, non-periodic 2d or 3d medium. The analytical transformation is based on the principle of equivalence which is described in Section 4.2.1 in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. The use of the Fourier-transformed fields for this operation is similar to that for the flux and force spectra: we specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at each frequency for the desired far-field points.
 
 There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
@@ -10,7 +10,7 @@ There are three steps to using the near-to-far-field feature. First, we need to 
 
 ### Radiation Pattern of an Antenna
 
-In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point source as the emitter in vacuum. We will compute the radiation pattern for three different polarizations of the input source. The source is placed in the middle of the 2d cell which is surrounded by perfectly-matched layers (PMLs). The near fields are obtained on a closed surface along the inner boundary of the PML. The far fields are computed at equally-spaced points along the circumference of a circle having a radius many times larger than the source wavelength and lying outside of the cell. The simulation geometry is shown in the following schematic.
+In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. We will compute the radiation pattern for three different polarizations of the input source. The source is placed in the middle of the 2d cell which is surrounded by PMLs. The near fields are obtained on a bounding box positioned just outside of the PML. The far fields are computed at equally-spaced points along the circumference of a circle having a radius many (i.e., 1000) times larger than the source wavelength and lying outside of the cell. The simulation geometry is shown in the following schematic.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
@@ -19,43 +19,55 @@ In this example, we use the near-to-far-field transformation feature to compute 
 The simulation script is in [examples/antenna-radiation.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/antenna-radiation.ctl).
 
 ```scm
-(set-param! resolution 50)
-(define-param sxy 4)
-(define-param dpml 1)
-(set! geometry-lattice (make lattice (size (+ sxy (* 2 dpml)) (+ sxy (* 2 dpml)) no-size)))
-(set! pml-layers (list (make pml (thickness dpml))))
-(define-param fcen 1.0)
-(define-param df 0.4)
-(define-param src-cmpt Ez)
-(set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df))) (center 0) (component src-cmpt))))
-(if (= src-cmpt Ex)
-   (set! symmetries (list (make mirror-sym (direction Y)))))
-(if (= src-cmpt Ey)
-   (set! symmetries (list (make mirror-sym (direction X)))))
-(if (= src-cmpt Ez)
-   (set! symmetries (list (make mirror-sym (direction X)) (make mirror-sym (direction Y)))))
-(define nearfield
- (add-near2far fcen 0 1
-               (make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
-               (make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-               (make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
-               (make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
-(run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
+(set-param! resolution 50)
+(define-param sxy 4)
+(define-param dpml 1)
+(set! geometry-lattice (make lattice (size (+ sxy (* 2 dpml)) (+ sxy (* 2 dpml)) no-size)))
+(set! pml-layers (list (make pml (thickness dpml))))
 
-(define-param r (/ 1000 fcen))     ; 1000 wavelengths out from the source
-(define-param npts 100)            ; number of points in [0,2*pi) range of angles
+(define-param fcen 1.0)
+(define-param df 0.4)
+(define-param src-cmpt Ez)
+(set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df))) (center 0) (component src-cmpt))))
 
-(map (lambda (n)
-      (let ((ff (get-farfield nearfield (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
-        (print "farfield:, " (number->string n) ", " (number->string (* 2 pi (/ n npts))))
-        (map (lambda (m)
-               (print ", " (number->string (list-ref ff m))))
-             (arith-sequence 0 1 6))
-        (print "\n")))
-    (arith-sequence 0 1 npts))
+(if (= src-cmpt Ex)
+    (set! symmetries (list (make mirror-sym (direction Y)))))
+(if (= src-cmpt Ey)
+    (set! symmetries (list (make mirror-sym (direction X)))))
+(if (= src-cmpt Ez)
+    (set! symmetries (list (make mirror-sym (direction X)) (make mirror-sym (direction Y)))))
+
+(define nearfield-box
+  (add-near2far fcen 0 1
+		(make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
+		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
+		(make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
+		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
+
+(define flux-box
+  (add-flux fcen 0 1
+	    (make flux-region (center 0 (* 0.5 sxy)) (size sxy 0))
+	    (make flux-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
+	    (make flux-region (center (* 0.5 sxy) 0) (size 0 sxy))
+	    (make flux-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
+
+(run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
+
+(print "flux:, " (list-ref (get-fluxes flux-box) 0) "\n")
+
+(define-param r (/ 1000 fcen))    ; 1000 wavelengths out from the source
+(define-param npts 100)           ; number of points in [0,2*pi) range of angles
+(map (lambda (n)
+       (let ((ff (get-farfield nearfield-box (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
+	 (print "farfield:, " (number->string n) ", " (number->string (* 2 pi (/ n npts))))
+	 (map (lambda (m)
+		(print ", " (number->string (list-ref ff m))))
+	      (arith-sequence 0 1 6))
+	 (print "\n")))
+         (arith-sequence 0 1 npts))
 ```
 
-We use the `get-farfield` routine to compute the far fields by looping over a set of 100 points along the circumference of the circle. We compute the far fields at a wavelength of 1 μm for three different polarizations of the current source by setting the `src-cmpt` parameter to E$_x$, E$_y$, and E$_z$ in separate runs. The output consists of eight columns containing for each point: index identifier (integer), angle (radians), and six field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$). Note that the far fields are always complex even though the near fields are real (as in this example).
+We use the `get-farfield` routine to compute the far fields by looping over a set of 100 points along the circumference of the circle with radius 1 mm. We compute the far fields at a wavelength of 1 μm for three different polarizations of the current source by setting the `src-cmpt` parameter to E$_x$, E$_y$, and E$_z$ in separate runs. The output consists of eight columns containing for each point: index identifier (integer), angle (radians), and six field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$). Note that the far fields are always complex even though the near fields are real (as in this example). We also compute the flux from the source using the same bounding box.
 
 The script is run and the output piped to a file using the following shell commands. The far field results are extracted from the output and placed in a separate file.
 
@@ -64,7 +76,7 @@ meep src-cmpt=Ez antenna-radiation.ctl |tee source_Jz_farfields.out
 grep farfield: source_Jz_farfields.out |cut -d , -f2- > source_Jz_farfields.dat
 ```
 
-From the far fields at each point $\mathbf{r}$, we can compute the in-plane flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Since this is a 2d simulation, $P_z$ is always 0. We plot the in-plane flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. As expected, the J$_x$ and J$_y$ sources produce dipole radiation patterns while J$_z$ has a monopole pattern. These plots were generated using the following Octave/Matlab script.
+From the far fields at each point $\mathbf{r}$, we can compute the radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Since this is a 2d simulation, $P_z$ is always 0. We plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern. These plots were generated using the following Octave/Matlab script.
 
 ```matlab
 d = dlmread("source_Jz_farfields.dat",",");
@@ -82,9 +94,20 @@ Py = real(Ez.*Hx-Ex.*Hz);
 Pz = real(Ex.*Hy-Ey.*Hx);
 Pr = sqrt(Px.^2+Py.^2);
 
-polar(d(:,2),Pr/max(Pr),'b-');
+angles = d(:,2)
+
+polar(angles,Pr/max(Pr),'b-');
 set(gca, 'xtick', [0 0.5 1.0]);
 ```
+
+By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the flux spectrum which is obtained by integrating around a closed surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between), with slight differences due to discretization errors. The integral of the radial flux along the circumference of a circle with radius 1000 μm is obtained via:
+
+```matlab
+r = 1000    % circle radius (same units as Meep simulation)
+disp(sprintf("flux:, %0.16f",sum(Pr)*2*pi*r/length(Pr)))
+```
+
+The far-field flux for the J$_z$ source is `2.4572492482882082`. The near-field flux, from the simulation output in the line prefixed by `flux:,`, is `2.456196799109356`. This is a ratio of `0.9995716962047763`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.2272603149732138` and `1.2277868880691678` which is a ratio of `0.9995711201177737`. This ratio will converge to one as the resolution is increased.
 
 <center>
 ![](../images/Source_radiation_pattern.png)

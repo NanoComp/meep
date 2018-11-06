@@ -130,7 +130,7 @@ Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the por
 
 ### Working with MPB Eigenmodes
 
-The return value of `get_eigenmode` is an opaque pointer to a data structure storing information about the computed eigenmode, which may be passed to the following routines:
+The return value of `get_eigenmode` is an [opaque pointer](https://en.wikipedia.org/wiki/Opaque_pointer) to a data structure storing information about the computed eigenmode, which may be passed to the following routines:
 
 ````
 // get a single component of the eigenmode field at a given point in space
