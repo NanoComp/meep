@@ -305,6 +305,8 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+
 ### DrudeSusceptibility
 
 Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
@@ -1063,12 +1065,12 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
-**`get_eigenmode(omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True, parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False)`**
+**`get_eigenmode(freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True, parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False)`**
 —
 The parameters of this routine are the same as that of `get_eigenmode_coefficients` or `EigenModeSource`, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
 
 + `band_num`: same as the `band_num` parameter
-+ `omega`: the computed frequency, same as `omega_src` if `match_frequency=True`
++ `freq`: the computed frequency, same as the `freq` input parameter if `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
 + `kdom`: the dominant planewave of mode `band_num`

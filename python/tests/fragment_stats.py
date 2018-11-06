@@ -25,7 +25,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fragment.num_nonzero_conductivity_pixels, cond)
 
     def get_fragment_stats(self, block_size, cell_size, dims, box_center=mp.Vector3(), dft_vecs=None,
-                           def_mat=mp.air, sym=[]):
+                           def_mat=mp.air, sym=[], geom=None):
         mat = mp.Medium(
             epsilon=12,
             epsilon_offdiag=mp.Vector3(z=1),
@@ -38,7 +38,8 @@ class TestFragmentStats(unittest.TestCase):
             B_conductivity_diag=mp.Vector3(x=1, z=1)
         )
 
-        geom = [mp.Block(size=block_size, center=box_center, material=mat)]
+        if geom is None:
+            geom = [mp.Block(size=block_size, center=box_center, material=mat)]
         sim = mp.Simulation(cell_size=cell_size, resolution=10, geometry=geom, dimensions=dims,
                             default_material=def_mat, symmetries=sym)
 
@@ -87,9 +88,9 @@ class TestFragmentStats(unittest.TestCase):
                          cond=300 / sym_factor)
 
         # Check DFT regions
-        self.assertEqual(fs[0].num_dft_pixels, 10240)
-        self.assertEqual(fs[1].num_dft_pixels, 17120)
-        self.assertEqual(fs[2].num_dft_pixels, 23840)
+        self.assertEqual(fs[0].num_dft_pixels, 8224)
+        self.assertEqual(fs[1].num_dft_pixels, 11792)
+        self.assertEqual(fs[2].num_dft_pixels, 21824)
 
     def test_1d(self):
         self._test_1d([])
@@ -140,8 +141,8 @@ class TestFragmentStats(unittest.TestCase):
             self.check_stats(fs[i], a_eps=30, a_mu=30, nonlin=90, susc=90, cond=90)
 
         # Check dft stats
-        self.assertEqual(fs[0].num_dft_pixels, 8000)
-        self.assertEqual(fs[1].num_dft_pixels, 5600)
+        self.assertEqual(fs[0].num_dft_pixels, 6560)
+        self.assertEqual(fs[1].num_dft_pixels, 4160)
         self.assertEqual(fs[2].num_dft_pixels, 0)
 
     def test_1d_with_shifted_center(self):
@@ -177,19 +178,17 @@ class TestFragmentStats(unittest.TestCase):
 
         self.assertEqual(len(fs), 3)
 
-        self.assertEqual(fs[1].num_dft_pixels, 800)
-        self.assertEqual(fs[2].num_dft_pixels, 0)
-
         self.assertEqual(fs[0].num_dft_pixels, 4000)
+        self.assertEqual(fs[1].num_dft_pixels, 80)
+        self.assertEqual(fs[2].num_dft_pixels, 0)
 
         # Same test with volume instead of center and size
         dft_vecs = make_dft_vecs(fldw=mp.Volume(mp.Vector3(z=-10), mp.Vector3(z=10)), fld_cmp=[mp.X, mp.Y])
         fs = self.get_fragment_stats(mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs)
 
-        self.assertEqual(fs[1].num_dft_pixels, 800)
-        self.assertEqual(fs[2].num_dft_pixels, 0)
-
         self.assertEqual(fs[0].num_dft_pixels, 4000)
+        self.assertEqual(fs[1].num_dft_pixels, 80)
+        self.assertEqual(fs[2].num_dft_pixels, 0)
 
     def _test_2d(self, sym):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
@@ -228,23 +227,23 @@ class TestFragmentStats(unittest.TestCase):
         idx = 4
         sym_factor = 4 if sym else 1
         self.check_stats(fs[idx],
-                         a_eps=1000 / sym_factor,
-                         a_mu=1000 / sym_factor,
-                         nonlin=3000 / sym_factor,
-                         susc=3000 / sym_factor,
-                         cond=3000 / sym_factor)
+                         a_eps=10000 / sym_factor,
+                         a_mu=10000 / sym_factor,
+                         nonlin=30000 / sym_factor,
+                         susc=30000 / sym_factor,
+                         cond=30000 / sym_factor)
 
         # Check DFT regions
         for i in [0, 3, 6]:
             self.assertEqual(fs[i].num_dft_pixels, 0)
 
-        self.assertEqual(fs[1].num_dft_pixels, 10240)
-        self.assertEqual(fs[4].num_dft_pixels, 17120)
-        self.assertEqual(fs[7].num_dft_pixels, 23840)
+        self.assertEqual(fs[1].num_dft_pixels, 8224)
+        self.assertEqual(fs[4].num_dft_pixels, 11792)
+        self.assertEqual(fs[7].num_dft_pixels, 21824)
 
-        self.assertEqual(fs[2].num_dft_pixels, 51200)
-        self.assertEqual(fs[5].num_dft_pixels, 85600)
-        self.assertEqual(fs[8].num_dft_pixels, 119200)
+        self.assertEqual(fs[2].num_dft_pixels, 411200)
+        self.assertEqual(fs[5].num_dft_pixels, 589600)
+        self.assertEqual(fs[8].num_dft_pixels, 1091200)
 
     def test_2d(self):
         self._test_2d([])
@@ -262,17 +261,17 @@ class TestFragmentStats(unittest.TestCase):
 
         # Middle fragment contains entire block
         idx = 4
-        self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
+        self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
 
         # Top-middle, bottom-middle, left-middle, and right-middle fragments are half
         # covered by the block, and half covered by default_material 'mat'.
         for i in [1, 3, 5, 7]:
-            self.check_stats(fs[i], a_eps=500, a_mu=500, nonlin=1500, susc=2000, cond=1500)
+            self.check_stats(fs[i], a_eps=5000, a_mu=5000, nonlin=15000, susc=20000, cond=15000)
 
         # The four corner fragments are quarter-filled by the block, and 3/4 filled by
         # default_material 'mat'
         for i in [0, 2, 6, 8]:
-            self.check_stats(fs[i], a_eps=250, a_mu=250, nonlin=750, susc=1500, cond=750)
+            self.check_stats(fs[i], a_eps=2500, a_mu=2500, nonlin=7500, susc=15000, cond=7500)
 
     def test_2d_with_partial_fragments_and_shifted_center(self):
         # A 26 x 26 cell with a 18 x 18 Block in the lower right corner
@@ -282,7 +281,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(len(fs), 9)
 
         # Middle fragment is 10 x 10 and covered by block
-        self.check_stats(fs[4], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
+        self.check_stats(fs[4], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
 
         for i in [0, 1, 2, 5, 8]:
             # Air
@@ -293,21 +292,21 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs[3].box.low.y, -13)
         self.assertEqual(fs[3].box.high.x, 5)
         self.assertEqual(fs[3].box.high.y, -5)
-        self.check_stats(fs[3], a_eps=800, a_mu=800, nonlin=2400, susc=2400, cond=2400)
+        self.check_stats(fs[3], a_eps=8000, a_mu=8000, nonlin=24000, susc=24000, cond=24000)
 
         # 8 x 10 fragment, covered by block
         self.assertEqual(fs[7].box.low.x, 5)
         self.assertEqual(fs[7].box.low.y, -5)
         self.assertEqual(fs[7].box.high.x, 13)
         self.assertEqual(fs[7].box.high.y, 5)
-        self.check_stats(fs[7], a_eps=800, a_mu=800, nonlin=2400, susc=2400, cond=2400)
+        self.check_stats(fs[7], a_eps=8000, a_mu=8000, nonlin=24000, susc=24000, cond=24000)
 
         # 8 x 8 fragment covered by block
         self.assertEqual(fs[6].box.low.x, 5)
         self.assertEqual(fs[6].box.low.y, -13)
         self.assertEqual(fs[6].box.high.x, 13)
         self.assertEqual(fs[6].box.high.y, -5)
-        self.check_stats(fs[6], a_eps=640, a_mu=640, nonlin=1920, susc=1920, cond=1920)
+        self.check_stats(fs[6], a_eps=6400, a_mu=6400, nonlin=19200, susc=19200, cond=19200)
 
     def test_2d_dft_fields(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
@@ -321,15 +320,15 @@ class TestFragmentStats(unittest.TestCase):
             fs = self.get_fragment_stats(mp.Vector3(10, 10), mp.Vector3(30, 30), 2, dft_vecs=dft_vec)
 
             # Middle fragment is fully covered
-            self.assertEqual(fs[4].num_dft_pixels, 30000)
+            self.assertEqual(fs[4].num_dft_pixels, 300000)
 
             # 4 corners are 1/4 covered
             for i in [0, 2, 6, 8]:
-                self.assertEqual(fs[i].num_dft_pixels, 7500)
+                self.assertEqual(fs[i].num_dft_pixels, 75000)
 
             # The rest are half covered
             for i in [1, 3, 5, 7]:
-                self.assertEqual(fs[i].num_dft_pixels, 15000)
+                self.assertEqual(fs[i].num_dft_pixels, 150000)
 
     def _test_3d(self, sym):
         # A 30 x 30 x 30 cell with a 10 x 10 x 10 block placed at the center, split
@@ -356,16 +355,16 @@ class TestFragmentStats(unittest.TestCase):
         idx = 13
         sym_factor = 8 if sym else 1
         self.check_stats(fs[idx],
-                         a_eps=10000 / sym_factor,
-                         a_mu=10000 / sym_factor,
-                         nonlin=30000 / sym_factor,
-                         susc=30000 / sym_factor,
-                         cond=30000 / sym_factor)
+                         a_eps=1000000 / sym_factor,
+                         a_mu=1000000 / sym_factor,
+                         nonlin=3000000 / sym_factor,
+                         susc=3000000 / sym_factor,
+                         cond=3000000 / sym_factor)
 
         # Check DFT regions
-        self.assertEqual(fs[0].num_dft_pixels, 256000)
-        self.assertEqual(fs[1].num_dft_pixels, 428000)
-        self.assertEqual(fs[2].num_dft_pixels, 596000)
+        self.assertEqual(fs[0].num_dft_pixels, 20560000)
+        self.assertEqual(fs[1].num_dft_pixels, 29480000)
+        self.assertEqual(fs[2].num_dft_pixels, 54560000)
 
     def test_3d(self):
         self._test_3d([])
@@ -384,20 +383,20 @@ class TestFragmentStats(unittest.TestCase):
 
         # Middle fragment contains entire block
         idx = 13
-        self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
+        self.check_stats(fs[idx], a_eps=1000000, a_mu=1000000, nonlin=3000000, susc=3000000, cond=3000000)
 
         # Six fragments adjacent to the middle fragment faces will be half covered by the block,
         # and half covered by default_material 'mat'
         for i in [4, 10, 12, 14, 16, 22]:
-            self.check_stats(fs[i], a_eps=5000, a_mu=5000, nonlin=15000, susc=20000, cond=15000)
+            self.check_stats(fs[i], a_eps=500000, a_mu=500000, nonlin=1500000, susc=2000000, cond=1500000)
 
         # The corners will be 1/8 covered by the block and 7/8 covered by default_material 'mat'
         for i in [0, 2, 6, 8, 18, 20, 24, 26]:
-            self.check_stats(fs[i], a_eps=1250, a_mu=1250, nonlin=3750, susc=12500, cond=3750)
+            self.check_stats(fs[i], a_eps=125000, a_mu=125000, nonlin=375000, susc=1250000, cond=375000)
 
         # The rest will be 1/4 covered by the block and 3/4 covered by default_material 'mat'
         for i in [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]:
-            self.check_stats(fs[i], a_eps=2500, a_mu=2500, nonlin=7500, susc=15000, cond=7500)
+            self.check_stats(fs[i], a_eps=250000, a_mu=250000, nonlin=750000, susc=1500000, cond=750000)
 
     def test_cyl(self):
         # A 30 x 30 cell, with a 10 x 10 block in the middle, split into 9 10 x 10 fragments.
@@ -435,20 +434,66 @@ class TestFragmentStats(unittest.TestCase):
 
         # Middle fragment contains entire block
         idx = 4
-        self.check_stats(fs[idx], a_eps=1000, a_mu=1000, nonlin=3000, susc=3000, cond=3000)
+        self.check_stats(fs[idx], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
 
         # Check DFT regions
         for i in [0, 3, 6]:
             self.assertEqual(fs[i].num_dft_pixels, 0)
 
-        self.assertEqual(fs[1].num_dft_pixels, 10240)
-        self.assertEqual(fs[4].num_dft_pixels, 17120)
-        self.assertEqual(fs[7].num_dft_pixels, 23840)
+        self.assertEqual(fs[1].num_dft_pixels, 8224)
+        self.assertEqual(fs[4].num_dft_pixels, 11792)
+        self.assertEqual(fs[7].num_dft_pixels, 21824)
 
-        self.assertEqual(fs[2].num_dft_pixels, 51200)
-        self.assertEqual(fs[5].num_dft_pixels, 85600)
-        self.assertEqual(fs[8].num_dft_pixels, 119200)
+        self.assertEqual(fs[2].num_dft_pixels, 411200)
+        self.assertEqual(fs[5].num_dft_pixels, 589600)
+        self.assertEqual(fs[8].num_dft_pixels, 1091200)
 
+    def test_no_geometry(self):
+        mat = mp.Medium(
+            epsilon=12,
+            epsilon_offdiag=mp.Vector3(x=1),
+            mu_offdiag=mp.Vector3(x=20),
+            E_chi2_diag=mp.Vector3(1, 1),
+            H_chi3_diag=mp.Vector3(x=1),
+            E_susceptibilities=[mp.LorentzianSusceptibility(), mp.NoisyLorentzianSusceptibility()],
+            H_susceptibilities=[mp.DrudeSusceptibility()],
+            D_conductivity_diag=mp.Vector3(y=1),
+            B_conductivity_diag=mp.Vector3(x=1, z=1)
+        )
+        fs = self.get_fragment_stats(mp.Vector3(), mp.Vector3(10, 10), 2, def_mat=mat, geom=[])
+
+        self.assertEqual(len(fs), 1)
+        self.check_stats(fs[0], a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
+
+    def test_1d_cell_smaller_than_minimum_fragment_size(self):
+        fs = self.get_fragment_stats(mp.Vector3(z=1), mp.Vector3(z=1), 1)
+        self.assertEqual(len(fs), 1)
+        stats = fs[0]
+        self.assertEqual(stats.box.low.z, -0.5)
+        self.assertEqual(stats.box.high.z, 0.5)
+        self.assertEqual(stats.num_pixels_in_box, 10)
+
+    def test_2d_cell_smaller_than_minimum_fragment_size(self):
+        fs = self.get_fragment_stats(mp.Vector3(1, 1), mp.Vector3(1, 1), 2)
+        self.assertEqual(len(fs), 1)
+        stats = fs[0]
+        self.assertEqual(stats.box.low.x, -0.5)
+        self.assertEqual(stats.box.low.y, -0.5)
+        self.assertEqual(stats.box.high.x, 0.5)
+        self.assertEqual(stats.box.high.y, 0.5)
+        self.assertEqual(stats.num_pixels_in_box, 100)
+
+    def test_3d_cell_smaller_than_minimum_fragment_size(self):
+        fs = self.get_fragment_stats(mp.Vector3(1, 1, 1), mp.Vector3(1, 1, 1), 3)
+        self.assertEqual(len(fs), 1)
+        stats = fs[0]
+        self.assertEqual(stats.box.low.x, -0.5)
+        self.assertEqual(stats.box.low.y, -0.5)
+        self.assertEqual(stats.box.low.z, -0.5)
+        self.assertEqual(stats.box.high.x, 0.5)
+        self.assertEqual(stats.box.high.y, 0.5)
+        self.assertEqual(stats.box.high.z, 0.5)
+        self.assertEqual(stats.num_pixels_in_box, 1000)
 
 if __name__ == '__main__':
     unittest.main()
