@@ -653,85 +653,7 @@ class Simulation(object):
 
         return v1
 
-    def _pml_to_vol_list_2d(self, cyl=False):
-        side_thickness = OrderedDict()
-        side_thickness['top'] = 0
-        side_thickness['bottom'] = 0
-        side_thickness['left'] = 0
-        side_thickness['right'] = 0
-
-        for pml in self.boundary_layers:
-            d = pml.direction
-            s = pml.side
-            if d == mp.X or d == mp.ALL:
-                if s == mp.High or s == mp.ALL:
-                    side_thickness['right'] = pml.thickness
-                if s == mp.Low or s == mp.ALL:
-                    side_thickness['left'] = pml.thickness
-            if d == mp.Y or d == mp.ALL:
-                if s == mp.High or s == mp.ALL:
-                    side_thickness['top'] = pml.thickness
-                if s == mp.Low or s == mp.ALL:
-                    side_thickness['bottom'] = pml.thickness
-
-        xmax = self.cell_size.x / 2
-        ymax = self.cell_size.z / 2 if cyl else self.cell_size.y / 2
-        ytot = self.cell_size.z if cyl else self.cell_size.y
-
-        def get_overlap_0(side, d):
-            if side == 'top' or side == 'bottom':
-                ydir = -1 if side == 'bottom' else 1
-                xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
-                ysz = d
-                xcen = xmax - side_thickness['right'] - (xsz / 2)
-                ycen = ydir*ymax + (-ydir*0.5*d)
-            elif side == 'left' or side == 'right':
-                xdir = 1 if side == 'right' else -1
-                xsz = d
-                ysz = ytot - (side_thickness['top'] + side_thickness['bottom'])
-                xcen = xdir*xmax + (-xdir*0.5*d)
-                ycen = ymax - side_thickness['top'] - (ysz / 2)
-
-            if cyl:
-                cen = mp.Vector3(xcen, 0, ycen)
-                sz = mp.Vector3(xsz, 0, ysz)
-            else:
-                cen = mp.Vector3(xcen, ycen)
-                sz = mp.Vector3(xsz, ysz)
-
-            return self._volume_from_kwargs(center=cen, size=sz)
-
-        def get_overlap_1(side1, side2, d):
-            xdir = -1 if side2 == 'left' else 1
-            ydir = 1 if side1 == 'top' else -1
-            xcen = xdir*xmax + -xdir*0.5*side_thickness[side2]
-            ycen = ydir*ymax + (-ydir*0.5*d)
-
-            if cyl:
-                cen = mp.Vector3(xcen, 0, ycen)
-                sz = mp.Vector3(side_thickness[side2], 0, d)
-            else:
-                cen = mp.Vector3(xcen, ycen)
-                sz = mp.Vector3(side_thickness[side2], d)
-
-            return self._volume_from_kwargs(center=cen, size=sz)
-
-        v1 = []
-        v2 = []
-
-        for side in side_thickness.keys():
-            thickness = side_thickness[side]
-            if thickness == 0:
-                continue
-
-            v1.append(get_overlap_0(side, thickness))
-            if side == 'top' or side == 'bottom':
-                v2.append(get_overlap_1(side, 'left', thickness))
-                v2.append(get_overlap_1(side, 'right', thickness))
-
-        return v1, v2
-
-    def _pml_to_vol_list_3d(self):
+    def _pml_to_vol_list_2d_3d(self, cyl=False):
         side_thickness = OrderedDict()
         side_thickness['top'] = 0
         side_thickness['bottom'] = 0
@@ -753,15 +675,17 @@ class Simulation(object):
                     side_thickness['top'] = pml.thickness
                 if s == mp.Low or s == mp.ALL:
                     side_thickness['bottom'] = pml.thickness
-            if d == mp.Z or d == mp.ALL:
-                if s == mp.High or s == mp.ALL:
-                    side_thickness['far'] = pml.thickness
-                if s == mp.Low or s == mp.ALL:
-                    side_thickness['near'] = pml.thickness
+            if self.dimensions == 3:
+                if d == mp.Z or d == mp.ALL:
+                    if s == mp.High or s == mp.ALL:
+                        side_thickness['far'] = pml.thickness
+                    if s == mp.Low or s == mp.ALL:
+                        side_thickness['near'] = pml.thickness
 
         xmax = self.cell_size.x / 2
-        ymax = self.cell_size.y / 2
+        ymax = self.cell_size.z / 2 if cyl else self.cell_size.y / 2
         zmax = self.cell_size.z / 2
+        ytot = self.cell_size.z if cyl else self.cell_size.y
 
         def get_overlap_0(side, d):
             if side == 'top' or side == 'bottom':
@@ -775,7 +699,7 @@ class Simulation(object):
             elif side == 'left' or side == 'right':
                 xdir = 1 if side == 'right' else -1
                 xsz = d
-                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
+                ysz = ytot - (side_thickness['top'] + side_thickness['bottom'])
                 zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
                 xcen = xdir*xmax + (-xdir*0.5*d)
                 ycen = ymax - side_thickness['top'] - (ysz / 2)
@@ -783,14 +707,19 @@ class Simulation(object):
             elif side == 'near' or side == 'far':
                 zdir = 1 if side == 'far' else -1
                 xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
-                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
+                ysz = ytot - (side_thickness['top'] + side_thickness['bottom'])
                 zsz = d
                 xcen = xmax - side_thickness['right'] - (xsz / 2)
                 ycen = ymax - side_thickness['top'] - (ysz / 2)
                 zcen = zdir*zmax + (-zdir*0.5*d)
 
-            cen = mp.Vector3(xcen, ycen, zcen)
-            sz = mp.Vector3(xsz, ysz, zsz)
+            if cyl:
+                cen = mp.Vector3(xcen, 0, ycen)
+                sz = mp.Vector3(xsz, 0, ysz)
+            else:
+                cen = mp.Vector3(xcen, ycen, zcen)
+                sz = mp.Vector3(xsz, ysz, zsz)
+
             return self._volume_from_kwargs(center=cen, size=sz)
 
         def get_overlap_1(side1, side2, d):
@@ -820,8 +749,12 @@ class Simulation(object):
                 ycen = ymax - side_thickness['top'] - (ysz / 2)
                 zcen = zdir*zmax + (-zdir*0.5*d)
 
-            cen = mp.Vector3(xcen, ycen, zcen)
-            sz = mp.Vector3(xsz, ysz, zsz)
+            if cyl:
+                cen = mp.Vector3(xcen, 0, ycen)
+                sz = mp.Vector3(xsz, 0, ysz)
+            else:
+                cen = mp.Vector3(xcen, ycen, zcen)
+                sz = mp.Vector3(xsz, ysz, zsz)
             return self._volume_from_kwargs(center=cen, size=sz)
 
         def get_overlap_2(side1, side2, side3, d):
@@ -851,12 +784,13 @@ class Simulation(object):
             if side == 'top' or side == 'bottom':
                 v2.append(get_overlap_1(side, 'left', thickness))
                 v2.append(get_overlap_1(side, 'right', thickness))
-                v2.append(get_overlap_1(side, 'near', thickness))
-                v2.append(get_overlap_1(side, 'far', thickness))
-                v3.append(get_overlap_2(side, 'left', 'near', thickness))
-                v3.append(get_overlap_2(side, 'right', 'near', thickness))
-                v3.append(get_overlap_2(side, 'left', 'far', thickness))
-                v3.append(get_overlap_2(side, 'right', 'far', thickness))
+                if self.dimensions == 3:
+                    v2.append(get_overlap_1(side, 'near', thickness))
+                    v2.append(get_overlap_1(side, 'far', thickness))
+                    v3.append(get_overlap_2(side, 'left', 'near', thickness))
+                    v3.append(get_overlap_2(side, 'right', 'near', thickness))
+                    v3.append(get_overlap_2(side, 'left', 'far', thickness))
+                    v3.append(get_overlap_2(side, 'right', 'far', thickness))
             if side == 'near' or side == 'far':
                 v2.append(get_overlap_1(side, 'left', thickness))
                 v2.append(get_overlap_1(side, 'right', thickness))
@@ -875,10 +809,8 @@ class Simulation(object):
 
         if self.dimensions == 1:
             vols_no_overlap = self._pml_to_vol_list_1d()
-        elif self.dimensions == 2:
-            vols_no_overlap, vols_2_overlap = self._pml_to_vol_list_2d(self.is_cylindrical)
-        elif self.dimensions == 3:
-            vols_no_overlap, vols_2_overlap, vols_3_overlap = self._pml_to_vol_list_3d()
+        else:
+            vols_no_overlap, vols_2_overlap, vols_3_overlap = self._pml_to_vol_list_2d_3d(self.is_cylindrical)
 
         return vols_no_overlap, vols_2_overlap, vols_3_overlap
 
