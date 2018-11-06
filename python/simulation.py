@@ -2160,14 +2160,15 @@ def output_sfield_p(sim):
     sim.output_component(mp.Sp)
 
 
-def get_ldos_freqs(f):
-    start = f.omega_min / (2 * math.pi)
-    stop = start + (f.domega / (2 * math.pi)) * f.Nomega
-    return np.linspace(start, stop, num=f.Nomega, endpoint=False).tolist()
+def Ldos(fcen, df, nfreq):
+    return mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
 
-def dft_ldos(fcen, df, nfreq):
-    ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
+    if ldos is None:
+        if fcen is None or df is None or nfreq is None:
+            raise ValueError("Either fcen, df, and nfreq, or an Ldos is required for dft_ldos")
+        ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
     def _ldos(sim, todo):
         if todo == 'step':
@@ -2176,7 +2177,7 @@ def dft_ldos(fcen, df, nfreq):
             sim.ldos_data = mp._dft_ldos_ldos(ldos)
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
-            display_csv(sim, 'ldos', zip(get_ldos_freqs(ldos), sim.ldos_data))
+            display_csv(sim, 'ldos', zip(ldos.freqs(), sim.ldos_data))
     return _ldos
 
 
