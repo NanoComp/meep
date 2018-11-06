@@ -430,11 +430,15 @@ void *fields::get_eigenmode(double omega_src,
   /* We only run MPB eigensolver on the master process to avoid
      any possibility of inconsistent mode solutions (#568) */
   eigvals[band_num - 1] = broadcast(0, eigvals[band_num - 1]);
+  k[d-X] = broadcast(0, k[d-X]);
+  vgrp = broadcast(0, vgrp);
   if (eigvals[band_num - 1] < 0) {  // no mode found
     destroy_evectmatrix(H);
     destroy_maxwell_data(mdata);
     return NULL;
   }
+  if (!am_master())
+    update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
   broadcast(0, (double*) H.data,  2 * H.n * H.p);
 
   if (!match_frequency)
