@@ -469,7 +469,8 @@ class Simulation(object):
                  filename_prefix=None,
                  output_volume=None,
                  output_single_precision=False,
-                 load_structure=''):
+                 load_structure='',
+                 geometry_center=mp.Vector3()):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -478,7 +479,7 @@ class Simulation(object):
         self.dimensions = dimensions
         self.boundary_layers = boundary_layers
         self.symmetries = symmetries
-        self.geometry_center = Vector3()
+        self.geometry_center = geometry_center
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
@@ -609,6 +610,7 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
+        gv.shift_origin(self.geometry_center)
         return gv
 
     def _create_symmetries(self, gv):
@@ -847,7 +849,7 @@ class Simulation(object):
             self.geometry,
             gv,
             self.cell_size,
-            mp.Vector3(),
+            self.geometry_center,
             self.default_material,
             dft_data_list,
             pml_vols1,
@@ -900,9 +902,17 @@ class Simulation(object):
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
         self.structure.shared_chunks = True
 
-        mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
-                                       self.subpixel_maxeval, self.ensure_periodicity and not not self.k_point,
-                                       False, self.default_material, absorbers, self.extra_materials)
+        mp.set_materials_from_geometry(self.structure,
+                                       self.geometry,
+                                       self.geometry_center,
+                                       self.eps_averaging,
+                                       self.subpixel_tol,
+                                       self.subpixel_maxeval,
+                                       self.ensure_periodicity and not not self.k_point,
+                                       False,
+                                       self.default_material,
+                                       absorbers,
+                                       self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 
@@ -915,6 +925,7 @@ class Simulation(object):
         mp.set_materials_from_geometry(
             self.structure,
             geometry if geometry is not None else self.geometry,
+            self.geometry_center,
             self.eps_averaging,
             self.subpixel_tol,
             self.subpixel_maxeval,

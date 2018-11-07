@@ -1537,6 +1537,7 @@ void add_absorbing_layer(absorber_list alist,
 /***************************************************************/
 void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
+                                 vector3 center,
                                  bool use_anisotropic_averaging,
                                  double tol,
                                  int maxeval,
@@ -1550,6 +1551,8 @@ void set_materials_from_geometry(meep::structure *s,
 
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
+  geometry_center = center;
+
   if (_default_material->which_subclass != material_data::MATERIAL_USER &&
       _default_material->which_subclass != material_data::PERFECT_METAL) {
       check_offdiag(&_default_material->medium);
