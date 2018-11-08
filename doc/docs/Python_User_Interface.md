@@ -71,7 +71,7 @@ Specifies the size of the computational cell which is centered on the origin of 
 
 **`default_material` [`Medium` class ]**
 —
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). See also `epsilon_input_file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a numpy array that defines a dielectric function much like `epsilon_input_file` below (see below).
 
 **`material_function` [ function ]**
 —
