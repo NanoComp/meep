@@ -29,7 +29,7 @@ df = 0.05*fcen         # frequency width
 ng = 1.5
 glass = mp.Medium(index=ng)
 
-# rotation angle of incident planewave; CCW about Y axis, 0 degrees along +X axis
+# rotation angle of incident planewave; CCW about Z axis, 0 degrees along +X axis
 theta_in = math.radians(10.7)
 
 # k (in source medium) with correct length (plane of incidence: XY)
@@ -65,7 +65,7 @@ sim = mp.Simulation(resolution=resolution,
 refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
 refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=200)
+sim.run(until_after_sources=100)
   
 input_flux = mp.get_fluxes(refl_flux)
 input_flux_data = sim.get_flux_data(refl_flux)
@@ -89,7 +89,7 @@ sim.load_minus_flux_data(refl_flux,input_flux_data)
 tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
 tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=400)
+sim.run(until_after_sources=200)
 
 nm_r = np.floor((fcen*ng-k.y)*gp)-np.ceil((-fcen*ng-k.y)*gp) # number of reflected orders
 if theta_in == 0:

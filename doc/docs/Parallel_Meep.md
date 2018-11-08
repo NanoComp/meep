@@ -75,7 +75,7 @@ Returns the index of the process running the current file, from zero to (meep-co
 **`(meep-all-wait)`**
 **`meep.all_wait()`**
 —
-Blocks until all processes execute this statment (MPI_Barrier).
+Blocks until all processes execute this statement (MPI_Barrier).
 
 **Warning**: do not attempt to perform different Meep commands in different processes by using the `(meep-my-rank)` or `meep.my_rank()`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.
 

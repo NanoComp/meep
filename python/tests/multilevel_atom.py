@@ -9,7 +9,7 @@ import meep as mp
 class TestMultiLevelAtom(unittest.TestCase):
 
     def test_multilevel_atom(self):
-        resolution = 20
+        resolution = 40
         ncav = 1.5
         Lcav = 1
         dpad = 1
@@ -59,7 +59,7 @@ class TestMultiLevelAtom(unittest.TestCase):
 
         def check_field(sim):
             fp = sim.get_field_point(mp.Ex, mp.Vector3(z=(-0.5 * sz) + Lcav + (0.5 * dpad))).real
-            self.assertAlmostEqual(fp, 1.8040684243391956)
+            self.assertAlmostEqual(fp, -2.7110969214986387)
 
         sim.init_sim()
         sim.fields.initialize_field(mp.Ex, field_func)

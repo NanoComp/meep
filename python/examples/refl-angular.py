@@ -19,10 +19,10 @@ def main(args):
     df = fmax-fmin                  # frequency width
     nfreq = 50                      # number of frequency bins
     
-    # rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
+    # rotation angle (in degrees) of source: CCW around Y axis, 0 degrees along +Z axis
     theta_r = math.radians(args.theta)
 
-    # plane of incidence is xz
+    # plane of incidence is XZ
     k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fmin)
     
     # if normal incidence, force number of dimensions to be 1

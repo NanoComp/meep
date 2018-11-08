@@ -2,7 +2,7 @@
 # Python Tutorial
 ---
 
-We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations and technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
 
 [TOC]
 
@@ -35,15 +35,15 @@ import meep as mp
 We can begin specifying each of the simulation objects starting with the computational cell. We're going to put a source at one end and watch the fields propagate down the waveguide in the *x* direction, so let's use a cell of length 16 μm in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries do not affect the waveguide mode; let's give it a size of 8 μm.
 
 ```py
-cell = mp.Vector3(16, 8, 0)
+cell = mp.Vector3(16,8,0)
 ```
 The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
 
 Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface.md#geometricobject) stored in the `geometry` object.
 
 ```py
-geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
-                     center=mp.Vector3(0, 0),
+geometry = [mp.Block(mp.Vector3(1e20,1,1e20),
+                     center=mp.Vector3(0,0),
                      material=mp.Medium(epsilon=12))]
 ```
 
@@ -134,12 +134,12 @@ import meep as mp
 Then let's set up the bent waveguide in a slightly larger computational cell:
 
 ```py
-cell = mp.Vector3(16, 16, 0)
-geometry = [mp.Block(mp.Vector3(12, 1, 1e20),
-                     center=mp.Vector3(-2.5, -3.5),
+cell = mp.Vector3(16,16,0)
+geometry = [mp.Block(mp.Vector3(12,1,1e20),
+                     center=mp.Vector3(-2.5,-3.5),
                      material=mp.Medium(epsilon=12)),
-            mp.Block(mp.Vector3(1, 12, 1e20),
-                     center=mp.Vector3(3.5, 2),
+            mp.Block(mp.Vector3(1,12,1e20),
+                     center=mp.Vector3(3.5,2),
                      material=mp.Medium(epsilon=12))]
 pml_layers = [mp.PML(1.0)]
 resolution = 10
@@ -149,7 +149,7 @@ Note that we have *two* blocks, both off-center to produce the bent waveguide st
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
-There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface.md#eigenmodesource) can also be used which is described in [Tutorial/Optical Forces](../Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at t=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface.md#eigenmodesource) can also be used which is described in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at t=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(wavelength=2*(11**0.5), width=20),
@@ -207,8 +207,8 @@ Instead of doing an animation, another interesting possibility is to make an ima
 vals = []
 
 def get_slice(sim):
-    center = mp.Vector3(0, -3.5)
-    size = mp.Vector3(16, 0)
+    center = mp.Vector3(0,-3.5)
+    size = mp.Vector3(16,0)
     vals.append(sim.get_array(center=center, size=size, component=mp.Ez))
 
 sim.run(mp.at_beginning(mp.output_epsilon),
@@ -432,7 +432,7 @@ Creating an oblique planewave source typically requires specifying two parameter
 
 In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
-The simulation script is [refl-angular.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-angular.py)
+The simulation script is [examples/refl-angular.py](https://github.com/stevengj/meep/blob/master/python/examples/refl-angular.py)
 
 ```py
 import meep as mp
@@ -457,7 +457,7 @@ def main(args):
     df = fmax-fmin          # frequency width
     nfreq = 50              # number of frequency bins
     
-    # rotation angle (in degrees) of source: CCW around y axis, 0 degrees along +z axis
+    # rotation angle (in degrees) of source: CCW around Y axis, 0 degrees along +Z axis
     theta_r = math.radians(args.theta)
 
     # plane of incidence is xz
@@ -519,7 +519,7 @@ if __name__ == '__main__':
 
 The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the minimum frequency of the source, this is *not* the same as the specified angle of the incident planewave, but rather sin<sup>-1</sup>(k<sub>x</sub>/ω).
 
-Note that there are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planwave. The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+Note that there are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planewave. The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
 ```sh
 #!/bin/bash
@@ -615,7 +615,7 @@ plt.show()
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.py](https://github.com/stevengj/meep/blob/master/python/examples/ring.py). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -680,7 +680,7 @@ $Q$ is the number of optical periods for the energy to decay by $\exp(-2\pi)$, a
 
 An interesting question is how long should we run the simulation, after the sources are turned off, in order to analyze the frequencies. With traditional Fourier analysis, the time would be proportional to the frequency resolution required, but with `Harminv` the time is much shorter. For example, there are three modes. The last has a $Q$ of 1677, which means that the mode decays for about 2000 periods or about 2000/0.175 = 10<sup>4</sup> time units. We have only analyzed it for about 300 time units, however, and the estimated uncertainty in the frequency is 10<sup>-7</sup> (with an actual error of about 10<sup>-6</sup>, from below). In general, you need to increase the run time to get more accuracy, and to find very high $Q$ values, but not by much. In some cases, modes with $Q$ of around 10<sup>9</sup> can be found with only 200 periods.
 
-In this case, we found three modes in the specified bandwith, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by [Marcatilli in 1969](https://ieeexplore.ieee.org/document/6769758/), the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
+In this case, we found three modes in the specified bandwidth, at frequencies of 0.118, 0.147, and 0.175, with corresponding $Q$ values of 81, 316, and 1677. As was shown by [Marcatilli in 1969](https://ieeexplore.ieee.org/document/6769758/), the $Q$ of a ring resonator increases *exponentially* with the product of ω and ring radius. Suppose that we want to actually see the field patterns of these modes. No problem: we just re-run the simulation with a *narrow*-band source around each mode and output the field at the end.
 
 In particular, to output the field at the end we might add an `at_end(mp.output_efield_z)` argument to our `run_after_sources` routine, but this is problematic: we might be unlucky and output at a time when the E<sub>z</sub> field is almost zero (i.e. when all of the energy is in the magnetic field), in which case the picture will be deceptive. Instead, at the end of the run we'll output 20 field snapshots over a whole period 1/`fcen` by appending the command:
 

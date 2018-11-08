@@ -2,11 +2,11 @@
 # Introduction
 ---
 
-Meep implements the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and the fields are evolved in time using discrete time steps &mdash; as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
+Meep implements the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and the fields are evolved in time using discrete time steps &mdash; as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems **essentially exactly**.
 
-In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
+In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should potentially consider a different method.
 
-This introduction does not describe the user interface with which you set up simulations. Instead, we focus here on the concepts that are being simulated. The user interface is described in [User Interface](Python_User_Interface.md) and is demonstrated with several examples beginning in [Tutorial/Basics](Python_Tutorials/Basics.md).
+This introduction does not describe the [User Interface](Python_User_Interface.md) with which you set up simulations. Instead, the focus here is on the physics and concepts that are being simulated. For tutorial examples which demonstrate core functionality, see [Tutorial/Basics](Python_Tutorials/Basics.md).
 
 [TOC]
 
@@ -39,7 +39,7 @@ $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mat
 
 Generally, ε depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
 
-For rotationally symmetric geometries, Meep also supports simulation in [Cylindrical Coordinates](Cylindrical_Coordinates.md).
+For rotationally symmetric geometries, Meep supports simulation in [Cylindrical Coordinates](Cylindrical_Coordinates.md).
 
 ### Units in Meep
 
@@ -133,7 +133,7 @@ Instead, what one does is to accumulate the Fourier transforms $\mathbf{E}_ω(\m
 
 $$\tilde{f}(\omega) = \frac{1}{\sqrt{2\pi}}  \sum_n e^{i\omega n \Delta t} f(n\Delta t) \Delta t \approx \frac{1}{\sqrt{2\pi}} \int e^{i\omega t} f(t) dt$$ and then, at the end of the time-stepping, computing $P(\omega)$ by the fluxes of these Fourier-transformed fields. Meep takes care of all of this for you automatically, of course &mdash; you simply specify the regions over which you want to integrate the flux, and the frequencies that you want to compute.
 
-There are other possible methods of time-series analysis, of course. One method that is sometimes very effective is construct a [Padé approximant](https://en.wikipedia.org/wiki/Padé_approximant) of the time series of field values at some point, from which one can often [extrapolate a very accurate discrete-time Fourier transform](http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=923035), including sharp peaks and other resonant features, from a relatively short time series. Meep does not provide a Padé computation for you, but of course you can output the fields at a point over time, ideally in a single-mode waveguide for transmittance spectra via a single point, and compute the Padé approximant yourself by standard methods.
+There are other possible methods of time-series analysis, of course. One method that is sometimes very effective is construct a [Padé approximant](https://en.wikipedia.org/wiki/Padé_approximant) of the time series of field values at some point, from which one can often extrapolate a very accurate discrete-time Fourier transform (see [IEEE Microwave and Wireless Components Letters, Vol. 11, pp. 223-5, 2001](http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=923035)), including sharp peaks and other resonant features, from a relatively short time series. Meep does not provide a Padé computation for you, but of course you can output the fields at a point over time, ideally in a single-mode waveguide for transmittance spectra via a single point, and compute the Padé approximant yourself by standard methods.
 
 The power $P(\omega)$ by itself is not very useful &mdash; one needs to *normalize*, dividing by the incident power at each frequency, to get the transmittance spectrum. Typically, this is done by running the simulation *twice*: once with only the incident wave and no scattering structure, and once with the scattering structure, where the first calculation is used for normalization.
 

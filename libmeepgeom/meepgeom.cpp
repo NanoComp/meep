@@ -1721,6 +1721,9 @@ inline static bool is_edge_box(double pt, double half_cell, double box_size, dou
 }
 
 static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
+  if (cell_size.z < box_size) {
+    box_size = cell_size.z;
+  }
   double half_box = box_size / 2;
   double half_z = cell_size.z / 2;
   double edge_size_z = fmod(half_z + half_box, box_size);
@@ -1738,6 +1741,9 @@ static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
 }
 
 static std::vector<geom_box> split_cell_2d(double box_size, vector3 cell_size) {
+  if (cell_size.x < box_size || cell_size.y < box_size) {
+    box_size = MIN(cell_size.x, cell_size.y);
+  }
   double half_box = box_size / 2;
   double half_x = cell_size.x /2;
   double half_y = cell_size.y /2;
@@ -1761,6 +1767,10 @@ static std::vector<geom_box> split_cell_2d(double box_size, vector3 cell_size) {
 }
 
 static std::vector<geom_box> split_cell_3d(double box_size, vector3 cell_size) {
+  if (cell_size.x < box_size || cell_size.y < box_size || cell_size.z < box_size) {
+    box_size = MIN(cell_size.x, cell_size.y);
+    box_size = MIN(box_size, cell_size.z);
+  }
   double half_box = box_size / 2;
   double half_x = cell_size.x /2;
   double half_y = cell_size.y /2;
@@ -1790,6 +1800,9 @@ static std::vector<geom_box> split_cell_3d(double box_size, vector3 cell_size) {
 }
 
 static std::vector<geom_box> split_cell_cyl(double box_size, vector3 cell_size) {
+  if (cell_size.x < box_size || cell_size.z < box_size) {
+    box_size = MIN(cell_size.x, cell_size.z);
+  }
   double half_box = box_size / 2;
   double half_x = cell_size.x /2;
   double half_z = cell_size.z /2;
@@ -1835,11 +1848,11 @@ static size_t get_pixels_in_box(geom_box *b, int empty_pixel=1) {
   int empty_y = b->low.y == b->high.y;
   int empty_z = b->low.z == b->high.z;
 
-  double v = ((empty_x ? empty_pixel : b->high.x - b->low.x) *
-              (empty_y ? empty_pixel : b->high.y - b->low.y) *
-              (empty_z ? empty_pixel : b->high.z - b->low.z));
+  double total_pixels = ((empty_x ? empty_pixel : (b->high.x - b->low.x) * fragment_stats::resolution) *
+                         (empty_y ? empty_pixel : (b->high.y - b->low.y) * fragment_stats::resolution) *
+                         (empty_z ? empty_pixel : (b->high.z - b->low.z) * fragment_stats::resolution));
 
-  return v == 1 ? 0 : (size_t)ceil(v * fragment_stats::resolution);
+  return (size_t)ceil(total_pixels);
 }
 
 static void center_box(geom_box *b) {
@@ -1880,6 +1893,10 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_center,
                                                    material_type default_mat,
                                                    std::vector<dft_data> dft_data_list,
+                                                   std::vector<meep::volume> pml_1d_vols,
+                                                   std::vector<meep::volume> pml_2d_vols,
+                                                   std::vector<meep::volume> pml_3d_vols,
+                                                   std::vector<meep::volume> absorber_vols,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
@@ -1892,6 +1909,8 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
   for (size_t i = 0; i < fragments.size(); ++i) {
     fragments[i].compute_stats(&geom);
     fragments[i].compute_dft_stats(&dft_data_list);
+    fragments[i].compute_pml_stats(pml_1d_vols, pml_2d_vols, pml_3d_vols);
+    fragments[i].compute_absorber_stats(absorber_vols);
   }
   return fragments;
 }
@@ -1902,6 +1921,9 @@ fragment_stats::fragment_stats(geom_box& bx, size_t pixels):
   num_nonlinear_pixels(0),
   num_susceptibility_pixels(0),
   num_nonzero_conductivity_pixels(0),
+  num_1d_pml_pixels(0),
+  num_2d_pml_pixels(0),
+  num_3d_pml_pixels(0),
   num_dft_pixels(0),
   num_pixels_in_box(pixels),
   box(bx) {
@@ -1925,6 +1947,11 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
 }
 
 void fragment_stats::compute_stats(geometric_object_list *geom) {
+
+  if (geom->num_items == 0) {
+    // If there is no geometry, count the default material for the whole fragment
+    update_stats_from_material((material_type)default_material, num_pixels_in_box);
+  }
 
   for (int i = 0; i < geom->num_items; ++i) {
     geometric_object *go = &geom->items[i];
@@ -2064,6 +2091,45 @@ void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
   }
 }
 
+void fragment_stats::compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
+                                       const std::vector<meep::volume> &pml_2d_vols,
+                                       const std::vector<meep::volume> &pml_3d_vols) {
+
+  const std::vector<meep::volume> *pml_vols[] = {
+      &pml_1d_vols,
+      &pml_2d_vols,
+      &pml_3d_vols
+  };
+  size_t *pml_pixels[] = {&num_1d_pml_pixels, &num_2d_pml_pixels, &num_3d_pml_pixels};
+
+  for (int j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < pml_vols[j]->size(); ++i) {
+      geom_box pml_box = gv2box((*pml_vols[j])[i]);
+
+      if (geom_boxes_intersect(&pml_box, &box)) {
+        geom_box overlap_box;
+        geom_box_intersection(&overlap_box, &pml_box, &box);
+        size_t overlap_pixels = get_pixels_in_box(&overlap_box, 1);
+        *pml_pixels[j] += overlap_pixels;
+      }
+    }
+  }
+}
+
+void fragment_stats::compute_absorber_stats(const std::vector<meep::volume> &absorber_vols) {
+
+  for (size_t i = 0; i < absorber_vols.size(); ++i) {
+    geom_box absorber_box = gv2box(absorber_vols[i]);
+
+    if (geom_boxes_intersect(&absorber_box, &box)) {
+      geom_box overlap_box;
+      geom_box_intersection(&overlap_box, &absorber_box, &box);
+      size_t overlap_pixels = get_pixels_in_box(&overlap_box, 1);
+      num_nonzero_conductivity_pixels += overlap_pixels;
+    }
+  }
+}
+
 void fragment_stats::print_stats() {
   master_printf("Fragment stats\n");
   master_printf("  num_anisotropic_eps_pixels: %zd\n", num_anisotropic_eps_pixels);
@@ -2071,6 +2137,9 @@ void fragment_stats::print_stats() {
   master_printf("  num_nonlinear_pixels: %zd\n", num_nonlinear_pixels);
   master_printf("  num_susceptibility_pixels: %zd\n", num_susceptibility_pixels);
   master_printf("  num_nonzero_conductivity_pixels: %zd\n", num_nonzero_conductivity_pixels);
+  master_printf("  num_1d_pml_pixels: %zd\n", num_1d_pml_pixels);
+  master_printf("  num_2d_pml_pixels: %zd\n", num_2d_pml_pixels);
+  master_printf("  num_3d_pml_pixels: %zd\n", num_3d_pml_pixels);
   master_printf("  num_dft_pixels: %zd\n", num_dft_pixels);
   master_printf("  num_pixels_in_box: %zd\n", num_pixels_in_box);
   master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);

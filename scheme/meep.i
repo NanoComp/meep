@@ -261,6 +261,8 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 %newobject *::clone;
 %newobject meep::dft_flux::flux;
 
+%warnfilter(302,325,451,503,509);
+
 %include "meep_renames.i"
 %include "meep_enum_renames.i"
 %include "meep_op_renames.i"

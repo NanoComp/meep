@@ -195,6 +195,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   t = tsave;
 
   unset_solve_cw_omega();
+  update_dfts();
 
   return !ierr;
 }

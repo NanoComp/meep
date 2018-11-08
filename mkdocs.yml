@@ -9,7 +9,6 @@ site_dir: 'doc/site'
 
 theme:
    name: readthedocs
-   # custom_dir: 'doc/meep-mkdocs-theme'
 
 markdown_extensions:
     - wikilinks
@@ -22,8 +21,6 @@ markdown_extensions:
 
 extra_javascript:
  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
- - 'js/mathjaxhelper.js'
- - 'js/extra.js'
 
 pages:
 - 'Manual': 'index.md'

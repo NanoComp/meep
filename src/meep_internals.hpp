@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <string.h>
 #include "meep.hpp"
 
 namespace meep {
@@ -62,7 +63,10 @@ class src_vol {
   void update(double time, double dt) { t->update(time, dt); }
 
   bool operator==(const src_vol &sv) const {
-    return sv.index[0]==index[0] && sv.index[sv.npts-1]==index[npts-1] && sv.c==c && sv.t==t;
+    // note: don't compare sv.A, since this is used to see if we can just
+    // add one source's amplitudes to another in src_vol::add_to
+    return sv.npts==npts && sv.c==c && sv.t==t &&
+           memcmp(sv.index, index, npts*sizeof(ptrdiff_t))==0;
   }
 
   src_vol *add_to(src_vol *others);

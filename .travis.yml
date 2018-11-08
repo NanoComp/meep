@@ -1,6 +1,6 @@
 language: python
-dist: trusty
-sudo: false
+dist: xenial
+sudo: required
 
 ##################################################
 # required linux packages and python packages
@@ -23,17 +23,20 @@ addons:
 ##################################################
 env:
   global:
-  - CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io
-  - CORETESTS1="known_results symmetry bragg_transmission one_dimensional integrate convergence_cyl_waveguide aniso_disp harmonics stress_tensor near2far"
-  - CORETESTS2="h5test three_d bench flux cylindrical two_dimensional physical 2D_convergence pml"
-  - CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD)
-  - DO_FULL_BUILD=$(for f in ${CHANGED_FILES}; do if [[ $f != doc/* ]] && [[ $f != mkdocs.yml ]]; then echo "true" && break; fi done)
+  - CPPFLAGS=-I${HOME}/local/include 
+  - LDFLAGS=-L${HOME}/local/lib
+  - HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5
+  - HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial
+  - HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi
+  - HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5
+  - HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial
+  - HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi
+  - GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io
 
 ##################################################
 # common installations performed before all build cases
 ##################################################
 before_script:
-  - if [[ ${DO_FULL_BUILD} != true ]]; then echo "Documentation PR. Skipping build"; exit 0; fi
   - git clone https://github.com/stevengj/libctl libctl-src
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
   - git clone https://github.com/stevengj/harminv
@@ -49,7 +52,12 @@ before_script:
 matrix:
   include:
   - python: "2.7"
-    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}" MKCHECKFLAGS="-j 2"
+    env:
+      - MPICONF="--without-mpi"
+      - MKCHECKFLAGS="-j 2"
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - BUILD_WITHOUT_MPB="1"
     addons:
       apt:
         packages:
@@ -58,7 +66,13 @@ matrix:
     install:
       - pip install numpy mpi4py scipy h5py
   - python: "2.7"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
     addons:
       apt:
         packages:
@@ -67,7 +81,14 @@ matrix:
     install:
       - pip install numpy mpi4py scipy h5py
   - python: "2.7"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - HDF5_MPI="ON"
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
     addons:
       apt:
         packages:
@@ -76,8 +97,28 @@ matrix:
     install:
       - pip install numpy mpi4py scipy
       - pip install --no-binary=h5py h5py
-  - python: "3.4"
-    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}" MKCHECKFLAGS="-j 2"
+  - python: "3.7"
+    env:
+      - MPICONF="--without-mpi"
+      - MKCHECKFLAGS="-j 2"
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - RUN_COVERAGE="1"
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-serial-dev
+    install:
+      - pip install numpy mpi4py scipy h5py coverage coveralls
+  - python: "3.7"
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
     addons:
       apt:
         packages:
@@ -85,17 +126,15 @@ matrix:
           - libhdf5-serial-dev
     install:
       - pip install numpy mpi4py scipy h5py
-  - python: "3.4"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" CC=mpicc CXX=mpic++
-    addons:
-      apt:
-        packages:
-          - *common_deps
-          - libhdf5-serial-dev
-    install:
-      - pip install numpy mpi4py scipy h5py
-  - python: "3.4"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS="" HDF5_MPI="ON" CC=mpicc CXX=mpic++
+  - python: "3.7"
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - HDF5_MPI="ON"
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
     addons:
       apt:
         packages:
@@ -117,11 +156,29 @@ script:
   # Output something every 9 minutes so travis doesn't kill the job
   - while sleep 540; do echo "still running"; done &
   - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+  - >
+    if [[ "${RUN_COVERAGE}" = "1" ]]; then
+      make ${MKCHECKFLAGS} &&
+      pushd python &&
+      echo "[run]" > .coveragerc &&
+      echo "data_file = ${TRAVIS_BUILD_DIR}/.coverage" >> .coveragerc &&
+      make ${MKCHECKFLAGS} check &&
+      popd;
+    fi
+  - >
+    if [[ "${BUILD_WITHOUT_MPB}" == "1" ]]; then
+      ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF} ac_cv_header_mpb_h=no &&
+      make clean &&
+      make;
+    fi
   # Kill background sleep loop
   - kill %1
 
+after_success:
+  - if [[ "${RUN_COVERAGE}" = "1" ]]; then cd ${TRAVIS_BUILD_DIR} && coveralls; fi
+
 after_script:
-  - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build
+  - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build/sub
   - MEEP_LOG=${BUILD_PREFIX}/tests/test-suite.log
   - if [[ -e ${MEEP_LOG} ]]; then cat ${MEEP_LOG}; fi
   - MEEPGEOM_LOG=${BUILD_PREFIX}/libmeepgeom/test-suite.log

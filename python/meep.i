@@ -17,6 +17,8 @@
 
 %module meep
 
+%import "config.h"
+
 %{
 #define SWIG_FILE_WITH_INIT
 #define SWIG_PYTHON_2_UNICODE
@@ -24,31 +26,42 @@
 #include <complex>
 #include <string>
 
+#include "config.h"
 #include "meep/vec.hpp"
 #include "meep.hpp"
 #include "meep/mympi.hpp"
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
+
+namespace meep {
+    size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
+    typedef std::complex<double> (*amplitude_function)(const vec &);
+}
+
+#ifdef HAVE_MPB
 #include "mpb.h"
 
 namespace meep {
-size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
-typedef std::complex<double> (*amplitude_function)(const vec &);
-struct eigenmode_data {
-    maxwell_data *mdata;
-    scalar_complex *fft_data_H, *fft_data_E;
-    evectmatrix H;
-    int n[3];
-    double s[3];
-    double Gk[3];
-    vec center;
-    amplitude_function amp_func;
-    int band_num;
-    double omega;
-    double group_velocity;
-};
+    struct eigenmode_data {
+        maxwell_data *mdata;
+        scalar_complex *fft_data_H, *fft_data_E;
+        evectmatrix H;
+        int n[3];
+        double s[3];
+        double Gk[3];
+        vec center;
+        amplitude_function amp_func;
+        int band_num;
+        double omega;
+        double group_velocity;
+    };
 }
+#else
+namespace meep {
+    struct eigenmode_data {};
+}
+#endif
 
 using namespace meep;
 using namespace meep_geom;
@@ -56,7 +69,6 @@ using namespace meep_geom;
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
-
 %}
 
 %include "numpy.i"
@@ -354,12 +366,16 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     int dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
+    size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
     for (int i = 0; i < rank; ++i) {
         arr_dims[i] = dims[i];
+        length *= dims[i];
     }
 
-    PyObject *py_arr = PyArray_SimpleNewFromData(rank, arr_dims, NPY_CDOUBLE, dft_arr);
+    PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_CDOUBLE);
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
+    delete[] dft_arr;
     delete[] arr_dims;
 
     return py_arr;
@@ -431,42 +447,36 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     return res;
 }
 
-struct py_eigenmode_data {
-    void *data;
-    int band_num;
-    double omega;
-    double group_velocity;
-    PyObject *Gk;
-    PyObject *kdom;
-};
+#ifdef HAVE_MPB
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                                     bool verbose, double kdom[3]) {
 
-py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
-                                 const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
-                                 bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                 bool verbose) {
-
-    double kdom[3];
     void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
                                   parity, resolution, eigensolver_tol, verbose, kdom);
-    meep::eigenmode_data *emdata = (meep::eigenmode_data *)data;
+    return (meep::eigenmode_data *)data;
+}
 
-    py_eigenmode_data result = {};
-    result.data = data;
-    result.band_num = emdata->band_num;
-    result.omega = emdata->omega;
-    result.group_velocity = emdata->group_velocity;
-
+PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
     PyObject *v3_class = py_vector3_object();
-    PyObject *Gk_args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
-    PyObject *kdom_args = Py_BuildValue("(ddd)", kdom[0], kdom[1], kdom[2]);
-    result.Gk = PyObject_Call(v3_class, Gk_args, NULL);
-    result.kdom = PyObject_Call(v3_class, kdom_args, NULL);
-
-    Py_DECREF(Gk_args);
-    Py_DECREF(kdom_args);
-
+    PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
+    PyObject *result = PyObject_Call(v3_class, args, NULL);
+    Py_DECREF(args);
     return result;
 }
+
+#else
+void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                    const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                    bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                    bool verbose, double kdom[3]) {
+    (void) f; (void) omega_src; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
+    (void) match_frequency; (void) parity; (void) resolution; (void) eigensolver_tol;
+    (void) verbose; (void) kdom;
+    meep::abort("Must compile Meep with MPB for get_eigenmode");
+}
+#endif
 %}
 
 %numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
@@ -804,6 +814,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
+%apply double INPLACE_ARRAY1[ANY] { double [3] };
 
 //--------------------------------------------------
 // typemaps needed for get_eigenmode_coefficients
@@ -978,17 +989,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for absorber_list
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep_geom::absorber_list {
-    $1 = PySequence_Check($input) || $input == Py_None;
+    $1 = PySequence_Check($input);
 }
 
 %typemap(in) meep_geom::absorber_list {
 
-    if ($input == Py_None) {
+    Py_ssize_t len = PyList_Size($input);
+
+    if (len == 0) {
         $1 = 0;
     } else {
         $1 = create_absorber_list();
-
-        Py_ssize_t len = PyList_Size($input);
 
         for (Py_ssize_t i = 0; i < len; i++) {
             absorber a;
@@ -1084,6 +1095,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
 
+%newobject _get_eigenmode;
+
 %rename(_vec) meep::vec::vec;
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
@@ -1148,17 +1161,73 @@ struct geom_box {
     vector3 high;
 };
 
-struct py_eigenmode_data {
-    void *data;
+%rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
+%rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
+
+#ifdef HAVE_MPB
+namespace meep {
+struct eigenmode_data {
+    maxwell_data *mdata;
+    scalar_complex *fft_data_H, *fft_data_E;
+    evectmatrix H;
+    int n[3];
+    double s[3];
+    double Gk[3];
+    vec center;
+    amplitude_function amp_func;
     int band_num;
     double omega;
     double group_velocity;
-    PyObject *Gk;
-    PyObject *kdom;
 };
+}
 
-%rename(is_point_in_object) point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
-%rename(is_point_in_periodic_object) point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                                     bool verbose, double kdom[3]);
+PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
+
+%extend meep::eigenmode_data {
+    ~eigenmode_data() {
+        meep::destroy_eigenmode_data($self);
+    }
+}
+
+#else
+void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+                    const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
+                    bool match_frequency, int parity, double resolution, double eigensolver_tol,
+                    bool verbose, double kdom[3]);
+#endif // HAVE_MPB
+
+// Make omega members of meep::dft_ldos available as 'freq' in python
+%extend meep::dft_ldos {
+
+    double get_omega_min() {
+        return $self->omega_min;
+    }
+    double get_domega() {
+        return $self->domega;
+    }
+    int get_Nomega() {
+        return $self->Nomega;
+    }
+    %pythoncode %{
+        def freqs(self):
+            import math
+            import numpy as np
+            start = self.omega_min / (2 * math.pi)
+            stop = start + (self.domega / (2 * math.pi)) * self.Nomega
+            return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
+
+        __swig_getmethods__["freq_min"] = get_omega_min
+        __swig_getmethods__["nfreq"] = get_Nomega
+        __swig_getmethods__["dfreq"] = get_domega
+        if _newclass: freq_min = property(get_omega_min)
+        if _newclass: nfreq = property(get_Nomega)
+        if _newclass: dfreq = property(get_domega)
+    %}
+}
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
@@ -1168,10 +1237,6 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
-py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
-                                 const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
-                                 bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                 bool verbose);
 
 %ignore eps_func;
 %ignore inveps_func;
@@ -1226,9 +1291,11 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         cartesian_to_reciprocal,
         reciprocal_to_cartesian,
         find_root_deriv,
+        get_rotation_matrix,
     )
     from .simulation import (
         Absorber,
+        Ldos,
         FluxRegion,
         ForceRegion,
         Harminv,
@@ -1261,7 +1328,6 @@ py_eigenmode_data _get_eigenmode(meep::fields *f, double omega_src, meep::direct
         get_force_freqs,
         get_forces,
         get_near2far_freqs,
-        get_ldos_freqs,
         in_point,
         in_volume,
         interpolate,

@@ -222,6 +222,7 @@ void fields::update_dfts() {
 }
 
 void fields_chunk::update_dfts(double timeE, double timeH) {
+  if (doing_solve_cw) return;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk) {
     cur->update_dft(is_magnetic(cur->c) ? timeH : timeE);
   }

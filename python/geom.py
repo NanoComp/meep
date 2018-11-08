@@ -396,8 +396,30 @@ class Matrix(object):
         else:
             raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
 
+    def __rmul__(self, left_arg):
+        if isinstance(left_arg, Number):
+            return self.scale(left_arg)
+        else:
+            raise TypeError("No operation known for 'Matrix * {}'".format(type(left_arg)))
+
+    def __add__(self, m):
+        return Matrix(self.c1 + m.c1, self.c2 + m.c2, self.c3 + m.c3)
+
+    def __sub__(self, m):
+        return Matrix(self.c1 - m.c1, self.c2 - m.c2, self.c3 - m.c3)
+
     def __repr__(self):
-        return "<{}\n {}\n {}>".format(self.c1, self.c2, self.c3)
+        r0 = self.row(0)
+        r1 = self.row(1)
+        r2 = self.row(2)
+        return "<<{} {} {}>\n <{} {} {}>\n <{} {} {}>>".format(r0[0], r0[1], r0[2],
+                                                               r1[0], r1[1], r1[2],
+                                                               r2[0], r2[1], r2[2])
+
+    def __array__(self):
+        return np.array([self.row(0).__array__(),
+                         self.row(1).__array__(),
+                         self.row(2).__array__()])
 
     def row(self, i):
         return Vector3(self.c1[i], self.c2[i], self.c3[i])
@@ -434,8 +456,14 @@ class Matrix(object):
         ])
         return sum1 - sum2
 
+    def conj(self):
+        return Matrix(self.c1.conj(), self.c2.conj(), self.c3.conj())
+
     def transpose(self):
         return Matrix(self.row(0), self.row(1), self.row(2))
+
+    def getH(self):
+        return self.transpose().conj()
 
     def inverse(self):
         v1x = self[1][1] * self[2][2] - self[1][2] * self[2][1]
@@ -456,6 +484,8 @@ class Matrix(object):
         m = Matrix(v1, v2, v3)
 
         return m.scale(1 / self.determinant())
+
+    H = property(getH, None)
 
 
 class Lattice(object):
@@ -707,3 +737,11 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
 
     return newton(x_guess, pick_bound(lambda aa: aa < 0),
                   pick_bound(lambda aa: aa > 0), x_max - x_min)
+
+
+def get_rotation_matrix(axis, theta):
+    """ Returns the rotation matrix for rotating by theta around axis """
+
+    return Matrix(Vector3(x=1).rotate(axis, theta),
+                  Vector3(y=1).rotate(axis, theta),
+                  Vector3(z=1).rotate(axis, theta))

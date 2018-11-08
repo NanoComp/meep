@@ -9,6 +9,7 @@ import subprocess
 import sys
 import warnings
 from collections import namedtuple
+from collections import OrderedDict
 from collections import Sequence
 
 import numpy as np
@@ -339,9 +340,9 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 class EigenmodeData(object):
 
-    def __init__(self, band_num, omega, group_velocity, k, swigobj, kdom):
+    def __init__(self, band_num, freq, group_velocity, k, swigobj, kdom):
         self.band_num = band_num
-        self.omega = omega
+        self.freq = freq
         self.group_velocity = group_velocity
         self.k = k
         self.swigobj = swigobj
@@ -512,6 +513,8 @@ class Simulation(object):
         self.epsilon_func = epsilon_func
         self.load_structure_file = load_structure
         self.dft_objects = []
+        self._is_initialized = False
+        self._fragment_size = 10
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -637,6 +640,185 @@ class Simulation(object):
 
         return volumes
 
+    def _boundaries_to_vols_1d(self, boundaries):
+        v1 = []
+
+        for bl in boundaries:
+            cen = mp.Vector3(z=(self.cell_size.z / 2) - (0.5 * bl.thickness))
+            sz = mp.Vector3(z=bl.thickness)
+            if bl.side == mp.High or bl.side == mp.ALL:
+                v1.append(self._volume_from_kwargs(center=cen, size=sz))
+            if bl.side == mp.Low or bl.side == mp.ALL:
+                v1.append(self._volume_from_kwargs(center=-1 * cen, size=sz))
+
+        return v1
+
+    def _boundaries_to_vols_2d_3d(self, boundaries, cyl=False):
+        side_thickness = OrderedDict()
+        side_thickness['top'] = 0
+        side_thickness['bottom'] = 0
+        side_thickness['left'] = 0
+        side_thickness['right'] = 0
+        side_thickness['near'] = 0
+        side_thickness['far'] = 0
+
+        for bl in boundaries:
+            d = bl.direction
+            s = bl.side
+            if d == mp.X or d == mp.ALL:
+                if s == mp.High or s == mp.ALL:
+                    side_thickness['right'] = bl.thickness
+                if s == mp.Low or s == mp.ALL:
+                    side_thickness['left'] = bl.thickness
+            if d == mp.Y or d == mp.ALL:
+                if s == mp.High or s == mp.ALL:
+                    side_thickness['top'] = bl.thickness
+                if s == mp.Low or s == mp.ALL:
+                    side_thickness['bottom'] = bl.thickness
+            if self.dimensions == 3:
+                if d == mp.Z or d == mp.ALL:
+                    if s == mp.High or s == mp.ALL:
+                        side_thickness['far'] = bl.thickness
+                    if s == mp.Low or s == mp.ALL:
+                        side_thickness['near'] = bl.thickness
+
+        xmax = self.cell_size.x / 2
+        ymax = self.cell_size.z / 2 if cyl else self.cell_size.y / 2
+        zmax = self.cell_size.z / 2
+        ytot = self.cell_size.z if cyl else self.cell_size.y
+
+        def get_overlap_0(side, d):
+            if side == 'top' or side == 'bottom':
+                ydir = 1 if side == 'top' else -1
+                xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
+                ysz = d
+                zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
+                xcen = xmax - side_thickness['right'] - (xsz / 2)
+                ycen = ydir*ymax + (-ydir*0.5*d)
+                zcen = zmax - side_thickness['far'] - (zsz / 2)
+            elif side == 'left' or side == 'right':
+                xdir = 1 if side == 'right' else -1
+                xsz = d
+                ysz = ytot - (side_thickness['top'] + side_thickness['bottom'])
+                zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
+                xcen = xdir*xmax + (-xdir*0.5*d)
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
+                zcen = zmax - side_thickness['far'] - (zsz / 2)
+            elif side == 'near' or side == 'far':
+                zdir = 1 if side == 'far' else -1
+                xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
+                ysz = ytot - (side_thickness['top'] + side_thickness['bottom'])
+                zsz = d
+                xcen = xmax - side_thickness['right'] - (xsz / 2)
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
+                zcen = zdir*zmax + (-zdir*0.5*d)
+
+            if cyl:
+                cen = mp.Vector3(xcen, 0, ycen)
+                sz = mp.Vector3(xsz, 0, ysz)
+            else:
+                cen = mp.Vector3(xcen, ycen, zcen)
+                sz = mp.Vector3(xsz, ysz, zsz)
+
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        def get_overlap_1(side1, side2, d):
+            if side_thickness[side2] == 0:
+                return []
+
+            if side1 == 'top' or side1 == 'bottom':
+                ydir = 1 if side1 == 'top' else -1
+                ysz = d
+                ycen = ydir*ymax + (-ydir*0.5*d)
+                if side2 == 'left' or side2 == 'right':
+                    xdir = 1 if side2 == 'right' else -1
+                    xsz = side_thickness[side2]
+                    zsz = self.cell_size.z - (side_thickness['near'] + side_thickness['far'])
+                    xcen = xdir*xmax + (-xdir*0.5*side_thickness[side2])
+                    zcen = zmax - side_thickness['far'] - (zsz / 2)
+                elif side2 == 'near' or side2 == 'far':
+                    zdir = 1 if side2 == 'far' else -1
+                    xsz = self.cell_size.x - (side_thickness['left'] + side_thickness['right'])
+                    zsz = side_thickness[side2]
+                    xcen = xmax - side_thickness['right'] - (xsz / 2)
+                    zcen = zdir*zmax + (-zdir*0.5*side_thickness[side2])
+            elif side1 == 'near' or side1 == 'far':
+                xdir = 1 if side2 == 'right' else -1
+                zdir = 1 if side1 == 'far' else -1
+                xsz = side_thickness[side2]
+                ysz = self.cell_size.y - (side_thickness['top'] + side_thickness['bottom'])
+                zsz = d
+                xcen = xdir*xmax + (-xdir*0.5*side_thickness[side2])
+                ycen = ymax - side_thickness['top'] - (ysz / 2)
+                zcen = zdir*zmax + (-zdir*0.5*d)
+
+            if cyl:
+                cen = mp.Vector3(xcen, 0, ycen)
+                sz = mp.Vector3(xsz, 0, ysz)
+            else:
+                cen = mp.Vector3(xcen, ycen, zcen)
+                sz = mp.Vector3(xsz, ysz, zsz)
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        def get_overlap_2(side1, side2, side3, d):
+            if side_thickness[side2] == 0 or side_thickness[side3] == 0:
+                return []
+            xdir = 1 if side2 == 'right' else -1
+            ydir = 1 if side1 == 'top' else -1
+            zdir = 1 if side3 == 'far' else -1
+            xsz = side_thickness[side2]
+            ysz = d
+            zsz = side_thickness[side3]
+            xcen = xdir*xmax + (-xdir*0.5*xsz)
+            ycen = ydir*ymax + (-ydir*0.5*d)
+            zcen = zdir*zmax + (-zdir*0.5*zsz)
+
+            cen = mp.Vector3(xcen, ycen, zcen)
+            sz = mp.Vector3(xsz, ysz, zsz)
+            return self._volume_from_kwargs(center=cen, size=sz)
+
+        v1 = []
+        v2 = []
+        v3 = []
+
+        for side, thickness in side_thickness.items():
+            if thickness == 0:
+                continue
+
+            v1.append(get_overlap_0(side, thickness))
+            if side == 'top' or side == 'bottom':
+                v2.append(get_overlap_1(side, 'left', thickness))
+                v2.append(get_overlap_1(side, 'right', thickness))
+                if self.dimensions == 3:
+                    v2.append(get_overlap_1(side, 'near', thickness))
+                    v2.append(get_overlap_1(side, 'far', thickness))
+                    v3.append(get_overlap_2(side, 'left', 'near', thickness))
+                    v3.append(get_overlap_2(side, 'right', 'near', thickness))
+                    v3.append(get_overlap_2(side, 'left', 'far', thickness))
+                    v3.append(get_overlap_2(side, 'right', 'far', thickness))
+            if side == 'near' or side == 'far':
+                v2.append(get_overlap_1(side, 'left', thickness))
+                v2.append(get_overlap_1(side, 'right', thickness))
+
+        return [v for v in v1 if v], [v for v in v2 if v], [v for v in v3 if v]
+
+    def _boundary_layers_to_vol_list(self, boundaries):
+        """Returns three lists of meep::volume objects. The first represents the boundary
+           regions with no overlaps. The second is regions where two boundaries overlap, and
+           the third is regions where three boundaries overlap
+        """
+
+        vols1 = []
+        vols2 = []
+        vols3 = []
+
+        if self.dimensions == 1:
+            vols1 = self._boundaries_to_vols_1d(boundaries)
+        else:
+            vols1, vols2, vols3 = self._boundaries_to_vols_2d_3d(boundaries, self.is_cylindrical)
+
+        return vols1, vols2, vols3
+
     def _compute_fragment_stats(self, gv):
 
         def convert_volumes(dft_obj):
@@ -649,6 +831,18 @@ class Simulation(object):
         dft_data_list = [mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o))
                          for o in self.dft_objects]
 
+        pmls = []
+        absorbers = []
+        for bl in self.boundary_layers:
+            if type(bl) is PML:
+                pmls.append(bl)
+            elif type(bl) is Absorber:
+                absorbers.append(bl)
+
+        pml_vols1, pml_vols2, pml_vols3 = self._boundary_layers_to_vol_list(pmls)
+        absorber_vols1, absorber_vols2, absorber_vols3 = self._boundary_layers_to_vol_list(absorbers)
+        absorber_vols = absorber_vols1 + absorber_vols2 + absorber_vols3
+
         stats = mp.compute_fragment_stats(
             self.geometry,
             gv,
@@ -656,9 +850,14 @@ class Simulation(object):
             mp.Vector3(),
             self.default_material,
             dft_data_list,
+            pml_vols1,
+            pml_vols2,
+            pml_vols3,
+            absorber_vols,
             self.subpixel_tol,
             self.subpixel_maxeval,
-            self.ensure_periodicity
+            self.ensure_periodicity,
+            self._fragment_size
         )
 
         mirror_symmetries = [sym for sym in self.symmetries if isinstance(sym, Mirror)]
@@ -669,6 +868,9 @@ class Simulation(object):
                 fs.num_nonlinear_pixels //= 2
                 fs.num_susceptibility_pixels //= 2
                 fs.num_nonzero_conductivity_pixels //= 2
+                fs.num_1d_pml_pixels //= 2
+                fs.num_2d_pml_pixels //= 2
+                fs.num_3d_pml_pixels //= 2
                 fs.num_pixels_in_box //= 2
 
         return stats
@@ -681,10 +883,7 @@ class Simulation(object):
         sym = self._create_symmetries(gv)
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
-        if self.boundary_layers and type(self.boundary_layers[0]) is Absorber:
-            absorbers = self.boundary_layers
-        else:
-            absorbers = None
+        absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         if self.material_function:
             self.material_function.eps = False
@@ -711,7 +910,7 @@ class Simulation(object):
         if self.fields:
             self.fields.remove_susceptibilities()
 
-        have_absorbers = self.boundary_layers and type(self.boundary_layers[0]) is Absorber
+        absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         mp.set_materials_from_geometry(
             self.structure,
@@ -722,7 +921,7 @@ class Simulation(object):
             self.ensure_periodicity,
             False,
             default_material if default_material else self.default_material,
-            self.boundary_layers if have_absorbers else None,
+            absorbers,
             self.extra_materials
         )
 
@@ -737,6 +936,8 @@ class Simulation(object):
         self.structure.dump(fname)
 
     def init_sim(self):
+        if self._is_initialized:
+            return
 
         materials = [g.material for g in self.geometry if isinstance(g.material, mp.Medium)]
         if isinstance(self.default_material, mp.Medium):
@@ -786,6 +987,8 @@ class Simulation(object):
 
         for hook in self.init_sim_hooks:
             hook()
+
+        self._is_initialized = True
 
     def init_fields(self):
         warnings.warn('init_fields is deprecated. Please use init_sim instead', DeprecationWarning)
@@ -1170,26 +1373,38 @@ class Simulation(object):
 
         flux.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
+    load_mode = load_flux
+
     def save_flux(self, fname, flux):
         if self.fields is None:
             self.init_sim()
 
         flux.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
+    save_mode = save_flux
+
     def load_minus_flux(self, fname, flux):
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
+    load_minus_mode = load_minus_flux
+
     def get_flux_data(self, flux):
         return FluxData(E=self.get_dft_data(flux.E), H=self.get_dft_data(flux.H))
+
+    get_mode_data = get_flux_data
 
     def load_flux_data(self, flux, fdata):
         mp._load_dft_data(flux.E, fdata.E)
         mp._load_dft_data(flux.H, fdata.H)
 
+    load_mode_data = load_flux_data
+
     def load_minus_flux_data(self, flux, fdata):
         self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
+
+    load_minus_mode_data = load_minus_flux_data
 
     def flux_in_box(self, d, box=None, center=None, size=None):
         if self.fields is None:
@@ -1237,6 +1452,7 @@ class Simulation(object):
     def solve_cw(self, tol=1e-8, maxiters=10000, L=2):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using solve_cw')
+        self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
@@ -1406,7 +1622,7 @@ class Simulation(object):
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
 
-    def get_eigenmode(self, omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
+    def get_eigenmode(self, freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False):
 
         if self.fields is None:
@@ -1419,11 +1635,13 @@ class Simulation(object):
             eig_vol = self._volume_from_kwargs(vol=eig_vol)
 
         swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
-        emdata = mp._get_eigenmode(self.fields, omega_src, direction, where, eig_vol, band_num, swig_kpoint,
-                                   match_frequency, parity, resolution, eigensolver_tol, verbose)
+        kdom = np.zeros(3)
+        emdata = mp._get_eigenmode(self.fields, freq, direction, where, eig_vol, band_num, swig_kpoint,
+                                   match_frequency, parity, resolution, eigensolver_tol, verbose, kdom)
+        Gk = mp._get_eigenmode_Gk(emdata)
 
-        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, emdata.Gk,
-                             emdata.data, emdata.kdom)
+        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, Gk,
+                             emdata, mp.Vector3(kdom[0], kdom[1], kdom[2]))
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
         if self.fields is None:
@@ -1466,6 +1684,7 @@ class Simulation(object):
 
             if needs_complex_fields and self.fields.is_real:
                 self.fields = None
+                self._is_initialized = False
                 self.init_sim()
             else:
                 if self.k_point:
@@ -1482,12 +1701,14 @@ class Simulation(object):
         self.fields = None
         self.structure = None
         self.dft_objects = []
+        self._is_initialized = False
 
     def restart_fields(self):
         if self.fields is not None:
             self.fields.t = 0
             self.fields.zero_fields()
         else:
+            self._is_initialized = False
             self.init_sim()
 
     def run(self, *step_funcs, **kwargs):
@@ -2167,14 +2388,15 @@ def output_sfield_p(sim):
     sim.output_component(mp.Sp)
 
 
-def get_ldos_freqs(f):
-    start = f.omega_min / (2 * math.pi)
-    stop = start + (f.domega / (2 * math.pi)) * f.Nomega
-    return np.linspace(start, stop, num=f.Nomega, endpoint=False).tolist()
+def Ldos(fcen, df, nfreq):
+    return mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
 
-def dft_ldos(fcen, df, nfreq):
-    ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
+    if ldos is None:
+        if fcen is None or df is None or nfreq is None:
+            raise ValueError("Either fcen, df, and nfreq, or an Ldos is required for dft_ldos")
+        ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
     def _ldos(sim, todo):
         if todo == 'step':
@@ -2183,7 +2405,7 @@ def dft_ldos(fcen, df, nfreq):
             sim.ldos_data = mp._dft_ldos_ldos(ldos)
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
-            display_csv(sim, 'ldos', zip(get_ldos_freqs(ldos), sim.ldos_data))
+            display_csv(sim, 'ldos', zip(ldos.freqs(), sim.ldos_data))
     return _ldos
 
 
