@@ -610,7 +610,7 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
-        gv.shift_origin(self.geometry_center)
+        gv.shift_origin(py_v3_to_vec(self.dimensions, self.geometry_center, self.is_cylindrical))
         return gv
 
     def _create_symmetries(self, gv):
