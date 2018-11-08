@@ -234,12 +234,12 @@ freqs = mp.get_eigenmode_freqs(mode_mon)
 nmode = 10
 res = sim.get_eigenmode_coefficients(mode_mon, range(1,nmode+1), eig_parity=mp.ODD_Z+mp.EVEN_Y)
 coeffs = res.alpha
-kpoints = res.kpoints
+kdom = res.kdom
 
 for nm in range(nmode):
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(math.acos(kpoints[nm*nfreq+nf].x/freqs[nf]))
+    mode_angle = math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf]))
     mode_tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
     if nm != 0:
       mode_tran = 0.5*mode_tran
@@ -489,3 +489,5 @@ poynting-flux:, 0.060885, 0.938560, 0.999445
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
+
+Finally, since this is a single-wavelength calculation, we can use the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver) instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `GaussianSource` with `ContinuousSource` and (2) `run` with `solve_cw`. The simulation script is in [examples/binary_grating_oblique_cwsolver.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique_cwsolver.py). In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation.

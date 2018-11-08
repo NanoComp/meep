@@ -72,12 +72,12 @@ freqs = mp.get_eigenmode_freqs(mode_mon)
 nmode = 10
 res = sim.get_eigenmode_coefficients(mode_mon, range(1,nmode+1), eig_parity=mp.ODD_Z+mp.EVEN_Y)
 coeffs = res.alpha
-kpoints = res.kpoints
+kdom = res.kdom
 
 for nm in range(nmode):
   for nf in range(nfreq):
     mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(math.acos(kpoints[nm*nfreq+nf].x/freqs[nf]))
+    mode_angle = math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf]))
     mode_tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
     if nm != 0:
       mode_tran = 0.5*mode_tran
