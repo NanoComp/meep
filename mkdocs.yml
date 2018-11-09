@@ -16,6 +16,7 @@ markdown_extensions:
         title: Table of Contents
     - attr_list
     - fenced_code
+    - smarty
     - mdx_math:
         enable_dollar_delimiter: True
 
@@ -56,6 +57,7 @@ pages:
     - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'    
     - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
+    - 'Tutorial/Adjoint-Based Optimization': 'Python_Tutorials/Adjoint_Based_Optimization.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
 - 'Scheme Interface':
     - 'User Interface': 'Scheme_User_Interface.md'
