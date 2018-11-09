@@ -44,7 +44,8 @@ class Simulation(object):
                  subpixel_maxeval=100000,
                  subpixel_tol=1e-4,
                  symmetries=[],
-                 verbose=False):
+                 verbose=False,
+                 geometry_center=mp.Vector3()):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -52,6 +53,10 @@ All `Simulation` attributes are described in further detail below. In brackets a
 **`geometry` [ list of `GeometricObject` class ]**
 —
 Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
+
+**`geometry_center` [ `Vector3` class ]**
+—
+Specifies the center of the computational cell. Defaults to (0, 0, 0).
 
 **`sources` [ list of `Source` class ]**
 —
