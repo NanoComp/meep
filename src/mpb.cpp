@@ -237,7 +237,7 @@ void *fields::get_eigenmode(double omega_src,
   // k-vector to be the (real part of the) bloch vector in that direction.
   vec kpoint(_kpoint);
   LOOP_OVER_DIRECTIONS(v.dim, dd)
-   if (float(eig_vol.in_direction(dd) == float(v.in_direction(dd))))
+   if (float(eig_vol.in_direction(dd)) == float(v.in_direction(dd)))
       if (boundaries[High][dd]==Periodic && boundaries[Low][dd]==Periodic)
         kpoint.set_direction(dd, real(k[dd]));
 
