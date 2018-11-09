@@ -107,7 +107,7 @@ r = 1000    % circle radius (same units as Meep simulation)
 disp(sprintf("flux:, %0.16f",sum(Pr)*2*pi*r/length(Pr)))
 ```
 
-The far-field flux for the J$_z$ source is `2.4572492482882082`. The near-field flux, from the simulation output in the line prefixed by `flux:,`, is `2.456196799109356`. This is a ratio of `0.9995716962047763`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.2272603149732138` and `1.2277868880691678` which is a ratio of `0.9995711201177737`. This ratio will converge to one as the resolution is increased.
+The far-field flux for the J$_z$ source is `2.457249`. The near-field flux, shown in the simulation output in the line prefixed by `flux:,`, is `2.456196`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.227260` and `1.227786` which is a ratio of `0.999571`. This ratio will converge to one as the resolution is increased.
 
 <center>
 ![](../images/Source_radiation_pattern.png)
