@@ -421,6 +421,8 @@ void *fields::get_eigenmode(double omega_src,
 	   && fabs(sqrt(eigvals[band_num - 1]) - omega_src) >
 	   omega_src * match_tol);
 
+  double eigval = eigvals[band_num - 1];
+
   // cleanup temporary storage
   delete[] eigvals;
   evect_destroy_constraints(constraints);
@@ -429,10 +431,10 @@ void *fields::get_eigenmode(double omega_src,
 
   /* We only run MPB eigensolver on the master process to avoid
      any possibility of inconsistent mode solutions (#568) */
-  eigvals[band_num - 1] = broadcast(0, eigvals[band_num - 1]);
+  eigval = broadcast(0, eigval);
   k[d-X] = broadcast(0, k[d-X]);
   vgrp = broadcast(0, vgrp);
-  if (eigvals[band_num - 1] < 0) {  // no mode found
+  if (eigval < 0) {  // no mode found
     destroy_evectmatrix(H);
     destroy_maxwell_data(mdata);
     return NULL;
@@ -442,7 +444,7 @@ void *fields::get_eigenmode(double omega_src,
   broadcast(0, (double*) H.data,  2 * H.n * H.p);
 
   if (!match_frequency)
-    omega_src = sqrt(eigvals[band_num - 1]);
+    omega_src = sqrt(eigval);
 
   /*--------------------------------------------------------------*/
   /*- part 3: do one stage of postprocessing to tabulate H-field  */
