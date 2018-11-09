@@ -387,23 +387,23 @@ void *fields::get_eigenmode(double omega_src,
 		    band_num, G[0][0]*k[0],G[1][1]*k[1],G[2][2]*k[2],
 		    sqrt(eigvals[band_num-1]), num_iters);
 
+    // copy desired single eigenvector into scratch arrays
+    evectmatrix_resize(&W[0], 1, 0);
+    evectmatrix_resize(&W[1], 1, 0);
+    for (int i = 0; i < H.n; ++i)
+      W[0].data[i] = H.data[H.p-1 + i * H.p];
+
+    // compute the group velocity in the kdir direction
+    maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
+    mpb_real vscratch;
+    evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
+    vgrp /= sqrt(eigvals[band_num - 1]);
+
+    // return to original size
+    evectmatrix_resize(&W[0], band_num, 0);
+    evectmatrix_resize(&W[1], band_num, 0);
+
     if (match_frequency) {
-      // copy desired single eigenvector into scratch arrays
-      evectmatrix_resize(&W[0], 1, 0);
-      evectmatrix_resize(&W[1], 1, 0);
-      for (int i = 0; i < H.n; ++i)
-        W[0].data[i] = H.data[H.p-1 + i * H.p];
-
-      // compute the group velocity in the kdir direction
-      maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
-      mpb_real vscratch;
-      evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
-      vgrp /= sqrt(eigvals[band_num - 1]);
-
-      // return to original size
-      evectmatrix_resize(&W[0], band_num, 0);
-      evectmatrix_resize(&W[1], band_num, 0);
-
       // update k via Newton step
       double dkmatch = (sqrt(eigvals[band_num - 1]) - omega_src) / vgrp;
       kmatch = kmatch - dkmatch;
