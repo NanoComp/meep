@@ -337,10 +337,12 @@ void *fields::get_eigenmode(double omega_src,
 
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 				     local_N, N_start, alloc_N);
-  unsigned seed = 0; // use the same initialization on all processes
-  for (int i = 0; i < H.n * H.p; ++i) {
-    ASSIGN_SCALAR(H.data[i], rand_r(&seed) * 1.0/RAND_MAX, rand_r(&seed) * 1.0/RAND_MAX);
-  }
+  /* initialize H to pseudorandom values on the master process; on other
+     processes we get the value via broadcast() below */
+  if (am_master())
+    for (int i = 0; i < H.n * H.p; ++i) {
+      ASSIGN_SCALAR(H.data[i], rand() * 1.0/RAND_MAX, rand() * 1.0/RAND_MAX);
+    }
 
   mpb_real *eigvals = new mpb_real[band_num];
   int num_iters;
@@ -368,48 +370,50 @@ void *fields::get_eigenmode(double omega_src,
   /*- part 2: newton iteration loop with call to MPB on each step */
   /*-         until eigenmode converged to requested tolerance    */
   /*--------------------------------------------------------------*/
-  do {
+  if (am_master()) do {
     eigensolver(H, eigvals, maxwell_operator, (void *) mdata,
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 6)
                 NULL, NULL, /* eventually, we can support mu here */
 #endif
-		maxwell_preconditioner2, (void *) mdata,
-		evectconstraint_chain_func,
-		(void *) constraints,
-		W, 3,
-		eigensolver_tol, &num_iters,
-		EIGS_DEFAULT_FLAGS |
-		(am_master() && verbose && !quiet ? EIGS_VERBOSE : 0));
+                maxwell_preconditioner2, (void *) mdata,
+                evectconstraint_chain_func,
+                (void *) constraints,
+                W, 3,
+                eigensolver_tol, &num_iters,
+                EIGS_DEFAULT_FLAGS |
+                (am_master() && verbose && !quiet ? EIGS_VERBOSE : 0));
     if (!quiet)
       master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
 		    band_num, G[0][0]*k[0],G[1][1]*k[1],G[2][2]*k[2],
 		    sqrt(eigvals[band_num-1]), num_iters);
 
+    // copy desired single eigenvector into scratch arrays
+    evectmatrix_resize(&W[0], 1, 0);
+    evectmatrix_resize(&W[1], 1, 0);
+    for (int i = 0; i < H.n; ++i)
+      W[0].data[i] = H.data[H.p-1 + i * H.p];
+
+    // compute the group velocity in the kdir direction
+    maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
+    mpb_real vscratch;
+    evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
+    vgrp /= sqrt(eigvals[band_num - 1]);
+
+    // return to original size
+    evectmatrix_resize(&W[0], band_num, 0);
+    evectmatrix_resize(&W[1], band_num, 0);
+
     if (match_frequency) {
-      // copy desired single eigenvector into scratch arrays
-      evectmatrix_resize(&W[0], 1, 0);
-      evectmatrix_resize(&W[1], 1, 0);
-      for (int i = 0; i < H.n; ++i)
-        W[0].data[i] = H.data[H.p-1 + i * H.p];
-
-      // compute the group velocity in the kdir direction
-      maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
-      mpb_real vscratch;
-      evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
-      vgrp /= sqrt(eigvals[band_num - 1]);
-
-      // return to original size
-      evectmatrix_resize(&W[0], band_num, 0);
-      evectmatrix_resize(&W[1], band_num, 0);
-
       // update k via Newton step
       double dkmatch = (sqrt(eigvals[band_num - 1]) - omega_src) / vgrp;
       kmatch = kmatch - dkmatch;
       if (!quiet && verbose)
         master_printf("Newton step: group velocity v=%g, kmatch=%g\n", vgrp, kmatch);
       count_dkmatch_increase += fabs(dkmatch) > fabs(dkmatch_prev);
-      if (count_dkmatch_increase > 4)
-        return NULL;
+      if (count_dkmatch_increase > 4) {
+        eigvals[band_num - 1] = -1;
+        break;
+      }
       k[d-X] = kmatch * R[d-X][d-X];
       update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
     }
@@ -417,8 +421,7 @@ void *fields::get_eigenmode(double omega_src,
 	   && fabs(sqrt(eigvals[band_num - 1]) - omega_src) >
 	   omega_src * match_tol);
 
-  if (!match_frequency)
-    omega_src = sqrt(eigvals[band_num - 1]);
+  double eigval = eigvals[band_num - 1];
 
   // cleanup temporary storage
   delete[] eigvals;
@@ -426,13 +429,28 @@ void *fields::get_eigenmode(double omega_src,
   for (int i = 0; i < 3; ++i)
     destroy_evectmatrix(W[i]);
 
+  /* We only run MPB eigensolver on the master process to avoid
+     any possibility of inconsistent mode solutions (#568) */
+  eigval = broadcast(0, eigval);
+  k[d-X] = broadcast(0, k[d-X]);
+  vgrp = broadcast(0, vgrp);
+  if (eigval < 0) {  // no mode found
+    destroy_evectmatrix(H);
+    destroy_maxwell_data(mdata);
+    return NULL;
+  }
+  if (!am_master())
+    update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+  broadcast(0, (double*) H.data,  2 * H.n * H.p);
+
+  if (!match_frequency)
+    omega_src = sqrt(eigval);
+
   /*--------------------------------------------------------------*/
   /*- part 3: do one stage of postprocessing to tabulate H-field  */
   /*-         components on the internal storage buffer in mdata  */
   /*--------------------------------------------------------------*/
   complex<mpb_real> *cdata = (complex<mpb_real> *) mdata->fft_data;
-
-  broadcast(0, (double*) H.data,  2 * H.n * H.p);
 
   maxwell_compute_h_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   /* choose deterministic phase, maximizing power in real part;
