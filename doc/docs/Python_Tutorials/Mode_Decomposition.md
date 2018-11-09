@@ -310,11 +310,11 @@ To convert the diffraction efficiency into transmittance in the *x* direction (i
 
 ### Reflectance and Transmittance Spectra for Planewave at Oblique Incidence
 
-As an additional demonstration of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle must necessarily sum to unity. Also, the total reflectance and transmittance must be equivalent to values computed using the Poynting flux. This is similar to the [single-mode waveguide example](#reflectance-of-a-waveguide-taper).
+As an additional demonstration of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle and wavelength must necessarily sum to unity. Also, the total reflectance and transmittance must be equivalent to values computed using the Poynting flux. This demonstration is somewhat similar to the [single-mode waveguide example](#reflectance-of-a-waveguide-taper).
 
 The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two different lines prefixed by `mode-coeff:` and `poynting-flux:`.
 
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This function takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which returns the planewave amplitude at that point. Two modifications to the original simulation are necessary for mitigating the intrinsic discretization effects of the Yee grid for oblique planewaves: (1) the pulse bandwidth is narrowed and (2) the anisotropic `PML` is replaced with an isotropic `Absorber`. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. Note that there is a second line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. Two modifications to the original simulation are necessary for mitigating the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves: (1) the pulse bandwidth is narrowed and (2) the anisotropic `PML` is replaced with an isotropic `Absorber`. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
 The simulation script is in [examples/binary_grating_oblique.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique.py).
 
@@ -348,6 +348,11 @@ df = 0.05*fcen         # frequency width
 ng = 1.5
 glass = mp.Medium(index=ng)
 
+use_cw_solver = False  # CW solver or time stepping?
+tol = 1e-6             # CW solver tolerance
+max_iters = 2000       # CW solver max iterations
+L = 10                 # CW solver L
+
 # rotation angle of incident planewave; CCW about Z axis, 0 degrees along +X axis
 theta_in = math.radians(10.7)
 
@@ -367,7 +372,7 @@ def pw_amp(k,x0):
   return _pw_amp
 
 src_pt = mp.Vector3(-0.5*sx+dpml+0.3*dsub,0,0)
-sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+sources = [mp.Source(mp.ContinuousSource(fcen,fwidth=df) if use_cw_solver else mp.GaussianSource(fcen,fwidth=df),
                      component=mp.Ez,
                      center=src_pt,
                      size=mp.Vector3(0,sy,0),
@@ -384,7 +389,11 @@ sim = mp.Simulation(resolution=resolution,
 refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
 refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=100)
+if use_cw_solver:
+  sim.init_sim()
+  sim.solve_cw(tol, max_iters, L)
+else:
+  sim.run(until_after_sources=100)
   
 input_flux = mp.get_fluxes(refl_flux)
 input_flux_data = sim.get_flux_data(refl_flux)
@@ -408,7 +417,11 @@ sim.load_minus_flux_data(refl_flux,input_flux_data)
 tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
 tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
-sim.run(until_after_sources=200)
+if use_cw_solver:
+  sim.init_sim()
+  sim.solve_cw(tol, max_iters, L)
+else:
+  sim.run(until_after_sources=200)
 
 nm_r = np.floor((fcen*ng-k.y)*gp)-np.ceil((-fcen*ng-k.y)*gp) # number of reflected orders
 if theta_in == 0:
@@ -451,6 +464,8 @@ Tflux =  t_flux[0]/input_flux[0]
 print("poynting-flux:, {:.6f}, {:.6f}, {:.6f}".format(Rflux,Tflux,Rflux+Tflux))
 ```
 
+Since this is a single-wavelength calculation, we can use the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver) instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `GaussianSource` with `ContinuousSource` and (2) `run` with `solve_cw`. Choosing among the two approaches is determined by setting the `use_cw_solver` boolean variable. In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation. The results from both approaches are nearly identical. Time stepping is therefore the default.
+
 The following are several of the lines from the output for eight of the reflected and transmitted orders. The first numerical column is the mode number, the second is the mode angle (in degrees), and the third is the fraction of the input power that is concentrated in the mode. Note that the thirteenth transmitted order at 19.18° contains nearly 38% of the input power.
 
 ```
@@ -489,5 +504,3 @@ poynting-flux:, 0.060885, 0.938560, 0.999445
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
-
-Finally, since this is a single-wavelength calculation, we can use the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver) instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `GaussianSource` with `ContinuousSource` and (2) `run` with `solve_cw`. The simulation script is in [examples/binary_grating_oblique_cwsolver.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique_cwsolver.py). In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation.
