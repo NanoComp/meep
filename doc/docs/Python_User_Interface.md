@@ -56,7 +56,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 
 **`geometry_center` [ `Vector3` class ]**
 —
-Specifies the center of the computational cell. Defaults to (0, 0, 0).
+Specifies the coordinates of center of the computational cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
 
 **`sources` [ list of `Source` class ]**
 —
