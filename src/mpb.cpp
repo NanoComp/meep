@@ -241,6 +241,10 @@ void *fields::get_eigenmode(double omega_src,
       if (boundaries[High][dd]==Periodic && boundaries[Low][dd]==Periodic)
         kpoint.set_direction(dd, real(k[dd]));
 
+  // special case: 2d cell in x and y with non-zero kz
+  if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1/a)) && (boundaries[High][Z]==Periodic && boundaries[Low][Z]==Periodic) && (kpoint.z() == 0) && (real(k[Z]) != 0))
+    kpoint.set_direction(Z, real(k[Z]));
+  
   //bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
