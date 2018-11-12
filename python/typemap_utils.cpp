@@ -481,10 +481,11 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
             PyErr_SetString(PyExc_TypeError, "Numpy array must be C-style contiguous.");
             return 0;
         }
-        md = (material_data *)malloc(sizeof(*md));
+        md = new material_data();
         md->which_subclass=material_data::MATERIAL_FILE;
         md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
-        md->epsilon_data = (double*)PyArray_DATA(pao);
+        md->epsilon_data = new realnum[PyArray_SIZE(pao)];
+        memcpy(md->epsilon_data, (realnum*)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
 
         for (int i = 0; i < PyArray_NDIM(pao); ++i) {
             md->epsilon_dims[i] = (size_t)PyArray_DIMS(pao)[i];
@@ -494,8 +495,6 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
                       md->epsilon_dims[0],
                       md->epsilon_dims[1],
                       md->epsilon_dims[2]);
-
-        md->medium = medium_struct();
     } else {
         PyErr_SetString(PyExc_TypeError, "Expected a Medium, a function, or a filename");
         return 0;

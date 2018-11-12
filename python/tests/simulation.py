@@ -18,6 +18,9 @@ class TestSimulation(unittest.TestCase):
 
     fname = 'simulation-ez-000200.00.h5'
 
+    def setUp(self):
+        print("Running {}".format(self._testMethodName))
+
     def test_interpolate_numbers(self):
 
         expected = [
