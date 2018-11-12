@@ -196,12 +196,41 @@ class Medium(object):
         self.B_conductivity_diag = B_conductivity_diag
         self.valid_freq_range = valid_freq_range
 
+    def rotate(self, rotation_matrix):
+        eps = Matrix(mp.Vector3(self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y),
+                     mp.Vector3(self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z),
+                     mp.Vector3(self.epsilon_offdiag.y, self.epsilon_offdiag.z, self.epsilon_diag.z))
+        mu = Matrix(mp.Vector3(self.mu_diag.x, self.mu_offdiag.x, self.mu_offdiag.y),
+                    mp.Vector3(self.mu_offdiag.x, self.mu_diag.y, self.mu_offdiag.z),
+                    mp.Vector3(self.mu_offdiag.y, self.mu_offdiag.z, self.mu_diag.z))
+
+        new_eps = rotation_matrix * eps * rotation_matrix.transpose()
+        new_mu = rotation_matrix * mu * rotation_matrix.transpose()
+        self.epsilon_diag = mp.Vector3(new_eps.c1.x, new_eps.c2.y, new_eps.c3.z)
+        self.epsilon_offdiag = mp.Vector3(new_eps.c2.x, new_eps.c3.x, new_eps.c3.y)
+        self.mu_diag = mp.Vector3(new_mu.c1.x, new_mu.c2.y, new_mu.c3.z)
+        self.mu_offdiag = mp.Vector3(new_mu.c2.x, new_mu.c3.x, new_mu.c3.y)
+
+        for s in self.E_susceptibilities:
+            s.rotate(rotation_matrix)
+
+        for s in self.H_susceptibilities:
+            s.rotate(rotation_matrix)
+
 
 class Susceptibility(object):
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
         self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
+
+    def rotate(self, rotation_matrix):
+        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
+                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
+                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
+        new_sigma = rotation_matrix * sigma * rotation_matrix.transpose()
+        self.sigma_diag = mp.Vector3(new_sigma.c1.x, new_sigma.c2.y, new_sigma.c3.z)
+        self.sigma_offdiag = mp.Vector3(new_sigma.c2.x, new_sigma.c3.x, new_sigma.c3.y)
 
 
 class LorentzianSusceptibility(Susceptibility):

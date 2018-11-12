@@ -349,6 +349,29 @@ class TestMedium(unittest.TestCase):
         sim.add_flux(15, 6, 2, fregion)
         check_warnings(sim)
 
+    def test_rotate(self):
+
+        e_sus = [mp.LorentzianSusceptibility(sigma_diag=mp.Vector3(1, 2, 3),
+                                             sigma_offdiag=mp.Vector3(12, 13, 14)),
+                 mp.DrudeSusceptibility(sigma_diag=mp.Vector3(1, 2, 3),
+                                        sigma_offdiag=mp.Vector3(12, 13, 14))]
+
+        mat = mp.Medium(epsilon_diag=mp.Vector3(1, 2, 3), epsilon_offdiag=mp.Vector3(12, 13, 14),
+                        E_susceptibilities=e_sus)
+
+        rot_matrix = mp.Matrix(mp.Vector3(1, 0, 0), mp.Vector3(0, 0, 1), mp.Vector3(0, -1, 0))
+        mat.rotate(rot_matrix)
+
+        self.assertEqual(mat.epsilon_diag, mp.Vector3(1, 3, 2))
+        self.assertEqual(mat.epsilon_offdiag, mp.Vector3(-13, 12, -14))
+        self.assertEqual(mat.mu_diag, mp.Vector3(1, 1, 1))
+        self.assertEqual(mat.mu_offdiag, mp.Vector3())
+        self.assertEqual(len(mat.E_susceptibilities), 2)
+        self.assertEqual(mat.E_susceptibilities[0].sigma_diag, mp.Vector3(1, 3, 2))
+        self.assertEqual(mat.E_susceptibilities[0].sigma_offdiag, mp.Vector3(-13, 12, -14))
+        self.assertEqual(mat.E_susceptibilities[1].sigma_diag, mp.Vector3(1, 3, 2))
+        self.assertEqual(mat.E_susceptibilities[1].sigma_offdiag, mp.Vector3(-13, 12, -14))
+
 
 class TestVector3(unittest.TestCase):
 
