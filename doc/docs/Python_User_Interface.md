@@ -1049,7 +1049,7 @@ Aliases for the corresponding "flux" methods.
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
 
-**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
+**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func, verbose)`**
 —
 Given a flux object and list of band indices, return a `namedtuple` with the following fields:
 
