@@ -1630,11 +1630,7 @@ void set_materials_from_geometry(meep::structure *s,
 /***************************************************************/
 material_type make_dielectric(double epsilon)
 {
-  material_data *md = (material_data *)malloc(sizeof(*md));
-  md->which_subclass=material_data::MEDIUM;
-  md->user_func=0;
-  md->user_data=0;
-  md->medium = medium_struct();
+  material_data *md = new material_data();
   md->medium.epsilon_diag.x=epsilon;
   md->medium.epsilon_diag.y=epsilon;
   md->medium.epsilon_diag.z=epsilon;
@@ -1644,11 +1640,10 @@ material_type make_dielectric(double epsilon)
 material_type make_user_material(user_material_func user_func,
                                  void *user_data)
 {
-  material_data *md = (material_data *)malloc(sizeof(*md));
+  material_data *md = new material_data();
   md->which_subclass=material_data::MATERIAL_USER;
   md->user_func=user_func;
   md->user_data=user_data;
-  md->medium = medium_struct();
   return md;
 }
 
@@ -1656,7 +1651,7 @@ material_type make_user_material(user_material_func user_func,
 // 'read_epsilon_file' routine
 material_type make_file_material(const char *eps_input_file)
 {
-  material_data *md = (material_data *)malloc(sizeof(*md));
+  material_data *md = new material_data();
   md->which_subclass=material_data::MATERIAL_FILE;
 
   md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
@@ -1670,13 +1665,12 @@ material_type make_file_material(const char *eps_input_file)
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     md->epsilon_data = eps_file.read(dataname, &rank, md->epsilon_dims, 3);
     master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n",
-		  md->epsilon_dims[0],
+                  md->epsilon_dims[0],
                   md->epsilon_dims[1],
                   md->epsilon_dims[2],
-		  eps_input_file);
+                  eps_input_file);
+    delete[] fname;
   }
-
-  md->medium = medium_struct();
 
   return md;
 }

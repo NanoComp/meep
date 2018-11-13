@@ -182,7 +182,7 @@ struct material_data
    meep::realnum *epsilon_data;
    size_t epsilon_dims[3];
 
-   material_data(): which_subclass(MEDIUM), medium(), user_data(NULL), epsilon_data(NULL) {
+   material_data(): which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL) {
      epsilon_dims[0] = 0;
      epsilon_dims[1] = 0;
      epsilon_dims[2] = 0;
@@ -206,7 +206,6 @@ material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func,
                                  void *user_data);
 material_type make_file_material(char *epsilon_input_file);
-
 void read_epsilon_file(const char *eps_input_file);
 
 

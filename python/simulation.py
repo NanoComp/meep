@@ -896,7 +896,7 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        self.fragment_stats = self._compute_fragment_stats(gv)
+        self.fragment_stats = self._compute_fragment_stats(gv) if isinstance(self.default_material, mp.Medium) else []
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
