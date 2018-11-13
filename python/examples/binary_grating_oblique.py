@@ -7,9 +7,9 @@ import numpy as np
 
 resolution = 50        # pixels/μm
 
-dpml = 2.0             # PML thickness
+dpml = 1.0             # PML thickness
 dsub = 3.0             # substrate thickness
-dpad = 3.0             # length of padding between grating and pml
+dpad = 3.0             # length of padding between grating and PML
 gp = 10.0              # grating period
 gh = 0.5               # grating height
 gdc = 0.5              # grating duty cycle
@@ -18,9 +18,7 @@ sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
 cell_size = mp.Vector3(sx,sy,0)
-
-# replace anisotropic PML with isotropic Absorber to attenuate parallel-directed fields of oblique source
-abs_layers = [mp.Absorber(thickness=dpml,direction=mp.X)] 
+pml_layers = [mp.PML(thickness=dpml,direction=mp.X)] 
 
 wvl = 0.5              # center wavelength
 fcen = 1/wvl           # center frequency

@@ -11,7 +11,7 @@ General
 
 ### What is Meep?
 
-Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-source_software) software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
+Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-source_software) software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method. The name Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
 
 ### Who are the developers of Meep?
 
@@ -29,13 +29,13 @@ Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers
 
 [Pull requests](https://github.com/stevengj/meep/pulls) involving bug fixes, new features, and general improvements are welcome and can be made to the master branch on GitHub. This includes tweaks, revisions, and updates to this documentation which is also part of the [source repository](https://github.com/stevengj/meep/tree/master/doc).
 
-### Is there a technical reference on Meep?
+### Is there a technical reference for Meep?
 
 Yes. The technical details of Meep's inner workings are described in the peer-reviewed publication [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)). Additional information is provided in the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707) in Chapters 4 ("Electromagnetic Wave Source Conditions"), 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media"), 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing"), and 20 ("MEEP: A Flexible Free FDTD Software Package"). A [video presentation](https://www.youtube.com/watch?v=9CA949csYvM) and [slides](http://ab-initio.mit.edu/~ardavan/stuff/IEEE_Photonics_Society_SCV3.pdf) as well as a [podcast](http://www.rce-cast.com/Podcast/rce-118-meep.html) are also available.
 
 ### Where can I find a list of projects which have used Meep?
 
-For a list of published works which have used Meep, see the Google Scholar citation page for Meep's [technical reference](https://scholar.google.com/scholar?cites=17712807607104508775) as well as the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259).
+For a list of more than 2500 published works which have used Meep, see the Google Scholar citation page for Meep's [technical reference](https://scholar.google.com/scholar?cites=17712807607104508775) as well as the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259).
 
 ### Can I access Meep in the public cloud?
 
@@ -114,6 +114,10 @@ Yes. A materials library is available containing [crystalline silicon](https://e
 
 You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the wavelength- or frequency-dependent data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials.md#material-dispersion). In general, you have to use nonlinear optimization to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. A wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented using the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation) can be directly transferred to the Lorentz model using a simple substitution of variables. This is also described in [Materials](Materials.md#sellmeier-coefficients). Note that Meep only does subpixel averaging of the nondispersive part of ε (and μ).
 
+### Why are the fields blowing up in my simulation?
+
+Instability in the fields is likely due to one of three causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) and the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is too high relative to the grid discretization (fix: increase the resolution and/or turn off subpixel smothing and/or reduce the Courant factor), or (3) a material with a wavelength-independent negative real permittivity which violates the [Kramers-Kroning relation](https://en.wikipedia.org/wiki/Kramers%E2%80%93Kronig_relations) as well as [von Neumann stability](https://en.wikipedia.org/wiki/Von_Neumann_stability_analysis) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
+
 ### Does Meep support importing GDSII files?
 
 Yes. The [`get_GDSII_prisms`](Python_User_Interface.md#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. See [Tutorial/GDSII Import](Python_Tutorials/GDSII_Import.md) for an example. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
@@ -126,9 +130,9 @@ Meep's [subpixel smoothing](Introduction.md#the-illusion-of-continuity) often im
 
 For flux calculations involving pulsed (i.e., Gaussian) sources, it is important to run the simulation long enough to ensure that all the fields have sufficiently decayed away (i.e., due to absorption by the PMLs, etc). Terminating the simulation prematurely will result in the Fourier-transformed fields, which are being accumulated during the time stepping (as explained in [Introduction](Introduction.md#transmittancereflectance-spectra)), to not be fully converged. Convergence of the fields is typically achieved by lowering the `decay_by` parameter in the `stop_when_fields_decayed` [run function](Python_User_Interface.md#run-functions).  Alternatively, you can explicitly set the run time to some numeric value that you repeatedly double, instead of using the field decay.  Sometimes it is also informative to double the `cutoff` parameter of sources to increase their smoothness (reducing the amplitude of long-lived high-frequency modes).
 
-### Why are my reflectance/transmittance values greater than one?
+### Why are my reflectance/transmittance values less than zero and/or greater than one?
 
-There are three possible explanations: (1) the normalization and the scattering runs are not comparable because e.g., the sources or flux monitors are not in the same position within the structure, (2) the run time is not long enough and hence all of the flux is not being collected in either or both runs, or (3) the flux is being computed at a frequency which is too far away from the center of the source bandwidth; in such cases the flux values are too small and may be dominated by rounding errors.
+There are three possible explanations: (1) the normalization and the scattering runs are not comparable because e.g., the sources or flux monitors are not in the same position within the structure, (2) the [run time is not long enough](#checking-convergence) and hence all of the flux is not being collected in either or both runs, or (3) the flux is being computed at a frequency which is too far away from the center of the source bandwidth; in such cases the flux values are too small and may be dominated by rounding errors.
 
 ### Why doesn't turning off subpixel averaging work?
 
@@ -169,17 +173,13 @@ Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be us
 
 ### `Harminv` is unable to find the resonant modes of my structure
 
-There are four possible explanations for why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) the run time was not long enough and the decay rate of the mode is so small that the `Harminv` data was mainly noise, (2) the `Harminv` call was not wrapped in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps sources it will get confused because the sources are not exponentially decaying fields, (3) the `Harminv` monitor point is near where the mode has a node (e.g., in a symmetry plane), or (4) there are field instabilities where the fields are actually blowing up slowly; this may result in `Harminv` returning a quality factor with *negative* value. For calculations involving `Harminv`, it is always preferrable to run with a narrower bandwidth source around the frequency of interest and/or for a longer time.
+There are four possible explanations for why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) the run time was not long enough and the decay rate of the mode is so small that the `Harminv` data was mainly noise, (2) the `Harminv` call was not wrapped in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps sources it will get confused because the sources are not exponentially decaying fields, (3) the `Harminv` monitor point is near where the mode has a node (e.g., in a symmetry plane), or (4) there are field instabilities where the fields are actually [blowing up](#why-are-the-fields-blowing-up-in-my-simulation) slowly; this may result in `Harminv` returning a *negative* quality factor. For calculations involving `Harminv`, it is always preferrable to run with a narrower bandwidth source around the frequency of interest and/or for a longer time.
 
 Note: any real-valued signal consists of both positive and negative frequency components (with complex-conjugate amplitudes) in a Fourier domain decomposition into complex exponentials. `Harminv` usually is set up to find just one sign of the frequency, but occasionally converges to a negative-frequency component as well; these are just as meaningful as the positive frequencies.
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
 Only the real, frequency-independent part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the `epsilon` value.
-
-### Why are the fields blowing up in my simulation?
-
-Instability in the fields is likely due to one of three causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) involving [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is too high relative to the grid discretization (fix: increase the resolution and/or turn off subpixel smothing and/or reduce the Courant factor), or (3) a material with a wavelength-independent negative real permittivity which violates the [Kramers-Kroning relation](https://en.wikipedia.org/wiki/Kramers%E2%80%93Kronig_relations) as well as [von Neumann stability](https://en.wikipedia.org/wiki/Von_Neumann_stability_analysis) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
 
 ### Does Meep support a non-uniform grid?
 
@@ -192,3 +192,7 @@ You can use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an
 ### Can Meep be used to investigate lasing phenomena?
 
 Yes. More specifically, Meep can be used to model saturable gain and absorption via multilevel atomic susceptibility. This feature may be used to investigate optically-pumped lasing phenomena such as [Raman lasers](https://en.wikipedia.org/wiki/Raman_laser). For details, see [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
+
+### Does Meep support adjoint-based optimization?
+
+Not currently but work is underway to add support for this feature with expected release in early 2019.
