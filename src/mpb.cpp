@@ -663,7 +663,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double eig_resolution, double eigensolver_tol,
                                         std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints, vec *kdom_list)
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom_list,
+                                        bool verbose)
 {
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -692,7 +693,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
       if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       void *mode_data
        = get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint,
-                       match_frequency, parity, eig_resolution, eigensolver_tol, false, kdom);
+                       match_frequency, parity, eig_resolution, eigensolver_tol, verbose, kdom);
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2*nb*num_freqs + 2*nf] = coeffs[2*nb*num_freqs + 2*nf + 1] = 0;
         if (vgrp) vgrp[nb*num_freqs + nf] = 0;
