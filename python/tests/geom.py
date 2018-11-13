@@ -349,7 +349,7 @@ class TestMedium(unittest.TestCase):
         sim.add_flux(15, 6, 2, fregion)
         check_warnings(sim)
 
-    def test_rotate(self):
+    def test_transform(self):
 
         e_sus = [mp.LorentzianSusceptibility(sigma_diag=mp.Vector3(1, 2, 3),
                                              sigma_offdiag=mp.Vector3(12, 13, 14)),
@@ -363,7 +363,7 @@ class TestMedium(unittest.TestCase):
         rot_matrix = mp.Matrix(mp.Vector3(math.cos(rot_angle), math.sin(rot_angle), 0),
                                mp.Vector3(-math.sin(rot_angle), math.cos(rot_angle), 0),
                                mp.Vector3(0, 0, 1))
-        mat.rotate(rot_matrix)
+        mat.transform(rot_matrix)
 
         expected_diag = mp.Vector3(-7.72552, 10.72552, 3)
         expected_offdiag = mp.Vector3(7.69024, 6.21332, 18.06640)

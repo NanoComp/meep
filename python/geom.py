@@ -196,7 +196,7 @@ class Medium(object):
         self.B_conductivity_diag = B_conductivity_diag
         self.valid_freq_range = valid_freq_range
 
-    def rotate(self, rotation_matrix):
+    def transform(self, rotation_matrix):
         eps = Matrix(mp.Vector3(self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y),
                      mp.Vector3(self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z),
                      mp.Vector3(self.epsilon_offdiag.y, self.epsilon_offdiag.z, self.epsilon_diag.z))
@@ -212,10 +212,10 @@ class Medium(object):
         self.mu_offdiag = mp.Vector3(new_mu.c2.x, new_mu.c3.x, new_mu.c3.y)
 
         for s in self.E_susceptibilities:
-            s.rotate(rotation_matrix)
+            s.transform(rotation_matrix)
 
         for s in self.H_susceptibilities:
-            s.rotate(rotation_matrix)
+            s.transform(rotation_matrix)
 
 
 class Susceptibility(object):
@@ -224,7 +224,7 @@ class Susceptibility(object):
         self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
-    def rotate(self, rotation_matrix):
+    def transform(self, rotation_matrix):
         sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
                        mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
                        mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
