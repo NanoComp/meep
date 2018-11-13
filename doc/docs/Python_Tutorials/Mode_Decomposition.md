@@ -167,13 +167,13 @@ import math
 
 resolution = 60        # pixels/μm
 
+dpml = 1.0             # PML thickness
 dsub = 3.0             # substrate thickness
-dpad = 3.0             # padding between grating and pml
+dpad = 3.0             # padding between grating and PML
 gp = 10.0              # grating period
 gh = 0.5               # grating height
 gdc = 0.5              # grating duty cycle
 
-dpml = 1.0             # PML thickness
 sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
@@ -314,7 +314,7 @@ As an additional demonstration of the mode-decomposition feature, the reflectanc
 
 The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two different lines prefixed by `mode-coeff:` and `poynting-flux:`.
 
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. Two modifications to the original simulation are necessary for mitigating the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves: (1) the pulse bandwidth is narrowed and (2) the anisotropic `PML` is replaced with an isotropic `Absorber`. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
 The simulation script is in [examples/binary_grating_oblique.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_oblique.py).
 
@@ -326,9 +326,9 @@ import numpy as np
 
 resolution = 50        # pixels/μm
 
-dpml = 2.0             # PML thickness
+dpml = 1.0             # PML thickness
 dsub = 3.0             # substrate thickness
-dpad = 3.0             # length of padding between grating and pml
+dpad = 3.0             # length of padding between grating and PML
 gp = 10.0              # grating period
 gh = 0.5               # grating height
 gdc = 0.5              # grating duty cycle
@@ -337,9 +337,7 @@ sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
 cell_size = mp.Vector3(sx,sy,0)
-
-# replace anisotropic PML with isotropic Absorber to attenuate parallel-directed fields of oblique source
-abs_layers = [mp.Absorber(thickness=dpml,direction=mp.X)] 
+pml_layers = [mp.PML(thickness=dpml,direction=mp.X)] 
 
 wvl = 0.5              # center wavelength
 fcen = 1/wvl           # center frequency
@@ -365,7 +363,7 @@ if theta_in == 0:
   k = mp.Vector3(0,0,0)
   symmetries = [mp.Mirror(mp.Y)]
   eig_parity += mp.EVEN_Y
-  
+
 def pw_amp(k,x0):
   def _pw_amp(x):
     return cmath.exp(1j*2*math.pi*k.dot(x+x0))
@@ -394,7 +392,7 @@ if use_cw_solver:
   sim.solve_cw(tol, max_iters, L)
 else:
   sim.run(until_after_sources=100)
-  
+
 input_flux = mp.get_fluxes(refl_flux)
 input_flux_data = sim.get_flux_data(refl_flux)
 
@@ -427,7 +425,7 @@ nm_r = np.floor((fcen*ng-k.y)*gp)-np.ceil((-fcen*ng-k.y)*gp) # number of reflect
 if theta_in == 0:
   nm_r = nm_r/2 # since eig_parity removes degeneracy in y-direction
 nm_r = int(nm_r)
-  
+
 res = sim.get_eigenmode_coefficients(refl_flux, range(1,nm_r+1), eig_parity=eig_parity)
 r_coeffs = res.alpha
 
@@ -438,7 +436,7 @@ for nm in range(nm_r):
   r_angle = np.sign(r_kdom.y)*math.acos(r_kdom.x/(ng*fcen))
   print("refl:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
   Rsum += Rmode
-    
+
 nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)       # number of transmitted orders
 if theta_in == 0:
   nm_t = nm_t/2 # since eig_parity removes degeneracy in y-direction
@@ -464,33 +462,33 @@ Tflux =  t_flux[0]/input_flux[0]
 print("poynting-flux:, {:.6f}, {:.6f}, {:.6f}".format(Rflux,Tflux,Rflux+Tflux))
 ```
 
-Since this is a single-wavelength calculation, we can use the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver) instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `GaussianSource` with `ContinuousSource` and (2) `run` with `solve_cw`. Choosing among the two approaches is determined by setting the `use_cw_solver` boolean variable. In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation. The results from both approaches are nearly identical. Time stepping is therefore the default.
+Since this is a single-wavelength calculation, we can use the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver) instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `GaussianSource` with `ContinuousSource` and (2) `run` with `solve_cw`. Choosing which approach to use is determined by the `use_cw_solver` boolean variable. In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation. The results from both approaches are nearly identical. Time stepping is therefore the default.
 
 The following are several of the lines from the output for eight of the reflected and transmitted orders. The first numerical column is the mode number, the second is the mode angle (in degrees), and the third is the fraction of the input power that is concentrated in the mode. Note that the thirteenth transmitted order at 19.18° contains nearly 38% of the input power.
 
 ```
 ...
-refl:, 7, 6.83, 0.00006973
-refl:, 8, -8.49, 0.00005924
-refl:, 9, 8.76, 0.00018065
-refl:, 10, -10.43, 0.00001251
-refl:, 11, 10.70, 0.04411070
-refl:, 12, -12.38, 0.00006484
-refl:, 13, 12.65, 0.00040637
-refl:, 14, -14.34, 0.00002070
+refl:, 7, 6.83, 0.00006655
+refl:, 8, -8.49, 0.00005703
+refl:, 9, 8.76, 0.00015782
+refl:, 10, -10.43, 0.00001277
+refl:, 11, 10.70, 0.04414104
+refl:, 12, -12.38, 0.00005981
+refl:, 13, 12.65, 0.00041466
+refl:, 14, -14.34, 0.00001991
 ...
 ```
 
 ```
 ...
-tran:, 12, -18.75, 0.00184829
-tran:, 13, 19.18, 0.38281256
-tran:, 14, -21.81, 0.00193687
-tran:, 15, 22.24, 0.00106604
-tran:, 16, -24.93, 0.00101186
-tran:, 17, 25.37, 0.04152728
-tran:, 18, -28.13, 0.00136077
-tran:, 19, 28.59, 0.00114489
+tran:, 12, -18.75, 0.00095295
+tran:, 13, 19.18, 0.38261656
+tran:, 14, -21.81, 0.00198510
+tran:, 15, 22.24, 0.00107184
+tran:, 16, -24.93, 0.00098452
+tran:, 17, 25.37, 0.04148787
+tran:, 18, -28.13, 0.00137329
+tran:, 19, 28.59, 0.00113850
 ...
 ```
 
@@ -499,8 +497,8 @@ The mode number is equivalent to the band index from the MPB calculation. The or
 The two main lines of the output are:
 
 ```
-mode-coeff:, 0.060892, 0.938891, 0.999783
-poynting-flux:, 0.060885, 0.938560, 0.999445
+mode-coeff:, 0.061007, 0.937897, 0.998904
+poynting-flux:, 0.061063, 0.938384, 0.999447
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.

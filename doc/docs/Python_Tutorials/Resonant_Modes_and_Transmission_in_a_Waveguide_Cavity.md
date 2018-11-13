@@ -35,40 +35,40 @@ def main(args):
 Next, we'll define some parameters of our structure as in the figure above. All lengths are in units of microns (μm). The periodicity of the photonic crystal is 1 μm.
 
 ```py
-eps = 13          # dielectric constant of waveguide
-w = 1.2           # width of waveguide
-r = 0.36          # radius of holes
-d = 1.4           # defect spacing (ordinary spacing = 1)
-N = args.N        # number of holes on either side of defect
+	resolution = 20   # pixels/um
+	
+	eps = 13          # dielectric constant of waveguide
+	w = 1.2           # width of waveguide
+	r = 0.36          # radius of holes
+	d = 1.4           # defect spacing (ordinary spacing = 1)
+	N = args.N        # number of holes on either side of defect
 
-sy = args.sy      # size of cell in y direction (perpendicular to wvg.)
-pad = 2           # padding between last hole and PML edge
-dpml = 1          # PML thickness
-
-resolution = 20
+	sy = args.sy      # size of cell in y direction (perpendicular to wvg.)
+	pad = 2           # padding between last hole and PML edge
+	dpml = 1          # PML thickness
 ```
 
 Given these parameters, the size of the cell in the $X$ direction, which we'll denote `sx`, is given by:
 
 ```py
-sx = 2*(pad + dpml + N) + d - 1  # size of cell in x direction
+	sx = 2*(pad+dpml+N)+d-1  # size of cell in x direction
 ```
 
 Now, the computational cell is:
 
 ```py
-cell = mp.Vector3(sx, sy, 0)
+	cell = mp.Vector3(sx,sy,0)
 ```
 
 The `geometry` will consist of a single `Block` for the waveguide, and `2N` cylindrical holes:
 
 ```py
-blk = mp.Block(size=mp.Vector3(1e20, w, 1e20), material=mp.Medium(epsilon=eps))
-geometry = [blk]
+	blk = mp.Block(size=mp.Vector3(mp.inf,w,mp.inf), material=mp.Medium(epsilon=eps))
+	geometry = [blk]
 
-for i in range(N):
-    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
-    geometry.append(mp.Cylinder(r, center=mp.Vector3(-(d / 2 + i))))
+	for i in range(N):
+    	    geometry.append(mp.Cylinder(r, center=mp.Vector3(d/2+i)))
+    	    geometry.append(mp.Cylinder(r, center=mp.Vector3(-(d/2+i))))
 ```
 
 To create the holes, we have used a `for` loop. Note that the geometry objects are combined using the `append` function. As usual, later objects in `geometry` take precedence over earlier objects, so the `Cylinder` objects will punch holes through the `Block`.
@@ -76,62 +76,64 @@ To create the holes, we have used a `for` loop. Note that the geometry objects a
 The absorbing boundaries surrounding the computational cell are:
 
 ```py
-pml_layers = [mp.PML(1.0)]
+	pml_layers = [mp.PML(1.0)]
 ```
 
 Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a $H_z$-polarized band gap for frequencies in the range 0.2 to 0.3, so we'll want to cover this interval.
 
 ```py
-fcen = args.fcen   # pulse center frequency
-df = args.df       # pulse frequency width
+	fcen = args.fcen   # pulse center frequency
+	df = args.df       # pulse frequency width
 ```
 
 The source will now be the usual Gaussian pulse centered at `fcen`, located at one edge of the cell just outside the PML, at `x = - 0.5 * sx + dpml`. Ideally, we would excite exactly the fundamental mode of the waveguide, but it is good enough to just excite it with a line source. Moreover, since we are interested in the $P$ polarization (electric field in the plane), we will excite it with a $J_y$ current source (transverse to the propagation direction), which is specified as `Ey`:
 
 ```py
-src = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ey,
-                 mp.Vector3(-0.5 * sx + dpml), size=mp.Vector3(0, w))]
+	src = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
+	                 component=mp.Ey,
+			         center=mp.Vector3(-0.5*sx+dpml),
+			         size=mp.Vector3(0,w))]
 ```
 
 The structure has mirror symmetry planes through the $X$ and $Y$ axes. The source breaks the mirror symmetry through the $Y$ axis, but we still have *odd* mirror symmetry through the $Z$ axis:
 
 ```py
-sym = [mp.Mirror(mp.Y, phase=-1)]
+	sym = [mp.Mirror(mp.Y, phase=-1)]
 ```
 
 Note that we specify the plane by its normal, the $Y$ direction. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). Putting all these objects together via the `Simulation` object:
 
 ```py
-sim = mp.Simulation(cell_size=cell,
-                    geometry=geometry,
-                    boundary_layers=pml_layers,
-                    sources=src,
-                    symmetries=sym,
-                    resolution=resolution)
+	sim = mp.Simulation(cell_size=cell,
+	                    geometry=geometry,
+			            boundary_layers=pml_layers,
+				        sources=src,
+					    symmetries=sym,
+					    resolution=resolution)
 ```
 
 Finally, we need to [compute the flux spectrum](../Introduction.md#transmittancereflectance-spectra) at the other end of the computational cell, after the holes but before the PML:
 
 ```py
-freg = mp.FluxRegion(center=mp.Vector3(0.5 * sx - dpml - 0.5),
-                     size=mp.Vector3(0, 2 * w))
+	freg = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml-0.5),
+	                     size=mp.Vector3(0,2*w))
 
-nfreq = 500 # number of frequencies at which to compute flux
+    nfreq = 500 # number of frequencies at which to compute flux
 
-# transmitted flux
-trans = sim.add_flux(fcen, df, nfreq, freg)
+    # transmitted flux
+    trans = sim.add_flux(fcen, df, nfreq, freg)
 ```
 
 Now, we can run the simulation until the sources have finished plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics.md), we'll use `stop_when_fields_decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
 
 ```py
-vol = mp.Volume(mp.Vector3(0), size=mp.Vector3(sx))
+	vol = mp.Volume(mp.Vector3(0), size=mp.Vector3(sx))
 
-sim.run(mp.at_beginning(mp.output_epsilon),
-        mp.during_sources(mp.in_volume(vol, mp.to_appended("hz-slice", mp.at_every(0.4, mp.output_hfield_z)))),
-        until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3((0.5 * sx) - dpml - 0.5, 0), 1e-3))
+	sim.run(mp.at_beginning(mp.output_epsilon),
+                mp.during_sources(mp.in_volume(vol, mp.to_appended("hz-slice", mp.at_every(0.4, mp.output_hfield_z)))),
+                until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3(0.5*sx-dpml-0.5), 1e-3))
 
-sim.display_fluxes(trans)  # print out the flux spectrum
+    sim.display_fluxes(trans)  # print out the flux spectrum
 ```
 
 Note that we've outputted ε at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics.md).
@@ -228,7 +230,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
         mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(), fcen, df)),
         until_after_sources=400)
 
-sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
+sim.run(mp.at_every(1/fcen/20, mp.output_hfield_z), until=1/fcen)
 ```
 
 Just as in [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator), we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
@@ -359,7 +361,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
         mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
         until_after_sources=300)
 
-sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
+sim.run(mp.at_every(1/fcen/20, mp.output_hfield_z), until=1/fcen)
 ```
 
 which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the Harminv calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:

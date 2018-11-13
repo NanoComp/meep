@@ -5,13 +5,13 @@ import math
 
 resolution = 60        # pixels/μm
 
+dpml = 1.0             # PML thickness
 dsub = 3.0             # substrate thickness
-dpad = 3.0             # padding between grating and pml
+dpad = 3.0             # padding between grating and PML
 gp = 10.0              # grating period
 gh = 0.5               # grating height
 gdc = 0.5              # grating duty cycle
 
-dpml = 1.0             # PML thickness
 sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
