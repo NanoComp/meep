@@ -359,18 +359,24 @@ class TestMedium(unittest.TestCase):
         mat = mp.Medium(epsilon_diag=mp.Vector3(1, 2, 3), epsilon_offdiag=mp.Vector3(12, 13, 14),
                         E_susceptibilities=e_sus)
 
-        rot_matrix = mp.Matrix(mp.Vector3(1, 0, 0), mp.Vector3(0, 0, 1), mp.Vector3(0, -1, 0))
+        rot_angle = math.radians(23.9)
+        rot_matrix = mp.Matrix(mp.Vector3(math.cos(rot_angle), math.sin(rot_angle), 0),
+                               mp.Vector3(-math.sin(rot_angle), math.cos(rot_angle), 0),
+                               mp.Vector3(0, 0, 1))
         mat.rotate(rot_matrix)
 
-        self.assertEqual(mat.epsilon_diag, mp.Vector3(1, 3, 2))
-        self.assertEqual(mat.epsilon_offdiag, mp.Vector3(-13, 12, -14))
+        expected_diag = mp.Vector3(-7.72552, 10.72552, 3)
+        expected_offdiag = mp.Vector3(7.69024, 6.21332, 18.06640)
+
+        self.assertTrue(mat.epsilon_diag.close(expected_diag, tol=4))
+        self.assertTrue(mat.epsilon_offdiag.close(expected_offdiag, tol=4))
         self.assertEqual(mat.mu_diag, mp.Vector3(1, 1, 1))
         self.assertEqual(mat.mu_offdiag, mp.Vector3())
         self.assertEqual(len(mat.E_susceptibilities), 2)
-        self.assertEqual(mat.E_susceptibilities[0].sigma_diag, mp.Vector3(1, 3, 2))
-        self.assertEqual(mat.E_susceptibilities[0].sigma_offdiag, mp.Vector3(-13, 12, -14))
-        self.assertEqual(mat.E_susceptibilities[1].sigma_diag, mp.Vector3(1, 3, 2))
-        self.assertEqual(mat.E_susceptibilities[1].sigma_offdiag, mp.Vector3(-13, 12, -14))
+        self.assertTrue(mat.E_susceptibilities[0].sigma_diag.close(expected_diag, tol=4))
+        self.assertTrue(mat.E_susceptibilities[0].sigma_offdiag.close(expected_offdiag, tol=4))
+        self.assertTrue(mat.E_susceptibilities[1].sigma_diag.close(expected_diag, tol=4))
+        self.assertTrue(mat.E_susceptibilities[1].sigma_offdiag.close(expected_offdiag, tol=4))
 
 
 class TestVector3(unittest.TestCase):
