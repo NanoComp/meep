@@ -276,6 +276,10 @@ List of dispersive susceptibilities (see below) added to the dielectric constant
 —
 List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
 
+**`transform(M [ `Matrix` class ] )`**
+—
+Transforms epsilon, mu, and sigma of any susceptibilities by the 3×3 matrix `M`.  If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `m`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M.  (The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](https://meep.readthedocs.io/en/latest/FAQ/#why-does-my-simulation-diverge-if-0.)
+
 **material functions**
 
 Any function that accepts a `Medium` instance can also accept a user defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
