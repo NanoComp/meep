@@ -276,6 +276,10 @@ List of dispersive susceptibilities (see below) added to the dielectric constant
 —
 List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
 
+**`transform(m [ `Matrix` class ] )`**
+—
+Transforms epsilon, mu, and sigma of any susceptibilities by the matrix `m`.
+
 **material functions**
 
 Any function that accepts a `Medium` instance can also accept a user defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
