@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
   double dpml       = 1.0;
   double resolution = 10.0;
   grid_volume gv=meep_geom::set_geometry_from_GDSII(resolution, GDSIIFile, GEOM_LAYER);
-  structure the_structure(gv, dummy_eps, pml(dpml));
+  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml));
 
   // oxide layer, part 1: bulk of oxide layer
   meep_geom::material_type oxide = meep_geom::make_dielectric(OXIDE_EPS);

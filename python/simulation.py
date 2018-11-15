@@ -898,7 +898,7 @@ class Simulation(object):
 
         self.fragment_stats = self._compute_fragment_stats(gv) if isinstance(self.default_material, mp.Medium) else []
 
-        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
+        self.structure = mp.structure(gv, None, self.fragment_stats, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
         self.structure.shared_chunks = True
 

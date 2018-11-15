@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
   gv.center_origin();
   symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
                                 : -mirror(X,gv) - mirror(Y,gv);
-  structure the_structure(gv, dummy_eps, pml(1.0), sym);
+  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(1.0), sym);
 
   my_material_func_data data;
   data.with_susceptibility=with_susceptibility;

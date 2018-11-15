@@ -22,6 +22,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "meepgeom.hpp"
 
 using namespace std;
 
@@ -52,11 +53,12 @@ structure::structure(const grid_volume &thegv, material_function &eps,
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
-  choose_chunkdivision(thegv, num, br, s);
+  choose_chunkdivision(thegv, num, br, s, std::vector<meep_geom::fragment_stats>(0));
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
 structure::structure(const grid_volume &thegv, double eps(const vec &),
+		     std::vector<meep_geom::fragment_stats> fragments,
 		     const boundary_region &br,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
@@ -66,7 +68,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &),
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
-  choose_chunkdivision(thegv, num, br, s);
+  choose_chunkdivision(thegv, num, br, s, fragments);
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -76,7 +78,9 @@ structure::structure(const grid_volume &thegv, double eps(const vec &),
 void structure::choose_chunkdivision(const grid_volume &thegv,
 				     int desired_num_chunks,
 				     const boundary_region &br,
-				     const symmetry &s) {
+				     const symmetry &s,
+				     std::vector<meep_geom::fragment_stats> fragments) {
+
   user_volume = thegv;
   if (desired_num_chunks == 0)
     desired_num_chunks = count_processors();

@@ -263,6 +263,16 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 
 %warnfilter(302,325,451,503,509);
 
+%ignore meep_geom::fragment_stats;
+%ignore meep::structure::structure(const grid_volume &gv, double eps(const vec &),
+                                   std::vector<meep_geom::fragment_stats> fragments,
+                                   const boundary_region &br = boundary_region(),
+                                   const symmetry &s = meep::identity(),
+                                   int num_chunks = 0, double Courant = 0.5,
+                                   bool use_anisotropic_averaging=false,
+                                   double tol=DEFAULT_SUBPIXEL_TOL,
+                                   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+
 %include "meep_renames.i"
 %include "meep_enum_renames.i"
 %include "meep_op_renames.i"
