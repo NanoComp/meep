@@ -1575,8 +1575,8 @@ class Simulation(object):
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
 
-    def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY,
-                                   eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None):
+    def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
+                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
@@ -1598,7 +1598,8 @@ class Simulation(object):
             eig_tolerance,
             coeffs,
             vgrp,
-            kpoint_func
+            kpoint_func,
+            verbose
         )
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)

@@ -51,7 +51,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double *vgrp,
                                         kpoint_func user_kpoint_func,
                                         void *user_kpoint_data,
-                                        vec *kdom_list)
+                                        vec *kdom_list,
+                                        bool verbose)
 ```
 The following are the parameters:
 
@@ -74,6 +75,8 @@ The following are the parameters:
 + `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
 
 + `user_kpoint_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
+
++ `verbose` controls the verbosity of `get_eigenmode`. Defaults to `false`.
 
 ```c++
 vec (*kpoint_func)(double freq, int mode, void *user_data);
