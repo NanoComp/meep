@@ -53,7 +53,7 @@ void Run(bool Pulse, double resolution, cdouble **field_array=0,
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
   symmetry sym=identity(); // mirror(Y, gv);
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml), sym);
+  structure the_structure(gv, dummy_eps, pml(dpml), sym);
 
   /***************************************************************/
   /* add objects                                                 */

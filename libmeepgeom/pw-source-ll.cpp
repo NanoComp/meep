@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml));
+  structure the_structure(gv, dummy_eps, pml(dpml));
 
   geometric_object_list g={0,0};
   meep_geom::set_materials_from_geometry(&the_structure, g);

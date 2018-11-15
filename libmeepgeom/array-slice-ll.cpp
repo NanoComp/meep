@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml), sym);
+  structure the_structure(gv, dummy_eps, pml(dpml), sym);
   meep_geom::material_type vacuum     = meep_geom::vacuum;
   meep_geom::material_type dielectric = meep_geom::make_dielectric(eps);
   geometric_object objects[7];

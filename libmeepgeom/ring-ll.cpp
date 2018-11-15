@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
   // (set! pml-layers (list (make pml (thickness dpml))))
   // ; exploit the mirror symmetry in structure+source:
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml), sym);
+  structure the_structure(gv, dummy_eps, pml(dpml), sym);
 
   // ; Create a ring waveguide by two overlapping cylinders - later objects
   // ; take precedence over earlier objects, so we put the outer cylinder first.

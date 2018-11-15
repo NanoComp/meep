@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   grid_volume gv = volone(10.0, resolution);
   gv.center_origin();
   boundary_region br = use_pml ? pml(1.0) : boundary_region();
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), br);
+  structure the_structure(gv, dummy_eps, br);
 
   meep_geom::absorber_list alist=0;
   if (!use_pml)

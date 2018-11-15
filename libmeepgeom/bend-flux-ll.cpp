@@ -56,7 +56,7 @@ structure create_structure_from_GDSII(char *GDSIIFile, bool no_bend,
   double dpml       = 1.0;
   double resolution = 10.0;
   grid_volume gv=meep_geom::set_geometry_from_GDSII(resolution, GDSIIFile, GEOM_LAYER);
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml));
+  structure the_structure(gv, dummy_eps, pml(dpml));
 
   // define waveguide
   geometric_object objects[1];
@@ -95,7 +95,7 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms,
   geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
-  structure the_structure(gv, dummy_eps, std::vector<meep_geom::fragment_stats>(0), pml(dpml));
+  structure the_structure(gv, dummy_eps, pml(dpml));
 
   double wvg_ycen = -0.5*(sy - w - 2.0*pad); //y center of horiz. wvg
   double wvg_xcen =  0.5*(sx - w - 2.0*pad); //x center of vert. wvg
