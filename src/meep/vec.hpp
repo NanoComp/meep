@@ -171,10 +171,12 @@ component first_field_component(field_type ft);
 // should only use these macros where that is true!  (Basically,
 // all of this is here to support performance hacks of step_generic.)
 
-#if !defined(__INTEL_COMPILER) && (defined(__GNUC__) || defined(__GNUG__))
-  #define IVDEP "GCC ivdep"
+#if !defined(__INTEL_COMPILER) && !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
+# define IVDEP _Pragma("GCC ivdep")
+#elif defined(__INTEL_COMPILER)
+# define IVDEP _Pragma("ivdep")
 #else
-  #define IVDEP "ivdep"
+# define IVDEP
 #endif
 
 // loop over indices idx from is to ie (inclusive) in gv
@@ -194,7 +196,7 @@ component first_field_component(field_type ft);
                 + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma(IVDEP) \
+    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) IVDEP \
       for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
 
