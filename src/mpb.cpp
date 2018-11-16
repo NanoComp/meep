@@ -244,7 +244,7 @@ void *fields::get_eigenmode(double omega_src,
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1/a)) && (boundaries[High][Z]==Periodic && boundaries[Low][Z]==Periodic) && (kpoint.z() == 0) && (real(k[Z]) != 0))
     kpoint.set_direction(Z, real(k[Z]));
-  
+
   //bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
@@ -526,9 +526,13 @@ void *fields::get_eigenmode(double omega_src,
   edata->group_velocity = (double) vgrp;
 
   if (kdom) {
+#if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
     maxwell_dominant_planewave(mdata, H, band_num, kdom);
     if (!quiet)
       master_printf("Dominant planewave for band %d: (%f,%f,%f)\n", band_num, kdom[0], kdom[1], kdom[2]);
+#else
+    kdom[0] = kdom[1] = kdom[2] = 0;
+#endif
   }
 
   return (void *)edata;

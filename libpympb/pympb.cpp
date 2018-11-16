@@ -2501,8 +2501,10 @@ number mode_solver::compute_energy_integral(field_integral_func field_func,
 }
 
 vector3 mode_solver::get_dominant_planewave(int band) {
-  double kdom[3];
+  double kdom[3] = {0,0,0};
+#if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
   maxwell_dominant_planewave(mdata, H, band, kdom);
+#endif
   vector3 result = {kdom[0], kdom[1], kdom[2]};
   return result;
 }
