@@ -1611,6 +1611,10 @@ class Simulation(object):
         dim_sizes = np.zeros(3, dtype=np.uintp)
         self.fields.get_array_slice_dimensions(v, dim_sizes)
         dims = [s for s in dim_sizes if s != 0]
+        xtics=np.zeros(0,dtype=np.float64)
+        ytics=np.zeros(0,dtype=np.float64)
+        ztics=np.zeros(0,dtype=np.float64)
+        weights=np.zeros(0,dtype=np.float64)
         return np.reshape( self.fields.get_array_metadata(v), dims + [4] )
 
     # same as previous routine, but with empty dimensions collapsed
