@@ -201,10 +201,6 @@ No. Meep does not support grids with spatially varying resolution. One possible 
 
 You can use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
 
-### How do I compute the Poynting flux in an arbitrary direction?
-
-The flux plane defined using [`FluxRegion`](Python_User_Interface.md#fluxregion) is always perpendicular to one of the coordinate axes. You can also integrate the Poynting vector over a volume instead of a surface. However, for a given `FluxRegion`, you can use its `direction` property to integrate a different component of the Poynting vector. Thus, in order to compute the Poynting flux in an arbitrary direction, you could specify three *overlapping* flux planes, each of which computes the integral of the Poynting vector in the *x*, *y*, and *z* directions.  Then a linear combination of these will give the Poynting flux in any desired direction.
-
 ### Can Meep be used to investigate lasing phenomena?
 
 Yes. More specifically, Meep can be used to model saturable gain and absorption via multilevel atomic susceptibility. This feature may be used to investigate optically-pumped lasing phenomena such as [Raman lasers](https://en.wikipedia.org/wiki/Raman_laser). For details, see [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
