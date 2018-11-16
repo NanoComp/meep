@@ -533,8 +533,16 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-std::vector<double> fields::get_array_metadata(const volume &where)
+void fields::get_array_metadata(const volume &where,
+                                std::vector<double> &xtics,
+                                std::vector<double> &ytics,
+                                std::vector<double> &ztics,
+                                std::vector<double> &weights)
 {
+  /*--------------------------------------------------------------*/
+  /*- mimic the setup for loop_in_chunks to initialize a loop     */
+  /*- over all grid points in `where`                             */
+  /*--------------------------------------------------------------*/
   component cgrid=Centered;
   vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
   ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
@@ -576,23 +584,34 @@ std::vector<double> fields::get_array_metadata(const volume &where)
   if (gv.dim == Dcyl)
    fprintf(stderr,"** warning: cylindrical coordinates not supported in get_array_metadata; integration weights may be incorrect\n");
 
-  size_t array_size=1;
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
-   array_size *= (1 + iabs(ie.in_direction(d)-is.in_direction(d))/2);
-  std::vector<double> xyzw(4*array_size,0.0);
-  int np=0;
+  /*--------------------------------------------------------------*/
+  /* loop over grid points in `where` to compute weights          */
+  /*--------------------------------------------------------------*/
+  vec loc0;
+  weights.resize(0);
   LOOP_OVER_IVECS(gv, is, ie, idx)
    { 
-     IVEC_LOOP_LOC(gv, loc);
-     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-
-     if (has_direction(gv.dim,X)) xyzw[4*np+0] = loc.x();
-     if (has_direction(gv.dim,Y)) xyzw[4*np+1] = loc.y();
-     if (has_direction(gv.dim,Z)) xyzw[4*np+2] = loc.z();
-     xyzw[4*np+3] = w;
-     np++;
+     if (weights.size()==0)
+      { IVEC_LOOP_LOC(gv,loc); // set loc0 on first iteration
+        loc0=loc;
+      }
+     weights.push_back(IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2));
    }
-  return xyzw;
+
+  std::vector<double> *v[3];
+  v[0]=&xtics;
+  v[1]=&ytics;
+  v[2]=&ztics;
+  for(int d=0; d<3; d++)
+   if(!has_direction(gv.dim,X+d))
+    v[d]->resize(1, 0.0);
+   else
+    { int num_tics = (1 + iabs(ie.in_direction(d)-is.in_direction(d))/2);
+      v[d]->resize(num_tics);
+      double *tics = v[d]->data(), t0 = loc0.in_direction(X+d);
+      for(int n=0; n<num_tics; n++)
+       tics[n] = t0 + n*gv.inva;
+    }
 }
 
 } // namespace meep

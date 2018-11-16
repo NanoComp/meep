@@ -1452,7 +1452,9 @@ class fields {
 
   // utility routine in loop_in_chunks.cpp to construct metadata for
   // the arrays returned by get_array_slice and get_dft_array
-  std::vector<double> get_array_metadata(const volume &where);
+  void get_array_metadata(const volume &where,
+                          std::vector<double> &xtics, std::vector<double> &ytics,
+                          std::vector<double> &ztics, std::vector<double> &weights);
 
   // step.cpp methods:
   double last_step_output_wall_time;
