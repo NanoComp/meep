@@ -7,24 +7,12 @@
  * Add `transform` method to `meep.Medium` (#603).
 
  * Read epsilon input from a numpy array when passed to a `Simulation` as `default_material`(#593).
-
- * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz (#602).
-
- * Fix sync of eigenmode calculation when no mode is found (#596).
-
+ 
  * Support `geometry_center` in Python (#599).
 
  * Add Python `Ldos` class (#581).
 
- * Update DFTs in `sovle_cw` (#570).
-
- * Fix memory leak in `get_dft_array` (#577).
-
- * Use same MPB phase on all processes (#578).
-
- * Fix incorrect #pragma ivdep statement for GCC (#566).
-
- * Fix memory leaks in `get_eigenmode` (#558).
+ * Compute Fourier-transformed fields (e.g. fluxes) in `solve_cw` (#570).
 
  * Enable builds without MPB (#558).
 
@@ -36,7 +24,17 @@
 
  * Multilevel atom susceptibilities for Python and Scheme (#500).
 
- * Various bug fixes, documentation improvements, etc.
+ * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz (#602).
+
+ * Fix sync of eigenmode calculation when no mode is found (#596).
+ 
+ * Fix memory leak in `get_dft_array` (#577).
+
+ * Use same MPB phase on all processes, fixing bug with eigenmodes and multiprocessing (#578).
+
+ * Fix memory leaks in `get_eigenmode` (#558).
+
+ * Various other bug fixes, documentation improvements, etc.
 
 ## Meep 1.6
 
