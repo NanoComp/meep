@@ -611,7 +611,7 @@ class structure {
 	    bool use_anisotropic_averaging=false,
 	    double tol=DEFAULT_SUBPIXEL_TOL,
 	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
-	    std::vector<meep_geom::fragment_stats> *fragments=NULL);
+	    const std::vector<meep_geom::fragment_stats> *fragments=NULL);
   structure(const structure *);
   structure(const structure &);
 
@@ -681,7 +681,7 @@ class structure {
   void add_to_effort_volumes(const grid_volume &new_effort_volume,
 			    double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region &br,
-			    const symmetry &s, std::vector<meep_geom::fragment_stats> *fragments=NULL);
+			    const symmetry &s, const std::vector<meep_geom::fragment_stats> *fragments=NULL);
   void check_chunks();
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
