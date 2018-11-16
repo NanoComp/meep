@@ -35,7 +35,7 @@ Yes. The technical details of Meep's inner workings are described in the peer-re
 
 ### Where can I find a list of projects which have used Meep?
 
-For a list of more than 2500 published works which have used Meep, see the Google Scholar citation page for Meep's [technical reference](https://scholar.google.com/scholar?cites=17712807607104508775) as well as the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259).
+For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [technical reference](https://scholar.google.com/scholar?cites=17712807607104508775) and also the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259).
 
 ### Can I access Meep in the public cloud?
 
@@ -79,7 +79,7 @@ Meep doesn't implement a frequency-independent complex ε. Not only is this not 
 
 ### Why does my simulation diverge if ε &lt; 0?
 
-Maxwell's equations have exponentially growing solutions for a frequency-independent negative ε. For any physical medium with negative ε, there must be dispersion, and you must likewise use dispersive materials in Meep to obtain negative ε at some desired frequency. The requirement of dispersion to obtain negative ε follows from the Kramers–Kronig relations, and also follows from thermodynamic considerations that the energy in the electric field must be positive. See, for example, the book [Electrodynamics of Continuous Media](https://www.amazon.com/Electrodynamics-Continuous-Media-Second-Theoretical/dp/0750626348) by Landau, Pitaevskii, and Lifshitz. At an even more fundamental level, it can be derived from passivity constraints as shown in [Physical Review A, Vol. 90, 023847, 2014](http://arxiv.org/abs/arXiv:1405.0238).
+Maxwell's equations have exponentially growing solutions for a frequency-independent negative ε. For any physical medium with negative ε, there must be dispersion, and you must likewise use dispersive materials in Meep to obtain negative ε at some desired frequency. The requirement of dispersion to obtain negative ε follows from the [Kramers–Kronig relations](https://en.wikipedia.org/wiki/Kramers%E2%80%93Kronig_relations), and also follows from thermodynamic considerations that the energy in the electric field must be positive. For example, see [Electrodynamics of Continuous Media](https://www.amazon.com/Electrodynamics-Continuous-Media-Second-Theoretical/dp/0750626348) by Landau, Pitaevskii, and Lifshitz. At an even more fundamental level, it can be derived from passivity constraints as shown in [Physical Review A, Vol. 90, 023847, 2014](http://arxiv.org/abs/arXiv:1405.0238).
 
 If you solve Maxwell's equations in a homogeneous-epsilon material at some real wavevector **k**, you get a dispersion relation $\omega^2 = c^2 |\mathbf{k}|^2 / \varepsilon$. If ε is positive, there are two real solutions $\omega = \pm c |\mathbf{k}| / \sqrt{\varepsilon}$, giving oscillating solutions. If ε is negative, there are two imaginary solutions corresponding to exponentially decaying and exponentially growing solutions from any current source. These solutions can always be spatially decomposed into a superposition of real-**k** values via a spatial Fourier transform.
 
@@ -116,7 +116,7 @@ You can import any arbitrary complex permittivity profile via n and k values int
 
 ### Why are the fields blowing up in my simulation?
 
-Instability in the fields is likely due to one of three causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) and the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is too high relative to the grid discretization (fix: increase the resolution and/or turn off subpixel smothing and/or reduce the Courant factor), or (3) a material with a wavelength-independent negative real permittivity which violates the [Kramers-Kroning relation](https://en.wikipedia.org/wiki/Kramers%E2%80%93Kronig_relations) as well as [von Neumann stability](https://en.wikipedia.org/wiki/Von_Neumann_stability_analysis) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
+Instability in the fields is likely due to one of three causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is too high relative to the grid discretization (fix: increase the resolution and/or turn off subpixel smothing and/or reduce the Courant factor), or (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
 
 ### Does Meep support importing GDSII files?
 
@@ -141,6 +141,10 @@ By default, when Meep assigns a dielectric constant ε or μ to each pixel, it u
 Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by setting `Simulation.eps_averaging = False` (Python) or `(set! eps-averaging? false)` (Scheme). For more details, see [Python User Interface](Python_User_Interface.md).
 
 Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and plot it, you may notice that there are some pixels with intermediate ε values, right at the boundary between two materials. This has a completely different source. Internally, Meep's simulation is performed on a [Yee grid](Yee_Lattice.md), in which every field component is stored on a slightly different grid which are offset from one another by half-pixels, and the ε values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid at the center of each pixel, so all quantities are interpolated onto this grid for output. Therefore, even though the internal ε values are indeed discontinuous when you disable subpixel averaging, the output file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.
+
+### Can subpixel averaging be applied to dispersive materials?
+
+Meep only does subpixel averaging of the *nondispersive* part of ε and μ. The dispersive part is not averaged at all.  This means that any sharp interfaces between dispersive materials will dominate the error, and you will probably get only first-order convergence, the same as if you do no subpixel averaging at all. It is possible that the subpixel averaging may still improve the constant factor in the convergence if not the asymptotic convergence rate, if you also have a lot of interfaces between nondispersive materials or if the dispersion is small (i.e., if ε is close to ε<sub>&#8734;</sub> over your bandwidth). On the other hand, if the dispersion is large and most of your interfaces are between large-dispersion materials, then subpixel averaging may not help at all and you might as well turn it off (which may improve [stability](#why-are-the-fields-blowing-up-in-my-simulation)). Generally, the subpixel averaging will not degrade accuracy though it will affect performance.
 
 ### How do I set up an oblique planewave source?
 
@@ -167,6 +171,14 @@ How much speedup this parallelization translates into depends on a number of fac
 
 In general, you will need large simulations to benefit from lots of processors. A rule of thumb is to keep doubling the number of processors until you no longer see much speedup.
 
+### Why does the amplitude of my point dipole source increase with resolution?
+
+The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
+
+### How does Meep deal with numerical dispersion?
+
+Numerical dispersion can be analyzed and quantified analytically for a homogeneous medium. For details, see e.g., Chapter 4 ("Numerical Dispersion and Stability") of [Computational Electrodynamics: The Finite Difference Time-Domain Method (3rd edition)](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320). However, in practice numerical dispersion is rarely the dominant source of error in FDTD calculations which almost always involve material inhomogeneities that give rise to much larger errors. Similar to other errors associated with the finite resolution, numerical dispersion decreases with resolution, so you can deal with it by increasing the resolution until convergence is obtained to the desired accuracy. In particular, the errors from numerical dispersion vary *quadratically* with resolution (in the ordinary center-difference FDTD scheme). On the other hand, the errors introduced by discretization of material interfaces go *linearly* with the resolution, so they are almost always dominant. Meep can partially correct for these errors using [subpixel averaging](Introduction.md#the-illusion-of-continuity).
+
 ### How do I compute S-parameters?
 
 Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
@@ -188,6 +200,10 @@ No. Meep does not support grids with spatially varying resolution. One possible 
 ### How do I visualize the structure and fields in 3d?
 
 You can use [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
+
+### How do I compute the Poynting flux in an arbitrary direction?
+
+The flux plane defined using [`FluxRegion`](Python_User_Interface.md#fluxregion) is always perpendicular to one of the coordinate axes. You can also integrate the Poynting vector over a volume instead of a surface. However, for a given `FluxRegion`, you can use its `direction` property to integrate a different component of the Poynting vector. Thus, in order to compute the Poynting flux in an arbitrary direction, you could specify three *overlapping* flux planes, each of which computes the integral of the Poynting vector in the *x*, *y*, and *z* directions.  Then a linear combination of these will give the Poynting flux in any desired direction.
 
 ### Can Meep be used to investigate lasing phenomena?
 

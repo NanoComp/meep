@@ -452,7 +452,7 @@ These are some examples of geometric objects created using the above classes:
 ```
 
 ```scm
-; A hexagon defined as a prism with six vertices centered on the origin
+; A hexagon defined as a prism with six vertices with centroid at (0,0,0.75)
 ; of material crystalline silicon (from the materials library)
 (set! geometry
       (list
