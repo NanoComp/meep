@@ -376,7 +376,7 @@ sources = [mp.Source(mp.ContinuousSource(fcen,fwidth=df) if use_cw_solver else m
 
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
-                    boundary_layers=abs_layers,
+                    boundary_layers=pml_layers,
                     k_point=k,
                     default_material=glass,
                     sources=sources,
@@ -401,7 +401,7 @@ geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), c
 
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
-                    boundary_layers=abs_layers,
+                    boundary_layers=pml_layers,
                     geometry=geometry,
                     k_point=k,
                     sources=sources,
