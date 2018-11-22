@@ -136,7 +136,8 @@ int main(int argc, char *argv[])
   int ref_bands=3;
   double ref_freq_re[3] = {  1.1807e-01, 1.4716e-01,  1.7525e-01  };
   double ref_freq_im[3] = { -7.6133e-04, -2.1156e-04, -5.2215e-05 };
-  cdouble ref_amp[3]    = { -8.28e-04-1.34e-03i, +1.23e-03-1.25e-02i, +2.83e-03-6.52e-04i};
+  cdouble ref_amp[3]    = { cdouble(-8.28e-04,-1.34e-03),
+    cdouble(1.23e-03,-1.25e-02), cdouble(2.83e-03,-6.52e-04) };
   if (bands!=3)
    abort("harminv found only %i/%i bands\n",bands,ref_bands);
   for(int nb=0; nb<bands; nb++)
