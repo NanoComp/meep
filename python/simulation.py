@@ -1298,7 +1298,7 @@ class Simulation(object):
 
     def load_minus_near2far_data(self, n2f, n2fdata):
         self.load_near2far_data(n2f, n2fdata)
-        n2f.scale_dfts(complex(1.0))
+        n2f.scale_dfts(complex(-1.0))
 
     def add_force(self, fcen, df, nfreq, *forces):
         force = DftForce(self._add_force, [fcen, df, nfreq, forces])
