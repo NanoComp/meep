@@ -207,11 +207,14 @@ Note: any real-valued signal consists of both positive and negative frequency co
 
 ### How does `k_point` define the phase relationship between adjacent periodic unit cells?
 
-If you set the `k_point` to *any* `meep.Vector3`, the structure will be periodic in **all** directions. The value of the `k_point` determines the phase relation between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction.
+If you set the `k_point` to *any* `meep.Vector3`, the structure will be periodic in **all** directions.  (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
+
+The value of the `k_point` determines the phase relation between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction.
 
 ### Can Meep simulate time-dependent structures?
 
-Yes. Meep has built-in support for changing the structure continuously in time by linearly interpolating between two given structures. In the C++ interface, the function is `meep::field::phase_in_material(const structure *s, double time)`. For `time=0`, the change is discontinuous but this case should be generally avoided.
+Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry`.   However, this is potentially quite slow.  One alternative is a function `field::phase_in_material` that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have
+a more general version of this functionality in the future (issue [#207](https://github.com/stevengj/meep/issues/207)).
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
