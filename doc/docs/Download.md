@@ -9,7 +9,7 @@ GitHub Source Repository
 
 The source repository is available via [GitHub](https://github.com/stevengj/meep).
 
-The current stable release is **version 1.6** which can be obtained from:
+The current stable release is **version 1.7** which can be obtained from:
 
 -   <https://github.com/stevengj/meep/releases>
 
