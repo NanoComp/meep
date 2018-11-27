@@ -51,7 +51,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double *vgrp,
                                         kpoint_func user_kpoint_func,
                                         void *user_kpoint_data,
-                                        vec *kdom_list)
+                                        vec *kdom_list,
+                                        bool verbose)
 ```
 The following are the parameters:
 
@@ -74,6 +75,8 @@ The following are the parameters:
 + `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
 
 + `user_kpoint_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
+
++ `verbose` controls the verbosity of `get_eigenmode`. Defaults to `false`.
 
 ```c++
 vec (*kpoint_func)(double freq, int mode, void *user_data);
@@ -130,7 +133,7 @@ Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the por
 
 ### Working with MPB Eigenmodes
 
-The return value of `get_eigenmode` is an opaque pointer to a data structure storing information about the computed eigenmode, which may be passed to the following routines:
+The return value of `get_eigenmode` is an [opaque pointer](https://en.wikipedia.org/wiki/Opaque_pointer) to a data structure storing information about the computed eigenmode, which may be passed to the following routines:
 
 ````
 // get a single component of the eigenmode field at a given point in space
@@ -219,7 +222,7 @@ $$ \left\langle \mathbf{H}_m \right|\left. \mathbf{E}^{\text{meep}} \right\rangl
 
 $$ \left\langle \mathbf{E}_m \right|\left. \mathbf{H}^{\text{meep}} \right\rangle =-(a_m^+ - a_m^+) v_m A_S $$
 
-Thus, by evaluating the integrals on the left-hand side of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}_m, \mathbf{H}_m\}$ and the Meep-computed fields $\{\mathbf{E}^{\text{meep}}, \mathbf{H}^{\text{meep}}\}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $\alpha^\pm_m$. This calculation is carried out by the routine `meep::fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
+Thus, by evaluating the integrals on the left-hand side of these equations &mdash; numerically, using the MPB-computed eigenmode fields $\{\mathbf{E}_m, \mathbf{H}_m\}$ and the Meep-computed fields $\{\mathbf{E}^{\text{meep}}, \mathbf{H}^{\text{meep}}\}$ as tabulated on the computational grid &mdash; and combining the results appropriately, we can extract the coefficients $\alpha^\pm_m$. This calculation is carried out by the routine `fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
 
 The Poynting flux carried by the Meep fields may be expressed in the form:
 

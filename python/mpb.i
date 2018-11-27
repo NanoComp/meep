@@ -26,6 +26,8 @@
 using namespace py_mpb;
 %}
 
+%include "numpy.i"
+
 %{
 using namespace meep;
 using namespace meep_geom;

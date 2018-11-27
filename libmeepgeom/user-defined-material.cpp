@@ -207,10 +207,11 @@ int main(int argc, char *argv[])
    = meep_geom::make_user_material(my_material_func, (void *)&data);
 
   geometric_object_list g={0, 0};
+  vector3 center = {0, 0, 0};
   bool use_anisotropic_averaging=true;
   bool ensure_periodicity=true;
   bool verbose=false;
-  meep_geom::set_materials_from_geometry(&the_structure, g,
+  meep_geom::set_materials_from_geometry(&the_structure, g, center,
                                          use_anisotropic_averaging,
                                          DEFAULT_SUBPIXEL_TOL,
                                          DEFAULT_SUBPIXEL_MAXEVAL,

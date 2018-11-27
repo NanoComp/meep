@@ -1,5 +1,41 @@
 # Meep Release Notes
 
+## Meep 1.7
+
+11/16/18
+
+ * Add `transform` method to `meep.Medium` (#603).
+
+ * Read epsilon input from a numpy array when passed to a `Simulation` as `default_material`(#593).
+ 
+ * Support `geometry_center` in Python (#599).
+
+ * Add Python `Ldos` class (#581).
+
+ * Compute Fourier-transformed fields (e.g. fluxes) in `solve_cw` (#570).
+
+ * Enable builds without MPB (#558).
+
+ * Add birefringent materials to materials library (#559).
+
+ * Print dominant planewave in `get_eigenmode` (#531).
+
+ * Python API for GDSII regions (#518)
+
+ * Multilevel atom susceptibilities for Python and Scheme (#500).
+
+ * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz (#602).
+
+ * Fix sync of eigenmode calculation when no mode is found (#596).
+ 
+ * Fix memory leak in `get_dft_array` (#577).
+
+ * Use same MPB phase on all processes, fixing bug with eigenmodes and multiprocessing (#578).
+
+ * Fix memory leaks in `get_eigenmode` (#558).
+
+ * Various other bug fixes, documentation improvements, etc.
+
 ## Meep 1.6
 
 9/7/2018

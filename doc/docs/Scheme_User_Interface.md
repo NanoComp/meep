@@ -17,6 +17,10 @@ These are global variables that you can set to control various parameters of the
 —
 Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
 
+**`geometry-center` [ `vector3` class ]**
+—
+Specifies the coordinates of the center of the computational cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
+
 **`sources` [ list of `source` class ]**
 —
 Specifies the current sources to be present in the simulation. Defaults to none.
@@ -277,6 +281,8 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+
 ### drude-susceptibility
 
 Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
@@ -446,7 +452,7 @@ These are some examples of geometric objects created using the above classes:
 ```
 
 ```scm
-; A hexagon defined as a prism with six vertices centered on the origin
+; A hexagon defined as a prism with six vertices with centroid at (0,0,0.75)
 ; of material crystalline silicon (from the materials library)
 (set! geometry
       (list

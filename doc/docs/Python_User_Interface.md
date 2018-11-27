@@ -4,7 +4,7 @@
 
 This page is a listing of the functions exposed by the Python interface. For a gentler introduction, see [Tutorial/Basics](Python_Tutorials/Basics.md). Note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from the Python module, but not all of these functions are documented or intended for end users. See also the instructions for [parallel Meep](Parallel_Meep.md).
 
-The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script.  If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section.   You typically import the `meep` module in Python via `import meep as mp`.
+The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script. If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section. You typically import the `meep` module in Python via `import meep as mp`.
 
 [TOC]
 
@@ -44,7 +44,8 @@ class Simulation(object):
                  subpixel_maxeval=100000,
                  subpixel_tol=1e-4,
                  symmetries=[],
-                 verbose=False):
+                 verbose=False,
+                 geometry_center=mp.Vector3()):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -52,6 +53,10 @@ All `Simulation` attributes are described in further detail below. In brackets a
 **`geometry` [ list of `GeometricObject` class ]**
 —
 Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
+
+**`geometry_center` [ `Vector3` class ]**
+—
+Specifies the coordinates of the center of the computational cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
 
 **`sources` [ list of `Source` class ]**
 —
@@ -71,7 +76,7 @@ Specifies the size of the computational cell which is centered on the origin of 
 
 **`default_material` [`Medium` class ]**
 —
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). See also `epsilon_input_file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a numpy array that defines a dielectric function much like `epsilon_input_file` below (see below).
 
 **`material_function` [ function ]**
 —
@@ -271,6 +276,10 @@ List of dispersive susceptibilities (see below) added to the dielectric constant
 —
 List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
 
+**`transform(M` [ `Matrix` class ]`)`**
+—
+Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](https://meep.readthedocs.io/en/latest/FAQ/#why-does-my-simulation-diverge-if-0).
+
 **material functions**
 
 Any function that accepts a `Medium` instance can also accept a user defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
@@ -304,6 +313,8 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 **`gamma` [`number`]**
 —
 The resonance loss rate $γ_n / 2\pi$.
+
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
 
 ### DrudeSusceptibility
 
@@ -1042,7 +1053,7 @@ Aliases for the corresponding "flux" methods.
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
 
-**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
+**`get_eigenmode_coefficients(flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False)`**
 —
 Given a flux object and list of band indices, return a `namedtuple` with the following fields:
 
@@ -1063,12 +1074,12 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
-**`get_eigenmode(omega_src, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True, parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False)`**
+**`get_eigenmode(freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True, parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False)`**
 —
 The parameters of this routine are the same as that of `get_eigenmode_coefficients` or `EigenModeSource`, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
 
 + `band_num`: same as the `band_num` parameter
-+ `omega`: the computed frequency, same as `omega_src` if `match_frequency=True`
++ `freq`: the computed frequency, same as the `freq` input parameter if `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
 + `kdom`: the dominant planewave of mode `band_num`
@@ -1178,13 +1189,17 @@ As `load_force_data`, but negates the Fourier-transformed fields after they are 
 
 Meep can also calculate the LDOS (local density of states) spectrum, as described in [Tutorial/Local Density of States](Python_Tutorials/Local_Density_of_States.md). To do this, you simply pass the following step function to your `run` command:
 
-**`dft_ldos(fcen, df, nfreq)`**
+**`Ldos(fcen, df, nfreq)`**
 —
-Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points.
+Create an LDOS object with frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points. This can be passed to the `dft_ldos` step function below, and has the properties `freq_min`, `nfreq` and `dfreq`.
 
-**`get_ldos_freqs(ldos)`**
+**`freqs()`**
 —
-Given an ldos object, returns a list of the frequencies that it is computing the spectrum for.
+Method of `Ldos` that returns a list of the frequencies that this `Ldos` instance is computing the spectrum for.
+
+**`dft_ldos(fcen=None, df=None, nfreq=None, ldos=None)`**
+—
+Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points. One can also pass in an `ldos` created with `DftLdos` as `dft_ldos(ldos=my_ldos)`.
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `ldos_data` variable of the `Simulation` object after the `run` is complete.
 

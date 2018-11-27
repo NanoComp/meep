@@ -55,6 +55,14 @@ class Vector3(object):
         else:
             raise TypeError("No operation known for 'Vector3 * {}'".format(type(other)))
 
+    def __truediv__(self, other):
+        if type(other) is Vector3:
+            return Vector3(self.x / other.x, self.y / other.y, self.z / other.z)
+        elif isinstance(other, Number):
+            return Vector3(self.x / other, self.y / other, self.z / other)
+        else:
+            raise TypeError("No operation known for 'Vector3 / {}'".format(type(other)))
+
     def __rmul__(self, other):
         if isinstance(other, Number):
             return self.scale(other)
@@ -218,12 +226,40 @@ class Medium(object):
             [self.D_conductivity_diag.x,self.D_conductivity_diag.y,self.D_conductivity_diag.z])/freq.reshape(-1,1)) * eps
         return [Vector3(eps[row,0],eps[row,1],eps[row,2]) for row in range(freq.shape[0])]
 
+    def transform(self, m):
+        eps = Matrix(mp.Vector3(self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y),
+                     mp.Vector3(self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z),
+                     mp.Vector3(self.epsilon_offdiag.y, self.epsilon_offdiag.z, self.epsilon_diag.z))
+        mu = Matrix(mp.Vector3(self.mu_diag.x, self.mu_offdiag.x, self.mu_offdiag.y),
+                    mp.Vector3(self.mu_offdiag.x, self.mu_diag.y, self.mu_offdiag.z),
+                    mp.Vector3(self.mu_offdiag.y, self.mu_offdiag.z, self.mu_diag.z))
+
+        new_eps = (m * eps * m.transpose()) / abs(m.determinant())
+        new_mu = (m * mu * m.transpose()) / abs(m.determinant())
+        self.epsilon_diag = mp.Vector3(new_eps.c1.x, new_eps.c2.y, new_eps.c3.z)
+        self.epsilon_offdiag = mp.Vector3(new_eps.c2.x, new_eps.c3.x, new_eps.c3.y)
+        self.mu_diag = mp.Vector3(new_mu.c1.x, new_mu.c2.y, new_mu.c3.z)
+        self.mu_offdiag = mp.Vector3(new_mu.c2.x, new_mu.c3.x, new_mu.c3.y)
+
+        for s in self.E_susceptibilities:
+            s.transform(m)
+
+        for s in self.H_susceptibilities:
+            s.transform(m)
 
 class Susceptibility(object):
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
         self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
+
+    def transform(self, m):
+        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
+                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
+                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
+        new_sigma = (m * sigma * m.transpose()) / abs(m.determinant())
+        self.sigma_diag = mp.Vector3(new_sigma.c1.x, new_sigma.c2.y, new_sigma.c3.z)
+        self.sigma_offdiag = mp.Vector3(new_sigma.c2.x, new_sigma.c3.x, new_sigma.c3.y)
 
 
 class LorentzianSusceptibility(Susceptibility):
@@ -444,6 +480,9 @@ class Matrix(object):
             return self.scale(left_arg)
         else:
             raise TypeError("No operation known for 'Matrix * {}'".format(type(left_arg)))
+
+    def __truediv__(self, scalar):
+        return Matrix(self.c1 / scalar, self.c2 / scalar, self.c3 / scalar)
 
     def __add__(self, m):
         return Matrix(self.c1 + m.c1, self.c2 + m.c2, self.c3 + m.c3)

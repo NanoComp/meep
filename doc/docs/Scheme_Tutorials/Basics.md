@@ -307,7 +307,7 @@ Notice how we're using our parameters like `wvg-ycen` and `w`: if we change the 
 (set-param! resolution 10)
 ```
 
-Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created.
+Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`flux-region`](../Scheme_User_Interface.md#flux-region). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `flux-region` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
 
 ```scm
 (define-param nfreq 100) ; number of frequencies at which to compute flux             

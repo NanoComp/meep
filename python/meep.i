@@ -430,17 +430,17 @@ struct kpoint_list {
 };
 
 kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
-                                                  int *bands, int num_bands, int parity, double eig_resolution,
-                                                  double eigensolver_tol, std::complex<double> *coeffs,
-                                                  double *vgrp, meep::kpoint_func user_kpoint_func,
-                                                  void *user_kpoint_data) {
+                                                   int *bands, int num_bands, int parity, double eig_resolution,
+                                                   double eigensolver_tol, std::complex<double> *coeffs,
+                                                   double *vgrp, meep::kpoint_func user_kpoint_func,
+                                                   void *user_kpoint_data, bool verbose) {
 
     size_t num_kpoints = num_bands * flux.Nfreq;
     meep::vec *kpoints = new meep::vec[num_kpoints];
     meep::vec *kdom = new meep::vec[num_kpoints];
 
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom);
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -603,7 +603,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
-        free((material_data *)$1.material);
+        delete[] ((material_data *)$1.material)->epsilon_data;
+        delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
 }
@@ -642,7 +643,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
-        free((material_data *)$1.items[i].material);
+        delete[] ((material_data *)$1.items[i].material)->epsilon_data;
+        delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
@@ -746,8 +748,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     int py_material = PyObject_IsInstance($input, py_material_object());
     int user_material = PyFunction_Check($input);
     int file_material = IsPyString($input);
+    int numpy_material = PyArray_Check($input);
 
-    $1 = py_material || user_material || file_material;
+    $1 = py_material || user_material || file_material || numpy_material;
 }
 
 %typemap(in) material_type {
@@ -763,7 +766,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if ($1->medium.H_susceptibilities.items) {
         delete[] $1->medium.H_susceptibilities.items;
     }
-    free($1);
+    delete[] $1->epsilon_data;
+    delete $1;
 }
 
 // Typemap suite for array_slice
@@ -989,17 +993,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for absorber_list
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep_geom::absorber_list {
-    $1 = PySequence_Check($input) || $input == Py_None;
+    $1 = PySequence_Check($input);
 }
 
 %typemap(in) meep_geom::absorber_list {
 
-    if ($input == Py_None) {
+    Py_ssize_t len = PyList_Size($input);
+
+    if (len == 0) {
         $1 = 0;
     } else {
         $1 = create_absorber_list();
-
-        Py_ssize_t len = PyList_Size($input);
 
         for (Py_ssize_t i = 0; i < len; i++) {
             absorber a;
@@ -1057,7 +1061,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             if ($1.items[i]->medium.H_susceptibilities.items) {
                 delete[] $1.items[i]->medium.H_susceptibilities.items;
             }
-            free($1.items[i]);
+            delete[] $1.items[i]->epsilon_data;
         }
         delete[] $1.items;
     }
@@ -1200,6 +1204,35 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
                     bool verbose, double kdom[3]);
 #endif // HAVE_MPB
 
+// Make omega members of meep::dft_ldos available as 'freq' in python
+%extend meep::dft_ldos {
+
+    double get_omega_min() {
+        return $self->omega_min;
+    }
+    double get_domega() {
+        return $self->domega;
+    }
+    int get_Nomega() {
+        return $self->Nomega;
+    }
+    %pythoncode %{
+        def freqs(self):
+            import math
+            import numpy as np
+            start = self.omega_min / (2 * math.pi)
+            stop = start + (self.domega / (2 * math.pi)) * self.Nomega
+            return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
+
+        __swig_getmethods__["freq_min"] = get_omega_min
+        __swig_getmethods__["nfreq"] = get_Nomega
+        __swig_getmethods__["dfreq"] = get_domega
+        if _newclass: freq_min = property(get_omega_min)
+        if _newclass: nfreq = property(get_Nomega)
+        if _newclass: dfreq = property(get_domega)
+    %}
+}
+
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
@@ -1207,7 +1240,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    const meep::volume &eig_vol, int *bands, int num_bands,
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
-                                                   meep::kpoint_func user_kpoint_func, void *user_kpoint_data);
+                                                   meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
+                                                   bool verbose);
 
 %ignore eps_func;
 %ignore inveps_func;
@@ -1266,6 +1300,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     )
     from .simulation import (
         Absorber,
+        Ldos,
         FluxRegion,
         ForceRegion,
         Harminv,
@@ -1298,7 +1333,6 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
         get_force_freqs,
         get_forces,
         get_near2far_freqs,
-        get_ldos_freqs,
         in_point,
         in_volume,
         interpolate,

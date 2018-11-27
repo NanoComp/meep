@@ -2,7 +2,7 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free and open-source software package for simulating electromagnetic systems via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
+ **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method.
 
 **Features**
 
@@ -31,7 +31,7 @@ A time-domain electromagnetic simulation simply evolves [Maxwell's equations](ht
 -   **Resonant Modes and Frequencies** &mdash; by analyzing the response of the system to a short pulse, one can extract the frequencies, decay rates, and field patterns of the harmonic modes of lossy and lossless systems including waveguide and cavity modes.
 -   **Field Patterns** (e.g. Green's functions) &mdash; in response to an arbitrary source via a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) input (fixed-ω).
 
-Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization etcetera in sequence or in parallel.
+Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization in sequence or in parallel.
 
 [Tutorial/Basics](Python_Tutorials/Basics.md) provides examples of all these kinds of computations.
 

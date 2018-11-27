@@ -35,15 +35,15 @@ import meep as mp
 We can begin specifying each of the simulation objects starting with the computational cell. We're going to put a source at one end and watch the fields propagate down the waveguide in the *x* direction, so let's use a cell of length 16 μm in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries do not affect the waveguide mode; let's give it a size of 8 μm.
 
 ```py
-cell = mp.Vector3(16, 8, 0)
+cell = mp.Vector3(16,8,0)
 ```
 The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
 
 Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface.md#geometricobject) stored in the `geometry` object.
 
 ```py
-geometry = [mp.Block(mp.Vector3(1e20, 1, 1e20),
-                     center=mp.Vector3(0, 0),
+geometry = [mp.Block(mp.Vector3(1e20,1,1e20),
+                     center=mp.Vector3(0,0),
                      material=mp.Medium(epsilon=12))]
 ```
 
@@ -134,12 +134,12 @@ import meep as mp
 Then let's set up the bent waveguide in a slightly larger computational cell:
 
 ```py
-cell = mp.Vector3(16, 16, 0)
-geometry = [mp.Block(mp.Vector3(12, 1, 1e20),
-                     center=mp.Vector3(-2.5, -3.5),
+cell = mp.Vector3(16,16,0)
+geometry = [mp.Block(mp.Vector3(12,1,1e20),
+                     center=mp.Vector3(-2.5,-3.5),
                      material=mp.Medium(epsilon=12)),
-            mp.Block(mp.Vector3(1, 12, 1e20),
-                     center=mp.Vector3(3.5, 2),
+            mp.Block(mp.Vector3(1,12,1e20),
+                     center=mp.Vector3(3.5,2),
                      material=mp.Medium(epsilon=12))]
 pml_layers = [mp.PML(1.0)]
 resolution = 10
@@ -207,8 +207,8 @@ Instead of doing an animation, another interesting possibility is to make an ima
 vals = []
 
 def get_slice(sim):
-    center = mp.Vector3(0, -3.5)
-    size = mp.Vector3(16, 0)
+    center = mp.Vector3(0,-3.5)
+    size = mp.Vector3(16,0)
     vals.append(sim.get_array(center=center, size=size, component=mp.Ez))
 
 sim.run(mp.at_beginning(mp.output_epsilon),
@@ -307,7 +307,7 @@ sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
 
 Notice how we're using our parameters like `wvg_ycen` and `w`: if we change the dimensions, everything will shift automatically.
 
-Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created.
+Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`FluxRegion`](../Python_User_Interface.md#fluxregion). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `FluxRegion` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
 
 ```py
 sim = mp.Simulation(cell_size=cell,

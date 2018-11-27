@@ -72,6 +72,15 @@ struct fragment_stats {
   size_t num_nonlinear_pixels;
   size_t num_susceptibility_pixels;
   size_t num_nonzero_conductivity_pixels;
+
+  // Pixels in single PML regions
+  size_t num_1d_pml_pixels;
+
+  // Pixels where 2 PML regions overlap
+  size_t num_2d_pml_pixels;
+
+  // Pixels where 3 PML regions overlap
+  size_t num_3d_pml_pixels;
   size_t num_dft_pixels;
   size_t num_pixels_in_box;
   geom_box box;
@@ -85,6 +94,10 @@ struct fragment_stats {
   void count_susceptibility_pixels(medium_struct *med, size_t pixels);
   void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
   void compute_dft_stats(std::vector<dft_data> *dft_data_list);
+  void compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
+                         const std::vector<meep::volume> &pml_2d_vols,
+                         const std::vector<meep::volume> &pml_3d_vols);
+  void compute_absorber_stats(const std::vector<meep::volume> &absorber_vols);
   void print_stats();
 };
 
@@ -94,6 +107,10 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
                                                    vector3 cell_center,
                                                    material_type default_mat,
                                                    std::vector<dft_data> dft_data_list,
+                                                   std::vector<meep::volume> pml_1d_vols,
+                                                   std::vector<meep::volume> pml_2d_vols,
+                                                   std::vector<meep::volume> pml_3d_vols,
+                                                   std::vector<meep::volume> absorber_vols,
                                                    double tol,
                                                    int maxeval,
                                                    bool ensure_per,
@@ -128,9 +145,15 @@ void add_absorbing_layer(absorber_list alist,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
+inline vector3 make_vector3(double x=0.0, double y=0.0, double z=0.0) {
+    vector3 v = {x, y, z};
+    return v;
+}
+
 void set_dimensions(int dims);
 void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
+                                 vector3 center=make_vector3(),
                                  bool use_anisotropic_averaging=true,
                                  double tol=DEFAULT_SUBPIXEL_TOL,
                                  int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
