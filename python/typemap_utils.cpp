@@ -877,9 +877,8 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
 
         PyObject *py_verts = PyList_New(num_verts);
         for (int i = 0; i < num_verts; ++i) {
-            vector3 vp = prsm->vertices.items[i];
-            vector3 cart_v3 = prism_coordinate_p2c(prsm, vp);
-            PyList_SetItem(py_verts, i, v3_to_pyv3(&cart_v3));
+            vector3 v = prsm->vertices.items[i];
+            PyList_SetItem(py_verts, i, v3_to_pyv3(&v));
         }
 
         double height = gobj->subclass.prism_data->height;
