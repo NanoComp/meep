@@ -413,7 +413,7 @@ Polygonal prism type.
 
 **`vertices` [list of `vector3`]**
 —
-The vertices that define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. Though the `center` property is required (since the prism is a sublcass of `geometric-object`), it is currently unused.
+The vertices that define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. The vertices must be coplanar, and if `axis` is specified it must be normal to the plane of the vertices. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. Though the `center` property must be specified (since the prism is a sublcass of `geometric-object`), the specified value is overridden by the center of the prism as computed from the vertices, height, and axis.
 
 **`height` [`number`]**
 —
@@ -421,7 +421,8 @@ The prism thickness, extruded in the direction of `axis`. `infinity` can be used
 
 **`axis` [`vector3`]**
 —
-Defaults to `(vector3 0 0 1)`, which is currently the only supported axis for the prism.
+Optional; specifies the extrusion axis, which must be normal to the plane of the vertices. If `axis` is not specified, the extrusion axis is taken to be the normal vector to the plane of the vertices, with sign determined by a right-hand rule with respect to the first two vertices: if your right-hand fingers point from vertex 1 to vertex 2, your thumb points in the direction of `axis.`
+[More specifically, `axis` points in the direction of the vector cross product `(vertices[0]-centroid)` &times; `(vertices[1]-centroid)` where `centroid` is the centroid of the vertex polygon.]
 
 These are some examples of geometric objects created using the above classes:
 
@@ -458,12 +459,14 @@ These are some examples of geometric objects created using the above classes:
       (list
        (make prism
          (vertices
-           (list (vector3 -1 0 0)
+           (list 
+                 (vector3 -1 0 0)
                  (vector3 -0.5 (/ (sqrt 3) 2) 0)
                  (vector3 0.5 (/ (sqrt 3) 2) 0)
                  (vector3 1 0 0)
                  (vector3 0.5 (/ (sqrt 3) -2) 0)
                  (vector3 -0.5 (/ (sqrt 3) -2) 0)))
+         (axis 0 0 1)
          (height 1.5)
          (center (vector3 0 0))
          (material cSi))))
