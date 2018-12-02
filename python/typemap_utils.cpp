@@ -35,9 +35,6 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
-extern "C" {
-    vector3 prism_coordinate_p2c(prism *prsm, vector3 vp);
-}
 static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
 
@@ -897,14 +894,11 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
         prism *prsm = gobj->subclass.prism_data;
 
         PyObject *py_verts = PyList_New(num_verts);
-        for (int i = 0; i < num_verts; ++i) {
-            vector3 vp = prsm->vertices.items[i];
-            vector3 cart_v3 = prism_coordinate_p2c(prsm, vp);
-            PyList_SetItem(py_verts, i, v3_to_pyv3(&cart_v3));
-        }
+        for (int i = 0; i < num_verts; ++i)
+         PyList_SetItem(py_verts, i, v3_to_pyv3(prsm->vertices.items + i));
 
-        double height = gobj->subclass.prism_data->height;
-        vector3 axis = gobj->subclass.prism_data->m_p2c.c2;
+        double height = prsm->height;
+        vector3 axis = prsm->axis;
         PyObject *py_axis = v3_to_pyv3(&axis);
 
         PyObject *py_mat = material_to_py_material((meep_geom::material_type)gobj->material);
