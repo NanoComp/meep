@@ -500,3 +500,174 @@ poynting-flux:, 0.061063, 0.938384, 0.999447
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
+
+Diffraction Spectra of Polarization Gratings
+--------------------------------------------
+
+As a final demonstration of mode decomposition, we compute the diffraction spectrum of a polarization grating. These types of gratings use [birefringence](https://en.wikipedia.org/wiki/Birefringence) to produce diffraction orders which are [circularly polarized](https://en.wikipedia.org/wiki/Circular_polarization). We will investigate two kinds of polarization gratings: (1) a homogeneous [uniaxial](https://en.wikipedia.org/wiki/Birefringence#Uniaxial_materials) grating (also known as a circular-polarization grating), and (2) a [twisted-nematic](https://en.wikipedia.org/wiki/Twisted_nematic_field_effect) [cholesteric liquid crystal](https://en.wikipedia.org/wiki/Cholesteric_liquid_crystal) grating as described in [Optics Letters, Vol. 33, No. 20, pp. 2287-9, 2008](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-33-20-2287) ([pdf](https://www.imagineoptix.com/cms/wp-content/uploads/2017/01/OL_08_Oh-broadband_PG.pdf)). The homogeneous uniaxial grating is just a special case of the twisted-nematic grating with a nematic [director](https://en.wikipedia.org/wiki/Liquid_crystal#Director) rotation angle of φ=0°.
+
+The grating design is a 2d slab with two parameters: birefringence (Δn) and thickness (d). The twisted-nematic grating consists of two layers with equal and opposite rotation angles of φ=70° for the nematic director. Both gratings contain only three diffraction orders: m=0, ±1. The m=0 order is linearly polarized (with the same polarization as the input planewave) and the m=±1 orders are circularly polarized with opposite chirality. For the uniaxial grating, the diffraction efficiencies for a mode with wavelength λ can be computed analytically from three parameters: η<sub>0</sub>=cos<sup>2</sup>(πΔnd/λ), η<sub>±1</sub>=0.5sin<sup>2</sup>(πΔnd/λ). The derivation of these diffraction efficiencies is presented in [Optics Letters, Vol, 24, No. 9, pp. 584-6, 1999](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-24-9-584). We will verify these analytic results.
+
+The input is a linearly-polarized planewave pulse with center wavelength of λ=0.54 μm at normal incidence. The polarization is in the yz-plane with a rotation angle of 45° about the x-axis. Two sets of mode coefficients are computed for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these linearly-polarized mode coefficients, the circularly-polarized mode coefficients with opposite chirality can be computed as (cosine amplitudes)+i(sine amplitudes) and (cosine amplitudes)-i(sine amplitudes), which correspond to modes with +k<sub>y</sub> and -k<sub>y</sub> separately.
+
+The simulation script is in [examples/polarization_grating.py](https://github.com/stevengj/meep/blob/master/python/examples/polarization_grating.py).
+
+```py
+import meep as mp
+import math
+import argparse
+
+resolution = 50        # pixels/μm
+
+dpml = 1.0             # PML thickness
+dsub = 1.0             # substrate thickness
+dpad = 1.0             # padding thickness
+
+k_point = mp.Vector3(0,0,0)
+
+n_0 = 1.55
+delta_n = 0.159
+epsilon_diag = mp.Matrix(mp.Vector3(n_0**2,0,0),mp.Vector3(0,n_0**2,0),mp.Vector3(0,0,(n_0+delta_n)**2))
+
+wvl = 0.54             # center wavelength
+fcen = 1/wvl           # center frequency
+df = 0.05*fcen         # frequency width
+
+def pol_grating(d,ph,gp,nmode):
+    sx = dpml+dsub+d+d+dpad+dpml
+    sy = gp
+
+    cell_size = mp.Vector3(sx,sy,0)
+    pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
+
+    # twist angle of nematic director; from equation 1b
+    def phi(p):
+        xx  = p.x-(-0.5*sx+dpml+dsub)
+        if (xx >= 0) and (xx <= d):
+            return math.pi*p.y/gp + ph*xx/d
+        else:
+            return math.pi*p.y/gp - ph*xx/d + 2*ph
+
+    # return the anisotropic permittivity tensor for a uniaxial, twisted nematic liquid crystal
+    def lc_mat(p):
+        # rotation matrix for rotation around x axis
+        Rx = mp.Matrix(mp.Vector3(1,0,0),mp.Vector3(0,math.cos(phi(p)),math.sin(phi(p))),mp.Vector3(0,-math.sin(phi(p)),math.cos(phi(p))))
+        lc_epsilon = Rx * epsilon_diag * Rx.transpose()
+        lc_epsilon_diag = mp.Vector3(lc_epsilon[0].x,lc_epsilon[1].y,lc_epsilon[2].z)
+        lc_epsilon_offdiag = mp.Vector3(lc_epsilon[1].x,lc_epsilon[2].x,lc_epsilon[2].y)
+        return mp.Medium(epsilon_diag=lc_epsilon_diag,epsilon_offdiag=lc_epsilon_offdiag)
+
+    geometry = [mp.Block(center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub)),size=mp.Vector3(dpml+dsub,mp.inf,mp.inf),material=mp.Medium(index=n_0)),
+                mp.Block(center=mp.Vector3(-0.5*sx+dpml+dsub+d),size=mp.Vector3(2*d,mp.inf,mp.inf),material=lc_mat)]
+
+    # linear-polarized planewave pulse source
+    src_pt = mp.Vector3(-0.5*sx+dpml+0.3*dsub,0,0)
+    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0)),
+               mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ey, center=src_pt, size=mp.Vector3(0,sy,0))]
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=pml_layers,
+                        k_point=k_point,
+                        sources=sources,
+                        default_material=mp.Medium(index=n_0))
+
+    refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
+    refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
+
+    sim.run(until_after_sources=100)
+
+    input_flux = mp.get_fluxes(refl_flux)
+    input_flux_data = sim.get_flux_data(refl_flux)
+
+    sim.reset_meep()
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=pml_layers,
+                        k_point=k_point,
+                        sources=sources,
+                        geometry=geometry)
+
+    refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
+    sim.load_minus_flux_data(refl_flux,input_flux_data)
+
+    tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+    tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
+
+    sim.run(until_after_sources=300)
+
+    res1 = sim.get_eigenmode_coefficients(tran_flux, range(1,nmode+1), eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    res2 = sim.get_eigenmode_coefficients(tran_flux, range(1,nmode+1), eig_parity=mp.EVEN_Z+mp.ODD_Y)
+    angles = [ math.degrees(math.acos(kdom.x/fcen)) for kdom in res1.kdom ]
+
+    return input_flux[0], angles, res1.alpha[:,0,0], res2.alpha[:,0,0];
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-dd', type=float, default=1.7, help='chiral layer thickness (default: 1.7 μm)')
+    parser.add_argument('-ph', type=float, default=70, help='chiral layer twist angle (default: 70°)')
+    parser.add_argument('-gp', type=float, default=6.5, help='grating period (default: 6.5 μm)')
+    parser.add_argument('-nmode', type=int, default=5, help='number of mode coefficients to compute (default: 5)')
+    args = parser.parse_args()
+    
+    input_flux, angles, coeffs1, coeffs2 = pol_grating(args.dd,math.radians(args.ph),args.gp,args.nmode)
+
+    tran1 = abs(coeffs1+1j*coeffs2)**2/input_flux
+    tran2 = abs(coeffs1-1j*coeffs2)**2/input_flux
+    print("tran:, 0, 0, {:.5f}".format(0.5*(tran1[0]+tran2[0])))
+    for m in range(1,args.nmode):
+        print("tran:, +{}, +{:.2f}, {:.5f}".format(m,angles[m],tran1[m]))
+        print("tran:, -{}, -{:.2f}, {:.5f}".format(m,angles[m],tran2[m]))
+```
+
+The Bash script below runs the grating simulations over a range of grating thicknesses corresponding to phase delays (Δnd/λ) spanning 0 to 1. The entire output is saved to a file and the transmittance data is extracted from this and placed in a separate file.
+
+```sh
+for d in `seq 0.1 0.1 3.4`; do
+    echo "circular polarization grating with d=${d}";
+    dd=$(printf "%0.2f" $(echo "scale=2;0.5*${d}" |bc));
+    python polarization_grating.py -dd ${dd} -ph 0 |tee -a circ_pol_grating.out;
+
+    echo "bilayer twisted nematic polarization grating with d=${dd}";
+    python polarization_grating.py -dd ${d} -ph 70 |tee -a bilayer_pol_grating.out;
+done
+
+grep tran: circ_pol_grating.out |cut -d , -f2- > circ_pol_grating.dat
+grep tran: bilayer_pol_grating.out |cut -d , -f2- > bilayer_pol_grating.dat
+```
+
+The output from the simulation for the circular-polarization grating is plotted using the script below. The diffraction spectra for the two grating types which are generated from this script are shown in the following figures.
+
+```py
+import numpy as np
+import matplotlib.pyplot as plt
+
+dat = np.genfromtxt("circ_pol_grating.dat",delimiter=",")
+m0 = dat[0::9,2]
+m1p = dat[1::9,2]
+m1m = dat[2::9,2]
+d = np.arange(0.1,3.5,0.1)
+
+delta_n = 0.159
+wvl = 0.54
+phase = delta_n*d/wvl
+
+plt.figure(dpi=100)
+plt.plot(phase,m0,'bo-',clip_on=False,label='0th order (linear pol.)')
+plt.plot(phase,m1p+m1m,'ro-',clip_on=False,label='±1 orders (circular pol.)')
+plt.axis([0, 1.0, 0, 1])
+plt.xticks([t for t in np.arange(0,1.2,0.2)])
+plt.xlabel("phase delay Δnd/λ")
+plt.ylabel("transmittance @ λ = 0.54 μm")
+plt.title("circular polarization grating")
+plt.legend(loc='center')
+plt.show()
+```
+
+The sinusoidal dependence of the transmittance predicted by the analytic theory is verified by the left figure. Note that approximately 6% of the input planewave is lost due to reflectance from the grating. This is why the peak transmittance is around 94%. The twisted-nematic grating produces circularly-polarized diffraction orders with peak transmittance over a larger bandwidth than the circular polarization grating consistent with results from the reference.
+
+<center>
+![](../images/pol_grating_diffraction_spectra.png)
+</center>
