@@ -89,7 +89,7 @@ def pol_grating(d,ph,gp,nmode):
 
     res1 = sim.get_eigenmode_coefficients(tran_flux, range(1,nmode+1), eig_parity=mp.ODD_Z+mp.EVEN_Y)
     res2 = sim.get_eigenmode_coefficients(tran_flux, range(1,nmode+1), eig_parity=mp.EVEN_Z+mp.ODD_Y)
-    angles = [ math.degrees(math.acos(kdom.x/fcen)) for kdom in res1.kdom ]
+    angles = [math.degrees(math.acos(kdom.x/fcen)) for kdom in res1.kdom]
 
     return input_flux[0], angles, res1.alpha[:,0,0], res2.alpha[:,0,0];
 

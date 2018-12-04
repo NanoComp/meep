@@ -246,7 +246,7 @@ for nm in range(nmode):
     print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
 ```
 
-Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarization. `EVEN_Y` is necessary since each diffraction order which is based on a given k<sub>x</sub> consists of *two* modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. As a result, the total transmittance must be halved in this case to obtain the transmittance for either the +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the sine mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
+Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarization. `EVEN_Y` is necessary since each diffraction order which is based on a given k<sub>x</sub> consists of *two* modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. As a result, the total transmittance must be halved in this case to obtain the transmittance for the individual +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the +k<sub>y</sub> - -k<sub>y</sub> (sine) mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Alternatively, in this example an input planewave with H<sub>z</sub> instead of E<sub>z</sub> polarization can be used which requires `eig_parity=mp.EVEN_Z+mp.ODD_Y` as well as an odd mirror symmetry plane in *y*. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
 
 The simulation is run and the results piped to a file (the grating data is extracted to a separate file for plotting) using the following shell script:
 
@@ -501,14 +501,20 @@ poynting-flux:, 0.061063, 0.938384, 0.999447
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
 
-Diffraction Spectra of Polarization Gratings
---------------------------------------------
+Diffraction Spectra of Liquid-Crystal Polarization Gratings
+-----------------------------------------------------------
 
-As a final demonstration of mode decomposition, we compute the diffraction spectrum of a polarization grating. These types of gratings use [birefringence](https://en.wikipedia.org/wiki/Birefringence) to produce diffraction orders which are [circularly polarized](https://en.wikipedia.org/wiki/Circular_polarization). We will investigate two kinds of polarization gratings: (1) a homogeneous [uniaxial](https://en.wikipedia.org/wiki/Birefringence#Uniaxial_materials) grating (also known as a circular-polarization grating), and (2) a [twisted-nematic](https://en.wikipedia.org/wiki/Twisted_nematic_field_effect) [cholesteric liquid crystal](https://en.wikipedia.org/wiki/Cholesteric_liquid_crystal) grating as described in [Optics Letters, Vol. 33, No. 20, pp. 2287-9, 2008](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-33-20-2287) ([pdf](https://www.imagineoptix.com/cms/wp-content/uploads/2017/01/OL_08_Oh-broadband_PG.pdf)). The homogeneous uniaxial grating is just a special case of the twisted-nematic grating with a nematic [director](https://en.wikipedia.org/wiki/Liquid_crystal#Director) rotation angle of φ=0°.
+As a final demonstration of mode decomposition, we compute the diffraction spectrum of a [liquid-crystal](https://en.wikipedia.org/wiki/Liquid_crystal) polarization grating. These types of beam splitters use [birefringence](https://en.wikipedia.org/wiki/Birefringence) to produce diffraction orders which are [circularly polarized](https://en.wikipedia.org/wiki/Circular_polarization). We will investigate two kinds of polarization gratings: (1) a homogeneous [uniaxial](https://en.wikipedia.org/wiki/Birefringence#Uniaxial_materials) grating (also known as a circular-polarization grating), and (2) a [twisted-nematic](https://en.wikipedia.org/wiki/Liquid_crystal#Chiral_phases) bilayer grating as described in [Optics Letters, Vol. 33, No. 20, pp. 2287-9, 2008](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-33-20-2287) ([pdf](https://www.imagineoptix.com/cms/wp-content/uploads/2017/01/OL_08_Oh-broadband_PG.pdf)). The homogeneous uniaxial grating is just a special case of the twisted-nematic grating with a nematic [director](https://en.wikipedia.org/wiki/Liquid_crystal#Director) rotation angle of φ=0°.
 
-The grating design is a 2d slab with two parameters: birefringence (Δn) and thickness (d). The twisted-nematic grating consists of two layers with equal and opposite rotation angles of φ=70° for the nematic director. Both gratings contain only three diffraction orders: m=0, ±1. The m=0 order is linearly polarized (with the same polarization as the input planewave) and the m=±1 orders are circularly polarized with opposite chirality. For the uniaxial grating, the diffraction efficiencies for a mode with wavelength λ can be computed analytically from three parameters: η<sub>0</sub>=cos<sup>2</sup>(πΔnd/λ), η<sub>±1</sub>=0.5sin<sup>2</sup>(πΔnd/λ). The derivation of these diffraction efficiencies is presented in [Optics Letters, Vol, 24, No. 9, pp. 584-6, 1999](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-24-9-584). We will verify these analytic results.
+A schematic of the grating geometry is shown below. The grating is a 2d slab in the *xy*-plane with two parameters: birefringence (Δn) and thickness (d). The twisted-nematic grating consists of two layers of thickness d each with equal and opposite rotation angles of φ=70° for the nematic director. Both gratings contain only three diffraction orders: m=0, ±1. The m=0 order is linearly polarized and the m=±1 orders are circularly polarized with opposite chirality. For the uniaxial grating, the diffraction efficiencies for a mode with wavelength λ can be computed analytically: η<sub>0</sub>=cos<sup>2</sup>(πΔnd/λ), η<sub>±1</sub>=0.5sin<sup>2</sup>(πΔnd/λ). The derivation of these formulas is presented in [Optics Letters, Vol, 24, No. 9, pp. 584-6, 1999](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-24-9-584). We will verify these analytic results and also demonstrate that the twisted-nematic grating produces a broader bandwidth response for the ±1 orders than the homogeneous uniaxial grating. An important property of these polarization gratings for e.g. display applications is that for a circular-polarized input planewave and phase delay (Δnd/λ) of nearly 0.5, there is only a single diffraction order with *opposite* chiraity.
 
-The input is a linearly-polarized planewave pulse with center wavelength of λ=0.54 μm at normal incidence. The polarization is in the yz-plane with a rotation angle of 45° about the x-axis. Two sets of mode coefficients are computed for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these linearly-polarized mode coefficients, the circularly-polarized mode coefficients with opposite chirality can be computed as (cosine amplitudes)+i(sine amplitudes) and (cosine amplitudes)-i(sine amplitudes), which correspond to modes with +k<sub>y</sub> and -k<sub>y</sub> separately.
+<center>
+![](../images/polarization_grating_schematic.png)
+</center>
+
+In this example, the input is a linear-polarized planewave with center wavelength of λ=0.54 μm at normal incidence. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise about the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these linear-polarized mode coefficients, the circular-polarized mode coefficients with opposite chirality can be computed: (cosine amplitudes)+i(sine amplitudes) and (cosine amplitudes)-i(sine amplitudes), which correspond to modes with +k<sub>y</sub> and -k<sub>y</sub> separately. The transmittance for the diffraction orders are computed from the mode coefficients. As usual, this requires a separate normalization run to compute the power of the input planewave.
+
+The anisotropic permittivity of the grating is specified using a [material function](../Python_User_Interface.md#medium). The nematic director is oriented along the *z* axis for φ=0°. Thus, the E<sub>z</sub> electric field has a larger permittivity than the E<sub>y</sub> field where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
 
 The simulation script is in [examples/polarization_grating.py](https://github.com/stevengj/meep/blob/master/python/examples/polarization_grating.py).
 
@@ -599,7 +605,7 @@ def pol_grating(d,ph,gp,nmode):
 
     res1 = sim.get_eigenmode_coefficients(tran_flux, range(1,nmode+1), eig_parity=mp.ODD_Z+mp.EVEN_Y)
     res2 = sim.get_eigenmode_coefficients(tran_flux, range(1,nmode+1), eig_parity=mp.EVEN_Z+mp.ODD_Y)
-    angles = [ math.degrees(math.acos(kdom.x/fcen)) for kdom in res1.kdom ]
+    angles = [math.degrees(math.acos(kdom.x/fcen)) for kdom in res1.kdom]
 
     return input_flux[0], angles, res1.alpha[:,0,0], res2.alpha[:,0,0];
 
@@ -622,7 +628,7 @@ if __name__ == '__main__':
         print("tran:, -{}, -{:.2f}, {:.5f}".format(m,angles[m],tran2[m]))
 ```
 
-The Bash script below runs the grating simulations over a range of grating thicknesses corresponding to phase delays (Δnd/λ) spanning 0 to 1. The entire output is saved to a file and the transmittance data is extracted from this and placed in a separate file.
+The Bash script below runs the grating simulations over a range of grating thicknesses corresponding to a range of phase delays (Δnd/λ) of 0 to 1. The entire output is saved to a file and the transmittance data is extracted from the output and placed in a separate file.
 
 ```sh
 for d in `seq 0.1 0.1 3.4`; do
@@ -638,36 +644,48 @@ grep tran: circ_pol_grating.out |cut -d , -f2- > circ_pol_grating.dat
 grep tran: bilayer_pol_grating.out |cut -d , -f2- > bilayer_pol_grating.dat
 ```
 
-The output from the simulation for the circular-polarization grating is plotted using the script below. The diffraction spectra for the two grating types which are generated from this script are shown in the following figures.
+The output from the simulation for the homogeneous uniaxial grating is plotted using the script below. The diffraction spectra for the two gratings are shown in the accompanying figures.
 
 ```py
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 
-dat = np.genfromtxt("circ_pol_grating.dat",delimiter=",")
-m0 = dat[0::9,2]
-m1p = dat[1::9,2]
-m1m = dat[2::9,2]
-d = np.arange(0.1,3.5,0.1)
+d = np.genfromtxt("circ_pol_grating.dat",delimiter=",")
+m0 = d[0::9,2]
+m1p = d[1::9,2]
+m1m = d[2::9,2]
+angles = d[1::9,1]
 
+cos_angles = [math.cos(math.radians(t)) for t in angles]
+tran = m0+m1p+m1m
+eff_m0 = m0/tran
+eff_m1p_m1m = ((m1p+m1m)/tran)/cos_angles
+
+dd = np.arange(0.1,3.5,0.1)
 delta_n = 0.159
 wvl = 0.54
-phase = delta_n*d/wvl
+phase = delta_n*dd/wvl
+
+eff_m0_analytic = [math.cos(math.pi*p)**2 for p in phase]
+eff_m1p_m1m_analytic = [math.sin(math.pi*p)**2 for p in phase]
 
 plt.figure(dpi=100)
-plt.plot(phase,m0,'bo-',clip_on=False,label='0th order (linear pol.)')
-plt.plot(phase,m1p+m1m,'ro-',clip_on=False,label='±1 orders (circular pol.)')
+plt.plot(phase,eff_m0,'bo-',clip_on=False,label='0th order (meep)')
+plt.plot(phase,eff_m0_analytic,'b--',clip_on=False,label='0th order (analytic)')
+plt.plot(phase,eff_m1p_m1m,'ro-',clip_on=False,label='±1 orders (meep)')
+plt.plot(phase,eff_m1p_m1m_analytic,'r--',clip_on=False,label='±1 orders (analytic)')
 plt.axis([0, 1.0, 0, 1])
 plt.xticks([t for t in np.arange(0,1.2,0.2)])
 plt.xlabel("phase delay Δnd/λ")
-plt.ylabel("transmittance @ λ = 0.54 μm")
-plt.title("circular polarization grating")
+plt.ylabel("diffraction efficiency @ λ = 0.54 μm")
 plt.legend(loc='center')
+plt.title("homogeneous uniaxial grating")
 plt.show()
 ```
 
-The sinusoidal dependence of the transmittance predicted by the analytic theory is verified by the left figure. Note that approximately 6% of the input planewave is lost due to reflectance from the grating. This is why the peak transmittance is around 94%. The twisted-nematic grating produces circularly-polarized diffraction orders with peak transmittance over a larger bandwidth than the circular polarization grating consistent with results from the reference.
-
 <center>
-![](../images/pol_grating_diffraction_spectra.png)
+![](../images/polarization_grating_diffraction_spectra.png)
 </center>
+
+The left figure shows good agreement between the simulation results and analytic theory for the homogeneous uniaxial grating. Approximately 6% of the power in the input planewave is lost due to reflection from the grating. This value is an average over the range of phase delays. The total transmittance is therefore around 94%. The twisted-nematic grating, with results shown in the right figure, produces ±1 diffraction orders with nearly-constant peak transmittance over a broader bandwidth around Δnd/λ=0.5 than the homogeneous uniaxial polarization grating. This is consistent with results from the reference. The average reflectance and transmittance for the twisted-nematic grating are similar to those for the homogeneous uniaxial grating.
