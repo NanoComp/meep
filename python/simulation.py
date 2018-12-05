@@ -1114,7 +1114,7 @@ class Simulation(object):
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
 
-    def _run_k_point(self, t, k):
+    def run_k_point(self, t, k):
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
@@ -1134,7 +1134,7 @@ class Simulation(object):
         h = Harminv(components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
         self.run(after_sources(h), until_after_sources=t)
 
-        return [complex(m.freq, m.decay) for m in h.modes]
+        return h
 
     def run_k_points(self, t, k_points):
         k_index = 0
@@ -1147,7 +1147,8 @@ class Simulation(object):
                 self.init_sim()
                 output_epsilon(self)
 
-            freqs = self._run_k_point(t, k)
+            harminv = self.run_k_point(t, k)
+            freqs = [complex(m.freq, m.decay) for m in harminv.modes]
 
             print("freqs:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
             print(', '.join([str(f.real) for f in freqs]))
