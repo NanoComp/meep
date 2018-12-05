@@ -716,7 +716,7 @@ The size of the current distribution along each direction of the computational c
 
 **`amplitude` [`complex`]**
 —
-An overall complex amplitude multiplying the the current source. Default is 1.0.
+An overall complex amplitude multiplying the current source. Default is 1.0.
 
 **`amp_func` [`function`]**
 —
