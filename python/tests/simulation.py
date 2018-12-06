@@ -218,7 +218,7 @@ class TestSimulation(unittest.TestCase):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
         eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
-                                     '..', '..', 'libmeepgeom')
+                                     '..', '..', 'tests')
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
         sim.epsilon_input_file = eps_input_path
 
@@ -238,7 +238,7 @@ class TestSimulation(unittest.TestCase):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
         eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
-                                     '..', '..', 'libmeepgeom')
+                                     '..', '..', 'tests')
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
 
         with h5py.File(eps_input_path, 'r') as f:
