@@ -11,75 +11,107 @@ DAC = $(SRC:.cpp=.dac)
 DONE = $(SRC:.cpp=.done)
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
-AM_CPPFLAGS = -I$(top_srcdir)/src
+LIBCTLGEOM = @LIBCTLGEOM_LIBS@
+MEEPLIBS = $(LIBMEEP) $(LIBCTLGEOM)
+AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
 
 .SUFFIXES = .dac .done
 
-check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
+check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields gdsII-3d bend-flux-ll
 
 aniso_disp_SOURCES = aniso_disp.cpp
-aniso_disp_LDADD = $(LIBMEEP)
+aniso_disp_LDADD = $(MEEPLIBS)
 
 bench_SOURCES = bench.cpp
-bench_LDADD = $(LIBMEEP)
+bench_LDADD = $(MEEPLIBS)
 
 bragg_transmission_SOURCES = bragg_transmission.cpp
-bragg_transmission_LDADD = $(LIBMEEP)
+bragg_transmission_LDADD = $(MEEPLIBS)
 
 convergence_cyl_waveguide_SOURCES = convergence_cyl_waveguide.cpp
-convergence_cyl_waveguide_LDADD = $(LIBMEEP)
+convergence_cyl_waveguide_LDADD = $(MEEPLIBS)
 
 cylindrical_SOURCES = cylindrical.cpp
-cylindrical_LDADD = $(LIBMEEP)
+cylindrical_LDADD = $(MEEPLIBS)
 
 flux_SOURCES = flux.cpp
-flux_LDADD = $(LIBMEEP)
+flux_LDADD = $(MEEPLIBS)
 
 harmonics_SOURCES = harmonics.cpp
-harmonics_LDADD = $(LIBMEEP)
+harmonics_LDADD = $(MEEPLIBS)
 
 integrate_SOURCES = integrate.cpp
-integrate_LDADD = $(LIBMEEP)
+integrate_LDADD = $(MEEPLIBS)
 
 known_results_SOURCES = known_results.cpp
-known_results_LDADD = $(LIBMEEP)
+known_results_LDADD = $(MEEPLIBS)
 
 near2far_SOURCES = near2far.cpp
-near2far_LDADD = $(LIBMEEP)
+near2far_LDADD = $(MEEPLIBS)
 
 one_dimensional_SOURCES = one_dimensional.cpp
-one_dimensional_LDADD = $(LIBMEEP)
+one_dimensional_LDADD = $(MEEPLIBS)
 
 physical_SOURCES = physical.cpp
-physical_LDADD = $(LIBMEEP)
+physical_LDADD = $(MEEPLIBS)
 
 stress_tensor_SOURCES = stress_tensor.cpp
-stress_tensor_LDADD = $(LIBMEEP)
+stress_tensor_LDADD = $(MEEPLIBS)
 
 symmetry_SOURCES = symmetry.cpp
-symmetry_LDADD = $(LIBMEEP)
+symmetry_LDADD = $(MEEPLIBS)
 
 three_d_SOURCES = three_d.cpp
-three_d_LDADD = $(LIBMEEP)
+three_d_LDADD = $(MEEPLIBS)
 
 two_dimensional_SOURCES = two_dimensional.cpp
-two_dimensional_LDADD = $(LIBMEEP)
+two_dimensional_LDADD = $(MEEPLIBS)
 
 2D_convergence_SOURCES = 2D_convergence.cpp
-2D_convergence_LDADD = $(LIBMEEP)
+2D_convergence_LDADD = $(MEEPLIBS)
 
 h5test_SOURCES = h5test.cpp
-h5test_LDADD = $(LIBMEEP)
+h5test_LDADD = $(MEEPLIBS)
 
 pml_SOURCES = pml.cpp
-pml_LDADD = $(LIBMEEP)
+pml_LDADD = $(MEEPLIBS)
 
-TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml 
+absorber_1d_ll_SOURCES = absorber-1d-ll.cpp
+absorber_1d_ll_LDADD   = $(MEEPLIBS)
+
+cyl_ellipsoid_ll_SOURCES = cyl-ellipsoid-ll.cpp
+cyl_ellipsoid_ll_LDADD   = $(MEEPLIBS)
+
+pw_source_ll_SOURCES = pw-source-ll.cpp
+pw_source_ll_LDADD   = $(MEEPLIBS)
+
+ring_ll_SOURCES = ring-ll.cpp
+ring_ll_LDADD   = $(MEEPLIBS)
+
+array_slice_ll_SOURCES = array-slice-ll.cpp
+array_slice_ll_LDADD   = $(MEEPLIBS)
+
+dft_fields_SOURCES = dft-fields.cpp
+dft_fields_LDADD   = $(MEEPLIBS)
+
+gdsII_3d_SOURCES = gdsII-3d.cpp
+gdsII_3d_LDADD   = $(MEEPLIBS)
+
+bend_flux_ll_SOURCES = bend-flux-ll.cpp
+bend_flux_ll_LDADD   = $(MEEPLIBS)
+
+user_defined_material_SOURCES = user-defined-material.cpp
+user_defined_material_LDADD   = $(MEEPLIBS)
+
+dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll-ref.h5 gdsII-3d.gds
+
+TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 
 if WITH_MPI
- LOG_COMPILER = $(RUNCODE)
+  LOG_COMPILER = $(RUNCODE)
+else
+  TESTS += cyl-ellipsoid-ll array-slice-ll
 endif
-#LOG_COMPILER = $(RUNCODE)
 
 # Note: this requires GNU make
 
@@ -101,4 +133,4 @@ clean-local::
 	rm -f *.o *.dac debug_out_* *.done
 
 distclean-local:
-	rm -f *.h5
+	rm -f $(ls *.h5 | sed '/.*ref.*/d')
