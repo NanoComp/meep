@@ -71,14 +71,19 @@ python/mpb.py
 
 # test programs
 tests/2D_convergence
+tests/absorber-1d-ll
 tests/aniso_disp
 tests/aniso_disp.log
 tests/aniso_disp.trs
+tests/array-slice-ll
 tests/bench
 tests/bench.log
+tests/bend-flux-ll
 tests/bragg_transmission
 tests/convergence_cyl_waveguide
+tests/cyl-ellipsoid-ll
 tests/cylindrical
+tests/dft-fields
 tests/flux
 tests/h5test
 tests/harmonics
@@ -88,28 +93,19 @@ tests/near2far
 tests/one_dimensional
 tests/physical
 tests/pml
+tests/pw-source-ll
+tests/ring-ll
 tests/stress_tensor
 tests/symmetry
 tests/three_d
 tests/two_dimensional
+tests/user-defined-material
+tests/wvg-taper
 tests/*.trs
 tests/*.log
 tests/*.h5
+!tests/*ref.h5
 tests/latest_output
-
-# libmeepgeom tests
-libmeepgeom/dft-fields
-libmeepgeom/bend-flux-ll
-libmeepgeom/pw-source-ll
-libmeepgeom/absorber-1d-ll
-libmeepgeom/array-slice-ll
-libmeepgeom/cyl-ellipsoid-ll
-libmeepgeom/user-defined-material
-libmeepgeom/wvg-taper
-libmeepgeom/ring-ll
-libmeepgeom/*.log
-libmeepgeom/*.trs
-libmeepgeom/*.h5
 
 # python tests
 python/tests/*.log
