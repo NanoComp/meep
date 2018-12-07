@@ -230,9 +230,7 @@ No. Meep does not support non-orthogonal grids with spatially varying resolution
 
 ### Can Meep model electrostatic effects?
 
-Not really. A time-domain simulation is inefficient for [electrostatics](https://en.wikipedia.org/wiki/Electrostatics) calculations; you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. This usually involves a frequency-domain, integral-equation solver based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.
-
-Note that no field in FDTD is truly static in any case, because you start at time=0 with zero fields and then you have to turn them on somehow. In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
+In principle, this corresponds to the limit as the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for such [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) (or magnetostatic) calculation; you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
 
 ### How do I visualize the structure and fields in 3d?
 
