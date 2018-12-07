@@ -4,8 +4,8 @@ HPPFILES=                                    \
  $(top_srcdir)/src/bicgstab.hpp              \
  $(top_srcdir)/src/meep/vec.hpp              \
  $(top_srcdir)/src/meep/mympi.hpp            \
- $(top_srcdir)/libmeepgeom/meepgeom.hpp      \
- $(top_srcdir)/libmeepgeom/material_data.hpp
+ $(top_srcdir)/src/meepgeom.hpp              \
+ $(top_srcdir)/src/material_data.hpp
 
 BUILT_SOURCES = meep-python.cpp __init__.py
 EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp materials.py examples tests
@@ -19,22 +19,20 @@ if WITH_MPB
   EXTRA_DIST += solver.py mpb_data.py
 endif
 
-LIBMEEPGEOM = $(top_builddir)/libmeepgeom/libmeepgeom.la
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
-              -I$(top_srcdir)/libmeepgeom           \
               $(PYMPBINCLUDE)                       \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
-_meep_la_LIBADD = $(LIBMEEP) $(LIBMEEPGEOM) $(PYTHON_LIBS) @LIBCTLGEOM_LIBS@
+_meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS) @LIBCTLGEOM_LIBS@
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 if WITH_MPB
 _mpb_la_SOURCES = mpb-python.cpp
-_mpb_la_LIBADD = $(LIBMEEPGEOM) $(PYTHON_LIBS) $(LIBPYMPB) @LIBCTLGEOM_LIBS@
+_mpb_la_LIBADD = $(PYTHON_LIBS) $(LIBPYMPB) @LIBCTLGEOM_LIBS@
 _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 MPB_LA = _mpb.la

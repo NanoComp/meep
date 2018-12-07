@@ -5,9 +5,6 @@ SUBDIRS = src tests
 if WITH_LIBCTL
   SUBDIRS += scheme
 endif
-if WITH_LIBCTLGEOM
-  SUBDIRS += libmeepgeom
-endif
 if WITH_MPB
 if WITH_LIBCTLGEOM
   SUBDIRS += libpympb

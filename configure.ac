@@ -558,7 +558,6 @@ AC_CONFIG_FILES([
 	tests/Makefile
 	scheme/Makefile
 	scheme/meep.scm
-	libmeepgeom/Makefile
 	libpympb/Makefile
 	python/Makefile
 ])

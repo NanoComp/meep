@@ -2,7 +2,6 @@ LIBMEEP = $(top_builddir)/src/libmeep.la
 
 AM_CPPFLAGS =                   \
     -Wfatal-errors              \
-    -I$(top_srcdir)/libmeepgeom \
     -I$(top_srcdir)/src         \
     -I$(top_builddir)
 
