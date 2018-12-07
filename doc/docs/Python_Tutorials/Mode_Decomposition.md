@@ -568,7 +568,7 @@ def pol_grating(d,ph,gp,nmode):
     # linear-polarized planewave pulse source
     src_pt = mp.Vector3(-0.5*sx+dpml+0.3*dsub,0,0)
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0)),
-               mp.Source(mp.GaussianSource(fcen,fwidth=0.06*fcen), component=mp.Ey, center=src_pt, size=mp.Vector3(0,sy,0))]
+               mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen), component=mp.Ey, center=src_pt, size=mp.Vector3(0,sy,0))]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
