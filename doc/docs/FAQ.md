@@ -50,7 +50,7 @@ Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, 
 
 ### Can I install Meep on Windows machines?
 
-Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework as an app and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 ### Are there precompiled binary packages for Ubuntu?
 
@@ -216,6 +216,10 @@ The value of the `k_point` determines the phase relation between the fields and 
 Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry`.   However, this is potentially quite slow.  One alternative is a function `field::phase_in_material` that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have
 a more general version of this functionality in the future (issue [#207](https://github.com/stevengj/meep/issues/207)).
 
+### How do I model a moving point charge?
+
+You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#continuoussource) with large wavelength (or nearly-zero frequency). This is analogous to a [direct current](https://en.wikipedia.org/wiki/Direct_current). You will also need to create a [run function](Python_User_Interface.md#run-functions) which contains [`change_sources`](Python_User_Interface.md#reloading-parameters) and specify the `center` property of the point source to be time dependent. For an example involving [Cherenkov radiation](https://en.wikipedia.org/wiki/Cherenkov_radiation), see Fig. 5 of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)). The [Scheme](Scheme_User_Interface.md) script used to generate this figure is available in the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg04235.html).
+
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
 Only the real, frequency-independent part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the `epsilon` value.
@@ -223,6 +227,12 @@ Only the real, frequency-independent part of ε/μ is written to an HDF5 file. A
 ### Does Meep support a non-uniform grid?
 
 No. Meep does not support non-orthogonal grids with spatially varying resolution. One possible approach, which does not require changes to the underlying code and is not yet implemented, is to use a coordinate transformation to selectively increase the resolution in a given region of the computational cell. This is possible using transformation optics which involves a change of materials. For more details, see the notes [Coordinate Transformation and Invariance in Electromagnetism](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) and [Variable Resolution in Meep](https://github.com/fesc3555/meep_variable_resolution) using this technique.
+
+### Can Meep model electrostatic effects?
+
+Not really. A time-domain simulation is inefficient for [electrostatics](https://en.wikipedia.org/wiki/Electrostatics) calculations; you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. This usually involves a frequency-domain, integral-equation solver based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.
+
+Note that no field in FDTD is truly static in any case, because you start at time=0 with zero fields and then you have to turn them on somehow. In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
 
 ### How do I visualize the structure and fields in 3d?
 
