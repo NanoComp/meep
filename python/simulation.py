@@ -1009,6 +1009,13 @@ class Simulation(object):
         if self.structure is None:
             mp.set_dimensions(self._infer_dimensions(self.k_point))
 
+    def force_all_components(self):
+        if self.fields is None:
+            self.init_sim()
+
+        self.fields.require_component(mp.Ez)
+        self.fields.require_component(mp.Hz)
+
     def meep_time(self):
         if self.fields is None:
             self.init_sim()
