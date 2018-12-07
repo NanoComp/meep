@@ -37,7 +37,7 @@ The `grid_volume` class declared in `meep/vec.hpp` is a box of pixels. It stores
 ### File Organization
 
 The core Meep C++ simulation code (all of the physics) is located in the `src/` directory, with C++
-tests in the `tests/` directory.  The `libmeepgeom/` directory provides a C++ library to specify Meep
+tests in the `tests/` directory.  The module `src/meepgeom.cpp` provides a C++ interface to specify Meep
 geometries in terms of a list of geometric objects (spheres, cylinders, boxes) with various
 material properties (via [libctl](https://libctl.readthedocs.io)'s geometry library), and is
 also used by the Python interface.
