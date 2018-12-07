@@ -133,4 +133,4 @@ clean-local::
 	rm -f *.o *.dac debug_out_* *.done
 
 distclean-local:
-	rm -f $(ls *.h5 | sed '/.*ref.*/d')
+	rm -f $(shell ls *.h5 | sed '/.*ref.*/d')
