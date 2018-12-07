@@ -1020,6 +1020,18 @@ class Simulation(object):
 
         return self.fields.round_time()
 
+    def phase_in_material(self, structure, time):
+        if self.fields is None:
+            self.init_sim()
+
+        return self.fields.phase_in_material(structure, time)
+
+    def set_boundary(self, side, direction, condition):
+        if self.fields is None:
+            self.init_sim()
+
+        self.fields.set_boundary(side, direction, condition)
+
     def get_field_point(self, c, pt):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
