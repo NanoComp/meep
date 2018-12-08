@@ -1687,7 +1687,7 @@ object_source_indicator::~object_source_indicator()
  { geometric_object_destroy(obj); }
 
 bool object_source_indicator::in_source(const meep::vec &p)
-{ return point_in_objectp(vec_to_vector3(p),obj); }
+{ return (point_in_objectp(vec_to_vector3(p),obj)==0 ? false : true); }
 
 /******************************************************************************/
 /* Helpers from  libctl/utils/geom.c                                          */
