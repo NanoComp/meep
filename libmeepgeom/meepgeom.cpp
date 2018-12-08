@@ -656,7 +656,7 @@ static bool get_front_object(const meep::volume &v,
   const geometric_object *o1 = 0, *o2 = 0;
   vector3 shiftby1 = {0,0,0}, shiftby2 = {0,0,0};
   geom_box pixel;
-  material_type mat1, mat2;
+  material_type mat1 = vacuum, mat2 = vacuum;
   int id1 = -1, id2 = -1;
   const int num_neighbors[3] = { 3, 5, 9 };
   const int neighbors[3][9][3] = {
@@ -1676,6 +1676,20 @@ material_type make_file_material(const char *eps_input_file)
 }
 
 /******************************************************************************/
+/* object_source_indicator is an implementation of source_indicator (defined  */
+/* in meep.hpp) that restricts a source to points in the interior of a        */
+/* geometric object.                                                          */
+/******************************************************************************/
+object_source_indicator::object_source_indicator(geometric_object obj0)
+{ geometric_object_copy(&obj0, &obj); }
+
+object_source_indicator::~object_source_indicator()
+ { geometric_object_destroy(obj); }
+
+bool object_source_indicator::in_source(const meep::vec &p)
+{ return point_in_objectp(vec_to_vector3(p),obj); }
+
+/******************************************************************************/
 /* Helpers from  libctl/utils/geom.c                                          */
 /******************************************************************************/
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
@@ -2147,6 +2161,6 @@ dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
   num_freqs(freqs),
   num_components(components),
   vols(volumes) {
-
 }
+
 } // namespace meep_geom

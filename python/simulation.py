@@ -1215,13 +1215,13 @@ class Simulation(object):
                 if not fname.endswith('.h5'):
                     fname += '.h5'
 
-                add_vol_src(fname, dset, src.amplitude * 1.0,)
+                add_vol_src(fname, dset, src.amplitude * 1.0,src.obj)
             elif src.amp_func:
-                add_vol_src(src.amp_func, src.amplitude * 1.0)
+                add_vol_src(src.amp_func, src.amplitude * 1.0,src.obj)
             elif src.amp_data is not None:
-                add_vol_src(src.amp_data, src.amplitude * 1.0,)
+                add_vol_src(src.amp_data, src.amplitude * 1.0,src.obj)
             else:
-                add_vol_src(src.amplitude * 1.0)
+                add_vol_src(src.amplitude * 1.0,src.obj)
 
     def _evaluate_dft_objects(self):
         for dft in self.dft_objects:

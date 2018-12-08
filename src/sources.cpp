@@ -239,11 +239,15 @@ void fields::add_point_source(component c, const src_time &src,
   add_volume_source(c, src, volume(p, p), amp);
 }
 
+// implementation of pure virtual destructor for source_indicator
+source_indicator::~source_indicator() {}
+
 static complex<double> one(const vec &pt) {(void) pt; return 1.0;}
 void fields::add_volume_source(component c, const src_time &src,
                                const volume &where,
-			       complex<double> amp) {
-  add_volume_source(c, src, where, one, amp);
+			       complex<double> amp,
+			       source_indicator *indicator) {
+  add_volume_source(c, src, where, one, amp, indicator);
 }
 
 struct src_vol_chunkloop_data {
@@ -251,6 +255,7 @@ struct src_vol_chunkloop_data {
   complex<double> amp;
   src_time *src;
   vec center;
+  source_indicator *indicator;
 };
 
 /* Adding source volumes can be treated as a kind of "integration"
@@ -284,6 +289,11 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   complex<double> amp = data->amp * conj(shift_phase);
 
   direction cd = component_direction(c);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+char FileName[100];
+snprintf(FileName,100,"/tmp/sources.%i",my_rank());
+FILE *f=fopen(FileName,"w");
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   double inva = fc->gv.inva;
   size_t idx_vol = 0;
@@ -293,6 +303,8 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 
     IVEC_LOOP_LOC(fc->gv, loc);
     loc += shift * (0.5*inva) - data->center;
+
+    if (data->indicator && data->indicator->in_source(loc)==false) continue;
 
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
 
@@ -304,8 +316,15 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     if (is_B(c) && fc->s->chi1inv[c-Bx+Hx][cd])
       amps_array[idx_vol] /= fc->s->chi1inv[c-Bx+Hx][cd][idx];
 
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+fprintf(f,"%s %i %e %e %e %e \n",component_name(c),idx,loc.x(),loc.y(),
+real(amps_array[idx_vol]), imag(amps_array[idx_vol]));
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
     index_array[idx_vol++] = idx;
   }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+fclose(f);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   if (idx_vol > npts)
     abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
@@ -356,7 +375,7 @@ complex<double> amp_file_func(const vec &p) {
 
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
                                complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
-                               complex<double> amp) {
+                               complex<double> amp, source_indicator *indicator) {
 
   amp_func_vol = &where_;
 
@@ -373,7 +392,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
     amp_func_data_im[i] = imag(arr[i]);
   }
 
-  add_volume_source(c, src, where_, amp_file_func, amp);
+  add_volume_source(c, src, where_, amp_file_func, amp, indicator);
 
   delete[] amp_func_data_re;
   delete[] amp_func_data_im;
@@ -383,7 +402,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 // of 'dataset' exist with '.re' and '.im' extensions.
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
                                const char *filename, const char *dataset,
-                               complex<double> amp) {
+                               complex<double> amp, source_indicator *indicator) {
 
   meep::h5file eps_file(filename, meep::h5file::READONLY, false);
   int rank;
@@ -412,7 +431,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
     amp_data[i] = complex<double>(real_data[i], imag_data[i]);
   }
 
-  add_volume_source(c, src, where_, amp_data, re_dims[0], re_dims[1], re_dims[2], amp);
+  add_volume_source(c, src, where_, amp_data, re_dims[0], re_dims[1], re_dims[2], amp, indicator);
 
   delete[] real_data;
   delete[] imag_data;
@@ -422,7 +441,9 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 void fields::add_volume_source(component c, const src_time &src,
                                const volume &where_,
                                complex<double> A(const vec &),
-			       complex<double> amp) {
+			       complex<double> amp,
+			       source_indicator *indicator)
+{
   volume where(where_); // make a copy to adjust size if necessary
   if (gv.dim != where.dim)
     abort("incorrect source grid_volume dimensionality in add_volume_source");
@@ -446,6 +467,7 @@ void fields::add_volume_source(component c, const src_time &src,
       data.amp *= gv.a; // correct units for J delta-function amplitude
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
+  data.indicator = indicator;
   loop_in_chunks(src_vol_chunkloop, (void *) &data, where, c, false);
   require_component(c);
 }

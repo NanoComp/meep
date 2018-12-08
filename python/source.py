@@ -10,26 +10,36 @@ def check_positive(prop, val):
     else:
         raise ValueError("{} must be positive. Got {}".format(prop, val))
 
-
 class Source(object):
 
-    def __init__(self, src, component, center, size=Vector3(), amplitude=1.0, amp_func=None,
+    def __init__(self, src, component, center=None, size=None, obj=None, amplitude=1.0, amp_func=None,
                  amp_func_file='', amp_data=None):
+
+        if center is None and obj is None:
+            raise ValueError("Must set either center or obj in {}.".format(self.__class__.__name__))
+        if obj is not None:
+            if center is not None or size is not None:
+                raise ValueError("center/size may not be specified together with obj")
+            center=obj.center
+            size=mp.get_py_gobj_size(obj)
+        else: # obj=None, center=not None
+            if size is None:
+                size=Vector3()
+
         self.src = src
         self.component = component
         self.center = center
-        self.size = size
+        self.size   = size
+        self.obj    = obj
         self.amplitude = complex(amplitude)
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
 
-
 class SourceTime(object):
 
     def __init__(self, is_integrated=False):
         self.is_integrated = is_integrated
-
 
 class ContinuousSource(SourceTime):
 
