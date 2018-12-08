@@ -502,6 +502,9 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
    }
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER) meep::source_indicator * 
+{ $1 = 1; }
+
 %typemap(freearg) meep::source_indicator *
 { printf("Doomage foryaf! \n");
   if ($1) delete $1; 
