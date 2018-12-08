@@ -1362,6 +1362,17 @@ public:
 /***************************************************************/
 typedef vec (*kpoint_func)(double freq, int mode, void *user_data);
 
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+class source_indicator
+ {
+ public:
+   virtual ~source_indicator()=0;
+   virtual bool in_source(const vec &p)=0;
+ };
+
+
 class fields {
 public:
   int num_chunks;
@@ -1527,9 +1538,9 @@ public:
   inline double time() const { return t * dt; };
 
   // cw_fields.cpp:
-  bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L = 2);
-  bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L = 2);
-
+  bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L=2);
+  bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L=2);
+#
   // sources.cpp:
   double last_source_time();
   void add_point_source(component c, double freq, double width, double peaktime, double cutoff,
@@ -1537,15 +1548,22 @@ public:
   void add_point_source(component c, const src_time &src, const vec &,
                         std::complex<double> amp = 1.0);
 
+  // if indicator is nonzero, sources are added only at points for which
+  // indicator->in_source(p) returns true.
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
-                         std::complex<double> amp);
-  void add_volume_source(component c, const src_time &src, const volume &where_,
-                         const char *filename, const char *dataset, std::complex<double> amp);
-  void add_volume_source(component c, const src_time &src, const volume &,
-                         std::complex<double> A(const vec &), std::complex<double> amp = 1.0);
-  void add_volume_source(component c, const src_time &src, const volume &,
-                         std::complex<double> amp = 1.0);
+                         std::complex<double> amp, source_indicator *indicator=0);
+  void add_volume_source(component c, const src_time &src,
+                         const volume &where_, const char *filename,
+                         const char *dataset, std::complex<double> amp,
+                         source_indicator *indicator=0);
+  void add_volume_source(component c, const src_time &src,
+			 const volume &,
+			 std::complex<double> A(const vec &),
+			 std::complex<double> amp = 1.0, source_indicator *indicator=0);
+  void add_volume_source(component c, const src_time &src,
+			 const volume &,
+			 std::complex<double> amp = 1.0, source_indicator *indicator=0);
   void require_component(component c);
 
   // mpb.cpp

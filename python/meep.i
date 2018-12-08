@@ -506,6 +506,19 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
     (std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3)
 };
 
+%typemap(in) source_indicator *indicator 
+{ if ($input==PyNone)
+   $1=NULL;
+  else
+   { GEOMETRIC_OBJECT obj;
+     if(!py_gobj_to_gobj($input,&obj))
+      SWIG_fail;
+     $1=new object_source_indicator(obj);
+   }
+}
+%typemap(freearg) source_indicator *indicator
+{ if ($1) delete $1; }
+
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
 // pointer object instead of as a built-in function
 %constant double py_pml_profile(double u, void *f);
@@ -1479,3 +1492,17 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     import atexit
     atexit.register(report_elapsed_time)
 %}
+
+%inline %{
+PyObject *get_py_gobj_size(PyObject *po)
+{
+  GEOMETRIC_OBJECT o;
+  if (!py_gobj_to_gobj(po, &o))
+   PyErr_Format(PyExc_TypeError, "Error: invalid GeometricObject in get_py_gobj_size");
+  geom_box gb;
+  geom_get_bounding_box(o, &gb);
+  vector3 object_size=vector3_minus(gb.high, gb.low);
+  return v3_to_pyv3(&object_size);
+}
+
+%} // %inline
