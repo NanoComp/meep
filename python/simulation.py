@@ -1543,13 +1543,14 @@ class Simulation(object):
 
     def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.uintp)
+        dirs      = np.zeros(3, dtype=np.uintp)
 
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
             v = self._volume_from_kwargs(vol, center, size)
 
-        self.fields.get_array_slice_dimensions(v, dim_sizes)
+        self.fields.get_array_slice_dimensions(v, dim_sizes, dirs)
 
         dims = [s for s in dim_sizes if s != 0]
 
