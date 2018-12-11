@@ -188,6 +188,7 @@ int main(int argc, char *argv[])
 
   int rank;
   size_t dims1D[1], dims2D[2];
+  direction dirs1D[1], direction dirs2D[2];
   cdouble *file_slice1d=0;
   double *file_slice2d=0;
 
@@ -230,14 +231,14 @@ int main(int argc, char *argv[])
      // generate 1D and 2D array slices and compare to
      // data read from file
      //
-     rank=f.get_array_slice_dimensions(v1d, dims1D);
+     rank=f.get_array_slice_dimensions(v1d, dims1D, dirs1D);
      if (rank!=1 || dims1D[0]!=NX)
       abort("incorrect dimensions for 1D slice");
      cdouble *slice1d=f.get_complex_array_slice(v1d, Hz);
      double RelErr1D=Compare(slice1d, file_slice1d, NX, "Hz_1d");
      master_printf("1D: rel error %e\n",RelErr1D);
 
-     rank=f.get_array_slice_dimensions(v2d, dims2D);
+     rank=f.get_array_slice_dimensions(v2d, dims2D, dirs2D);
      if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
       abort("incorrect dimensions for 2D slice");
      double *slice2d=f.get_array_slice(v2d, Sy);

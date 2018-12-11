@@ -533,8 +533,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-std::vector<double> fields::get_array_metadata(const volume &where)
+void fields::get_array_metadata(const volume &where,
+                                vector<double> &xgrid,
+                                vector<double> &ygrid,
+                                vector<double> &zgrid,
+                                vector<double> &weights,
+                                bool collapse_empty_dimensions)
 {
+  // mimic what is done in `loop_in_chunks` to initialize a loop
+  // over grid points in `where`
   component cgrid=Centered;
   vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
   ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
@@ -575,23 +582,35 @@ std::vector<double> fields::get_array_metadata(const volume &where)
   if (gv.dim == Dcyl)
    fprintf(stderr,"** warning: cylindrical coordinates not supported in get_array_metadata; integration weights may be incorrect\n");
 
-  size_t array_size=1;
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
-   array_size *= (1 + iabs(ie.in_direction(d)-is.in_direction(d))/2);
-  std::vector<double> xyzw(4*array_size,0.0);
-  int np=0;
-  LOOP_OVER_IVECS(gv, is, ie, idx)
-   { 
-     IVEC_LOOP_LOC(gv, loc);
-     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+  size_t stride[3];
+  stride[2] = 1;
+  stride[1] = (zgrid.size() > 0) ? zgrid.size() : 1;
+  stride[0] = ((ygrid.size() > 0) ? ygrid.size() : 1) * stride[1];
 
-     if (has_direction(gv.dim,X)) xyzw[4*np+0] = loc.x();
-     if (has_direction(gv.dim,Y)) xyzw[4*np+1] = loc.y();
-     if (has_direction(gv.dim,Z)) xyzw[4*np+2] = loc.z();
-     xyzw[4*np+3] = w;
-     np++;
+  double *xyz[3];
+  xyz[0]=xgrid.data();
+  xyz[1]=ygrid.data();
+  xyz[2]=zgrid.data();
+  
+  memset(weights.data(), 0, weights.size() * sizeof(double));
+  LOOP_OVER_IVECS(gv, is, ie, idx)
+   {
+     IVEC_LOOP_ILOC(gv, iloc);
+     IVEC_LOOP_LOC(gv, loc);
+     int index=0; // into weights[] array
+     LOOP_OVER_DIRECTIONS(gv.dim, d)
+      {
+        if  (collapse_empty_dimensions && where.in_direction(d)==0.0)
+         xyz[d][0] = where.in_direction_min(d);
+        else
+         { int nd     = (iloc.in_direction(d) - is.in_direction(d))/2;
+           xyz[d][nd] = loc.in_direction(d);
+           index     += nd*stride[d];
+         }
+      }
+     weights[index]+=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
    }
-  return xyzw;
 }
+
 
 } // namespace meep

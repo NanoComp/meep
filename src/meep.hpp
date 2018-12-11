@@ -1414,9 +1414,30 @@ class fields {
 
   // given a subvolume, compute the dimensions of the array slice
   // needed to store field data for that subvolume.
-  // the data parameter is used internally in get_array_slice
+  // if `where` has zero thickness in (say) the x dimension,
+  // i.e. the volume lives entirely at a single x-coordinate x0,
+  // then the array slice will nonetheless generally have length 2
+  // in the x direction (corresponding to the two grid points
+  // nearest x0, from which fields at x0 are interpolated).
+  // if collapse_empty_dimensions==true, all such length-2
+  // array dimensions are collaped to length 1 by doing the
+  // interpolation before returning the array.
+  // currently, collapse_empty_dimensions is always false for the 
+  // time-domain arrays returned by get_field_array and always
+  // true for the frequency-domain arrays returned by get_dft_array,
+  // so an alternative name for `collapse_empty_dimensions` would be 
+  // `is_dft_array`.
+  // 
+  // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
-  int get_array_slice_dimensions(const volume &where, size_t dims[3], void *data=0);
+  int get_array_slice_dimensions(const volume &where, size_t dims[3],
+                                 direction dirs[3],
+                                 bool collapse_empty_dimensions=false,
+                                 void *data=0);
+
+  int get_dft_array_dimensions(const volume &where,
+                               size_t dims[3], direction dirs[3])
+   { return get_array_slice_dimensions(where,dims,dirs,true); }
 
   // given a subvolume, return a column-major array containing
   // the given function of the field components in that subvolume
@@ -1452,7 +1473,19 @@ class fields {
 
   // utility routine in loop_in_chunks.cpp to construct metadata for
   // the arrays returned by get_array_slice and get_dft_array
-  std::vector<double> get_array_metadata(const volume &where);
+  void get_array_metadata(const volume &where,
+                          std::vector<double> &xgrid,
+                          std::vector<double> &ygrid,
+                          std::vector<double> &zgrid,
+                          std::vector<double> &weights,
+                          bool collapse_empty_dimensions=false);
+
+  void get_dft_array_metadata(const volume &where,
+                              std::vector<double> &xgrid,
+                              std::vector<double> &ygrid,
+                              std::vector<double> &zgrid,
+                              std::vector<double> &weights)
+   { return get_array_metadata(where, xgrid, ygrid, zgrid, weights, true); }
 
   // step.cpp methods:
   double last_step_output_wall_time;
