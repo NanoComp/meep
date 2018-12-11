@@ -375,8 +375,10 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     }
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_CDOUBLE);
-    memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
-    if (dft_arr) delete[] dft_arr; // dft_arr may be NULL, i.e. if the given component was not present
+    if (dft_arr) // dft_arr may be NULL, i.e. if the given component vanishes by symmetry
+     { memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
+       delete[] dft_arr; 
+     }
     if (arr_dims) delete[] arr_dims;
 
     return py_arr;

@@ -799,7 +799,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
      reim_max = 1;
    }
   else if (pfield_array)
-   *pfield_array = field_array = new cdouble[array_size];
+   *pfield_array = field_array = (array_size ? new cdouble[array_size] : 0);
 
   bool append_data      = false;
   bool single_precision = false;
