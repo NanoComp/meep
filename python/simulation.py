@@ -469,7 +469,8 @@ class Simulation(object):
                  filename_prefix=None,
                  output_volume=None,
                  output_single_precision=False,
-                 load_structure=''):
+                 load_structure='',
+                 geometry_center=mp.Vector3()):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -478,7 +479,7 @@ class Simulation(object):
         self.dimensions = dimensions
         self.boundary_layers = boundary_layers
         self.symmetries = symmetries
-        self.geometry_center = Vector3()
+        self.geometry_center = geometry_center
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
@@ -609,6 +610,7 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
+        gv.shift_origin(py_v3_to_vec(self.dimensions, self.geometry_center, self.is_cylindrical))
         return gv
 
     def _create_symmetries(self, gv):
@@ -847,7 +849,7 @@ class Simulation(object):
             self.geometry,
             gv,
             self.cell_size,
-            mp.Vector3(),
+            self.geometry_center,
             self.default_material,
             dft_data_list,
             pml_vols1,
@@ -894,15 +896,23 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        self.fragment_stats = self._compute_fragment_stats(gv)
+        self.fragment_stats = self._compute_fragment_stats(gv) if isinstance(self.default_material, mp.Medium) else []
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
         self.structure.shared_chunks = True
 
-        mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
-                                       self.subpixel_maxeval, self.ensure_periodicity and not not self.k_point,
-                                       False, self.default_material, absorbers, self.extra_materials)
+        mp.set_materials_from_geometry(self.structure,
+                                       self.geometry,
+                                       self.geometry_center,
+                                       self.eps_averaging,
+                                       self.subpixel_tol,
+                                       self.subpixel_maxeval,
+                                       self.ensure_periodicity and not not self.k_point,
+                                       False,
+                                       self.default_material,
+                                       absorbers,
+                                       self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 
@@ -915,6 +925,7 @@ class Simulation(object):
         mp.set_materials_from_geometry(
             self.structure,
             geometry if geometry is not None else self.geometry,
+            self.geometry_center,
             self.eps_averaging,
             self.subpixel_tol,
             self.subpixel_maxeval,
@@ -1008,6 +1019,18 @@ class Simulation(object):
             self.init_sim()
 
         return self.fields.round_time()
+
+    def phase_in_material(self, structure, time):
+        if self.fields is None:
+            self.init_sim()
+
+        return self.fields.phase_in_material(structure, time)
+
+    def set_boundary(self, side, direction, condition):
+        if self.fields is None:
+            self.init_sim()
+
+        self.fields.set_boundary(side, direction, condition)
 
     def get_field_point(self, c, pt):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
@@ -1103,7 +1126,7 @@ class Simulation(object):
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
 
-    def _run_k_point(self, t, k):
+    def run_k_point(self, t, k):
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
@@ -1123,7 +1146,7 @@ class Simulation(object):
         h = Harminv(components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
         self.run(after_sources(h), until_after_sources=t)
 
-        return [complex(m.freq, m.decay) for m in h.modes]
+        return h
 
     def run_k_points(self, t, k_points):
         k_index = 0
@@ -1136,7 +1159,8 @@ class Simulation(object):
                 self.init_sim()
                 output_epsilon(self)
 
-            freqs = self._run_k_point(t, k)
+            harminv = self.run_k_point(t, k)
+            freqs = [complex(m.freq, m.decay) for m in harminv.modes]
 
             print("freqs:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
             print(', '.join([str(f.real) for f in freqs]))
@@ -1287,7 +1311,7 @@ class Simulation(object):
 
     def load_minus_near2far_data(self, n2f, n2fdata):
         self.load_near2far_data(n2f, n2fdata)
-        n2f.scale_dfts(complex(1.0))
+        n2f.scale_dfts(complex(-1.0))
 
     def add_force(self, fcen, df, nfreq, *forces):
         force = DftForce(self._add_force, [fcen, df, nfreq, forces])
@@ -1598,8 +1622,8 @@ class Simulation(object):
             xyzw[:,0:3] = 0.5*xyzw[:,0:3]
         return xyzw
 
-    def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY,
-                                   eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None):
+    def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
+                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
@@ -1621,7 +1645,8 @@ class Simulation(object):
             eig_tolerance,
             coeffs,
             vgrp,
-            kpoint_func
+            kpoint_func,
+            verbose
         )
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)

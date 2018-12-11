@@ -44,7 +44,8 @@ class Simulation(object):
                  subpixel_maxeval=100000,
                  subpixel_tol=1e-4,
                  symmetries=[],
-                 verbose=False):
+                 verbose=False,
+                 geometry_center=mp.Vector3()):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -52,6 +53,10 @@ All `Simulation` attributes are described in further detail below. In brackets a
 **`geometry` [ list of `GeometricObject` class ]**
 —
 Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
+
+**`geometry_center` [ `Vector3` class ]**
+—
+Specifies the coordinates of the center of the computational cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
 
 **`sources` [ list of `Source` class ]**
 —
@@ -71,7 +76,7 @@ Specifies the size of the computational cell which is centered on the origin of 
 
 **`default_material` [`Medium` class ]**
 —
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). See also `epsilon_input_file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a numpy array that defines a dielectric function much like `epsilon_input_file` below (see below).
 
 **`material_function` [ function ]**
 —
@@ -193,6 +198,10 @@ Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z
 —
 Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
 
+**`boundary_condition` constants**
+—
+`Periodic`, `Magnetic`, `Metallic`, or `None`.
+
 **`component` constants**
 —
 Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hy`, `Hp`, `Hz`, `Bx`, `By`, `Bz`, `By`, `Bp`, `Bz`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, ε, μ, respectively.
@@ -270,6 +279,10 @@ List of dispersive susceptibilities (see below) added to the dielectric constant
 **`H_susceptibilities` [ list of `Susceptibility` class ]**
 —
 List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
+
+**`transform(M` [ `Matrix` class ]`)`**
+—
+Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](https://meep.readthedocs.io/en/latest/FAQ/#why-does-my-simulation-diverge-if-0).
 
 **material functions**
 
@@ -707,7 +720,7 @@ The size of the current distribution along each direction of the computational c
 
 **`amplitude` [`complex`]**
 —
-An overall complex amplitude multiplying the the current source. Default is 1.0.
+An overall complex amplitude multiplying the current source. Default is 1.0.
 
 **`amp_func` [`function`]**
 —
@@ -886,6 +899,18 @@ Occasionally, e.g. for termination conditions of the form *time* &lt; *T*?, it
 
 Meep supports a large number of functions to perform computations on the fields. Most of them are accessed via the lower-level C++/SWIG interface. Some of them are based on the following simpler, higher-level versions. They are accessible as methods of a `Simulation` instance.
 
+**`set_boundary(side, direction, condition)`**
+—
+Sets the condition of the boundary on the specified side in the specified direction. See the [Constants (Enumerated Types)](#constants-enumerated-types) section for valid `side`, `direction`, and `boundary_condition` values.
+
+**`phase_in_material(newstructure, phasetime)`**
+—
+`newstructure` should be the `structure` field of another `Simulation` object with the same computational cell size and resolution.   Over the next time period `phasetime` (in the current simulation's time units), the current structure (ε, μ, and conductivity) will be gradually changed to `newstructure`. In particular, at each timestep it linearly interpolates between the old structure and the new structure. After `phasetime` has elapsed, the structure will remain equal to `newstructure`. This is demonstrated in the following image for two [Cylinder](#cylinder) objects (the simulation script is in [examples/phase_in_material.py](https://github.com/stevengj/meep/blob/master/python/examples/phase_in_material.py)).
+
+<center>
+![](images/phase-in-material.png)
+</center>
+
 **`get_field_point(c, pt)`**
 —
 Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, returns the value of that component at that point.
@@ -1048,7 +1073,7 @@ Aliases for the corresponding "flux" methods.
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
 
-**`get_eigenmode_coefficients(flux, bands, eig_parity, eig_vol, eig_resolution, eig_tolerance, kpoint_func)`**
+**`get_eigenmode_coefficients(flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False)`**
 —
 Given a flux object and list of band indices, return a `namedtuple` with the following fields:
 
@@ -1344,6 +1369,10 @@ Finally, another run function, useful for computing ω(**k**) band diagrams, is:
 **`run_k_points(T, k_points)`**
 —
 Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources. Returns a list of lists of frequencies (one list of frequencies for each *k*). Also prints out a comma-delimited list of frequencies, prefixed by `freqs:`, and their imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
+
+**`run_k_point(t, k_point)`**
+—
+Lower level function called by `run_k_points` above that runs a simulation for a single *k* point `k_point` and returns a `Harminv` instance. Useful when you need to access more `Harminv` data than just the frequencies.
 
 ### Predefined Step Functions
 

@@ -67,7 +67,8 @@ int main(int argc, char *argv[])
    };
 
   geometric_object_list g={ 0, 0};
-  meep_geom::set_materials_from_geometry(&the_structure, g,
+  vector3 center = {0, 0, 0};
+  meep_geom::set_materials_from_geometry(&the_structure, g, center,
                                          true,                     // use_anisotropic_averaging,
 		                         DEFAULT_SUBPIXEL_TOL,     // tol
 	  	                         DEFAULT_SUBPIXEL_MAXEVAL, // maxeval

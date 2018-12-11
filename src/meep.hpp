@@ -1517,8 +1517,8 @@ class fields {
                                   int *bands, int num_bands, int parity,
                                   double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
-                                  kpoint_func user_kpoint_func=0,
-                                  void *user_kpoint_data=0, vec *kpoints=0, vec *kdom=0);
+                                  kpoint_func user_kpoint_func=0, void *user_kpoint_data=0,
+                                  vec *kpoints=0, vec *kdom=0, bool verbose=false);
 
 
   // initialize.cpp:

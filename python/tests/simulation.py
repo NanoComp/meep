@@ -18,6 +18,9 @@ class TestSimulation(unittest.TestCase):
 
     fname = 'simulation-ez-000200.00.h5'
 
+    def setUp(self):
+        print("Running {}".format(self._testMethodName))
+
     def test_interpolate_numbers(self):
 
         expected = [
@@ -215,7 +218,7 @@ class TestSimulation(unittest.TestCase):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
         eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
-                                     '..', '..', 'libmeepgeom')
+                                     '..', '..', 'tests')
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
         sim.epsilon_input_file = eps_input_path
 
@@ -230,6 +233,20 @@ class TestSimulation(unittest.TestCase):
             sim.run(until=200)
             fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
             self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+
+    def test_numpy_epsilon(self):
+        sim = self.init_simple_simulation()
+        eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
+        eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
+                                     '..', '..', 'tests')
+        eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
+
+        with h5py.File(eps_input_path, 'r') as f:
+            sim.default_material = f['eps'].value
+
+        sim.run(until=200)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
     def test_set_materials(self):
 
@@ -533,6 +550,29 @@ class TestSimulation(unittest.TestCase):
         center, size = mp.get_center_and_size(v3d)
         self.assertTrue(center.close(mp.Vector3()))
         self.assertTrue(size.close(mp.Vector3(2, 2, 2)))
+
+    def test_geometry_center(self):
+        resolution = 20
+        cell_size = mp.Vector3(10, 10)
+        pml = [mp.PML(1)]
+        center = mp.Vector3(2, -1)
+        result = []
+        fcen = 0.15
+        df = 0.1
+
+        sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
+                             center=mp.Vector3())]
+        geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(mp.inf, 3, mp.inf),
+                             material=mp.Medium(epsilon=12))]
+
+        def print_field(sim):
+            result.append(sim.get_field_point(mp.Ez, mp.Vector3(2, -1)))
+
+        sim = mp.Simulation(resolution=resolution, cell_size=cell_size, boundary_layers=pml,
+                            sources=sources, geometry=geometry, geometry_center=center)
+        sim.run(mp.at_end(print_field), until=50)
+
+        self.assertAlmostEqual(result[0], -0.0599602798684155)
 
 
 if __name__ == '__main__':

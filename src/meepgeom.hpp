@@ -145,9 +145,15 @@ void add_absorbing_layer(absorber_list alist,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
+inline vector3 make_vector3(double x=0.0, double y=0.0, double z=0.0) {
+    vector3 v = {x, y, z};
+    return v;
+}
+
 void set_dimensions(int dims);
 void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
+                                 vector3 center=make_vector3(),
                                  bool use_anisotropic_averaging=true,
                                  double tol=DEFAULT_SUBPIXEL_TOL,
                                  int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,

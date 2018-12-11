@@ -2,15 +2,13 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's [near-to-far-field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature using two examples. This feature uses the fields from a "near" bounding surface <i>inside</i> the computational cell to compute the resulting "far" fields <i>outside</i> the cell via an analytical transformation. Note that this only works if the "near" surface and the "far" region lie in a single, homogeneous, non-periodic 2d or 3d medium. The analytical transformation is based on the principle of equivalence which is described in Section 4.2.1 in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. The use of the Fourier-transformed fields for this operation is similar to that for the flux and force spectra: we specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at each frequency for the desired far-field points.
-
-There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
+We demonstrate Meep's [near-to-far-field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature using two examples. There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or possibly, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
 ### Radiation Pattern of an Antenna
 
-In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. We will compute the radiation pattern for three different polarizations of the input source. The source is placed in the middle of the 2d cell which is surrounded by PMLs. The near fields are obtained on a bounding box positioned just outside of the PML. The far fields are computed at equally-spaced points along the circumference of a circle having a radius many (i.e., 1000) times larger than the source wavelength and lying outside of the cell. The simulation geometry is shown in the following schematic.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. We will compute the radiation pattern for three different polarizations of the input source. The source is placed in the middle of the 2d cell which is surrounded by PMLs. The near fields are obtained on a bounding box positioned just outside of the PML. The far fields are computed at equally-spaced points along the circumference of a circle having a radius many (i.e., 1000) times larger than the source wavelength and lying outside of the cell. The simulation geometry is shown in the following schematic.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
@@ -107,7 +105,7 @@ r = 1000    % circle radius (same units as Meep simulation)
 disp(sprintf("flux:, %0.16f",sum(Pr)*2*pi*r/length(Pr)))
 ```
 
-The far-field flux for the J$_z$ source is `2.4572492482882082`. The near-field flux, from the simulation output in the line prefixed by `flux:,`, is `2.456196799109356`. This is a ratio of `0.9995716962047763`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.2272603149732138` and `1.2277868880691678` which is a ratio of `0.9995711201177737`. This ratio will converge to one as the resolution is increased.
+The far-field flux for the J$_z$ source is `2.457249`. The near-field flux, shown in the simulation output in the line prefixed by `flux:,`, is `2.456196`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.227260` and `1.227786` which is a ratio of `0.999571`. This ratio will converge to one as the resolution is increased.
 
 <center>
 ![](../images/Source_radiation_pattern.png)

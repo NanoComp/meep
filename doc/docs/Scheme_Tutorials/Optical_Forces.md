@@ -2,7 +2,7 @@
 # Optical Forces
 ---
 
-This tutorial demonstrates Meep's ability to compute classical forces via the [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor) (MST). Also demonstrated is the [eigenmode source](../Scheme_User_Interface.md#eigenmode-source). The geometry consists of two identical, parallel, silicon waveguides with square cross section in vacuum. A schematic of the geometry is shown below. Due to the parallel orientation of the waveguides, the two modes can be chosen to be either symmetric or anti-symmetric with respect to a mirror-symmetry plane between them. As the two waveguides are brought closer and closer together, their modes increasingly couple and give rise to a gradient force that is *transverse* to the waveguide axis. This is different from [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) which involves momentum exchange between photons and is *longitudinal* in nature. An interesting phenomena that occurs for this coupled system is that the force can be tuned to be either attractive or repulsive depending on the relative phase of the modes. We will demonstrate this effect in this tutorial.
+This tutorial demonstrates Meep's ability to compute classical forces via the [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor) (MST). Also demonstrated is the [eigenmode source](../Scheme_User_Interface.md#eigenmode-source). The geometry consists of two identical, parallel, silicon waveguides with square cross section in vacuum. A schematic of the geometry is shown below. Due to the parallel orientation of the waveguides, the two modes can be chosen to be either symmetric or anti-symmetric with respect to a mirror-symmetry plane between them. As the two waveguides are brought closer and closer together, their modes increasingly couple and give rise to a gradient force that is *transverse* to the waveguide axis. This is different from [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) which involves momentum exchange between photons and is *longitudinal* in nature. An interesting phenomena that occurs for this coupled system is that the force can be tuned to be either attractive or repulsive depending on the relative phase of the modes. This tutorial will demonstrate this effect.
 
 <center>
 ![](../images/Waveguide_forces.png)
@@ -86,7 +86,6 @@ Once we have determined the mode frequency, we then replace the `source` with [`
 		    (src (make gaussian-src (frequency f) (fwidth df)))
 		    (size a a 0)
 		    (center (* -0.5 (+ s a)) 0)
-		    (component Ey)
 		    (eig-kpoint k-point)
 		    (eig-match-freq? true)
 		    (eig-parity ODD-Y))
@@ -94,7 +93,6 @@ Once we have determined the mode frequency, we then replace the `source` with [`
 		    (src (make gaussian-src (frequency f) (fwidth df)))
 		    (size a a 0)
 		    (center (* 0.5 (+ s a)) 0)
-		    (component Ey)
 		    (eig-kpoint k-point)
 		    (eig-match-freq? true)
 		    (eig-parity ODD-Y)

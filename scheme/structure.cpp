@@ -188,8 +188,9 @@ static void read_epsilon_file(const char *eps_input_file)
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     epsilon_data = eps_file.read(dataname, &rank, epsilon_dims, 3);
     master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n",
-		  epsilon_dims[0], epsilon_dims[1], epsilon_dims[2],
-		  eps_input_file);
+                  epsilon_dims[0], epsilon_dims[1], epsilon_dims[2],
+                  eps_input_file);
+    delete[] fname;
   }
 }
 
