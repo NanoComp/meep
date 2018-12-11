@@ -415,7 +415,7 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(cdouble));
         remaining-=size;
         offset+=size;
-      };
+      }
      delete[] buffer;
    }
   else
@@ -429,9 +429,9 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(double));
         remaining-=size;
         offset+=size;
-      };
+      }
      delete[] buffer;
-   };
+   }
 
   delete[] data.offsets;
   delete[] data.fields;
