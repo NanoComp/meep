@@ -897,11 +897,15 @@ Meep supports a large number of functions to perform computations on the fields.
 
 **`set_boundary(side, direction, condition)`**
 —
-Sets the condition of the boundary on the specified side in the specified direction. See the [Constants (Enumerated Types)](#Constants (Enumerated Types)) section for valid `side`, `direction`, and `boundary_condition` values.
+Sets the condition of the boundary on the specified side in the specified direction. See the [Constants (Enumerated Types)](#constants-enumerated-types) section for valid `side`, `direction`, and `boundary_condition` values.
 
 **`phase_in_material(newstructure, phasetime)`**
 —
-`newstructure` should be the `structure` field of another `Simulation` object with the same computational cell size and resolution.   Over the next time period `phasetime` (in the current simulation's time units), the current structure (ε, μ, and conductivity) will be gradually changed to `newstructure`.  (In particular, at each timestep it linearly interpolates between the old structure and the new structure.)  After `phasetime` has elapsed, the structure will remain equal to `newstructure`. 
+`newstructure` should be the `structure` field of another `Simulation` object with the same computational cell size and resolution.   Over the next time period `phasetime` (in the current simulation's time units), the current structure (ε, μ, and conductivity) will be gradually changed to `newstructure`. In particular, at each timestep it linearly interpolates between the old structure and the new structure. After `phasetime` has elapsed, the structure will remain equal to `newstructure`. This is demonstrated in the following image for two [Cylinder](#cylinder) objects (the simulation script is in [examples/phase_in_material.py](https://github.com/stevengj/meep/blob/master/python/examples/phase_in_material.py)).
+
+<center>
+![](images/phase-in-material.png)
+</center>
 
 **`get_field_point(c, pt)`**
 —

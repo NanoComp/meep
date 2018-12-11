@@ -207,18 +207,21 @@ Note: any real-valued signal consists of both positive and negative frequency co
 
 ### How does `k_point` define the phase relationship between adjacent periodic unit cells?
 
-If you set the `k_point` to *any* `meep.Vector3`, the structure will be periodic in **all** directions.  (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
+If you set the `k_point` to *any* `meep.Vector3`, the structure will be periodic in **all** directions. (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
 
 The value of the `k_point` determines the phase relation between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction.
 
 ### Can Meep simulate time-dependent structures?
 
-Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry`.   However, this is potentially quite slow.  One alternative is a function `field::phase_in_material` that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have
-a more general version of this functionality in the future (issue [#207](https://github.com/stevengj/meep/issues/207)).
+Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry`. However, this is potentially quite slow. One alternative is a function [`field::phase_in_material`](Python_User_Interface.md#field-computations) that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have a more general version of this functionality in the future (issue [#207](https://github.com/stevengj/meep/issues/207)).
 
 ### How do I model a moving point charge?
 
-You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#continuoussource) with large wavelength (or nearly-zero frequency). This is analogous to a [direct current](https://en.wikipedia.org/wiki/Direct_current). You will also need to create a [run function](Python_User_Interface.md#run-functions) which contains [`change_sources`](Python_User_Interface.md#reloading-parameters) and specify the `center` property of the point source to be time dependent. For an example involving [Cherenkov radiation](https://en.wikipedia.org/wiki/Cherenkov_radiation), see Fig. 5 of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)). The [Scheme](Scheme_User_Interface.md) script used to generate this figure is available in the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg04235.html).
+You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#continuoussource) with large wavelength (or nearly-zero frequency). This is analogous to a [direct current](https://en.wikipedia.org/wiki/Direct_current). You will also need to create a [run function](Python_User_Interface.md#run-functions) which contains [`change_sources`](Python_User_Interface.md#reloading-parameters) and specify the `center` property of the point source to be time dependent. As an example, the following image demonstrates [Cherenkov radiation](https://en.wikipedia.org/wiki/Cherenkov_radiation) involving a moving point charge with [superluminal phase velocity](https://en.wikipedia.org/wiki/Faster-than-light#Phase_velocities_above_c) (the simulation script is in [examples/cherenkov-radiation.py](https://github.com/stevengj/meep/blob/master/python/examples/cherenkov-radiation.py)).
+
+<center>
+![](images/cherenkov_radiation.png)
+</center>
 
 ### When outputting the dielectric function to a file, I don't see any dispersive materials
 
