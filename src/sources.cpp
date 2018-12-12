@@ -262,11 +262,6 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   complex<double> amp = data->amp * conj(shift_phase);
 
   direction cd = component_direction(c);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-char FileName[100];
-snprintf(FileName,100,"/tmp/sources.%i",my_rank());
-FILE *f=fopen(FileName,"w");
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   double inva = fc->gv.inva;
   size_t idx_vol = 0;
@@ -291,15 +286,8 @@ FILE *f=fopen(FileName,"w");
     if (is_B(c) && fc->s->chi1inv[c - Bx + Hx][cd])
       amps_array[idx_vol] /= fc->s->chi1inv[c - Bx + Hx][cd][idx];
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-fprintf(f,"%s %i %e %e %e %e \n",component_name(c),idx,loc.x(),loc.y(),
-real(amps_array[idx_vol]), imag(amps_array[idx_vol]));
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
     index_array[idx_vol++] = idx;
   }
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-fclose(f);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   if (idx_vol > npts) abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 

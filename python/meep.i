@@ -507,8 +507,7 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 };
 
 %typemap(in) meep::source_indicator *
-{ printf("Howdage foryaf! \n");
-  if ($input==Py_None)
+{ if ($input==Py_None)
    $1=NULL;
   else
    { GEOMETRIC_OBJECT obj;
@@ -522,8 +521,7 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 { $1 = 1; }
 
 %typemap(freearg) meep::source_indicator *
-{ printf("Doomage foryaf! \n");
-  if ($1) delete $1; 
+{ if ($1) delete $1; 
 }
 
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
