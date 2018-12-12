@@ -1543,7 +1543,7 @@ class Simulation(object):
 
     def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        dirs      = np.zeros(3, dtype=np.uintp)
+        dirs      = np.zeros(3, dtype=np.intc)
 
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
@@ -1610,43 +1610,22 @@ class Simulation(object):
     def get_array_metadata(self, vol=None, center=None, size=None, collapse=False):
          v    = self._volume_from_kwargs(vol, center, size)
          dims = np.zeros(3, dtype=np.uintp)
-         dirs = np.zeros(3, dtype=np.uintp)
+         dirs = np.zeros(3, dtype=np.intc)
          rank = self.fields.get_array_slice_dimensions(v, dims, dirs, collapse)
-         nxyz = [1,1,1]
+         nxyz = np.ones(3, dtype=np.intp)
          for r in range(0,rank):
              nxyz[dirs[r]]=dims[r]
-         xtics=np.zeros(nxyz[0],dtype=np.float64)
-         ytics=np.zeros(nxyz[1],dtype=np.float64)
-         ztics=np.zeros(nxyz[2],dtype=np.float64)
-         weights=np.zeros(nw,dtype=np.float64)
+         nw=nxyz[0]*nxyz[1]*nxyz[2]
+         xtics=mp.DoubleVector(nxyz[0])
+         ytics=mp.DoubleVector(nxyz[1])
+         ztics=mp.DoubleVector(nxyz[2])
+         weights=mp.DoubleVector(nw)
          self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
-         return (xgrid,ygrid,zgrid,weights)
+         return (xtics,ytics,ztics,weights)
 
-    def get_dft_array_metadata(self, vol=None, center=None, size=None):
-         return self.get_array_metadata(vol=vol, center=center, size=size, collapse=True)
-
-#    # same as previous routine, but with empty dimensions collapsed
-#    def get_dft_array_metadata(self, vol=None, center=None, size=None):
-#        xyzw=self.get_array_metadata(vol=vol,center=center,size=size)
-#        if size is None:
-#            size=vol.size
-#        dims=np.shape(xyzw)
-#        if len(dims)==4 and np.count_nonzero(size)<3: # collapse 3D --> 2D
-#            if   size.x==0 and dims[0]==2:
-#               xyzw = xyzw[0,:,:,:] + xyzw[1,:,:,:]
-#            elif size.y==0 and dims[1]==2:
-#               xyzw = xyzw[:,0,:,:] + xyzw[:,1,:,:]
-#            else: # size.z==0 and dims[2]==2
-#               xyzw = xyzw[:,:,0,:] + xyzw[:,:,1,:]
-#            xyzw[:,:,0:3] = 0.5*xyzw[:,:,0:3]
-#            dims=np.shape(xyzw)
-#        if len(dims)==3 and np.count_nonzero(size)<2: # collapse 2D --> 1D
-#            if size.x>0:
-#                xyzw = xyzw[:,0,:] + xyzw[:,1,:]
-#            else:
-#                xyzw = xyzw[0,:,:] + xyzw[1,:,:]
-#            xyzw[:,0:3] = 0.5*xyzw[:,0:3]
-#        return xyzw
+    def get_dft_array_metadata(self, dft=None, vol=None, center=None, size=None):
+         return self.get_array_metadata(vol=dft.where if dft is not None else vol,
+                                        center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
