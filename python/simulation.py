@@ -1588,18 +1588,25 @@ class Simulation(object):
             return mp.get_dft_near2far_array(self.fields, dft_swigobj, component, num_freq)
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
-#
-#    def get_array_metadata(self, vol=None, center=None, size=None):
-#        v = self._volume_from_kwargs(vol, center, size)
-#        dim_sizes = np.zeros(3, dtype=np.uintp)
-#        self.fields.get_array_slice_dimensions(v, dim_sizes)
-#        dims = [s for s in dim_sizes if s != 0]
-#        xtics=np.zeros(0,dtype=np.float64)
-#        ytics=np.zeros(0,dtype=np.float64)
-#        ztics=np.zeros(0,dtype=np.float64)
-#        weights=np.zeros(0,dtype=np.float64)
-#        return np.reshape( self.fields.get_array_metadata(v), dims + [4] )
-#
+ 
+    def get_array_metadata(self, vol=None, center=None, size=None, collapse=False):
+         v    = self._volume_from_kwargs(vol, center, size)
+         dims = np.zeros(3, dtype=np.uintp)
+         dirs = np.zeros(3, dtype=np.uintp)
+         rank = self.fields.get_array_slice_dimensions(v, dims, dirs, collapse)
+         nxyz = [1,1,1]
+         for r in range(0,rank):
+             nxyz[dirs[r]]=dims[r]
+         xtics=np.zeros(nxyz[0],dtype=np.float64)
+         ytics=np.zeros(nxyz[1],dtype=np.float64)
+         ztics=np.zeros(nxyz[2],dtype=np.float64)
+         weights=np.zeros(nw,dtype=np.float64)
+         self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
+         return (xgrid,ygrid,zgrid,weights)
+
+    def get_dft_array_metadata(self, vol=None, center=None, size=None):
+         return self.get_array_metadata(vol=vol, center=center, size=size, collapse=True)
+ 
 #    # same as previous routine, but with empty dimensions collapsed
 #    def get_dft_array_metadata(self, vol=None, center=None, size=None):
 #        xyzw=self.get_array_metadata(vol=vol,center=center,size=size)

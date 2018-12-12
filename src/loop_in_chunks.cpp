@@ -531,7 +531,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 }
 
 /***************************************************************/
-/***************************************************************/
+/* on input, the e.g. ygrid should be pre-allocated to the     */
+/* length reported by get_array_slice_dimensions for the y     */
+/* direction---unless that length was 0, in which case ygrid   */
+/* should have length 1.                                       */
 /***************************************************************/
 void fields::get_array_metadata(const volume &where,
                                 vector<double> &xgrid,

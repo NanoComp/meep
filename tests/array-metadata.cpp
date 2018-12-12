@@ -81,11 +81,10 @@ bool test_array_metadata(meep::fields &f, const volume &where,
   direction dirs[3];
   int rank=f.get_array_slice_dimensions(where, dims, dirs,
                                         collapse_empty_dimensions);
-  size_t nxyz[3]={0,0,0}, nw=1;
+  size_t nxyz[3]={1,1,1};
   for(int r=0; r<rank; r++)
-   { nxyz[dirs[r]-X] = dims[r];
-     nw*=dims[r];
-   }
+   nxyz[dirs[r]-X] = dims[r];
+  size_t nw=nxyx[0]*nxyz[1]*nxyz[2];
   vector<double> xgrid(nxyz[0],0.0);
   vector<double> ygrid(nxyz[1],0.0);
   vector<double> zgrid(nxyz[2],0.0);
@@ -93,8 +92,8 @@ bool test_array_metadata(meep::fields &f, const volume &where,
   f.get_array_metadata(where, xgrid, ygrid, zgrid, weights, collapse_empty_dimensions);
   size_t stride[3];
   stride[2] = 1;
-  stride[1] = ( zgrid.size() > 0 ? zgrid.size() : 1);
-  stride[0] = ( ygrid.size() > 0 ? ygrid.size() : 1) * stride[1];
+  stride[1] = nxyz[2];
+  stride[0] = nxyz[1]*nxyz[2];
 
   printf("Metadata: Rank=%i, dims=",rank);
   for(int r=0; r<rank; r++)
@@ -155,7 +154,9 @@ bool test_array_metadata(meep::fields &f, const volume &where,
   FILE *LogFile = (LogFileName ? fopen(LogFileName,"w") : 0);
   LOOP_OVER_IVECS(gv, is, ie, idx)
    {
-     // correct coordinates and weight for current grid point
+     // get the (correct) coordinates and weight for the current grid point,
+     // or (for collapsed dimensions) the sum of the weights of the two
+     // points from which we interpolate to get values at the array slice coordinate
      double xyzw_loop[4]={0.0,0.0,0.0,0.0};
      IVEC_LOOP_LOC(gv, loc);
      xyzw_loop[0] = has_direction(gv.dim,X) ? loc.x() : 0.0;
