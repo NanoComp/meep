@@ -774,6 +774,39 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete $1;
 }
 
+//--------------------------------------------------
+// typemaps for get_array_metadata
+//--------------------------------------------------
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* xtics {
+    $1 = (double *)array_data($input);
+}
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* ytics {
+    $1 = (double *)array_data($input);
+}
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* ztics {
+    $1 = (double *)array_data($input);
+}
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* weights {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* weights {
+    $1 = (double *)array_data($input);
+}
+//--------------------------------------------------
+// end typemaps for get_array_metadata
+//--------------------------------------------------
+
+
+
 // Typemap suite for array_slice
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") size_t dims[3] {

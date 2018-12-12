@@ -1482,18 +1482,13 @@ class fields {
   // utility routine in loop_in_chunks.cpp to construct metadata for
   // the arrays returned by get_array_slice and get_dft_array
   void get_array_metadata(const volume &where,
-                          std::vector<double> &xgrid,
-                          std::vector<double> &ygrid,
-                          std::vector<double> &zgrid,
-                          std::vector<double> &weights,
-                          bool collapse_empty_dimensions=false);
+                          double *xtics, double *ytics, double *ztics,
+                          double *weights, bool collapse_empty_dimensions=false);
 
   void get_dft_array_metadata(const volume &where,
-                              std::vector<double> &xgrid,
-                              std::vector<double> &ygrid,
-                              std::vector<double> &zgrid,
-                              std::vector<double> &weights)
-   { return get_array_metadata(where, xgrid, ygrid, zgrid, weights, true); }
+                              double *xtics, double *ytics,
+                              double *ztics, double *weights)
+   { return get_array_metadata(where, xtics, ytics, ztics, weights, true); }
 
   // step.cpp methods:
   double last_step_output_wall_time;
