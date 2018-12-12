@@ -33,6 +33,7 @@ typedef complex<double> cdouble;
 
 namespace meep {
 
+
 /***************************************************************************/
 
 typedef struct {
