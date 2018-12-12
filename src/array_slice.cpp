@@ -312,13 +312,13 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
      n=1;
      
     if (n > 1) {
-      data->ds[rank]  = d;
+      data->ds[rank] = d;
       dims[rank++] = n;
       slice_size *= n;
     }
   }
   for(int r=0; r<rank; r++)
-   dirs[rank] = (data->ds[r] - (meep::direction)X);
+   dirs[r] = (data->ds[r] - (meep::direction)X);
   data->rank=rank;
   data->slice_size=slice_size;
   finished_working();
