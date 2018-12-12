@@ -594,7 +594,7 @@ void fields::get_array_metadata(const volume &where,
   xyz[0]=xgrid.data();
   xyz[1]=ygrid.data();
   xyz[2]=zgrid.data();
-  
+   
   memset(weights.data(), 0, weights.size() * sizeof(double));
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 int np=0;
@@ -626,6 +626,8 @@ nxyz[id]=nd;
 printf("%4i: {%zu,%zu,%zu} index=%zu*%zu + %zu*%zu + %zu*%zu=%zu\n",
 np++,nxyz[0],nxyz[1],nxyz[2],nxyz[0],stride[0],nxyz[1],stride[1],nxyz[2],stride[2],index);
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+if (index>=weights.size())
+ printf("** BAWONKATAGE %zu > %zu\n",index,weights.size());
      weights[index]+=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
    }
 }

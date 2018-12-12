@@ -365,6 +365,9 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     int rank;
     int dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
+ 
+    if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
+     return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
@@ -374,10 +377,8 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     }
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_CDOUBLE);
-    if (dft_arr) // dft_arr may be NULL, i.e. if the given component vanishes by symmetry
-     { memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
-       delete[] dft_arr; 
-     }
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
+    delete[] dft_arr;
     if (arr_dims) delete[] arr_dims;
 
     return py_arr;
@@ -780,6 +781,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(in, fragment="NumPy_Macros") size_t dims[3] {
     $1 = (size_t *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") int dirs[3] {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") int dirs[3] {
+    $1 = (int *)array_data($input);
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {

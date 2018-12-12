@@ -1431,12 +1431,12 @@ class fields {
   // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
   int get_array_slice_dimensions(const volume &where, size_t dims[3],
-                                 direction dirs[3],
+                                 /*direction dirs[3],*/ int dirs[3],  // swig prefers this?
                                  bool collapse_empty_dimensions=false,
                                  void *data=0);
 
   int get_dft_array_dimensions(const volume &where,
-                               size_t dims[3], direction dirs[3])
+                               size_t dims[3], int dirs[3]/*direction dirs[3]*/)
    { return get_array_slice_dimensions(where,dims,dirs,true); }
 
   // given a subvolume, return a column-major array containing

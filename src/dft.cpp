@@ -785,7 +785,10 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
    { *array_rank=rank;
      for(int d=0; d<rank; d++) array_dims[d]=dims[d];
    }
-  if (rank==0) return 0.0; // no chunks with the specified component on this processor
+  if (rank==0) 
+   { if (pfield_array) *pfield_array=0;
+     return 0.0; // no chunks with the specified component on this processor
+   }
 
   /***************************************************************/
   /* buffer for process-local contributions to HDF5 output files,*/
