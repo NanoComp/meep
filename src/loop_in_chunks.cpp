@@ -537,10 +537,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 /* should have length 1.                                       */
 /***************************************************************/
 void fields::get_array_metadata(const volume &where,
-                                vector<double> &xgrid,
-                                vector<double> &ygrid,
-                                vector<double> &zgrid,
-                                vector<double> &weights,
+                                double *xtics, double *ytics,
+                                double *ztics, double *weights,
                                 bool collapse_empty_dimensions)
 {
   // mimic what is done in `loop_in_chunks` to initialize a loop
@@ -585,17 +583,25 @@ void fields::get_array_metadata(const volume &where,
   if (gv.dim == Dcyl)
    fprintf(stderr,"** warning: cylindrical coordinates not supported in get_array_metadata; integration weights may be incorrect\n");
 
+  size_t dims[3]; 
+  int dirs[3];
+  int rank=get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
+  size_t nxyz[3]={1,1,1};
+  for(int r=0; r<rank; r++)
+   nxyz[dirs[r]]=dims[r];
+  size_t nw=nxyz[0]*nxyz[1]*nxyz[2];
+
   size_t stride[3]; // for weights array
   stride[2] = 1;
-  stride[1] = (zgrid.size() > 0) ? zgrid.size() : 1;
-  stride[0] = ((ygrid.size() > 0) ? ygrid.size() : 1) * stride[1];
+  stride[1] = nxyz[2];
+  stride[0] = nxyz[1]*nxyz[2];
 
   double *xyz[3];
-  xyz[0]=xgrid.data();
-  xyz[1]=ygrid.data();
-  xyz[2]=zgrid.data();
+  xyz[0]=xtics;
+  xyz[1]=ytics;
+  xyz[2]=ztics;
    
-  memset(weights.data(), 0, weights.size() * sizeof(double));
+  memset(weights, 0, nw * sizeof(double));
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 int np=0;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -626,8 +632,8 @@ nxyz[id]=nd;
 printf("%4i: {%zu,%zu,%zu} index=%zu*%zu + %zu*%zu + %zu*%zu=%zu\n",
 np++,nxyz[0],nxyz[1],nxyz[2],nxyz[0],stride[0],nxyz[1],stride[1],nxyz[2],stride[2],index);
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-if (index>=weights.size())
- printf("** BAWONKATAGE %zu > %zu\n",index,weights.size());
+if (index>=nw)
+ printf("** BAWONKATAGE %zu > %zu\n",index,nw);
      weights[index]+=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
    }
 }

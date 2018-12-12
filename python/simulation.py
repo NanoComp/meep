@@ -1598,10 +1598,10 @@ class Simulation(object):
          for r in range(0,rank):
              nxyz[dirs[r]]=dims[r]
          nw=nxyz[0]*nxyz[1]*nxyz[2]
-         xtics=mp.DoubleVector(nxyz[0])
-         ytics=mp.DoubleVector(nxyz[1])
-         ztics=mp.DoubleVector(nxyz[2])
-         weights=mp.DoubleVector(nw)
+         xtics=np.zeros(nxyz[0],dtype=np.float64)
+         ytics=np.zeros(nxyz[1],dtype=np.float64)
+         ztics=np.zeros(nxyz[2],dtype=np.float64)
+         weights=np.zeros(nw,dtype=np.float64)
          self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
          return (xtics,ytics,ztics,weights)
 
