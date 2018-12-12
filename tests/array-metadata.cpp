@@ -235,6 +235,9 @@ int main(int argc, char *argv[])
   // double-valued command-line parameters
   vector <const char *> parm_name;
   vector <double *> parm_adrs;
+  parm_name.push_back("--sx");    parm_adrs.push_back(&sx);
+  parm_name.push_back("--sy");    parm_adrs.push_back(&sy);
+  parm_name.push_back("--sz");    parm_adrs.push_back(&sz);
   parm_name.push_back("--vxmin"); parm_adrs.push_back(&vxmin);
   parm_name.push_back("--vymin"); parm_adrs.push_back(&vymin);
   parm_name.push_back("--vzmin"); parm_adrs.push_back(&vzmin);
@@ -242,7 +245,6 @@ int main(int argc, char *argv[])
   parm_name.push_back("--vymax"); parm_adrs.push_back(&vymax);
   parm_name.push_back("--vzmax"); parm_adrs.push_back(&vzmax);
   parm_name.push_back("--res");   parm_adrs.push_back(&res);
-  parm_name.push_back("--sz");    parm_adrs.push_back(&sz);
 
   /*--------------------------------------------------------------*/
   /*- parse arguments --------------------------------------------*/
@@ -305,7 +307,7 @@ int main(int argc, char *argv[])
   double fcen = 0.2;
   double df   = 0.1;
   gaussian_src_time src(fcen, df);
-  component src_cmpt = Ez;
+  component src_cmpt = (gv.dim==D1 ? Ex : Ez);
   vec src_point = zero_vec(gv.dim);
   vec src_size  = zero_vec(gv.dim);
   f.add_point_source(src_cmpt, src, src_point);
