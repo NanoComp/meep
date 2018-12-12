@@ -1452,13 +1452,16 @@ class fields {
                                                 component c,
                                                 std::complex<double> *slice=0);
 
+  // like get_array_slice, but for *sources* instead of fields
+  double *get_source_slice(const volume &where, double *slice=0);
+
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,
                            std::vector<component> components,
                            field_function fun,
                            field_rfunction rfun,
                            void *fun_data,
-                           void *vslice);
+                           void *vslice, bool source_slice=false);
 
   // step.cpp methods:
   double last_step_output_wall_time;

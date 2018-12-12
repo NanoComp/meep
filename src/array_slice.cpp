@@ -53,6 +53,7 @@ typedef struct {
   field_rfunction rfun;
   void *fun_data;
   std::vector<component> components;
+  bool source_slice;
 
   void *vslice;
 
@@ -111,7 +112,72 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->min_corner = min(data->min_corner, min(isS, ieS));
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
+}
 
+/********************************************************************/
+/* reverse the calculation done in LOOP_OVER_IVECS to get the       */
+/* (absolute) grid indices of the #idx_th grid point encountered    */
+/* in a full loop over the points of gv.                            */
+/********************************************************************/
+ivec index_2_iloc(grid_volume gv, ptrdiff_t idx)
+{
+  ptrdiff_t loop_s1 = gv.stride(gv.yucky_direction(0));
+  ptrdiff_t loop_s2 = gv.stride(gv.yucky_direction(1));
+  ptrdiff_t loop_s3 = gv.stride(gv.yucky_direction(2));
+  ptrdiff_t loop_i1 = idx/loop_s1;
+  ptrdiff_t loop_i2 = (idx%loop_s1)/loop_s2;
+  ptrdiff_t loop_i3 = (idx%loop_s2)/loop_s3;
+  ivec iloc = gv.little_corner();
+  direction d1=gv.yucky_direction(0);
+  iloc.set_direction(d1, iloc.in_direction(d1) + 2*loop_i1);
+  direction d2=gv.yucky_direction(1);
+  iloc.set_direction(d2, iloc.in_direction(d2) + 2*loop_i2);
+  direction d3=gv.yucky_direction(2);
+  iloc.set_direction(d3, iloc.in_direction(d3) + 2*loop_i3);
+  return iloc;
+}
+
+/********************************************************************/
+/* eventually this routine could take a parameter source_slice_type */
+/* to yield more refined information, i.e. return just the          */
+/* real part of x-directed electric sources or the phase of magnetic*/
+/* sources. for now it just tallies the total squared magnitude of  */
+/* all sources (all components, all field types) at each point.     */
+/********************************************************************/
+void fill_chunk_source_slice(fields_chunk *fc, ivec is, ivec ie, void *vslice,
+                             ptrdiff_t sco, ptrdiff_t slice_offset[3], ptrdiff_t slice_stride[3])
+{
+  grid_volume gv=fc->gv;
+  double *slice = (double *)vslice;
+  //cdouble *zslice;  /* will be needed for other source_slice_types
+
+  for(int ft=0; ft<NUM_FIELD_TYPES; ft++)
+   for(src_vol *s=fc->sources[ft]; s; s=s->next)
+    { 
+      // insert here logic to determine whether we are interested
+      // in this source component
+      // if ( need_source_component(source_slice_type, s->c) )... 
+
+      // loop over point sources in this src_vol. for each point source,
+      // the src_vol stores the amplitude and the index of the grid point
+      // *within the chunk* (i.e. within fc->gv), which we need to convert
+      // to the index of the grid point *within the slice* (if it even lies within the slice).
+      for(size_t npt=0; npt<s->npts; npt++)
+       { cdouble amp = s->A[npt];                      // amplitude of source
+         ptrdiff_t index_in_gv = s->index[npt];        // index of source point relative to origin of gv
+         ivec iloc = index_2_iloc(gv, index_in_gv);    // absolute indices of source point
+         if (iloc<is || iloc>ie) continue;             // source point outside slice
+         ivec loop_i = iloc - is;
+         ptrdiff_t loop_i1 = loop_i.in_direction(gv.yucky_direction(0));
+         ptrdiff_t loop_i2 = loop_i.in_direction(gv.yucky_direction(1));
+         ptrdiff_t loop_i3 = loop_i.in_direction(gv.yucky_direction(2));
+         ptrdiff_t index_in_slice= sco + ((((slice_offset[0] + slice_offset[1] + slice_offset[2])
+                              + loop_i1 * slice_stride[0])
+                              + loop_i2 * slice_stride[1])
+                              + loop_i3 * slice_stride[2]);
+         slice[index_in_slice] += norm(amp);
+       }
+    }
 }
 
 /***************************************************************/
@@ -177,7 +243,25 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   ptrdiff_t sco=start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
 
   //-----------------------------------------------------------------------//
-  // Compute the function to output, exactly as in fields::integrate.
+  //- If we're fetching a 'source slice,' branch off here to handle that.  //
+  //-----------------------------------------------------------------------//
+  if (data->source_slice)
+   { fill_chunk_source_slice(fc,is,ie,data->vslice,sco,offset,stride);
+     return;
+   }
+
+  //-----------------------------------------------------------------------//
+  // Otherwise proceed to compute the function of field components to be   //
+  // tabulated on the slice, exactly as in fields::integrate.              //
+  //-----------------------------------------------------------------------//
+  double *slice=0;
+  cdouble *zslice=0;
+  bool complex_data = (data->rfun==0);
+  if (complex_data)
+   zslice = (cdouble *)data->vslice;
+  else
+   slice = (double *)data->vslice;
+
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
@@ -188,14 +272,6 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   const direction *imds = data->invmu_ds;
   ptrdiff_t imos[6];
   int num_components=data->components.size();
-
-  double *slice=0;
-  cdouble *zslice=0;
-  bool complex_data = (data->rfun==0);
-  if (complex_data)
-   zslice = (cdouble *)data->vslice;
-  else
-   slice = (double *)data->vslice;
 
   for (int i = 0; i < num_components; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -212,10 +288,16 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
     fc->gv.yee2cent_offsets(imcs[k], imos[2*k], imos[2*k+1]);
 
   vec rshift(shift * (0.5*fc->gv.inva));
+  // main loop over all grid points owned by this field chunk.
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+
+    // get real-space coordinates of grid point, taking into
+    // account the complications of symmetries.
     IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
 
+    // interpolate fields at the four nearest grid points
+    // to get the value of the field component for this point
     for (int i = 0; i < num_components; ++i) {
       if (cS[i] == Dielectric) {
 	double tr = 0.0;
@@ -250,6 +332,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	fields[i] = complex<double>(f[0], f[1]) * ph[i];
       }
     }
+
+    // compute the index into the array for this grid point and store the result of the computation
     int idx2 = sco + ((((offset[0] + offset[1] + offset[2])
                          + loop_i1 * stride[0])
                          + loop_i2 * stride[1])
@@ -260,12 +344,12 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
     else
      slice[idx2]  = data->rfun(fields, loc, data->fun_data);
 
-  };
+  } // LOOP_OVER_IVECS
 
 }
 
 /***************************************************************/
-/* given a volume, fill in the dims[] and directions[] arrays  */
+/* given a volume, fill in the dims[] and dirs[] arrays        */
 /* describing the array slice needed to store field data for   */
 /* all grid points in the volume.                              */
 /*                                                             */
@@ -276,7 +360,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* initialized appopriately for subsequent use in              */
 /* get_array_slice.                                            */
 /***************************************************************/
-int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], void *caller_data)
+int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
+                                       void *caller_data)
 {
   am_now_working_on(FieldOutput);
 
@@ -305,6 +390,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], void
     if (rank >= 3) abort("too many dimensions in array_slice");
     size_t n = (data->max_corner.in_direction(d)
 	     - data->min_corner.in_direction(d)) / 2 + 1;
+
     if (n > 1) {
       data->ds[rank] = d;
       dims[rank++] = n;
@@ -318,22 +404,25 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], void
   return rank;
 }
 
-/***************************************************************/
-/* precisely one of fun, rfun should be non-NULL               */
-/***************************************************************/
+/**********************************************************************/
+/* precisely one of fun, rfun, source_slice should be non-NULL / true */
+/**********************************************************************/
 void *fields::do_get_array_slice(const volume &where,
                                  std::vector<component> components,
                                  field_function fun,
                                  field_rfunction rfun,
                                  void *fun_data,
-                                 void *vslice) {
-
+                                 void *vslice,
+                                 bool source_slice)
+{
   am_now_working_on(FieldOutput);
 
   /***************************************************************/
   /* call get_array_slice_dimensions to get slice dimensions and */
   /* partially initialze an array_slice_data struct              */
   /***************************************************************/
+  // by tradition, empty dimensions in time-domain field arrays are *not* collapsed;
+  // TODO make this a caller-specifiable parameter to get_array_slice()?
   size_t dims[3];
   array_slice_data data;
   int rank=get_array_slice_dimensions(where, dims, &data);
@@ -346,19 +435,22 @@ void *fields::do_get_array_slice(const volume &where,
   if (vslice==0)
    { if (complex_data)
       { zslice = new cdouble[slice_size];
+        memset(zslice,0,slice_size*sizeof(cdouble));
         vslice = (void *)zslice;
       }
      else
       { slice  = new double[slice_size];
+        memset(slice,0,slice_size*sizeof(double));
         vslice = (void *)slice;
       };
    };
 
-  data.vslice     = vslice;
-  data.fun        = fun;
-  data.rfun       = rfun;
-  data.fun_data   = fun_data;
-  data.components = components;
+  data.vslice       = vslice;
+  data.fun          = fun;
+  data.rfun         = rfun;
+  data.fun_data     = fun_data;
+  data.source_slice = source_slice;
+  data.components   = components;
 
   int num_components = components.size();
 
@@ -416,7 +508,7 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(cdouble));
         remaining-=size;
         offset+=size;
-      };
+      }
      delete[] buffer;
    }
   else
@@ -430,9 +522,9 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(double));
         remaining-=size;
         offset+=size;
-      };
+      }
      delete[] buffer;
-   };
+   }
 
   delete[] data.offsets;
   delete[] data.fields;
@@ -497,6 +589,11 @@ cdouble *fields::get_complex_array_slice(const volume &where, component c,
   return (cdouble *)do_get_array_slice(where, components,
                                        default_field_func, 0, 0,
                                        (void *)slice);
+}
+
+double *fields::get_source_slice(const volume &where, double *slice)
+{ vector<component> cs; // empty
+  return (double *)do_get_array_slice(where,cs,0,0,0,(void *)slice,true);
 }
 
 } // namespace meep
