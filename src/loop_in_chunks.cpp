@@ -596,14 +596,15 @@ void fields::get_array_metadata(const volume &where,
   LOOP_OVER_IVECS(gv, is, ie, idx)
    {
      IVEC_LOOP_ILOC(gv, iloc);
+     ivec ioffset = iloc - is;
      IVEC_LOOP_LOC(gv, loc);
-     int index=0; // into weights[] array
+     size_t index=0; // into weights[] array
      LOOP_OVER_DIRECTIONS(gv.dim, d)
       {
-        if  (collapse_empty_dimensions && where.in_direction(d)==0.0)
+        if  (where.in_direction(d)==0.0 && collapse_empty_dimensions)
          xyz[d][0] = where.in_direction_min(d);
         else
-         { int nd     = (iloc.in_direction(d) - is.in_direction(d))/2;
+         { int nd     = ioffset.in_direction(d)/2;
            xyz[d][nd] = loc.in_direction(d);
            index     += nd*stride[d];
          }
