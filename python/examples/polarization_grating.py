@@ -21,7 +21,6 @@ epsilon_diag = mp.Matrix(mp.Vector3(n_0**2,0,0),mp.Vector3(0,n_0**2,0),mp.Vector
 
 wvl = 0.54             # center wavelength
 fcen = 1/wvl           # center frequency
-df = 0.05*fcen         # frequency width
 
 def pol_grating(d,ph,gp,nmode):
     sx = dpml+dsub+d+d+dpad+dpml
@@ -52,8 +51,8 @@ def pol_grating(d,ph,gp,nmode):
 
     # linear-polarized planewave pulse source
     src_pt = mp.Vector3(-0.5*sx+dpml+0.3*dsub,0,0)
-    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0)),
-               mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ey, center=src_pt, size=mp.Vector3(0,sy,0))]
+    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0)),
+               mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen), component=mp.Ey, center=src_pt, size=mp.Vector3(0,sy,0))]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,

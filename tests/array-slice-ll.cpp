@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
   cdouble *file_slice1d=0;
   double *file_slice2d=0;
 
-#define H5FILENAME DATADIR"array-slice-ll"
+#define H5FILENAME DATADIR"array-slice-ll-ref"
 #define NX 126
 #define NY 38
   if (write_files)

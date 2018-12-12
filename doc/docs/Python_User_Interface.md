@@ -198,6 +198,10 @@ Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z
 —
 Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
 
+**`boundary_condition` constants**
+—
+`Periodic`, `Magnetic`, `Metallic`, or `None`.
+
 **`component` constants**
 —
 Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hy`, `Hp`, `Hz`, `Bx`, `By`, `Bz`, `By`, `Bp`, `Bz`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, ε, μ, respectively.
@@ -890,6 +894,18 @@ Occasionally, e.g. for termination conditions of the form *time* &lt; *T*?, it
 ### Field Computations
 
 Meep supports a large number of functions to perform computations on the fields. Most of them are accessed via the lower-level C++/SWIG interface. Some of them are based on the following simpler, higher-level versions. They are accessible as methods of a `Simulation` instance.
+
+**`set_boundary(side, direction, condition)`**
+—
+Sets the condition of the boundary on the specified side in the specified direction. See the [Constants (Enumerated Types)](#constants-enumerated-types) section for valid `side`, `direction`, and `boundary_condition` values.
+
+**`phase_in_material(newstructure, phasetime)`**
+—
+`newstructure` should be the `structure` field of another `Simulation` object with the same computational cell size and resolution.   Over the next time period `phasetime` (in the current simulation's time units), the current structure (ε, μ, and conductivity) will be gradually changed to `newstructure`. In particular, at each timestep it linearly interpolates between the old structure and the new structure. After `phasetime` has elapsed, the structure will remain equal to `newstructure`. This is demonstrated in the following image for two [Cylinder](#cylinder) objects (the simulation script is in [examples/phase_in_material.py](https://github.com/stevengj/meep/blob/master/python/examples/phase_in_material.py)).
+
+<center>
+![](images/phase-in-material.png)
+</center>
 
 **`get_field_point(c, pt)`**
 —
