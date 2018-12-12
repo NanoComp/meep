@@ -582,7 +582,7 @@ void fields::get_array_metadata(const volume &where,
   if (gv.dim == Dcyl)
    fprintf(stderr,"** warning: cylindrical coordinates not supported in get_array_metadata; integration weights may be incorrect\n");
 
-  size_t stride[3];
+  size_t stride[3]; // for weights array
   stride[2] = 1;
   stride[1] = (zgrid.size() > 0) ? zgrid.size() : 1;
   stride[0] = ((ygrid.size() > 0) ? ygrid.size() : 1) * stride[1];
@@ -593,22 +593,36 @@ void fields::get_array_metadata(const volume &where,
   xyz[2]=zgrid.data();
   
   memset(weights.data(), 0, weights.size() * sizeof(double));
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+int np=0;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   LOOP_OVER_IVECS(gv, is, ie, idx)
    {
      IVEC_LOOP_ILOC(gv, iloc);
-     ivec ioffset = iloc - is;
+     ivec two_nxyz = iloc - is;
      IVEC_LOOP_LOC(gv, loc);
      size_t index=0; // into weights[] array
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+size_t nxyz[3]={0,0,0};
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
      LOOP_OVER_DIRECTIONS(gv.dim, d)
       {
         if  (where.in_direction(d)==0.0 && collapse_empty_dimensions)
          xyz[d][0] = where.in_direction_min(d);
         else
-         { int nd     = ioffset.in_direction(d)/2;
-           xyz[d][nd] = loc.in_direction(d);
-           index     += nd*stride[d];
+         { int id = d-X; // index of direction, {0,1,2} for {X,Y,Z}
+           int nd       = two_nxyz.in_direction(d)/2;
+           xyz[id][nd]  = loc.in_direction(d);
+           index       += nd*stride[id];
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+nxyz[id]=nd;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
          }
       }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("%4i: {%zu,%zu,%zu} index=%zu*%zu + %zu*%zu + %zu*%zu=%zu\n",
+np++,nxyz[0],nxyz[1],nxyz[2],nxyz[0],stride[0],nxyz[1],stride[1],nxyz[2],stride[2],index);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
      weights[index]+=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
    }
 }
