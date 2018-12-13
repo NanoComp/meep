@@ -1611,6 +1611,7 @@ class Simulation(object):
          v    = self._volume_from_kwargs(vol, center, size)
          dims = np.zeros(3, dtype=np.uintp)
          dirs = np.zeros(3, dtype=np.intc)
+         print(v)
          rank = self.fields.get_array_slice_dimensions(v, dims, dirs, collapse)
          nxyz = np.ones(3, dtype=np.intp)
          for r in range(0,rank):
