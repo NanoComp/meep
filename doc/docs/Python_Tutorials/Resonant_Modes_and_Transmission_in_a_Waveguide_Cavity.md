@@ -16,14 +16,14 @@ Third, by combining several structures in sequence &mdash; ordinary waveguide wi
 
 In the following, we will analyze the structure in exactly the opposite order of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
-See also [holey-wvg-cavity.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-cavity.py) and [holey-wvg-bands.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-bands.py) which contain the commands below.
+See also [examples/holey-wvg-cavity.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-cavity.py) and [examples/holey-wvg-bands.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-bands.py) which contain the commands below.
 
 [TOC]
 
 Transmission Spectrum
 ---------------------
 
-To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics.md), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll load the necessary modules which will enable passing parameters from the command line:
+To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics.md#transmittance-spectrum-of-a-waveguide-bend), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll load the necessary modules which will enable passing parameters from the command line:
 
 ```py
 import meep as mp
@@ -124,7 +124,7 @@ Finally, we need to [compute the flux spectrum](../Introduction.md#transmittance
     trans = sim.add_flux(fcen, df, nfreq, freg)
 ```
 
-Now, we can run the simulation until the sources have finished plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics.md), we'll use `stop_when_fields_decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
+Now, we can run the simulation until the sources have finished plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics.md#transmittance-spectrum-of-a-waveguide-bend), we'll use `stop_when_fields_decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
 
 ```py
 	vol = mp.Volume(mp.Vector3(0), size=mp.Vector3(sx))
@@ -136,7 +136,7 @@ Now, we can run the simulation until the sources have finished plus some additio
     sim.display_fluxes(trans)  # print out the flux spectrum
 ```
 
-Note that we've outputted ε at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics.md).
+Note that we've outputted ε at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is. We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics.md#a-90-bend).
 
 Finally, we specify all the command-line parameters with default values via [argparse](https://docs.python.org/3/library/argparse.html):
 

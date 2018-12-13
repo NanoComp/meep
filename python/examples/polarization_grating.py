@@ -103,9 +103,6 @@ if __name__ == '__main__':
     
     input_flux, angles, coeffs1, coeffs2 = pol_grating(args.dd,math.radians(args.ph),args.gp,args.nmode)
 
-    tran1 = abs(coeffs1+1j*coeffs2)**2/input_flux
-    tran2 = abs(coeffs1-1j*coeffs2)**2/input_flux
-    print("tran:, 0, 0, {:.5f}".format(0.5*(tran1[0]+tran2[0])))
-    for m in range(1,args.nmode):
-        print("tran:, +{}, +{:.2f}, {:.5f}".format(m,angles[m],tran1[m]))
-        print("tran:, -{}, -{:.2f}, {:.5f}".format(m,angles[m],tran2[m]))
+    tran = (abs(coeffs1)**2+abs(coeffs2)**2)/input_flux
+    for m in range(args.nmode):
+        print("tran:, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))

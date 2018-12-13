@@ -1,4 +1,4 @@
-## moving point charge with superluminal phase velocity in homogeneous media emitting Cherenkov radiation
+## moving point charge with superluminal phase velocity in dielectric media emitting Cherenkov radiation
 
 import meep as mp
 
