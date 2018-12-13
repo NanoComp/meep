@@ -418,7 +418,7 @@ class Harminv(object):
 
         modes = []
         for freq, amp, err in bands:
-            Q = freq.real / (-2 * freq.imag)
+            Q = freq.real / (-2 * freq.imag) if freq.imag != 0 else float('inf')
             modes.append(Mode(freq.real, freq.imag, Q, amp, err))
             display_run_data(sim, 'harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
 
