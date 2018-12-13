@@ -1593,7 +1593,6 @@ class Simulation(object):
          v    = self._volume_from_kwargs(vol, center, size)
          dims = np.zeros(3, dtype=np.uintp)
          dirs = np.zeros(3, dtype=np.intc)
-         print(v)
          rank = self.fields.get_array_slice_dimensions(v, dims, dirs, collapse)
          nxyz = np.ones(3, dtype=np.intp)
          for r in range(0,rank):
@@ -1604,7 +1603,7 @@ class Simulation(object):
          ztics=np.zeros(nxyz[2],dtype=np.float64)
          weights=np.zeros(nw,dtype=np.float64)
          self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
-         return (xtics,ytics,ztics,weights)
+         return (xtics,ytics,ztics,np.reshape(weights,dims[np.nonzero(dims)]))
 
     def get_dft_array_metadata(self, dft=None, vol=None, center=None, size=None):
          return self.get_array_metadata(vol=dft.where if dft is not None else vol,
