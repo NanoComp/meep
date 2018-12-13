@@ -113,6 +113,7 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->min_corner = min(data->min_corner, min(isS, ieS));
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
+
 }
 
 /*****************************************************************/
@@ -337,7 +338,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 }
 
 /***************************************************************/
-/* given a volume, fill in the dims[] and dirs[] arrays        */
+/* given a volume, fill in the dims[] and directions[] arrays  */
 /* describing the array slice needed to store field data for   */
 /* all grid points in the volume.                              */
 /*                                                             */
@@ -348,10 +349,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* initialized appopriately for subsequent use in              */
 /* get_array_slice.                                            */
 /***************************************************************/
-int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
-                                       /*direction dirs[3],*/int dirs[3],
-                                       bool collapse_empty_dimensions,
-                                       void *caller_data)
+int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], void *caller_data)
 {
   am_now_working_on(FieldOutput);
 
@@ -380,21 +378,14 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
     if (rank >= 3) abort("too many dimensions in array_slice");
     size_t n = (data->max_corner.in_direction(d)
 	     - data->min_corner.in_direction(d)) / 2 + 1;
-
-<<<<<<< e480bc700e6e30213027b29cafd221c11b1a59c5
-=======
     if (collapse_empty_dimensions && where.in_direction(d)==0.0)
      n=1;
-     
->>>>>>> updates
     if (n > 1) {
       data->ds[rank] = d;
       dims[rank++] = n;
       slice_size *= n;
     }
   }
-  for(int r=0; r<rank; r++)
-   dirs[r] = (data->ds[r] - (meep::direction)X);
   data->rank=rank;
   data->slice_size=slice_size;
   finished_working();
@@ -421,14 +412,10 @@ void *fields::do_get_array_slice(const volume &where,
   /***************************************************************/
   // by tradition, empty dimensions in time-domain field arrays are *not* collapsed;
   // TODO make this a caller-specifiable parameter to get_array_slice()?
-<<<<<<< e480bc700e6e30213027b29cafd221c11b1a59c5
-=======
-  bool collapse_empty_dimensions=false; 
->>>>>>> updates
+  bool collapse_empty_dimensions=false;
   size_t dims[3];
-  int dirs[3];
   array_slice_data data;
-  int rank=get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, &data);
+  int rank=get_array_slice_dimensions(where, dims, &data);
   size_t slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
@@ -445,21 +432,22 @@ void *fields::do_get_array_slice(const volume &where,
       { slice  = new double[slice_size];
         memset(slice,0,slice_size*sizeof(double));
         vslice = (void *)slice;
-      }
-   }
+      };
+   };
 
-  data.vslice                 = vslice;
-  data.fun                    = fun;
-  data.rfun                   = rfun;
-  data.fun_data               = fun_data;
-  data.source_slice_component = source_slice_component;
-  data.get_source_slice       = get_source_slice;
-  data.components             = components;
-  int num_components          = components.size();
-  data.cS                     = new component[num_components];
-  data.ph                     = new cdouble[num_components];
-  data.fields                 = new cdouble[num_components];
-  data.offsets                = new ptrdiff_t[2 * num_components];
+  data.vslice       = vslice;
+  data.fun          = fun;
+  data.rfun         = rfun;
+  data.fun_data     = fun_data;
+  data.components   = components;
+
+  int num_components = components.size();
+
+  data.cS      = new component[num_components];
+  data.ph      = new cdouble[num_components];
+  data.fields  = new cdouble[num_components];
+
+  data.offsets = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2*num_components*sizeof(ptrdiff_t));
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
@@ -508,7 +496,7 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(cdouble));
         remaining-=size;
         offset+=size;
-      }
+      };
      delete[] buffer;
    }
   else
@@ -522,9 +510,9 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(double));
         remaining-=size;
         offset+=size;
-      }
+      };
      delete[] buffer;
-   }
+   };
 
   delete[] data.offsets;
   delete[] data.fields;
