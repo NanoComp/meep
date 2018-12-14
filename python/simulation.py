@@ -470,7 +470,8 @@ class Simulation(object):
                  output_volume=None,
                  output_single_precision=False,
                  load_structure='',
-                 geometry_center=mp.Vector3()):
+                 geometry_center=mp.Vector3(),
+                 force_all_components=False):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -516,6 +517,7 @@ class Simulation(object):
         self.dft_objects = []
         self._is_initialized = False
         self._fragment_size = 10
+        self.force_all_components = force_all_components
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -972,6 +974,10 @@ class Simulation(object):
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin
         )
+
+        if self.force_all_components and self.dimensions != 1:
+            self.fields.require_component(mp.Ez)
+            self.fields.require_component(mp.Hz)
 
         if self.verbose:
             self.fields.verbose()
