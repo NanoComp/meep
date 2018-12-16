@@ -54,7 +54,7 @@ typedef struct {
   field_rfunction rfun;
   void *fun_data;
   std::vector<component> components;
-  bool source_slice;
+  const char *source_slice_type;
 
   void *vslice;
 
@@ -139,25 +139,27 @@ ivec index_2_iloc(grid_volume gv, ptrdiff_t idx)
 }
 
 /********************************************************************/
-/* eventually this routine could take a parameter source_slice_type */
-/* to yield more refined information, i.e. return just the          */
-/* real part of x-directed electric sources or the phase of magnetic*/
-/* sources. for now it just tallies the total squared magnitude of  */
-/* all sources (all components, all field types) at each point.     */
+/* source_slice_type is currently not implemented, but could        */
+/* eventually be a string like "re(Ez)" or "abs(H)" to select       */
+/* specific source components; for now the value returned for each  */
+/* point is the sum of the squared magnitudes of all source         */
+/* components at that point                                         */
 /********************************************************************/
-void fill_chunk_source_slice(fields_chunk *fc, ivec is, ivec ie, void *vslice,
+void fill_chunk_source_slice(fields_chunk *fc, ivec is, ivec ie,
+                             const char *source_slice_type, void *vslice,
                              ptrdiff_t sco, ptrdiff_t slice_offset[3], ptrdiff_t slice_stride[3])
 {
+  (void) source_slice_type;
   grid_volume gv=fc->gv;
   double *slice = (double *)vslice;
-  //cdouble *zslice;  /* will be needed for other source_slice_types
+  //cdouble *zslice;  /* may be needed for other source_slice_types
 
   for(int ft=0; ft<NUM_FIELD_TYPES; ft++)
    for(src_vol *s=fc->sources[ft]; s; s=s->next)
     { 
-      // insert here logic to determine whether we are interested
-      // in this source component
-      // if ( need_source_component(source_slice_type, s->c) )... 
+      // eventually, insert here logic to determine whether the requested
+      // type of source slice requires us to process this source component
+      // if ( need_source_component(source_slice_type, s->c) )...
 
       // loop over point sources in this src_vol. for each point source,
       // the src_vol stores the amplitude and the index of the grid point
@@ -185,10 +187,10 @@ void fill_chunk_source_slice(fields_chunk *fc, ivec is, ivec ie, void *vslice,
 /* callback function passed to loop_in_chunks to fill array slice */
 /***************************************************************/
 static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
-	      			  ivec is, ivec ie, vec s0, vec s1, vec e0, vec e1,
-				  double dV0, double dV1,
-	  			  ivec shift, complex<double> shift_phase,
-				  const symmetry &S, int sn, void *data_)
+                                      ivec is, ivec ie, vec s0, vec s1, vec e0, vec e1,
+                                      double dV0, double dV1,
+                                      ivec shift, complex<double> shift_phase,
+                                      const symmetry &S, int sn, void *data_)
 {
   UNUSED(ichnk);UNUSED(cgrid);UNUSED(s0);UNUSED(s1);UNUSED(e0);UNUSED(e1);
   UNUSED(dV0);UNUSED(dV1);
@@ -246,8 +248,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   //-----------------------------------------------------------------------//
   //- If we're fetching a 'source slice,' branch off here to handle that.  //
   //-----------------------------------------------------------------------//
-  if (data->source_slice)
-   { fill_chunk_source_slice(fc,is,ie,data->vslice,sco,offset,stride);
+  if (data->source_slice_type)
+   { fill_chunk_source_slice(fc,is,ie,data->source_slice_type,data->vslice,sco,offset,stride);
      return;
    }
 
@@ -414,7 +416,7 @@ void *fields::do_get_array_slice(const volume &where,
                                  field_rfunction rfun,
                                  void *fun_data,
                                  void *vslice,
-                                 bool source_slice)
+                                 const char *source_slice_type)
 {
   am_now_working_on(FieldOutput);
 
@@ -446,22 +448,18 @@ void *fields::do_get_array_slice(const volume &where,
       };
    };
 
-  data.vslice       = vslice;
-  data.fun          = fun;
-  data.rfun         = rfun;
-  data.fun_data     = fun_data;
-  data.source_slice = source_slice;
-  data.components   = components;
-
-  int num_components = components.size();
-
-  data.cS      = new component[num_components];
-  data.ph      = new cdouble[num_components];
-  data.fields  = new cdouble[num_components];
-
-  data.offsets = new ptrdiff_t[2 * num_components];
-  for (int i = 0; i < 2 * num_components; ++i)
-    data.offsets[i] = 0;
+  data.vslice            = vslice;
+  data.fun               = fun;
+  data.rfun              = rfun;
+  data.fun_data          = fun_data;
+  data.source_slice_type = source_slice_type;
+  data.components        = components;
+  int num_components     = components.size();
+  data.cS                = new component[num_components];
+  data.ph                = new cdouble[num_components];
+  data.fields            = new cdouble[num_components];
+  data.offsets           = new ptrdiff_t[2 * num_components];
+  memset(data.offsets, 0, sizeof(data.offsets));
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
@@ -592,9 +590,12 @@ cdouble *fields::get_complex_array_slice(const volume &where, component c,
                                        (void *)slice);
 }
 
-double *fields::get_source_slice(const volume &where, double *slice)
+#define DEF_SOURCE_SLICE_TYPE "abs(EH)"
+
+double *fields::get_source_slice(const volume &where, const char *source_slice_type, double *slice)
 { vector<component> cs; // empty
-  return (double *)do_get_array_slice(where,cs,0,0,0,(void *)slice,true);
+  if (source_slice_type==0) source_slice_type=DEF_SOURCE_SLICE_TYPE;
+  return (double *)do_get_array_slice(where,cs,0,0,0,(void *)slice,source_slice_type);
 }
 
 } // namespace meep
