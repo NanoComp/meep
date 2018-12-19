@@ -759,6 +759,36 @@ void mode_solver::init(int p, bool reset_fields) {
     block_size = num_bands;
   }
 
+  if (mdata) {
+    if (n[0] == mdata->nx && n[1] == mdata->ny && n[2] == mdata->nz &&
+        block_size == Hblock.alloc_p && num_bands == H.p &&
+        eigensolver_nwork + (mdata->mu_inv != NULL) == nwork_alloc) {
+
+      have_old_fields = 1;
+    }
+    else {
+      destroy_evectmatrix(H);
+      for (int i = 0; i < nwork_alloc; ++i) {
+        destroy_evectmatrix(W[i]);
+      }
+
+      if (Hblock.data != H.data) {
+        destroy_evectmatrix(Hblock);
+      }
+      if (muinvH.data != H.data) {
+        destroy_evectmatrix(muinvH);
+      }
+    }
+    destroy_maxwell_target_data(mtdata);
+    mtdata = NULL;
+    destroy_maxwell_data(mdata);
+    mdata = NULL;
+    curfield_reset();
+  }
+  else {
+    srand(time(NULL));
+  }
+
   if (deterministic) {
     // seed should be the same for each run, although
     // it should be different for each process.
