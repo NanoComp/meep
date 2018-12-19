@@ -306,7 +306,7 @@ In the limit where the grating periodicity is much larger than the wavelength an
 
 To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
-We can also use the complex mode coefficients to compute the phase of the transmittance. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as metalenses. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of only the zeroth diffraction order for an E<sub>z</sub>-polarized planewave normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9.
+We can also use the complex mode coefficients to compute the phase of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in metalenses. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
 
 The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/stevengj/meep/blob/master/python/examples/binary_grating_phasemap.py).
 
@@ -432,7 +432,7 @@ if __name__ == '__main__':
   plt.show()
 ```
 
-The script produces the figure shown below of the transmittance spectra (left) and phase map (right). The transmittance is nearly unity over most of the parameter space mainly because of the subwavlength dimensions of the grating. The phase variation spans the full range of -2π to +2π but is generally weak as a result of the the relatively low index contrast of the glass and air (1.5:1).
+Note that the phase of the zeroth diffraction order is simply the angle of its complex mode coefficient. The script is run from the shell terminal using: `python binary_grating_phasemap.py -gp 0.35 -gh 0.6 -oddz`. The figure shown below is produced of the transmittance spectra (left) and phase map (right). The transmittance is nearly unity over most of the parameter space mainly because of the subwavlength dimensions of the grating. The phase variation spans the full range of -2π to +2π but is weak as a result of the the relatively low index of the glass grating. Higher-index materials such as [titanium dioxide](https://en.wikipedia.org/wiki/Titanium_dioxide#Thin_films) (TiO<sub>2</sub>) generally provide more control over the phase.
 
 <center>
 ![](../images/grating_phasemap.png)
