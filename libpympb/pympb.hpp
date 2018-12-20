@@ -29,7 +29,6 @@ struct mode_solver {
   static const int NUM_FFT_BANDS = 20;
 
   int num_bands;
-  int parity;
   double resolution[3];
   double target_freq;
   lattice lat;
@@ -57,10 +56,7 @@ struct mode_solver {
   int iterations;
   double eigensolver_flops;
 
-  geometric_object_list geometry;
-
   geom_box_tree geometry_tree;
-  // geom_box_tree restricted_tree;
 
   mpb_real vol;
 
@@ -81,22 +77,35 @@ struct mode_solver {
   evectmatrix muinvH;
   evectmatrix W[MAX_NWORK];
 
-  meep_geom::material_data *default_md;
-
   std::vector<mpb_real> freqs;
 
   bool verbose;
   bool deterministic;
 
-  mode_solver(int num_bands, int parity, double resolution[3], lattice lat, double tolerance,
-              int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
-              bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
-              bool periodicity, double flops, bool negative_epsilon_ok, std::string epsilon_input_file,
-              std::string mu_input_file, bool force_mu, bool use_simple_preconditioner, vector3 grid_size,
-              int eigensolver_nwork, int eigensolver_block_size);
+  mode_solver(int num_bands,
+              double resolution[3],
+              lattice lat,
+              double tolerance,
+              int mesh_size,
+              meep_geom::material_data *_default_material,
+              bool deterministic,
+              double target_freq,
+              int dims,
+              bool verbose,
+              bool periodicity,
+              double flops,
+              bool negative_epsilon_ok,
+              std::string epsilon_input_file,
+              std::string mu_input_file,
+              bool force_mu,
+              bool use_simple_preconditioner,
+              vector3 grid_size,
+              int eigensolver_nwork,
+              int eigensolver_block_size);
+
   ~mode_solver();
 
-  void init(int p, bool reset_fields);
+  void init(int p, bool reset_fields, geometric_object_list geometry, meep_geom::material_data *_default_material);
   void solve_kpoint(vector3 kpoint);
   bool using_mu();
   void set_parity(int p);
@@ -112,9 +121,9 @@ struct mode_solver {
                     mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3]);
 
   void randomize_fields();
-  void init_epsilon();
-  void reset_epsilon();
-  bool has_mu();
+  void init_epsilon(geometric_object_list *geometry);
+  void reset_epsilon(geometric_object_list *geometry);
+  bool has_mu(geometric_object_list *geometry);
   bool material_has_mu(void *mt);
   void curfield_reset();
 

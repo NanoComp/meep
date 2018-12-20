@@ -139,6 +139,34 @@ class ModeSolver(object):
         self.eigensolver_iters = []
         self.mode_solver = None
 
+        self.grid_size = self._get_grid_size()
+
+        if self.optimize_grid_size:
+            self._optimize_grid_size()
+
+        self.mode_solver = mode_solver(
+            self.num_bands,
+            self.resolution,
+            self.geometry_lattice,
+            self.tolerance,
+            self.mesh_size,
+            self.default_material,
+            self.deterministic,
+            self.target_freq,
+            self.dimensions,
+            self.verbose,
+            self.ensure_periodicity,
+            self.eigensolver_flops,
+            self.is_negative_epsilon_ok,
+            self.epsilon_input_file,
+            self.mu_input_file,
+            self.force_mu,
+            self.use_simple_preconditioner,
+            self.grid_size,
+            self.eigensolver_nwork,
+            self.eigensolver_block_size,
+        )
+
     @property
     def resolution(self):
         return self._resolution
@@ -699,36 +727,7 @@ class ModeSolver(object):
         return self.next_factor2357(n + 1)
 
     def init_params(self, p, reset_fields):
-        self.grid_size = self._get_grid_size()
-
-        if self.optimize_grid_size:
-            self._optimize_grid_size()
-
-        self.mode_solver = mode_solver(
-            self.num_bands,
-            p,
-            self.resolution,
-            self.geometry_lattice,
-            self.tolerance,
-            self.mesh_size,
-            self.default_material,
-            self.geometry,
-            True if reset_fields else False,
-            self.deterministic,
-            self.target_freq,
-            self.dimensions,
-            self.verbose,
-            self.ensure_periodicity,
-            self.eigensolver_flops,
-            self.is_negative_epsilon_ok,
-            self.epsilon_input_file,
-            self.mu_input_file,
-            self.force_mu,
-            self.use_simple_preconditioner,
-            self.grid_size,
-            self.eigensolver_nwork,
-            self.eigensolver_block_size,
-        )
+        self.mode_solver.init(p, reset_fields, self.geometry, self.default_material)
 
     def set_parity(self, p):
         self.mode_solver.set_parity(p)
@@ -846,6 +845,7 @@ class ModeSolver(object):
 
     def find_k(self, p, omega, band_min, band_max, korig_and_kdir, tol,
                kmag_guess, kmag_min, kmag_max, *band_funcs):
+
         num_bands_save = self.num_bands
         kpoints_save = self.k_points
         nb = band_max - band_min + 1
