@@ -30,6 +30,7 @@ class Simulation(object):
                  extra_materials=[],
                  filename_prefix='',
                  force_complex_fields=False,
+                 force_all_components=False,
                  geometry=[],
                  k_point=False,
                  load_structure='',
@@ -121,6 +122,11 @@ If `True` (the default), then subpixel averaging is used when initializing the d
 **`force_complex_fields` [`boolean`]**
 —
 By default, Meep runs its simulations with purely real fields whenever possible. It uses complex fields which require twice the memory and computation if the `k_point` is non-zero or if `m` is non-zero. However, by setting `force_complex_fields` to `True`, Meep will always use complex fields.
+
+
+**`force_all_components` [`boolean`]**
+—
+By default, in a 2d simulation Meep uses only one of two sets of orthogonal fields: (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>). However, by setting `force_all_components` to `True`, Meep will use all field components.
 
 **`filename_prefix` [`string`]**
 —

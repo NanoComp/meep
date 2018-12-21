@@ -275,4 +275,4 @@ Yes. More specifically, Meep can be used to model saturable gain and absorption 
 
 ### Does Meep support adjoint-based optimization?
 
-Not currently but work is underway to add support for this feature with expected release in early 2019.
+Not currently but work is underway to add support for this feature with expected release in early 2019 (issue [#600](https://github.com/stevengj/meep/pull/600)).
