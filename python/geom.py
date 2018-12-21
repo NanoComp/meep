@@ -752,8 +752,7 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
         a_prime = x if f < 0 else a
         b_prime = x if f > 0 else b
 
-        cond = f_memo(lazy(a_prime))[0] * f_memo(lazy(b_prime))[0] > 0
-        if dx != x_max - x_min and dx * (f / df) < 0 and cond:
+        if dx != x_max - x_min and dx * (f / df) < 0 and f_memo(lazy(a_prime))[0] * f_memo(lazy(b_prime))[0] > 0:
             raise ValueError("failed to bracket the root in find_root_deriv")
 
         if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
