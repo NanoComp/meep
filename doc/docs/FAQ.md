@@ -211,6 +211,20 @@ How much speedup this parallelization translates into depends on a number of fac
 
 Unless the computational parallelism outweighs the extra communications overhead, the parallel program will actually be *slower* than the serial one.  This means, for example, that even if you really have two or more physical processors you won't be able to benefit from parallelization until the problem is sufficiently large. In general, you will need large simulations to benefit from lots of processors. A rule of thumb is to keep doubling the number of processors until you no longer see much speedup.
 
+### Why are simulations involving Fourier-transformed fields slow?
+
+The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-time_Fourier_transform) (DTFT) of the fields, which is necessary for computing the [Poynting flux](Python_User_Interface.md#flux-spectra), [local density of states](Python_User_Interface.md#ldos-spectra) (LDOS), [near to far field transformation](Python_User_Interface.md#near-to-far-field-spectra), etc., is accumulated at every time step for every point in the [flux region](Python_User_Interface.md#fluxregion). The DTFT computation is parallelized but only in the sense that each processor computes the DTFT fields at points in its own [chunk](Chunks_and_Symmetry.md) of the grid. If the division of the grid among processors into approximately equal-sized chunks allocates most of the points where the DTFT fields are computed to one processor, it is *not* going to parallelize.
+
+Ideally, the parallelization should take the DTFT computation into account: the grid should be divided such that the flux region, if it is sufficiently expensive, is divided among the processors. The best approach would be some kind of adaptive [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)). However, nothing like this is currently implemented. Also, it is not possible in Meep to customize how the cell is divided among the processes.
+
+A simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
+
+Another approach might be to change your structure so that the flux region is closer to the center of the grid, which will increase the likelihood that the parallelization will divide the grid in such a way as to split the flux region between different processors.
+
+### Does Meep support shared-memory parallelism?
+
+No. Currently, Meep does not support [shared-memory](https://en.wikipedia.org/wiki/Shared_memory) parallelism such as [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) (issue [#228](https://github.com/stevengj/meep/issues/228)).
+
 ### Why does the amplitude of a dipole point source increase with resolution?
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
