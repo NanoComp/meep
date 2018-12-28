@@ -44,12 +44,12 @@ class SourceTime(object):
 class ContinuousSource(SourceTime):
 
     def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0,
-                 fwidth=float('inf'), cutoff=3.0, wavelength=None):
+                 fwidth=float('inf'), cutoff=3.0, wavelength=None, **kwargs):
 
         if frequency is None and wavelength is None:
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
-        super(ContinuousSource, self).__init__()
+        super(ContinuousSource, self).__init__(**kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
@@ -62,11 +62,12 @@ class ContinuousSource(SourceTime):
 
 class GaussianSource(SourceTime):
 
-    def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0, wavelength=None):
+    def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0, wavelength=None,
+                 **kwargs):
         if frequency is None and wavelength is None:
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
-        super(GaussianSource, self).__init__()
+        super(GaussianSource, self).__init__(**kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
@@ -78,8 +79,8 @@ class GaussianSource(SourceTime):
 
 class CustomSource(SourceTime):
 
-    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20):
-        super(CustomSource, self).__init__()
+    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, **kwargs):
+        super(CustomSource, self).__init__(**kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
