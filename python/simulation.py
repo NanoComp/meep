@@ -1541,7 +1541,7 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None)
+    def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.uintp)
 
         if vol is None and center is None and size is None:
@@ -1602,7 +1602,7 @@ class Simulation(object):
         dim_sizes=np.zeros(3,dtype=np.uintp)
         self.fields.get_array_slice_dimensions(v, dim_sizes)
         dims = [s for s in dim_sizes if s != 0]
-        cmplx = False; # eventually set this based on type
+        cmplx = False;
         arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
         self.fields.get_source_slice(v,type,arr)
         return arr

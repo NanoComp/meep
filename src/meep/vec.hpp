@@ -484,11 +484,14 @@ class vec {
   double in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, double val) { t[d] = val; };
 
+  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which case not thread-safe)
+  const char *str(char *buffer=0, size_t buflen=0);
+
   double project_to_boundary(direction, double boundary_loc);
   friend vec zero_vec(ndim);
   friend vec one_vec(ndim);
  private:
-  double t[5];
+  double t[5]={0,0,0,0,0}; // ensure fixed value 0 in all non-present dimensions
 };
 
 inline double abs(const vec &pt) { return sqrt(pt & pt); }
@@ -618,6 +621,9 @@ class ivec {
   int in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, int val) { t[d] = val; };
 
+  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which case not thread-safe)
+  const char *str(char *buffer=0, size_t buflen=0);
+
   ivec round_up_to_even(void) const {
     ivec result(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
@@ -628,7 +634,7 @@ class ivec {
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
  private:
-  int t[5];
+  int t[5]={0,0,0,0,0}; // ensure fixed value 0 in all non-present dimensions
 };
 
 inline ivec zero_ivec(ndim di) {
@@ -727,6 +733,9 @@ grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 class grid_volume {
  public:
   grid_volume() {};
+
+  grid_volume subvolume(ivec is, ivec ie);
+  void init_subvolume(ivec is, ivec ie);
 
   ndim dim;
   double a, inva /* = 1/a */;

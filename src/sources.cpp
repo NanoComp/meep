@@ -279,7 +279,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   (void) S; (void) sn; // these should be the identity
   (void) dV0; (void) dV1; // grid_volume weighting is included in data->amp
   (void) ichunk;
-
+  
   size_t npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d)
     npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
@@ -297,11 +297,12 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     if (!fc->gv.owns(iloc)) continue;
 
     IVEC_LOOP_LOC(fc->gv, loc);
-    loc += shift * (0.5*inva) - data->center;
+    loc += shift * (0.5*inva);
 
     if (data->indicator && data->indicator->in_source(loc)==false) continue;
 
-    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
+    vec rel_loc = loc - data->center;
+    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(rel_loc);
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
        right because it doesn't handle non-diagonal chi1inv!

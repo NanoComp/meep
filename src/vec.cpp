@@ -1471,5 +1471,62 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
 }
 
 /***************************************************************************/
+/* utility methods for pretty-printing. may be called with no arguments,   */
+/* in which case static internal buffers are used; NUMBUFS defines the     */
+/* number of str() calls with no arguments that may be appear              */
+/* simultaneously as e.g. arguments to a single invocation of printf().    */
+/***************************************************************************/
+#define BUFLEN  100
+#define NUMBUFS 10
+const char *ivec::str(char *buffer, size_t buflen)
+{ static char bufring[NUMBUFS][BUFLEN];
+  static int nbuf=0;
+  if (buffer==0)
+   { buffer=bufring[nbuf]; buflen=BUFLEN; nbuf=(nbuf+1)%NUMBUFS; }
+  if (dim==Dcyl)
+   snprintf(buffer,buflen,"{%i,%i}",t[R],t[Z]);
+  else
+   snprintf(buffer,buflen,"{%i,%i,%i}",t[X],t[Y],t[Z]);
+  return buffer;
+}
+
+const char *vec::str(char *buffer, size_t buflen)
+{ static char bufring[NUMBUFS][BUFLEN];
+  static int nbuf=0;
+  if (buffer==0) 
+   { buffer=bufring[nbuf]; buflen=BUFLEN; nbuf=(nbuf+1)%NUMBUFS; }
+  if (dim==Dcyl)
+   snprintf(buffer,buflen,"{%f,%f}",t[R],t[Z]);
+  else
+   snprintf(buffer,buflen,"{%f,%f,%f}",t[X],t[Y],t[Z]);
+  return buffer;
+}
+
+/********************************************************************/
+/********************************************************************/
+/********************************************************************/
+grid_volume grid_volume::subvolume(ivec is, ivec ie)
+{ 
+  if ( !(contains(is) && contains(ie) ) )
+   abort("invalid extents in subvolume");
+  grid_volume sub;
+  sub.dim=dim;
+  sub.a=a;
+  sub.inva=inva;
+  sub.init_subvolume(is, ie);
+  return sub;
+}
+
+void grid_volume::init_subvolume(ivec is, ivec ie)
+{
+  ivec origin(dim,0);
+  LOOP_OVER_DIRECTIONS(dim,d)
+   { num[(int)d] = (ie-is).in_direction(d)/2;
+     origin.set_direction(d, is.in_direction(d));
+   }
+  num_changed();
+  center_origin();
+  shift_origin(origin);
+}
 
 } // namespace meep
