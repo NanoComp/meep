@@ -214,6 +214,7 @@ mode_solver::mode_solver(int num_bands,
   force_mu(force_mu),
   use_simple_preconditioner(use_simple_preconditioner),
   grid_size(grid_size),
+  nwork_alloc(0),
   eigensolver_nwork(eigensolver_nwork),
   eigensolver_block_size(eigensolver_block_size),
   last_parity(-2),
@@ -236,6 +237,14 @@ mode_solver::mode_solver(int num_bands,
   geometry_lattice = lat;
   dimensions = dims;
   ensure_periodicity = periodicity;
+  geometry_tree = NULL;
+  H.data = NULL;
+  Hblock.data = NULL;
+  muinvH.data = NULL;
+
+  for (int i = 0; i < MAX_NWORK; i++) {
+    W[i].data = NULL;
+  }
 
   for (int i = 0; i < 3; ++i) {
     this->resolution[i] = resolution[i];
@@ -1606,6 +1615,22 @@ std::vector<int> mode_solver::get_dims() {
   }
 
   return dims;
+}
+
+int mode_solver::get_libctl_dimensions() {
+  return dimensions;
+}
+
+void mode_solver::set_libctl_dimensions(int val) {
+  dimensions = val;
+}
+
+bool mode_solver::get_libctl_ensure_periodicity() {
+  return ensure_periodicity;
+}
+
+void mode_solver::set_libctl_ensure_periodicity(bool val) {
+  ensure_periodicity = val;
 }
 
 void mode_solver::get_curfield(double *data, int size) {

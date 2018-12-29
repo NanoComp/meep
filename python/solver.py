@@ -99,73 +99,64 @@ class ModeSolver(object):
                  eigensolver_block_size=-11):
 
         self.resolution = resolution
-        self.is_negative_epsilon_ok = is_negative_epsilon_ok
-        self.eigensolver_flops = eigensolver_flops
-        self.eigensolver_nwork = eigensolver_nwork
-        self.eigensolver_block_size = eigensolver_block_size
         self.eigensolver_flags = eigensolver_flags
-        self.use_simple_preconditioner = use_simple_preconditioner
-        self.force_mu = force_mu
-        self.mu_input_file = mu_input_file
-        self.epsilon_input_file = epsilon_input_file
-        self.mesh_size = mesh_size
-        self.target_freq = target_freq
-        self.tolerance = tolerance
-        self.num_bands = num_bands
         self.k_points = k_points
-        self.ensure_periodicity = ensure_periodicity
         self.geometry = geometry
         self.geometry_lattice = geometry_lattice
         self.geometry_center = geometry_center
         self.default_material = default_material
-        self.dimensions = dimensions
         self.random_fields = random_fields
         self.filename_prefix = filename_prefix
-        self.deterministic = deterministic
-        self.verbose = verbose
         self.optimize_grid_size = optimize_grid_size
-        self.eigensolver_nwork = eigensolver_nwork
-        self.eigensolver_block_size = eigensolver_block_size
         self.parity = ''
         self.iterations = 0
         self.all_freqs = None
         self.freqs = []
         self.band_range_data = []
-        self.eigensolver_flops = 0
         self.total_run_time = 0
         self.current_k = mp.Vector3()
         self.k_split_num = 1
         self.k_split_index = 0
         self.eigensolver_iters = []
-        self.mode_solver = None
 
-        self.grid_size = self._get_grid_size()
+        grid_size = self._get_grid_size()
 
         if self.optimize_grid_size:
-            self._optimize_grid_size()
+            grid_size = self._optimize_grid_size(grid_size)
+
+        if type(self.default_material) is not mp.Medium and callable(self.default_material):
+            self.default_material.eps = False
 
         self.mode_solver = mode_solver(
-            self.num_bands,
+            num_bands,
             self.resolution,
             self.geometry_lattice,
-            self.tolerance,
-            self.mesh_size,
+            tolerance,
+            mesh_size,
             self.default_material,
-            self.deterministic,
-            self.target_freq,
-            self.dimensions,
-            self.verbose,
-            self.ensure_periodicity,
-            self.eigensolver_flops,
-            self.is_negative_epsilon_ok,
-            self.epsilon_input_file,
-            self.mu_input_file,
-            self.force_mu,
-            self.use_simple_preconditioner,
-            self.grid_size,
-            self.eigensolver_nwork,
-            self.eigensolver_block_size,
+            deterministic,
+            target_freq,
+            dimensions,
+            verbose,
+            ensure_periodicity,
+            eigensolver_flops,
+            is_negative_epsilon_ok,
+            epsilon_input_file,
+            mu_input_file,
+            force_mu,
+            use_simple_preconditioner,
+            grid_size,
+            eigensolver_nwork,
+            eigensolver_block_size,
         )
+
+    @property
+    def num_bands(self):
+        return self.mode_solver.num_bands
+
+    @num_bands.setter
+    def num_bands(self, val):
+        self.mode_solver.num_bands = val
 
     @property
     def resolution(self):
@@ -180,6 +171,126 @@ class ModeSolver(object):
         else:
             t = type(val)
             raise TypeError("resolution must be a number or a Vector3: Got {}".format(t))
+
+    @property
+    def tolerance(self):
+        return self.mode_solver.tolerance
+
+    @tolerance.setter
+    def tolerance(self, val):
+        self.mode_solver.tolerance = val
+
+    @property
+    def mesh_size(self):
+        return self.mode_solver.mesh_size
+
+    @mesh_size.setter
+    def mesh_size(self, val):
+        self.mode_solver.mesh_size = val
+
+    @property
+    def deterministic(self):
+        return self.mode_solver.deterministic
+
+    @deterministic.setter
+    def deterministic(self, val):
+        self.mode_solver.deterministic = val
+
+    @property
+    def target_freq(self):
+        return self.mode_solver.target_freq
+
+    @target_freq.setter
+    def target_freq(self, val):
+        self.mode_solver.target_freq = val
+
+    @property
+    def dimensions(self):
+        return self.mode_solver.get_libctl_dimensions()
+
+    @dimensions.setter
+    def dimensions(self, val):
+        self.mode_solver.set_libctl_dimensions(val)
+
+    @property
+    def verbose(self):
+        return self.mode_solver.verbose
+
+    @verbose.setter
+    def verbose(self, val):
+        self.mode_solver.verbose = val
+
+    @property
+    def ensure_periodicity(self):
+        return self.mode_solver.get_libctl_ensure_periodicity()
+
+    @ensure_periodicity.setter
+    def ensure_periodicity(self, val):
+        self.mode_solver.set_libctl_ensure_periodicity(val)
+
+    @property
+    def eigensolver_flops(self):
+        return self.mode_solver.eigensolver_flops
+
+    @eigensolver_flops.setter
+    def eigensolver_flops(self, val):
+        self.mode_solver.eigensolver_flops = val
+
+    @property
+    def is_negative_epsilon_ok(self):
+        return self.mode_solver.negative_epsilon_ok
+
+    @is_negative_epsilon_ok.setter
+    def is_negative_epsilon_ok(self, val):
+        self.mode_solver.negative_epsilon_ok = val
+
+    @property
+    def epsilon_input_file(self):
+        return self.mode_solver.epsilon_input_file
+
+    @epsilon_input_file.setter
+    def epsilon_input_file(self, val):
+        self.mode_solver.epsilon_input_file = val
+
+    @property
+    def mu_input_file(self):
+        return self.mode_solver.mu_input_file
+
+    @mu_input_file.setter
+    def mu_input_file(self, val):
+        self.mode_solver.mu_input_file = val
+
+    @property
+    def force_mu(self):
+        return self.mode_solver.force_mu
+
+    @force_mu.setter
+    def force_mu(self, val):
+        self.mode_solver.force_mu = val
+
+    @property
+    def use_simple_preconditioner(self):
+        return self.mode_solver.use_simple_preconditioner
+
+    @use_simple_preconditioner.setter
+    def use_simple_preconditioner(self, val):
+        self.mode_solver.use_simple_preconditioner = val
+
+    @property
+    def eigensolver_nwork(self):
+        return self.mode_solver.eigensolver_nwork
+
+    @eigensolver_nwork.setter
+    def eigensolver_nwork(self, val):
+        self.mode_solver.eigensolver_nwork = val
+
+    @property
+    def eigensolver_block_size(self):
+        return self.mode_solver.eigensolver_block_size
+
+    @eigensolver_block_size.setter
+    def eigensolver_block_size(self, val):
+        self.mode_solver.eigensolver_block_size = val
 
     def allow_negative_epsilon(self):
         self.is_negative_epsilon_ok = True
@@ -707,10 +818,11 @@ class ModeSolver(object):
 
         return grid_size
 
-    def _optimize_grid_size(self):
-        self.grid_size.x = self.next_factor2357(self.grid_size.x)
-        self.grid_size.y = self.next_factor2357(self.grid_size.y)
-        self.grid_size.z = self.next_factor2357(self.grid_size.z)
+    def _optimize_grid_size(self, grid_size):
+        grid_size.x = self.next_factor2357(grid_size.x)
+        grid_size.y = self.next_factor2357(grid_size.y)
+        grid_size.z = self.next_factor2357(grid_size.z)
+        return grid_size
 
     def next_factor2357(self, n):
 
@@ -748,10 +860,6 @@ class ModeSolver(object):
 
         print("Initializing eigensolver data")
         print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
-
-        if type(self.default_material) is not mp.Medium and callable(self.default_material):
-            # TODO: Support epsilon_function user materials like meep?
-            self.default_material.eps = False
 
         self.init_params(p, reset_fields)
 

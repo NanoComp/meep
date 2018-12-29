@@ -155,6 +155,10 @@ struct mode_solver {
   void set_curfield_type(char t);
   std::string get_parity_string();
   std::vector<int> get_dims();
+  int get_libctl_dimensions();
+  void set_libctl_dimensions(int val);
+  bool get_libctl_ensure_periodicity();
+  void set_libctl_ensure_periodicity(bool val);
   std::vector<mpb_real> get_output_k();
 
   mpb_real get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
