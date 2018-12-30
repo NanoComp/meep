@@ -26,7 +26,6 @@ geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
 
 fcen = 0.15  # pulse center frequency
 df = 0.1     # pulse width (in frequency)
-
 sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez,
                      center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0),size=mp.Vector3(0,w,0))]
 

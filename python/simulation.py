@@ -1596,7 +1596,10 @@ class Simulation(object):
             raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
 
     def get_array_metadata(self, vol=None, center=None, size=None, collapse=False):
-         v    = self._volume_from_kwargs(vol, center, size)
+         if vol is None and center is None and size is None:
+             v = self.fields.total_volume()
+         else:
+             v = self._volume_from_kwargs(vol, center, size)
          dims = np.zeros(3, dtype=np.uintp)
          dirs = np.zeros(3, dtype=np.intc)
          rank = self.fields.get_array_slice_dimensions(v, dims, dirs, collapse)
