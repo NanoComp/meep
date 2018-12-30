@@ -1623,8 +1623,8 @@ class Simulation(object):
          self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
          return (xtics,ytics,ztics,np.reshape(weights,dims[np.nonzero(dims)]))
 
-    def get_dft_array_metadata(self, dft=None, vol=None, center=None, size=None):
-         return self.get_array_metadata(vol=dft.where if dft is not None else vol,
+    def get_dft_array_metadata(self, dft_cell=None, vol=None, center=None, size=None):
+         return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
                                         center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,

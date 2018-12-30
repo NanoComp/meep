@@ -63,6 +63,7 @@ class GaussianSource(SourceTime):
         self.cutoff = cutoff
         self.swigobj = mp.gaussian_src_time(self.frequency, self.width, self.start_time,
                                             self.start_time + 2 * self.width * self.cutoff)
+        self.peak_time = self.swigobj.get_peak_time()
         self.swigobj.is_integrated = self.is_integrated
 
 

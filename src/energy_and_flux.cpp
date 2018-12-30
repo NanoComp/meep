@@ -286,6 +286,12 @@ double fields::electric_energy_max_in_box(const volume &where) {
       E. M. Purcell, Phys. Rev. B 69, 681 (1946).
     (based on spontaneous emission enhancement). */
 double fields::modal_volume_in_box(const volume &where) {
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+double num=electric_energy_in_box(where); 
+double denom=electric_energy_max_in_box(where);
+printf("num=%e, denom=%e\n",num,denom);
+return num/denom;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   return electric_energy_in_box(where) / electric_energy_max_in_box(where);
 }
 
