@@ -1466,24 +1466,65 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 + `num_freq`: The index of the frequency: (an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.)
 
-**`get_array_metadata(vol=None, center=None, size=None)**`
-**`get_dft_array_metadata(vol=None, center=None, size=None)**`
+#### Array metadata
 
-These routines provide geometric information useful for interpreting the data returned by `get_array` and `get_dft_array`.
-If xk$
-The `array_metadata` is itself an array of the same dimensions 
+**`get_array_metadata(vol=None, center=None, size=None, collapse=False)`**
+**`get_dft_array_metadata(dft_cell=None, vol=None, center=None, size=None)`**
 
-These routines the Cartesian coordinates and interpolation/integration weights for the points of the arrays
-returned
+These routines provide geometric information useful for interpreting the arrays
+returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
+or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where
 
-More specifically, if the array returned by `get_array`/`get_dft_array`
-has dimensions $(N_1, \cdots, N_D)$, then the return value of `get_array_metadata`/`get_dft_array_metadata` is an
-array of dimensions $(N_1, \cdots, N_D, 4)$, with the
++ `x,y,z` are 1D numpy arrays storing the $x,y,z$ coordinates of the points in the grid slice
++ `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`,
+    whose entries are the weights in a cubature rule for integrating over the spatial region
+    (with the *points* in the cubature rule being just the grid points contained in the region).
+    Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid
+    point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum
+    $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q(\mathbf{x})$$
 
-More specifically, the return value
+Here are some examples of how array metadata can be used:
 
-+ `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If `None` (default), then a `size` and `center` must be specified.
-+ `center`, `size` : `Vector3`; if both are specified, the library will construct an apporpriate `Volume`. This is a convenience feature and alternative to supplying a `Volume`.
++ To label axes in plots of grid quantities:
+
++ To compute quantities defined by integrals over grid regions:
+
+##### Q: What is the difference between `get_array_metadata` and `get_dft_metadata`? Also, what is the `collapse` parameter to `get_array_metadata`?
+
+##### A (tl;dr version):
+
++ Use `get_array_metadata` for arrays of time-domain field components (as returned by `get_array`).
++ Use `get_dft_array_metadata` for arrays of frequency-domain field components (as returned by `get_dft_array`).
++ Ignore the `collapse` parameter to `get_array_metadata.
+
+##### A (full version: Collapsing empty dimensions in array slices
+
+One complication of array slicing is that the array returned by `get_array` may have nonzero
+thickness (i.e. more than one point) in dimensions for which the region in question has zero
+extent. (For example, upon requesting an array slice for a vertical line with `size=mp.Vector3(0,3,0)`,
+we would expect to get back just a one-dimensional array of field values, but in fact `get_array`
+may return a $2\times N$ matrix.) This occurs when the coordinate of the empty dimension
+falls between points of the computational grid; in this case, the field values at
+both of the two nearest grid points are needed to determine values at the intermediate
+point by interpolation, and the field array returned by `get_array` (as well as the `w` array
+returned by `get_array_metadata`) will have size 2 in the corresponding dimension
+to store field values and weights for both nearest-neighbor points.
+For many purposes it is convenient to *collapse* these dimensions by performing
+the interpolation to reduce e.g. a $2\times N$ array to a one-dimensional array of length $N$,
+and meep adopts the following somewhat arbitrary convention regarding when this is done:
+
++ in arrays of time-domain field components (as returned by `get_array`), empty dimensions *are not* collapsed;
++ in arrays of frequency-domain field components (as returned by `get_dft_array`), empty dimensions *are* collapsed.
+
+The `collapse` flag to `get_array_metadata` may be set to `True` to specify that empty dimensions
+are to be collapsed, as appropriate for metadata describing arrays of frequency-domain field components;
+by default, `get_array_metadata` does not collapse dimensions,
+as appropriate for metadata describing arrays of time-domain field components.
+
+The routine `get_dft_array_metadata` is equivalent to `get_array_metadata` with `collapse=True`.
+`get_dft_array_metadata` also accepts the convenience parameter `dft_cell` as an alternative to
+`vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object
+to define the region covered by the array.
 
 #### Harminv
 

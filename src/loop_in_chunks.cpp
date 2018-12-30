@@ -602,18 +602,12 @@ void fields::get_array_metadata(const volume &where,
   xyz[2]=ztics;
    
   memset(weights, 0, nw * sizeof(double));
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-int np=0;
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   LOOP_OVER_IVECS(gv, is, ie, idx)
    {
      IVEC_LOOP_ILOC(gv, iloc);
      ivec two_nxyz = iloc - is;
      IVEC_LOOP_LOC(gv, loc);
      size_t index=0; // into weights[] array
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-size_t nxyz[3]={0,0,0};
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
      LOOP_OVER_DIRECTIONS(gv.dim, d)
       {
         if  (where.in_direction(d)==0.0 && collapse_empty_dimensions)
@@ -623,20 +617,10 @@ size_t nxyz[3]={0,0,0};
            int nd       = two_nxyz.in_direction(d)/2;
            xyz[id][nd]  = loc.in_direction(d);
            index       += nd*stride[id];
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-nxyz[id]=nd;
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
          }
       }
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-printf("%4i: {%zu,%zu,%zu} index=%zu*%zu + %zu*%zu + %zu*%zu=%zu\n",
-np++,nxyz[0],nxyz[1],nxyz[2],nxyz[0],stride[0],nxyz[1],stride[1],nxyz[2],stride[2],index);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-if (index>=nw)
- printf("** BAWONKATAGE %zu > %zu\n",index,nw);
      weights[index]+=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
    }
 }
-
 
 } // namespace meep

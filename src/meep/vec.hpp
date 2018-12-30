@@ -628,7 +628,7 @@ class ivec {
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
  private:
-  int t[5];
+  int t[5]={0,0,0,0,0};
 };
 
 inline ivec zero_ivec(ndim di) {

@@ -761,6 +761,7 @@ class gaussian_src_time : public src_time {
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
+  double get_peak_time() const { return peak_time; }
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
 
  private:
