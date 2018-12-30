@@ -38,16 +38,38 @@ def get_modal_volume(sim, box=None, dft_cell=None, nf=0):
     return num/denom if denom!=0.0 else 0.0
 
 ##################################################
+# utility routine for color-highlighted output 
 ##################################################
+Highlight1, Highlight2, ErrorText, PlainText='', '', '', ''
+try:
+    from colorama import init, Fore, Back, Style
+    init()
+    Highlight1 = Style.BRIGHT + Fore.WHITE + Back.CYAN
+    Highlight2 = Style.BRIGHT + Fore.WHITE + Back.MAGENTA
+    ErrorText  = Style.BRIGHT + Fore.RED   + Back.WHITE
+    PlainText  = Style.RESET_ALL
+except ImportError:
+    pass
+
+##################################################
+# parse arguments
 ##################################################
 parser = argparse.ArgumentParser()
-parser.add_argument('--res', type=float, default=20,   help='resolution')
-parser.add_argument('--w',   type=float, default=0,    help='width of cavity opening')
+parser.add_argument('--res',          type=float, default=20,    help='resolution')
+parser.add_argument('--w',            type=float, default=0,     help='width of cavity opening')
+parser.add_argument('--use_symmetry',             default=False, action='store_true')
 
 args         = parser.parse_args()
 resolution   = args.res
 w            = args.w
+use_symmetry = args.use_symmetry
 
+sym_str = "True" if use_symmetry else "False"
+print "use_symmetries is " + sym_str
+
+##################################################
+# define geometry
+##################################################
 sxy    = 2
 dpml   = 1
 sxy    = sxy + 2 * dpml
@@ -74,13 +96,15 @@ if w > 0:
                             )
                    )
 
+##################################################
+# add sources
+##################################################
 fcen = math.sqrt(0.5) / a
 df = 0.2
 source_time_profile = mp.GaussianSource(fcen, fwidth=df)
 sources = [mp.Source(src=source_time_profile, component=mp.Ez, center=origin) ]
 
-#symmetries = [mp.Mirror(mp.Y)]
-symmetries = []
+symmetries = [mp.Mirror(mp.Y)] if use_symmetry else []
 
 pml_layers = [mp.PML(dpml)]
 sim = mp.Simulation(cell_size=cell, geometry=geometry,
@@ -98,14 +122,36 @@ dft_cell    = sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez], fcen-df, fcen+df, 3, whe
 # (b) by the python routine above based on array metadata
 source_end_time       = source_time_profile.swigobj.last_time_max() 
 measurement_interval  = source_end_time/10.0
+next_measurement_time = sim.round_time() + 2*measurement_interval # skip first interval
+td_values=0
+td_errors=0
+RelTol=0.1 # only look for errors greater than 10%
 while sim.round_time() < source_end_time:
-    next_measurement_time = sim.round_time() + measurement_interval
     sim.run(until=next_measurement_time)
-    tdmv1 = sim.modal_volume_in_box(box=mv_box) # 'time-domain modal volume' computed via method (a)
-    tdmv2 = get_modal_volume(sim, box=mv_box)   # 'time-domain model volume' computed via method (b)
-    sys.stdout.write("t=%.3e:   mv(meep)=%.4e   mv(metadata)=%.4e\n" % (sim.round_time(), tdmv1, tdmv2) )
+    next_measurement_time+=measurement_interval
+    tdmv_metadata = get_modal_volume(sim, box=mv_box)   # 'time-domain model volume' computed via method (b)
+    tdmv_meep     = sim.modal_volume_in_box(box=mv_box) # 'time-domain modal volume' computed via method (a)
+    TestFailed = (abs(tdmv_metadata - tdmv_meep) > RelTol*abs(tdmv_meep))
+    td_errors += 1 if TestFailed else 0
+    sys.stdout.write(Highlight1)
+    sys.stdout.write("t%i (%.3e):   mv(metadata)=%.4e   mv(meep)=%.4e   " % (td_values, sim.round_time(), tdmv_metadata, tdmv_meep) )
+    sys.stdout.write(ErrorText + "FAIL" if TestFailed else "PASS")
+    sys.stdout.write(PlainText + "\n")
+    td_values+=1
 
 # compute modal volume from frequency-domain fields
+sys.stdout.write("\n**\n** Frequency-domain modal volumes:\n**\n\n")
 for nf in range(0,3):
+    freq=dft_cell.freq_min + nf*dft_cell.dfreq
     fdmv=get_modal_volume(sim, dft_cell=dft_cell, nf=nf)
-    sys.stdout.write("nf=%i  mv=%.4e\n" % (nf, fdmv));
+    sys.stdout.write(Highlight1)
+    sys.stdout.write("f%i (%.3e):   mv(metadata)=%.4e" % (nf, freq, fdmv));
+    sys.stdout.write(PlainText + "\n")
+
+if td_errors>0:
+    sys.stdout.write(ErrorText + "Test FAILED with %i/%i errors in time-domain modal volumes" % (td_errors,td_values))
+    sys.stdout.write(PlainText + "\n")
+else:
+    sys.stdout.write("Test PASSED with 0/%i errors\n" % (td_values) )
+
+#sys.exit(td_errors)
