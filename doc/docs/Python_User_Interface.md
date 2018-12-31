@@ -126,7 +126,7 @@ By default, Meep runs its simulations with purely real fields whenever possible.
 
 **`force_all_components` [`boolean`]**
 —
-By default, in a 2d simulation Meep uses only one of two sets of orthogonal fields: (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>). However, by setting `force_all_components` to `True`, Meep will use all field components.
+By default, in a 2d simulation Meep uses only the field components that might excited by your current sources: either the in-plane (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or out-of-plane (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>) polarization, depending on the source.  (Both polarizations are excited if you use multiple source polarizations, or if an anisotropic medium is present that couples the two polarizations.)   In rare cases (primarily for combining results of multiple simulations with differing polarizations), you might want to force it to simulate all fields, even those that remain zero throughout the simulation, by setting `force_all_components` to `True`.
 
 **`filename_prefix` [`string`]**
 —
