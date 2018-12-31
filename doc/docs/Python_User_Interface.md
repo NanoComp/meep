@@ -338,8 +338,6 @@ The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a re
 —
 The loss rate $γ_n / 2\pi$.
 
-Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
-
 ### MultilevelAtom
 
 Specifies a multievel atomic susceptibility for modeling saturable gain and absorption. This is a subclass of `E_susceptibilities` which contains two objects: (1) `transitions`: a list of atomic `Transition`s (defined below), and (2) `initial_populations`: a list of numbers defining the initial population of each atomic level. See [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
@@ -380,7 +378,9 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 
 **`noise_amp` [`number`]**
 —
-The noise has root-mean square amplitude σ $\times$ `noise_amp`.   This is mainly useful for simulating thermal radiation and spontaneous emission in linear materials, as described in e.g. [this 2011 paper](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.107.114302) or [this 2004 paper](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905), although there are more efficient methods that don't involve random sources (via [Kirchhoff's law](https://en.wikipedia.org/wiki/Kirchhoff%27s_law_of_thermal_radiation) for far-field radiation, or by newer methods described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305) for near-field effects)
+The noise has root-mean square amplitude σ $\times$ `noise_amp`.   
+
+This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using [Kirchhoff's law](https://en.wikipedia.org/wiki/Kirchhoff%27s_law_of_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
 
 ### Vector3
 
