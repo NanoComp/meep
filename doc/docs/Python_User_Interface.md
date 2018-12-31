@@ -380,7 +380,7 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 
 **`noise_amp` [`number`]**
 —
-The noise has root-mean square amplitude σ $\times$ `noise_amp`.
+The noise has root-mean square amplitude σ $\times$ `noise_amp`.   This is mainly useful for simulating thermal radiation and spontaneous emission in linear materials, as described in e.g. [this 2011 paper](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.107.114302) or [this 2004 paper](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905), although there are more efficient methods that don't involve random sources (via [Kirchhoff's law](https://en.wikipedia.org/wiki/Kirchhoff%27s_law_of_thermal_radiation) for far-field radiation, or by newer methods described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305) for near-field effects)
 
 ### Vector3
 
