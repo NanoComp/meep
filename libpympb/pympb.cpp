@@ -232,8 +232,6 @@ mode_solver::mode_solver(int num_bands,
   curfield_type('-'),
   eps(true) {
 
-  this->lat = lat;
-
   geometry_lattice = lat;
   dimensions = dims;
   ensure_periodicity = periodicity;
@@ -1032,6 +1030,11 @@ void mode_solver::set_parity(integer p) {
   set_kpoint_index(0);  /* reset index */
 }
 
+void mode_solver::set_num_bands(int nb) {
+  num_bands = nb;
+  freqs.resize(nb);
+}
+
 int mode_solver::get_kpoint_index() {
   return kpoint_index;
 }
@@ -1631,6 +1634,10 @@ bool mode_solver::get_libctl_ensure_periodicity() {
 
 void mode_solver::set_libctl_ensure_periodicity(bool val) {
   ensure_periodicity = val;
+}
+
+void mode_solver::set_libctl_geometry_lattice(lattice val) {
+  geometry_lattice = val;
 }
 
 void mode_solver::get_curfield(double *data, int size) {

@@ -1401,7 +1401,7 @@ class TestModeSolver(unittest.TestCase):
     def test_fractional_lattice(self):
 
         ms = self.init_solver()
-        ms.geometry_lattice.size = mp.Vector3(0.1, 0.1)
+        ms.geometry_lattice = mp.Lattice(size=mp.Vector3(0.1, 0.1))
         ms.run_te()
 
         expected_brd = [

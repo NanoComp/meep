@@ -98,6 +98,7 @@ class ModeSolver(object):
                  eigensolver_nwork=3,
                  eigensolver_block_size=-11):
 
+        self.mode_solver = None
         self.resolution = resolution
         self.eigensolver_flags = eigensolver_flags
         self.k_points = k_points
@@ -156,7 +157,7 @@ class ModeSolver(object):
 
     @num_bands.setter
     def num_bands(self, val):
-        self.mode_solver.num_bands = val
+        self.mode_solver.set_num_bands(val)
 
     @property
     def resolution(self):
@@ -171,6 +172,19 @@ class ModeSolver(object):
         else:
             t = type(val)
             raise TypeError("resolution must be a number or a Vector3: Got {}".format(t))
+
+        if self.mode_solver:
+            self.mode_solver.resolution = self._resolution
+
+    @property
+    def geometry_lattice(self):
+        return self._geometry_lattice
+
+    @geometry_lattice.setter
+    def geometry_lattice(self, val):
+        self._geometry_lattice = val
+        if self.mode_solver:
+            self.mode_solver.set_libctl_geometry_lattice(val)
 
     @property
     def tolerance(self):

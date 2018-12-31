@@ -109,6 +109,7 @@ struct mode_solver {
   void solve_kpoint(vector3 kpoint);
   bool using_mu();
   void set_parity(int p);
+  void set_num_bands(int nb);
   int get_kpoint_index();
   void set_kpoint_index(int i);
   void get_epsilon();
@@ -159,6 +160,7 @@ struct mode_solver {
   void set_libctl_dimensions(int val);
   bool get_libctl_ensure_periodicity();
   void set_libctl_ensure_periodicity(bool val);
+  void set_libctl_geometry_lattice(lattice val);
   std::vector<mpb_real> get_output_k();
 
   mpb_real get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
