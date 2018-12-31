@@ -299,7 +299,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     IVEC_LOOP_LOC(fc->gv, loc);
     loc += shift * (0.5*inva);
 
-    if (data->indicator && data->indicator->in_source(loc)==false) continue;
+    if (data->indicator && data->indicator->point_in_source(loc)==false) continue;
 
     vec rel_loc = loc - data->center;
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(rel_loc);

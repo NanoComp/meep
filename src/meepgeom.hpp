@@ -208,7 +208,7 @@ class object_source_indicator: public meep::source_indicator
 public:
    object_source_indicator(geometric_object obj0);
    ~object_source_indicator();
-   bool in_source(const meep::vec &p);
+   bool point_in_source(const meep::vec &p);
 private:
    geometric_object obj;
  };

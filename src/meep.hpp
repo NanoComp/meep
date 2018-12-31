@@ -1311,7 +1311,7 @@ class source_indicator
  {
  public:
    virtual ~source_indicator()=0;
-   virtual bool in_source(const vec &p)=0;
+   virtual bool point_in_source(const vec &p)=0;
  };
 
 
@@ -1487,7 +1487,7 @@ class fields {
                         const vec &, std::complex<double> amp = 1.0);
 
   // if indicator is nonzero, sources are added only at points for which
-  // indicator->in_source(p) returns true.
+  // indicator->point_in_source(p) returns true.
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
                          std::complex<double> amp, source_indicator *indicator=0);

@@ -131,7 +131,7 @@ char parse_source_slice_type(const char *sstype, component *source_slice_compone
   // try to parse in the form "re xx" or "im xx" where "xx" is the name of a MEEP component
   if ( strlen(sstype)>=5 && ( !strncasecmp(sstype,"RE ",3) || !strncasecmp(sstype,"IM ",3) ) )
    FOR_COMPONENTS(c)
-    if (!strcasecmp(sstype+3,component_name(c)))
+    if (!strncasecmp(sstype+3,component_name(c),2))
      { *source_slice_component=c;
        return toupper(sstype[0]);
      }
