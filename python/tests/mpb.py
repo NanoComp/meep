@@ -69,6 +69,58 @@ class TestModeSolver(unittest.TestCase):
             tolerance=1e-12
         )
 
+    def test_attribute_accessors(self):
+        ms = mpb.ModeSolver()
+        self.assertEqual(ms.mode_solver.num_bands, 1)
+        self.assertEqual(ms.mode_solver.deterministic, False)
+        self.assertEqual(ms.mode_solver.tolerance, 1.0e-7)
+        self.assertEqual(ms.mode_solver.mesh_size, 3)
+        self.assertEqual(ms.mode_solver.target_freq, 0)
+        self.assertEqual(ms.mode_solver.get_libctl_dimensions(), 3)
+        self.assertEqual(ms.mode_solver.verbose, False)
+        self.assertEqual(ms.mode_solver.get_libctl_ensure_periodicity(), True)
+        self.assertEqual(ms.mode_solver.eigensolver_flops, 0)
+        self.assertEqual(ms.mode_solver.negative_epsilon_ok, False)
+        self.assertEqual(ms.mode_solver.epsilon_input_file, '')
+        self.assertEqual(ms.mode_solver.mu_input_file, '')
+        self.assertEqual(ms.mode_solver.force_mu, False)
+        self.assertEqual(ms.mode_solver.use_simple_preconditioner, False)
+        self.assertEqual(ms.mode_solver.eigensolver_nwork, 3)
+        self.assertEqual(ms.mode_solver.eigensolver_block_size, -11)
+
+        ms.num_bands = 2
+        ms.deterministic = True
+        ms.tolerance = 1.0e-12
+        ms.mesh_size = 2
+        ms.target_freq = 1
+        ms.dimensions = 2
+        ms.verbose = True
+        ms.ensure_periodicity = False
+        ms.eigensolver_flops = 20
+        ms.is_negative_epsilon_ok = True
+        ms.epsilon_input_file = 'test'
+        ms.mu_input_file = 'test'
+        ms.force_mu = True
+        ms.use_simple_preconditioner = True
+        ms.eigensolver_nwork = 4
+        ms.eigensolver_block_size = 11
+        self.assertEqual(ms.mode_solver.num_bands, 2)
+        self.assertEqual(ms.mode_solver.deterministic, True)
+        self.assertEqual(ms.mode_solver.tolerance, 1.0e-12)
+        self.assertEqual(ms.mode_solver.mesh_size, 2)
+        self.assertEqual(ms.mode_solver.target_freq, 1)
+        self.assertEqual(ms.mode_solver.get_libctl_dimensions(), 2)
+        self.assertEqual(ms.mode_solver.verbose, True)
+        self.assertEqual(ms.mode_solver.get_libctl_ensure_periodicity(), False)
+        self.assertEqual(ms.mode_solver.eigensolver_flops, 20)
+        self.assertEqual(ms.mode_solver.negative_epsilon_ok, True)
+        self.assertEqual(ms.mode_solver.epsilon_input_file, 'test')
+        self.assertEqual(ms.mode_solver.mu_input_file, 'test')
+        self.assertEqual(ms.mode_solver.force_mu, True)
+        self.assertEqual(ms.mode_solver.use_simple_preconditioner, True)
+        self.assertEqual(ms.mode_solver.eigensolver_nwork, 4)
+        self.assertEqual(ms.mode_solver.eigensolver_block_size, 11)
+
     def test_resolution(self):
         ms = self.init_solver()
         self.assertEqual([32, 32, 32], ms.resolution)
@@ -1349,7 +1401,7 @@ class TestModeSolver(unittest.TestCase):
     def test_fractional_lattice(self):
 
         ms = self.init_solver()
-        ms.geometry_lattice.size = mp.Vector3(0.1, 0.1)
+        ms.geometry_lattice = mp.Lattice(size=mp.Vector3(0.1, 0.1))
         ms.run_te()
 
         expected_brd = [

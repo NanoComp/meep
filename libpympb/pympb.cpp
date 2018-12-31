@@ -185,14 +185,11 @@ static void deflation_constraint(evectmatrix X, void *data) {
 /******* mode_solver *******/
 
 mode_solver::mode_solver(int num_bands,
-                         int parity,
                          double resolution[3],
                          lattice lat,
                          double tolerance,
                          int mesh_size,
                          meep_geom::material_data *_default_material,
-                         geometric_object_list geom,
-                         bool reset_fields,
                          bool deterministic,
                          double target_freq,
                          int dims,
@@ -208,7 +205,6 @@ mode_solver::mode_solver(int num_bands,
                          int eigensolver_nwork,
                          int eigensolver_block_size):
   num_bands(num_bands),
-  parity(parity),
   target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
@@ -218,6 +214,7 @@ mode_solver::mode_solver(int num_bands,
   force_mu(force_mu),
   use_simple_preconditioner(use_simple_preconditioner),
   grid_size(grid_size),
+  nwork_alloc(0),
   eigensolver_nwork(eigensolver_nwork),
   eigensolver_block_size(eigensolver_block_size),
   last_parity(-2),
@@ -235,11 +232,17 @@ mode_solver::mode_solver(int num_bands,
   curfield_type('-'),
   eps(true) {
 
-  this->lat = lat;
-
   geometry_lattice = lat;
   dimensions = dims;
   ensure_periodicity = periodicity;
+  geometry_tree = NULL;
+  H.data = NULL;
+  Hblock.data = NULL;
+  muinvH.data = NULL;
+
+  for (int i = 0; i < MAX_NWORK; i++) {
+    W[i].data = NULL;
+  }
 
   for (int i = 0; i < 3; ++i) {
     this->resolution[i] = resolution[i];
@@ -249,21 +252,14 @@ mode_solver::mode_solver(int num_bands,
     }
   }
 
-  default_material = _default_material;
-
 #ifndef WITH_HERMITIAN_EPSILON
   meep_geom::medium_struct *m;
-  if (meep_geom::is_medium(default_material, &m)) {
+  if (meep_geom::is_medium(_default_material, &m)) {
     meep_geom::check_offdiag(m);
   }
+#else
+  (void)_default_material;
 #endif
-
-  geometry = geom;
-
-  // `init` is called in the constructor to avoid the need to copy the
-  // geometric objects and default material. They can then be safely freed by
-  // typemaps once the mode_solver constructor call returns to python.
-  init(parity, reset_fields);
 }
 
 mode_solver::~mode_solver() {
@@ -716,8 +712,11 @@ bool mode_solver::using_mu() {
   return mdata && mdata->mu_inv != NULL;
 }
 
-void mode_solver::init(int p, bool reset_fields) {
+void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
+                       meep_geom::material_data *_default_material) {
   int have_old_fields = 0;
+
+  default_material = _default_material;
 
   n[0] = grid_size.x;
   n[1] = grid_size.y;
@@ -759,6 +758,36 @@ void mode_solver::init(int p, bool reset_fields) {
     block_size = num_bands;
   }
 
+  if (mdata) {
+    if (n[0] == mdata->nx && n[1] == mdata->ny && n[2] == mdata->nz &&
+        block_size == Hblock.alloc_p && num_bands == H.p &&
+        eigensolver_nwork + (mdata->mu_inv != NULL) == nwork_alloc) {
+
+      have_old_fields = 1;
+    }
+    else {
+      destroy_evectmatrix(H);
+      for (int i = 0; i < nwork_alloc; ++i) {
+        destroy_evectmatrix(W[i]);
+      }
+
+      if (Hblock.data != H.data) {
+        destroy_evectmatrix(Hblock);
+      }
+      if (muinvH.data != H.data) {
+        destroy_evectmatrix(muinvH);
+      }
+    }
+    destroy_maxwell_target_data(mtdata);
+    mtdata = NULL;
+    destroy_maxwell_data(mdata);
+    mdata = NULL;
+    curfield_reset();
+  }
+  else {
+    srand(time(NULL));
+  }
+
   if (deterministic) {
     // seed should be the same for each run, although
     // it should be different for each process.
@@ -774,7 +803,7 @@ void mode_solver::init(int p, bool reset_fields) {
     mtdata = create_maxwell_target_data(mdata, target_freq);
   }
 
-  init_epsilon();
+  init_epsilon(&geometry);
 
   if (check_maxwell_dielectric(mdata, 0)) {
     meep::abort("invalid dielectric function for MPB");
@@ -816,7 +845,7 @@ void mode_solver::init(int p, bool reset_fields) {
   evectmatrix_flops = eigensolver_flops;
 }
 
-void mode_solver::init_epsilon() {
+void mode_solver::init_epsilon(geometric_object_list *geometry) {
   mpb_real no_size_x = geometry_lattice.size.x == 0 ? 1 : geometry_lattice.size.x;
   mpb_real no_size_y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
   mpb_real no_size_z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
@@ -844,20 +873,20 @@ void mode_solver::init_epsilon() {
   matrix3x3_to_arr(R, Rm);
   matrix3x3_to_arr(G, Gm);
 
-  geom_fix_objects0(geometry);
+  geom_fix_objects0(*geometry);
 
   meep::master_printf("Geometric objects:\n");
   if (meep::am_master()) {
-    for (int i = 0; i < geometry.num_items; ++i) {
+    for (int i = 0; i < geometry->num_items; ++i) {
 
 #ifndef WITH_HERMITIAN_EPSILON
       meep_geom::medium_struct *mm;
-      if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
+      if (meep_geom::is_medium(geometry->items[i].material, &mm)) {
         meep_geom::check_offdiag(mm);
       }
 #endif
 
-      display_geometric_object_info(5, geometry.items[i]);
+      display_geometric_object_info(5, geometry->items[i]);
 
       // meep_geom::medium_struct *mm;
       // if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
@@ -884,7 +913,7 @@ void mode_solver::init_epsilon() {
     b0.high.x += tmp_size.x / mdata->nx;
     b0.high.y += tmp_size.y / mdata->ny;
     b0.high.z += tmp_size.z / mdata->nz;
-    geometry_tree = create_geom_box_tree0(geometry, b0);
+    geometry_tree = create_geom_box_tree0(*geometry, b0);
   }
 
   if (verbose && meep::am_master()) {
@@ -896,14 +925,14 @@ void mode_solver::init_epsilon() {
   int tree_nobjects;
   geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
   meep::master_printf("Geometric object tree has depth %d and %d object nodes"
-                      " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry.num_items);
+                      " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry->num_items);
 
   // restricted_tree = geometry_tree;
 
-  reset_epsilon();
+  reset_epsilon(geometry);
 }
 
-void mode_solver::reset_epsilon() {
+void mode_solver::reset_epsilon(geometric_object_list *geometry) {
   int mesh[3] = {
     mesh_size,
     (dimensions > 1) ? mesh_size : 1,
@@ -922,7 +951,7 @@ void mode_solver::reset_epsilon() {
   set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
                          static_cast<void *>(this));
 
-  if (has_mu()) {
+  if (has_mu(geometry)) {
     meep::master_printf("Initializing mu function...\n");
     eps = false;
     set_maxwell_mu(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
@@ -931,14 +960,14 @@ void mode_solver::reset_epsilon() {
   }
 }
 
-bool mode_solver::has_mu() {
+bool mode_solver::has_mu(geometric_object_list *geometry) {
   // TODO: mu_file_func
   if (material_has_mu(default_material) || force_mu) {
     return true;
   }
 
-  for (int i = 0; i < geometry.num_items; ++i) {
-    if (material_has_mu(geometry.items[i].material)) {
+  for (int i = 0; i < geometry->num_items; ++i) {
+    if (material_has_mu(geometry->items[i].material)) {
       return true;
     }
   }
@@ -999,6 +1028,11 @@ void mode_solver::set_parity(integer p) {
 
   last_parity = p;
   set_kpoint_index(0);  /* reset index */
+}
+
+void mode_solver::set_num_bands(int nb) {
+  num_bands = nb;
+  freqs.resize(nb);
 }
 
 int mode_solver::get_kpoint_index() {
@@ -1584,6 +1618,32 @@ std::vector<int> mode_solver::get_dims() {
   }
 
   return dims;
+}
+
+void mode_solver::set_grid_size(vector3 gs) {
+  grid_size.x = gs.x;
+  grid_size.y = gs.y;
+  grid_size.z = gs.z;
+}
+
+int mode_solver::get_libctl_dimensions() {
+  return dimensions;
+}
+
+void mode_solver::set_libctl_dimensions(int val) {
+  dimensions = val;
+}
+
+bool mode_solver::get_libctl_ensure_periodicity() {
+  return ensure_periodicity;
+}
+
+void mode_solver::set_libctl_ensure_periodicity(bool val) {
+  ensure_periodicity = val;
+}
+
+void mode_solver::set_libctl_geometry_lattice(lattice val) {
+  geometry_lattice = val;
 }
 
 void mode_solver::get_curfield(double *data, int size) {
