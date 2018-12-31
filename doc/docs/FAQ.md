@@ -223,7 +223,7 @@ Another approach might be to change your structure so that the flux region is cl
 
 ### Does Meep support shared-memory parallelism?
 
-No. Currently, Meep does not support [shared-memory](https://en.wikipedia.org/wiki/Shared_memory) parallelism such as [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) (issue [#228](https://github.com/stevengj/meep/issues/228)).
+Meep can run in parallel on a shared-memory machine using MPI. However, it doesn't yet take special advantage of shared memory using [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) (issue [#228](https://github.com/stevengj/meep/issues/228)).
 
 ### Why does the amplitude of a dipole point source increase with resolution?
 
