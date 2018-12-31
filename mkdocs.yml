@@ -1,6 +1,6 @@
 site_name: MEEP Documentation
 site_author: MEEP Developers
-repo_url: https://github.com/stevengj/meep/
+repo_url: https://github.com/NanoComp/meep/
 
 use_directory_urls: True
 
