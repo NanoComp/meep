@@ -156,6 +156,7 @@ struct mode_solver {
   void set_curfield_type(char t);
   std::string get_parity_string();
   std::vector<int> get_dims();
+  void set_grid_size(vector3 gs);
   int get_libctl_dimensions();
   void set_libctl_dimensions(int val);
   bool get_libctl_ensure_periodicity();

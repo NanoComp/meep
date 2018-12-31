@@ -120,10 +120,7 @@ class ModeSolver(object):
         self.k_split_index = 0
         self.eigensolver_iters = []
 
-        grid_size = self._get_grid_size()
-
-        if self.optimize_grid_size:
-            grid_size = self._optimize_grid_size(grid_size)
+        grid_size = self._adjust_grid_size()
 
         if type(self.default_material) is not mp.Medium and callable(self.default_material):
             self.default_material.eps = False
@@ -175,6 +172,8 @@ class ModeSolver(object):
 
         if self.mode_solver:
             self.mode_solver.resolution = self._resolution
+            grid_size = self._adjust_grid_size()
+            self.mode_solver.set_grid_size(grid_size)
 
     @property
     def geometry_lattice(self):
@@ -185,6 +184,8 @@ class ModeSolver(object):
         self._geometry_lattice = val
         if self.mode_solver:
             self.mode_solver.set_libctl_geometry_lattice(val)
+            grid_size = self._adjust_grid_size()
+            self.mode_solver.set_grid_size(grid_size)
 
     @property
     def tolerance(self):
@@ -305,6 +306,14 @@ class ModeSolver(object):
     @eigensolver_block_size.setter
     def eigensolver_block_size(self, val):
         self.mode_solver.eigensolver_block_size = val
+
+    def _adjust_grid_size(self):
+        grid_size = self._get_grid_size()
+
+        if self.optimize_grid_size:
+            grid_size = self._optimize_grid_size(grid_size)
+
+        return grid_size
 
     def allow_negative_epsilon(self):
         self.is_negative_epsilon_ok = True

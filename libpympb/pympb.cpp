@@ -1620,6 +1620,12 @@ std::vector<int> mode_solver::get_dims() {
   return dims;
 }
 
+void mode_solver::set_grid_size(vector3 gs) {
+  grid_size.x = gs.x;
+  grid_size.y = gs.y;
+  grid_size.z = gs.z;
+}
+
 int mode_solver::get_libctl_dimensions() {
   return dimensions;
 }
