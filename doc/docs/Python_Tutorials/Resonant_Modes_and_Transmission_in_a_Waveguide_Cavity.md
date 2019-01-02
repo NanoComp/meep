@@ -16,7 +16,7 @@ Third, by combining several structures in sequence &mdash; ordinary waveguide wi
 
 In the following, we will analyze the structure in exactly the opposite order of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
-See also [examples/holey-wvg-cavity.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-cavity.py) and [examples/holey-wvg-bands.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-bands.py) which contain the commands below.
+See also [examples/holey-wvg-cavity.py](https://github.com/NanoComp/meep/blob/master/python/examples/holey-wvg-cavity.py) and [examples/holey-wvg-bands.py](https://github.com/NanoComp/meep/blob/master/python/examples/holey-wvg-bands.py) which contain the commands below.
 
 [TOC]
 
@@ -200,7 +200,7 @@ Resonant Modes
 
 To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them directly, placing a source inside the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator) and the [Introduction](../Introduction.md#resonant-modes).
 
-The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same [holey-wvg-cavity.py](https://github.com/stevengj/meep/blob/master/python/examples/holey-wvg-cavity.py) input file for *both* calculations, and select between the two with an `if` statement controlled by a `-r` or `--resonant_modes` command-line parameter:
+The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same [holey-wvg-cavity.py](https://github.com/NanoComp/meep/blob/master/python/examples/holey-wvg-cavity.py) input file for *both* calculations, and select between the two with an `if` statement controlled by a `-r` or `--resonant_modes` command-line parameter:
 
 ```py
 if args.resonant_modes:
@@ -233,7 +233,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1/fcen/20, mp.output_hfield_z), until=1/fcen)
 ```
 
-Just as in [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator), we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
+Just as in [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator), we use the `harminv` command (which calls [Harminv](https://github.com/NanoComp/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
 
 We can now launch the simulation, setting the `-r` command-line parameter to do the resonant-mode calculation:
 
@@ -306,7 +306,7 @@ Finally, we consider a smaller, more abstract calculation that we really should 
 
 Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-ω t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $ω(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
-Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [Harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
+Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [Harminv](https://github.com/NanoComp/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
 Thus, we will define our computational cell as follows.
 

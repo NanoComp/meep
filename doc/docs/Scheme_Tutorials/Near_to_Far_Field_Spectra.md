@@ -14,7 +14,7 @@ In this example, we compute the [radiation pattern](https://en.wikipedia.org/wik
 ![](../images/Near2far_simulation_geometry.png)
 </center>
 
-The simulation script is in [examples/antenna-radiation.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/antenna-radiation.ctl).
+The simulation script is in [examples/antenna-radiation.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/antenna-radiation.ctl).
 
 ```scm
 (set-param! resolution 50)
@@ -113,11 +113,11 @@ The far-field flux for the J$_z$ source is `2.457249`. The near-field flux, show
 
 ### Far-Field Intensity of a Cavity
 
-For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/cavity-farfield.ctl). The structure is shown at the bottom of the left image below.
+For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/cavity-farfield.ctl). The structure is shown at the bottom of the left image below.
 
 ![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
-To set this up, we simply remove the last portion of [examples/holey-wvg-cavity.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/holey-wvg-cavity.ctl), beginning right after the line:
+To set this up, we simply remove the last portion of [examples/holey-wvg-cavity.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/holey-wvg-cavity.ctl), beginning right after the line:
 
 ```scm
 (set! symmetries

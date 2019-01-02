@@ -18,7 +18,7 @@ It is convenient to normalize the force in order to work with dimensionless quan
 
 We can compute the gradient force using two different methods and verify that they are equivalent: (1) using MPB, we compute the frequency and group velocity for a given mode over a range of separation distances and then use a [finite-difference](https://en.wikipedia.org/wiki/Finite_difference) scheme to numerically evaluate the formula from above, and (2) using Meep, we directly compute both the gradient force and the power transmitted through the waveguide for the guided mode over the same range of separation distances. In this particular example, we consider just the fundamental `ODD-Y` mode which shows the bidirectional force. The range of separation distances is from 0.02 to 1.02 μm in increments of 0.02 μm.
 
-The simulation script is in [examples/parallel-wvgs-force.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/parallel-wvgs-force.ctl).
+The simulation script is in [examples/parallel-wvgs-force.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/parallel-wvgs-force.ctl).
 
 
 ```scm
@@ -117,7 +117,7 @@ There are two important items to note in the script: (1) We have defined a singl
 
 We run this simulation over the range of separation distances and compare the results to those obtained from MPB. This is shown in the figure above. The two methods show good agreement.
 
-The MPB simulation is in [examples/parallel-wvgs-mpb.ctl](https://github.com/stevengj/meep/blob/master/scheme/examples/parallel-wvgs-mpb.ctl). Note: since MPB permits symmetries only in the $y$ and $z$ directions, the coordinate axes used in the MPB script to define the waveguide geometry are different than those in the Meep script. In MPB, the propagating axis is $x$ whereas in Meep it is $z$.
+The MPB simulation is in [examples/parallel-wvgs-mpb.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/parallel-wvgs-mpb.ctl). Note: since MPB permits symmetries only in the $y$ and $z$ directions, the coordinate axes used in the MPB script to define the waveguide geometry are different than those in the Meep script. In MPB, the propagating axis is $x$ whereas in Meep it is $z$.
 
 ```scm
 (set-param! resolution 128)  ; pixels/μm

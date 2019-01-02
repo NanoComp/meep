@@ -7,13 +7,13 @@
 GitHub Source Repository
 ------------------------
 
-The source repository is available via [GitHub](https://github.com/stevengj/meep).
+The source repository is available via [GitHub](https://github.com/NanoComp/meep).
 
 The current stable release is **version 1.7** which can be obtained from:
 
--   <https://github.com/stevengj/meep/releases>
+-   <https://github.com/NanoComp/meep/releases>
 
-Refer to [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md) for a list of the latest changes, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
+Refer to [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md) for a list of the latest changes, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
 
 To receive notifications when new versions are released, subscribe to the **meep-announce** mailing list:
 
