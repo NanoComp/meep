@@ -37,11 +37,11 @@ env:
 # common installations performed before all build cases
 ##################################################
 before_script:
-  - git clone https://github.com/stevengj/libctl libctl-src
+  - git clone https://github.com/NanoComp/libctl libctl-src
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
-  - git clone https://github.com/stevengj/mpb
+  - git clone https://github.com/NanoComp/mpb
   - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
   - git clone https://github.com/HomerReid/libGDSII
   - (cd libGDSII && git checkout master && sh autogen.sh --prefix=$HOME/local && make install)
@@ -155,9 +155,9 @@ script:
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
   # Output something every 9 minutes so travis doesn't kill the job
   - while sleep 540; do echo "still running"; done &
-  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" && export SUCCESS=1 || export SUCCESS=0
   - >
-    if [[ "${RUN_COVERAGE}" = "1" ]]; then
+    if [[ "${RUN_COVERAGE}" = "1" ]] && [[ "${SUCCESS}" = "1" ]]; then
       make ${MKCHECKFLAGS} &&
       pushd python &&
       echo "[run]" > .coveragerc &&
@@ -166,7 +166,7 @@ script:
       popd;
     fi
   - >
-    if [[ "${BUILD_WITHOUT_MPB}" == "1" ]]; then
+    if [[ "${BUILD_WITHOUT_MPB}" = "1" ]] && [[ "${SUCCESS}" = "1" ]]; then
       ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF} ac_cv_header_mpb_h=no &&
       make clean &&
       make;
