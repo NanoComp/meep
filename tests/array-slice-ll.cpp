@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 
   int rank;
   size_t dims1D[1], dims2D[2];
-  direction dirs1D[1], direction dirs2D[2];
+  direction dirs1D[1], dirs2D[2];
   cdouble *file_slice1d=0;
   double *file_slice2d=0;
 
