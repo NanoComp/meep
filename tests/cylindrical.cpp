@@ -267,6 +267,46 @@ complex<double> checkers(const vec &pt) {
   return 0.0;
 }
 
+int test_pattern(double eps(const vec &), int splitting,
+                 const char *mydirname) {
+  double a = 10.0;
+  grid_volume gv = volcyl(1.5,0.8,a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
+  for (int m=0;m<1;m++) {
+    char m_str[10];
+    snprintf(m_str, 10, "%d", m);
+    master_printf("Trying test pattern with m = %d and %d chunks...\n",
+                  m, splitting);
+    fields f(&s, m);
+    f.use_bloch(0.0);
+    fields f1(&s1, m);
+    f1.use_bloch(0.0);
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
+    master_printf("First chunk is %g by %g\n",
+                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
+    f1.initialize_field(Hp, checkers);
+    f.initialize_field(Hp, checkers);
+
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, veccyl(0.751, 0.401))) return 0;
+    if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
+    if (!compare_point(f, f1, veccyl(1.0, 0.7))) return 0;
+    if (!compare(f.field_energy(), f1.field_energy(),
+                 "   total energy")) return 0;
+    if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                 f1.electric_energy_in_box(gv.surroundings()),
+                 "electric energy")) return 0;
+    if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                 f1.magnetic_energy_in_box(gv.surroundings()),
+                 "magnetic energy")) return 0;
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   quiet = true;
@@ -275,6 +315,11 @@ int main(int argc, char **argv) {
   master_printf("Testing cylindrical coords under different splittings...\n");
 
   if (!test_r_equals_zero(one, mydirname)) abort("error in test_r_equals_zero");
+
+  for (int s=2;s<6;s++)
+    if (!test_pattern(one, s, mydirname)) abort("error in test_pattern\n");
+  //if (!test_pattern(one, 8, mydirname)) abort("error in crazy test_pattern\n");
+  //if (!test_pattern(one, 120, mydirname)) abort("error in crazy test_pattern\n");
   
   for (int s=2;s<4;s++)
     if (!test_simple_periodic(one, s, mydirname)) abort("error in test_simple_periodic\n");

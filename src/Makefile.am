@@ -13,7 +13,7 @@ libmeep_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
 bands.cpp boundaries.cpp bicgstab.cpp casimir.cpp 	\
 control_c.cpp cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
 fields.cpp loop_in_chunks.cpp h5fields.cpp h5file.cpp 	\
-integrate.cpp integrate2.cpp monitor.cpp mympi.cpp 	\
+initialize.cpp integrate.cpp integrate2.cpp monitor.cpp mympi.cpp 	\
 multilevel-atom.cpp near2far.cpp output_directory.cpp random.cpp 	\
 sources.cpp step.cpp step_db.cpp stress.cpp structure.cpp structure_dump.cpp		\
 susceptibility.cpp time.cpp update_eh.cpp mpb.cpp update_pols.cpp 	\
