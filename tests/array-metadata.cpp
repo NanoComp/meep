@@ -78,18 +78,19 @@ bool test_array_metadata(meep::fields &f, const volume &where,
   /* get_array_metadata                                          */
   /***************************************************************/
   size_t dims[3];
-  direction dirs[3];
+  int dirs[3];
   int rank=f.get_array_slice_dimensions(where, dims, dirs,
                                         collapse_empty_dimensions);
   size_t nxyz[3]={1,1,1};
   for(int r=0; r<rank; r++)
    nxyz[dirs[r]-X] = dims[r];
-  size_t nw=nxyx[0]*nxyz[1]*nxyz[2];
+  size_t nw=nxyz[0]*nxyz[1]*nxyz[2];
   vector<double> xgrid(nxyz[0],0.0);
   vector<double> ygrid(nxyz[1],0.0);
   vector<double> zgrid(nxyz[2],0.0);
   vector<double> weights(nw,0.0);
-  f.get_array_metadata(where, xgrid, ygrid, zgrid, weights, collapse_empty_dimensions);
+  f.get_array_metadata(where, xgrid.data(), ygrid.data(), zgrid.data(), weights.data(), 
+                       collapse_empty_dimensions);
   size_t stride[3];
   stride[2] = 1;
   stride[1] = nxyz[2];
