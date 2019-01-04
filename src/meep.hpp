@@ -1304,16 +1304,6 @@ class chunkloop_field_components {
 /***************************************************************/
 typedef vec (*kpoint_func)(double freq, int mode, void *user_data);
 
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-class source_indicator
- {
- public:
-   virtual ~source_indicator()=0;
-   virtual bool point_in_source(const vec &p)=0;
- };
-
 
 class fields {
  public:
@@ -1490,18 +1480,16 @@ class fields {
   // indicator->point_in_source(p) returns true.
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
-                         std::complex<double> amp, source_indicator *indicator=0);
+                         std::complex<double> amp);
   void add_volume_source(component c, const src_time &src,
                          const volume &where_, const char *filename,
-                         const char *dataset, std::complex<double> amp,
-                         source_indicator *indicator=0);
+                         const char *dataset, std::complex<double> amp);
   void add_volume_source(component c, const src_time &src,
 			 const volume &,
 			 std::complex<double> A(const vec &),
-			 std::complex<double> amp = 1.0, source_indicator *indicator=0);
+			 std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const volume &,
-			 std::complex<double> amp = 1.0, source_indicator *indicator=0);
+			 const volume &, std::complex<double> amp = 1.0);
   void require_component(component c);
 
   // mpb.cpp

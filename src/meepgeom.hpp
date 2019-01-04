@@ -198,21 +198,6 @@ geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, 
 meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
 meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
 
-/******************************************************************************/
-/* object_source_indicator is an implementation of source_indicator (defined  */
-/* in meep.hpp) that restricts a source to points in the interior of a        */
-/* geometric object.                                                          */
-/******************************************************************************/
-class object_source_indicator: public meep::source_indicator
- {
-public:
-   object_source_indicator(geometric_object obj0);
-   ~object_source_indicator();
-   bool point_in_source(const meep::vec &p);
-private:
-   geometric_object obj;
- };
-
 }; // namespace meep_geom
 
 #endif // #ifndef MEEP_GEOM_H
