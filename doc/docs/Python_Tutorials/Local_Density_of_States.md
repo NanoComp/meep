@@ -116,4 +116,3 @@ We run several simulations spanning a number of different notch sizes and plot t
 
 <center>
 ![](../images/Metalcavity_ldos.png)
-</center>

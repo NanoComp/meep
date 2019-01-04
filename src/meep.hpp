@@ -1106,8 +1106,6 @@ typedef struct polarization_state_s {
   struct polarization_state_s *next; // linked list
 } polarization_state;
 
-typedef std::complex<double> (*amplitude_function)(const vec &);
-
 class fields_chunk {
  public:
   realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
@@ -1242,8 +1240,7 @@ class fields_chunk {
   void calc_sources(double time);
 
   // initialize.cpp
-  //void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_field(component, amplitude_function f);
+  void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
@@ -1558,8 +1555,7 @@ class fields {
 
 
   // initialize.cpp:
-  //void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_field(component, amplitude_function f);
+  void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int ntot);
