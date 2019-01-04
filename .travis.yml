@@ -155,9 +155,9 @@ script:
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
   # Output something every 9 minutes so travis doesn't kill the job
   - while sleep 540; do echo "still running"; done &
-  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" && export SUCCESS=1 || export SUCCESS=0
+  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" && export MAKE_DISTCHECK_EXIT_CODE=0
   - >
-    if [[ "${RUN_COVERAGE}" = "1" ]] && [[ "${SUCCESS}" = "1" ]]; then
+    if [[ "${RUN_COVERAGE}" = "1" ]] && [[ "${MAKE_DISTCHECK_EXIT_CODE}" = "0" ]]; then
       make ${MKCHECKFLAGS} &&
       pushd python &&
       echo "[run]" > .coveragerc &&
@@ -166,7 +166,7 @@ script:
       popd;
     fi
   - >
-    if [[ "${BUILD_WITHOUT_MPB}" = "1" ]] && [[ "${SUCCESS}" = "1" ]]; then
+    if [[ "${BUILD_WITHOUT_MPB}" = "1" ]] && [[ "${MAKE_DISTCHECK_EXIT_CODE}" = "0" ]]; then
       ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF} ac_cv_header_mpb_h=no &&
       make clean &&
       make;
