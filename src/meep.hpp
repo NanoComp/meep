@@ -1239,10 +1239,6 @@ class fields_chunk {
   bool update_pols(field_type ft);
   void calc_sources(double time);
 
-  // initialize.cpp
-  void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_with_nth_te(int n, double kz);
-  void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
   void alloc_extra_connections(field_type, connect_phase, in_or_out, size_t);
   // dft.cpp
@@ -1516,12 +1512,6 @@ class fields {
                                   vec *kpoints=0, vec *kdom=0, bool verbose=false);
 
 
-  // initialize.cpp:
-  void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_with_nth_te(int n);
-  void initialize_with_nth_tm(int n);
-  void initialize_with_n_te(int ntot);
-  void initialize_with_n_tm(int ntot);
   int phase_in_material(const structure *s, double time);
   int is_phasing();
 
@@ -1819,9 +1809,6 @@ void set_random_seed(unsigned long seed);
 double uniform_random(double a, double b); // uniform random in [a,b]
 double gaussian_random(double mean, double stddev); // normal random with given mean and stddev
 int random_int(int a, int b); // uniform random in [a,b)
-
-// Bessel function (in initialize.cpp)
-double BesselJ(int m, double kr);
 
 // analytical Green's functions (in near2far.cpp); upon return,
 // EH[0..5] are set to the Ex,Ey,Ez,Hx,Hy,Hz field components at x
