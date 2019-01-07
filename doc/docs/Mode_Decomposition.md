@@ -129,7 +129,7 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               double *kdom);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp#L190-L495).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [mpb.cpp](https://github.com/NanoComp/meep/blob/master/src/mpb.cpp#L190-L495).
 
 ### Working with MPB Eigenmodes
 
@@ -146,7 +146,7 @@ double get_group_velocity(void *vedata);
 void destroy_eigenmode_data(void *vedata);
 ````
 
-These functions are implemented in [src/mpb.cpp](https://github.com/stevengj/meep/blob/master/src/mpb.cpp).
+These functions are implemented in [src/mpb.cpp](https://github.com/NanoComp/meep/blob/master/src/mpb.cpp).
 
 ### Exporting Frequency-Domain Fields
 
@@ -160,7 +160,7 @@ These functions are implemented in [src/mpb.cpp](https://github.com/stevengj/mee
 
 `output_mode_fields` is similar, but instead exports the components of the eigenmode described by `mode_data` which should be the return value of a call to `get_eigenmode`.
 
-These functions are implemented in [src/dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1070-L1092).
+These functions are implemented in [src/dft.cpp](https://github.com/NanoComp/meep/blob/master/src/dft.cpp#L1070-L1092).
 
 ### Computing Overlap Integrals
 ````
@@ -179,7 +179,7 @@ These functions are implemented in [src/dft.cpp](https://github.com/stevengj/mee
 
 `get_mode_mode_overlap` is similar, but computes the overlap integral between two eigenmodes. `mode1_data` and `mode2_data` may be identical, in which case you get the inner product of the mode with itself. This should equal the group velocity of the mode based on the MPB's normalization convention.
 
-These functions are implemented in [src/dft.cpp](https://github.com/stevengj/meep/blob/master/src/dft.cpp#L1133-L1144).
+These functions are implemented in [src/dft.cpp](https://github.com/NanoComp/meep/blob/master/src/dft.cpp#L1133-L1144).
 
 ## How Mode Decomposition Works
 

@@ -69,7 +69,7 @@ The following table briefly describes what is in each .cpp file:
 |----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | Material dispersion                                                                                            | polarization.cpp, update_from_e.cpp, and friends.                                                                          |
 | Vectors, volumes etc.                                                                                          | meep/vec.hpp, vec.cpp                                                                                                        |
-| Geometric objects                                                                                              | handled by [libctl](https://github.com/stevengj/libctl) functions in libctl's geom.c, called from the Scheme front-end (not handled by Meep) |
+| Geometric objects                                                                                              | handled by [libctl](https://github.com/NanoComp/libctl) functions in libctl's geom.c, called from the Scheme front-end (not handled by Meep) |
 | Fields: initialization, cleanup, chunking, stepping-plan, (dis)affiliation with sources, polarizabilities etc. | fields.cpp                                                                                                                   |
 | Structure: initialization, cleanup, chunking, material parameters, boundary conditions etc.                    | structure.cpp                                                                                                                |
 | MPI interface                                                                                                  | meep/mympi.hpp, mympi.cpp                                                                                                    |
@@ -173,7 +173,7 @@ Classes and functions related to the high-level Python interface to `MPB`. Addit
 
 ### `mpb_data.py`
 
-Definition of `MPBData`, a Python class useful for `MPB` data analysis (documented [here](https://mpb.readthedocs.io/en/latest/Python_Data_Analysis_Tutorial)). This is is a Python port of the functionality available in the [`mpb-data` command line program](https://github.com/stevengj/mpb/blob/master/utils/mpb-data.c) originally written in C.
+Definition of `MPBData`, a Python class useful for `MPB` data analysis (documented [here](https://mpb.readthedocs.io/en/latest/Python_Data_Analysis_Tutorial)). This is is a Python port of the functionality available in the [`mpb-data` command line program](https://github.com/NanoComp/mpb/blob/master/utils/mpb-data.c) originally written in C.
 
 ## Testing
 

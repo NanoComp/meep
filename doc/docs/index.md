@@ -33,17 +33,19 @@ A time-domain electromagnetic simulation simply evolves [Maxwell's equations](ht
 
 Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization in sequence or in parallel.
 
-[Tutorial/Basics](Python_Tutorials/Basics.md) provides examples of all these kinds of computations.
+[Tutorial/Basics](Python_Tutorials/Basics.md) provides examples of the various kinds of computations.
 
 Download
 --------
 
-The source repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are in [Releases](https://github.com/stevengj/meep/releases). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
+The source repository is on [GitHub](https://github.com/NanoComp/meep). Gzipped tarballs of stable versions are in [Releases](https://github.com/NanoComp/meep/releases). The release history is in [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------
 
-See the left navigation sidebar. In particular, the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md) are the most important things to review when starting.
+For a list of topics, see the left navigation sidebar. For first-time users, the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md) are the most important items to review.
+
+This documentation is for the master branch of the [source repository](Download.md#github-source-repository).
 
 ### Mailing Lists
 
@@ -51,12 +53,12 @@ Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu
 
 ### Bug Reports and Feature Requests
 
-For bug reports and feature requests, please file a [GitHub issue](https://github.com/stevengj/meep/issues).
+For bug reports and feature requests, please file a [GitHub issue](https://github.com/NanoComp/meep/issues).
 
 Acknowledgements
 ----------------
 
-The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep). [Acknowledgements](Acknowledgements.md) provides a complete listing of the project contributors.
+The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep). [Acknowledgements](Acknowledgements.md) provides a complete listing of the project contributors.
 
 Support and Feedback
 ---------------------

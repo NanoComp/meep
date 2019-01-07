@@ -106,7 +106,7 @@ Optional Dependencies
 
 ### BLAS and LAPACK
 
-BLAS and LAPACK libraries are required in order to install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
+BLAS and LAPACK libraries are required in order to install [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
 Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, it makes a big difference if you also use [MPB](https://mpb.readthedocs.io).
 
@@ -140,9 +140,9 @@ We currently recommend installing OpenBLAS which includes LAPACK so you do not n
 
 ### Harminv
 
-To use Meep to extract resonant frequencies and decay rates, you must install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) which requires BLAS and LAPACK.
+To use Meep to extract resonant frequencies and decay rates, you must install [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) which requires BLAS and LAPACK.
 
-See the [Harminv installation](https://github.com/stevengj/harminv/blob/master/doc/installation.md) instructions.
+See the [Harminv installation](https://github.com/NanoComp/harminv/blob/master/doc/installation.md) instructions.
 
 ### MPI
 
@@ -156,7 +156,7 @@ As described below, when you configure Meep with MPI support (`--with-mpi`), it 
 
 ### HDF5
 
-Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields. [HDF](https://www.hdfgroup.org) is a widely-used, free, portable library and file format for multi-dimensional scientific data. There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) utilities.
+Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields. [HDF](https://www.hdfgroup.org) is a widely-used, free, portable library and file format for multi-dimensional scientific data. There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md) utilities.
 
 HDF5 supports parallel I/O under MPI which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other. We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large HPC clusters we strongly recommend using the parallel HDF5.
 
@@ -280,25 +280,25 @@ sudo apt-get -y install     \
 mkdir -p ~/install
 
 cd ~/install
-git clone https://github.com/stevengj/harminv.git
+git clone https://github.com/NanoComp/harminv.git
 cd harminv/
 sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
-git clone https://github.com/stevengj/libctl.git
+git clone https://github.com/NanoComp/libctl.git
 cd libctl/
 sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
-git clone https://github.com/stevengj/h5utils.git
+git clone https://github.com/NanoComp/h5utils.git
 cd h5utils/
 sh autogen.sh CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 
 cd ~/install
-git clone https://github.com/stevengj/mpb.git
+git clone https://github.com/NanoComp/mpb.git
 cd mpb/
 sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make && sudo make install
@@ -316,7 +316,7 @@ export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
 
 cd ~/install
-git clone https://github.com/stevengj/meep.git
+git clone https://github.com/NanoComp/meep.git
 cd meep/
 sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
     CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
@@ -429,28 +429,28 @@ make -j
 sudo make -j install
 
 cd ~/install
-git clone https://github.com/stevengj/harminv.git
+git clone https://github.com/NanoComp/harminv.git
 cd harminv/
 sh autogen.sh --enable-shared
 make -j
 sudo make -j install
 
 cd ~/install
-git clone https://github.com/stevengj/libctl.git
+git clone https://github.com/NanoComp/libctl.git
 cd libctl/
 sh autogen.sh  --enable-shared
 make -j
 sudo make -j install
 
 cd ~/install
-git clone https://github.com/stevengj/h5utils.git
+git clone https://github.com/NanoComp/h5utils.git
 cd h5utils/
 sh autogen.sh CC=/usr/local/bin/mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make -j
 sudo make -j install
 
 cd ~/install
-git clone https://github.com/stevengj/mpb.git
+git clone https://github.com/NanoComp/mpb.git
 cd mpb/
 sh autogen.sh --enable-shared CC=/usr/local/bin/mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make -j
@@ -478,7 +478,7 @@ python3 setup.py build
 sudo /usr/local/bin/python3 setup.py install
 
 cd ~/install
-git clone https://github.com/stevengj/meep.git
+git clone https://github.com/NanoComp/meep.git
 cd meep/
 sh autogen.sh --enable-shared --with-mpi PYTHON=python3 MPICC=/usr/local/bin/mpicc MPICXX=/usr/local/bin/mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make -j
@@ -493,7 +493,7 @@ If you want to modify the source code, you will want to have a number of additio
 Once you have Git, you can obtain a copy of the source repository from GitHub:
 
 ```sh
- git clone https://github.com/stevengj/meep.git
+ git clone https://github.com/NanoComp/meep.git
 ```
 
 This command clones the repository in a local directory `meep`. See the [Git manual](https://git-scm.com/doc) for more information on using Git. Perhaps the most useful command is `git pull` which you can execute periodically to get any new updates to the development version.

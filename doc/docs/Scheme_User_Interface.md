@@ -1169,7 +1169,7 @@ Outputs *all* the components of the field *X*, where *X* is either `h`, `b`, `e`
 
 **`(output-png component h5topng-options)`**
 —
-Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](https://github.com/stevengj/h5utils/blob/master/README.md), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc bluered"`). See also [Tutorial/Basics](Scheme_Tutorials/Basics.md#output-tips-and-tricks).
+Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](https://github.com/NanoComp/h5utils/blob/master/README.md), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc bluered"`). See also [Tutorial/Basics](Scheme_Tutorials/Basics.md#output-tips-and-tricks).
 
 It is often useful to use the `h5topng` `-C` or `-A` options to overlay the dielectric function when outputting fields. To do this, you need to know the name of the dielectric-function `.h5` file which must have been previously output by `output-epsilon`. To make this easier, a built-in shell variable `$EPS` is provided which refers to the last-output dielectric-function `.h5` file. So, for example `(output-png Ez "-C $EPS")` will output the $E_z$ field and overlay the dielectric contours.
 
@@ -1191,7 +1191,7 @@ See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic 
 
 #### Harminv
 
-The following step function collects field data from a given point and runs [Harminv](https://github.com/stevengj/harminv) on that data to extract the frequencies, decay rates, and other information.
+The following step function collects field data from a given point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract the frequencies, decay rates, and other information.
 
 **`(harminv c pt fcen df [maxbands])`**
 —
