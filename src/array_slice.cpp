@@ -140,7 +140,7 @@ void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data)
   for(int ft=0; ft<NUM_FIELD_TYPES; ft++)
    for(src_vol *s=fc->sources[ft]; s; s=s->next)
     {
-      if (slice_component!=Permeability && slice_component!=s->c)
+      if (slice_component!=s->c)
        continue;
 
       // loop over point sources in this src_vol. for each point source,
