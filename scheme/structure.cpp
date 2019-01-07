@@ -306,7 +306,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
     }
   }
 
-  geom_fix_objects0(geometry);
+  geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
   if (verbose && meep::am_master()) {

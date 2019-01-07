@@ -873,7 +873,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   matrix3x3_to_arr(R, Rm);
   matrix3x3_to_arr(G, Gm);
 
-  geom_fix_objects0(*geometry);
+  geom_fix_object_list(*geometry);
 
   meep::master_printf("Geometric objects:\n");
   if (meep::am_master()) {

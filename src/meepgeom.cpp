@@ -445,7 +445,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g,
     }
   }
 
-  geom_fix_objects0(geometry);
+  geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
   if (verbose && meep::am_master()) {
@@ -1881,7 +1881,7 @@ static void init_libctl(material_type default_mat, bool ensure_per, meep::grid_v
   geometry_center = cell_center;
   dimensions = meep::number_of_directions(gv->dim);
   geometry_lattice.size = cell_size;
-  geom_fix_objects0(*geom);
+  geom_fix_object_list(*geom);
 }
 
 std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
