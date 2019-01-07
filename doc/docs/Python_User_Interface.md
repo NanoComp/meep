@@ -1465,7 +1465,7 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 #### Source slices
 
-**`get_source_slice(vol=None, center=None, size=None, type=None)`**
+**`get_source_slice(component, vol=None, center=None, size=None)`**
 
 This routine returns an array of the same dimensions as that
 returned by `get_array` for the given `vol` or `center/size`,
@@ -1474,26 +1474,14 @@ not the fields there.
 (Because sources, unlike fields, are *inputs* rather
 than outputs of meep calculations, this routine
 is not a means of extracting results from meep calculations,
-but is rather a tool for sanity-check visualization
-to confirm that the source distribution you specified is the one you
+but is rather a tool to sanity-check visualization
+and confirm that the source distribution you specified is the one you
 wanted; philosophically it is closer in
 spirit to [`output_epsilon()`](#output_epsilon) than to
  `get_array/get_dft_array`.
 
-The array returned by `get_source_slice` is always real-valued,
-with the significance of the entry corresponding to a given grid point
-depending on the optional string-valued `type` argument:
-
-|  `type`     | Significance of array value
-|-------------|-------------------------------------------------------
-|  `Re Ex`    |  Real part of *x*-directed electric source amplitude
-|  `Im Hy`    |  Imaginary part of *y*-directed magnetic source amplitude
-|  `norm`     |  Sum of squared magnitudes of all source components of all field types
-| `indicator` |  Binary indicator function: 1 if any source component has nonzero amplitude, 0 otherwise
-
-(In the first two cases, `Ex` or `Hy` may be replaced with the name of any
-field component.)
-If `type` is not specified, it defaults to `indicator`.
+The array returned by `get_source_slice` is always complex,
+and corresponds to the given `component`.
 
 #### Harminv
 

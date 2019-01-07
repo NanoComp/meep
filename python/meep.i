@@ -1434,17 +1434,3 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     import atexit
     atexit.register(report_elapsed_time)
 %}
-
-%inline %{
-PyObject *get_py_gobj_size(PyObject *po)
-{
-  GEOMETRIC_OBJECT o;
-  if (!py_gobj_to_gobj(po, &o))
-   PyErr_Format(PyExc_TypeError, "Error: invalid GeometricObject in get_py_gobj_size");
-  geom_box gb;
-  geom_get_bounding_box(o, &gb);
-  vector3 object_size=vector3_minus(gb.high, gb.low);
-  return v3_to_pyv3(&object_size);
-}
-
-%} // %inline
