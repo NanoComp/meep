@@ -439,19 +439,18 @@ void *fields::do_get_array_slice(const volume &where,
       }
    }
 
-  data.vslice       = vslice;
-  data.fun          = fun;
-  data.rfun         = rfun;
-  data.fun_data     = fun_data;
-  data.components   = components;
-
-  int num_components = components.size();
-
-  data.cS      = new component[num_components];
-  data.ph      = new cdouble[num_components];
-  data.fields  = new cdouble[num_components];
-
-  data.offsets = new ptrdiff_t[2 * num_components];
+  data.vslice                 = vslice;
+  data.fun                    = fun;
+  data.rfun                   = rfun;
+  data.fun_data               = fun_data;
+  data.source_slice_component = source_slice_component;
+  data.get_source_slice       = get_source_slice;
+  data.components             = components;
+  int num_components          = components.size();
+  data.cS                     = new component[num_components];
+  data.ph                     = new cdouble[num_components];
+  data.fields                 = new cdouble[num_components];
+  data.offsets                = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2*num_components*sizeof(ptrdiff_t));
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
