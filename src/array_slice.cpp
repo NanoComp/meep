@@ -350,7 +350,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* get_array_slice.                                            */
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
-                                       int dirs[3], bool collapse_empty_dimensions,
+                                       direction dirs[3], bool collapse_empty_dimensions,
                                        void *caller_data)
 {
   am_now_working_on(FieldOutput);
@@ -389,7 +389,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
     }
   }
   for(int r=0; r<rank; r++)
-   dirs[r]=(data->ds[r] - /*(meep::direction)*/X);
+      dirs[r]=(meep::direction)(data->ds[r] - /*(meep::direction)*/X);
   data->rank=rank;
   data->slice_size=slice_size;
   finished_working();
@@ -418,7 +418,7 @@ void *fields::do_get_array_slice(const volume &where,
   // TODO make this a caller-specifiable parameter to get_array_slice()?
   bool collapse=false;
   size_t dims[3];
-  int dirs[3];
+  direction dirs[3];
   array_slice_data data;
   int rank=get_array_slice_dimensions(where, dims, dirs, collapse, &data);
   size_t slice_size=data.slice_size;

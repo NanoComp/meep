@@ -1420,21 +1420,21 @@ class fields {
   // if collapse_empty_dimensions==true, all such length-2
   // array dimensions are collaped to length 1 by doing the
   // interpolation before returning the array.
-  // currently, collapse_empty_dimensions is always false for the 
+  // currently, collapse_empty_dimensions is always false for the
   // time-domain arrays returned by get_field_array and always
   // true for the frequency-domain arrays returned by get_dft_array,
-  // so an alternative name for `collapse_empty_dimensions` would be 
+  // so an alternative name for `collapse_empty_dimensions` would be
   // `is_dft_array`.
-  // 
+  //
   // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
   int get_array_slice_dimensions(const volume &where, size_t dims[3],
-                                 /*direction dirs[3],*/ int dirs[3],  // swig prefers this?
+                                 direction dirs[3],
                                  bool collapse_empty_dimensions=false,
                                  void *data=0);
 
   int get_dft_array_dimensions(const volume &where,
-                               size_t dims[3], int dirs[3]/*direction dirs[3]*/)
+                               size_t dims[3], direction dirs[3])
    { return get_array_slice_dimensions(where,dims,dirs,true); }
 
   // given a subvolume, return a column-major array containing

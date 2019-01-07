@@ -549,7 +549,7 @@ void fields::get_array_metadata(const volume &where,
   volume wherec(where + yee_c);
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
-  
+
   ivec imin=gv.little_corner()+one_ivec(gv.dim), imax=gv.big_corner()-one_ivec(gv.dim);
   LOOP_OVER_DIRECTIONS(gv.dim, d)
    { if (is.in_direction(d) < imin.in_direction(d))
@@ -583,8 +583,8 @@ void fields::get_array_metadata(const volume &where,
   if (gv.dim == Dcyl)
    fprintf(stderr,"** warning: cylindrical coordinates not supported in get_array_metadata; integration weights may be incorrect\n");
 
-  size_t dims[3]; 
-  int dirs[3];
+  size_t dims[3];
+  direction dirs[3];
   int rank=get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
   size_t nxyz[3]={1,1,1};
   for(int r=0; r<rank; r++)

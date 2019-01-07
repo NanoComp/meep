@@ -78,7 +78,7 @@ bool test_array_metadata(meep::fields &f, const volume &where,
   /* get_array_metadata                                          */
   /***************************************************************/
   size_t dims[3];
-  int dirs[3];
+  direction dirs[3];
   int rank=f.get_array_slice_dimensions(where, dims, dirs,
                                         collapse_empty_dimensions);
   size_t nxyz[3]={1,1,1};
