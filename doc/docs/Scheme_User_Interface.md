@@ -409,33 +409,60 @@ An ellipsoid. This is actually a subclass of `block`, and inherits all the same 
 
 ### prism
 
-Polygonal prism type.
+A `prism` consists of a plane polygon, defined by an arbitrary-length
+list of 3D points (the *vertices*), extruded through a given 
+distance (the *height*) in a given direction (the *axis*) to form
+a 3D volume. The quantities you will specify to instantiate 
+a `prism` are
 
-**`vertices` [list of `vector3`]**
++ **`vertices` [list of `vector3`]**
 —
-The vertices that define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. They must lie in a plane that's perpendicular to the `axis`. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. Though the `center` property is required (since the prism is a sublcass of `geometric-object`), it is currently unused.
+The vertices that define the polygonal *floor* of the prism;
+the vertices must be coplanar, and if `axis` is specified it
+must be normal to the plane of the vertices.
+Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell.
+The *ceiling* of the prism is just its floor polygon rigidly
+translated through the displacement vector `height*axis`.   
 
-**`height` [`number`]**
-—
-The prism thickness, extruded in the direction of `axis`. `infinity` can be used for infinite height.
 
-**`axis` [`vector3`]**
++ **`height` [`number`]**
 —
-Defaults to `(vector3 0 0 1)`, which is currently the only supported axis for the prism.
+The prism thickness, extruded in the direction of `axis`. `infinity` can be used for infinite height.   
+
+
++ **`axis` [`vector3`]**
+—
+Optional; specifies the extrusion axis, which must be normal to the plane of the vertices. If `axis` is not specified, the extrusion axis is taken to be the normal vector to the plane of the vertices, with sign determined by a right-hand rule with respect to the first two vertices: if your right-hand fingers point from vertex 1 to vertex 2, your thumb points in the direction of `axis.`
+In vector language, `axis` is determined by computing a vector cross product and normalizing to unit magnitude:
+$$ \mathbf{a}
+  =(\mathbf{v}_1 - \overline{\mathbf v})
+   \times
+   (\mathbf{v}_2 - \overline{\mathbf{v}}), 
+   \quad 
+   \texttt{axis}\equiv \frac{\mathbf{a}}{|\mathbf{a}|}
+$$
+where $\mathbf{v}_{1,2}$ are the first and second `vertices` and $\overline{\mathbf{v}}\equiv\frac{1}{N}\sum_{n=1}^N \mathbf{v}_n$
+is the *centroid* of the polygon (with $N\ge 3$ the length of the
+`vertices` array).
+
+##### Options for specifying the `center` of a prism
+
+In contrast to the other types of `geometric-object`, the center of a prism does not need to be explicitly specified, because it may be calculated from `vertices`, `height`, and `axis.` (Specifically, we have `center = centroid + 0.5*height*axis,` where the `centroid` was defined above). To create a `prism` with the center computed automatically in this way, simply initialize the `center` field of the `prism` class (inherited from `geometric_object`) to the special initializer keyword `auto-center`. On the other hand, in some cases you may want to override this automatic calculation and instead specify your own `center` for a prism; this will have the effect of rigidly translating the entire prism so that it is centered at the point you specify. See below for examples of both possibilities.
+
+### Examples of geometric objects
 
 These are some examples of geometric objects created using the above classes:
 
++ A cylinder of infinite radius and height 0.25 pointing along the **x** axis and centered at the origin:
+
 ```scm
-; A cylinder of infinite radius and height 0.25 pointing along the x axis,
-; centered at the origin:
 (make cylinder (center 0 0 0) (material (make dielectric (index 3.5))) 
                (radius infinity) (height 0.25) (axis 1 0 0))
 ```
 
++ An ellipsoid with its long axis pointing along (1,1,1), centered on the origin (the other two axes are orthogonal and have equal semi-axis lengths):
+
 ```scm
-; An ellipsoid with its long axis pointing along (1,1,1), centered on
-; the origin (the other two axes are orthogonal and have equal
-; semi-axis lengths):
 (make ellipsoid (center 0 0 0) (material (make dielectric (epsilon 12.0)))
                 (size 0.8 0.2 0.2)
                 (e1 1 1 1)
@@ -443,29 +470,55 @@ These are some examples of geometric objects created using the above classes:
                 (e3 -2 1 1))
 ```
 
++ A unit cube of material `mat` with a spherical air hole of radius 0.2 at its center, the whole thing centered at (1,2,3):
+
 ```scm
-; A unit cube of material mat with a spherical air hole of radius 0.2 at
-; its center, the whole thing centered at (1,2,3):
 (set! geometry (list
                (make block (center 1 2 3) (material metal) (size 1 1 1))
                (make sphere (center 1 2 3) (material air) (radius 0.2))))
 ```
 
++ A hexagonal prism of material crystalline silicon (from the [Materials Library](../Materials#materials-library)) with base (floor) defined by 6 vertices---lying in the $xy$ plane, centered at the origin---and extruded in the $\mathbf{\hat{z}}$ direction to a height of 1.5:
+
 ```scm
-; A hexagon defined as a prism with six vertices with centroid at (0,0,0.75)
-; of material crystalline silicon (from the materials library)
 (set! geometry
       (list
        (make prism
          (vertices
-           (list (vector3 -1 0 0)
+           (list 
+                 (vector3 -1 0 0)
                  (vector3 -0.5 (/ (sqrt 3) 2) 0)
                  (vector3 0.5 (/ (sqrt 3) 2) 0)
                  (vector3 1 0 0)
                  (vector3 0.5 (/ (sqrt 3) -2) 0)
                  (vector3 -0.5 (/ (sqrt 3) -2) 0)))
+         (axis 0 0 1)
          (height 1.5)
-         (center (vector3 0 0))
+         (center auto-center)
+         (material cSi))))
+```
+Note the use of `(center auto-center)` to establish that the prism
+center will be computed automatically from the vertices, axes, and
+height---which, in this case, will put the center at $(0,0,0.75).$
+
++ The same hexagonal prism, but now rigidly displaced so that
+its center lies at (0.4, 0.8, -0.2):
+
+```scm
+(set! geometry
+      (list
+       (make prism
+         (vertices
+           (list 
+                 (vector3 -1 0 0)
+                 (vector3 -0.5 (/ (sqrt 3) 2) 0)
+                 (vector3 0.5 (/ (sqrt 3) 2) 0)
+                 (vector3 1 0 0)
+                 (vector3 0.5 (/ (sqrt 3) -2) 0)
+                 (vector3 -0.5 (/ (sqrt 3) -2) 0)))
+         (axis 0 0 1)
+         (height 1.5)
+         (center (vector3 0.4 0.8 -0.2))
          (material cSi))))
 ```
 

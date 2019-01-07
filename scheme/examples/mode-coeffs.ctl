@@ -19,10 +19,10 @@
         (prism_y (/ w 2))
         (verts
          (list
-          (vector3 (* prism_x -1) prism_y)
           (vector3 prism_x prism_y)
-          (vector3 prism_x (* prism_y -1))
-          (vector3 (* prism_x -1) (* prism_y -1))))
+          (vector3 (* prism_x -1) prism_y)
+          (vector3 (* prism_x -1) (* prism_y -1))
+          (vector3 prism_x (* prism_y -1))))
         (modes-to-check '(1 2))  ; indices of modes for which to compute expansion coefficients
         (xm (- (* 0.5 sx) dpml)))  ; x-coordinate of monitor
 

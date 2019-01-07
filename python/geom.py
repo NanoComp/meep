@@ -400,12 +400,14 @@ class Ellipsoid(Block):
 class Prism(GeometricObject):
 
     def __init__(self, vertices, height, axis=Vector3(z=1), center=None, **kwargs):
-        centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) + (0.5*height)*axis
-        if center is not None and len(vertices): # shift centroid to center
-            shift = center - centroid
+        centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
+        original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
+        if center is not None and len(vertices):
+            # translate vertices to center prism at requested center
+            shift = center - original_center
             vertices = list(map(lambda v: v + shift, vertices))
         else:
-            center = centroid
+            center = original_center
         self.vertices = vertices
         self.height = height
         self.axis = axis
