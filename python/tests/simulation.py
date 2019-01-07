@@ -574,6 +574,11 @@ class TestSimulation(unittest.TestCase):
 
         self.assertAlmostEqual(result[0], -0.0599602798684155)
 
+    def test_source_slice(self):
+        sim = self.init_simple_simulation()
+        sim.run(until=5)
+        slice = sim.get_source_slice(mp.Ez)
+        print(slice)
 
 if __name__ == '__main__':
     unittest.main()

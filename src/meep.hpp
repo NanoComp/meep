@@ -1443,7 +1443,7 @@ class fields {
                                                 std::complex<double> *slice=0);
 
   // like get_array_slice, but for *sources* instead of fields
-  double *get_source_slice(const volume &where, const char *type=0, double *slice=0);
+  std::complex<double> *get_source_slice(const volume &where, component source_slice_component, std::complex<double> *slice=0);
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,
@@ -1451,7 +1451,9 @@ class fields {
                            field_function fun,
                            field_rfunction rfun,
                            void *fun_data,
-                           void *vslice, const char *source_slice_type=0);
+                           void *vslice,
+                           component source_slice_component=Ex,
+                           bool get_source_slice=false);
 
   // step.cpp methods:
   double last_step_output_wall_time;
@@ -1467,7 +1469,7 @@ class fields {
   // cw_fields.cpp:
   bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L=2);
   bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L=2);
-#
+
   // sources.cpp:
   double last_source_time();
   void add_point_source(component c, double freq, double width, double peaktime,
@@ -1476,8 +1478,6 @@ class fields {
   void add_point_source(component c, const src_time &src,
                         const vec &, std::complex<double> amp = 1.0);
 
-  // if indicator is nonzero, sources are added only at points for which
-  // indicator->point_in_source(p) returns true.
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
                          std::complex<double> amp);

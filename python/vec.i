@@ -57,6 +57,8 @@
 %rename(vec_abs) meep::abs;
 %rename(vec_max) meep::max;
 %rename(vec_min) meep::min;
+%rename(vec_str) meep::vec::str;
+%rename(ivec_str) meep::ivec::str;
 %rename(print_grid_volume) meep::grid_volume::print;
 %rename(symmetry_reduce) meep::symmetry::reduce;
 

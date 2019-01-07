@@ -274,7 +274,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   (void) S; (void) sn; // these should be the identity
   (void) dV0; (void) dV1; // grid_volume weighting is included in data->amp
   (void) ichunk;
-  
+
   size_t npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d)
     npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
@@ -357,7 +357,7 @@ complex<double> amp_file_func(const vec &p) {
 
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
                                complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
-                               complex<double> amp) { 
+                               complex<double> amp) {
 
   amp_func_vol = &where_;
 
@@ -423,8 +423,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 void fields::add_volume_source(component c, const src_time &src,
                                const volume &where_,
                                complex<double> A(const vec &),
-			       complex<double> amp)
-{
+			       complex<double> amp) {
   volume where(where_); // make a copy to adjust size if necessary
   if (gv.dim != where.dim)
     abort("incorrect source grid_volume dimensionality in add_volume_source");

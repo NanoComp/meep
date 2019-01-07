@@ -403,12 +403,13 @@ vec zero_vec(ndim);
 
 class vec {
  public:
-  vec() {};
-  vec(ndim di) { dim = di; };
+  vec() { init_t(); };
+  vec(ndim di) { init_t(); dim = di; };
   vec(ndim di, double val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
-  vec(double zz) { dim = D1; t[Z] = zz; };
-  vec(double xx, double yy) { dim = D2; t[X] = xx; t[Y] = yy; };
+  vec(double zz) { init_t(); dim = D1; t[Z] = zz; };
+  vec(double xx, double yy) { init_t(); dim = D2; t[X] = xx; t[Y] = yy; };
   vec(double xx, double yy, double zz) {
+    init_t();
     dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
   friend vec veccyl(double rr, double zz);
   ~vec() {};
@@ -491,7 +492,13 @@ class vec {
   friend vec zero_vec(ndim);
   friend vec one_vec(ndim);
  private:
-  double t[5]={0,0,0,0,0}; // ensure fixed value 0 in all non-present dimensions
+  double t[5];
+  void init_t() {
+    for (int i = 0; i < 5; ++i) {
+      t[i] = 0;
+    }
+  }
+
 };
 
 inline double abs(const vec &pt) { return sqrt(pt & pt); }
@@ -529,12 +536,13 @@ ivec one_ivec(ndim);
 
 class ivec {
  public:
-  ivec() { dim = D2; t[X]=t[Y]=t[Z]=0; };
-  ivec(ndim di) { dim = di; t[X]=t[Y]=t[Z]=0; };
+  ivec() { init_t(); dim = D2; };
+  ivec(ndim di) { init_t(); dim = di; };
   ivec(ndim di, int val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
-  ivec(int zz) { dim = D1; t[X]=t[Y]=0; t[Z] = zz; };
-  ivec(int xx, int yy) { dim = D2; t[X] = xx; t[Y] = yy; t[Z]=0; };
+  ivec(int zz) { init_t(); dim = D1; t[Z] = zz; };
+  ivec(int xx, int yy) { init_t(); dim = D2; t[X] = xx; t[Y] = yy; };
   ivec(int xx, int yy, int zz) {
+    init_t();
     dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
   friend ivec iveccyl(int xx, int yy);
   ~ivec() {};
@@ -634,7 +642,12 @@ class ivec {
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
  private:
-  int t[5]={0,0,0,0,0}; // ensure fixed value 0 in all non-present dimensions
+  int t[5];
+  void init_t() {
+    for (int i = 0; i < 5; ++i) {
+      t[i] = 0;
+    }
+  }
 };
 
 inline ivec zero_ivec(ndim di) {

@@ -1233,13 +1233,13 @@ class Simulation(object):
                 if not fname.endswith('.h5'):
                     fname += '.h5'
 
-                add_vol_src(fname, dset, src.amplitude * 1.0,src.obj)
+                add_vol_src(fname, dset, src.amplitude * 1.0)
             elif src.amp_func:
-                add_vol_src(src.amp_func, src.amplitude * 1.0,src.obj)
+                add_vol_src(src.amp_func, src.amplitude * 1.0)
             elif src.amp_data is not None:
-                add_vol_src(src.amp_data, src.amplitude * 1.0,src.obj)
+                add_vol_src(src.amp_data, src.amplitude * 1.0)
             else:
-                add_vol_src(src.amplitude * 1.0,src.obj)
+                add_vol_src(src.amplitude * 1.0)
 
     def _evaluate_dft_objects(self):
         for dft in self.dft_objects:
@@ -1594,17 +1594,16 @@ class Simulation(object):
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
 
-    def get_source_slice(self, vol=None, center=None, size=None, type=None):
+    def get_source_slice(self, component, vol=None, center=None, size=None):
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
             v = self._volume_from_kwargs(vol, center, size)
-        dim_sizes=np.zeros(3,dtype=np.uintp)
+        dim_sizes = np.zeros(3, dtype=np.uintp)
         self.fields.get_array_slice_dimensions(v, dim_sizes)
         dims = [s for s in dim_sizes if s != 0]
-        cmplx = False;
-        arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
-        self.fields.get_source_slice(v,type,arr)
+        arr = np.zeros(dims, dtype=np.complex128)
+        self.fields.get_source_slice(v, component ,arr)
         return arr
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,

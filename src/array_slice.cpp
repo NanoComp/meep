@@ -53,7 +53,8 @@ typedef struct {
   field_rfunction rfun;
   void *fun_data;
   std::vector<component> components;
-  const char *source_slice_type;
+  component source_slice_component;
+  bool get_source_slice;
 
   void *vslice;
 
@@ -114,64 +115,20 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->num_chunks++;
 }
 
-/********************************************************************/
-/* return { 'R', 'I', 'N', or '1' } for real part, imag part, norm, */
-/* and indicator. Set *source_slice_component to the specified      */
-/* component or to Permeability if no component was specified.      */
-/********************************************************************/
-char parse_source_slice_type(const char *sstype, component *source_slice_component)
-{
-  *source_slice_component=Permeability; // default, indicates no component specified
-
-  if (sstype==0 || !strcasecmp(sstype,"indicator") )
-   return '1'; // 'indicator' is the default
-  if (!strcasecmp(sstype,"norm"))
-   return 'N';
-
-  // try to parse in the form "re xx" or "im xx" where "xx" is the name of a MEEP component
-  if ( strlen(sstype)>=5 && ( !strncasecmp(sstype,"RE ",3) || !strncasecmp(sstype,"IM ",3) ) )
-   FOR_COMPONENTS(c)
-    if (!strncasecmp(sstype+3,component_name(c),2))
-     { *source_slice_component=c;
-       return toupper(sstype[0]);
-     }
-
-  fprintf(stderr,"warning: failed to parse source_slice_type %s; defaulting to 'indicator'\n",sstype);
-  return '1';
-}
-                             
-/********************************************************************/
-/* populate the array slice with information about sources.         */
-/* the significance of the entries in the returned array depends on */
-/* what the caller specified for source_slice_type; the currently   */
-/* supported possibilities for `source_slice_type` are as follows.  */
-/*                                                                  */
-/*  're Ex'     the array value corresponding to a grid point is the*/
-/*  'im Ex'     real or imaginary part of the amplitude of the      */
-/*              x-directed electric source at that point. 'Ex' can  */
-/*              be replaced by any field component.                 */
-/*                                                                  */
-/*  'norm':     the array value corresponding to a grid point is    */
-/*              the sum of the squared magnitudes of the amplitudes */
-/*              of all cartesian components of all sources of all   */
-/*              types (electric, magnetic, etc.) at that grid point.*/
-/*                                                                  */
-/*  'indicator': the array value corresponding to a grid point is   */
-/*               either 1 or 0 depending on whether sources (any    */
-/*               type, any component) are present with nonzero      */
-/*               amplitude at that point.                           */
-/********************************************************************/
+/*****************************************************************/
+/* populate the array slice with information about sources with  */
+/* the component specified in source_slice_component.            */
+/*****************************************************************/
 void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data)
-{  
+{
   ndim dim=fc->gv.dim;
   if (dim==Dcyl)
    { fprintf(stderr,"warning: source slices not implemented for cylindrical coordinates; array will be all zeros\n");
      return;
    }
 
-  component slice_component;
-  char op=parse_source_slice_type(data->source_slice_type, &slice_component);
-  double *slice=(double *)data->vslice;
+  component slice_component = data->source_slice_component;
+  cdouble *slice = (cdouble *)data->vslice;
   ivec slice_imin=data->min_corner, slice_imax=data->max_corner;
 
   ptrdiff_t NY=1, NZ=1;
@@ -182,7 +139,7 @@ void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data)
 
   for(int ft=0; ft<NUM_FIELD_TYPES; ft++)
    for(src_vol *s=fc->sources[ft]; s; s=s->next)
-    { 
+    {
       if (slice_component!=Permeability && slice_component!=s->c)
        continue;
 
@@ -204,13 +161,7 @@ void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data)
          if (has_direction(dim,X))
           slice_index += NY*NZ*slice_offset.in_direction(X)/2;
 
-         switch(op)
-          { case 'R': slice[slice_index]  = real(amp); break;
-            case 'I': slice[slice_index]  = imag(amp); break;
-            case 'N': slice[slice_index] += norm(amp); break;
-            case '1':
-            default:  slice[slice_index]  = (amp==0.0 ? 0.0 : 1.0);
-          }
+         slice[slice_index] = amp;
        }
     }
 }
@@ -231,7 +182,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   //-----------------------------------------------------------------------//
   //- If we're fetching a 'source slice,' branch off here to handle that.  //
   //-----------------------------------------------------------------------//
-  if (data->source_slice_type)
+  if (data->get_source_slice)
    { fill_chunk_source_slice(fc,data);
      return;
    }
@@ -450,8 +401,8 @@ void *fields::do_get_array_slice(const volume &where,
                                  field_rfunction rfun,
                                  void *fun_data,
                                  void *vslice,
-                                 const char *source_slice_type)
-{
+                                 component source_slice_component,
+                                 bool get_source_slice) {
   am_now_working_on(FieldOutput);
 
   /***************************************************************/
@@ -466,7 +417,7 @@ void *fields::do_get_array_slice(const volume &where,
   size_t slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
-  bool complex_data = (rfun==0 && source_slice_type==0);
+  bool complex_data = (rfun==0);
   cdouble *zslice;
   double *slice;
   if (vslice==0)
@@ -482,17 +433,18 @@ void *fields::do_get_array_slice(const volume &where,
       }
    }
 
-  data.vslice            = vslice;
-  data.fun               = fun;
-  data.rfun              = rfun;
-  data.fun_data          = fun_data;
-  data.source_slice_type = source_slice_type;
-  data.components        = components;
-  int num_components     = components.size();
-  data.cS                = new component[num_components];
-  data.ph                = new cdouble[num_components];
-  data.fields            = new cdouble[num_components];
-  data.offsets           = new ptrdiff_t[2 * num_components];
+  data.vslice                 = vslice;
+  data.fun                    = fun;
+  data.rfun                   = rfun;
+  data.fun_data               = fun_data;
+  data.source_slice_component = source_slice_component;
+  data.get_source_slice       = get_source_slice;
+  data.components             = components;
+  int num_components          = components.size();
+  data.cS                     = new component[num_components];
+  data.ph                     = new cdouble[num_components];
+  data.fields                 = new cdouble[num_components];
+  data.offsets                = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2*num_components*sizeof(ptrdiff_t));
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
@@ -624,12 +576,10 @@ cdouble *fields::get_complex_array_slice(const volume &where, component c,
                                        (void *)slice);
 }
 
-#define DEF_SOURCE_SLICE_TYPE "indicator"
 
-double *fields::get_source_slice(const volume &where, const char *source_slice_type, double *slice)
-{ vector<component> cs; // empty
-  if (source_slice_type==0) source_slice_type=DEF_SOURCE_SLICE_TYPE;
-  return (double *)do_get_array_slice(where,cs,0,0,0,(void *)slice,source_slice_type);
+cdouble *fields::get_source_slice(const volume &where, component source_slice_component, cdouble *slice) {
+  vector<component> cs; // empty
+  return (cdouble *)do_get_array_slice(where,cs,0,0,0,(void *)slice,source_slice_component, true);
 }
 
 } // namespace meep

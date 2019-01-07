@@ -490,24 +490,6 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
     (std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3)
 };
 
-%typemap(in) meep::source_indicator *
-{ if ($input==Py_None)
-   $1=NULL;
-  else
-   { GEOMETRIC_OBJECT obj;
-     if(!py_gobj_to_gobj($input,&obj))
-      SWIG_fail;
-     $1=new object_source_indicator(obj);
-   }
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) meep::source_indicator * 
-{ $1 = 1; }
-
-%typemap(freearg) meep::source_indicator *
-{ if ($1) delete $1; 
-}
-
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
 // pointer object instead of as a built-in function
 %constant double py_pml_profile(double u, void *f);
