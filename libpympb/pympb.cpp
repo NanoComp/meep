@@ -2436,9 +2436,7 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
     return 0.0;
   }
 
-  for (int i = 0; i < objects.num_items; ++i) {
-    geom_fix_object(objects.items[i]);
-  }
+  geom_fix_objects0(objects);
 
   int n1 = mdata->nx;
   int n2 = mdata->ny;

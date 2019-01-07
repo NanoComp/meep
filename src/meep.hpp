@@ -1304,6 +1304,7 @@ class chunkloop_field_components {
 /***************************************************************/
 typedef vec (*kpoint_func)(double freq, int mode, void *user_data);
 
+
 class fields {
  public:
   int num_chunks;
@@ -1441,13 +1442,18 @@ class fields {
                                                 component c,
                                                 std::complex<double> *slice=0);
 
+  // like get_array_slice, but for *sources* instead of fields
+  std::complex<double> *get_source_slice(const volume &where, component source_slice_component, std::complex<double> *slice=0);
+
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,
                            std::vector<component> components,
                            field_function fun,
                            field_rfunction rfun,
                            void *fun_data,
-                           void *vslice);
+                           void *vslice,
+                           component source_slice_component=Ex,
+                           bool get_source_slice=false);
 
   // step.cpp methods:
   double last_step_output_wall_time;
@@ -1471,6 +1477,7 @@ class fields {
                         int is_continuous = 0);
   void add_point_source(component c, const src_time &src,
                         const vec &, std::complex<double> amp = 1.0);
+
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
                          std::complex<double> amp);
@@ -1482,8 +1489,7 @@ class fields {
 			 std::complex<double> A(const vec &),
 			 std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const volume &,
-			 std::complex<double> amp = 1.0);
+			 const volume &, std::complex<double> amp = 1.0);
   void require_component(component c);
 
   // mpb.cpp

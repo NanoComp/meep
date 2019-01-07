@@ -656,7 +656,7 @@ static bool get_front_object(const meep::volume &v,
   const geometric_object *o1 = 0, *o2 = 0;
   vector3 shiftby1 = {0,0,0}, shiftby2 = {0,0,0};
   geom_box pixel;
-  material_type mat1, mat2;
+  material_type mat1 = vacuum, mat2 = vacuum;
   int id1 = -1, id2 = -1;
   const int num_neighbors[3] = { 3, 5, 9 };
   const int neighbors[3][9][3] = {
@@ -2147,6 +2147,6 @@ dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
   num_freqs(freqs),
   num_components(components),
   vols(volumes) {
-
 }
+
 } // namespace meep_geom

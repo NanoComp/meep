@@ -10,7 +10,6 @@ def check_positive(prop, val):
     else:
         raise ValueError("{} must be positive. Got {}".format(prop, val))
 
-
 class Source(object):
 
     def __init__(self, src, component, center, size=Vector3(), amplitude=1.0, amp_func=None,

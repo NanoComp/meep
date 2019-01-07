@@ -292,9 +292,10 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     if (!fc->gv.owns(iloc)) continue;
 
     IVEC_LOOP_LOC(fc->gv, loc);
-    loc += shift * (0.5*inva) - data->center;
+    loc += shift * (0.5*inva);
 
-    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
+    vec rel_loc = loc - data->center;
+    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(rel_loc);
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
        right because it doesn't handle non-diagonal chi1inv!

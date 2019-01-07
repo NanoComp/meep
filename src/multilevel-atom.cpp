@@ -264,7 +264,7 @@ void multilevel_susceptibility::update_P
     }
 
     // compute E*8 at point i
-    double E8[3][2];
+    double E8[3][2]={{0.0,0.0},{0.0,0.0},{0.0,0.0}};
     for (idot = 0; idot < 3 && cdot[idot] != Dielectric; ++idot) {
       realnum *w = W[cdot[idot]][0], *wp = W_prev[cdot[idot]][0];
       E8[idot][0] = w[i]+w[i+o1[idot]]+w[i+o2[idot]]+w[i+o1[idot]+o2[idot]]
