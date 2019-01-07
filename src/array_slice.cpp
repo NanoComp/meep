@@ -113,7 +113,6 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->min_corner = min(data->min_corner, min(isS, ieS));
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
-
 }
 
 /*****************************************************************/
@@ -338,7 +337,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 }
 
 /***************************************************************/
-/* given a volume, fill in the dims[] and directions[] arrays  */
+/* given a volume, fill in the dims[] and dirs[] arrays        */
 /* describing the array slice needed to store field data for   */
 /* all grid points in the volume.                              */
 /*                                                             */
@@ -389,7 +388,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
     }
   }
   for(int r=0; r<rank; r++)
-      dirs[r]=(meep::direction)(data->ds[r] - /*(meep::direction)*/X);
+      dirs[r]=(meep::direction)(data->ds[r] - X);
   data->rank=rank;
   data->slice_size=slice_size;
   finished_working();
@@ -437,8 +436,8 @@ void *fields::do_get_array_slice(const volume &where,
       { slice  = new double[slice_size];
         memset(slice,0,slice_size*sizeof(double));
         vslice = (void *)slice;
-      };
-   };
+      }
+   }
 
   data.vslice       = vslice;
   data.fun          = fun;
@@ -501,7 +500,7 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(cdouble));
         remaining-=size;
         offset+=size;
-      };
+      }
      delete[] buffer;
    }
   else
@@ -515,9 +514,9 @@ void *fields::do_get_array_slice(const volume &where,
         memcpy(slice+offset, buffer, size*sizeof(double));
         remaining-=size;
         offset+=size;
-      };
+      }
      delete[] buffer;
-   };
+   }
 
   delete[] data.offsets;
   delete[] data.fields;
