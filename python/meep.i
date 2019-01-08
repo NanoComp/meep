@@ -824,14 +824,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (size_t *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") int dirs[3] {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") int dirs[3] {
-    $1 = (int *)array_data($input);
-}
-
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {
     $1 = is_array($input);
 }
