@@ -254,8 +254,8 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
 /* Integration weights at boundaries (c.f. long comment at top).   */
 /* This code was formerly part of loop_in_chunks, now refactored   */
 /* as a separate routine so we can call it from get_array_metadata.*/
-void compute_boundary_weights(grid_volume gv, volume wherec,
-                              ivec is, ivec ie, bool snap_empty_dims,
+void compute_boundary_weights(grid_volume gv, volume &wherec,
+                              ivec &is, ivec &ie, bool snap_empty_dims,
                               vec &s0, vec &e0, vec &s1, vec &e1)
 {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {

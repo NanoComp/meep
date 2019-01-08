@@ -46,8 +46,8 @@ static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
   return ipt;
 }
 namespace meep {
-void compute_boundary_weights(grid_volume gv, volume wherec,
-                              ivec is, ivec ie, bool snap_empty_dims,
+void compute_boundary_weights(grid_volume gv, volume &wherec,
+                              ivec &is, ivec &ie, bool snap_empty_dims,
                               vec &s0, vec &e0, vec &s1, vec &e1);
 }
 
