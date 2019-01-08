@@ -673,7 +673,6 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
          int idx2=0;
          for (int i=rank-1, stride=1; i>=0; stride*=array_count[i--])
           idx2 += stride * (iloc.in_direction(ds[i]) / 2);
-
          field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
        }
       else
@@ -786,7 +785,10 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
    { *array_rank=rank;
      for(int d=0; d<rank; d++) array_dims[d]=dims[d];
    }
-  if (rank==0) return 0.0; // no chunks with the specified component on this processor
+  if (rank==0) 
+   { if (pfield_array) *pfield_array=0;
+     return 0.0; // no chunks with the specified component on this processor
+   }
 
   /***************************************************************/
   /* buffer for process-local contributions to HDF5 output files,*/
@@ -800,7 +802,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
      reim_max = 1;
    }
   else if (pfield_array)
-   *pfield_array = field_array = new cdouble[array_size];
+   *pfield_array = field_array = (array_size ? new cdouble[array_size] : 0);
 
   bool append_data      = false;
   bool single_precision = false;

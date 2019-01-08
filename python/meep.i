@@ -366,6 +366,9 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     int rank;
     int dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
+ 
+    if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
+     return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
@@ -377,7 +380,7 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_CDOUBLE);
     memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
     delete[] dft_arr;
-    delete[] arr_dims;
+    if (arr_dims) delete[] arr_dims;
 
     return py_arr;
 }
@@ -446,6 +449,19 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
     return res;
+}
+
+PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
+                                      bool collapse_empty_dimensions) {
+    meep::direction dirs[3] = {meep::X, meep::X, meep::X};
+    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
+
+    PyObject *py_dirs = PyList_New(3);
+    for (Py_ssize_t i = 0; i < 3; ++i) {
+        PyList_SetItem(py_dirs, i, PyInteger_FromLong(static_cast<int>(dirs[i])));
+    }
+
+    return Py_BuildValue("(iO)", rank, py_dirs);
 }
 
 #ifdef HAVE_MPB
@@ -769,6 +785,33 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
     delete[] $1->epsilon_data;
     delete $1;
+}
+
+// Typemap suite for get_array_metadata
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* xtics {
+    $1 = (double *)array_data($input);
+}
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* ytics {
+    $1 = (double *)array_data($input);
+}
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* ztics {
+    $1 = (double *)array_data($input);
+}
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* weights {
+    $1 = is_array($input);
+}
+%typemap(in, fragment="NumPy_Macros") double* weights {
+    $1 = (double *)array_data($input);
 }
 
 // Typemap suite for array_slice
@@ -1243,6 +1286,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    bool verbose);
+PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
+                                      bool collapse_empty_dimensions);
 
 %ignore eps_func;
 %ignore inveps_func;

@@ -850,6 +850,8 @@ The end time for the source. Default is 10<sup>20</sup> (never turn off).
 —
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources. Default is `False`.
 
+<a name="fluxregion"></a>
+
 ### FluxRegion
 
 A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a region in which Meep should accumulate the appropriate Fourier-transformed fields in order to compute a flux spectrum. It represents a region (volume, plane, line, or point) in which to compute the integral of the Poynting vector of the Fourier-transformed fields. `ModeRegion` is an alias for `FluxRegion` for use with `add_mode_monitor`.
@@ -872,6 +874,8 @@ Properties:
 —A `meep.Volume` can be used to specify the flux region instead of a center and a size.
 
 Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
+
+<a name="Volume"></a>
 
 ### Volume
 
@@ -1480,6 +1484,119 @@ Returns the Fourier-transformed fields as a NumPy array.
 + `component`: A field component (e.g., `mp.Ez`)
 
 + `num_freq`: The index of the frequency: (an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.)
+
+#### Array metadata
+
+**`get_array_metadata(vol=None, center=None, size=None, collapse=False)`**
+**`get_dft_array_metadata(dft_cell=None, vol=None, center=None, size=None)`**
+
+These routines provide geometric information useful for interpreting the arrays
+returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
+or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where
+
++ `x,y,z` are 1D numpy arrays storing the $x,y,z$ coordinates of the points in the grid slice
++ `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`,
+    whose entries are the weights in a cubature rule for integrating over the spatial region
+    (with the *points* in the cubature rule being just the grid points contained in the region).
+    Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid
+    point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum
+    $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
+
+    (This is a 1-, 2-, or 3-dimensional integral depending on the number of
+     dimensions in which $\mathcal{V}$ has zero extent.) If the $\{Q_n\}$
+     samples are stored in an array `Q` of the same dimensions as `w`, then evaluating
+     the sum on the RHS is a one-liner in python: `np.sum(w*Q).`
+
+Here are some examples of how array metadata can be used:
+
++ To label axes in plots of grid quantities:
+
+```python
+# using the geometry from the `bend-flux` example
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
+eps_array=sim.get_epsilon()
+(x,y,z,w)=sim.get_array_metadata()
+plt.clf(); 
+plt.pcolormesh(x,y,np.transpose(eps_array), shading='gouraud'); 
+plt.axes().set_aspect('equal'); 
+plt.show(False);
+```
+![](images/PermittivityWithLabeledAxes.png)
+
++ To compute quantities defined by integrals of field-dependent functions
+  over grid regions, such as
+
+    + energy stored in the $\mathbf{E}$-field in a region $\mathcal{V}$:
+      $$ \mathcal{E}=
+         \frac{1}{2}\int_{\mathcal V} \epsilon |\mathbf{E}|^2\,dV
+      $$
+
+    + Poynting flux through a surface $\mathcal{S}$:
+      $$\mathcal{S}=\frac{1}{2}\text{Re }\int_{\mathcal S}
+        \Big(\mathbf{E}^*\times \mathbf{H}\Big)\times d\mathbf{A}
+      $$
+
+```python
+  import numpy as np
+
+  # E-field modal volume in box from time-domain fields
+  box            = mp.Volume(center=box_center, size=box_size)
+  (Ex,Ey,Ez)     = [sim.get_array(vol=box, component=c, cmplx=True) for c in [mp.Ex, mp.Ey, mp.Ez]]
+  eps            = sim.get_array(vol=box, component=mp.Dielectric)
+  (x,y,z,w)      = sim.get_array_metadata(vol=box)
+  energy_density = np.real( eps*( np.conj(Ex)*Ex + np.conj(Ey)*Ey + np.conj(Ez)*Ez ) ) # array
+  energy         = np.sum(w*energy_density)                                            # scalar
+
+  # x-directed Poynting flux through monitor from frequency-domain fields
+  monitor        = mp.FluxRegion(center=mon_center, size=mon_size)
+  dft_cell       = sim.add_flux(freq, freq, 1, monitor)
+  sim.run(...)    # timestep until DFTs converged
+  (Ey,Ez,Hy,Hz)  = [sim.get_dft_array(dft_cell,c,0) for c in [mp.Ey, mp.Ez, mp.Hy, mp.Hz]]
+  (x,y,z,w)      = sim.get_dft_array_metadata(dft_cell=dft_cell)
+  flux_density   = np.real( np.conj(Ey)*Hz - np.conj(Ez)*Hy )    # array
+  flux           = np.sum(w*flux_density)                        # scalar
+```
+
+**Question:** What is the difference between `get_array_metadata` and `get_dft_metadata`? Also, what is the `collapse` parameter to `get_array_metadata`?
+
+**Answer** (tl;dr version):
+
++ Use `get_array_metadata` for arrays of time-domain field components (as returned by `get_array`).
++ Use `get_dft_array_metadata` for arrays of frequency-domain field components (as returned by `get_dft_array`).
++ Ignore the `collapse` parameter to `get_array_metadata.`
+
+**Answer** (full version): **Collapsing empty dimensions in array slices**
+
+One complication of array slicing is that the array returned by `get_array` may have nonzero
+thickness (i.e. more than one point) in dimensions for which the region in question has zero
+extent. (Thus, upon requesting an array slice for a vertical line with `size=mp.Vector3(0,3,0)`,
+we would expect to get back just a one-dimensional array of field values, but in fact `get_array`
+may return a $2\times N$ array.) This occurs when the coordinate of the empty dimension
+falls between points of the computational grid; in this case, the field values at
+both of the two nearest grid points are needed to determine values at the intermediate
+point by interpolation, and the field array returned by `get_array` (as well as the `w` array
+returned by `get_array_metadata`) will have size 2 in the corresponding dimension
+to store field values and weights for both nearest-neighbor points.
+For many purposes it is convenient to *collapse* these dimensions by performing
+the interpolation to reduce e.g. a $2\times N$ array to a one-dimensional array of length $N$,
+and meep adopts the following somewhat arbitrary convention regarding when this is done:
+
++ in arrays of time-domain field components (as returned by `get_array`), empty dimensions *are not* collapsed;
++ in arrays of frequency-domain field components (as returned by `get_dft_array`), empty dimensions *are* collapsed.
+
+The `collapse` flag to `get_array_metadata` may be set to `True` to specify that the
+metadata are to be computed for an array with empty dimensions collapsed---in other
+words, for an array of frequency-domain field components.
+The default is `collapse=False`, in which case `get_array_metadata`
+returns metadata appropriate for an array of time-domain field components
+
+The routine `get_dft_array_metadata` is equivalent to `get_array_metadata` with `collapse=True`.
+`get_dft_array_metadata` also accepts the convenience parameter `dft_cell` as an alternative to
+`vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object
+to define the region covered by the array.
 
 #### Source slices
 

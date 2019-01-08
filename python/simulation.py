@@ -1549,7 +1549,7 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
 
-        self.fields.get_array_slice_dimensions(v, dim_sizes)
+        _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False)
 
         dims = [s for s in dim_sizes if s != 0]
 
@@ -1600,11 +1600,34 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        self.fields.get_array_slice_dimensions(v, dim_sizes)
+        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(dims, dtype=np.complex128)
         self.fields.get_source_slice(v, component ,arr)
         return arr
+
+    def get_array_metadata(self, vol=None, center=None, size=None, collapse=False):
+         if vol is None and center is None and size is None:
+             v = self.fields.total_volume()
+         else:
+             v = self._volume_from_kwargs(vol, center, size)
+         dims = np.zeros(3, dtype=np.uintp)
+         rank, dirs = mp._get_array_slice_dimensions(self.fields, v, dims, collapse)
+
+         nxyz = np.ones(3, dtype=np.intp)
+         for r in range(0,rank):
+             nxyz[dirs[r]]=dims[r]
+         nw=nxyz[0]*nxyz[1]*nxyz[2]
+         xtics=np.zeros(nxyz[0],dtype=np.float64)
+         ytics=np.zeros(nxyz[1],dtype=np.float64)
+         ztics=np.zeros(nxyz[2],dtype=np.float64)
+         weights=np.zeros(nw,dtype=np.float64)
+         self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
+         return (xtics,ytics,ztics,np.reshape(weights,dims[np.nonzero(dims)]))
+
+    def get_dft_array_metadata(self, dft_cell=None, vol=None, center=None, size=None):
+         return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
+                                        center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):

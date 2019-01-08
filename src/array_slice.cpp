@@ -349,6 +349,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* get_array_slice.                                            */
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
+                                       direction dirs[3], bool collapse_empty_dimensions,
                                        void *caller_data)
 {
   am_now_working_on(FieldOutput);
@@ -378,13 +379,16 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
     if (rank >= 3) abort("too many dimensions in array_slice");
     size_t n = (data->max_corner.in_direction(d)
 	     - data->min_corner.in_direction(d)) / 2 + 1;
-
+    if (where.in_direction(d)==0.0 && collapse_empty_dimensions)
+     n=1;
     if (n > 1) {
       data->ds[rank] = d;
       dims[rank++] = n;
       slice_size *= n;
     }
   }
+  for(int r=0; r<rank; r++)
+    dirs[r]=data->ds[r];
   data->rank=rank;
   data->slice_size=slice_size;
   finished_working();
@@ -411,9 +415,11 @@ void *fields::do_get_array_slice(const volume &where,
   /***************************************************************/
   // by tradition, empty dimensions in time-domain field arrays are *not* collapsed;
   // TODO make this a caller-specifiable parameter to get_array_slice()?
+  bool collapse=false;
   size_t dims[3];
+  direction dirs[3];
   array_slice_data data;
-  int rank=get_array_slice_dimensions(where, dims, &data);
+  int rank=get_array_slice_dimensions(where, dims, dirs, collapse, &data);
   size_t slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
