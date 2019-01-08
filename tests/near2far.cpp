@@ -46,7 +46,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
   f.add_point_source(c0, src, zero_vec(dim));
   f.solve_cw(1e-6);
 
-  FOR_E_AND_H(c) if (gv.has_field(c)) {
+  FOR_E_AND_H(c) { if (gv.has_field(c)) {
           const int N = 20;
           double dx = 0.75 * (xmax/4) / N;
           complex<double> F[N], F0[N], EH[6];
@@ -81,6 +81,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
               return 0;
           }
   }
+  }
 
   const double L = xmax/4;
   volume_list vl =
@@ -101,7 +102,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
   f.update_dfts();
   n2f.scale_dfts(sqrt(2*pi)/f.dt); // cancel time-integration factor
 
-  FOR_E_AND_H(c) if (gv.has_field(c)) {
+  FOR_E_AND_H(c) { if (gv.has_field(c)) {
           const int N = 20;
           double dx = 0.75 * (xmax/4) / N;
           complex<double> F[N], F0[N], EH_[6], EH[6];
@@ -136,6 +137,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
               return 0;
           }
   }
+  }
 
   return 1;
 }
@@ -148,7 +150,7 @@ int main(int argc, char **argv) {
   if (!check_2d_3d(D3, 4, a3d, Ez)) return 1;
   if (!check_2d_3d(D3, 4, a3d, Hz)) return 1;
 #ifdef HAVE_LIBGSL
-  FOR_E_AND_H(c0) if (!check_2d_3d(D2, 8, a2d, c0)) return 1;
+  FOR_E_AND_H(c0) {  if (!check_2d_3d(D2, 8, a2d, c0)) return 1; }
 #endif
 
   return 0;

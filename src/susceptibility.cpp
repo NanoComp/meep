@@ -71,8 +71,9 @@ bool susceptibility::needs_P(component c, int cmp,
 			     realnum *W[NUM_FIELD_COMPONENTS][2])
   const {
   if (!is_electric(c) && !is_magnetic(c)) return false;
-  FOR_DIRECTIONS(d)
+  FOR_DIRECTIONS(d) {
     if (!trivial_sigma[c][d] && W[direction_component(c, d)][cmp]) return true;
+  }
   return false;
 }
 
@@ -82,10 +83,11 @@ bool susceptibility::needs_P(component c, int cmp,
    W is needed in *any* chunk.) */
 bool susceptibility::needs_W_notowned(component c,
 				realnum *W[NUM_FIELD_COMPONENTS][2]) const {
-  FOR_DIRECTIONS(d) if (d != component_direction(c)) {
+  FOR_DIRECTIONS(d) { if (d != component_direction(c)) {
     component cP = direction_component(c, d);
     if (needs_P(cP, 0, W) && !trivial_sigma[cP][component_direction(c)])
       return true;
+  }
   }
   return false;
 }
@@ -104,7 +106,7 @@ void *lorentzian_susceptibility::new_internal_data(
 			 realnum *W[NUM_FIELD_COMPONENTS][2],
 			 const grid_volume &gv) const {
   int num = 0;
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
+  FOR_COMPONENTS(c) DOCMP2 { if (needs_P(c, cmp, W)) num += 2 * gv.ntot(); }
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *) malloc(sz);
   d->sz_data = sz;
@@ -122,11 +124,12 @@ void lorentzian_susceptibility::init_internal_data(
   size_t ntot = d->ntot = gv.ntot();
   realnum *P = d->data;
   realnum *P_prev = d->data + ntot;
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
+  FOR_COMPONENTS(c) DOCMP2 { if (needs_P(c, cmp, W)) {
     d->P[c][cmp] = P;
     d->P_prev[c][cmp] = P_prev;
     P += 2*ntot;
     P_prev += 2*ntot;
+  }
   }
 }
 
@@ -138,11 +141,12 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   size_t ntot = d->ntot;
   realnum *P = dnew->data;
   realnum *P_prev = dnew->data + ntot;
-  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
+  FOR_COMPONENTS(c) DOCMP2 { if (d->P[c][cmp]) {
     dnew->P[c][cmp] = P;
     dnew->P_prev[c][cmp] = P_prev;
     P += 2*ntot;
     P_prev += 2*ntot;
+  }
   }
   return (void*) dnew;
 }
@@ -181,7 +185,7 @@ void lorentzian_susceptibility::update_P
 
   // TODO: add back lorentzian_unstable(omega_0, gamma, dt) if we can improve the stability test
 
-  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
+  FOR_COMPONENTS(c) DOCMP2 { if (d->P[c][cmp]) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
     if (w && s) {
       realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
@@ -239,6 +243,7 @@ void lorentzian_susceptibility::update_P
       }
     }
   }
+  }
 }
 
 void lorentzian_susceptibility::subtract_P(field_type ft,
@@ -247,13 +252,14 @@ void lorentzian_susceptibility::subtract_P(field_type ft,
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   size_t ntot = d->ntot;
-  FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
+  FOR_FT_COMPONENTS(ft, ec) DOCMP2 { if (d->P[ec][cmp]) {
     component dc = field_type_component(ft2, ec);
     if (f_minus_p[dc][cmp]) {
       realnum *p = d->P[ec][cmp];
       realnum *fmp = f_minus_p[dc][cmp];
       for (size_t i = 0; i < ntot; ++i) fmp[i] -= p[i];
     }
+  }
   }
 }
 
@@ -294,15 +300,17 @@ void noisy_lorentzian_susceptibility::update_P
   const double amp = w2pi * noise_amp * sqrt(g2pi) * dt*dt / (1 + g2pi*dt/2);
   /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
 
-  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
+  FOR_COMPONENTS(c) DOCMP2 { if (d->P[c][cmp]) {
     const realnum *s = sigma[c][component_direction(c)];
     if (s) {
       realnum *p = d->P[c][cmp];
-      LOOP_OVER_VOL_OWNED(gv, c, i)
-	p[i] += gaussian_random(0, amp * sqrt(s[i]));
+      LOOP_OVER_VOL_OWNED(gv, c, i) {
+        p[i] += gaussian_random(0, amp * sqrt(s[i]));
+      }
       // for uniform random numbers, use uniform_random(-1,1) * amp * sqrt(s[i])
       // for gaussian random numbers, use gaussian_random(0, amp * sqrt(s[i]))
     }
+  }
   }
 }
 

@@ -68,7 +68,7 @@ public:
       sigma[c][d] = NULL; trivial_sigma[c][d] = true; } }
   virtual susceptibility *clone() const;
   virtual ~susceptibility() {
-    FOR_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] sigma[c][d];
+    FOR_COMPONENTS(c) FOR_DIRECTIONS(d) { delete[] sigma[c][d]; }
     delete next; }
 
   int get_id() const { return id; }

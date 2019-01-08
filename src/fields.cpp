@@ -69,16 +69,18 @@ fields::fields(structure *s, double m, double beta,
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
-  for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
+  for (int b=0;b<2;b++) FOR_DIRECTIONS(d) {
     if (gv.has_boundary((boundary_side)b, d)) boundaries[b][d] = Metallic;
     else boundaries[b][d] = None;
+  }
   chunk_connections_valid = false;
 
   // unit directions are periodic by default:
-  FOR_DIRECTIONS(d)
+  FOR_DIRECTIONS(d) {
     if (gv.has_boundary(High, d) && gv.has_boundary(Low, d) && d != R
 	&& s->user_volume.num_direction(d) == 1)
       use_bloch(d, 0.0);
+  }
 }
 
 fields::fields(const fields &thef) :
@@ -121,8 +123,9 @@ fields::fields(const fields &thef) :
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
-  for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
+  for (int b=0;b<2;b++) FOR_DIRECTIONS(d) {
     boundaries[b][d] = thef.boundaries[b][d];
+  }
   chunk_connections_valid = false;
 }
 
@@ -148,9 +151,10 @@ void fields::verbose(int gv) {
 }
 
 void fields::use_real_fields() {
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (boundaries[High][d] == Periodic && k[d] != 0.0)
       abort("Can't use real fields with bloch boundary conditions!\n");
+  }
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
   chunk_connections_valid = false;
@@ -166,7 +170,7 @@ bool fields::have_component(component c) {
 fields_chunk::~fields_chunk() {
   is_real = 0; // So that we can make sure to delete everything...
   // for mu=1 non-PML regions, H==B to save space/time - don't delete twice!
-  DOCMP2 FOR_H_AND_B(hc,bc) if (f[hc][cmp] == f[bc][cmp]) f[bc][cmp] = NULL;
+  DOCMP2 FOR_H_AND_B(hc,bc) { if (f[hc][cmp] == f[bc][cmp]) f[bc][cmp] = NULL; }
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
     delete[] f_u[c][cmp];
@@ -180,11 +184,12 @@ fields_chunk::~fields_chunk() {
     delete[] f_cond_backup[c][cmp];
   }
   delete[] f_rderiv_int;
-  FOR_FIELD_TYPES(ft)
+  FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
+  }
 	delete[] connections[ft][ip][io];
-  FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
+  FOR_FIELD_TYPES(ft) { delete[] connection_phases[ft]; }
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
     delete dft_chunks;
@@ -194,11 +199,12 @@ fields_chunk::~fields_chunk() {
     delete sources[ft];
     delete[] zeroes[ft];
   }
-  FOR_FIELD_TYPES(ft) for (polarization_state *cur = pol[ft]; cur; ) {
+  FOR_FIELD_TYPES(ft) { for (polarization_state *cur = pol[ft]; cur; ) {
     polarization_state *p = cur;
     cur = cur->next;
     p->s->delete_internal_data(p->data);
     delete p;
+  }
   }
   if (s->refcount-- <= 1) delete s; // delete if not shared
   if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
@@ -231,7 +237,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   }
   doing_solve_cw = false;
   solve_cw_omega = 0.0;
-  FOR_FIELD_TYPES(ft) sources[ft] = NULL;
+  FOR_FIELD_TYPES(ft) { sources[ft] = NULL; }
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
@@ -287,7 +293,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   }
   doing_solve_cw = thef.doing_solve_cw;
   solve_cw_omega = thef.solve_cw_omega;
-  FOR_FIELD_TYPES(ft) sources[ft] = NULL;
+  FOR_FIELD_TYPES(ft) { sources[ft] = NULL; }
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
@@ -381,9 +387,10 @@ void fields::figure_out_step_plan() {
 }
 
 void fields_chunk::figure_out_step_plan() {
-  FOR_COMPONENTS(cc)
+  FOR_COMPONENTS(cc) {
     have_minus_deriv[cc] = have_plus_deriv[cc] = false;
-  FOR_COMPONENTS(c1)
+  }
+  FOR_COMPONENTS(c1) {
     if (f[c1][0]) {
       const direction dc1 = component_direction(c1);
       // Figure out which field components contribute.
@@ -409,6 +416,7 @@ void fields_chunk::figure_out_step_plan() {
           }
         }
     }
+  }
 }
 
 bool is_tm(component c) {
@@ -485,11 +493,12 @@ void fields::require_component(component c) {
 
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;
-  FOR_COMPONENTS(c_alloc)
+  FOR_COMPONENTS(c_alloc) {
     if (gv.has_field(c_alloc) && (is_like(gv.dim, c, c_alloc) || aniso2d))
       for (int i = 0; i < num_chunks; ++i)
       	if (chunks[i]->alloc_f(c_alloc))
       	  need_to_reconnect++;
+  }
 
   if (need_to_reconnect) figure_out_step_plan();
   if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
@@ -546,10 +555,11 @@ void fields_chunk::zero_fields() {
     ZERO(f_cond_backup[c][cmp]);
 #undef ZERO
   }
-  if (is_mine()) FOR_FIELD_TYPES(ft)
+  if (is_mine()) FOR_FIELD_TYPES(ft) {
       for (polarization_state *p = pol[ft]; p; p = p->next) {
 	if (p->data) p->s->init_internal_data(f, dt, gv, p->data);
       }
+  }
 }
 
 void fields::zero_fields() {
@@ -567,12 +577,12 @@ void fields::reset() {
 void fields_chunk::use_real_fields() {
   is_real = 1;
   // for mu=1 non-PML regions, H==B to save space/time - don't delete twice!
-  FOR_H_AND_B(hc,bc) if (f[hc][1] == f[bc][1]) f[bc][1] = NULL;
+  FOR_H_AND_B(hc,bc) { if (f[hc][1] == f[bc][1]) f[bc][1] = NULL; }
   FOR_COMPONENTS(c) if (f[c][1]) {
     delete[] f[c][1];
     f[c][1] = 0;
   }
-  if (is_mine()) FOR_FIELD_TYPES(ft)
+  if (is_mine()) FOR_FIELD_TYPES(ft) {
     for (polarization_state *p = pol[ft]; p; p = p->next) {
       if (p->data) { // TODO: print an error message in this case?
 	p->s->delete_internal_data(p->data);
@@ -580,6 +590,7 @@ void fields_chunk::use_real_fields() {
 	p->s->init_internal_data(f, dt, gv, p->data);
       }
     }
+  }
 }
 
 int fields::phase_in_material(const structure *snew, double time) {

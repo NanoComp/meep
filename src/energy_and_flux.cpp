@@ -92,15 +92,17 @@ double fields::field_energy_in_box(component c,
 
 double fields::electric_energy_in_box(const volume &where) {
   long double sum = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_ELECTRIC_COMPONENTS(c) {
     sum += field_energy_in_box(c, where);
+  }
   return sum;
 }
 
 double fields::magnetic_energy_in_box(const volume &where) {
   long double sum = 0.0;
-  FOR_MAGNETIC_COMPONENTS(c)
+  FOR_MAGNETIC_COMPONENTS(c) {
     sum += field_energy_in_box(c, where);
+  }
   return sum;
 }
 
@@ -155,8 +157,8 @@ void fields::synchronize_magnetic_fields() {
   if (synchronized_magnetic_fields++) return; // already synched
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      FOR_B_COMPONENTS(c) chunks[i]->backup_component(c);
-      FOR_MAGNETIC_COMPONENTS(c) chunks[i]->backup_component(c);
+      FOR_B_COMPONENTS(c) { chunks[i]->backup_component(c); }
+      FOR_MAGNETIC_COMPONENTS(c) { chunks[i]->backup_component(c); }
     }
   am_now_working_on(Stepping);
   calc_sources(time()); // for B sources
@@ -169,8 +171,8 @@ void fields::synchronize_magnetic_fields() {
   finished_working();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      FOR_B_COMPONENTS(c) chunks[i]->average_with_backup(c);
-      FOR_MAGNETIC_COMPONENTS(c) chunks[i]->average_with_backup(c);
+      FOR_B_COMPONENTS(c) { chunks[i]->average_with_backup(c); }
+      FOR_MAGNETIC_COMPONENTS(c) { chunks[i]->average_with_backup(c); }
     }
 }
 
@@ -180,8 +182,8 @@ void fields::restore_magnetic_fields() {
     return;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      FOR_B_COMPONENTS(c) chunks[i]->restore_component(c);
-      FOR_MAGNETIC_COMPONENTS(c) chunks[i]->restore_component(c);
+      FOR_B_COMPONENTS(c) { chunks[i]->restore_component(c); }
+      FOR_MAGNETIC_COMPONENTS(c) { chunks[i]->restore_component(c); }
     }
 }
 
@@ -307,12 +309,13 @@ static complex<double> dot_fx_integrand(const complex<double> *fields,
 double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 					     const volume &where) {
   double sum = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_ELECTRIC_COMPONENTS(c) {
     if (!coordinate_mismatch(gv.dim, component_direction(c))) {
       component cs[2];
       cs[0] = cs[1] = direction_component(Ex, component_direction(c));
       sum += real(integrate(2, cs, dot_fx_integrand, (void *) f, where));
     }
+  }
   return sum * 0.5 / electric_energy_in_box(where);
 }
 
@@ -320,13 +323,14 @@ double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 double fields::electric_energy_weighted_integral(double (*f)(const vec &),
 					     const volume &where) {
   double sum = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_ELECTRIC_COMPONENTS(c) {
     if (!coordinate_mismatch(gv.dim, component_direction(c))) {
       component cs[2];
       cs[0] = direction_component(Ex, component_direction(c));
       cs[1] = direction_component(Dx, component_direction(c));
       sum += real(integrate(2, cs, dot_fx_integrand, (void *) f, where));
     }
+  }
   return sum * 0.5 / electric_energy_in_box(where);
 }
 

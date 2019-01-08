@@ -42,7 +42,7 @@ bool fields_chunk::update_pols(field_type ft) {
   bool allocated_fields = false;
 
   realnum *w[NUM_FIELD_COMPONENTS][2];
-  FOR_COMPONENTS(c) DOCMP2 w[c][cmp] = f_w[c][cmp] ? f_w[c][cmp] : f[c][cmp];
+  FOR_COMPONENTS(c) DOCMP2 { w[c][cmp] = f_w[c][cmp] ? f_w[c][cmp] : f[c][cmp]; }
 
   for (polarization_state *p = pol[ft]; p; p = p->next) {
 

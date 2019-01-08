@@ -55,9 +55,10 @@ void fields::use_bloch(const vec &k) {
   // it is unambiguous.
   if (k.dim != gv.dim && !(k.dim == D1 && gv.dim == Dcyl))
     abort("Aaaack, k has wrong dimensions!\n");
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (gv.has_boundary(Low,d) && d != R)
       use_bloch(d, k.in_direction(d));
+  }
 }
 
 ivec fields::ilattice_vector(direction d) const {
@@ -90,12 +91,13 @@ void fields::disconnect_chunks() {
   chunk_connections_valid = false;
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
-      FOR_FIELD_TYPES(f)
+      FOR_FIELD_TYPES(f) {
       	for (int ip=0;ip<3;++ip)
       	  for (int io=0;io<2;io++) {
       	    delete[] chunks[i]->connections[f][ip][io];
       	    chunks[i]->connections[f][ip][io] = NULL;
       	  }
+      }
     }
     FOR_FIELD_TYPES(f) {
       delete[] chunks[i]->connection_phases[f];
@@ -105,13 +107,14 @@ void fields::disconnect_chunks() {
       	  chunks[i]->num_connections[f][ip][io] = 0;
     }
   }
-  FOR_FIELD_TYPES(ft)
+  FOR_FIELD_TYPES(ft) {
     for (int i=0;i<num_chunks*num_chunks;i++) {
       delete[] comm_blocks[ft][i];
       comm_blocks[ft][i] = 0;
       for (int ip=0;ip<3;++ip)
       	comm_sizes[ft][ip][i] = 0;
     }
+  }
 }
 
 void fields::connect_chunks() {
@@ -177,7 +180,7 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
   newp2[0] = p2;
   kphase[0] = 1;
   vec cen = (newp1[0] + newp2[0]) * 0.5;
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (boundaries[High][d] == Periodic)  {
       while (cen.in_direction(d) < gv.boundary_location(Low, d)) {
         newp1[0] += lattice_vector(d);
@@ -192,9 +195,10 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
         cen = (newp1[0] + newp2[0]) * 0.5;
       }
     }
+  }
 
   // if grid_volume extends outside user_volume in any direction, we need to duplicate already existing copies
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (boundaries[High][d] == Periodic) {
       if (newp1[0].in_direction(d) < gv.boundary_location(Low, d) ||
           newp2[0].in_direction(d) < gv.boundary_location(Low, d)) {
@@ -215,6 +219,7 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
         ncopies *= 2;
       }
     }
+  }
 }
 
 bool fields::locate_component_point(component *c, ivec *there,
@@ -255,9 +260,9 @@ void fields::find_metals() {
         delete[] chunks[i]->zeroes[ft];
         // First electric components...
         chunks[i]->num_zeroes[ft] = 0;
-        DOCMP FOR_COMPONENTS(c)
+        DOCMP FOR_COMPONENTS(c) {
           if (type(c) == ft && chunks[i]->f[c][cmp])
-	    LOOP_OVER_VOL_OWNED(vi, c, n)
+	    LOOP_OVER_VOL_OWNED(vi, c, n) {
 	      if (IVEC_LOOP_AT_BOUNDARY) { // todo: just loop over boundaries
 		IVEC_LOOP_ILOC(vi, here);
 		if (on_metal_boundary(here))
@@ -266,14 +271,18 @@ void fields::find_metals() {
         typedef realnum *realnum_ptr;
         chunks[i]->zeroes[ft] = new realnum_ptr[chunks[i]->num_zeroes[ft]];
         size_t num = 0;
-        DOCMP FOR_COMPONENTS(c)
+        DOCMP FOR_COMPONENTS(c) {
           if (type(c) == ft && chunks[i]->f[c][cmp])
-    	    LOOP_OVER_VOL_OWNED(vi, c, n)
+    	    LOOP_OVER_VOL_OWNED(vi, c, n) {
     	      if (IVEC_LOOP_AT_BOUNDARY) { // todo: just loop over boundaries
           		IVEC_LOOP_ILOC(vi, here);
           		if (on_metal_boundary(here))
           		  chunks[i]->zeroes[ft][num++] = chunks[i]->f[c][cmp] + n;
     	      }
+          }
+        }
+      }
+    }
       }
     }
 }
@@ -286,12 +295,13 @@ bool fields_chunk::needs_W_notowned(component c) {
 
 void fields::connect_the_chunks() {
   size_t *nc[NUM_FIELD_TYPES][3][2];
-  FOR_FIELD_TYPES(f)
+  FOR_FIELD_TYPES(f) {
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++) {
       	nc[f][ip][io] = new size_t[num_chunks];
       	for (int i=0;i<num_chunks;i++) nc[f][ip][io][i] = 0;
       }
+  }
 
   /* For some of the chunks, H==B, and we definitely don't need to
      send B between two such chunks.   We'll still send B when
@@ -304,9 +314,10 @@ void fields::connect_the_chunks() {
      for anything(?) it shouldn't matter. */
   int *B_redundant = new int[num_chunks*2 * 5];
   for (int i = 0; i < num_chunks; ++i)
-    FOR_H_AND_B(hc,bc)
+    FOR_H_AND_B(hc,bc) {
       B_redundant[5*(num_chunks+i) + bc-Bx]
       = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
+    }
   and_to_all(B_redundant + 5*num_chunks, B_redundant, 5*num_chunks);
 
   /* Figure out whether we need the notowned W field (== E/H in
@@ -319,15 +330,15 @@ void fields::connect_the_chunks() {
      of communicating between a PML region (which has a separate W
      array) and a non-PML region (no separate W). */
   bool needs_W_notowned[NUM_FIELD_COMPONENTS];
-  FOR_COMPONENTS(c) needs_W_notowned[c] = false;
-  FOR_E_AND_H(c) for (int i=0;i<num_chunks;i++)
-    needs_W_notowned[c]= needs_W_notowned[c] || chunks[i]->needs_W_notowned(c);
-  FOR_E_AND_H(c) needs_W_notowned[c] = or_to_all(needs_W_notowned[c]);
+  FOR_COMPONENTS(c) { needs_W_notowned[c] = false; }
+  FOR_E_AND_H(c) { for (int i=0;i<num_chunks;i++)
+    needs_W_notowned[c]= needs_W_notowned[c] || chunks[i]->needs_W_notowned(c); }
+  FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
 
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
     const grid_volume vi = chunks[i]->gv;
-    FOR_FIELD_TYPES(ft)
+    FOR_FIELD_TYPES(ft) {
       for (int ip=0;ip<3;ip++)
       	for (int j=0;j<num_chunks;j++)
       	  comm_sizes[ft][ip][j+i*num_chunks] = 0;
@@ -396,14 +407,16 @@ void fields::connect_the_chunks() {
       	    } // loop over j chunks
         } // LOOP_OVER_VOL_NOTOWNED
     } // FOR_COMPONENTS
+    } // FOR_FIELD_TYPES
 
     // Allocating comm blocks as we go...
-    FOR_FIELD_TYPES(ft)
+    FOR_FIELD_TYPES(ft) {
       for (int j=0;j<num_chunks;j++) {
         delete[] comm_blocks[ft][j+i*num_chunks];
         comm_blocks[ft][j+i*num_chunks] =
           new realnum[comm_size_tot(ft, j+i*num_chunks)];
       }
+    }
   } // loop over i chunks
 
   /* Note that the ordering of the connections arrays must be kept
@@ -419,7 +432,7 @@ void fields::connect_the_chunks() {
      wasteful (by a factor of 2) because we allocate for chunks we
      don't own if we have a connection with them. Removing this waste
      would mean a bunch more is_mine() checks below. */
-  FOR_FIELD_TYPES(f)
+  FOR_FIELD_TYPES(f) {
     for (int ip=0;ip<3;ip++) {
       for (int io=0;io<2;io++) {
       	for (int i=0;i<num_chunks;i++)
@@ -432,6 +445,7 @@ void fields::connect_the_chunks() {
       }
       for (int i=0;i<num_chunks;i++) wh[f][ip][Outgoing][i] = 0;
     }
+  }
 
   // Next start setting up the connections...
 
@@ -439,15 +453,16 @@ void fields::connect_the_chunks() {
     const grid_volume vi = chunks[i]->gv;
 
     // initialize wh[f][ip][Incoming][j] to sum of comm_sizes for jj < j
-    FOR_FIELD_TYPES(f)
+    FOR_FIELD_TYPES(f) {
       for (int ip=0;ip<3;ip++) {
       	wh[f][ip][Incoming][0] = 0;
       	for (int j = 1; j < num_chunks; ++j)
       	  wh[f][ip][Incoming][j] = wh[f][ip][Incoming][j-1]
       	    + comm_sizes[f][ip][(j-1)+i*num_chunks];
       }
+    }
 
-    FOR_COMPONENTS(corig)
+    FOR_COMPONENTS(corig) {
       if (have_component(corig))
       	LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
         	  IVEC_LOOP_ILOC(vi, here);
@@ -544,11 +559,13 @@ void fields::connect_the_chunks() {
         	      } // if is_mine and owns...
         	    } // loop over j chunks
       } // LOOP_OVER_VOL_NOTOWNED
+    } // FOR_COMPONENTS
   } // loop over i chunks
-  FOR_FIELD_TYPES(f)
+  FOR_FIELD_TYPES(f) {
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
       	delete[] wh[f][ip][io];
+  }
   delete[] B_redundant;
 }
 

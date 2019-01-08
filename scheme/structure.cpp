@@ -287,7 +287,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   extra_materials = mlist;
   current_pol = NULL;
 
-  FOR_DIRECTIONS(d) FOR_SIDES(b) cond[d][b].prof = NULL;
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = NULL; }
 
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
@@ -327,8 +327,9 @@ geom_epsilon::~geom_epsilon()
 {
   unset_volume();
   destroy_geom_box_tree(geometry_tree);
-  FOR_DIRECTIONS(d) FOR_SIDES(b) if (cond[d][b].prof)
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { if (cond[d][b].prof)
       delete[] cond[d][b].prof;
+  }
 }
 
 void geom_epsilon::set_cond_profile(meep::direction dir,
@@ -930,8 +931,9 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c,
     meep::vec gradient(normal_vector(meep::type(c), v));
     double n[3] = {0,0,0};
     double nabsinv = 1.0/meep::abs(gradient);
-    LOOP_OVER_DIRECTIONS(gradient.dim, k)
+    LOOP_OVER_DIRECTIONS(gradient.dim, k) {
       n[k%3] = gradient.in_direction(k) * nabsinv;
+    }
     int rownum = meep::component_direction(c) % 3;
     for (int i=0; i<3; ++i)
       chi1inv_row[i] = n[rownum] * n[i] * (minveps - 1/meps);
@@ -1076,7 +1078,7 @@ static double get_cnd(meep::component c, const medium *m) {
 
 bool geom_epsilon::has_conductivity(meep::component c)
 {
-  FOR_DIRECTIONS(d) FOR_SIDES(b) if (cond[d][b].prof) return true;
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { if (cond[d][b].prof) return true; }
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
       if (get_cnd(c, geometry.items[i].material.subclass.medium_data) != 0)
@@ -1282,7 +1284,7 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
       int i = d->transitions.items[t].from_level - minlev;
       int j = d->transitions.items[t].to_level - minlev;
       alpha[i * T + tr] = -1.0 / (2*pi*omega[tr]); // but we *do* need the 2*pi here. -- AWC
-      alpha[j * T + tr] = +1.0 / (2*pi*omega[tr]); 
+      alpha[j * T + tr] = +1.0 / (2*pi*omega[tr]);
       ++tr;
     }
 
@@ -1521,7 +1523,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
     if (pml_layers.items[i].direction == -1) {
       LOOP_OVER_DIRECTIONS(gv.dim, d) {
 	if (pml_layers.items[i].side == -1) {
-	  FOR_SIDES(b)
+	  FOR_SIDES(b) {
 	    br = br + meep::boundary_region
 	    (meep::boundary_region::PML,
 	     pml_layers.items[i].thickness,
@@ -1536,6 +1538,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     d, b);
+    }
 	}
 	else
 	  br = br + meep::boundary_region
@@ -1557,7 +1560,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
     }
     else {
 	if (pml_layers.items[i].side == -1) {
-	  FOR_SIDES(b)
+	  FOR_SIDES(b) {
 	    br = br + meep::boundary_region
 	    (meep::boundary_region::PML,
 	     pml_layers.items[i].thickness,
@@ -1573,6 +1576,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     (meep::direction) pml_layers.items[i].direction,
 	     b);
+    }
 	}
 	else
 	  br = br + meep::boundary_region
@@ -1604,12 +1608,13 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
           if (layer.direction == -1) {
               LOOP_OVER_DIRECTIONS(gv.dim, d) {
                   if (layer.side == -1) {
-                      FOR_SIDES(b)
+                      FOR_SIDES(b) {
                           geps.set_cond_profile(d, b,
                                 layer.thickness, gv.inva * 0.5,
                                 scm_pml_profile2, layer.pml_profile,
                                 pow(layer.R_asymptotic,
                                     layer.strength));
+                      }
                   }
                   else
                       geps.set_cond_profile(d,
@@ -1621,12 +1626,13 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
               }
           }
           else if (layer.side == -1) {
-              FOR_SIDES(b)
+              FOR_SIDES(b) {
                   geps.set_cond_profile((meep::direction) layer.direction,
                                         b, layer.thickness, gv.inva * 0.5,
                                         scm_pml_profile2, layer.pml_profile,
                                         pow(layer.R_asymptotic,
                                             layer.strength));
+              }
           }
           else
               geps.set_cond_profile((meep::direction) layer.direction,

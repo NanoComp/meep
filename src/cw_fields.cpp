@@ -27,7 +27,7 @@ static void fields_to_array(const fields &f, complex<realnum> *x)
   size_t ix = 0;
   for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
-      FOR_COMPONENTS(c)
+      FOR_COMPONENTS(c) {
         if (is_D(c) || is_B(c)) {
 	  realnum *fr, *fi;
 #define COPY_FROM_FIELD(fld)					\
@@ -43,6 +43,7 @@ static void fields_to_array(const fields &f, complex<realnum> *x)
 	  if (f.chunks[i]->f_w[c2][0]) COPY_FROM_FIELD(f[c2]);
 #undef COPY_FROM_FIELD
 	}
+      }
 }
 
 static void array_to_fields(const complex<realnum> *x, fields &f)
@@ -50,7 +51,7 @@ static void array_to_fields(const complex<realnum> *x, fields &f)
   size_t ix = 0;
   for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
-      FOR_COMPONENTS(c)
+      FOR_COMPONENTS(c) {
         if (is_D(c) || is_B(c)) {
 	  realnum *fr, *fi;
 #define COPY_TO_FIELD(fld)					\
@@ -68,6 +69,7 @@ static void array_to_fields(const complex<realnum> *x, fields &f)
 	  if (f.chunks[i]->f_w[c2][0]) COPY_TO_FIELD(f[c2]);
 #undef COPY_TO_FIELD
 	}
+  }
 
   f.step_boundaries(D_stuff);
   f.update_eh(E_stuff, true);
@@ -125,7 +127,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   size_t N = 0; // size of linear system (on this processor, at least)
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      FOR_COMPONENTS(c)
+      FOR_COMPONENTS(c) {
 	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
 	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
 	  /* unknowns are just D and B in non-PML regions, but in PML
@@ -139,6 +141,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 	     + (chunks[i]->f_w[c2][0] != NULL) * 2
 	     + (chunks[i]->f_cond[c][0] != NULL));
 	}
+    }
     }
 
   size_t nwork = (size_t) bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);

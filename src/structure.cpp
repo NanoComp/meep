@@ -183,7 +183,7 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
 
 bool boundary_region::check_ok(const grid_volume &gv) const {
   double thick[5][2];
-  FOR_DIRECTIONS(d) FOR_SIDES(s) thick[d][s] = 0;
+  FOR_DIRECTIONS(d) FOR_SIDES(s) { thick[d][s] = 0; }
   for (const boundary_region *r = this; r; r = r->next) {
     if (r->kind != NOTHING_SPECIAL
 	&& gv.num_direction(r->d) > 1
@@ -193,9 +193,10 @@ bool boundary_region::check_ok(const grid_volume &gv) const {
       thick[r->d][r->side] = r->thickness;
     }
   }
-  LOOP_OVER_DIRECTIONS(gv.dim,d)
+  LOOP_OVER_DIRECTIONS(gv.dim,d) {
     if (thick[d][High] + thick[d][Low] > gv.interior().in_direction(d))
       return false;
+  }
   return true;
 }
 
@@ -232,12 +233,13 @@ void structure::check_chunks() {
   size_t sum = 0;
   for (int i=0; i<num_chunks; i++) {
     size_t grid_points = 1;
-    LOOP_OVER_DIRECTIONS(chunks[i]->gv.dim, d)
+    LOOP_OVER_DIRECTIONS(chunks[i]->gv.dim, d) {
       grid_points *= chunks[i]->gv.num_direction(d);
+    }
     sum += grid_points;
   }
   size_t v_grid_points = 1;
-  LOOP_OVER_DIRECTIONS(gv.dim, d) v_grid_points *= gv.num_direction(d);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
   if (sum != v_grid_points)
     abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
 }
@@ -359,9 +361,9 @@ void structure::set_materials(material_function &mat,
 			      double tol, int maxeval) {
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
   if (mat.has_mu()) set_mu(mat, use_anisotropic_averaging, tol, maxeval);
-  FOR_D_AND_B(c) if (mat.has_conductivity(c)) set_conductivity(c, mat);
-  FOR_E_AND_H(c) if (mat.has_chi3(c)) set_chi3(c, mat);
-  FOR_E_AND_H(c) if (mat.has_chi2(c)) set_chi2(c, mat);
+  FOR_D_AND_B(c) { if (mat.has_conductivity(c)) set_conductivity(c, mat); }
+  FOR_E_AND_H(c) { if (mat.has_chi3(c)) set_chi3(c, mat); }
+  FOR_E_AND_H(c) { if (mat.has_chi2(c)) set_chi2(c, mat); }
 }
 
 void structure::set_chi1inv(component c, material_function &eps,
@@ -377,8 +379,8 @@ void structure::set_epsilon(material_function &eps,
 			    bool use_anisotropic_averaging,
 			    double tol, int maxeval) {
   double tstart = wall_time();
-  FOR_ELECTRIC_COMPONENTS(c) set_chi1inv(c, eps, use_anisotropic_averaging,
-					 tol, maxeval);
+  FOR_ELECTRIC_COMPONENTS(c) { set_chi1inv(c, eps, use_anisotropic_averaging,
+					 tol, maxeval); }
   if (!quiet)
     master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
@@ -394,8 +396,8 @@ void structure::set_mu(material_function &m,
 		       bool use_anisotropic_averaging,
 		       double tol, int maxeval) {
   double tstart = wall_time();
-  FOR_MAGNETIC_COMPONENTS(c) set_chi1inv(c, m, use_anisotropic_averaging,
-					 tol, maxeval);
+  FOR_MAGNETIC_COMPONENTS(c) { set_chi1inv(c, m, use_anisotropic_averaging,
+					 tol, maxeval); }
   if (!quiet)
     master_printf("time for set_mu = %g s\n", wall_time() - tstart);
 }
@@ -432,7 +434,7 @@ void structure::set_chi3(component c, material_function &eps) {
 }
 
 void structure::set_chi3(material_function &eps) {
-  FOR_ELECTRIC_COMPONENTS(c) set_chi3(c, eps);
+  FOR_ELECTRIC_COMPONENTS(c) { set_chi3(c, eps); }
 }
 
 void structure::set_chi3(double eps(const vec &)) {
@@ -448,7 +450,7 @@ void structure::set_chi2(component c, material_function &eps) {
 }
 
 void structure::set_chi2(material_function &eps) {
-  FOR_ELECTRIC_COMPONENTS(c) set_chi2(c, eps);
+  FOR_ELECTRIC_COMPONENTS(c) { set_chi2(c, eps); }
 }
 
 void structure::set_chi2(double eps(const vec &)) {
@@ -475,19 +477,21 @@ void structure::add_susceptibility(material_function &sigma, field_type ft, cons
      susceptibility object was added to the beginning of each chunk's
      chiP[ft] list.) */
   int trivial_sigma[NUM_FIELD_COMPONENTS][5];
-  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) trivial_sigma[c][d] = true;
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) { trivial_sigma[c][d] = true; }
   for (int i=0;i<num_chunks;i++) {
     const susceptibility *newsus = chunks[i]->chiP[ft];
-    FOR_FT_COMPONENTS(ft,c) FOR_DIRECTIONS(d)
+    FOR_FT_COMPONENTS(ft,c) FOR_DIRECTIONS(d) {
       trivial_sigma[c][d] = trivial_sigma[c][d] && newsus->trivial_sigma[c][d];
+    }
   }
   int trivial_sigma_sync[NUM_FIELD_COMPONENTS][5];
   and_to_all(&trivial_sigma[0][0], &trivial_sigma_sync[0][0],
 	     NUM_FIELD_COMPONENTS * 5);
   for (int i=0;i<num_chunks;i++) {
     susceptibility *newsus = chunks[i]->chiP[ft];
-    FOR_FT_COMPONENTS(ft,c) FOR_DIRECTIONS(d)
+    FOR_FT_COMPONENTS(ft,c) FOR_DIRECTIONS(d) {
       newsus->trivial_sigma[c][d] = trivial_sigma_sync[c][d];
+    }
   }
 }
 
@@ -672,8 +676,9 @@ void structure_chunk::update_condinv() {
     direction d = component_direction(c);
     if (conductivity[c][d]) {
       if (!condinv[c][d]) condinv[c][d] = new realnum[gv.ntot()];
-      LOOP_OVER_VOL(gv, c, i)
-	condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5);
+      LOOP_OVER_VOL(gv, c, i) {
+        condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5);
+      }
     }
     else if (condinv[c][d]) { // condinv not needed
       delete[] condinv[c][d];
@@ -719,8 +724,8 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       chi2[c] = NULL;
     }
   }
-  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) trivial_chi1inv[c][d] = true;
-  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) if (is_mine()) {
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) { trivial_chi1inv[c][d] = true; }
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) { if (is_mine()) {
     trivial_chi1inv[c][d] = o->trivial_chi1inv[c][d];
     if (o->chi1inv[c][d]) {
       chi1inv[c][d] = new realnum[gv.ntot()];
@@ -734,6 +739,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       memcpy(condinv[c][d], o->condinv[c][d], gv.ntot()*sizeof(realnum));
     } else conductivity[c][d] = condinv[c][d] = NULL;
   }
+  }
   condinv_stale = o->condinv_stale;
   // Allocate the PML conductivity arrays:
   FOR_DIRECTIONS(d) {
@@ -745,7 +751,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   for (int i=0;i<5;++i) sigsize[i] = 0;
   // Copy over the PML conductivity arrays:
   if (is_mine())
-    FOR_DIRECTIONS(d)
+    FOR_DIRECTIONS(d) {
       if (o->sig[d]) {
       	sig[d] = new double[2*gv.num_direction(d)+1];
       	kap[d] = new double[2*gv.num_direction(d)+1];
@@ -757,6 +763,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       	  siginv[d][i] = o->siginv[d][i];
       	}
       }
+    }
 }
 
 void structure_chunk::set_chi3(component c, material_function &epsilon) {
@@ -885,8 +892,8 @@ structure_chunk::structure_chunk(const grid_volume &thegv,
   the_is_mine = n_proc() == my_rank();
 
   // initialize materials arrays to NULL
-  FOR_COMPONENTS(c) chi3[c] = NULL;
-  FOR_COMPONENTS(c) chi2[c] = NULL;
+  FOR_COMPONENTS(c) { chi3[c] = NULL; }
+  FOR_COMPONENTS(c) { chi2[c] = NULL; }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
     trivial_chi1inv[c][d] = true;
     chi1inv[c][d] = NULL;

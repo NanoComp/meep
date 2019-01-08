@@ -276,8 +276,9 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   (void) ichunk;
 
   size_t npts = 1;
-  LOOP_OVER_DIRECTIONS(is.dim, d)
+  LOOP_OVER_DIRECTIONS(is.dim, d) {
     npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+  }
   ptrdiff_t *index_array = new ptrdiff_t[npts];
   complex<double> *amps_array = new complex<double>[npts];
 
@@ -442,9 +443,10 @@ void fields::add_volume_source(component c, const src_time &src,
   src_vol_chunkloop_data data;
   data.A = A ? A : one;
   data.amp = amp;
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
       data.amp *= gv.a; // correct units for J delta-function amplitude
+  }
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
   loop_in_chunks(src_vol_chunkloop, (void *) &data, where, c, false);
