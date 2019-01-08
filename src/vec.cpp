@@ -504,7 +504,7 @@ ptrdiff_t grid_volume::index(component c, const ivec &p) const {
 }
 
 void grid_volume::set_strides() {
-  FOR_DIRECTIONS(d) { the_stride[d] = 0; // Yuck yuck yuck. }
+  FOR_DIRECTIONS(d) { the_stride[d] = 0; /* Yuck yuck yuck. */ }
   LOOP_OVER_DIRECTIONS(dim,d) {
     switch(d) {
     case Z: the_stride[d] = 1; break;

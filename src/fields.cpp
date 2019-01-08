@@ -187,8 +187,8 @@ fields_chunk::~fields_chunk() {
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
-  }
 	delete[] connections[ft][ip][io];
+  }
   FOR_FIELD_TYPES(ft) { delete[] connection_phases[ft]; }
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
