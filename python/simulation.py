@@ -1543,14 +1543,13 @@ class Simulation(object):
 
     def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        dirs      = np.zeros(3, dtype=np.intc)
 
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
             v = self._volume_from_kwargs(vol, center, size)
 
-        self.fields.get_array_slice_dimensions(v, dim_sizes, dirs)
+        _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False)
 
         dims = [s for s in dim_sizes if s != 0]
 
@@ -1601,7 +1600,7 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        self.fields.get_array_slice_dimensions(v, dim_sizes)
+        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(dims, dtype=np.complex128)
         self.fields.get_source_slice(v, component ,arr)
@@ -1613,8 +1612,8 @@ class Simulation(object):
          else:
              v = self._volume_from_kwargs(vol, center, size)
          dims = np.zeros(3, dtype=np.uintp)
-         dirs = np.zeros(3, dtype=np.intc)
-         rank = self.fields.get_array_slice_dimensions(v, dims, dirs, collapse)
+         rank, dirs = mp._get_array_slice_dimensions(self.fields, v, dims, collapse)
+
          nxyz = np.ones(3, dtype=np.intp)
          for r in range(0,rank):
              nxyz[dirs[r]]=dims[r]

@@ -65,7 +65,7 @@ w            = args.w
 use_symmetry = args.use_symmetry
 
 sym_str = "True" if use_symmetry else "False"
-print "use_symmetries is " + sym_str
+print("use_symmetries is " + sym_str)
 
 ##################################################
 # define geometry

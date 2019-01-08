@@ -451,6 +451,19 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     return res;
 }
 
+PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
+                                      bool collapse_empty_dimensions) {
+    meep::direction dirs[3] = {meep::X, meep::X, meep::X};
+    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
+
+    PyObject *py_dirs = PyList_New(3);
+    for (Py_ssize_t i = 0; i < 3; ++i) {
+        PyList_SetItem(py_dirs, i, PyInteger_FromLong(static_cast<int>(dirs[i])));
+    }
+
+    return Py_BuildValue("(iO)", rank, py_dirs);
+}
+
 #ifdef HAVE_MPB
 meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
@@ -774,9 +787,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete $1;
 }
 
-//--------------------------------------------------
-// typemaps for get_array_metadata
-//--------------------------------------------------
+// Typemap suite for get_array_metadata
+
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
     $1 = is_array($input);
 }
@@ -801,11 +813,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(in, fragment="NumPy_Macros") double* weights {
     $1 = (double *)array_data($input);
 }
-//--------------------------------------------------
-// end typemaps for get_array_metadata
-//--------------------------------------------------
-
-
 
 // Typemap suite for array_slice
 
@@ -1287,6 +1294,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    bool verbose);
+PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
+                                      bool collapse_empty_dimensions);
 
 %ignore eps_func;
 %ignore inveps_func;
