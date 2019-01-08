@@ -388,7 +388,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3],
     }
   }
   for(int r=0; r<rank; r++)
-      dirs[r]=(meep::direction)(data->ds[r] - X);
+    dirs[r]=data->ds[r];
   data->rank=rank;
   data->slice_size=slice_size;
   finished_working();
