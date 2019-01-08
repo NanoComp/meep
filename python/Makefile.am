@@ -7,7 +7,7 @@ HPPFILES=                                    \
  $(top_srcdir)/src/meepgeom.hpp              \
  $(top_srcdir)/src/material_data.hpp
 
-BUILT_SOURCES = meep-python.cpp __init__.py
+BUILT_SOURCES = meep-python.cxx __init__.py
 EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp materials.py examples tests
 
 CLEANFILES = $(BUILT_SOURCES) meep.py .coverage
@@ -15,7 +15,7 @@ CLEANFILES = $(BUILT_SOURCES) meep.py .coverage
 if WITH_MPB
   PYMPBINCLUDE=-I$(top_srcdir)/libpympb
   LIBPYMPB=$(top_builddir)/libpympb/libpympb.la
-  BUILT_SOURCES += mpb-python.cpp mpb.py
+  BUILT_SOURCES += mpb-python.cxx mpb.py
   EXTRA_DIST += solver.py mpb_data.py
 endif
 
@@ -25,13 +25,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               $(PYMPBINCLUDE)                       \
               -I$(top_builddir) # for config.h
 
-_meep_la_SOURCES = meep-python.cpp
+_meep_la_SOURCES = meep-python.cxx
 _meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS) @LIBCTLGEOM_LIBS@
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 if WITH_MPB
-_mpb_la_SOURCES = mpb-python.cpp
+_mpb_la_SOURCES = mpb-python.cxx
 _mpb_la_LIBADD = $(PYTHON_LIBS) $(LIBPYMPB) @LIBCTLGEOM_LIBS@
 _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
@@ -133,19 +133,19 @@ SWIG ?= swig
 SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
 MEEP_SWIG_SRC = meep.i numpy.i vec.i
 
-meep-python.cpp: $(MEEP_SWIG_SRC) $(HPPFILES)
+meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
-mpb-python.cpp: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
+mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
 	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
 
-mpb.py: mpb-python.cpp
+mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
 endif # WITH_MPB
 
-meep.py: meep-python.cpp
+meep.py: meep-python.cxx
 
 __init__.py: meep.py $(MPB_PY)
 	cp $< $@
