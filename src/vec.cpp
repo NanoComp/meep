@@ -21,6 +21,7 @@
 #include <complex>
 
 #include "meep_internals.hpp"
+#include "meepgeom.hpp"
 
 using namespace std;
 
@@ -993,13 +994,77 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
         .split_by_effort(n - num_low, which - num_low, Ngv, v, effort);
 }
 
-grid_volume grid_volume::split_at_fraction(bool want_high, int numer) const {
-  int bestd = -1, bestlen = 1;
-  for (int i = 0; i < 3; i++)
-    if (num[i] > bestlen) {
-      bestd = i;
-      bestlen = num[i];
+grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
+  const size_t grid_points_owned = nowned_min();
+  if (size_t(desired_chunks) > grid_points_owned)
+    abort("Cannot split %zd grid points into %d parts\n", nowned_min(), desired_chunks);
+  if (desired_chunks == 1) return *this;
+  double best_split_measure = 1e20, left_effort_fraction = 0;
+  int best_split_point = 0;
+  direction best_split_direction = NO_DIRECTION;
+
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    int biglen = num_direction(d);
+    direction splitdir = d;
+
+    for (int split_point = 1; split_point < biglen; split_point+=1) {
+      grid_volume v_left = *this;
+      v_left.set_num_direction(splitdir, split_point);
+      grid_volume v_right = *this;
+      v_right.set_num_direction(splitdir, num_direction(splitdir) - split_point);
+      v_right.shift_origin(splitdir, split_point*2);
+
+      geom_box left_box = meep_geom::gv2box(v_left.surroundings());
+      geom_box right_box = meep_geom::gv2box(v_right.surroundings());
+
+      meep_geom::fragment_stats left_stats(left_box);
+      meep_geom::fragment_stats right_stats(right_box);
+
+      left_stats.compute();
+      right_stats.compute();
+      double total_left_effort = left_stats.cost();
+      double total_right_effort = right_stats.cost();
+
+      double split_measure = max(total_left_effort/(desired_chunks/2),
+                                 total_right_effort/(desired_chunks-desired_chunks/2));
+      if (split_measure < best_split_measure) {
+        best_split_measure = split_measure;
+        best_split_point = split_point;
+        best_split_direction = d;
+        left_effort_fraction = total_left_effort/(total_left_effort + total_right_effort);
+      }
     }
+  }
+  const int split_point = best_split_point;
+  const int num_in_split_dir = num_direction(best_split_direction);
+
+  const int num_low = (size_t)(left_effort_fraction*desired_chunks + 0.5);
+  // Revert to split() when cost method gives less grid points than chunks
+  if (size_t(num_low) > best_split_point*(grid_points_owned/num_in_split_dir) ||
+      size_t(desired_chunks-num_low) > (grid_points_owned - best_split_point*(grid_points_owned/num_in_split_dir)))
+    return split(desired_chunks, proc_num);
+
+  bool split_low = proc_num < num_low;
+  grid_volume split_gv = split_at_fraction(!split_low, split_point, best_split_direction, num_in_split_dir);
+
+  if (split_low) {
+    return split_gv.split_by_cost(num_low, proc_num);
+  }
+  else {
+    return split_gv.split_by_cost(desired_chunks-num_low, proc_num-num_low);
+  }
+}
+
+grid_volume grid_volume::split_at_fraction(bool want_high, int numer, int bestd, int bestlen) const {
+
+  if (bestd == -1) {
+    for (int i=0;i<3;i++)
+      if (num[i] > bestlen) {
+        bestd = i;
+        bestlen = num[i];
+      }
+  }
+
   if (bestd == -1) {
     for (int i = 0; i < 3; i++)
       master_printf("num[%d] = %d\n", i, num[i]);

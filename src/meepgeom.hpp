@@ -66,6 +66,17 @@ struct fragment_stats {
   static int maxeval;
   static int resolution;
   static meep::ndim dims;
+  static geometric_object_list geom;
+  static std::vector<dft_data> dft_data_list;
+  static std::vector<meep::volume> pml_1d_vols;
+  static std::vector<meep::volume> pml_2d_vols;
+  static std::vector<meep::volume> pml_3d_vols;
+  static std::vector<meep::volume> absorber_vols;
+  static bool split_chunks_evenly;
+
+  static bool has_non_medium_material();
+  static void init_libctl(meep_geom::material_type default_mat, bool ensure_per, meep::grid_volume *gv,
+                          vector3 cell_size, vector3 cell_center, geometric_object_list *geom_list);
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
@@ -86,19 +97,19 @@ struct fragment_stats {
   geom_box box;
 
   fragment_stats() {}
-  fragment_stats(geom_box &bx, size_t pixels);
+  fragment_stats(geom_box& bx);
   void update_stats_from_material(material_type mat, size_t pixels);
-  void compute_stats(geometric_object_list *geom);
+  void compute_stats();
   void count_anisotropic_pixels(medium_struct *med, size_t pixels);
   void count_nonlinear_pixels(medium_struct *med, size_t pixels);
   void count_susceptibility_pixels(medium_struct *med, size_t pixels);
   void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
-  void compute_dft_stats(std::vector<dft_data> *dft_data_list);
-  void compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
-                         const std::vector<meep::volume> &pml_2d_vols,
-                         const std::vector<meep::volume> &pml_3d_vols);
-  void compute_absorber_stats(const std::vector<meep::volume> &absorber_vols);
-  void print_stats();
+  void compute_dft_stats();
+  void compute_pml_stats();
+  void compute_absorber_stats();
+  void compute();
+  double cost() const;
+  void print_stats() const;
 };
 
 std::vector<fragment_stats>
