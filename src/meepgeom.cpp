@@ -236,7 +236,8 @@ meep::vec vector3_to_vec(const vector3 v3) {
   }
 }
 
-static geom_box gv2box(const meep::volume &v) {
+geom_box gv2box(const meep::volume &v)
+{
   geom_box box;
   box.low = vec_to_vector3(v.get_min_corner());
   box.high = vec_to_vector3(v.get_max_corner());
@@ -1591,6 +1592,13 @@ double fragment_stats::tol = 0;
 int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
 meep::ndim fragment_stats::dims = meep::D1;
+geometric_object_list fragment_stats::geom = {};
+std::vector<dft_data> fragment_stats::dft_data_list;
+std::vector<meep::volume> fragment_stats::pml_1d_vols;
+std::vector<meep::volume> fragment_stats::pml_2d_vols;
+std::vector<meep::volume> fragment_stats::pml_3d_vols;
+std::vector<meep::volume> fragment_stats::absorber_vols;
+bool fragment_stats::split_chunks_evenly = false;
 
 inline static bool is_edge_box(double pt, double half_cell, double box_size, double edge_size) {
   return (pt == -half_cell && edge_size != 0) || pt + box_size > half_cell;
@@ -1738,49 +1746,83 @@ static std::vector<fragment_stats> init_fragments(std::vector<geom_box> &boxes, 
 
   for (size_t i = 0; i < boxes.size(); ++i) {
     center_box(&boxes[i]);
-    size_t pixels_in_box = get_pixels_in_box(&boxes[i]);
-    fragments.push_back(fragment_stats(boxes[i], pixels_in_box));
+    fragments.push_back(fragment_stats(boxes[i]));
   }
   return fragments;
 }
 
-static void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                        vector3 cell_size, vector3 cell_center, geometric_object_list *geom) {
+std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom_,
+                                                   meep::grid_volume *gv,
+                                                   vector3 cell_size,
+                                                   vector3 cell_center,
+                                                   material_type default_mat,
+                                                   std::vector<dft_data> dft_data_list_,
+                                                   std::vector<meep::volume> pml_1d_vols_,
+                                                   std::vector<meep::volume> pml_2d_vols_,
+                                                   std::vector<meep::volume> pml_3d_vols_,
+                                                   std::vector<meep::volume> absorber_vols_,
+                                                   double tol,
+                                                   int maxeval,
+                                                   bool ensure_per,
+                                                   double box_size) {
+
+  fragment_stats::geom = geom_;
+  fragment_stats::dft_data_list = dft_data_list_;
+  fragment_stats::pml_1d_vols = pml_1d_vols_;
+  fragment_stats::pml_2d_vols = pml_2d_vols_;
+  fragment_stats::pml_3d_vols = pml_3d_vols_;
+  fragment_stats::absorber_vols = absorber_vols_;
+
+  fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
+  std::vector<geom_box> boxes = split_cell_into_boxes(gv, box_size, cell_size);
+  std::vector<fragment_stats> fragments = init_fragments(boxes, tol, maxeval, gv);
+
+  for (size_t i = 0; i < fragments.size(); ++i) {
+    fragments[i].compute();
+  }
+  return fragments;
+}
+
+fragment_stats::fragment_stats(geom_box& bx):
+  num_anisotropic_eps_pixels(0),
+  num_anisotropic_mu_pixels(0),
+  num_nonlinear_pixels(0),
+  num_susceptibility_pixels(0),
+  num_nonzero_conductivity_pixels(0),
+  num_1d_pml_pixels(0),
+  num_2d_pml_pixels(0),
+  num_3d_pml_pixels(0),
+  num_dft_pixels(0),
+  num_pixels_in_box(0),
+  box(bx) {
+
+  num_pixels_in_box = get_pixels_in_box(&bx);
+
+}
+
+void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
+                                 vector3 cell_size, vector3 cell_center, geometric_object_list *geom_) {
   geom_initialize();
   default_material = default_mat;
   ensure_periodicity = ensure_per;
   geometry_center = cell_center;
   dimensions = meep::number_of_directions(gv->dim);
   geometry_lattice.size = cell_size;
-  geom_fix_object_list(*geom);
+  geom_fix_object_list(*geom_);
 }
 
-std::vector<fragment_stats>
-compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv, vector3 cell_size,
-                       vector3 cell_center, material_type default_mat,
-                       std::vector<dft_data> dft_data_list, std::vector<meep::volume> pml_1d_vols,
-                       std::vector<meep::volume> pml_2d_vols, std::vector<meep::volume> pml_3d_vols,
-                       std::vector<meep::volume> absorber_vols, double tol, int maxeval,
-                       bool ensure_per, double box_size) {
-
-  init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom);
-  std::vector<geom_box> boxes = split_cell_into_boxes(gv, box_size, cell_size);
-  std::vector<fragment_stats> fragments = init_fragments(boxes, tol, maxeval, gv);
-
-  for (size_t i = 0; i < fragments.size(); ++i) {
-    fragments[i].compute_stats(&geom);
-    fragments[i].compute_dft_stats(&dft_data_list);
-    fragments[i].compute_pml_stats(pml_1d_vols, pml_2d_vols, pml_3d_vols);
-    fragments[i].compute_absorber_stats(absorber_vols);
+bool fragment_stats::has_non_medium_material() {
+  for (int i = 0; i < geom.num_items; ++i) {
+    material_type mat = (material_type)geom.items[i].material;
+    if (mat->which_subclass != material_data::MEDIUM) {
+      return true;
+    }
   }
-  return fragments;
+  if (((material_type)default_material)->which_subclass != material_data::MEDIUM) {
+    return true;
+  }
+  return false;
 }
-
-fragment_stats::fragment_stats(geom_box &bx, size_t pixels)
-    : num_anisotropic_eps_pixels(0), num_anisotropic_mu_pixels(0), num_nonlinear_pixels(0),
-      num_susceptibility_pixels(0), num_nonzero_conductivity_pixels(0), num_1d_pml_pixels(0),
-      num_2d_pml_pixels(0), num_3d_pml_pixels(0), num_dft_pixels(0), num_pixels_in_box(pixels),
-      box(bx) {}
 
 void fragment_stats::update_stats_from_material(material_type mat, size_t pixels) {
   switch (mat->which_subclass) {
@@ -1798,15 +1840,15 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
   }
 }
 
-void fragment_stats::compute_stats(geometric_object_list *geom) {
+void fragment_stats::compute_stats() {
 
-  if (geom->num_items == 0) {
+  if (geom.num_items == 0) {
     // If there is no geometry, count the default material for the whole fragment
     update_stats_from_material((material_type)default_material, num_pixels_in_box);
   }
 
-  for (int i = 0; i < geom->num_items; ++i) {
-    geometric_object *go = &geom->items[i];
+  for (int i = 0; i < geom.num_items; ++i) {
+    geometric_object *go = &geom.items[i];
     double overlap = box_overlap_with_object(box, *go, tol, maxeval);
 
     // Count contributions from material of object
@@ -1876,11 +1918,11 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
 }
 
-void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
+void fragment_stats::compute_dft_stats() {
 
-  for (size_t i = 0; i < dft_data_list->size(); ++i) {
-    for (size_t j = 0; j < (*dft_data_list)[i].vols.size(); ++j) {
-      geom_box dft_box = gv2box((*dft_data_list)[i].vols[j]);
+  for (size_t i = 0; i < dft_data_list.size(); ++i) {
+    for (size_t j = 0; j < dft_data_list[i].vols.size(); ++j) {
+      geom_box dft_box = gv2box(dft_data_list[i].vols[j]);
 
       if (geom_boxes_intersect(&dft_box, &box)) {
         geom_box overlap_box;
@@ -1889,16 +1931,13 @@ void fragment_stats::compute_dft_stats(std::vector<dft_data> *dft_data_list) {
         // Note: Since geom_boxes_intersect returns true if two planes share a line or two volumes
         // share a line or plane, there are cases where some pixels are counted multiple times.
         size_t overlap_pixels = get_pixels_in_box(&overlap_box, 2);
-        num_dft_pixels +=
-            overlap_pixels * (*dft_data_list)[i].num_freqs * (*dft_data_list)[i].num_components;
+        num_dft_pixels += overlap_pixels * dft_data_list[i].num_freqs * dft_data_list[i].num_components;
       }
     }
   }
 }
 
-void fragment_stats::compute_pml_stats(const std::vector<meep::volume> &pml_1d_vols,
-                                       const std::vector<meep::volume> &pml_2d_vols,
-                                       const std::vector<meep::volume> &pml_3d_vols) {
+void fragment_stats::compute_pml_stats() {
 
   const std::vector<meep::volume> *pml_vols[] = {&pml_1d_vols, &pml_2d_vols, &pml_3d_vols};
   size_t *pml_pixels[] = {&num_1d_pml_pixels, &num_2d_pml_pixels, &num_3d_pml_pixels};
@@ -1917,7 +1956,7 @@ void fragment_stats::compute_pml_stats(const std::vector<meep::volume> &pml_1d_v
   }
 }
 
-void fragment_stats::compute_absorber_stats(const std::vector<meep::volume> &absorber_vols) {
+void fragment_stats::compute_absorber_stats() {
 
   for (size_t i = 0; i < absorber_vols.size(); ++i) {
     geom_box absorber_box = gv2box(absorber_vols[i]);
@@ -1931,7 +1970,30 @@ void fragment_stats::compute_absorber_stats(const std::vector<meep::volume> &abs
   }
 }
 
-void fragment_stats::print_stats() {
+void fragment_stats::compute() {
+  compute_stats();
+  compute_dft_stats();
+  compute_pml_stats();
+  compute_absorber_stats();
+}
+
+// Return the estimated time in seconds this fragment will take to run
+// based on a cost function obtained via linear regression on a dataset
+// of random simulations.
+double fragment_stats::cost() const {
+  return (num_anisotropic_eps_pixels * 1.15061674e-04 +
+          num_anisotropic_mu_pixels * 1.26843801e-04 +
+          num_nonlinear_pixels * 1.67029547e-04 +
+          num_susceptibility_pixels * 2.24790864e-04 +
+          num_nonzero_conductivity_pixels * 4.61260934e-05 +
+          num_dft_pixels * 1.47283950e-04 +
+          num_1d_pml_pixels * 9.92955372e-05 +
+          num_2d_pml_pixels * 1.36901107e-03 +
+          num_3d_pml_pixels * 6.63939607e-04 +
+          num_pixels_in_box * 3.46518274e-04);
+}
+
+void fragment_stats::print_stats() const {
   master_printf("Fragment stats\n");
   master_printf("  num_anisotropic_eps_pixels: %zd\n", num_anisotropic_eps_pixels);
   master_printf("  num_anisotropic_mu_pixels: %zd\n", num_anisotropic_mu_pixels);

@@ -22,6 +22,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "meepgeom.hpp"
 
 using namespace std;
 
@@ -64,6 +65,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thegv, num, br, s);
+
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -128,8 +130,18 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   chunks = new structure_chunk_ptr[desired_num_chunks * num_effort_volumes];
   for (int i = 0; i < desired_num_chunks; i++) {
     const int proc = i * count_processors() / desired_num_chunks;
-    grid_volume vi =
-        gv.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
+
+    grid_volume vi;
+    if (meep_geom::fragment_stats::resolution == 0 ||
+        meep_geom::fragment_stats::has_non_medium_material() ||
+        gv.dim == Dcyl || meep_geom::fragment_stats::split_chunks_evenly) {
+      // Fall back to split_by_effort method
+      vi = gv.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
+    }
+    else {
+      vi = gv.split_by_cost(desired_num_chunks, i);
+    }
+
     for (int j = 0; j < num_effort_volumes; j++) {
       grid_volume vc;
       if (vi.intersect_with(effort_volumes[j], &vc)) {
