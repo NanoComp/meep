@@ -1011,6 +1011,11 @@ class Simulation(object):
         warnings.warn('init_fields is deprecated. Please use init_sim instead', DeprecationWarning)
         self.init_sim()
 
+    def initialize_field(self, cmpnt, amp_func):
+        if self.fields is None:
+            self.init_sim()
+        self.fields.initialize_field(cmpnt, amp_func)
+
     def require_dimensions(self):
         if self.structure is None:
             mp.set_dimensions(self._infer_dimensions(self.k_point))

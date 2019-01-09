@@ -62,7 +62,7 @@ class TestMultiLevelAtom(unittest.TestCase):
             self.assertAlmostEqual(fp, -2.7110969214986387)
 
         sim.init_sim()
-        sim.fields.initialize_field(mp.Ex, field_func)
+        sim.initialize_field(mp.Ex, field_func)
         sim.run(mp.at_end(check_field), until=7000)
 
 
