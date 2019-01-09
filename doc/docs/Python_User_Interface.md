@@ -571,21 +571,21 @@ cyl = mp.Cylinder(center=mp.Vector3(0,0,0), height=0.25, radius=mp.inf,
 
 ```py
 # An ellipsoid with its long axis pointing along (1,1,1), centered on
-# the origin (the other two axes are orthogonal and have equal  semi-axis lengths):
+# the origin (the other two axes are orthogonal and have equal semi-axis lengths):
 ell = mp.Ellipsoid(center=mp.Vector3(0,0,0), size=mp.Vector3(0.8,0.2,0.2),
                    e1=Vector3(1,1,1), e2=Vector3(0,1,-1), e3=Vector3(-2,1,1),
                    material=mp.Medium(epsilon=13))
 ```
 
 ```py
-# A unit cube of material mat with a spherical air hole of radius 0.2 at
+# A unit cube of material metal with a spherical air hole of radius 0.2 at
 # its center, the whole thing centered at (1,2,3):
 geometry=[mp.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=mp.metal),
           mp.Sphere(center=Vector3(1,2,3), radius=0.2, material=mp.air)]
 ```
 
 ```py
-# A hexagon defined as a prism with six vertices centered on the origin
+# A hexagonal prism defined by six vertices centered on the origin
 # of material crystalline silicon (from the materials library)
 vertices = [mp.Vector3(-1,0),
             mp.Vector3(-0.5,math.sqrt(3)/2),
@@ -937,6 +937,10 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 —
 Equivalent to `get_field_point(mp.Dielectric, pt)`.
 
+**`initialize_field(c, func)`**
+—
+Initialize the `c` component fields using the position-dependent function `func` which takes a `Vector3` parameter and returns a complex number for the value of the field at that point.
+
 **`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**
 —
 Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computational cell). The volume can also be specified via the `center` and `size` arguments.
@@ -1090,6 +1094,8 @@ Aliases for the corresponding "flux" methods.
 **`scale_flux_fields(s, flux)`**
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
+
+### Mode Decomposition
 
 **`get_eigenmode_coefficients(flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False)`**
 —
@@ -1457,10 +1463,10 @@ See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic 
 
 #### Array Slices
 
-The output functions described above write the data for the fields and materials for the entire computational volume to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the computational volume and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
+The output functions described above write the data for the fields and materials for the entire cell to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 ```python
- get_array(vol=None, center=None, size=None component=mp.Ez, cmplx=False, arr=None)
+ get_array(vol=None, center=None, size=None, component=mp.Ez, cmplx=False, arr=None)
 ```
 
 with the following input parameters:
@@ -1475,6 +1481,8 @@ with the following input parameters:
 
 + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
+For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`.
+
 **`get_dft_array(dft_obj, component, num_freq)`**
 —
 Returns the Fourier-transformed fields as a NumPy array.
@@ -1485,7 +1493,7 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 + `num_freq`: The index of the frequency: (an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.)
 
-#### Array metadata
+#### Array Metadata
 
 **`get_array_metadata(vol=None, center=None, size=None, collapse=False)`**
 **`get_dft_array_metadata(dft_cell=None, vol=None, center=None, size=None)`**
@@ -1598,25 +1606,11 @@ The routine `get_dft_array_metadata` is equivalent to `get_array_metadata` with 
 `vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object
 to define the region covered by the array.
 
-#### Source slices
+#### Source Slices
 
 **`get_source_slice(component, vol=None, center=None, size=None)`**
 
-This routine returns an array of the same dimensions as that
-returned by `get_array` for the given `vol` or `center/size`,
-but containing information on the [*sources*](#source) at grid points,
-not the fields there.
-(Because sources, unlike fields, are *inputs* rather
-than outputs of meep calculations, this routine
-is not a means of extracting results from meep calculations,
-but is rather a tool to sanity-check visualization
-and confirm that the source distribution you specified is the one you
-wanted; philosophically it is closer in
-spirit to [`output_epsilon()`](#output_epsilon) than to
- `get_array/get_dft_array`.
-
-The array returned by `get_source_slice` is always complex,
-and corresponds to the given `component`.
+Return an array of complex values of the [source](#source) amplitude for `component` over the given `vol` or `center`/`size`. The array has the same dimensions as that returned by [`get_array`](#array-slices).
 
 #### Harminv
 
@@ -1636,7 +1630,7 @@ The results are stored in the list `Harminv.modes`, which is a list of tuples ho
 
 **`freq`**
 —
-The complex frequency ω (in the usual Meep $2\pi c$ units).
+The complex frequency ω (in the usual Meep 2πc units).
 
 **`freq.real`**
 —

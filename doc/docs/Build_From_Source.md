@@ -87,7 +87,7 @@ If you only want the Python interface, it is possible to install libctl without 
 
 Instead of using Guile directly in our Scheme interface, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
-If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
+If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
 
 ### Python
 
@@ -160,7 +160,7 @@ Meep outputs its fields and other volumetric data in the HDF5 format, so you mus
 
 HDF5 supports parallel I/O under MPI which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other. We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large HPC clusters we strongly recommend using the parallel HDF5.
 
-**Note:** If you have a version of HDF5 compiled with MPI parallel I/O support, then you need to use the MPI compilers to link to it, even when you are compiling the serial versions of Meep or MPB.  Just use `./configure CC=mpicc CXX=mpic++` or whatever your MPI compilers are when configuring.
+**Note:** If you have a version of HDF5 compiled with MPI parallel I/O support, then you need to use the MPI compilers to link to it, even when you are compiling the serial version of Meep.  Just use `./configure CC=mpicc CXX=mpic++` or whatever your MPI compilers are when configuring.
 
 ### libGDSII
 
@@ -173,6 +173,12 @@ Guile is required in order to use the Scheme interface. If you don't install it,
 Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
 
 - **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package.
+
+### MPB
+
+The planewave expansion mode solver [MPB](https://mpb.readthedocs.io/en/latest/) is required for the [eigenmode source](Python_User_Interface.md#eigenmodesource) and [mode decomposition](Python_User_Interface.md#mode-decomposition) features.
+
+**Note:** Meep can only link to the *serial* version of MPB.
 
 Meep
 ----
