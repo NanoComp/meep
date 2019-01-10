@@ -268,6 +268,8 @@ void fields::find_metals() {
 		if (on_metal_boundary(here))
 		  chunks[i]->num_zeroes[ft]++;
 	      }
+      }
+        }
         typedef realnum *realnum_ptr;
         chunks[i]->zeroes[ft] = new realnum_ptr[chunks[i]->num_zeroes[ft]];
         size_t num = 0;
@@ -281,8 +283,6 @@ void fields::find_metals() {
     	      }
           }
         }
-      }
-    }
       }
     }
 }
@@ -342,6 +342,7 @@ void fields::connect_the_chunks() {
       for (int ip=0;ip<3;ip++)
       	for (int j=0;j<num_chunks;j++)
       	  comm_sizes[ft][ip][j+i*num_chunks] = 0;
+    }
     FOR_COMPONENTS(corig) {
       if (have_component(corig))
       	LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
@@ -407,7 +408,6 @@ void fields::connect_the_chunks() {
       	    } // loop over j chunks
         } // LOOP_OVER_VOL_NOTOWNED
     } // FOR_COMPONENTS
-    } // FOR_FIELD_TYPES
 
     // Allocating comm blocks as we go...
     FOR_FIELD_TYPES(ft) {
