@@ -2,3 +2,7 @@ BasedOnStyle: LLVM
 IndentWidth: 2
 UseTab: Never
 IndentCaseLabels: true
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+ColumnLimit: 100
