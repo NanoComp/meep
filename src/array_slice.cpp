@@ -386,7 +386,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
 }
 
 /**********************************************************************/
-/* precisely one of fun, rfun should be non-NULL.                     */
+/* precisely one of fun, rfun, source_slice should be non-NULL / true */
 /**********************************************************************/
 void *fields::do_get_array_slice(const volume &where,
                                  std::vector<component> components,
