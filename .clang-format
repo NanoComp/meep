@@ -6,3 +6,4 @@ AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: true
 ColumnLimit: 100
+Standard: Cpp03
