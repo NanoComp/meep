@@ -556,8 +556,8 @@ AC_CONFIG_FILES([
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
- 	scheme/Makefile
- 	scheme/meep.scm
+	scheme/Makefile
+	scheme/meep.scm
 	libpympb/Makefile
 	python/Makefile
 ])
