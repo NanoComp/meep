@@ -93,8 +93,9 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   dft_phase = new complex<realnum>[Nomega];
 
   N = 1;
-  LOOP_OVER_DIRECTIONS(is.dim, d)
+  LOOP_OVER_DIRECTIONS(is.dim, d) {
     N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+  }
   dft = new complex<realnum>[N * Nomega];
   for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
@@ -475,9 +476,10 @@ direction fields::normal_direction(const volume &where) const {
     /* hack so that we still infer the normal direction correctly for
        volumes with empty dimensions */
     volume where_pad(where);
-    LOOP_OVER_DIRECTIONS(where.dim, d1)
+    LOOP_OVER_DIRECTIONS(where.dim, d1) {
       if (nosize_direction(d1) && where.in_direction(d1) == 0.0)
 	where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
+    }
     d = where_pad.normal_direction();
     if (d == NO_DIRECTION)
       abort("Could not determine normal direction for given grid_volume.");
@@ -503,7 +505,7 @@ dft_flux fields::add_mode_monitor(direction d, const volume &where,
 dft_flux fields::add_dft_flux_box(const volume &where,
 				  double freq_min, double freq_max, int Nfreq){
   volume_list *faces = 0;
-  LOOP_OVER_DIRECTIONS(where.dim, d)
+  LOOP_OVER_DIRECTIONS(where.dim, d) {
     if (where.in_direction(d) > 0) {
       volume face(where);
       derived_component c = direction_component(Sx, d);
@@ -513,6 +515,7 @@ dft_flux fields::add_dft_flux_box(const volume &where,
       face.set_direction_max(d, where.in_direction_min(d));
       faces = new volume_list(face, c, -1, faces);
     }
+  }
 
   dft_flux flux = add_dft_flux(faces, freq_min, freq_max, Nfreq);
   delete faces;
@@ -587,8 +590,9 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
    for (int i = 0; i < 3; ++i)
     permute.set_direction(fc->gv.yucky_direction(i), i);
    permute = S.transform_unshifted(permute, sn);
-   LOOP_OVER_DIRECTIONS(permute.dim, d)
+   LOOP_OVER_DIRECTIONS(permute.dim, d) {
     permute.set_direction(d, abs(permute.in_direction(d)));
+   }
 
    for (int i = 0; i < rank; ++i)
     { direction d = ds[i];
@@ -633,8 +637,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds,
    vec rshift(shift * (0.5*fc->gv.inva));
    int chunk_idx = 0;
    cdouble integral = 0.0;
-   LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-    {
+   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
       IVEC_LOOP_LOC(fc->gv, loc);
       loc = S.transform(loc, sn) + rshift;
       double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
@@ -757,8 +760,9 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       min_corner = min(min_corner, min(isS, ieS));
       max_corner = max(max_corner, max(isS, ieS));
       size_t this_bufsz=1;
-      LOOP_OVER_DIRECTIONS(chunk->fc->gv.dim, d)
+      LOOP_OVER_DIRECTIONS(chunk->fc->gv.dim, d) {
        this_bufsz *= (chunk->ie.in_direction(d) - chunk->is.in_direction(d)) / 2 + 1;
+      }
       bufsz = max(bufsz, this_bufsz);
     }
   max_corner = max_to_all(max_corner);
@@ -883,8 +887,8 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], volum
   if (full_rank==0) return array;
 
   int reduced_rank=0, reduced_dims[3], reduced_stride[3]={1,1,1}, nd=0;
-  LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
-   { int dim = dims[nd++];
+  LOOP_OVER_DIRECTIONS(dft_volume.dim, d) {
+     int dim = dims[nd++];
      if (dim==0) continue;
      if (dft_volume.in_direction(d) == 0.0)
       reduced_stride[nd-1]=0;    // degenerate dimension, to be collapsed
@@ -995,9 +999,10 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
   // because some processes' field chunks may have no overlap with dft_volume,
   // in which case those processes will think NumFreqs==0.
   bool have_empty_dims=false;
-  LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
+  LOOP_OVER_DIRECTIONS(dft_volume.dim, d) {
    if (dft_volume.in_direction(d)==0.0)
     have_empty_dims=true;
+  }
 
   h5file *file=0;
   if ( have_empty_dims && am_master() )
@@ -1010,7 +1015,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
 
   bool first_component=true;
   for(int num_freq=0; num_freq<NumFreqs; num_freq++)
-   FOR_E_AND_H(c)
+   FOR_E_AND_H(c) {
     if (!have_empty_dims)
      {
         process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName,
@@ -1044,6 +1049,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists,
         }
        if (array) delete[] array;
      }
+   }
   if (file) delete file;
 }
 
@@ -1090,8 +1096,9 @@ void fields::output_mode_fields(void *mode_data, dft_flux flux,
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  FOR_E_AND_H(c)
+  FOR_E_AND_H(c) {
    process_dft_component(chunklists, 2, 0, c, 0, 0, 0, 0, mode_data, 0, c);
+  }
 }
 
 /***************************************************************/

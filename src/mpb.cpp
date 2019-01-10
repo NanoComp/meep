@@ -235,10 +235,11 @@ void *fields::get_eigenmode(double omega_src,
   // in any direction, set the corresponding component of the eigenmode initial-guess
   // k-vector to be the (real part of the) bloch vector in that direction.
   vec kpoint(_kpoint);
-  LOOP_OVER_DIRECTIONS(v.dim, dd)
+  LOOP_OVER_DIRECTIONS(v.dim, dd) {
    if (float(eig_vol.in_direction(dd)) == float(v.in_direction(dd)))
       if (boundaries[High][dd]==Periodic && boundaries[Low][dd]==Periodic)
         kpoint.set_direction(dd, real(k[dd]));
+  }
 
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1/a)) && (boundaries[High][Z]==Periodic && boundaries[Low][Z]==Periodic) && (kpoint.z() == 0) && (real(k[Z]) != 0))

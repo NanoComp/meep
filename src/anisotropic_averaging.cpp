@@ -163,8 +163,9 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
   {
     double n[3] = {0,0,0};
     double nabsinv = 1.0/abs(gradient);
-    LOOP_OVER_DIRECTIONS(gradient.dim, k)
+    LOOP_OVER_DIRECTIONS(gradient.dim, k) {
       n[k%3] = gradient.in_direction(k) * nabsinv;
+    }
 
     /* get rownum'th row of effective tensor
        P * minveps + (I-P) * 1/meps = P * (minveps-1/meps) + I * 1/meps

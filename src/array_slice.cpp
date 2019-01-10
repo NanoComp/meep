@@ -202,8 +202,9 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int i = 0; i < 3; ++i)
     permute.set_direction(fc->gv.yucky_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
-  LOOP_OVER_DIRECTIONS(permute.dim, d)
+  LOOP_OVER_DIRECTIONS(permute.dim, d) {
     permute.set_direction(d, abs(permute.in_direction(d)));
+  }
 
   // compute the size of the chunk to output, and its strides etc.
   size_t slice_size=1;

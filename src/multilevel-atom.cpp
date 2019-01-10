@@ -128,7 +128,7 @@ void *multilevel_susceptibility::new_internal_data(
 				    realnum *W[NUM_FIELD_COMPONENTS][2],
 				    const grid_volume &gv) const {
   size_t num = 0; // number of P components
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
+  FOR_COMPONENTS(c) DOCMP2 { if (needs_P(c, cmp, W)) num += 2 * gv.ntot(); }
   size_t sz = sizeof(multilevel_data)
     + sizeof(realnum) * (L*L + L + gv.ntot()*L + num*T - 1);
   multilevel_data *d = (multilevel_data *) malloc(sz);
@@ -161,7 +161,7 @@ void multilevel_susceptibility::init_internal_data(
 
   realnum *P = d->data + L*L;
   realnum *P_prev = P + ntot;
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
+  FOR_COMPONENTS(c) DOCMP2 { if (needs_P(c, cmp, W)) {
     d->P[c][cmp] = new realnumP[T];
     d->P_prev[c][cmp] = new realnumP[T];
     for (int t = 0; t < T; ++t) {
@@ -170,6 +170,7 @@ void multilevel_susceptibility::init_internal_data(
       P += 2*ntot;
       P_prev += 2*ntot;
     }
+  }
   }
 
   d->Ntmp = P;
@@ -201,7 +202,7 @@ void *multilevel_susceptibility::copy_internal_data(void *data) const {
   dnew->GammaInv = dnew->data;
   realnum *P = dnew->data + L*L;
   realnum *P_prev = P + ntot;
-  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
+  FOR_COMPONENTS(c) DOCMP2 { if (d->P[c][cmp]) {
     dnew->P[c][cmp] = new realnumP[T];
     dnew->P_prev[c][cmp] = new realnumP[T];
     for (int t = 0; t < T; ++t) {
@@ -210,6 +211,7 @@ void *multilevel_susceptibility::copy_internal_data(void *data) const {
       P += 2*ntot;
       P_prev += 2*ntot;
     }
+  }
   }
   dnew->Ntmp = P;
   dnew->N = P + L;
@@ -243,10 +245,11 @@ void multilevel_susceptibility::update_P
   component cdot[3] = {Dielectric,Dielectric,Dielectric};
   ptrdiff_t o1[3], o2[3];
   int idot = 0;
-  FOR_COMPONENTS(c) if (d->P[c][0]) {
+  FOR_COMPONENTS(c) { if (d->P[c][0]) {
     if (idot == 3) abort("bug in meep: too many polarization components");
     gv.yee2cent_offsets(c, o1[idot], o2[idot]);
     cdot[idot++] = c;
+  }
   }
 
   // update N from W and P
@@ -303,7 +306,7 @@ void multilevel_susceptibility::update_P
 	}
       }
       EdP32 *= 0.03125; /* divide by 32 */
-      EPave64 *= 0.015625; /* divide by 64 (extra factor of 1/2 is from P_current + P_previous) */ 
+      EPave64 *= 0.015625; /* divide by 64 (extra factor of 1/2 is from P_current + P_previous) */
       for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T+t]*EdP32 + alpha[l*T+t]*gperpdt*EPave64;
     }
 
@@ -321,7 +324,7 @@ void multilevel_susceptibility::update_P
     const double gamma1inv = 1 / (1 + g2pi*dt2), gamma1 = (1 - g2pi*dt2);
     const double dtsqr = dt*dt;
     // note that gamma[t]*2*pi = 2*gamma_perp as one would usually write it in SALT. -- AWC
-    
+
     // figure out which levels this transition couples
     int lp = -1, lm = -1;
     for (int l = 0; l < L; ++l) {
@@ -330,7 +333,7 @@ void multilevel_susceptibility::update_P
     }
     if (lp < 0 || lm < 0) abort("invalid alpha array for transition %d", t);
 
-    FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
+    FOR_COMPONENTS(c) DOCMP2 { if (d->P[c][cmp]) {
       const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
       const double st = sigmat[5*t + component_direction(c)];
       if (w && s) {
@@ -362,13 +365,14 @@ void multilevel_susceptibility::update_P
 	    // dNi is population inversion for this transition
 	    double dNi = 0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
 				 -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
-	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqrCorrected) 
+	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqrCorrected)
 				- gamma1 * pp[i]
 				- dtsqr * (st * s[i] * w[i]) * dNi);
 	    pp[i] = pcur;
 	  }
 	}
       }
+    }
     }
   }
 }
@@ -380,13 +384,14 @@ void multilevel_susceptibility::subtract_P(field_type ft,
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   size_t ntot = d->ntot;
   for (int t = 0; t < T; ++t) {
-    FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
+    FOR_FT_COMPONENTS(ft, ec) DOCMP2 { if (d->P[ec][cmp]) {
       component dc = field_type_component(ft2, ec);
       if (f_minus_p[dc][cmp]) {
 	realnum *p = d->P[ec][cmp][t];
 	realnum *fmp = f_minus_p[dc][cmp];
 	for (size_t i = 0; i < ntot; ++i) fmp[i] -= p[i];
       }
+    }
     }
   }
 }

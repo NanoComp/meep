@@ -73,12 +73,12 @@ complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_typ
   }
   dg[0] = -sigma;
   if (eps_func){
-    eps0 = eps_func(0.0); // != 1 in general 
+    eps0 = eps_func(0.0); // != 1 in general
     for (int i = 1; i < Nfft/2 ; ++i) {
-      double xi = 2*pi*i / (Nfft * dt); 
+      double xi = 2*pi*i / (Nfft * dt);
       dg[i] = dg[i] * eps_func(xi * sqrt(C(1.0, sigma/xi)));
     }
-  }						
+  }
   for (int i = 1; i < Nfft/2; ++i) {
     double xi = 2*pi*i / (Nfft * dt);
     dg[i] = dg[i] - (C(sigma, -xi) + 0.5 * eps0 * sqrt(C(0.0, (sigma*sigma*sigma) / xi)));
@@ -199,7 +199,7 @@ static void stress_chunkloop_bloch(fields_chunk *fc, int ichunk, component cgrid
     fim = fc->f[cgrid][1] ? fc->f[cgrid][1][idx] : 0.0;
     complex<double> fval = complex<double>(fre, fim) * ph;
     // coordinate origin is taken to be the center of the unit cell
-    sum += fval * polar(1.0, 
+    sum += fval * polar(1.0,
 			- d->kx * (loc.in_direction(d->xd) - d->x0)
 			- d->ky * (loc.in_direction(d->yd) - d->y0)
 			- d->kz * (loc.in_direction(d->zd) - d->z0))
@@ -224,7 +224,7 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
     abort("invalid directions in casimir_stress_dct_integral");
   if (dnormal == NO_DIRECTION)
     abort("invalid integration surface in casimir_stress_dct_integral");
-  if (ft != E_stuff && ft != H_stuff) 
+  if (ft != E_stuff && ft != H_stuff)
     abort("invalid field type in casimir_stress_dct_integral");
 
   if (dforce != dnormal && dsource != dnormal)
@@ -282,20 +282,21 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
     data.zd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.z0 = data.kz = 0; // innocuous values: ignore this dir
   }
-  
-  coefficient *= (ft==E_stuff 
+
+  coefficient *= (ft==E_stuff
   		  ? get_eps(where.center()) : get_mu(where.center()));
 
   data.sum = 0.0;
   data.dV = 1.0;
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (where.in_direction(d) > 0.0)
       data.dV *= gv.inva;
+  }
 
   if (is_bloch) //complex exponentials exp(i m x)
     loop_in_chunks(stress_chunkloop_bloch, &data, where, c);
   else //cosine functions for closed surfaces
-    loop_in_chunks(stress_chunkloop, &data, where, c); 
+    loop_in_chunks(stress_chunkloop, &data, where, c);
 
   data.sum = sum_to_all(data.sum);
   return coefficient * complex<double>(real(data.sum), imag(data.sum));
@@ -312,7 +313,7 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
   {
     double tshift = (ft == E_stuff || ft == D_stuff) ? 0.0 : dt;
     T += 5 * dt; // allocate a few extra timesteps just in case
-    
+
     int N = int(ceil(T / dt));
     C *g = new C[N];
     for (int i = 1; i < N; ++i) {

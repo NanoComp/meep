@@ -75,9 +75,10 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     }
   }
   bool have_f_minus_p = false;
-  FOR_FT_COMPONENTS(ft2, dc) if (f_minus_p[dc][0]) {
+  FOR_FT_COMPONENTS(ft2, dc) { if (f_minus_p[dc][0]) {
     have_f_minus_p = true;
     break;
+  }
   }
 
   const size_t ntot = s->gv.ntot();
@@ -122,10 +123,11 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   // Finally, compute E = chi1inv * D
 
   realnum *dmp[NUM_FIELD_COMPONENTS][2];
-  FOR_FT_COMPONENTS(ft2,dc) DOCMP2
+  FOR_FT_COMPONENTS(ft2,dc) DOCMP2 {
       dmp[dc][cmp] = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
+  }
 
-  DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp]) {
+  DOCMP FOR_FT_COMPONENTS(ft,ec) { if (f[ec][cmp]) {
     if (type(ec) != ft) abort("bug in FOR_FT_COMPONENTS");
     component dc = field_type_component(ft2, ec);
     const direction d_ec = component_direction(ec);
@@ -172,6 +174,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 		       s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
 		       f_w[ec][cmp], dsigw, s->sig[dsigw], s->kap[dsigw]);
   }
+  }
 
   /* Do annoying special cases for r=0 in cylindrical coords.  Note
      that this only really matters for field output; the Ez and Ep
@@ -179,7 +182,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
      because of the form of Maxwell's equations in cylindrical coords. */
   // (FIXME: handle Kerr case?  Do we care about auxiliary PML fields here?)
   if (gv.dim == Dcyl && gv.origin_r() == 0.0)
-    DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp] && (ec == Ep || ec == Ez
+    DOCMP FOR_FT_COMPONENTS(ft,ec) { if (f[ec][cmp] && (ec == Ep || ec == Ez
 						      || ec == Hr)) {
       component dc = field_type_component(ft2, ec);
       if (f[ec][cmp] == f[dc][cmp]) continue;
@@ -199,6 +202,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       	  const int i = yee_idx + iZ - sR;
       	  E[i] = D[i];
       	}
+    }
     }
 
   return allocated_eh;

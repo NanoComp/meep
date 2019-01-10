@@ -85,24 +85,28 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
     	double dt2 = dt * 0.5;
     	if (g2) {
-    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    f[i] = ((1 - dt2 * cnd[i]) * f[i] -
     		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+				}
     	}
     	else {
-    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    f[i] = ((1 - dt2 * cnd[i]) * f[i]
     		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+				}
     	}
       }
       else { // no conductivity
     	if (g2) {
-    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+				}
     	}
     	else {
-    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
     	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
+				}
     	}
       }
     }
@@ -304,12 +308,14 @@ void step_beta(RPR f, component c, const RPR g,
     }
     else { // no PML, no fu
       if (cndinv) { // conductivity, no PML
-	LOOP_OVER_VOL_OWNED0(gv, c, i)
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  f[i] += betadt * g[i] * cndinv[i];
+	}
       }
       else { // no conductivity or PML
-	LOOP_OVER_VOL_OWNED0(gv, c, i)
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  f[i] += betadt * g[i];
+	}
       }
     }
   }
@@ -547,7 +553,9 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	}
       }
       else
-	LOOP_OVER_VOL_OWNED(gv, fc, i) f[i] = g[i];
+				LOOP_OVER_VOL_OWNED(gv, fc, i) {
+					f[i] = g[i];
+				}
     }
   }
 }

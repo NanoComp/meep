@@ -74,8 +74,9 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
         master_printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
         master_printf("Right now I'm looking at ");
-        LOOP_OVER_DIRECTIONS(p.dim,d)
+        LOOP_OVER_DIRECTIONS(p.dim,d) {
           master_printf("%s = %g, ", direction_name(d), p.in_direction(d));
+        }
         master_printf("time %g\n", f1.time());
         return 0;
       }

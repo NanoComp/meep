@@ -92,7 +92,7 @@ The `meep` Python package consists of a low-level interface and a high-level int
 
 <center>![](images/swig_process.png)</center>
 
-Next, we compile `meep-python.cpp`, rename `meep.py` to `__init__.py` and put them in a folder called `meep`. Putting all the code in `__init__.py` allows us to access the symbols directly from the `meep` namespace rather than going through an additional module like `meep.meep.vec`. Now we have a complete Python package.
+Next, we compile `meep-python.cxx`, rename `meep.py` to `__init__.py` and put them in a folder called `meep`. Putting all the code in `__init__.py` allows us to access the symbols directly from the `meep` namespace rather than going through an additional module like `meep.meep.vec`. Now we have a complete Python package.
 
 <center>![](images/pypackage_creation.png)</center>
 

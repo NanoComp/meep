@@ -79,9 +79,10 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
   for (int i=0;i<10;i++) pt->f[i] = 0.0;
   pt->loc = loc;
   pt->t = time();
-  FOR_COMPONENTS(c)
+  FOR_COMPONENTS(c) {
     if (gv.has_field(c))
       pt->f[c] = get_field(c,loc);
+  }
 }
 
 complex<double> fields::get_field(int c, const vec &loc) const {
@@ -107,14 +108,16 @@ double fields::get_field(derived_component c, const vec &loc) const {
     return sum;
   case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
     if (c != H_EnergyDensity)
-      FOR_ELECTRIC_COMPONENTS(c1) if (gv.has_field(c1)) {
+      FOR_ELECTRIC_COMPONENTS(c1) { if (gv.has_field(c1)) {
 	c2 = direction_component(Dx, component_direction(c1));
 	sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
       }
+      }
     if (c != D_EnergyDensity)
-      FOR_MAGNETIC_COMPONENTS(c1) if (gv.has_field(c1)) {
+      FOR_MAGNETIC_COMPONENTS(c1) { if (gv.has_field(c1)) {
 	complex<double> f = get_field(c1, loc);
 	sum += real(conj(f) * f);
+      }
       }
     return sum * 0.5;
   default: abort("unknown derived_component in get_field");
@@ -235,22 +238,24 @@ double fields::get_chi1inv(component c, direction d,
 double fields::get_eps(const vec &loc) const {
   double tr = 0;
   int nc = 0;
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
       tr += get_chi1inv(c, component_direction(c), loc);
       ++nc;
     }
+  }
   return nc / tr;
 }
 
 double fields::get_mu(const vec &loc) const {
   double tr = 0;
   int nc = 0;
-  FOR_MAGNETIC_COMPONENTS(c)
+  FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
       tr += get_chi1inv(c, component_direction(c), loc);
       ++nc;
     }
+  }
   return nc / tr;
 }
 
@@ -295,22 +300,24 @@ double structure::get_chi1inv(component c, direction d,
 double structure::get_eps(const vec &loc) const {
   double tr = 0;
   int nc = 0;
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
       tr += get_chi1inv(c, component_direction(c), loc);
       ++nc;
     }
+  }
   return nc / tr;
 }
 
 double structure::get_mu(const vec &loc) const {
   double tr = 0;
   int nc = 0;
-  FOR_MAGNETIC_COMPONENTS(c)
+  FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
       tr += get_chi1inv(c, component_direction(c), loc);
       ++nc;
     }
+  }
   return nc / tr;
 }
 
@@ -343,8 +350,9 @@ double monitor_point::poynting_in_direction(vec dir) {
     abort("poynting_in_direction: dir.dim != loc.dim\n");
   dir = dir / abs(dir);
   double result = 0.0;
-  LOOP_OVER_DIRECTIONS(dir.dim, d)
+  LOOP_OVER_DIRECTIONS(dir.dim, d) {
     result += dir.in_direction(d) * poynting_in_direction(d);
+  }
   return result;
 }
 

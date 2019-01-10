@@ -45,7 +45,7 @@ bool fields_chunk::step_db(field_type ft) {
   if (ft != B_stuff && ft != D_stuff)
     abort("bug - step_db should only be called for B or D");
 
-  DOCMP FOR_FT_COMPONENTS(ft, cc)
+  DOCMP FOR_FT_COMPONENTS(ft, cc) {
     if (f[cc][cmp]) {
       const component c_p=plus_component[cc], c_m=minus_component[cc];
       const direction d_deriv_p = plus_deriv_direction[cc];
@@ -123,6 +123,7 @@ bool fields_chunk::step_db(field_type ft) {
 		dt,
 		s->conductivity[cc][d_c], s->condinv[cc][d_c],f_cond[cc][cmp]);
     }
+	}
 
   /* In 2d with beta != 0, add beta terms.  This is a trick to model
      an exp(i beta z) z-dependence but without requiring a "3d"

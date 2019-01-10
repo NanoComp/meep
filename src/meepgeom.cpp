@@ -425,7 +425,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g,
   extra_materials = mlist;
   current_pol = NULL;
 
-  FOR_DIRECTIONS(d) FOR_SIDES(b) cond[d][b].prof = NULL;
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = NULL; }
 
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
@@ -466,8 +466,9 @@ geom_epsilon::~geom_epsilon()
 {
   unset_volume();
   destroy_geom_box_tree(geometry_tree);
-  FOR_DIRECTIONS(d) FOR_SIDES(b) if (cond[d][b].prof)
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { if (cond[d][b].prof)
       delete[] cond[d][b].prof;
+  }
 }
 
 void geom_epsilon::set_cond_profile(meep::direction dir,
@@ -1020,8 +1021,9 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c,
     meep::vec gradient(normal_vector(meep::type(c), v));
     double n[3] = {0,0,0};
     double nabsinv = 1.0/meep::abs(gradient);
-    LOOP_OVER_DIRECTIONS(gradient.dim, k)
+    LOOP_OVER_DIRECTIONS(gradient.dim, k) {
       n[k%3] = gradient.in_direction(k) * nabsinv;
+    }
     int rownum = meep::component_direction(c) % 3;
     for (int i=0; i<3; ++i)
       chi1inv_row[i] = n[rownum] * n[i] * (minveps - 1/meps);
@@ -1161,7 +1163,7 @@ bool geom_epsilon::has_conductivity(meep::component c)
 {
   medium_struct *mm;
 
-  FOR_DIRECTIONS(d) FOR_SIDES(b) if (cond[d][b].prof) return true;
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { if (cond[d][b].prof) return true; }
 
   for (int i = 0; i < geometry.num_items; ++i)
    if (    is_medium(geometry.items[i].material,&mm)
@@ -1600,20 +1602,20 @@ void set_materials_from_geometry(meep::structure *s,
   /***************************************************************/
   if (alist)
    { for(absorber_list_type::iterator layer=alist->begin(); layer!=alist->end(); layer++)
-      { LOOP_OVER_DIRECTIONS(gv.dim,d)
-         { if (layer->direction!=ALL_DIRECTIONS && layer->direction!=d) continue;
-           FOR_SIDES(b)
-            { if (layer->side!=ALL_SIDES && layer->side!=b ) continue;
+      { LOOP_OVER_DIRECTIONS(gv.dim,d) {
+           if (layer->direction!=ALL_DIRECTIONS && layer->direction!=d) continue;
+           FOR_SIDES(b) {
+             if (layer->side!=ALL_SIDES && layer->side!=b ) continue;
               pml_profile_thunk mythunk;
               mythunk.func      = layer->pml_profile;
               mythunk.func_data = layer->pml_profile_data;
               geps.set_cond_profile(d,b,layer->thickness, gv.inva*0.5,
                                     pml_profile_wrapper, (void *)&mythunk,
                                     layer->R_asymptotic);
-            };
-         };
-      };
-   };
+            }
+         }
+      }
+   }
 
   /***************************************************************/
   /***************************************************************/

@@ -79,8 +79,9 @@ static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
   size_t bufsz = 1;
-  LOOP_OVER_DIRECTIONS(fc->gv.dim, d)
+  LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
     bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+  }
   data->bufsz = max(data->bufsz, bufsz);
 }
 
@@ -111,8 +112,9 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   for (int i = 0; i < 3; ++i)
     permute.set_direction(fc->gv.yucky_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
-  LOOP_OVER_DIRECTIONS(permute.dim, d)
+  LOOP_OVER_DIRECTIONS(permute.dim, d) {
     permute.set_direction(d, abs(permute.in_direction(d)));
+  }
 
   // compute the size of the chunk to output, and its strides etc.
   for (int i = 0; i < data->rank; ++i) {
