@@ -52,11 +52,8 @@ typedef struct {
   field_rfunction rfun;
   void *fun_data;
   std::vector<component> components;
-<<<<<<< HEAD
   component source_slice_component;
   bool get_source_slice;
-=======
->>>>>>> geometric_object_source
 
   void *vslice;
 
@@ -118,7 +115,6 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->num_chunks++;
 }
 
-<<<<<<< HEAD
 /*****************************************************************/
 /* populate the array slice with information about sources with  */
 /* the component specified in source_slice_component.            */
@@ -163,8 +159,6 @@ void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data) {
     }
 }
 
-=======
->>>>>>> geometric_object_source
 /***************************************************************/
 /* callback function passed to loop_in_chunks to fill array slice */
 /***************************************************************/
@@ -241,12 +235,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   ptrdiff_t sco = start[0] * dims[1] * dims[2] + start[1] * dims[2] + start[2];
 
   //-----------------------------------------------------------------------//
-<<<<<<< HEAD
   // Otherwise proceed to compute the function of field components to be   //
   // tabulated on the slice, exactly as in fields::integrate.              //
-=======
-  // Compute the function to output, exactly as in fields::integrate.
->>>>>>> geometric_object_source
   //-----------------------------------------------------------------------//
   double *slice = 0;
   cdouble *zslice = 0;
@@ -403,14 +393,9 @@ void *fields::do_get_array_slice(const volume &where,
                                  field_function fun,
                                  field_rfunction rfun,
                                  void *fun_data,
-<<<<<<< HEAD
                                  void *vslice,
                                  component source_slice_component,
                                  bool get_source_slice) {
-=======
-                                 void *vslice)
-{
->>>>>>> geometric_object_source
   am_now_working_on(FieldOutput);
 
   /***************************************************************/
@@ -440,25 +425,8 @@ void *fields::do_get_array_slice(const volume &where,
       { slice  = new double[slice_size];
         memset(slice,0,slice_size*sizeof(double));
         vslice = (void *)slice;
-<<<<<<< HEAD
       }
    }
-=======
-      };
-   };
-
-  data.vslice       = vslice;
-  data.fun          = fun;
-  data.rfun         = rfun;
-  data.fun_data     = fun_data;
-  data.components   = components;
-
-  int num_components = components.size();
-
-  data.cS      = new component[num_components];
-  data.ph      = new cdouble[num_components];
-  data.fields  = new cdouble[num_components];
->>>>>>> geometric_object_source
 
   data.vslice = vslice;
   data.fun = fun;
