@@ -985,9 +985,10 @@ public:
   friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
   grid_volume split(size_t num, int which) const;
-  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL, double *effort = NULL) const;
+  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL,
+                              double *effort = NULL) const;
   grid_volume split_by_cost(int desired_chunks, int proc_num) const;
-  grid_volume split_at_fraction(bool want_high, int numer, int bestd=-1, int bestlen=1) const;
+  grid_volume split_at_fraction(bool want_high, int numer, int bestd = -1, int bestlen = 1) const;
   grid_volume halve(direction d) const;
   void pad_self(direction d);
   grid_volume pad(direction d) const;

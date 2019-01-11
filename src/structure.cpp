@@ -133,12 +133,11 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
     grid_volume vi;
     if (meep_geom::fragment_stats::resolution == 0 ||
-        meep_geom::fragment_stats::has_non_medium_material() ||
-        gv.dim == Dcyl || meep_geom::fragment_stats::split_chunks_evenly) {
+        meep_geom::fragment_stats::has_non_medium_material() || gv.dim == Dcyl ||
+        meep_geom::fragment_stats::split_chunks_evenly) {
       // Fall back to split_by_effort method
       vi = gv.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
-    }
-    else {
+    } else {
       vi = gv.split_by_cost(desired_num_chunks, i);
     }
 

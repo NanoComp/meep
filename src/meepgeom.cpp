@@ -1750,20 +1750,12 @@ static std::vector<fragment_stats> init_fragments(std::vector<geom_box> &boxes, 
   return fragments;
 }
 
-std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom_,
-                                                   meep::grid_volume *gv,
-                                                   vector3 cell_size,
-                                                   vector3 cell_center,
-                                                   material_type default_mat,
-                                                   std::vector<dft_data> dft_data_list_,
-                                                   std::vector<meep::volume> pml_1d_vols_,
-                                                   std::vector<meep::volume> pml_2d_vols_,
-                                                   std::vector<meep::volume> pml_3d_vols_,
-                                                   std::vector<meep::volume> absorber_vols_,
-                                                   double tol,
-                                                   int maxeval,
-                                                   bool ensure_per,
-                                                   double box_size) {
+std::vector<fragment_stats> compute_fragment_stats(
+    geometric_object_list geom_, meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
+    material_type default_mat, std::vector<dft_data> dft_data_list_,
+    std::vector<meep::volume> pml_1d_vols_, std::vector<meep::volume> pml_2d_vols_,
+    std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_, double tol,
+    int maxeval, bool ensure_per, double box_size) {
 
   fragment_stats::geom = geom_;
   fragment_stats::dft_data_list = dft_data_list_;
@@ -1782,25 +1774,17 @@ std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom_,
   return fragments;
 }
 
-fragment_stats::fragment_stats(geom_box& bx):
-  num_anisotropic_eps_pixels(0),
-  num_anisotropic_mu_pixels(0),
-  num_nonlinear_pixels(0),
-  num_susceptibility_pixels(0),
-  num_nonzero_conductivity_pixels(0),
-  num_1d_pml_pixels(0),
-  num_2d_pml_pixels(0),
-  num_3d_pml_pixels(0),
-  num_dft_pixels(0),
-  num_pixels_in_box(0),
-  box(bx) {
+fragment_stats::fragment_stats(geom_box &bx)
+    : num_anisotropic_eps_pixels(0), num_anisotropic_mu_pixels(0), num_nonlinear_pixels(0),
+      num_susceptibility_pixels(0), num_nonzero_conductivity_pixels(0), num_1d_pml_pixels(0),
+      num_2d_pml_pixels(0), num_3d_pml_pixels(0), num_dft_pixels(0), num_pixels_in_box(0), box(bx) {
 
   num_pixels_in_box = get_pixels_in_box(&bx);
-
 }
 
 void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                                 vector3 cell_size, vector3 cell_center, geometric_object_list *geom_) {
+                                 vector3 cell_size, vector3 cell_center,
+                                 geometric_object_list *geom_) {
   geom_initialize();
   default_material = default_mat;
   ensure_periodicity = ensure_per;
@@ -1813,13 +1797,9 @@ void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, mee
 bool fragment_stats::has_non_medium_material() {
   for (int i = 0; i < geom.num_items; ++i) {
     material_type mat = (material_type)geom.items[i].material;
-    if (mat->which_subclass != material_data::MEDIUM) {
-      return true;
-    }
+    if (mat->which_subclass != material_data::MEDIUM) { return true; }
   }
-  if (((material_type)default_material)->which_subclass != material_data::MEDIUM) {
-    return true;
-  }
+  if (((material_type)default_material)->which_subclass != material_data::MEDIUM) { return true; }
   return false;
 }
 
@@ -1930,7 +1910,8 @@ void fragment_stats::compute_dft_stats() {
         // Note: Since geom_boxes_intersect returns true if two planes share a line or two volumes
         // share a line or plane, there are cases where some pixels are counted multiple times.
         size_t overlap_pixels = get_pixels_in_box(&overlap_box, 2);
-        num_dft_pixels += overlap_pixels * dft_data_list[i].num_freqs * dft_data_list[i].num_components;
+        num_dft_pixels +=
+            overlap_pixels * dft_data_list[i].num_freqs * dft_data_list[i].num_components;
       }
     }
   }
@@ -1980,16 +1961,11 @@ void fragment_stats::compute() {
 // based on a cost function obtained via linear regression on a dataset
 // of random simulations.
 double fragment_stats::cost() const {
-  return (num_anisotropic_eps_pixels * 1.15061674e-04 +
-          num_anisotropic_mu_pixels * 1.26843801e-04 +
-          num_nonlinear_pixels * 1.67029547e-04 +
-          num_susceptibility_pixels * 2.24790864e-04 +
-          num_nonzero_conductivity_pixels * 4.61260934e-05 +
-          num_dft_pixels * 1.47283950e-04 +
-          num_1d_pml_pixels * 9.92955372e-05 +
-          num_2d_pml_pixels * 1.36901107e-03 +
-          num_3d_pml_pixels * 6.63939607e-04 +
-          num_pixels_in_box * 3.46518274e-04);
+  return (num_anisotropic_eps_pixels * 1.15061674e-04 + num_anisotropic_mu_pixels * 1.26843801e-04 +
+          num_nonlinear_pixels * 1.67029547e-04 + num_susceptibility_pixels * 2.24790864e-04 +
+          num_nonzero_conductivity_pixels * 4.61260934e-05 + num_dft_pixels * 1.47283950e-04 +
+          num_1d_pml_pixels * 9.92955372e-05 + num_2d_pml_pixels * 1.36901107e-03 +
+          num_3d_pml_pixels * 6.63939607e-04 + num_pixels_in_box * 3.46518274e-04);
 }
 
 void fragment_stats::print_stats() const {

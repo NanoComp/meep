@@ -75,8 +75,9 @@ struct fragment_stats {
   static bool split_chunks_evenly;
 
   static bool has_non_medium_material();
-  static void init_libctl(meep_geom::material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                          vector3 cell_size, vector3 cell_center, geometric_object_list *geom_list);
+  static void init_libctl(meep_geom::material_type default_mat, bool ensure_per,
+                          meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
+                          geometric_object_list *geom_list);
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
@@ -97,7 +98,7 @@ struct fragment_stats {
   geom_box box;
 
   fragment_stats() {}
-  fragment_stats(geom_box& bx);
+  fragment_stats(geom_box &bx);
   void update_stats_from_material(material_type mat, size_t pixels);
   void compute_stats();
   void count_anisotropic_pixels(medium_struct *med, size_t pixels);
