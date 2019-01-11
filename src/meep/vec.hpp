@@ -27,136 +27,167 @@ namespace meep {
 const int NUM_FIELD_COMPONENTS = 20;
 const int NUM_FIELD_TYPES = 8;
 
-enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
-                 Dx, Dy, Dr, Dp, Dz, Bx, By, Br, Bp, Bz, Dielectric, Permeability };
+enum component {
+  Ex = 0,
+  Ey,
+  Er,
+  Ep,
+  Ez,
+  Hx,
+  Hy,
+  Hr,
+  Hp,
+  Hz,
+  Dx,
+  Dy,
+  Dr,
+  Dp,
+  Dz,
+  Bx,
+  By,
+  Br,
+  Bp,
+  Bz,
+  Dielectric,
+  Permeability
+};
 #define Centered Dielectric // better name for centered "dielectric" grid
-enum derived_component { Sx=100, Sy, Sr, Sp, Sz, EnergyDensity,
-			 D_EnergyDensity, H_EnergyDensity };
-enum ndim { D1=0, D2, D3, Dcyl };
-enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, PE_stuff=4, PH_stuff=5, WE_stuff=6, WH_stuff=7 };
-enum boundary_side { High=0, Low };
-enum direction { X=0,Y,Z,R,P, NO_DIRECTION };
+enum derived_component {
+  Sx = 100,
+  Sy,
+  Sr,
+  Sp,
+  Sz,
+  EnergyDensity,
+  D_EnergyDensity,
+  H_EnergyDensity
+};
+enum ndim { D1 = 0, D2, D3, Dcyl };
+enum field_type {
+  E_stuff = 0,
+  H_stuff = 1,
+  D_stuff = 2,
+  B_stuff = 3,
+  PE_stuff = 4,
+  PH_stuff = 5,
+  WE_stuff = 6,
+  WH_stuff = 7
+};
+enum boundary_side { High = 0, Low };
+enum direction { X = 0, Y, Z, R, P, NO_DIRECTION };
 struct signed_direction {
-  signed_direction(direction dd=X,bool f=false, std::complex<double> ph=1.0) {
-    d = dd; flipped = f; phase = ph;
+  signed_direction(direction dd = X, bool f = false, std::complex<double> ph = 1.0) {
+    d = dd;
+    flipped = f;
+    phase = ph;
   };
   signed_direction(const signed_direction &sd) {
-    d = sd.d; flipped = sd.flipped; phase = sd.phase;
+    d = sd.d;
+    flipped = sd.flipped;
+    phase = sd.phase;
   }
   signed_direction operator*(std::complex<double> ph);
-  bool operator==(const signed_direction &sd) const { return (d == sd.d &&
-						       flipped == sd.flipped
-						       && phase == sd.phase); }
+  bool operator==(const signed_direction &sd) const {
+    return (d == sd.d && flipped == sd.flipped && phase == sd.phase);
+  }
   bool operator!=(const signed_direction &sd) const { return !(*this == sd); }
   direction d;
   bool flipped;
   std::complex<double> phase;
 };
 
-inline int number_of_directions(ndim dim) {
-  return (int) (dim + 1 - 2 * (dim == Dcyl));
-}
+inline int number_of_directions(ndim dim) { return (int)(dim + 1 - 2 * (dim == Dcyl)); }
 
 inline direction start_at_direction(ndim dim) {
-  return (direction) (((dim == D1) || (dim == Dcyl)) ? 2 : 0);
+  return (direction)(((dim == D1) || (dim == Dcyl)) ? 2 : 0);
 }
 
-inline direction stop_at_direction(ndim dim) {
-  return (direction) (dim + 1 + 2 * (dim == D1));
-}
+inline direction stop_at_direction(ndim dim) { return (direction)(dim + 1 + 2 * (dim == D1)); }
 
 component first_field_component(field_type ft);
 
-#define FOR_FIELD_TYPES(ft) for (meep::field_type ft = meep::E_stuff;	\
-				 ft <= meep::WH_stuff;			\
-                                 ft = (meep::field_type) (ft+1))
-#define FOR_ELECTRIC_COMPONENTS(c) for (meep::component c = meep::Ex;	\
-                                        c < meep::Hx;			\
-                                        c = (meep::component) (c+1))
-#define FOR_MAGNETIC_COMPONENTS(c) for (meep::component c = meep::Hz;	\
-                                        c > meep::Ez;			\
-                                        c = (meep::component) (c-1))
-#define FOR_B_COMPONENTS(c) for (meep::component c = meep::Bz;	\
-				 c > meep::Dz; c = (meep::component) (c-1))
-#define FOR_H_AND_B(h,b) for (meep::component h=meep::Hx, b=meep::Bx;	\
-			      h <= meep::Hz;				\
-                              h = (meep::component) (h+1),		\
-			      b = (meep::component) (b+1))
-#define FOR_D_COMPONENTS(c) for (meep::component c = meep::Dz;	\
-                                 c > meep::Hz; c = (meep::component) (c-1))
-#define FOR_E_AND_D(e,d) for (meep::component e = meep::Ex, d = meep::Dx; \
-                              e <= meep::Ez; e = (meep::component) (e+1), \
-                              d = (component) (d+1))
-#define FOR_E_AND_H(c) for (meep::component c = meep::Ex; c < meep::Dx; \
-                            c = (meep::component) (c+1))
-#define FOR_D_AND_B(c) for (meep::component c = meep::Dx;		\
-                            c < meep::Dielectric; c = (meep::component) (c+1))
-#define FOR_FT_COMPONENTS(ft,c) for (meep::component c = meep::first_field_component(ft), loop_cstop = meep::component(meep::first_field_component(ft) + 5); c < loop_cstop; c = meep::component(c+1))
-#define FOR_COMPONENTS(c) for (meep::component c = meep::Ex,		\
-                                               loop_stop_co = meep::Ey; \
-                               c != loop_stop_co;			\
-                               c = (meep::component)((c+1) %		\
-					       meep::NUM_FIELD_COMPONENTS), \
-			       loop_stop_co = meep::Ex)
-#define FOR_DIRECTIONS(d) for (meep::direction d = meep::X,		\
-                                               loop_stop_di = meep::Y;	\
-                               d != loop_stop_di;			\
-                               d = (meep::direction)((d+1)%5),		\
-                               loop_stop_di = meep::X)
-#define FOR_SIDES(s) for (meep::boundary_side s = meep::High,		\
-                                             loop_stop_bi = meep::Low;	\
-			  s != loop_stop_bi;				\
-                          s = (meep::boundary_side) ((s+1) % 2),	\
-                          loop_stop_bi = meep::High)
+#define FOR_FIELD_TYPES(ft)                                                                        \
+  for (meep::field_type ft = meep::E_stuff; ft <= meep::WH_stuff; ft = (meep::field_type)(ft + 1))
+#define FOR_ELECTRIC_COMPONENTS(c)                                                                 \
+  for (meep::component c = meep::Ex; c < meep::Hx; c = (meep::component)(c + 1))
+#define FOR_MAGNETIC_COMPONENTS(c)                                                                 \
+  for (meep::component c = meep::Hz; c > meep::Ez; c = (meep::component)(c - 1))
+#define FOR_B_COMPONENTS(c)                                                                        \
+  for (meep::component c = meep::Bz; c > meep::Dz; c = (meep::component)(c - 1))
+#define FOR_H_AND_B(h, b)                                                                          \
+  for (meep::component h = meep::Hx, b = meep::Bx; h <= meep::Hz;                                  \
+       h = (meep::component)(h + 1), b = (meep::component)(b + 1))
+#define FOR_D_COMPONENTS(c)                                                                        \
+  for (meep::component c = meep::Dz; c > meep::Hz; c = (meep::component)(c - 1))
+#define FOR_E_AND_D(e, d)                                                                          \
+  for (meep::component e = meep::Ex, d = meep::Dx; e <= meep::Ez;                                  \
+       e = (meep::component)(e + 1), d = (component)(d + 1))
+#define FOR_E_AND_H(c)                                                                             \
+  for (meep::component c = meep::Ex; c < meep::Dx; c = (meep::component)(c + 1))
+#define FOR_D_AND_B(c)                                                                             \
+  for (meep::component c = meep::Dx; c < meep::Dielectric; c = (meep::component)(c + 1))
+#define FOR_FT_COMPONENTS(ft, c)                                                                   \
+  for (meep::component c = meep::first_field_component(ft),                                        \
+                       loop_cstop = meep::component(meep::first_field_component(ft) + 5);          \
+       c < loop_cstop; c = meep::component(c + 1))
+#define FOR_COMPONENTS(c)                                                                          \
+  for (meep::component c = meep::Ex, loop_stop_co = meep::Ey; c != loop_stop_co;                   \
+       c = (meep::component)((c + 1) % meep::NUM_FIELD_COMPONENTS), loop_stop_co = meep::Ex)
+#define FOR_DIRECTIONS(d)                                                                          \
+  for (meep::direction d = meep::X, loop_stop_di = meep::Y; d != loop_stop_di;                     \
+       d = (meep::direction)((d + 1) % 5), loop_stop_di = meep::X)
+#define FOR_SIDES(s)                                                                               \
+  for (meep::boundary_side s = meep::High, loop_stop_bi = meep::Low; s != loop_stop_bi;            \
+       s = (meep::boundary_side)((s + 1) % 2), loop_stop_bi = meep::High)
 
 // only loop over directions where we have coordinates
-#define LOOP_OVER_DIRECTIONS(dim, d)					\
-  for (meep::direction d = meep::start_at_direction(dim),		\
-                       loop_stop_directi = meep::stop_at_direction(dim); \
-       d < loop_stop_directi; d = (meep::direction) (d+1))
+#define LOOP_OVER_DIRECTIONS(dim, d)                                                               \
+  for (meep::direction d = meep::start_at_direction(dim),                                          \
+                       loop_stop_directi = meep::stop_at_direction(dim);                           \
+       d < loop_stop_directi; d = (meep::direction)(d + 1))
 
 // loop over all directions in which we might have fields
-#define LOOP_OVER_FIELD_DIRECTIONS(dim, d) for (meep::direction d = dim == meep::Dcyl ? meep::Z : meep::X; d < (dim == meep::Dcyl ? meep::NO_DIRECTION : meep::R); d = meep::direction(d+1))
+#define LOOP_OVER_FIELD_DIRECTIONS(dim, d)                                                         \
+  for (meep::direction d = dim == meep::Dcyl ? meep::Z : meep::X;                                  \
+       d < (dim == meep::Dcyl ? meep::NO_DIRECTION : meep::R); d = meep::direction(d + 1))
 
 // loop over indices idx from is to ie (inclusive) in gv
-#define LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
-           loop_is2 = (is).yucky_val(1), \
-           loop_is3 = (is).yucky_val(2), \
-           loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
-           loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1, \
-           loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
-           loop_d1 = (gv).yucky_direction(0), \
-           loop_d2 = (gv).yucky_direction(1), \
-           loop_d3 = (gv).yucky_direction(2), \
-	   loop_s1 = (gv).stride((meep::direction) loop_d1),		\
-	   loop_s2 = (gv).stride((meep::direction) loop_d2),		\
-	   loop_s3 = (gv).stride((meep::direction) loop_d3),		\
-           idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 \
-                + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
-                + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
-           loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
-      for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
-           loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
+#define LOOP_OVER_IVECS(gv, is, ie, idx)                                                           \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
+                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
+                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
+                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
+                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
+                 loop_d3 = (gv).yucky_direction(2),                                                \
+                 loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
+                 loop_s2 = (gv).stride((meep::direction)loop_d2),                                  \
+                 loop_s3 = (gv).stride((meep::direction)loop_d3),                                  \
+                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
+                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
+                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                 loop_i1 = 0;                                                                      \
+       loop_i1 < loop_n1; loop_i1++)                                                               \
+    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                            \
+      for (ptrdiff_t idx = idx0 + loop_i1 * loop_s1 + loop_i2 * loop_s2, loop_i3 = 0;              \
+           loop_i3 < loop_n3; loop_i3++, idx += loop_s3)
 
-#define LOOP_OVER_VOL(gv, c, idx) \
-  LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c), (gv).big_corner() + (gv).iyee_shift(c), idx)
+#define LOOP_OVER_VOL(gv, c, idx)                                                                  \
+  LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                   \
+                  (gv).big_corner() + (gv).iyee_shift(c), idx)
 
-#define LOOP_OVER_VOL_OWNED(gv, c, idx) \
+#define LOOP_OVER_VOL_OWNED(gv, c, idx)                                                            \
   LOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
 
-#define LOOP_OVER_VOL_OWNED0(gv, c, idx) \
+#define LOOP_OVER_VOL_OWNED0(gv, c, idx)                                                           \
   LOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
 
-#define LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
- for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
-      loop_notowned_is == zero_ivec((gv).dim);) \
-   for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
-		  				       &loop_notowned_is,  \
-						       &loop_notowned_ie); \
-	loop_ibound++) \
-     LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
+#define LOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                         \
+  for (ivec loop_notowned_is((gv).dim, 0), loop_notowned_ie((gv).dim, 0);                          \
+       loop_notowned_is == zero_ivec((gv).dim);)                                                   \
+    for (int loop_ibound = 0;                                                                      \
+         (gv).get_boundary_icorners(c, loop_ibound, &loop_notowned_is, &loop_notowned_ie);         \
+         loop_ibound++)                                                                            \
+  LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
 #define LOOPS_ARE_STRIDE1(gv) ((gv).stride((gv).yucky_direction(2)) == 1)
 
@@ -172,73 +203,81 @@ component first_field_component(field_type ft);
 // all of this is here to support performance hacks of step_generic.)
 
 #if !defined(__INTEL_COMPILER) && !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
-# define IVDEP _Pragma("GCC ivdep")
+#define IVDEP _Pragma("GCC ivdep")
 #elif defined(__INTEL_COMPILER)
-# define IVDEP _Pragma("ivdep")
+#define IVDEP _Pragma("ivdep")
 #else
-# define IVDEP
+#define IVDEP
 #endif
 
 // loop over indices idx from is to ie (inclusive) in gv
-#define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
-           loop_is2 = (is).yucky_val(1), \
-           loop_is3 = (is).yucky_val(2), \
-           loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
-           loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1, \
-           loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
-           loop_d1 = (gv).yucky_direction(0), \
-           loop_d2 = (gv).yucky_direction(1), \
-	   loop_s1 = (gv).stride((meep::direction) loop_d1),	\
-	   loop_s2 = (gv).stride((meep::direction) loop_d2),	\
-           loop_s3 = 1, \
-           idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 \
-                + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
-                + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
-           loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) IVDEP \
-      for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
-           loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
+#define S1LOOP_OVER_IVECS(gv, is, ie, idx)                                                         \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
+                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
+                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
+                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
+                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
+                 loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
+                 loop_s2 = (gv).stride((meep::direction)loop_d2), loop_s3 = 1,                     \
+                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
+                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
+                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                 loop_i1 = 0;                                                                      \
+       loop_i1 < loop_n1; loop_i1++)                                                               \
+    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                            \
+      IVDEP                                                                                        \
+  for (ptrdiff_t idx = idx0 + loop_i1 * loop_s1 + loop_i2 * loop_s2, loop_i3 = 0;                  \
+       loop_i3 < loop_n3; loop_i3++, idx++)
 
-#define S1LOOP_OVER_VOL(gv, c, idx) \
-  S1LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c), (gv).big_corner() + (gv).iyee_shift(c), idx)
+#define S1LOOP_OVER_VOL(gv, c, idx)                                                                \
+  S1LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                 \
+                    (gv).big_corner() + (gv).iyee_shift(c), idx)
 
-#define S1LOOP_OVER_VOL_OWNED(gv, c, idx) \
+#define S1LOOP_OVER_VOL_OWNED(gv, c, idx)                                                          \
   S1LOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
 
-#define S1LOOP_OVER_VOL_OWNED0(gv, c, idx) \
+#define S1LOOP_OVER_VOL_OWNED0(gv, c, idx)                                                         \
   S1LOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
 
-#define S1LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
- for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
-      loop_notowned_is == meep::zero_ivec((gv).dim);)			\
-   for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
-		  				       &loop_notowned_is,  \
-						       &loop_notowned_ie); \
-	loop_ibound++) \
-     S1LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
+#define S1LOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                       \
+  for (ivec loop_notowned_is((gv).dim, 0), loop_notowned_ie((gv).dim, 0);                          \
+       loop_notowned_is == meep::zero_ivec((gv).dim);)                                             \
+    for (int loop_ibound = 0;                                                                      \
+         (gv).get_boundary_icorners(c, loop_ibound, &loop_notowned_is, &loop_notowned_ie);         \
+         loop_ibound++)                                                                            \
+  S1LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-#define IVEC_LOOP_AT_BOUNDARY 					\
- ((loop_s1 != 0 && (loop_i1 == 0 || loop_i1 == loop_n1-1)) ||	\
-  (loop_s2 != 0 && (loop_i2 == 0 || loop_i2 == loop_n2-1)) ||	\
-  (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3-1)))
+#define IVEC_LOOP_AT_BOUNDARY                                                                      \
+  ((loop_s1 != 0 && (loop_i1 == 0 || loop_i1 == loop_n1 - 1)) ||                                   \
+   (loop_s2 != 0 && (loop_i2 == 0 || loop_i2 == loop_n2 - 1)) ||                                   \
+   (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3 - 1)))
 
-#define IVEC_LOOP_ILOC(gv, iloc) \
-  ivec iloc((gv).dim); \
-  iloc.set_direction(direction(loop_d1), loop_is1 + 2*loop_i1); \
-  iloc.set_direction(direction(loop_d2), loop_is2 + 2*loop_i2); \
-  iloc.set_direction(direction(loop_d3), loop_is3 + 2*loop_i3)
+#define IVEC_LOOP_ILOC(gv, iloc)                                                                   \
+  ivec iloc((gv).dim);                                                                             \
+  iloc.set_direction(direction(loop_d1), loop_is1 + 2 * loop_i1);                                  \
+  iloc.set_direction(direction(loop_d2), loop_is2 + 2 * loop_i2);                                  \
+  iloc.set_direction(direction(loop_d3), loop_is3 + 2 * loop_i3)
 
-#define IVEC_LOOP_LOC(gv, loc) \
-  vec loc((gv).dim); \
-  loc.set_direction(direction(loop_d1), (0.5*loop_is1 + loop_i1) * (gv).inva); \
-  loc.set_direction(direction(loop_d2), (0.5*loop_is2 + loop_i2) * (gv).inva); \
-  loc.set_direction(direction(loop_d3), (0.5*loop_is3 + loop_i3) * (gv).inva)
+#define IVEC_LOOP_LOC(gv, loc)                                                                     \
+  vec loc((gv).dim);                                                                               \
+  loc.set_direction(direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);                   \
+  loc.set_direction(direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);                   \
+  loc.set_direction(direction(loop_d3), (0.5 * loop_is3 + loop_i3) * (gv).inva)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
-#define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? (s0).in_direction(meep::direction(dir)) : (i == 1 ? (s1).in_direction(meep::direction(dir)) : i == n - 1 ? (e0).in_direction(meep::direction(dir)) : (i == n - 2 ? (e1).in_direction(meep::direction(dir)) : 1.0))))
-#define IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, k) IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, loop_i##k,loop_n##k,loop_d##k)
-#define IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV) (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 3) * (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 2) * ((dV) * IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 1))))
+#define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir)                                              \
+  ((i > 1 && i < n - 2)                                                                            \
+       ? 1.0                                                                                       \
+       : (i == 0 ? (s0).in_direction(meep::direction(dir))                                         \
+                 : (i == 1 ? (s1).in_direction(meep::direction(dir))                               \
+                           : i == n - 1                                                            \
+                                 ? (e0).in_direction(meep::direction(dir))                         \
+                                 : (i == n - 2 ? (e1).in_direction(meep::direction(dir)) : 1.0))))
+#define IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, k)                                                       \
+  IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, loop_i##k, loop_n##k, loop_d##k)
+#define IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV)                                                       \
+  (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 3) *                                                          \
+   (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 2) * ((dV)*IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 1))))
 
 inline signed_direction flip(signed_direction d) {
   signed_direction d2 = d;
@@ -258,9 +297,8 @@ inline bool has_field_direction(ndim dim, direction d) {
 
 // true if d is polar while dim is cartesian, or vice versa
 inline bool coordinate_mismatch(ndim dim, direction d) {
-  return (d != NO_DIRECTION &&
-	  ((dim >= D1 && dim <= D3 && d != X && d != Y && d != Z) ||
-	   (dim == Dcyl && d != R && d != P && d != Z)));
+  return (d != NO_DIRECTION && ((dim >= D1 && dim <= D3 && d != X && d != Y && d != Z) ||
+                                (dim == Dcyl && d != R && d != P && d != Z)));
 }
 
 bool is_tm(component c);
@@ -273,12 +311,16 @@ inline bool is_D(component c) { return c >= Dx && c < Bx; }
 inline bool is_B(component c) { return c >= Bx && c < Dielectric; }
 inline bool is_derived(int c) { return c >= Sx; }
 inline bool is_poynting(derived_component c) { return c < EnergyDensity; }
-inline bool is_energydensity(derived_component c) { return c>=EnergyDensity; }
+inline bool is_energydensity(derived_component c) { return c >= EnergyDensity; }
 inline field_type type(component c) {
-  if (is_electric(c)) return E_stuff;
-  else if (is_magnetic(c)) return H_stuff;
-  else if (is_D(c)) return D_stuff;
-  else if (is_B(c)) return B_stuff;
+  if (is_electric(c))
+    return E_stuff;
+  else if (is_magnetic(c))
+    return H_stuff;
+  else if (is_D(c))
+    return D_stuff;
+  else if (is_B(c))
+    return B_stuff;
   abort("Invalid field in type.\n");
   return E_stuff; // This is never reached.
 }
@@ -290,13 +332,28 @@ const char *dimension_name(ndim);
 
 inline int component_index(component c) {
   switch (c) {
-  case Ex: case Hx: case Dx: case Bx: return 0;
-  case Ey: case Hy: case Dy: case By: return 1;
-  case Ez: case Hz: case Dz: case Bz: return 2;
-  case Er: case Hr: case Dr: case Br: return 0;
-  case Ep: case Hp: case Dp: case Bp: return 1;
-  case Dielectric: return -1;
-  case Permeability: return -1;
+    case Ex:
+    case Hx:
+    case Dx:
+    case Bx: return 0;
+    case Ey:
+    case Hy:
+    case Dy:
+    case By: return 1;
+    case Ez:
+    case Hz:
+    case Dz:
+    case Bz: return 2;
+    case Er:
+    case Hr:
+    case Dr:
+    case Br: return 0;
+    case Ep:
+    case Hp:
+    case Dp:
+    case Bp: return 1;
+    case Dielectric: return -1;
+    case Permeability: return -1;
   }
   return -2; // This code is never reached...
 }
@@ -305,25 +362,41 @@ direction component_direction(int c);
 int direction_component(int c, direction d);
 inline direction component_direction(component c) {
   switch (c) {
-  case Ex: case Hx: case Dx: case Bx: return X;
-  case Ey: case Hy: case Dy: case By: return Y;
-  case Ez: case Hz: case Dz: case Bz: return Z;
-  case Er: case Hr: case Dr: case Br: return R;
-  case Ep: case Hp: case Dp: case Bp: return P;
-  case Dielectric: return NO_DIRECTION;
-  case Permeability: return NO_DIRECTION;
+    case Ex:
+    case Hx:
+    case Dx:
+    case Bx: return X;
+    case Ey:
+    case Hy:
+    case Dy:
+    case By: return Y;
+    case Ez:
+    case Hz:
+    case Dz:
+    case Bz: return Z;
+    case Er:
+    case Hr:
+    case Dr:
+    case Br: return R;
+    case Ep:
+    case Hp:
+    case Dp:
+    case Bp: return P;
+    case Dielectric: return NO_DIRECTION;
+    case Permeability: return NO_DIRECTION;
   }
   return X; // This code is never reached...
 }
 inline direction component_direction(derived_component c) {
   switch (c) {
-  case Sx: return X;
-  case Sy: return Y;
-  case Sz: return Z;
-  case Sr: return R;
-  case Sp: return P;
-  case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
-    return NO_DIRECTION;
+    case Sx: return X;
+    case Sy: return Y;
+    case Sz: return Z;
+    case Sr: return R;
+    case Sp: return P;
+    case EnergyDensity:
+    case D_EnergyDensity:
+    case H_EnergyDensity: return NO_DIRECTION;
   }
   return X; // This code is never reached...
 }
@@ -335,35 +408,45 @@ inline direction component_direction(int c) {
 }
 inline component direction_component(component c, direction d) {
   component start_point;
-  if (is_electric(c)) start_point = Ex;
-  else if (is_magnetic(c)) start_point = Hx;
-  else if (is_D(c)) start_point = Dx;
-  else if (is_B(c)) start_point = Bx;
-  else if (c == Dielectric && d == NO_DIRECTION) return Dielectric;
-  else if (c == Permeability && d == NO_DIRECTION) return Permeability;
-  else abort("unknown field component %d", c);
+  if (is_electric(c))
+    start_point = Ex;
+  else if (is_magnetic(c))
+    start_point = Hx;
+  else if (is_D(c))
+    start_point = Dx;
+  else if (is_B(c))
+    start_point = Bx;
+  else if (c == Dielectric && d == NO_DIRECTION)
+    return Dielectric;
+  else if (c == Permeability && d == NO_DIRECTION)
+    return Permeability;
+  else
+    abort("unknown field component %d", c);
   switch (d) {
-  case X: return start_point;
-  case Y: return (component) (start_point + 1);
-  case Z: return (component) (start_point + 4);
-  case R: return (component) (start_point + 2);
-  case P: return (component) (start_point + 3);
-  case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
+    case X: return start_point;
+    case Y: return (component)(start_point + 1);
+    case Z: return (component)(start_point + 4);
+    case R: return (component)(start_point + 2);
+    case P: return (component)(start_point + 3);
+    case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
   }
   return Ex; // This is never reached.
 }
 inline derived_component direction_component(derived_component c, direction d) {
   derived_component start_point;
-  if (is_poynting(c)) start_point = Sx;
-  else if (is_energydensity(c) && d == NO_DIRECTION) return c;
-  else abort("unknown field component %d", c);
+  if (is_poynting(c))
+    start_point = Sx;
+  else if (is_energydensity(c) && d == NO_DIRECTION)
+    return c;
+  else
+    abort("unknown field component %d", c);
   switch (d) {
-  case X: return start_point;
-  case Y: return (derived_component) (start_point + 1);
-  case Z: return (derived_component) (start_point + 4);
-  case R: return (derived_component) (start_point + 2);
-  case P: return (derived_component) (start_point + 3);
-  case NO_DIRECTION: abort("vector %d derived_component in NO_DIRECTION", c);
+    case X: return start_point;
+    case Y: return (derived_component)(start_point + 1);
+    case Z: return (derived_component)(start_point + 4);
+    case R: return (derived_component)(start_point + 2);
+    case P: return (derived_component)(start_point + 3);
+    case NO_DIRECTION: abort("vector %d derived_component in NO_DIRECTION", c);
   }
   return Sx; // This is never reached.
 }
@@ -375,8 +458,7 @@ inline int direction_component(int c, direction d) {
 }
 
 inline component field_type_component(field_type ft, component c) {
-  return direction_component(first_field_component(ft),
-			     component_direction(c));
+  return direction_component(first_field_component(ft), component_direction(c));
 }
 
 inline bool coordinate_mismatch(ndim dim, component c) {
@@ -402,17 +484,36 @@ vec veccyl(double rr, double zz);
 vec zero_vec(ndim);
 
 class vec {
- public:
+public:
   vec() { init_t(); };
-  vec(ndim di) { init_t(); dim = di; };
-  vec(ndim di, double val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
-  vec(double zz) { init_t(); dim = D1; t[Z] = zz; };
-  vec(double xx, double yy) { init_t(); dim = D2; t[X] = xx; t[Y] = yy; };
+  vec(ndim di) {
+    init_t();
+    dim = di;
+  };
+  vec(ndim di, double val) {
+    dim = di;
+    t[0] = t[1] = t[2] = t[3] = t[4] = val;
+  };
+  vec(double zz) {
+    init_t();
+    dim = D1;
+    t[Z] = zz;
+  };
+  vec(double xx, double yy) {
+    init_t();
+    dim = D2;
+    t[X] = xx;
+    t[Y] = yy;
+  };
   vec(double xx, double yy, double zz) {
     init_t();
-    dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
+    dim = D3;
+    t[X] = xx;
+    t[Y] = yy;
+    t[Z] = zz;
+  };
   friend vec veccyl(double rr, double zz);
-  ~vec() {};
+  ~vec(){};
 
   vec operator+(const vec &a) const {
     vec result = a;
@@ -466,7 +567,7 @@ class vec {
 
   vec operator/(double s) const {
     vec result = *this;
-    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= (1.0/s);
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= (1.0 / s);
     return result;
   };
 
@@ -485,31 +586,34 @@ class vec {
   double in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, double val) { t[d] = val; };
 
-  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which case not thread-safe)
-  const char *str(char *buffer=0, size_t buflen=0);
+  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which
+  // case not thread-safe)
+  const char *str(char *buffer = 0, size_t buflen = 0);
 
   double project_to_boundary(direction, double boundary_loc);
   friend vec zero_vec(ndim);
   friend vec one_vec(ndim);
- private:
+
+private:
   double t[5];
   void init_t() {
     for (int i = 0; i < 5; ++i) {
       t[i] = 0;
     }
   }
-
 };
 
 inline double abs(const vec &pt) { return sqrt(pt & pt); }
 
 inline vec zero_vec(ndim di) {
-  vec pt(di); LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 0.0);
+  vec pt(di);
+  LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 0.0);
   return pt;
 }
 
 inline vec one_vec(ndim di) {
-  vec pt(di); LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 1.0);
+  vec pt(di);
+  LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 1.0);
   return pt;
 }
 
@@ -526,7 +630,10 @@ inline vec clean_vec(const vec &pt, double val_unused = 0.0) {
 }
 
 inline vec veccyl(double rr, double zz) {
-  vec pt(Dcyl); pt.t[R] = rr; pt.t[Z] = zz; return pt;
+  vec pt(Dcyl);
+  pt.t[R] = rr;
+  pt.t[Z] = zz;
+  return pt;
 }
 
 class ivec;
@@ -535,17 +642,39 @@ ivec zero_ivec(ndim);
 ivec one_ivec(ndim);
 
 class ivec {
- public:
-  ivec() { init_t(); dim = D2; };
-  ivec(ndim di) { init_t(); dim = di; };
-  ivec(ndim di, int val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
-  ivec(int zz) { init_t(); dim = D1; t[Z] = zz; };
-  ivec(int xx, int yy) { init_t(); dim = D2; t[X] = xx; t[Y] = yy; };
+public:
+  ivec() {
+    init_t();
+    dim = D2;
+  };
+  ivec(ndim di) {
+    init_t();
+    dim = di;
+  };
+  ivec(ndim di, int val) {
+    dim = di;
+    t[0] = t[1] = t[2] = t[3] = t[4] = val;
+  };
+  ivec(int zz) {
+    init_t();
+    dim = D1;
+    t[Z] = zz;
+  };
+  ivec(int xx, int yy) {
+    init_t();
+    dim = D2;
+    t[X] = xx;
+    t[Y] = yy;
+  };
   ivec(int xx, int yy, int zz) {
     init_t();
-    dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
+    dim = D3;
+    t[X] = xx;
+    t[Y] = yy;
+    t[Z] = zz;
+  };
   friend ivec iveccyl(int xx, int yy);
-  ~ivec() {};
+  ~ivec(){};
 
   // Only an idiot (or a macro) would use a yucky function.  Don't be an
   // idiot.
@@ -629,19 +758,21 @@ class ivec {
   int in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, int val) { t[d] = val; };
 
-  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which case not thread-safe)
-  const char *str(char *buffer=0, size_t buflen=0);
+  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which
+  // case not thread-safe)
+  const char *str(char *buffer = 0, size_t buflen = 0);
 
   ivec round_up_to_even(void) const {
     ivec result(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
-      result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2;
+    result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2;
     return result;
   }
 
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
- private:
+
+private:
   int t[5];
   void init_t() {
     for (int i = 0; i < 5; ++i) {
@@ -651,12 +782,16 @@ class ivec {
 };
 
 inline ivec zero_ivec(ndim di) {
-  ivec pt; pt.dim = di; LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 0);
+  ivec pt;
+  pt.dim = di;
+  LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 0);
   return pt;
 }
 
 inline ivec one_ivec(ndim di) {
-  ivec pt; pt.dim = di; LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 1);
+  ivec pt;
+  pt.dim = di;
+  LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 1);
   return pt;
 }
 
@@ -667,7 +802,10 @@ inline ivec unit_ivec(ndim di, direction d) {
 }
 
 inline ivec iveccyl(int rr, int zz) {
-  ivec pt(Dcyl); pt.t[R] = rr; pt.t[Z] = zz; return pt;
+  ivec pt(Dcyl);
+  pt.t[R] = rr;
+  pt.t[Z] = zz;
+  return pt;
 }
 
 vec max(const vec &vec1, const vec &vec2);
@@ -677,9 +815,13 @@ ivec min(const ivec &ivec1, const ivec &ivec2);
 ivec max_to_all(const ivec &); // in mympi.cpp
 
 class volume {
- public:
+public:
   ndim dim;
-  volume(ndim di) { dim = di; min_corner.dim = di; max_corner.dim = di; };
+  volume(ndim di) {
+    dim = di;
+    min_corner.dim = di;
+    max_corner.dim = di;
+  };
   volume(const vec &vec1, const vec &vec2);
   volume(const vec &pt);
   volume(const volume &vol);
@@ -696,25 +838,20 @@ class volume {
   bool contains(const vec &h) const;
   bool contains(const volume &a) const;
   volume intersect_with(const volume &a) const;
-  volume operator&(const volume &a) const {
-    return intersect_with(a);
-  };
+  volume operator&(const volume &a) const { return intersect_with(a); };
   volume operator|(const volume &a) const {
-    return volume(min(min_corner, a.min_corner),
-			    max(max_corner, a.max_corner));
+    return volume(min(min_corner, a.min_corner), max(max_corner, a.max_corner));
   };
-  volume operator+(const vec &a) const {
-    return volume(min_corner + a, max_corner + a);
-  }
+  volume operator+(const vec &a) const { return volume(min_corner + a, max_corner + a); }
   volume operator+=(const vec &a) {
-    min_corner += a; max_corner += a;
+    min_corner += a;
+    max_corner += a;
     return *this;
   }
-  volume operator-(const vec &a) const {
-    return volume(min_corner - a, max_corner - a);
-  }
+  volume operator-(const vec &a) const { return volume(min_corner - a, max_corner - a); }
   volume operator-=(const vec &a) {
-    min_corner -= a; max_corner -= a;
+    min_corner -= a;
+    max_corner -= a;
     return *this;
   }
   bool operator==(const volume &a) const {
@@ -722,16 +859,15 @@ class volume {
   }
   bool operator!=(const volume &a) const { return !(*this == a); };
   volume round_float(void) const {
-    return volume(min_corner.round_float(),max_corner.round_float());
+    return volume(min_corner.round_float(), max_corner.round_float());
   }
   bool intersects(const volume &a) const;
-  bool operator&&(const volume &a) const {
-    return intersects(a);
-  };
+  bool operator&&(const volume &a) const { return intersects(a); };
   vec get_min_corner() const { return min_corner; };
   vec get_max_corner() const { return max_corner; };
   direction normal_direction() const;
- private:
+
+private:
   vec min_corner, max_corner;
 };
 
@@ -744,8 +880,8 @@ grid_volume vol2d(double xsize, double ysize, double a);
 grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
 class grid_volume {
- public:
-  grid_volume() {};
+public:
+  grid_volume(){};
 
   grid_volume subvolume(ivec is, ivec ie);
   void init_subvolume(ivec is, ivec ie);
@@ -755,9 +891,7 @@ class grid_volume {
 
   void print() const;
   ptrdiff_t stride(direction d) const { return the_stride[d]; };
-  int num_direction(direction d) const {
-    return num[((int) d) % 3];
-  };
+  int num_direction(direction d) const { return num[((int)d) % 3]; };
   // Only an idiot (or a macro) would use a yucky function.  Don't be an
   // idiot.
   int yucky_num(int) const;
@@ -770,9 +904,9 @@ class grid_volume {
 
   bool has_field(component c) const {
     if (dim == D1) return c == Ex || c == Hy || c == Dx || c == By;
-    return (dim == Dcyl)?component_direction(c)>Y:component_direction(c)<R;
+    return (dim == Dcyl) ? component_direction(c) > Y : component_direction(c) < R;
   }
-  int has_boundary(boundary_side,direction) const;
+  int has_boundary(boundary_side, direction) const;
 
   vec dr() const;
   vec dx() const;
@@ -780,9 +914,13 @@ class grid_volume {
   vec dz() const;
 
   size_t ntot() const { return the_ntot; }
-  size_t nowned_min() const { size_t n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= (size_t)(num_direction(d)); return n; }
+  size_t nowned_min() const {
+    size_t n = 1;
+    LOOP_OVER_DIRECTIONS(dim, d) n *= (size_t)(num_direction(d));
+    return n;
+  }
   size_t nowned(component c) const;
-  vec operator[](const ivec &p) const { return p*(0.5*inva); };
+  vec operator[](const ivec &p) const { return p * (0.5 * inva); };
   ptrdiff_t index(component, const ivec &) const;
   ivec round_vec(const vec &) const;
   void interpolate(component, const vec &, ptrdiff_t indices[8], double weights[8]) const;
@@ -790,7 +928,8 @@ class grid_volume {
 
   volume dV(component c, ptrdiff_t index) const;
   volume dV(const ivec &, double diameter = 1.0) const;
-  bool intersect_with(const grid_volume &vol_in, grid_volume *intersection = NULL, grid_volume *others = NULL, int *num_others = NULL) const;
+  bool intersect_with(const grid_volume &vol_in, grid_volume *intersection = NULL,
+                      grid_volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
   double rmax() const;
   double xmin() const;
@@ -808,8 +947,8 @@ class grid_volume {
 
   ptrdiff_t yee_index(component c) const {
     ptrdiff_t idx = 0;
-    LOOP_OVER_DIRECTIONS(dim,d)
-      idx += (1-iyee_shift(c).in_direction(d))*stride(d);
+    LOOP_OVER_DIRECTIONS(dim, d)
+    idx += (1 - iyee_shift(c).in_direction(d)) * stride(d);
     return idx;
   }
   vec yee_shift(component) const;
@@ -828,7 +967,7 @@ class grid_volume {
   /* differs from little_owned_corner in that it doesn't count
      "ownership" of the r=0 origin for Dcyl, which is updated separately */
   ivec little_owned_corner0(component c) const {
-    return ivec(little_corner() + one_ivec(dim)*2 - iyee_shift(c));
+    return ivec(little_corner() + one_ivec(dim) * 2 - iyee_shift(c));
   }
 
   ivec little_owned_corner(component c) const;
@@ -846,24 +985,25 @@ class grid_volume {
   friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
   grid_volume split(size_t num, int which) const;
-  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL, double *effort = NULL) const;
+  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL,
+                              double *effort = NULL) const;
   grid_volume split_at_fraction(bool want_high, int numer) const;
   grid_volume halve(direction d) const;
   void pad_self(direction d);
   grid_volume pad(direction d) const;
   grid_volume pad() const {
-       grid_volume gv(*this);
-       LOOP_OVER_DIRECTIONS(dim,d)
-	    gv.pad_self(d);
-       return gv;
+    grid_volume gv(*this);
+    LOOP_OVER_DIRECTIONS(dim, d)
+    gv.pad_self(d);
+    return gv;
   }
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
-    LOOP_OVER_DIRECTIONS(dim,d)
-      if (c == Dielectric || c == Permeability ||
-          ((is_electric(c) || is_D(c)) && d == component_direction(c)) ||
-          ((is_magnetic(c) || is_B(c)) && d != component_direction(c)))
-        out.set_direction(d,1);
+    LOOP_OVER_DIRECTIONS(dim, d)
+    if (c == Dielectric || c == Permeability ||
+        ((is_electric(c) || is_D(c)) && d == component_direction(c)) ||
+        ((is_magnetic(c) || is_B(c)) && d != component_direction(c)))
+      out.set_direction(d, 1);
     return out;
   }
 
@@ -872,23 +1012,26 @@ class grid_volume {
   void set_origin(const ivec &o);
   void shift_origin(const vec &s) { set_origin(origin + s); }
   void shift_origin(const ivec &s) { set_origin(io + s); }
-  void shift_origin(direction d, int s) {shift_origin(unit_ivec(dim, d) * s);}
+  void shift_origin(direction d, int s) { shift_origin(unit_ivec(dim, d) * s); }
   void set_origin(direction d, int o);
   void center_origin(void) { shift_origin(-icenter()); }
-  double origin_in_direction(direction d) const{return origin.in_direction(d);}
-  int iorigin_in_direction(direction d) const{return io.in_direction(d);}
+  double origin_in_direction(direction d) const { return origin.in_direction(d); }
+  int iorigin_in_direction(direction d) const { return io.in_direction(d); }
   double origin_r() const { return origin.r(); }
   double origin_x() const { return origin.x(); }
   double origin_y() const { return origin.y(); }
   double origin_z() const { return origin.z(); }
 
- private:
+private:
   grid_volume(ndim d, double ta, int na, int nb, int nc);
-  ivec io; // integer origin ... always change via set_origin etc.!
+  ivec io;    // integer origin ... always change via set_origin etc.!
   vec origin; // cache of operator[](io), for performance
   void update_ntot();
   void set_strides();
-  void num_changed() { update_ntot(); set_strides(); }
+  void num_changed() {
+    update_ntot();
+    set_strides();
+  }
   int num[3];
   ptrdiff_t the_stride[5];
   size_t the_ntot;
@@ -898,20 +1041,20 @@ class volume_list;
 
 class symmetry;
 symmetry identity();
-symmetry rotate4(direction,const grid_volume &);
-symmetry rotate2(direction,const grid_volume &);
-symmetry mirror(direction,const grid_volume &);
+symmetry rotate4(direction, const grid_volume &);
+symmetry rotate2(direction, const grid_volume &);
+symmetry mirror(direction, const grid_volume &);
 symmetry r_to_minus_r_symmetry(double m);
 
 class symmetry {
- public:
+public:
   symmetry();
   symmetry(const symmetry &);
   ~symmetry();
   friend symmetry identity();
-  friend symmetry rotate4(direction,const grid_volume &);
-  friend symmetry rotate2(direction,const grid_volume &);
-  friend symmetry mirror(direction,const grid_volume &);
+  friend symmetry rotate4(direction, const grid_volume &);
+  friend symmetry rotate2(direction, const grid_volume &);
+  friend symmetry mirror(direction, const grid_volume &);
 
   signed_direction transform(direction d, int n) const;
   ivec transform(const ivec &, int n) const;
@@ -930,13 +1073,14 @@ class symmetry {
   volume_list *reduce(const volume_list *gl) const;
 
   symmetry operator+(const symmetry &) const;
-  symmetry operator*(std::complex<double>) const;
+  symmetry operator*(std::complex<double>)const;
   symmetry operator-(const symmetry &b) const { return *this + b * (-1.0); }
   symmetry operator-(void) const { return *this * (-1.0); }
   void operator=(const symmetry &);
   bool operator==(const symmetry &) const;
   bool operator!=(const symmetry &S) const { return !(*this == S); };
- private:
+
+private:
   signed_direction S[5];
   std::complex<double> ph;
   vec symmetry_point;
@@ -948,15 +1092,16 @@ class symmetry {
 
 class volume_list {
 public:
-  volume_list(const volume &v, int c, std::complex<double> weight = 1.0, volume_list *next = 0) : v(v), c(c), weight(weight), next(next) {}
+  volume_list(const volume &v, int c, std::complex<double> weight = 1.0, volume_list *next = 0)
+      : v(v), c(c), weight(weight), next(next) {}
   ~volume_list() { delete next; }
   volume_list(const volume_list *vl) : v(vl->v), c(vl->c), weight(vl->weight), next(0) {
-      volume_list *p = vl->next, *q = this;
-      while (p) {
-          q->next = new volume_list(*p);
-          q = q->next;
-          p = p->next;
-      }
+    volume_list *p = vl->next, *q = this;
+    while (p) {
+      q->next = new volume_list(*p);
+      q = q->next;
+      p = p->next;
+    }
   }
 
   volume v;

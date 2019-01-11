@@ -46,23 +46,23 @@ void structure::set_output_directory(const char *name) {
 
 void fields::set_output_directory(const char *name) {
   delete[] outdir;
-  outdir = new char[strlen(name) + 1]; strcpy(outdir, name);
-  for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(outdir);
+  outdir = new char[strlen(name) + 1];
+  strcpy(outdir, name);
+  for (int i = 0; i < num_chunks; i++)
+    chunks[i]->set_output_directory(outdir);
 }
 
-void fields_chunk::set_output_directory(const char *name) {
-  outdir = name;
-}
+void fields_chunk::set_output_directory(const char *name) { outdir = name; }
 
 static void cp(const char *a, const char *b) {
-  FILE *fa = fopen(a,"r");
-  FILE *fb = fopen(b,"w");
+  FILE *fa = fopen(a, "r");
+  FILE *fb = fopen(b, "w");
   if (!fa || !fb) return;
   int ca;
   while (1) {
     ca = getc(fa);
     if (ca == EOF) break;
-    putc(ca,fb);
+    putc(ca, fb);
   }
   fclose(fa);
   fclose(fb);
@@ -73,8 +73,10 @@ static bool is_ok_dir(const char *dirname) {
   bool direxists = 0;
   if (am_master()) {
     direxists = (dir = opendir(dirname)) != NULL;
-    if (direxists) closedir(dir);
-    else mkdir(dirname, 00777);
+    if (direxists)
+      closedir(dir);
+    else
+      mkdir(dirname, 00777);
   }
   direxists = broadcast(0, direxists);
   return !direxists;
@@ -92,20 +94,20 @@ FILE *create_output_file(const char *dirname, const char *fname) {
 const char *make_output_directory(const char *exename, const char *jobname) {
   const int buflen = 300;
   char basename[buflen];
-  const char * const evil_suffs[] = { ".dac", ".cpp", ".cc", ".cxx", ".C" };
+  const char *const evil_suffs[] = {".dac", ".cpp", ".cc", ".cxx", ".C"};
   char stripped_name[buflen];
-  const char *bnp = exename; // stripped_name holds the actual name of the executable (dirs removed).
+  const char *bnp =
+      exename; // stripped_name holds the actual name of the executable (dirs removed).
   const char *t;
-  for (t=exename;*t;t++) {
-    if (*t == '/') bnp = t+1;
+  for (t = exename; *t; t++) {
+    if (*t == '/') bnp = t + 1;
   }
-  
+
   snprintf(stripped_name, buflen, "%s", bnp);
   for (int i = 0; i < (int)(sizeof(evil_suffs) / sizeof(evil_suffs[0])); ++i) {
     int sufflen = strlen(evil_suffs[i]);
-    if (strcmp(stripped_name + strlen(stripped_name) - sufflen, 
-	       evil_suffs[i]) == 0
-	&& strlen(stripped_name) > size_t(sufflen)) {
+    if (strcmp(stripped_name + strlen(stripped_name) - sufflen, evil_suffs[i]) == 0 &&
+        strlen(stripped_name) > size_t(sufflen)) {
       stripped_name[strlen(stripped_name) - sufflen] = (char)0;
       break;
     }
@@ -116,8 +118,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
 
   if (jobname != NULL) {
     snprintf(basename, buflen, "%s", jobname);
-  }
-  else {
+  } else {
     snprintf(basename, buflen, "%s", stripped_name);
   }
 
@@ -126,8 +127,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   {
     int i = 0;
     while (!is_ok_dir(outdirname)) {
-      if (!quiet)
-	master_printf("Output directory %s already exists!\n", outdirname);
+      if (!quiet) master_printf("Output directory %s already exists!\n", outdirname);
       snprintf(outdirname, buflen, "%s-out-%d", basename, i++);
     }
   }

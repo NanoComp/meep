@@ -47,18 +47,13 @@ struct transition {
   double pumping_rate;
 
   bool operator==(const transition &other) const {
-    return (from_level == other.from_level              &&
-            to_level == other.to_level                  &&
-            transition_rate == other.transition_rate    &&
-            frequency == other.frequency                &&
-            vector3_equal(sigma_diag, other.sigma_diag) &&
-            gamma == other.gamma                        &&
+    return (from_level == other.from_level && to_level == other.to_level &&
+            transition_rate == other.transition_rate && frequency == other.frequency &&
+            vector3_equal(sigma_diag, other.sigma_diag) && gamma == other.gamma &&
             pumping_rate == other.pumping_rate);
   }
 
-  bool operator!=(const transition &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const transition &other) const { return !(*this == other); }
 };
 
 typedef struct susceptibility_struct {
@@ -77,7 +72,7 @@ struct susceptibility_list {
   int num_items;
   susceptibility *items;
 
-  susceptibility_list(): num_items(0), items(NULL) {}
+  susceptibility_list() : num_items(0), items(NULL) {}
 };
 
 struct medium_struct {
@@ -94,7 +89,7 @@ struct medium_struct {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 
-  medium_struct(double epsilon=1): E_susceptibilities(), H_susceptibilities() {
+  medium_struct(double epsilon = 1) : E_susceptibilities(), H_susceptibilities() {
     epsilon_diag.x = epsilon;
     epsilon_diag.y = epsilon;
     epsilon_diag.z = epsilon;
@@ -146,8 +141,7 @@ struct medium_struct {
 // prototype for user-defined material function,
 // which should fill in medium as appropriate to
 // describe the material properties at point x
-typedef void (*user_material_func)(vector3 x, void *user_data,
-                                   medium_struct *medium);
+typedef void (*user_material_func)(vector3 x, void *user_data, medium_struct *medium);
 
 // the various types of materials are as follows:
 //  MEDIUM:        material properties independent of position. In
@@ -163,31 +157,32 @@ typedef void (*user_material_func)(vector3 x, void *user_data,
 //                 each evaluation point by calling the user's
 //                 routine.
 //  PERFECT_METAL: the 'medium' field is never referenced in this case.
-struct material_data
- {
-   enum { MEDIUM,
-          MATERIAL_FILE,      // formerly MATERIAL_TYPE_SELF
-          MATERIAL_USER,      // formerly MATERIAL_FUNCTION
-          PERFECT_METAL
-        } which_subclass;
+struct material_data {
+  enum {
+    MEDIUM,
+    MATERIAL_FILE, // formerly MATERIAL_TYPE_SELF
+    MATERIAL_USER, // formerly MATERIAL_FUNCTION
+    PERFECT_METAL
+  } which_subclass;
 
-   // this field is used for all material types except PERFECT_METAL
-   medium_struct medium;
+  // this field is used for all material types except PERFECT_METAL
+  medium_struct medium;
 
-   // these fields used only if which_subclass==MATERIAL_USER
-   user_material_func user_func;
-   void *             user_data;
+  // these fields used only if which_subclass==MATERIAL_USER
+  user_material_func user_func;
+  void *user_data;
 
-   // these fields used only if which_subclass==MATERIAL_FILE
-   meep::realnum *epsilon_data;
-   size_t epsilon_dims[3];
+  // these fields used only if which_subclass==MATERIAL_FILE
+  meep::realnum *epsilon_data;
+  size_t epsilon_dims[3];
 
-   material_data(): which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL) {
-     epsilon_dims[0] = 0;
-     epsilon_dims[1] = 0;
-     epsilon_dims[2] = 0;
-   }
- };
+  material_data()
+      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL) {
+    epsilon_dims[0] = 0;
+    epsilon_dims[1] = 0;
+    epsilon_dims[2] = 0;
+  }
+};
 
 typedef material_data *material_type;
 
@@ -195,7 +190,7 @@ struct material_type_list {
   material_type *items;
   int num_items;
 
-  material_type_list(): items(NULL), num_items(0) {}
+  material_type_list() : items(NULL), num_items(0) {}
 };
 
 // global variables
@@ -203,13 +198,9 @@ extern material_type vacuum;
 
 // exported functions for creating particular material types
 material_type make_dielectric(double epsilon);
-material_type make_user_material(user_material_func user_func,
-                                 void *user_data);
+material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(char *epsilon_input_file);
 void read_epsilon_file(const char *eps_input_file);
-
-
-
 
 }; // namespace meep_geom
 

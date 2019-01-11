@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ int interrupt = 0;
 static int kill_time = 2;
 
 static void handle_control_c(int i) {
-  (void) i; // unused: should equal SIGINT
+  (void)i; // unused: should equal SIGINT
   interrupt++;
   if (interrupt >= kill_time) {
     abort("interrupted");

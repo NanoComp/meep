@@ -22,12 +22,12 @@
    the nonlinear eigenproblem.  The Matlab code is as follows.
 
 function result = detMwk(f,k)
-  sigE = [ 2.92724 0.45948 0.70117; 
-          0.45948 2.89689 0.45083; 
+  sigE = [ 2.92724 0.45948 0.70117;
+          0.45948 2.89689 0.45083;
           0.70117 0.45083 2.17378; ];
   epsinf = [ 2.41104 0.48709 0.41226;
-	     0.48709 2.43172 1.62060;
-	     0.41226 1.62060 3.61498; ];
+             0.48709 2.43172 1.62060;
+             0.41226 1.62060 3.61498; ];
   sigH = 0;
   muinf = [ 1 0 0; 0 1 0; 0 0 1; ];
   f0 = 1.1; g0 = 1e-5;
@@ -50,40 +50,37 @@ using namespace std;
 
 class anisodisp_material : public material_function {
 public:
-  virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
-                               const volume &v,
-                               double tol=DEFAULT_SUBPIXEL_TOL,
-			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL) {
-    (void) v; (void) tol; (void) maxeval; // unused
+  virtual void eff_chi1inv_row(component c, double chi1inv_row[3], const volume &v,
+                               double tol = DEFAULT_SUBPIXEL_TOL,
+                               int maxeval = DEFAULT_SUBPIXEL_MAXEVAL) {
+    (void)v;
+    (void)tol;
+    (void)maxeval; // unused
     if (component_direction(c) == X) {
       chi1inv_row[0] = 0.432818;
       chi1inv_row[1] = -0.076724;
       chi1inv_row[2] = -0.014964;
-    }
-    else if (component_direction(c) == Y) {
+    } else if (component_direction(c) == Y) {
       chi1inv_row[0] = -0.076724;
       chi1inv_row[1] = 0.600041;
       chi1inv_row[2] = -0.260249;
-    }
-    else {
+    } else {
       chi1inv_row[0] = -0.014964;
       chi1inv_row[1] = -0.260249;
       chi1inv_row[2] = 0.395003;
     }
   }
   virtual void sigma_row(component c, double sigrow[3], const vec &r) {
-    (void) r; // unused
+    (void)r; // unused
     if (component_direction(c) == X) {
       sigrow[0] = 2.92724;
       sigrow[1] = 0.45948;
       sigrow[2] = 0.70117;
-    }
-    else if (component_direction(c) == Y) {
+    } else if (component_direction(c) == Y) {
       sigrow[0] = 0.45948;
       sigrow[1] = 2.89689;
       sigrow[2] = 0.45083;
-    }
-    else {
+    } else {
       sigrow[0] = 0.70117;
       sigrow[1] = 0.45083;
       sigrow[2] = 2.17378;
@@ -98,21 +95,19 @@ int main(int argc, char **argv) {
   if (0 == divide_parallel_processes(count_processors())) {
     quiet = true;
     const double res = 200;
-    grid_volume gv = vol3d(0,0,0, res);
+    grid_volume gv = vol3d(0, 0, 0, res);
     gv.center_origin();
     anisodisp_material anisodispmat;
     structure *s = new structure(gv, anisodispmat);
-    s->add_susceptibility(anisodispmat, E_stuff, 
-                          lorentzian_susceptibility(1.1,1e-5));
+    s->add_susceptibility(anisodispmat, E_stuff, lorentzian_susceptibility(1.1, 1e-5));
     fields f(s);
     delete s; // should be safe since structure_chunk in f is refcounted
-    f.use_bloch(vec(0.813,0,0));
-    f.add_point_source(Ez, 0.5, 1.0, 0.0, 4.0, vec(0,0,0));
+    f.use_bloch(vec(0.813, 0, 0));
+    f.add_point_source(Ez, 0.5, 1.0, 0.0, 4.0, vec(0, 0, 0));
     double T = f.last_source_time();
     int iT = T / f.dt;
     while (f.t < iT) {
-      if (f.t % (iT / 10) == 0)
-	master_printf("%g%% done with source\n", f.time()/T * 100);
+      if (f.t % (iT / 10) == 0) master_printf("%g%% done with source\n", f.time() / T * 100);
       f.step();
     }
     double T2 = 200;
@@ -120,29 +115,27 @@ int main(int argc, char **argv) {
     complex<double> *vals = new complex<double>[iT2];
     while (f.t - iT < iT2) {
       if ((f.t - iT) % (iT2 / 10) == 0)
-	master_printf("%g%% done with harminv\n", (f.t - iT) * 100.0 / iT2);
-      vals[f.t - iT] = f.get_field(Ez, vec(0.,0.,0.));
+        master_printf("%g%% done with harminv\n", (f.t - iT) * 100.0 / iT2);
+      vals[f.t - iT] = f.get_field(Ez, vec(0., 0., 0.));
       f.step();
     }
     complex<double> amps[8];
     double freqs_re[8], freqs_im[8];
-    
+
     master_printf("done with timestepping, running harminv...\n");
-    int num = do_harminv(vals, iT2, f.dt, 0.0, 1.0, 8, 
-			 amps, freqs_re, freqs_im);
-    
+    int num = do_harminv(vals, iT2, f.dt, 0.0, 1.0, 8, amps, freqs_re, freqs_im);
+
     // compute the error compared to analytical solution
     int i0 = 0;
-    for (int i=0;i<num;i++) {
-      master_printf("freq %d is %0.6g, %0.6g\n",i,freqs_re[i],freqs_im[i]);
-      if (fabs(freqs_re[i]-0.41562) < fabs(freqs_re[i0]-0.41562))
-	i0 = i;
+    for (int i = 0; i < num; i++) {
+      master_printf("freq %d is %0.6g, %0.6g\n", i, freqs_re[i], freqs_im[i]);
+      if (fabs(freqs_re[i] - 0.41562) < fabs(freqs_re[i0] - 0.41562)) i0 = i;
     }
-    master_printf("err. real: %g\n",fabs(freqs_re[i0]-0.41562)/0.41562);
-    master_printf("err. imag: %g\n",fabs(freqs_im[i0]+4.8297e-07)/4.8297e-7);
-    
-    ok = fabs(freqs_re[i0]-0.41562)/0.41562 < 1e-4
-      && fabs(freqs_im[i0]+4.8297e-07)/4.8297e-7 < 0.2;
+    master_printf("err. real: %g\n", fabs(freqs_re[i0] - 0.41562) / 0.41562);
+    master_printf("err. imag: %g\n", fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7);
+
+    ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4 &&
+         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.2;
   }
   end_divide_parallel();
   return !and_to_all(ok);

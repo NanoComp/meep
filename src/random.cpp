@@ -19,9 +19,9 @@
 #include "config.h"
 
 #ifdef HAVE_LIBGSL
-#  include <gsl/gsl_randist.h>
+#include <gsl/gsl_randist.h>
 #else
-#  include <stdlib.h>
+#include <stdlib.h>
 #endif
 #include <time.h>
 
@@ -41,14 +41,13 @@ static void init_rand(void) {
     rng = gsl_rng_alloc(gsl_rng_mt19937);
 #endif
     rand_inited = true; // no infinite loop since rand_inited == true
-    set_random_seed(time(NULL) *
-		    (1 + my_global_rank())); 
+    set_random_seed(time(NULL) * (1 + my_global_rank()));
   }
 }
 
 void set_random_seed(unsigned long seed) {
   init_rand();
-  seed = ((unsigned long) broadcast(0, (int) seed)) + my_rank();
+  seed = ((unsigned long)broadcast(0, (int)seed)) + my_rank();
 #ifdef HAVE_LIBGSL
   gsl_rng_set(rng, seed);
 #else
@@ -59,18 +58,18 @@ void set_random_seed(unsigned long seed) {
 int random_int(int a, int b) {
   init_rand();
 #ifdef HAVE_LIBGSL
-  return ((int) gsl_rng_uniform_int(rng, b-a+1)) + a;
+  return ((int)gsl_rng_uniform_int(rng, b - a + 1)) + a;
 #else
-  return a + rand() % (b-a+1);
+  return a + rand() % (b - a + 1);
 #endif
 }
 
 double uniform_random(double a, double b) {
   init_rand();
 #ifdef HAVE_LIBGSL
-  return a + gsl_rng_uniform(rng) * (b-a);
+  return a + gsl_rng_uniform(rng) * (b - a);
 #else
-  return a + rand() * (b-a) / RAND_MAX;
+  return a + rand() * (b - a) / RAND_MAX;
 #endif
 }
 
@@ -85,15 +84,14 @@ double gaussian_random(double mean, double stddev) {
   do {
     v1 = uniform_random(-1, 1);
     v2 = uniform_random(-1, 1);
-    s = v1*v1 + v2*v2;
+    s = v1 * v1 + v2 * v2;
   } while (s >= 1.0);
   if (s == 0) {
     return mean;
-  }
-  else {
+  } else {
     return mean + v1 * sqrt(-2 * log(s) / s) * stddev;
   }
 #endif
 }
 
-}
+} // namespace meep

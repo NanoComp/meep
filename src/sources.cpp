@@ -30,30 +30,26 @@ namespace meep {
 /*********************************************************************/
 
 // this function is necessary to make equality commutative ... ugh
-bool src_times_equal(const src_time &t1, const src_time &t2)
-{
-     return t1.is_equal(t2) && t2.is_equal(t1);
+bool src_times_equal(const src_time &t1, const src_time &t2) {
+  return t1.is_equal(t2) && t2.is_equal(t1);
 }
 
-src_time *src_time::add_to(src_time *others, src_time **added) const
-{
-     if (others) {
-	  if (src_times_equal(*this, *others))
-	       *added = others;
-	  else
-	       others->next = add_to(others->next, added);
-	  return others;
-     }
-     else {
-	  src_time *t = clone();
-	  t->next = others;
-	  *added = t;
-	  return t;
-     }
+src_time *src_time::add_to(src_time *others, src_time **added) const {
+  if (others) {
+    if (src_times_equal(*this, *others))
+      *added = others;
+    else
+      others->next = add_to(others->next, added);
+    return others;
+  } else {
+    src_time *t = clone();
+    t->next = others;
+    *added = t;
+    return t;
+  }
 }
 
-double src_time::last_time_max(double after)
-{
+double src_time::last_time_max(double after) {
   after = max(last_time(), after);
   if (next)
     return next->last_time_max(after);
@@ -61,97 +57,86 @@ double src_time::last_time_max(double after)
     return after;
 }
 
-gaussian_src_time::gaussian_src_time(double f, double fwidth, double s)
-{
+gaussian_src_time::gaussian_src_time(double f, double fwidth, double s) {
   freq = f;
   width = 1.0 / fwidth;
   peak_time = width * s;
   cutoff = width * s;
 
   // this is to make last_source_time as small as possible
-  while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
+  while (exp(-cutoff * cutoff / (2 * width * width)) < 1e-100)
     cutoff *= 0.9;
   cutoff = float(cutoff); // don't make cutoff sensitive to roundoff error
 }
 
-gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
-{
+gaussian_src_time::gaussian_src_time(double f, double w, double st, double et) {
   freq = f;
   width = w;
   peak_time = 0.5 * (st + et);
   cutoff = (et - st) * 0.5;
 
   // this is to make last_source_time as small as possible
-  while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
+  while (exp(-cutoff * cutoff / (2 * width * width)) < 1e-100)
     cutoff *= 0.9;
   cutoff = float(cutoff); // don't make cutoff sensitive to roundoff error
 }
 
-complex<double> gaussian_src_time::dipole(double time) const
-{
+complex<double> gaussian_src_time::dipole(double time) const {
   double tt = time - peak_time;
-  if (float(fabs(tt)) > cutoff)
-    return 0.0;
+  if (float(fabs(tt)) > cutoff) return 0.0;
 
   // correction factor so that current amplitude (= d(dipole)/dt) is
   // ~ 1 near the peak of the Gaussian.
-  complex<double> amp = 1.0 / complex<double>(0,-2*pi*freq);
+  complex<double> amp = 1.0 / complex<double>(0, -2 * pi * freq);
 
-  return exp(-tt*tt / (2*width*width)) * polar(1.0, -2*pi*freq*tt) * amp;
+  return exp(-tt * tt / (2 * width * width)) * polar(1.0, -2 * pi * freq * tt) * amp;
 }
 
-bool gaussian_src_time::is_equal(const src_time &t) const
-{
-     const gaussian_src_time *tp = dynamic_cast<const gaussian_src_time*>(&t);
-     if (tp)
-	  return(tp->freq == freq && tp->width == width &&
-		 tp->peak_time == peak_time && tp->cutoff == cutoff);
-     else
-	  return 0;
+bool gaussian_src_time::is_equal(const src_time &t) const {
+  const gaussian_src_time *tp = dynamic_cast<const gaussian_src_time *>(&t);
+  if (tp)
+    return (tp->freq == freq && tp->width == width && tp->peak_time == peak_time &&
+            tp->cutoff == cutoff);
+  else
+    return 0;
 }
 
-complex<double> continuous_src_time::dipole(double time) const
-{
+complex<double> continuous_src_time::dipole(double time) const {
   float rtime = float(time);
-  if (rtime < start_time || rtime > end_time)
-    return 0.0;
+  if (rtime < start_time || rtime > end_time) return 0.0;
 
   // correction factor so that current amplitude (= d(dipole)/dt) is 1.
-  complex<double> amp = 1.0 / (complex<double>(0,-1.0) * (2*pi)*freq);
+  complex<double> amp = 1.0 / (complex<double>(0, -1.0) * (2 * pi) * freq);
 
   if (width == 0.0)
-    return exp(complex<double>(0,-1.0) * (2*pi)*freq*time) * amp;
+    return exp(complex<double>(0, -1.0) * (2 * pi) * freq * time) * amp;
   else {
     double ts = (time - start_time) / width - slowness;
     double te = (end_time - time) / width - slowness;
 
-    return exp(complex<double>(0,-1.0) * (2*pi)*freq*time) * amp
-      * (1.0 + tanh(ts))  // goes from 0 to 2
-      * (1.0 + tanh(te))  // goes from 2 to 0
-      * 0.25;
+    return exp(complex<double>(0, -1.0) * (2 * pi) * freq * time) * amp *
+           (1.0 + tanh(ts))   // goes from 0 to 2
+           * (1.0 + tanh(te)) // goes from 2 to 0
+           * 0.25;
   }
 }
 
-bool continuous_src_time::is_equal(const src_time &t) const
-{
-     const continuous_src_time *tp =
-	  dynamic_cast<const continuous_src_time*>(&t);
-     if (tp)
-	  return(tp->freq == freq && tp->width == width &&
-		 tp->start_time == start_time && tp->end_time == end_time &&
-		 tp->slowness == slowness);
-     else
-	  return 0;
+bool continuous_src_time::is_equal(const src_time &t) const {
+  const continuous_src_time *tp = dynamic_cast<const continuous_src_time *>(&t);
+  if (tp)
+    return (tp->freq == freq && tp->width == width && tp->start_time == start_time &&
+            tp->end_time == end_time && tp->slowness == slowness);
+  else
+    return 0;
 }
 
-bool custom_src_time::is_equal(const src_time &t) const
-{
-     const custom_src_time *tp = dynamic_cast<const custom_src_time*>(&t);
-     if (tp)
-	  return(tp->start_time == start_time && tp->end_time == end_time &&
-		 tp->func == func && tp->data == data);
-     else
-	  return 0;
+bool custom_src_time::is_equal(const src_time &t) const {
+  const custom_src_time *tp = dynamic_cast<const custom_src_time *>(&t);
+  if (tp)
+    return (tp->start_time == start_time && tp->end_time == end_time && tp->func == func &&
+            tp->data == data);
+  else
+    return 0;
 }
 
 /*********************************************************************/
@@ -160,7 +145,8 @@ src_vol::src_vol(component cc, src_time *st, size_t n, ptrdiff_t *ind, complex<d
   c = cc;
   if (is_D(c)) c = direction_component(Ex, component_direction(c));
   if (is_B(c)) c = direction_component(Hx, component_direction(c));
-  t = st; next = NULL;
+  t = st;
+  next = NULL;
   npts = n;
   index = ind;
   A = amps;
@@ -172,7 +158,7 @@ src_vol::src_vol(const src_vol &sv) {
   npts = sv.npts;
   index = new ptrdiff_t[npts];
   A = new complex<double>[npts];
-  for (size_t j=0; j<npts; j++) {
+  for (size_t j = 0; j < npts; j++) {
     index[j] = sv.index[j];
     A[j] = sv.A[j];
   }
@@ -188,18 +174,15 @@ src_vol *src_vol::add_to(src_vol *others) {
       if (npts != others->npts)
         abort("Cannot add grid_volume sources with different number of points\n");
       /* Compare all of the indices...if this ever becomes too slow,
-	 we can just compare the first and last indices. */
-      for (size_t j=0; j<npts; j++) {
-        if (others->index[j] != index[j])
-          abort("Different indices\n");
+         we can just compare the first and last indices. */
+      for (size_t j = 0; j < npts; j++) {
+        if (others->index[j] != index[j]) abort("Different indices\n");
         others->A[j] += A[j];
       }
-    }
-    else
+    } else
       others->next = add_to(others->next);
     return others;
-  }
-  else {
+  } else {
     next = others;
     return this;
   }
@@ -208,41 +191,37 @@ src_vol *src_vol::add_to(src_vol *others) {
 /*********************************************************************/
 
 // THIS VARIANT IS FOR BACKWARDS COMPATIBILITY, and is DEPRECATED:
-void fields::add_point_source(component c, double freq,
-                              double width, double peaktime,
-                              double cutoff, const vec &p,
-                              complex<double> amp, int is_c) {
+void fields::add_point_source(component c, double freq, double width, double peaktime,
+                              double cutoff, const vec &p, complex<double> amp, int is_c) {
   width /= freq;
 
   if (is_c) { // TODO: don't ignore peaktime?
     continuous_src_time src(freq, width, time(), infinity, cutoff);
     if (is_magnetic(c)) src.is_integrated = false;
     add_point_source(c, src, p, amp);
-  }
-  else {
+  } else {
     cutoff = gv.inva + cutoff * width;
-    if (peaktime <= 0.0)
-      peaktime = time() + cutoff;
+    if (peaktime <= 0.0) peaktime = time() + cutoff;
 
     // backward compatibility (slight phase shift in old Meep version)
-    peaktime += is_magnetic(c) ? -dt*0.5 : dt;
+    peaktime += is_magnetic(c) ? -dt * 0.5 : dt;
 
-    gaussian_src_time src(freq, width,
-			     peaktime - cutoff, peaktime + cutoff);
+    gaussian_src_time src(freq, width, peaktime - cutoff, peaktime + cutoff);
     if (is_magnetic(c)) src.is_integrated = false;
     add_point_source(c, src, p, amp);
   }
 }
 
-void fields::add_point_source(component c, const src_time &src,
-			      const vec &p, complex<double> amp) {
+void fields::add_point_source(component c, const src_time &src, const vec &p, complex<double> amp) {
   add_volume_source(c, src, volume(p, p), amp);
 }
 
-static complex<double> one(const vec &pt) {(void) pt; return 1.0;}
-void fields::add_volume_source(component c, const src_time &src,
-                               const volume &where,
-			       complex<double> amp) {
+static complex<double> one(const vec &pt) {
+  (void)pt;
+  return 1.0;
+}
+void fields::add_volume_source(component c, const src_time &src, const volume &where,
+                               complex<double> amp) {
   add_volume_source(c, src, where, one, amp);
 }
 
@@ -261,24 +240,19 @@ struct src_vol_chunkloop_data {
    set use_symmetry=false: we only find the intersection of the grid_volume
    with the untransformed chunks (since the transformed versions are
    implicit). */
-static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
-			      ivec is, ivec ie,
-			      vec s0, vec s1, vec e0, vec e1,
-			      double dV0, double dV1,
-			      ivec shift, complex<double> shift_phase,
-			      const symmetry &S, int sn,
-			      void *data_)
-{
-  src_vol_chunkloop_data *data = (src_vol_chunkloop_data *) data_;
+static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is, ivec ie, vec s0,
+                              vec s1, vec e0, vec e1, double dV0, double dV1, ivec shift,
+                              complex<double> shift_phase, const symmetry &S, int sn, void *data_) {
+  src_vol_chunkloop_data *data = (src_vol_chunkloop_data *)data_;
 
-  (void) S; (void) sn; // these should be the identity
-  (void) dV0; (void) dV1; // grid_volume weighting is included in data->amp
-  (void) ichunk;
+  (void)S;
+  (void)sn; // these should be the identity
+  (void)dV0;
+  (void)dV1; // grid_volume weighting is included in data->amp
+  (void)ichunk;
 
   size_t npts = 1;
-  LOOP_OVER_DIRECTIONS(is.dim, d) {
-    npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
-  }
+  LOOP_OVER_DIRECTIONS(is.dim, d) { npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
   ptrdiff_t *index_array = new ptrdiff_t[npts];
   complex<double> *amps_array = new complex<double>[npts];
 
@@ -293,24 +267,23 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     if (!fc->gv.owns(iloc)) continue;
 
     IVEC_LOOP_LOC(fc->gv, loc);
-    loc += shift * (0.5*inva);
+    loc += shift * (0.5 * inva);
 
     vec rel_loc = loc - data->center;
-    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(rel_loc);
+    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1) * amp * data->A(rel_loc);
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
        right because it doesn't handle non-diagonal chi1inv!
        similarly, for "B" sources, multiply by mu. */
-    if (is_D(c) && fc->s->chi1inv[c-Dx+Ex][cd])
-      amps_array[idx_vol] /= fc->s->chi1inv[c-Dx+Ex][cd][idx];
-    if (is_B(c) && fc->s->chi1inv[c-Bx+Hx][cd])
-      amps_array[idx_vol] /= fc->s->chi1inv[c-Bx+Hx][cd][idx];
+    if (is_D(c) && fc->s->chi1inv[c - Dx + Ex][cd])
+      amps_array[idx_vol] /= fc->s->chi1inv[c - Dx + Ex][cd][idx];
+    if (is_B(c) && fc->s->chi1inv[c - Bx + Hx][cd])
+      amps_array[idx_vol] /= fc->s->chi1inv[c - Bx + Hx][cd][idx];
 
     index_array[idx_vol++] = idx;
   }
 
-  if (idx_vol > npts)
-    abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
+  if (idx_vol > npts) abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
   src_vol *tmp = new src_vol(c, data->src, idx_vol, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
@@ -326,22 +299,20 @@ complex<double> amp_file_func(const vec &p) {
   double x_size = 0, y_size = 0, z_size = 0;
 
   switch (amp_func_vol->dim) {
-  case D1:
-    z_size = amp_func_vol->in_direction(Z);
-    break;
-  case D2:
-    x_size = amp_func_vol->in_direction(X);
-    y_size = amp_func_vol->in_direction(Y);
-    break;
-  case D3:
-    x_size = amp_func_vol->in_direction(X);
-    y_size = amp_func_vol->in_direction(Y);
-    z_size = amp_func_vol->in_direction(Z);
-    break;
-  case Dcyl:
-    x_size = amp_func_vol->in_direction(X);
-    z_size = amp_func_vol->in_direction(Z);
-    break;
+    case D1: z_size = amp_func_vol->in_direction(Z); break;
+    case D2:
+      x_size = amp_func_vol->in_direction(X);
+      y_size = amp_func_vol->in_direction(Y);
+      break;
+    case D3:
+      x_size = amp_func_vol->in_direction(X);
+      y_size = amp_func_vol->in_direction(Y);
+      z_size = amp_func_vol->in_direction(Z);
+      break;
+    case Dcyl:
+      x_size = amp_func_vol->in_direction(X);
+      z_size = amp_func_vol->in_direction(Z);
+      break;
   }
 
   double rx = x_size == 0 ? 0 : 0.5 + p.x() / x_size;
@@ -349,10 +320,10 @@ complex<double> amp_file_func(const vec &p) {
   double rz = z_size == 0 ? 0 : 0.5 + p.z() / z_size;
 
   complex<double> res;
-  res.real(linear_interpolate(rx, ry, rz, amp_func_data_re,
-                              amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
-  res.imag(linear_interpolate(rx, ry, rz, amp_func_data_im,
-                              amp_file_dims[0], amp_file_dims[1], amp_file_dims[2], 1));
+  res.real(linear_interpolate(rx, ry, rz, amp_func_data_re, amp_file_dims[0], amp_file_dims[1],
+                              amp_file_dims[2], 1));
+  res.imag(linear_interpolate(rx, ry, rz, amp_func_data_im, amp_file_dims[0], amp_file_dims[1],
+                              amp_file_dims[2], 1));
   return res;
 }
 
@@ -384,8 +355,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 // Reads amplitude function data from h5file 'filename.' Assumes real and imaginary components
 // of 'dataset' exist with '.re' and '.im' extensions.
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
-                               const char *filename, const char *dataset,
-                               complex<double> amp) {
+                               const char *filename, const char *dataset, complex<double> amp) {
 
   meep::h5file eps_file(filename, meep::h5file::READONLY, false);
   int rank;
@@ -394,13 +364,13 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 
   size_t re_dims[] = {1, 1, 1};
   double *real_data = eps_file.read(dataset_re.c_str(), &rank, re_dims, 3);
-  master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n",
-                re_dims[0], re_dims[1], re_dims[2], filename, dataset_re.c_str());
+  master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", re_dims[0], re_dims[1],
+                re_dims[2], filename, dataset_re.c_str());
 
   size_t im_dims[] = {1, 1, 1};
   double *imag_data = eps_file.read(dataset_im.c_str(), &rank, im_dims, 3);
-  master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n",
-                im_dims[0], im_dims[1], im_dims[2], filename, dataset_im.c_str());
+  master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", im_dims[0], im_dims[1],
+                im_dims[2], filename, dataset_im.c_str());
 
   for (int i = 0; i < 3; ++i) {
     if (re_dims[i] != im_dims[i]) {
@@ -421,16 +391,13 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   delete[] amp_data;
 }
 
-void fields::add_volume_source(component c, const src_time &src,
-                               const volume &where_,
-                               complex<double> A(const vec &),
-			       complex<double> amp) {
+void fields::add_volume_source(component c, const src_time &src, const volume &where_,
+                               complex<double> A(const vec &), complex<double> amp) {
   volume where(where_); // make a copy to adjust size if necessary
   if (gv.dim != where.dim)
     abort("incorrect source grid_volume dimensionality in add_volume_source");
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    double w = user_volume.boundary_location(High, d)
-      - user_volume.boundary_location(Low, d);
+    double w = user_volume.boundary_location(High, d) - user_volume.boundary_location(Low, d);
     if (where.in_direction(d) > w + gv.inva)
       abort("Source width > cell width in %s direction!\n", direction_name(d));
     else if (where.in_direction(d) > w) { // difference is less than 1 pixel
@@ -449,7 +416,7 @@ void fields::add_volume_source(component c, const src_time &src,
   }
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
-  loop_in_chunks(src_vol_chunkloop, (void *) &data, where, c, false);
+  loop_in_chunks(src_vol_chunkloop, (void *)&data, where, c, false);
   require_component(c);
 }
 

@@ -73,10 +73,10 @@ using namespace std;
 
 namespace meep {
 
-static double dot(size_t n, const realnum *x, const realnum *y)
-{
+static double dot(size_t n, const realnum *x, const realnum *y) {
   double sum = 0;
-  for (size_t i = 0; i < n; ++i) sum += x[i] * y[i];
+  for (size_t i = 0; i < n; ++i)
+    sum += x[i] * y[i];
   return sum_to_all(sum);
 }
 
@@ -100,7 +100,8 @@ static double norm2(size_t n, const realnum *x) {
 }
 
 static void xpay(size_t n, realnum *x, double a, const realnum *y) {
-  for (size_t m = 0; m < n; ++m) x[m] += a * y[m];
+  for (size_t m = 0; m < n; ++m)
+    x[m] += a * y[m];
 }
 
 #define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
@@ -108,20 +109,16 @@ static void xpay(size_t n, realnum *x, double a, const realnum *y) {
 typedef realnum *prealnum; // grr, ISO C++ forbids new (double*)[...]
 
 /* BiCGSTAB(L) algorithm for the n-by-n problem Ax = b */
-ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x,
-	      bicgstab_op A, void *Adata, const realnum *b,
-	      const double tol,
-	      int *iters,
-	      realnum *work,
-	      const bool quiet)
-{
-  if (!work) return (2*L+3)*n; // required workspace
+ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void *Adata,
+                    const realnum *b, const double tol, int *iters, realnum *work,
+                    const bool quiet) {
+  if (!work) return (2 * L + 3) * n; // required workspace
 
-  prealnum *r = new prealnum[L+1];
-  prealnum *u = new prealnum[L+1];
+  prealnum *r = new prealnum[L + 1];
+  prealnum *u = new prealnum[L + 1];
   for (int i = 0; i <= L; ++i) {
     r[i] = work + i * n;
-    u[i] = work + (L+1 + i) * n;
+    u[i] = work + (L + 1 + i) * n;
   }
 
   double bnrm = norm2(n, b);
@@ -143,13 +140,15 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x,
   /**** FIXME: check for breakdown conditions(?) during iteration  ****/
 
   // rtilde = r[0] = b - Ax
-  realnum *rtilde = work + (2*L+2) * n;
+  realnum *rtilde = work + (2 * L + 2) * n;
   A(x, r[0], Adata);
-  for (size_t m = 0; m < n; ++m) rtilde[m] = r[0][m] = b[m] - r[0][m];
+  for (size_t m = 0; m < n; ++m)
+    rtilde[m] = r[0][m] = b[m] - r[0][m];
 
   { /* Sleipjen normalizes rtilde in his code; it seems to help slightly */
     double s = 1.0 / norm2(n, rtilde);
-    for (size_t m = 0; m < n; ++m) rtilde[m] *= s;
+    for (size_t m = 0; m < n; ++m)
+      rtilde[m] *= s;
   }
 
   memset(u[0], 0, sizeof(realnum) * n); // u[0] = 0
@@ -166,40 +165,44 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x,
 
     rho = -omega * rho;
     for (int j = 0; j < L; ++j) {
-      if (fabs(rho) < breaktol) { ierr = -1; goto finish; }
+      if (fabs(rho) < breaktol) {
+        ierr = -1;
+        goto finish;
+      }
       double rho1 = dot(n, r[j], rtilde);
       double beta = alpha * rho1 / rho;
       rho = rho1;
       for (int i = 0; i <= j; ++i)
-      	for (size_t m = 0; m < n; ++m) u[i][m] = r[i][m] - beta * u[i][m];
-      A(u[j], u[j+1], Adata);
-      alpha = rho / dot(n, u[j+1], rtilde);
+        for (size_t m = 0; m < n; ++m)
+          u[i][m] = r[i][m] - beta * u[i][m];
+      A(u[j], u[j + 1], Adata);
+      alpha = rho / dot(n, u[j + 1], rtilde);
       for (int i = 0; i <= j; ++i)
-      	xpay(n, r[i], -alpha, u[i+1]);
-      A(r[j], r[j+1], Adata);
+        xpay(n, r[i], -alpha, u[i + 1]);
+      A(r[j], r[j + 1], Adata);
       xpay(n, x, alpha, u[0]);
     }
 
     for (int j = 1; j <= L; ++j) {
       for (int i = 1; i < j; ++i) {
-      	int ij = (j-1)*L + (i-1);
-      	tau[ij] = dot(n, r[j], r[i]) / sigma[i];
-      	xpay(n, r[j], -tau[ij], r[i]);
+        int ij = (j - 1) * L + (i - 1);
+        tau[ij] = dot(n, r[j], r[i]) / sigma[i];
+        xpay(n, r[j], -tau[ij], r[i]);
       }
-      sigma[j] = dot(n, r[j],r[j]);
+      sigma[j] = dot(n, r[j], r[j]);
       gamma_p[j] = dot(n, r[0], r[j]) / sigma[j];
     }
 
     omega = gamma[L] = gamma_p[L];
-    for (int j = L-1; j >= 1; --j) {
+    for (int j = L - 1; j >= 1; --j) {
       gamma[j] = gamma_p[j];
-      for (int i = j+1; i <= L; ++i)
-      	gamma[j] -= tau[(i-1)*L + (j-1)] * gamma[i];
+      for (int i = j + 1; i <= L; ++i)
+        gamma[j] -= tau[(i - 1) * L + (j - 1)] * gamma[i];
     }
     for (int j = 1; j < L; ++j) {
-      gamma_pp[j] = gamma[j+1];
-      for (int i = j+1; i < L; ++i)
-      	gamma_pp[j] += tau[(i-1)*L + (j-1)] * gamma[i+1];
+      gamma_pp[j] = gamma[j + 1];
+      for (int i = j + 1; i < L; ++i)
+        gamma_pp[j] += tau[(i - 1) * L + (j - 1)] * gamma[i + 1];
     }
 
     xpay(n, x, gamma[1], r[0]);
@@ -211,12 +214,15 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x,
       xpay(n, u[0], -gamma[j], u[j]);
     }
 
-    if (iter == *iters) { ierr = 1; break; }
+    if (iter == *iters) {
+      ierr = 1;
+      break;
+    }
   }
 
   if (!quiet) master_printf("final residual = %g\n", norm2(n, r[0]) / bnrm);
 
- finish:
+finish:
   delete[] sigma;
   delete[] tau;
   delete[] gamma_pp;

@@ -30,8 +30,8 @@ using namespace std;
 
 namespace meep {
 
-// Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy), omega_0,
-// gamma, no_omega_0_denominator)
+// Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy),
+// omega_0, gamma, no_omega_0_denominator)
 void structure::write_susceptibility_params(h5file *file, const char *dname, int EorH) {
   // Get number of susceptibility params from first chunk, since all chunks will have
   // the same susceptibility list.
@@ -55,24 +55,23 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 }
 
 void structure::dump(const char *filename) {
-  if (!quiet)
-    master_printf("creating epsilon output file \"%s\"...\n", filename);
+  if (!quiet) master_printf("creating epsilon output file \"%s\"...\n", filename);
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.
-  size_t *num_chi1inv_ = new size_t[num_chunks*NUM_FIELD_COMPONENTS*5];
-  memset(num_chi1inv_, 0, sizeof(size_t)*size_t(num_chunks*NUM_FIELD_COMPONENTS*5));
+  size_t *num_chi1inv_ = new size_t[num_chunks * NUM_FIELD_COMPONENTS * 5];
+  memset(num_chi1inv_, 0, sizeof(size_t) * size_t(num_chunks * NUM_FIELD_COMPONENTS * 5));
   size_t my_ntot = 0;
-  for (int i=0; i<num_chunks; i++)
+  for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
         for (int d = 0; d < 5; ++d)
           if (chunks[i]->chi1inv[c][d])
-            my_ntot += (num_chi1inv_[(i*NUM_FIELD_COMPONENTS + c)*5 + d] = ntot);
+            my_ntot += (num_chi1inv_[(i * NUM_FIELD_COMPONENTS + c) * 5 + d] = ntot);
     }
-  size_t *num_chi1inv = new size_t[num_chunks*NUM_FIELD_COMPONENTS*5];
-  sum_to_master(num_chi1inv_, num_chi1inv, num_chunks*NUM_FIELD_COMPONENTS*5);
+  size_t *num_chi1inv = new size_t[num_chunks * NUM_FIELD_COMPONENTS * 5];
+  sum_to_master(num_chi1inv_, num_chi1inv, num_chunks * NUM_FIELD_COMPONENTS * 5);
   delete[] num_chi1inv_;
 
   // determine total dataset size and offset of this process's data
@@ -83,21 +82,20 @@ void structure::dump(const char *filename) {
   size_t dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
-  if (am_master())
-    file.write_chunk(3, start, dims, num_chi1inv);
+  if (am_master()) file.write_chunk(3, start, dims, num_chi1inv);
   delete[] num_chi1inv;
 
   // write the data
   file.create_data("chi1inv", 1, &ntotal);
-  for (int i=0; i<num_chunks; i++)
+  for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
-        size_t ntot = chunks[i]->gv.ntot();
-        for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-          for (int d = 0; d < 5; ++d)
-            if (chunks[i]->chi1inv[c][d]) {
-              file.write_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d]);
-              my_start += ntot;
-            }
+      size_t ntot = chunks[i]->gv.ntot();
+      for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
+        for (int d = 0; d < 5; ++d)
+          if (chunks[i]->chi1inv[c][d]) {
+            file.write_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d]);
+            my_start += ntot;
+          }
     }
 
   // Get the sizes of susceptibility lists for chiP[E_stuff] and chiP[H_stuff]
@@ -144,9 +142,7 @@ void structure::dump(const char *filename) {
         if (sus) {
           for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
             for (int d = 0; d < 5; ++d) {
-              if (sus->sigma[c][d]) {
-                my_num_sigmas[ft][i] += 1;
-              }
+              if (sus->sigma[c][d]) { my_num_sigmas[ft][i] += 1; }
             }
           }
         }
@@ -178,12 +174,8 @@ void structure::dump(const char *filename) {
   size_t num_E_sigmas = 0;
   size_t num_H_sigmas = 0;
   for (int i = 0; i < num_chunks; ++i) {
-    if (num_sigmas[E_stuff][i] != 0) {
-      num_E_sigmas = num_sigmas[E_stuff][i];
-    }
-    if (num_sigmas[H_stuff][i] != 0) {
-      num_H_sigmas = num_sigmas[H_stuff][i];
-    }
+    if (num_sigmas[E_stuff][i] != 0) { num_E_sigmas = num_sigmas[E_stuff][i]; }
+    if (num_sigmas[H_stuff][i] != 0) { num_H_sigmas = num_sigmas[H_stuff][i]; }
   }
 
   // Allocate space for component and direction of non-null sigmas
@@ -205,9 +197,7 @@ void structure::dump(const char *filename) {
       int j = 0;
       bool done = false;
       for (int i = 0; i < num_chunks; ++i) {
-        if (done) {
-          break;
-        }
+        if (done) { break; }
         if (chunks[i]->is_mine()) {
           susceptibility *sus = chunks[i]->chiP[ft];
           if (sus) {
@@ -310,17 +300,14 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
         sus->next = new lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator);
         sus->next->ntot = ntot;
         sus->next->set_id(id);
-      }
-      else {
+      } else {
         sus = new lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator);
         sus->ntot = ntot;
         sus->set_id(id);
         res = sus;
       }
-      if (sus->next)
-        sus = sus->next;
-    }
-    else if (num_params == 5) {
+      if (sus->next) sus = sus->next;
+    } else if (num_params == 5) {
       // This is a noisy_lorentzian_susceptibility and the next 5 values in the dataset
       // are id, noise_amp, omega_0, gamma, and no_omega_0_denominator.
       size_t noisy_lorentzian_dims[3] = {5, 0, 0};
@@ -334,20 +321,19 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       double gamma = noisy_lorentzian_params[3];
       bool no_omega_0_denominator = (bool)noisy_lorentzian_params[4];
       if (sus) {
-        sus->next = new noisy_lorentzian_susceptibility(noise_amp, omega_0, gamma, no_omega_0_denominator);
+        sus->next =
+            new noisy_lorentzian_susceptibility(noise_amp, omega_0, gamma, no_omega_0_denominator);
         sus->next->ntot = ntot;
         sus->next->set_id(id);
-      }
-      else {
-        sus = new noisy_lorentzian_susceptibility(noise_amp, omega_0, gamma, no_omega_0_denominator);
+      } else {
+        sus =
+            new noisy_lorentzian_susceptibility(noise_amp, omega_0, gamma, no_omega_0_denominator);
         sus->ntot = ntot;
         sus->set_id(id);
         res = sus;
       }
-      if (sus->next)
-        sus = sus->next;
-    }
-    else {
+      if (sus->next) sus = sus->next;
+    } else {
       abort("Invalid number of susceptibility parameters in structure::load");
     }
   }
@@ -359,8 +345,7 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   size_t dims[3] = {0, 0, 0};
 
   file->read_size(dataset, &rank, dims, 1);
-  if (rank != 1)
-    abort("inconsistent data size in structure::load");
+  if (rank != 1) abort("inconsistent data size in structure::load");
 
   if (dims[0] != 0) {
     for (int i = 0; i < num_chunks; ++i) {
@@ -372,41 +357,37 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
 void structure::load(const char *filename) {
   h5file file(filename, h5file::READONLY, true);
 
-  if (!quiet)
-    master_printf("reading epsilon from file \"%s\"...\n", filename);
+  if (!quiet) master_printf("reading epsilon from file \"%s\"...\n", filename);
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.
-  size_t *num_chi1inv = new size_t[num_chunks*NUM_FIELD_COMPONENTS*5];
+  size_t *num_chi1inv = new size_t[num_chunks * NUM_FIELD_COMPONENTS * 5];
   int rank;
   size_t dims[3], _dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.read_size("num_chi1inv", &rank, dims, 3);
   if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])
     abort("chunk mismatch in structure::load");
-  if (am_master())
-    file.read_chunk(3, start, dims, num_chi1inv);
+  if (am_master()) file.read_chunk(3, start, dims, num_chi1inv);
 
   file.prevent_deadlock();
-  broadcast(0, num_chi1inv, dims[0]*dims[1]*dims[2]);
+  broadcast(0, num_chi1inv, dims[0] * dims[1] * dims[2]);
 
   changing_chunks();
 
   // allocate data as needed and check sizes
   size_t my_ntot = 0;
-  for (int i=0; i<num_chunks; i++)
+  for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
         for (int d = 0; d < 5; ++d) {
-          size_t n = num_chi1inv[(i*NUM_FIELD_COMPONENTS + c)*5 + d];
+          size_t n = num_chi1inv[(i * NUM_FIELD_COMPONENTS + c) * 5 + d];
           if (n == 0) {
             delete[] chunks[i]->chi1inv[c][d];
             chunks[i]->chi1inv[c][d] = NULL;
-          }
-          else {
-            if (n != ntot)
-              abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
+          } else {
+            if (n != ntot) abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
             chunks[i]->chi1inv[c][d] = new realnum[ntot];
             my_ntot += ntot;
           }
@@ -419,17 +400,16 @@ void structure::load(const char *filename) {
 
   // read the data
   file.read_size("chi1inv", &rank, dims, 1);
-  if (rank != 1 || dims[0] != ntotal)
-    abort("inconsistent data size in structure::load");
-  for (int i=0; i<num_chunks; i++)
+  if (rank != 1 || dims[0] != ntotal) abort("inconsistent data size in structure::load");
+  for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
-        size_t ntot = chunks[i]->gv.ntot();
-        for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-          for (int d = 0; d < 5; ++d)
-            if (chunks[i]->chi1inv[c][d]) {
-              file.read_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d]);
-              my_start += ntot;
-            }
+      size_t ntot = chunks[i]->gv.ntot();
+      for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
+        for (int d = 0; d < 5; ++d)
+          if (chunks[i]->chi1inv[c][d]) {
+            file.read_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d]);
+            my_start += ntot;
+          }
     }
   // Create susceptibilites from params datasets
   set_chiP_from_file(&file, "E_params", E_stuff);
@@ -464,9 +444,7 @@ void structure::load(const char *filename) {
     int rank = 0;
     size_t dims[] = {0, 0, 0};
     file.read_size("num_sigmas", &rank, dims, 1);
-    if (dims[0] != (size_t)num_chunks * 2) {
-      abort("inconsistent data size in structure::load");
-    }
+    if (dims[0] != (size_t)num_chunks * 2) { abort("inconsistent data size in structure::load"); }
     if (am_master()) {
       size_t start = 0;
       size_t count = num_chunks;
@@ -485,9 +463,7 @@ void structure::load(const char *filename) {
   size_t nsig[2] = {0, 0};
   for (int ft = 0; ft < 2; ++ft) {
     for (int i = 0; i < num_chunks; ++i) {
-      if (num_sigmas[ft][i] != 0) {
-        nsig[ft] = num_sigmas[ft][i];
-      }
+      if (num_sigmas[ft][i] != 0) { nsig[ft] = num_sigmas[ft][i]; }
     }
   }
 
@@ -522,7 +498,7 @@ void structure::load(const char *filename) {
     for (int i = 0; i < num_chunks; ++i) {
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
         for (int d = 0; d < 5; ++d) {
-          susceptibility * sus = chunks[i]->chiP[ft];
+          susceptibility *sus = chunks[i]->chiP[ft];
           while (sus) {
             for (size_t j = 0; j < nsig[ft] * 2; j += 2) {
               int _c = sigma_cd[ft][j];
@@ -552,9 +528,7 @@ void structure::load(const char *filename) {
               size_t start = 0;
               while (sus) {
                 size_t count = chunks[i]->gv.ntot();
-                if (sus->sigma[c][d]) {
-                  delete[] sus->sigma[c][d];
-                }
+                if (sus->sigma[c][d]) { delete[] sus->sigma[c][d]; }
                 sus->sigma[c][d] = new realnum[count];
                 sus->trivial_sigma[c][d] = false;
                 file.read_chunk(rank, &start, &count, sus->sigma[c][d]);

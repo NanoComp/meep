@@ -28,17 +28,17 @@ int radiating_2D(const double xmax) {
   const double a = 10.0;
   const double ymax = 3.0;
 
-  grid_volume gv = voltwo(xmax,ymax,a);
-  structure s(gv, one, pml(ymax/3));
+  grid_volume gv = voltwo(xmax, ymax, a);
+  structure s(gv, one, pml(ymax / 3));
 
   fields f(&s);
   double w = 0.30;
   double dx = 2.0;
   continuous_src_time src(w);
-  f.add_point_source(Ez, src, vec(xmax/2 - dx, ymax/2));
+  f.add_point_source(Ez, src, vec(xmax / 2 - dx, ymax / 2));
 
-  vec p1(xmax/2 + 0*dx, ymax/2);
-  vec p2(xmax/2 + 1*dx, ymax/2);
+  vec p1(xmax / 2 + 0 * dx, ymax / 2);
+  vec p2(xmax / 2 + 1 * dx, ymax / 2);
 
   // let the source reach steady state
 #if 1
@@ -50,12 +50,12 @@ int radiating_2D(const double xmax) {
 
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
-  double ratio = pow(abs(amp1)/abs(amp2), 2.0) ;
-  master_printf("Ratio is %g from (%g %g) and (%g %g)\n",
-         ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
+  double ratio = pow(abs(amp1) / abs(amp2), 2.0);
+  master_printf("Ratio is %g from (%g %g) and (%g %g)\n", ratio, real(amp1), imag(amp1), real(amp2),
+                imag(amp2));
   if (ratio > 2.12 || ratio < 1.88)
     abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
-	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
+          real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }
 
@@ -63,18 +63,18 @@ int radiating_3D(const double xmax) {
   const double a = 10.0;
   const double ymax = 3.0;
 
-  grid_volume gv = vol3d(xmax,ymax,ymax,a);
-  symmetry S = mirror(Y,gv) - mirror(Z,gv);
-  structure s(gv, one, pml(ymax/3));
+  grid_volume gv = vol3d(xmax, ymax, ymax, a);
+  symmetry S = mirror(Y, gv) - mirror(Z, gv);
+  structure s(gv, one, pml(ymax / 3));
 
   fields f(&s);
   double w = 0.30;
   double dx = 2.0;
   continuous_src_time src(w);
-  f.add_point_source(Ez, src, vec(xmax/2 - dx, ymax/2, ymax/2));
+  f.add_point_source(Ez, src, vec(xmax / 2 - dx, ymax / 2, ymax / 2));
 
-  vec p1(xmax/2 + 0*dx, ymax/2, ymax/2);
-  vec p2(xmax/2 + 1*dx, ymax/2, ymax/2);
+  vec p1(xmax / 2 + 0 * dx, ymax / 2, ymax / 2);
+  vec p2(xmax / 2 + 1 * dx, ymax / 2, ymax / 2);
 
   // let the source reach steady state
 #if 1
@@ -86,18 +86,20 @@ int radiating_3D(const double xmax) {
 
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
-  double ratio = abs(amp1)/abs(amp2) ;
-  master_printf("Ratio is %g from (%g %g) and (%g %g)\n",
-         ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
+  double ratio = abs(amp1) / abs(amp2);
+  master_printf("Ratio is %g from (%g %g) and (%g %g)\n", ratio, real(amp1), imag(amp1), real(amp2),
+                imag(amp2));
   if (ratio > 2.12 || ratio < 1.88)
     abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2) = %g, too far from 2.0\n",
-	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
+          real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }
 
 void attempt(const char *name, int allright) {
-  if (allright) master_printf("Passed %s\n", name);
-  else abort("Failed %s!\n", name);
+  if (allright)
+    master_printf("Passed %s\n", name);
+  else
+    abort("Failed %s!\n", name);
 }
 
 int main(int argc, char **argv) {

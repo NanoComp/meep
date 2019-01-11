@@ -28,23 +28,24 @@ namespace meep {
 double wall_time(void);
 
 class initialize {
- public:
-  initialize(int &argc, char** &argv);
+public:
+  initialize(int &argc, char **&argv);
   ~initialize();
   double elapsed_time() { return wall_time() - t_start; }
- private:
+
+private:
   double t_start;
 };
 
 #ifdef __GNUC__
-#  define NORETURN_ATTR __attribute__((noreturn))
-#  define PRINTF_ATTR(f,a) __attribute__((format(printf, f, a)))
+#define NORETURN_ATTR __attribute__((noreturn))
+#define PRINTF_ATTR(f, a) __attribute__((format(printf, f, a)))
 #else
-#  define NORETURN_ATTR
-#  define PRINTF_ATTR(f,a)
+#define NORETURN_ATTR
+#define PRINTF_ATTR(f, a)
 #endif
 
-void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1,2);
+void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1, 2);
 void all_wait();
 int count_processors();
 int my_rank();
@@ -52,7 +53,7 @@ bool am_really_master();
 inline int am_master() { return my_rank() == 0; }
 bool with_mpi();
 
-void send(int from, int to, double *data, int size=1);
+void send(int from, int to, double *data, int size = 1);
 void broadcast(int from, double *data, int size);
 void broadcast(int from, char *data, int size);
 void broadcast(int from, int *data, int size);
@@ -65,7 +66,7 @@ bool broadcast(int from, bool);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
 int max_to_all(int);
-float sum_to_master(float); // Only returns the correct value to proc 0.
+float sum_to_master(float);   // Only returns the correct value to proc 0.
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
 void sum_to_all(const double *in, double *out, int size);
@@ -92,9 +93,9 @@ bool and_to_all(bool in);
 void and_to_all(const int *in, int *out, int size);
 
 // IO routines:
-void master_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
-void debug_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
-void master_fprintf(FILE *f, const char *fmt, ...) PRINTF_ATTR(2,3);
+void master_printf(const char *fmt, ...) PRINTF_ATTR(1, 2);
+void debug_printf(const char *fmt, ...) PRINTF_ATTR(1, 2);
+void master_fprintf(FILE *f, const char *fmt, ...) PRINTF_ATTR(2, 3);
 FILE *master_fopen(const char *name, const char *mode);
 void master_fclose(FILE *f);
 

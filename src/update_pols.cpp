@@ -28,10 +28,9 @@ using namespace std;
 namespace meep {
 
 void fields::update_pols(field_type ft) {
-  for (int i=0;i<num_chunks;i++)
+  for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      if (chunks[i]->update_pols(ft))
-      	chunk_connections_valid = false;
+      if (chunks[i]->update_pols(ft)) chunk_connections_valid = false;
 
   /* synchronize to avoid deadlocks if one process decides it needs
      to allocate E or H ... */
@@ -50,8 +49,8 @@ bool fields_chunk::update_pols(field_type ft) {
     if (!p->data) {
       p->data = p->s->new_internal_data(f, gv);
       if (p->data) {
-	p->s->init_internal_data(f, dt, gv, p->data);
-	allocated_fields = true;
+        p->s->init_internal_data(f, dt, gv, p->data);
+        allocated_fields = true;
       }
     }
 
