@@ -167,8 +167,6 @@ int main(int argc, char *argv[])
       abort("Dielectric output error in cyl-ellipsoid-ll");
    };
 
-  //(define print-stuff (lambda () (print "field:, " (get-field-point src-cmpt (vector3 4.13 3.75 0)) "\n")))
-  //
   // (run-until 23 (at-beginning output-epsilon)
   //	           (at-end output-efield-z)
   //	           (at-end print-stuff))

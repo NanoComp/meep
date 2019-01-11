@@ -36,11 +36,11 @@ int main(int argc, char *argv[])
 {
   initialize mpi(argc, argv);
 
-  // simple argument parsing 
+  // simple argument parsing
   bool use_pml = false;
   bool verbose = false;
   for(int narg=1; narg<argc; narg++)
-   { 
+   {
      if ( argv[narg] && !strcmp(argv[narg],"--pml") )
       use_pml=true;
      else if ( argv[narg] && !strcmp(argv[narg],"--verbose") )
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   if (verbose)
    master_printf("Using %s.\n",use_pml ? "pml" : "absorber");
 
-  double resolution = 20.0; 
+  double resolution = 20.0;
   geometry_lattice.size.x=TINY;
   geometry_lattice.size.y=TINY;
   geometry_lattice.size.z=10.0;
@@ -88,7 +88,6 @@ int main(int argc, char *argv[])
   vec x0(0.0);
   f.add_point_source(Ex, src, x0);
 
-  //(define print-stuff (lambda () (print "field:, " (get-field-point src-cmpt (vector3 4.13 3.75 0)) "\n")))
   double min_time     = 50.0;
   double dt_output    = 10.0;
   double next_output  = dt_output;
@@ -98,7 +97,7 @@ int main(int argc, char *argv[])
   double f50=0.0;
   bool done = false;
   while (!done)
-   { 
+   {
      f.step();
      double t = f.time();
      field = real(f.get_field(Ex, x0));
@@ -120,16 +119,16 @@ int main(int argc, char *argv[])
   double f50_ref = -5.090114e-01;
   double tFinal_ref=9.195000e+01;
   double fFinal_ref=1.624782e-07;
-  if(    fabs(f50-f50_ref) > 1.0e-6*fabs(f50_ref)  
-      || fabs(tFinal-tFinal_ref) > 1.0e-6*fabs(tFinal_ref) 
-      || fabs(fFinal-fFinal_ref) > 1.0e-6*fabs(fFinal_ref) 
+  if(    fabs(f50-f50_ref) > 1.0e-6*fabs(f50_ref)
+      || fabs(tFinal-tFinal_ref) > 1.0e-6*fabs(tFinal_ref)
+      || fabs(fFinal-fFinal_ref) > 1.0e-6*fabs(fFinal_ref)
     )
    { master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n",f50,tFinal,fFinal);
      master_printf(" should be:\n");
      master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n",f50,tFinal,fFinal);
      abort("Test failed.");
    }
-  else 
+  else
    if (verbose) master_printf("Test successful.\n");
 
-}  
+}
