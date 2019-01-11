@@ -199,15 +199,15 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin = 0.
 /* in meep.hpp) that restricts a source to points in the interior of a        */
 /* geometric object.                                                          */
 /******************************************************************************/
-class object_source_indicator: public meep::source_indicator
- {
+class object_source_indicator : public meep::source_indicator {
 public:
-   object_source_indicator(geometric_object obj0);
-   ~object_source_indicator();
-   bool in_source(const meep::vec &p);
+  object_source_indicator(geometric_object obj0);
+  ~object_source_indicator();
+  bool in_source(const meep::vec &p);
+
 private:
-   geometric_object obj;
- };
+  geometric_object obj;
+};
 
 }; // namespace meep_geom
 

@@ -1561,19 +1561,20 @@ material_type make_file_material(const char *eps_input_file) {
 /* in meep.hpp) that restricts a source to points in the interior of a        */
 /* geometric object.                                                          */
 /******************************************************************************/
-object_source_indicator::object_source_indicator(geometric_object obj0)
-{ geometric_object_copy(&obj0, &obj); }
+object_source_indicator::object_source_indicator(geometric_object obj0) {
+  geometric_object_copy(&obj0, &obj);
+}
 
-object_source_indicator::~object_source_indicator()
- { geometric_object_destroy(obj); }
+object_source_indicator::~object_source_indicator() { geometric_object_destroy(obj); }
 
-//bool object_source_indicator::in_source(const meep::vec &p)
+// bool object_source_indicator::in_source(const meep::vec &p)
 //{ return (point_in_objectp(vec_to_vector3(p),obj)==0 ? false : true); }
 
-bool object_source_indicator::in_source(const meep::vec &p)
-{ boolean inside=point_in_objectp(vec_to_vector3(p),obj);
-  printf("%e %e %e %i\n",p.x(),p.y(),p.z(),inside);
-  return (point_in_objectp(vec_to_vector3(p),obj)==0 ? false : true); }
+bool object_source_indicator::in_source(const meep::vec &p) {
+  boolean inside = point_in_objectp(vec_to_vector3(p), obj);
+  printf("%e %e %e %i\n", p.x(), p.y(), p.z(), inside);
+  return (point_in_objectp(vec_to_vector3(p), obj) == 0 ? false : true);
+}
 
 /******************************************************************************/
 /* Helpers from  libctl/utils/geom.c                                          */

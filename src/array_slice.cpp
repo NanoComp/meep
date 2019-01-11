@@ -388,13 +388,9 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
 /**********************************************************************/
 /* precisely one of fun, rfun, source_slice should be non-NULL / true */
 /**********************************************************************/
-void *fields::do_get_array_slice(const volume &where,
-                                 std::vector<component> components,
-                                 field_function fun,
-                                 field_rfunction rfun,
-                                 void *fun_data,
-                                 void *vslice,
-                                 component source_slice_component,
+void *fields::do_get_array_slice(const volume &where, std::vector<component> components,
+                                 field_function fun, field_rfunction rfun, void *fun_data,
+                                 void *vslice, component source_slice_component,
                                  bool get_source_slice) {
   am_now_working_on(FieldOutput);
 
@@ -415,18 +411,17 @@ void *fields::do_get_array_slice(const volume &where,
   bool complex_data = (rfun == 0);
   cdouble *zslice;
   double *slice;
-  if (vslice==0)
-   { if (complex_data)
-      { zslice = new cdouble[slice_size];
-        memset(zslice,0,slice_size*sizeof(cdouble));
-        vslice = (void *)zslice;
-      }
-     else
-      { slice  = new double[slice_size];
-        memset(slice,0,slice_size*sizeof(double));
-        vslice = (void *)slice;
-      }
-   }
+  if (vslice == 0) {
+    if (complex_data) {
+      zslice = new cdouble[slice_size];
+      memset(zslice, 0, slice_size * sizeof(cdouble));
+      vslice = (void *)zslice;
+    } else {
+      slice = new double[slice_size];
+      memset(slice, 0, slice_size * sizeof(double));
+      vslice = (void *)slice;
+    }
+  }
 
   data.vslice = vslice;
   data.fun = fun;
