@@ -1562,7 +1562,7 @@ public:
   void *get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, bool verbose = false,
-                      double *kdom = 0);
+                      double *kdom = 0, void **user_mdata = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
@@ -1865,7 +1865,7 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 
 // non-class methods for working with mpb eigenmode data
 //
-void destroy_eigenmode_data(void *vedata);
+void destroy_eigenmode_data(void *vedata, bool destroy_mdata = true);
 std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c);
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);
