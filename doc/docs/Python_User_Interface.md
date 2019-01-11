@@ -23,7 +23,7 @@ class Simulation(object):
                  Courant=0.5,
                  default_material=mp.Medium(),
                  dimensions=2,
-                 ensure_periodicity=False,
+                 ensure_periodicity=True,
                  eps_averaging=True,
                  epsilon_func=None,
                  epsilon_input_file='',
@@ -77,7 +77,7 @@ Specifies the size of the computational cell which is centered on the origin of 
 
 **`default_material` [`Medium` class ]**
 —
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a numpy array that defines a dielectric function much like `epsilon_input_file` below (see below).
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below).
 
 **`material_function` [ function ]**
 —
@@ -571,21 +571,21 @@ cyl = mp.Cylinder(center=mp.Vector3(0,0,0), height=0.25, radius=mp.inf,
 
 ```py
 # An ellipsoid with its long axis pointing along (1,1,1), centered on
-# the origin (the other two axes are orthogonal and have equal  semi-axis lengths):
+# the origin (the other two axes are orthogonal and have equal semi-axis lengths):
 ell = mp.Ellipsoid(center=mp.Vector3(0,0,0), size=mp.Vector3(0.8,0.2,0.2),
                    e1=Vector3(1,1,1), e2=Vector3(0,1,-1), e3=Vector3(-2,1,1),
                    material=mp.Medium(epsilon=13))
 ```
 
 ```py
-# A unit cube of material mat with a spherical air hole of radius 0.2 at
+# A unit cube of material metal with a spherical air hole of radius 0.2 at
 # its center, the whole thing centered at (1,2,3):
 geometry=[mp.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=mp.metal),
           mp.Sphere(center=Vector3(1,2,3), radius=0.2, material=mp.air)]
 ```
 
 ```py
-# A hexagon defined as a prism with six vertices centered on the origin
+# A hexagonal prism defined by six vertices centered on the origin
 # of material crystalline silicon (from the materials library)
 vertices = [mp.Vector3(-1,0),
             mp.Vector3(-0.5,math.sqrt(3)/2),
@@ -937,6 +937,10 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 —
 Equivalent to `get_field_point(mp.Dielectric, pt)`.
 
+**`initialize_field(c, func)`**
+—
+Initialize the component `c` fields using the function `func` which has a single argument, a `Vector3` giving a position and returns a complex number for the value of the field at that point.
+
 **`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**
 —
 Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire computational cell). The volume can also be specified via the `center` and `size` arguments.
@@ -1090,6 +1094,8 @@ Aliases for the corresponding "flux" methods.
 **`scale_flux_fields(s, flux)`**
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
+
+### Mode Decomposition
 
 **`get_eigenmode_coefficients(flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None, eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False)`**
 —
@@ -1457,10 +1463,10 @@ See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic 
 
 #### Array Slices
 
-The output functions described above write the data for the fields and materials for the entire computational volume to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the computational volume and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
+The output functions described above write the data for the fields and materials for the entire cell to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 ```python
- get_array(vol=None, center=None, size=None component=mp.Ez, cmplx=False, arr=None)
+ get_array(vol=None, center=None, size=None, component=mp.Ez, cmplx=False, arr=None)
 ```
 
 with the following input parameters:
@@ -1475,66 +1481,61 @@ with the following input parameters:
 
 + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
+For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`.
+
 **`get_dft_array(dft_obj, component, num_freq)`**
 —
 Returns the Fourier-transformed fields as a NumPy array.
 
 + `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
 
-+ `component`: A field component (e.g., `mp.Ez`)
++ `component`: a field component (e.g., `mp.Ez`)
 
-+ `num_freq`: The index of the frequency: (an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.)
++ `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
 
-#### Array metadata
+#### Array Metadata
 
 **`get_array_metadata(vol=None, center=None, size=None, collapse=False)`**
 **`get_dft_array_metadata(dft_cell=None, vol=None, center=None, size=None)`**
 
-These routines provide geometric information useful for interpreting the arrays
-returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
-or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where
+These routines provide geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where
 
-+ `x,y,z` are 1D numpy arrays storing the $x,y,z$ coordinates of the points in the grid slice
-+ `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`,
-    whose entries are the weights in a cubature rule for integrating over the spatial region
-    (with the *points* in the cubature rule being just the grid points contained in the region).
-    Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid
-    point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum
-    $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
++ `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the grid slice
++ `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule for integrating over the spatial region (with the points in the cubature rule being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum:
 
-    (This is a 1-, 2-, or 3-dimensional integral depending on the number of
-     dimensions in which $\mathcal{V}$ has zero extent.) If the $\{Q_n\}$
-     samples are stored in an array `Q` of the same dimensions as `w`, then evaluating
-     the sum on the RHS is a one-liner in python: `np.sum(w*Q).`
+$$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
+
+This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is just one line: `np.sum(w*Q).`
+
+For `get_dft_array_metadata`, if the `dft_cell` argument is provided then all other arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided, then the entire cell is used.
 
 Here are some examples of how array metadata can be used:
 
-+ To label axes in plots of grid quantities:
+**Labeling Axes in Plots of Grid Quantities**
 
 ```python
-# using the geometry from the `bend-flux` example
+# using the geometry from the bend-flux tutorial example
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
 eps_array=sim.get_epsilon()
 (x,y,z,w)=sim.get_array_metadata()
-plt.clf(); 
-plt.pcolormesh(x,y,np.transpose(eps_array), shading='gouraud'); 
-plt.axes().set_aspect('equal'); 
-plt.show(False);
+plt.clf()
+plt.pcolormesh(x,y,np.transpose(eps_array), shading='gouraud')
+plt.axes().set_aspect('equal')
+plt.show()
 ```
 ![](images/PermittivityWithLabeledAxes.png)
 
-+ To compute quantities defined by integrals of field-dependent functions
-  over grid regions, such as
+**Computing Quantities Defined by Integrals of Field-Dependent Functions Over Grid Regions**
 
-    + energy stored in the $\mathbf{E}$-field in a region $\mathcal{V}$:
++ energy stored in the $\mathbf{E}$-field in a region $\mathcal{V}$:
       $$ \mathcal{E}=
          \frac{1}{2}\int_{\mathcal V} \epsilon |\mathbf{E}|^2\,dV
       $$
 
-    + Poynting flux through a surface $\mathcal{S}$:
++ Poynting flux through a surface $\mathcal{S}$:
       $$\mathcal{S}=\frac{1}{2}\text{Re }\int_{\mathcal S}
         \Big(\mathbf{E}^*\times \mathbf{H}\Big)\times d\mathbf{A}
       $$
@@ -1547,8 +1548,8 @@ plt.show(False);
   (Ex,Ey,Ez)     = [sim.get_array(vol=box, component=c, cmplx=True) for c in [mp.Ex, mp.Ey, mp.Ez]]
   eps            = sim.get_array(vol=box, component=mp.Dielectric)
   (x,y,z,w)      = sim.get_array_metadata(vol=box)
-  energy_density = np.real( eps*( np.conj(Ex)*Ex + np.conj(Ey)*Ey + np.conj(Ez)*Ez ) ) # array
-  energy         = np.sum(w*energy_density)                                            # scalar
+  energy_density = np.real(eps*(np.conj(Ex)*Ex + np.conj(Ey)*Ey + np.conj(Ez)*Ez)) # array
+  energy         = np.sum(w*energy_density)                                        # scalar
 
   # x-directed Poynting flux through monitor from frequency-domain fields
   monitor        = mp.FluxRegion(center=mon_center, size=mon_size)
@@ -1560,7 +1561,7 @@ plt.show(False);
   flux           = np.sum(w*flux_density)                        # scalar
 ```
 
-**Question:** What is the difference between `get_array_metadata` and `get_dft_metadata`? Also, what is the `collapse` parameter to `get_array_metadata`?
+**Question:** What is the difference between `get_array_metadata` and `get_dft_array_metadata`? Also, what is the `collapse` parameter to `get_array_metadata`?
 
 **Answer** (tl;dr version):
 
@@ -1570,53 +1571,20 @@ plt.show(False);
 
 **Answer** (full version): **Collapsing empty dimensions in array slices**
 
-One complication of array slicing is that the array returned by `get_array` may have nonzero
-thickness (i.e. more than one point) in dimensions for which the region in question has zero
-extent. (Thus, upon requesting an array slice for a vertical line with `size=mp.Vector3(0,3,0)`,
-we would expect to get back just a one-dimensional array of field values, but in fact `get_array`
-may return a $2\times N$ array.) This occurs when the coordinate of the empty dimension
-falls between points of the computational grid; in this case, the field values at
-both of the two nearest grid points are needed to determine values at the intermediate
-point by interpolation, and the field array returned by `get_array` (as well as the `w` array
-returned by `get_array_metadata`) will have size 2 in the corresponding dimension
-to store field values and weights for both nearest-neighbor points.
-For many purposes it is convenient to *collapse* these dimensions by performing
-the interpolation to reduce e.g. a $2\times N$ array to a one-dimensional array of length $N$,
-and meep adopts the following somewhat arbitrary convention regarding when this is done:
+One complication of array slicing is that the array returned by `get_array` may have nonzero thickness (i.e. more than one point) in dimensions for which the region in question has zero extent. Thus, upon requesting an array slice for a vertical line with `size=mp.Vector3(0,3,0)`, we would expect to get back just a one-dimensional array of field values, but in fact `get_array` may return a $2\times N$ array. This occurs when the coordinate of the empty dimension falls between points of the computational grid; in this case, the field values at both of the two nearest grid points are needed to determine values at the intermediate point by interpolation, and the field array returned by `get_array` (as well as the `w` array returned by `get_array_metadata`) will have size 2 in the corresponding dimension to store field values and weights for both nearest-neighbor points. For many purposes it is convenient to *collapse* these dimensions by performing the interpolation to reduce e.g. a $2\times N$ array to a one-dimensional array of length $N$, and Meep adopts the following somewhat arbitrary convention regarding when this is done:
 
 + in arrays of time-domain field components (as returned by `get_array`), empty dimensions *are not* collapsed;
 + in arrays of frequency-domain field components (as returned by `get_dft_array`), empty dimensions *are* collapsed.
 
-The `collapse` flag to `get_array_metadata` may be set to `True` to specify that the
-metadata are to be computed for an array with empty dimensions collapsed---in other
-words, for an array of frequency-domain field components.
-The default is `collapse=False`, in which case `get_array_metadata`
-returns metadata appropriate for an array of time-domain field components
+The `collapse` flag to `get_array_metadata` may be set to `True` to specify that the metadata are to be computed for an array with empty dimensions collapsed &mdash; in other words, for an array of frequency-domain field components. The default is `collapse=False`, in which case `get_array_metadata` returns metadata appropriate for an array of time-domain field components
 
-The routine `get_dft_array_metadata` is equivalent to `get_array_metadata` with `collapse=True`.
-`get_dft_array_metadata` also accepts the convenience parameter `dft_cell` as an alternative to
-`vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object
-to define the region covered by the array.
+The routine `get_dft_array_metadata` is equivalent to `get_array_metadata` with `collapse=True`. `get_dft_array_metadata` also accepts the convenience parameter `dft_cell` as an alternative to `vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object to define the region covered by the array.
 
-#### Source slices
+#### Source Slices
 
 **`get_source_slice(component, vol=None, center=None, size=None)`**
 
-This routine returns an array of the same dimensions as that
-returned by `get_array` for the given `vol` or `center/size`,
-but containing information on the [*sources*](#source) at grid points,
-not the fields there.
-(Because sources, unlike fields, are *inputs* rather
-than outputs of meep calculations, this routine
-is not a means of extracting results from meep calculations,
-but is rather a tool to sanity-check visualization
-and confirm that the source distribution you specified is the one you
-wanted; philosophically it is closer in
-spirit to [`output_epsilon()`](#output_epsilon) than to
- `get_array/get_dft_array`.
-
-The array returned by `get_source_slice` is always complex,
-and corresponds to the given `component`.
+Return an array of complex values of the [source](#source) amplitude for `component` over the given `vol` or `center`/`size`. The array has the same dimensions as that returned by [`get_array`](#array-slices).
 
 #### Harminv
 
@@ -1624,7 +1592,7 @@ The following step function collects field data from a given point and runs [Har
 
 **`Harminv(c, pt, fcen, df, [maxbands])`**
 —
-`Harminv` is implemented as a class whose constructor returns a step function that collects data from the field component `c` (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
+`Harminv` is implemented as a class whose constructor returns a step function that collects data from the field component `c` (e.g. E<sub>x</sub>, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
 
 **Important:** normally, you should only use Harminv to analyze data *after the sources are off*. Wrapping it in `after_sources(mp.Harminv(...))` is sufficient.
 
@@ -1636,7 +1604,7 @@ The results are stored in the list `Harminv.modes`, which is a list of tuples ho
 
 **`freq`**
 —
-The complex frequency ω (in the usual Meep $2\pi c$ units).
+The complex frequency ω (in the usual Meep 2πc units).
 
 **`freq.real`**
 —

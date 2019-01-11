@@ -9,9 +9,6 @@ Gyromagnetic materials via general anisotropic conductivities.
 Second-order accurate subpixel smoothing scheme for
 dispersive materials involving complex permittivity.
 
-Finish implementation of active materials (multilevel atoms and
-saturable absorption/gain).
-
 Support 3d (r,phi,z) cell, where m is "Bloch wavenumber"
       -- gives 6-fold (and n-fold) symmetry as side effect
       -- allows computation of bent photonic-crystal waveguides
