@@ -20,7 +20,9 @@
 #include <stdlib.h>
 
 #include "meep.hpp"
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #ifdef HAVE_MPI
 #ifdef NEED_UNDEF_SEEK_FOR_MPI

@@ -19,7 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "meep.hpp"
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #ifdef HAVE_MPB
 #include <mpb.h>

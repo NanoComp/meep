@@ -1,6 +1,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #define DPR double *restrict
 #define RPR realnum *restrict

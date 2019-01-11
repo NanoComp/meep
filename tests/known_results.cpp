@@ -22,7 +22,9 @@
 using namespace meep;
 using namespace std;
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 double one(const vec &) { return 1.0; }
 

@@ -22,7 +22,9 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 #ifdef HAVE_HARMINV
 #include <harminv.h>
 #endif
