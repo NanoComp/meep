@@ -67,13 +67,13 @@ integral = f0 (1 - a)^2/2         <---- f0 s0
          + f4 (b - 3)^2 / 2       <---- f4 e0
 
 In terms of starting and ending weights:
-	 w0 = 1 - a
-	 w1 = b - 3
+         w0 = 1 - a
+         w1 = b - 3
 
-	 s0 = w0^2 / 2
-	 s1 = 1 - (1 - w0)^2 / 2
-	 e0 = w1^2 / 2
-	 e1 = 1 - (1 - w1)^2 / 2
+         s0 = w0^2 / 2
+         s1 = 1 - (1 - w0)^2 / 2
+         e0 = w1^2 / 2
+         e1 = 1 - (1 - w1)^2 / 2
 
 2) one grid point between a and b.
 
@@ -129,8 +129,8 @@ linear interpolation in [i,i+1): f(x) = f_i (i+1 - x) + f_{i+1} (x-i)
    want: \int_a^b f(x) x dx
 
 in terms of starting and ending weights:
-	 w0 = (i+1) - a
-	 w1 = b - (i+3)
+         w0 = (i+1) - a
+         w1 = b - (i+3)
 
 integral = f_i [-w0^3 / 3 + (i+1) w0^2 / 2]                       <- s0 i
       + f_{j=i+1} [w0^3 / 3 - (j+1) w0^2 / 2 + j w0 + j/2 + 1/6]  <- s1 (i+1)
@@ -191,33 +191,32 @@ namespace meep {
 /***************************************************************/
 chunkloop_field_components::chunkloop_field_components(fields_chunk *fc, component cgrid,
                                                        std::complex<double> shift_phase,
-                                                       const symmetry &S, int sn,
-                                                       int num_fields, const component *components) :
-  fc(fc), parent_components(num_fields), phases(num_fields), offsets(2*num_fields), values(num_fields)
-{
+                                                       const symmetry &S, int sn, int num_fields,
+                                                       const component *components)
+    : fc(fc), parent_components(num_fields), phases(num_fields), offsets(2 * num_fields),
+      values(num_fields) {
   // for each requested component, get symmetry-parent component, yee-grid offsets, and phase shift
-  for (int nc=0; nc < num_fields; nc++) {
+  for (int nc = 0; nc < num_fields; nc++) {
     parent_components[nc] = S.transform(components[nc], -sn);
     phases[nc] = shift_phase * S.phase_shift(parent_components[nc], sn);
-    ptrdiff_t ofs1=0, ofs2=0;
-    if (cgrid == Centered)
-      fc->gv.yee2cent_offsets(parent_components[nc], ofs1, ofs2);
-    offsets[2*nc]   = ofs1;
-    offsets[2*nc+1] = ofs2;
+    ptrdiff_t ofs1 = 0, ofs2 = 0;
+    if (cgrid == Centered) fc->gv.yee2cent_offsets(parent_components[nc], ofs1, ofs2);
+    offsets[2 * nc] = ofs1;
+    offsets[2 * nc + 1] = ofs2;
   }
 }
 
-void chunkloop_field_components::update_values(ptrdiff_t idx)
-{
-  for (size_t nc=0; nc < values.size(); nc++) {
+void chunkloop_field_components::update_values(ptrdiff_t idx) {
+  for (size_t nc = 0; nc < values.size(); nc++) {
     // do appropriate averaging to get value of field component at grid point
     component cparent = parent_components[nc];
-    ptrdiff_t ofs1 = offsets[2*nc], ofs2 = offsets[2*nc+1];
-    double favg[2]={0.0,0.0}; // real, imag parts
-    for (int reim=0; reim<2; reim++) {
+    ptrdiff_t ofs1 = offsets[2 * nc], ofs2 = offsets[2 * nc + 1];
+    double favg[2] = {0.0, 0.0}; // real, imag parts
+    for (int reim = 0; reim < 2; reim++) {
       const double *fgrid = fc->f[cparent][reim];
       if (!fgrid) continue;
-      favg[reim] = 0.25 * (fgrid[idx] + fgrid[idx+ofs1] + fgrid[idx+ofs2] + fgrid[idx+ofs1+ofs2]);
+      favg[reim] =
+          0.25 * (fgrid[idx] + fgrid[idx + ofs1] + fgrid[idx + ofs2] + fgrid[idx + ofs1 + ofs2]);
     }
     values[nc] = phases[nc] * std::complex<double>(favg[0], favg[1]);
   }
@@ -233,7 +232,7 @@ void chunkloop_field_components::update_values(ptrdiff_t idx)
 static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
   ivec ipt(pt.dim);
   LOOP_OVER_DIRECTIONS(pt.dim, d) {
-    ipt.set_direction(d, 1+2*int(floor(pt.in_direction(d)*a-.5)));
+    ipt.set_direction(d, 1 + 2 * int(floor(pt.in_direction(d) * a - .5)));
     if (ipt.in_direction(d) == pt.in_direction(d))
       ipt.set_direction(d, ipt.in_direction(d) + equal_shift.in_direction(d));
   }
@@ -242,7 +241,7 @@ static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
 static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
   ivec ipt(pt.dim);
   LOOP_OVER_DIRECTIONS(pt.dim, d) {
-    ipt.set_direction(d, 1+2*int(ceil(pt.in_direction(d)*a-.5)));
+    ipt.set_direction(d, 1 + 2 * int(ceil(pt.in_direction(d) * a - .5)));
     if (ipt.in_direction(d) == pt.in_direction(d))
       ipt.set_direction(d, ipt.in_direction(d) + equal_shift.in_direction(d));
   }
@@ -254,46 +253,42 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
 /* Integration weights at boundaries (c.f. long comment at top).   */
 /* This code was formerly part of loop_in_chunks, now refactored   */
 /* as a separate routine so we can call it from get_array_metadata.*/
-void compute_boundary_weights(grid_volume gv, volume &wherec,
-                              ivec &is, ivec &ie, bool snap_empty_dims,
-                              vec &s0, vec &e0, vec &s1, vec &e1)
-{
+void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie,
+                              bool snap_empty_dims, vec &s0, vec &e0, vec &s1, vec &e1) {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w0, w1;
-    w0 = 1. - wherec.in_direction_min(d)*gv.a + 0.5*is.in_direction(d);
-    w1 = 1. + wherec.in_direction_max(d)*gv.a - 0.5*ie.in_direction(d);
-    if (ie.in_direction(d) >= is.in_direction(d) + 3*2) {
-      s0.set_direction(d, w0*w0 / 2);
-      s1.set_direction(d, 1 - (1-w0)*(1-w0) / 2);
-      e0.set_direction(d, w1*w1 / 2);
-      e1.set_direction(d, 1 - (1-w1)*(1-w1) / 2);
-    }
-    else if (ie.in_direction(d) == is.in_direction(d) + 2*2) {
-      s0.set_direction(d, w0*w0 / 2);
-      s1.set_direction(d, 1 - (1-w0)*(1-w0) / 2 - (1-w1)*(1-w1) / 2);
-      e0.set_direction(d, w1*w1 / 2);
+    w0 = 1. - wherec.in_direction_min(d) * gv.a + 0.5 * is.in_direction(d);
+    w1 = 1. + wherec.in_direction_max(d) * gv.a - 0.5 * ie.in_direction(d);
+    if (ie.in_direction(d) >= is.in_direction(d) + 3 * 2) {
+      s0.set_direction(d, w0 * w0 / 2);
+      s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2);
+      e0.set_direction(d, w1 * w1 / 2);
+      e1.set_direction(d, 1 - (1 - w1) * (1 - w1) / 2);
+    } else if (ie.in_direction(d) == is.in_direction(d) + 2 * 2) {
+      s0.set_direction(d, w0 * w0 / 2);
+      s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2 - (1 - w1) * (1 - w1) / 2);
+      e0.set_direction(d, w1 * w1 / 2);
       e1.set_direction(d, s1.in_direction(d));
-    }
-    else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
+    } else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
       if (snap_empty_dims) {
-	if (w0 > w1) ie.set_direction(d, is.in_direction(d));
-	else is.set_direction(d, ie.in_direction(d));
-	wherec.set_direction_min(d, is.in_direction(d) * (0.5*gv.inva));
-	wherec.set_direction_max(d, is.in_direction(d) * (0.5*gv.inva));
-	w0 = w1 = 1.0;
+        if (w0 > w1)
+          ie.set_direction(d, is.in_direction(d));
+        else
+          is.set_direction(d, ie.in_direction(d));
+        wherec.set_direction_min(d, is.in_direction(d) * (0.5 * gv.inva));
+        wherec.set_direction_max(d, is.in_direction(d) * (0.5 * gv.inva));
+        w0 = w1 = 1.0;
       }
       s0.set_direction(d, w0);
       s1.set_direction(d, w1);
       e0.set_direction(d, w1);
       e1.set_direction(d, w0);
-    }
-    else if (ie.in_direction(d) == is.in_direction(d) + 1*2) {
-      s0.set_direction(d, w0*w0 / 2 - (1-w1)*(1-w1) / 2);
-      e0.set_direction(d, w1*w1 / 2 - (1-w0)*(1-w0) / 2);
+    } else if (ie.in_direction(d) == is.in_direction(d) + 1 * 2) {
+      s0.set_direction(d, w0 * w0 / 2 - (1 - w1) * (1 - w1) / 2);
+      e0.set_direction(d, w1 * w1 / 2 - (1 - w0) * (1 - w0) / 2);
       s1.set_direction(d, e0.in_direction(d));
       e1.set_direction(d, s0.in_direction(d));
-    }
-    else
+    } else
       abort("bug: impossible(?) looping boundaries");
   }
 }
@@ -338,14 +333,11 @@ void compute_boundary_weights(grid_volume gv, volume &wherec,
    (min = max) dimensions of WHERE, instead of interpolating, we
    "snap" them to the nearest grid point.  */
 
-void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
-			    const volume &where,
-			    component cgrid,
-			    bool use_symmetry, bool snap_empty_dims)
-{
+void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, const volume &where,
+                            component cgrid, bool use_symmetry, bool snap_empty_dims) {
   if (coordinate_mismatch(gv.dim, cgrid))
-    abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n",
-	  component_name(cgrid), dimension_name(gv.dim));
+    abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n", component_name(cgrid),
+          dimension_name(gv.dim));
   if (where.dim != gv.dim)
     abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
@@ -373,8 +365,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
 
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
-  compute_boundary_weights(gv, wherec, is, ie, snap_empty_dims,
-                           s0, e0, s1, e1);
+  compute_boundary_weights(gv, wherec, is, ie, snap_empty_dims, s0, e0, s1, e1);
 
   // loop over symmetry transformations of the chunks:
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
@@ -396,16 +387,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     ivec min_ishift(gv.dim), max_ishift(gv.dim);
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
       if (boundaries[High][S.transform(d, -sn).d] == Periodic) {
-	min_ishift.set_direction(d,
-	 int(floor((wherec.in_direction_min(d) - gvS.in_direction_max(d))
-		   / L.in_direction(d))));
-	max_ishift.set_direction(d,
-	 int(ceil((wherec.in_direction_max(d) - gvS.in_direction_min(d))
-		  / L.in_direction(d))));
-      }
-      else {
-	min_ishift.set_direction(d, 0);
-	max_ishift.set_direction(d, 0);
+        min_ishift.set_direction(
+            d,
+            int(floor((wherec.in_direction_min(d) - gvS.in_direction_max(d)) / L.in_direction(d))));
+        max_ishift.set_direction(
+            d,
+            int(ceil((wherec.in_direction_max(d) - gvS.in_direction_min(d)) / L.in_direction(d))));
+      } else {
+        min_ishift.set_direction(d, 0);
+        max_ishift.set_direction(d, 0);
       }
     }
 
@@ -416,116 +406,106 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       vec shift(gv.dim, 0.0);
       ivec shifti(gv.dim, 0);
       LOOP_OVER_DIRECTIONS(gv.dim, d) {
-	shift.set_direction(d, L.in_direction(d) * ishift.in_direction(d));
-	shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
-	ph *= pow(eikna[d], ishift.in_direction(d));
+        shift.set_direction(d, L.in_direction(d) * ishift.in_direction(d));
+        shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
+        ph *= pow(eikna[d], ishift.in_direction(d));
       }
 
       for (int i = 0; i < num_chunks; ++i) {
-	if (!chunks[i]->is_mine()) continue;
-	// Chunk looping boundaries:
-	volume vS(gv.dim);
+        if (!chunks[i]->is_mine()) continue;
+        // Chunk looping boundaries:
+        volume vS(gv.dim);
 
-	if (use_symmetry)
-	  vS = S.transform(chunks[i]->v, sn);
-	else {
-	  /* If we're not using symmetry, it's because (as in src_vol)
-	     we don't care about correctly counting the points in the
-	     grid_volume.  Rather, we just want to make sure to get *all*
-	     of the chunk points that intersect where.  Hence, add a little
-	     padding to make sure we don't miss any points due to rounding. */
-	  vec pad(one_ivec(gv.dim) * gv.inva * 1e-3);
-	  vS = volume(chunks[i]->gv.loc(Centered,0) - pad,
-				 chunks[i]->gv.loc(Centered,
-						  chunks[i]->gv.ntot()-1) +pad);
-	}
+        if (use_symmetry)
+          vS = S.transform(chunks[i]->v, sn);
+        else {
+          /* If we're not using symmetry, it's because (as in src_vol)
+             we don't care about correctly counting the points in the
+             grid_volume.  Rather, we just want to make sure to get *all*
+             of the chunk points that intersect where.  Hence, add a little
+             padding to make sure we don't miss any points due to rounding. */
+          vec pad(one_ivec(gv.dim) * gv.inva * 1e-3);
+          vS = volume(chunks[i]->gv.loc(Centered, 0) - pad,
+                      chunks[i]->gv.loc(Centered, chunks[i]->gv.ntot() - 1) + pad);
+        }
 
-	ivec iscS(max(is-shifti, vec2diel_ceil(vS.get_min_corner(),
-					       gv.a, one_ivec(gv.dim) * 2)));
-	ivec iecS(min(ie-shifti, vec2diel_floor(vS.get_max_corner(),
-						gv.a, zero_ivec(gv.dim))));
-	if (iscS <= iecS) {
-	  // Determine weights at chunk looping boundaries:
-	  ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
-	  vec s0c(gv.dim,1.0), s1c(gv.dim,1.0), e0c(gv.dim,1.0), e1c(gv.dim,1.0);
-	  iscS += shifti;
-	  iecS += shifti;
-	  LOOP_OVER_DIRECTIONS(gv.dim, d) {
-	    direction dS = S.transform(d, sn).d;
-	    if (iscS.in_direction(dS) == is.in_direction(dS)) {
-	      s0c.set_direction(d, s0.in_direction(dS));
-	      s1c.set_direction(d, s1.in_direction(dS));
-	    }
-	    else if (iscS.in_direction(dS) == is.in_direction(dS) + 2) {
-	      s0c.set_direction(d, s1.in_direction(dS));
-	    }
-	    if (iecS.in_direction(dS) == ie.in_direction(dS)) {
-	      e0c.set_direction(d, e0.in_direction(dS));
-	      e1c.set_direction(d, e1.in_direction(dS));
-	    }
-	    else if (iecS.in_direction(dS) == ie.in_direction(dS) - 2) {
-	      e0c.set_direction(d, e1.in_direction(dS));
-	    }
-	    if (iecS.in_direction(dS) == iscS.in_direction(dS)) {
-	      double w = min(s0c.in_direction(d), e0c.in_direction(d));
-	      s0c.set_direction(d, w); e0c.set_direction(d, w);
-	      s1c.set_direction(d, w); e1c.set_direction(d, w);
-	    }
-	    else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 1*2) {
-	      double w = min(s0c.in_direction(d), e1c.in_direction(d));
-	      s0c.set_direction(d, w); e1c.set_direction(d, w);
-	      w = min(s1c.in_direction(d), e0c.in_direction(d));
-	      s1c.set_direction(d, w); e0c.set_direction(d, w);
-	    }
-	    else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 2*2) {
-	      double w = min(s1c.in_direction(d), e1c.in_direction(d));
-	      s1c.set_direction(d, w); e1c.set_direction(d, w);
-	    }
+        ivec iscS(max(is - shifti, vec2diel_ceil(vS.get_min_corner(), gv.a, one_ivec(gv.dim) * 2)));
+        ivec iecS(min(ie - shifti, vec2diel_floor(vS.get_max_corner(), gv.a, zero_ivec(gv.dim))));
+        if (iscS <= iecS) {
+          // Determine weights at chunk looping boundaries:
+          ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
+          vec s0c(gv.dim, 1.0), s1c(gv.dim, 1.0), e0c(gv.dim, 1.0), e1c(gv.dim, 1.0);
+          iscS += shifti;
+          iecS += shifti;
+          LOOP_OVER_DIRECTIONS(gv.dim, d) {
+            direction dS = S.transform(d, sn).d;
+            if (iscS.in_direction(dS) == is.in_direction(dS)) {
+              s0c.set_direction(d, s0.in_direction(dS));
+              s1c.set_direction(d, s1.in_direction(dS));
+            } else if (iscS.in_direction(dS) == is.in_direction(dS) + 2) {
+              s0c.set_direction(d, s1.in_direction(dS));
+            }
+            if (iecS.in_direction(dS) == ie.in_direction(dS)) {
+              e0c.set_direction(d, e0.in_direction(dS));
+              e1c.set_direction(d, e1.in_direction(dS));
+            } else if (iecS.in_direction(dS) == ie.in_direction(dS) - 2) {
+              e0c.set_direction(d, e1.in_direction(dS));
+            }
+            if (iecS.in_direction(dS) == iscS.in_direction(dS)) {
+              double w = min(s0c.in_direction(d), e0c.in_direction(d));
+              s0c.set_direction(d, w);
+              e0c.set_direction(d, w);
+              s1c.set_direction(d, w);
+              e1c.set_direction(d, w);
+            } else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 1 * 2) {
+              double w = min(s0c.in_direction(d), e1c.in_direction(d));
+              s0c.set_direction(d, w);
+              e1c.set_direction(d, w);
+              w = min(s1c.in_direction(d), e0c.in_direction(d));
+              s1c.set_direction(d, w);
+              e0c.set_direction(d, w);
+            } else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 2 * 2) {
+              double w = min(s1c.in_direction(d), e1c.in_direction(d));
+              s1c.set_direction(d, w);
+              e1c.set_direction(d, w);
+            }
 
-	    // swap endpoints/weights if in wrong order due to S.transform
-	    if (isc.in_direction(d) > iec.in_direction(d)) {
-	      int iswap = isc.in_direction(d);
-	      isc.set_direction(d, iec.in_direction(d));
-	      iec.set_direction(d, iswap);
-	      double swap = s0c.in_direction(d);
-	      s0c.set_direction(d, e0c.in_direction(d));
-	      e0c.set_direction(d, swap);
-	      swap = s1c.in_direction(d);
-	      s1c.set_direction(d, e1c.in_direction(d));
-	      e1c.set_direction(d, swap);
-	    }
-	  }
+            // swap endpoints/weights if in wrong order due to S.transform
+            if (isc.in_direction(d) > iec.in_direction(d)) {
+              int iswap = isc.in_direction(d);
+              isc.set_direction(d, iec.in_direction(d));
+              iec.set_direction(d, iswap);
+              double swap = s0c.in_direction(d);
+              s0c.set_direction(d, e0c.in_direction(d));
+              e0c.set_direction(d, swap);
+              swap = s1c.in_direction(d);
+              s1c.set_direction(d, e1c.in_direction(d));
+              e1c.set_direction(d, swap);
+            }
+          }
 
+          // Determine integration "volumes" dV0 and dV1;
+          double dV0 = 1.0, dV1 = 0.0;
+          LOOP_OVER_DIRECTIONS(gv.dim, d) {
+            if (wherec.in_direction(d) > 0.0) dV0 *= gv.inva;
+          }
+          if (gv.dim == Dcyl) {
+            dV1 = dV0 * 2 * pi * gv.inva;
+            dV0 *= 2 * pi *
+                   fabs((S.transform(chunks[i]->gv[isc], sn) + shift - yee_c).in_direction(R));
+          }
 
-	  // Determine integration "volumes" dV0 and dV1;
-	  double dV0 = 1.0, dV1 = 0.0;
-	  LOOP_OVER_DIRECTIONS(gv.dim, d) {
-	    if (wherec.in_direction(d) > 0.0)
-	      dV0 *= gv.inva;
-    }
-	  if (gv.dim == Dcyl) {
-	    dV1 = dV0 * 2*pi * gv.inva;
-	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->gv[isc], sn) + shift
-				- yee_c).in_direction(R));
-	  }
-
-	  chunkloop(chunks[i], i, cS,
-		    isc - iyee_cS, iec - iyee_cS,
-		    s0c, s1c, e0c, e1c,
-		    dV0, dV1,
-		    shifti, ph,
-		    S, sn,
-		    chunkloop_data);
-	}
+          chunkloop(chunks[i], i, cS, isc - iyee_cS, iec - iyee_cS, s0c, s1c, e0c, e1c, dV0, dV1,
+                    shifti, ph, S, sn, chunkloop_data);
+        }
       }
 
-
       LOOP_OVER_DIRECTIONS(gv.dim, d) {
-	if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
-	  ishift.set_direction(d, ishift.in_direction(d) + 1);
-	  break;
-	}
-	ishift.set_direction(d, min_ishift.in_direction(d));
+        if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
+          ishift.set_direction(d, ishift.in_direction(d) + 1);
+          break;
+        }
+        ishift.set_direction(d, min_ishift.in_direction(d));
       }
     } while (ishift != min_ishift);
   }
@@ -537,91 +517,83 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 /* direction---unless that length was 0, in which case ygrid   */
 /* should have length 1.                                       */
 /***************************************************************/
-void fields::get_array_metadata(const volume &where,
-                                double *xtics, double *ytics,
-                                double *ztics, double *weights,
-                                bool collapse_empty_dimensions)
-{
+void fields::get_array_metadata(const volume &where, double *xtics, double *ytics, double *ztics,
+                                double *weights, bool collapse_empty_dimensions) {
   // mimic what is done in `loop_in_chunks` to initialize a loop
   // over grid points in `where`
-  component cgrid=Centered;
+  component cgrid = Centered;
   vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
   ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
   volume wherec(where + yee_c);
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
 
-  ivec imin=gv.little_corner()+one_ivec(gv.dim), imax=gv.big_corner()-one_ivec(gv.dim);
-  LOOP_OVER_DIRECTIONS(gv.dim, d)
-   { if (is.in_direction(d) < imin.in_direction(d))
-      is.set_direction(d,imin.in_direction(d));
-     if (ie.in_direction(d) > imax.in_direction(d))
-      ie.set_direction(d,imax.in_direction(d));
-   }
+  ivec imin = gv.little_corner() + one_ivec(gv.dim), imax = gv.big_corner() - one_ivec(gv.dim);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    if (is.in_direction(d) < imin.in_direction(d)) is.set_direction(d, imin.in_direction(d));
+    if (ie.in_direction(d) > imax.in_direction(d)) ie.set_direction(d, imax.in_direction(d));
+  }
 
-  bool snap_empty_dims=true;
+  bool snap_empty_dims = true;
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   // this initialization step seems to be necessary here to avoid winding
   // up with zero or undefined integration weights; I don't know why it
   // seems to be unnecessary for loop_in_chunks above.
   FOR_DIRECTIONS(d)
-   if (!has_direction(gv.dim,d))
-    { s0.set_direction(d,1.0);
-      e0.set_direction(d,1.0);
-      s1.set_direction(d,1.0);
-      e1.set_direction(d,1.0);
-    }
-  compute_boundary_weights(gv, wherec, is, ie, snap_empty_dims,
-                           s0, e0, s1, e1);
+  if (!has_direction(gv.dim, d)) {
+    s0.set_direction(d, 1.0);
+    e0.set_direction(d, 1.0);
+    s1.set_direction(d, 1.0);
+    e1.set_direction(d, 1.0);
+  }
+  compute_boundary_weights(gv, wherec, is, ie, snap_empty_dims, s0, e0, s1, e1);
 
   // Determine integration "volumes" dV0 and dV1
   double dV0 = 1.0, dV1 = 0.0;
   LOOP_OVER_DIRECTIONS(gv.dim, d)
-   if (wherec.in_direction(d) > 0.0)
-    dV0 *= gv.inva;
+  if (wherec.in_direction(d) > 0.0) dV0 *= gv.inva;
 
   // punt on figuring out what to do here
   if (gv.dim == Dcyl)
-   fprintf(stderr,"** warning: cylindrical coordinates not supported in get_array_metadata; integration weights may be incorrect\n");
+    fprintf(stderr, "** warning: cylindrical coordinates not supported in get_array_metadata; "
+                    "integration weights may be incorrect\n");
 
   size_t dims[3];
   direction dirs[3];
-  int rank=get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
-  size_t nxyz[3]={1,1,1};
-  for(int r=0; r<rank; r++)
-   nxyz[dirs[r]]=dims[r];
-  size_t nw=nxyz[0]*nxyz[1]*nxyz[2];
+  int rank = get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
+  size_t nxyz[3] = {1, 1, 1};
+  for (int r = 0; r < rank; r++)
+    nxyz[dirs[r]] = dims[r];
+  size_t nw = nxyz[0] * nxyz[1] * nxyz[2];
 
   size_t stride[3]; // for weights array
   stride[2] = 1;
   stride[1] = nxyz[2];
-  stride[0] = nxyz[1]*nxyz[2];
+  stride[0] = nxyz[1] * nxyz[2];
 
   double *xyz[3];
-  xyz[0]=xtics;
-  xyz[1]=ytics;
-  xyz[2]=ztics;
-   
+  xyz[0] = xtics;
+  xyz[1] = ytics;
+  xyz[2] = ztics;
+
   memset(weights, 0, nw * sizeof(double));
-  LOOP_OVER_IVECS(gv, is, ie, idx)
-   {
-     IVEC_LOOP_ILOC(gv, iloc);
-     ivec two_nxyz = iloc - is;
-     IVEC_LOOP_LOC(gv, loc);
-     size_t index=0; // into weights[] array
-     LOOP_OVER_DIRECTIONS(gv.dim, d)
-      {
-        if  (where.in_direction(d)==0.0 && collapse_empty_dimensions)
-         xyz[d][0] = where.in_direction_min(d);
-        else
-         { int id = d-X; // index of direction, {0,1,2} for {X,Y,Z}
-           int nd       = two_nxyz.in_direction(d)/2;
-           xyz[id][nd]  = loc.in_direction(d);
-           index       += nd*stride[id];
-         }
+  LOOP_OVER_IVECS(gv, is, ie, idx) {
+    IVEC_LOOP_ILOC(gv, iloc);
+    ivec two_nxyz = iloc - is;
+    IVEC_LOOP_LOC(gv, loc);
+    size_t index = 0; // into weights[] array
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      if (where.in_direction(d) == 0.0 && collapse_empty_dimensions)
+        xyz[d][0] = where.in_direction_min(d);
+      else {
+        int id = d - X; // index of direction, {0,1,2} for {X,Y,Z}
+        int nd = two_nxyz.in_direction(d) / 2;
+        xyz[id][nd] = loc.in_direction(d);
+        index += nd * stride[id];
       }
-     weights[index]+=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-   }
+    }
+    weights[index] += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+  }
 }
 
 } // namespace meep

@@ -1,6 +1,6 @@
 // -*- C++ -*-
 #ifndef MEEP_CTL_H
-#define MEEP_CTL_H 
+#define MEEP_CTL_H
 
 #include "meep.hpp"
 
@@ -15,8 +15,6 @@ extern int verbose; // in main.c
 
 /***************************************************************************/
 
-#define CK(ex, msg) \
-    (void)((ex) || (meep::abort(msg), 0))
-
+#define CK(ex, msg) (void)((ex) || (meep::abort(msg), 0))
 
 #endif /* MEEP_CTL_H */

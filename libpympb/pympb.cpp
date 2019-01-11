@@ -10,42 +10,47 @@
 
 // xyz_loop.h
 #ifndef HAVE_MPI
-  #define LOOP_XYZ(md) { \
-    int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2, i3; \
-    for (i1 = 0; i1 < n1; ++i1) \
-      for (i2 = 0; i2 < n2; ++i2) \
-        for (i3 = 0; i3 < n3; ++i3) { \
+#define LOOP_XYZ(md)                                                                               \
+  {                                                                                                \
+    int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2, i3;                                         \
+    for (i1 = 0; i1 < n1; ++i1)                                                                    \
+      for (i2 = 0; i2 < n2; ++i2)                                                                  \
+        for (i3 = 0; i3 < n3; ++i3) {                                                              \
           int xyz_index = ((i1 * n2 + i2) * n3 + i3);
 #else /* HAVE_MPI */
-  /* first two dimensions are transposed in MPI output: */
-  #define LOOP_XYZ(md) { \
-    int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2_, i3; \
-    int local_n2 = md->local_ny, local_y_start = md->local_y_start; \
-    for (i2_ = 0; i2_ < local_n2; ++i2_) \
-      for (i1 = 0; i1 < n1; ++i1) \
-        for (i3 = 0; i3 < n3; ++i3) { \
-          int i2 = i2_ + local_y_start; \
+/* first two dimensions are transposed in MPI output: */
+#define LOOP_XYZ(md)                                                                               \
+  {                                                                                                \
+    int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2_, i3;                                        \
+    int local_n2 = md->local_ny, local_y_start = md->local_y_start;                                \
+    for (i2_ = 0; i2_ < local_n2; ++i2_)                                                           \
+      for (i1 = 0; i1 < n1; ++i1)                                                                  \
+        for (i3 = 0; i3 < n3; ++i3) {                                                              \
+          int i2 = i2_ + local_y_start;                                                            \
           int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
-#  endif /* HAVE_MPI */
+#endif /* HAVE_MPI */
 
-typedef  mpb_real real; // needed for the CASSIGN macros below
+typedef mpb_real real; // needed for the CASSIGN macros below
 
 // TODO: Support MPI
-#define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
-     CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");\
-     memcpy((rb), (sb), (n) * sizeof(ctype)); \
-}
+#define mpi_allreduce(sb, rb, n, ctype, t, op, comm)                                               \
+  {                                                                                                \
+    CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");                      \
+    memcpy((rb), (sb), (n) * sizeof(ctype));                                                       \
+  }
 
 /* "in-place" Allreduce wrapper for reducing a single value */
-#define mpi_allreduce_1(b, ctype, t, op, comm) { \
-     ctype bbbb = *(b); \
-     mpi_allreduce(&bbbb, (b), 1, ctype, t, op, comm); \
-}
+#define mpi_allreduce_1(b, ctype, t, op, comm)                                                     \
+  {                                                                                                \
+    ctype bbbb = *(b);                                                                             \
+    mpi_allreduce(&bbbb, (b), 1, ctype, t, op, comm);                                              \
+  }
 
 #ifdef CHECK_DISABLE
-  #define CHECK(cond, s) // Do nothing
+#define CHECK(cond, s) // Do nothing
 #else
-  #define CHECK(cond, s) if (!(cond)){meep::abort(s "\n");}
+#define CHECK(cond, s)                                                                             \
+  if (!(cond)) { meep::abort(s "\n"); }
 #endif
 
 namespace py_mpb {
@@ -75,9 +80,9 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
   ms->material_epsmu(mat, eps, eps_inv, eps);
 }
 
-static int mean_epsilon_func(symmetric_matrix* meps, symmetric_matrix *meps_inv,
-                             mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3,
-                             mpb_real tol, const mpb_real r[3], void *edata) {
+static int mean_epsilon_func(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
+                             mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
+                             const mpb_real r[3], void *edata) {
 
   mode_solver *ms = static_cast<mode_solver *>(edata);
   return ms->mean_epsilon(meps, meps_inv, n, d1, d2, d3, tol, r);
@@ -100,9 +105,7 @@ void matrix3x3_to_arr(mpb_real arr[3][3], matrix3x3 m) {
   vector3_to_arr(arr[2], m.c2);
 }
 
-cnumber cscalar2cnumber(scalar_complex cs) {
-  return make_cnumber(CSCALAR_RE(cs), CSCALAR_IM(cs));
-}
+cnumber cscalar2cnumber(scalar_complex cs) { return make_cnumber(CSCALAR_RE(cs), CSCALAR_IM(cs)); }
 
 // Return a string describing the current parity, used for frequency and filename
 // prefixes
@@ -141,20 +144,20 @@ mpb_real mean_medium_from_matrix(const symmetric_matrix *eps_inv) {
 typedef struct {
   evectmatrix Y;  /* the vectors to orthogonalize against; Y must
                      itself be normalized (Yt B Y = 1) */
-  evectmatrix BY;  /* B * Y */
-  int p;  /* the number of columns of Y to orthogonalize against */
-  scalar *S;  /* a matrix for storing the dot products; should have
-                 at least p * X.p elements (see below for X) */
-  scalar *S2; /* a scratch matrix the same size as S */
+  evectmatrix BY; /* B * Y */
+  int p;          /* the number of columns of Y to orthogonalize against */
+  scalar *S;      /* a matrix for storing the dot products; should have
+                     at least p * X.p elements (see below for X) */
+  scalar *S2;     /* a scratch matrix the same size as S */
 } deflation_data;
 
 extern "C" {
-void blasglue_gemm(char transa, char transb, int m, int n, int k, mpb_real a, scalar *A,
-                   int fdA, scalar *B, int fdB, mpb_real b, scalar *C, int fdC);
+void blasglue_gemm(char transa, char transb, int m, int n, int k, mpb_real a, scalar *A, int fdA,
+                   scalar *B, int fdB, mpb_real b, scalar *C, int fdC);
 }
 
 static void deflation_constraint(evectmatrix X, void *data) {
-  deflation_data *d = (deflation_data *) data;
+  deflation_data *d = (deflation_data *)data;
 
   CHECK(X.n == d->BY.n && d->BY.p >= d->p && d->Y.p >= d->p, "invalid dimensions");
 
@@ -166,70 +169,36 @@ static void deflation_constraint(evectmatrix X, void *data) {
      this case.) */
 
   /* compute S = Xt BY (i.e. all the dot products): */
-  blasglue_gemm('C', 'N', X.p, d->p, X.n, 1.0, X.data, X.p, d->BY.data, d->BY.p,
-                0.0, d->S2, d->p);
-// TODO
-// #if HAVE_MPI
-//   MPI_Allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, SCALAR_MPI_TYPE,
-//                 MPI_SUM, mpb_comm);
-// #else
+  blasglue_gemm('C', 'N', X.p, d->p, X.n, 1.0, X.data, X.p, d->BY.data, d->BY.p, 0.0, d->S2, d->p);
+  // TODO
+  // #if HAVE_MPI
+  //   MPI_Allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, SCALAR_MPI_TYPE,
+  //                 MPI_SUM, mpb_comm);
+  // #else
   memcpy(d->S, d->S2, sizeof(mpb_real) * d->p * X.p * SCALAR_NUMVALS);
-// #endif
+  // #endif
 
   /* compute X = X - Y*St = (1 - BY Yt B) X */
-  blasglue_gemm('N', 'C', X.n, X.p, d->p, -1.0, d->Y.data, d->Y.p, d->S, d->p,
-                1.0, X.data, X.p);
+  blasglue_gemm('N', 'C', X.n, X.p, d->p, -1.0, d->Y.data, d->Y.p, d->S, d->p, 1.0, X.data, X.p);
 }
 
 /******* mode_solver *******/
 
-mode_solver::mode_solver(int num_bands,
-                         double resolution[3],
-                         lattice lat,
-                         double tolerance,
-                         int mesh_size,
-                         meep_geom::material_data *_default_material,
-                         bool deterministic,
-                         double target_freq,
-                         int dims,
-                         bool verbose,
-                         bool periodicity,
-                         double flops,
-                         bool negative_epsilon_ok,
-                         std::string epsilon_input_file,
-                         std::string mu_input_file,
-                         bool force_mu,
-                         bool use_simple_preconditioner,
-                         vector3 grid_size,
-                         int eigensolver_nwork,
-                         int eigensolver_block_size):
-  num_bands(num_bands),
-  target_freq(target_freq),
-  tolerance(tolerance),
-  mesh_size(mesh_size),
-  negative_epsilon_ok(negative_epsilon_ok),
-  epsilon_input_file(epsilon_input_file),
-  mu_input_file(mu_input_file),
-  force_mu(force_mu),
-  use_simple_preconditioner(use_simple_preconditioner),
-  grid_size(grid_size),
-  nwork_alloc(0),
-  eigensolver_nwork(eigensolver_nwork),
-  eigensolver_block_size(eigensolver_block_size),
-  last_parity(-2),
-  iterations(0),
-  eigensolver_flops(flops),
-  vol(0),
-  mdata(NULL),
-  mtdata(NULL),
-  curfield_band(0),
-  freqs(num_bands),
-  verbose(verbose),
-  deterministic(deterministic),
-  kpoint_index(0),
-  curfield(NULL),
-  curfield_type('-'),
-  eps(true) {
+mode_solver::mode_solver(int num_bands, double resolution[3], lattice lat, double tolerance,
+                         int mesh_size, meep_geom::material_data *_default_material,
+                         bool deterministic, double target_freq, int dims, bool verbose,
+                         bool periodicity, double flops, bool negative_epsilon_ok,
+                         std::string epsilon_input_file, std::string mu_input_file, bool force_mu,
+                         bool use_simple_preconditioner, vector3 grid_size, int eigensolver_nwork,
+                         int eigensolver_block_size)
+    : num_bands(num_bands), target_freq(target_freq), tolerance(tolerance), mesh_size(mesh_size),
+      negative_epsilon_ok(negative_epsilon_ok), epsilon_input_file(epsilon_input_file),
+      mu_input_file(mu_input_file), force_mu(force_mu),
+      use_simple_preconditioner(use_simple_preconditioner), grid_size(grid_size), nwork_alloc(0),
+      eigensolver_nwork(eigensolver_nwork), eigensolver_block_size(eigensolver_block_size),
+      last_parity(-2), iterations(0), eigensolver_flops(flops), vol(0), mdata(NULL), mtdata(NULL),
+      curfield_band(0), freqs(num_bands), verbose(verbose), deterministic(deterministic),
+      kpoint_index(0), curfield(NULL), curfield_type('-'), eps(true) {
 
   geometry_lattice = lat;
   dimensions = dims;
@@ -253,9 +222,7 @@ mode_solver::mode_solver(int num_bands,
 
 #ifndef WITH_HERMITIAN_EPSILON
   meep_geom::medium_struct *m;
-  if (meep_geom::is_medium(_default_material, &m)) {
-    meep_geom::check_offdiag(m);
-  }
+  if (meep_geom::is_medium(_default_material, &m)) { meep_geom::check_offdiag(m); }
 #else
   (void)_default_material;
 #endif
@@ -271,18 +238,14 @@ mode_solver::~mode_solver() {
     destroy_evectmatrix(W[i]);
   }
 
-  if (Hblock.data != H.data) {
-    destroy_evectmatrix(Hblock);
-  }
+  if (Hblock.data != H.data) { destroy_evectmatrix(Hblock); }
 
-  if (muinvH.data != H.data) {
-    destroy_evectmatrix(muinvH);
-  }
+  if (muinvH.data != H.data) { destroy_evectmatrix(muinvH); }
 }
 
-int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv,
-                               mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3,
-                               mpb_real tol, const mpb_real r[3]) {
+int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
+                              mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
+                              const mpb_real r[3]) {
 
   const geometric_object *o1 = 0;
   const geometric_object *o2 = 0;
@@ -294,26 +257,40 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
   int id1 = -1;
   int id2 = -1;
 
-  const int num_neighbors[3] = { 3, 5, 9 };
-  const int neighbors[3][9][3] = {
-    { {0,0,0}, {-1,0,0}, {1,0,0},
-      {0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0} },
-    { {0,0,0},
-      {-1,-1,0}, {1,1,0}, {-1,1,0}, {1,-1,0},
-      {0,0,0},{0,0,0},{0,0,0},{0,0,0} },
-    { {0,0,0},
-      {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},
-      {-1,1,1},{-1,1,-1},{-1,-1,1},{-1,-1,-1} }
-  };
+  const int num_neighbors[3] = {3, 5, 9};
+  const int neighbors[3][9][3] = {{{0, 0, 0},
+                                   {-1, 0, 0},
+                                   {1, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0}},
+                                  {{0, 0, 0},
+                                   {-1, -1, 0},
+                                   {1, 1, 0},
+                                   {-1, 1, 0},
+                                   {1, -1, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0},
+                                   {0, 0, 0}},
+                                  {{0, 0, 0},
+                                   {1, 1, 1},
+                                   {1, 1, -1},
+                                   {1, -1, 1},
+                                   {1, -1, -1},
+                                   {-1, 1, 1},
+                                   {-1, 1, -1},
+                                   {-1, -1, 1},
+                                   {-1, -1, -1}}};
 
   /* p needs to be in the lattice *unit* vector basis, while r is
      in the lattice vector basis.  Also, shift origin to the center
      of the grid. */
-  vector3 p = {
-    (r[0] - 0.5) * geometry_lattice.size.x,
-    (r[1] - 0.5) * geometry_lattice.size.y,
-    (r[2] - 0.5) * geometry_lattice.size.z
-  };
+  vector3 p = {(r[0] - 0.5) * geometry_lattice.size.x, (r[1] - 0.5) * geometry_lattice.size.y,
+               (r[2] - 0.5) * geometry_lattice.size.z};
 
   d1 *= geometry_lattice.size.x * 0.5;
   d2 *= geometry_lattice.size.y * 0.5;
@@ -351,10 +328,8 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
 
     meep_geom::material_type mat = (meep_geom::material_type)default_material;
     if (o) {
-      meep_geom::material_data *md = (meep_geom::material_data*)o->material;
-      if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
-        mat = md;
-      }
+      meep_geom::material_data *md = (meep_geom::material_data *)o->material;
+      if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) { mat = md; }
     }
 
     if (id1 == -1) {
@@ -362,16 +337,14 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
       shiftby1 = shiftby;
       id1 = id;
       mat1 = mat;
-    }
-    else if (id2 == -1 || ((id >= id1 && id >= id2) &&
-            (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
+    } else if (id2 == -1 || ((id >= id1 && id >= id2) &&
+                             (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
       o2 = o;
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
-    }
-    else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
-             !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
+    } else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
+               !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
       return 0; /* too many nearby objects for analysis */
     }
   }
@@ -386,14 +359,12 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
 
   bool o1_is_var = o1 && meep_geom::is_variable(o1->material);
   bool o2_is_var = o2 && meep_geom::is_variable(o2->material);
-  bool default_is_var_or_file = meep_geom::is_variable(default_material) ||
-                                meep_geom::is_file(default_material);
+  bool default_is_var_or_file =
+      meep_geom::is_variable(default_material) || meep_geom::is_file(default_material);
 
-  if (o1_is_var ||
-      o2_is_var ||
-      (default_is_var_or_file && (!o1 || !o2 ||
-                                  meep_geom::is_file(o1->material) ||
-                                  meep_geom::is_file(o2->material)))) {
+  if (o1_is_var || o2_is_var ||
+      (default_is_var_or_file &&
+       (!o1 || !o2 || meep_geom::is_file(o1->material) || meep_geom::is_file(o2->material)))) {
     return 0; /* arbitrary material functions are non-analyzable */
   }
 
@@ -407,8 +378,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
 
   if (id1 > id2) {
     normal = normal_to_fixed_object(vector3_minus(p, shiftby1), *o1);
-  }
-  else {
+  } else {
     normal = normal_to_fixed_object(vector3_minus(p, shiftby2), *o2);
   }
 
@@ -427,12 +397,11 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
   if (id1 > id2) {
     pixel.low = vector3_minus(pixel.low, shiftby1);
     pixel.high = vector3_minus(pixel.high, shiftby1);
-    fill = box_overlap_with_object(pixel, *o1, tol, 100/tol);
-  }
-  else {
+    fill = box_overlap_with_object(pixel, *o1, tol, 100 / tol);
+  } else {
     pixel.low = vector3_minus(pixel.low, shiftby2);
     pixel.high = vector3_minus(pixel.high, shiftby2);
-    fill = 1 - box_overlap_with_object(pixel, *o2, tol, 100/tol);
+    fill = 1 - box_overlap_with_object(pixel, *o2, tol, 100 / tol);
   }
 
   {
@@ -446,11 +415,9 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     n0 = R[0][0] * n[0] + R[1][0] * n[1] + R[2][0] * n[2];
     n1 = R[0][1] * n[0] + R[1][1] * n[1] + R[2][1] * n[2];
     n2 = R[0][2] * n[0] + R[1][2] * n[1] + R[2][2] * n[2];
-    norm = sqrt(n0*n0 + n1*n1 + n2*n2);
+    norm = sqrt(n0 * n0 + n1 * n1 + n2 * n2);
 
-    if (norm == 0.0) {
-      return 0;
-    }
+    if (norm == 0.0) { return 0; }
 
     norm = 1.0 / norm;
     Rot[0][0] = n0 = n0 * norm;
@@ -461,14 +428,13 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
       Rot[0][2] = n1;
       Rot[1][2] = -n0;
       Rot[2][2] = 0;
-    }
-    else { /* n is ~ parallel to z direction, use (x x n) instead */
+    } else { /* n is ~ parallel to z direction, use (x x n) instead */
       Rot[0][2] = 0;
       Rot[1][2] = -n2;
       Rot[2][2] = n1;
     }
     { /* normalize second column */
-      double s = Rot[0][2]*Rot[0][2]+Rot[1][2]*Rot[1][2]+Rot[2][2]*Rot[2][2];
+      double s = Rot[0][2] * Rot[0][2] + Rot[1][2] * Rot[1][2] + Rot[2][2] * Rot[2][2];
       s = 1.0 / sqrt(s);
       Rot[0][2] *= s;
       Rot[1][2] *= s;
@@ -483,7 +449,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     maxwell_sym_matrix_rotate(&eps1, &eps1, Rot);
     maxwell_sym_matrix_rotate(&eps2, &eps2, Rot);
 
-#define AVG (fill * (EXPR(eps1)) + (1-fill) * (EXPR(eps2)))
+#define AVG (fill * (EXPR(eps1)) + (1 - fill) * (EXPR(eps2)))
 
 #define EXPR(eps) (-1 / eps.m00)
     delta.m00 = AVG;
@@ -506,31 +472,34 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
 #undef EXPR
 
 #ifdef WITH_HERMITIAN_EPSILON
-#  define EXPR(eps) (ESCALAR_IM(eps.m01) / eps.m00)
+#define EXPR(eps) (ESCALAR_IM(eps.m01) / eps.m00)
     ESCALAR_IM(delta.m01) = AVG;
-#  undef EXPR
-#  define EXPR(eps) (ESCALAR_IM(eps.m02) / eps.m00)
+#undef EXPR
+#define EXPR(eps) (ESCALAR_IM(eps.m02) / eps.m00)
     ESCALAR_IM(delta.m02) = AVG;
-#  undef EXPR
-#  define EXPR(eps) (ESCALAR_IM(eps.m12) - ESCALAR_MULT_CONJ_IM(eps.m02, eps.m01) / eps.m00)
+#undef EXPR
+#define EXPR(eps) (ESCALAR_IM(eps.m12) - ESCALAR_MULT_CONJ_IM(eps.m02, eps.m01) / eps.m00)
     ESCALAR_IM(delta.m12) = AVG;
-#  undef EXPR
+#undef EXPR
 #endif /* WITH_HERMITIAN_EPSILON */
 
-    meps->m00 = -1/delta.m00;
+    meps->m00 = -1 / delta.m00;
     meps->m11 = delta.m11 - ESCALAR_NORMSQR(delta.m01) / delta.m00;
     meps->m22 = delta.m22 - ESCALAR_NORMSQR(delta.m02) / delta.m00;
-    ASSIGN_ESCALAR(meps->m01, -ESCALAR_RE(delta.m01)/delta.m00,
-      -ESCALAR_IM(delta.m01)/delta.m00);
-    ASSIGN_ESCALAR(meps->m02, -ESCALAR_RE(delta.m02)/delta.m00,
-      -ESCALAR_IM(delta.m02)/delta.m00);
+    ASSIGN_ESCALAR(meps->m01, -ESCALAR_RE(delta.m01) / delta.m00,
+                   -ESCALAR_IM(delta.m01) / delta.m00);
+    ASSIGN_ESCALAR(meps->m02, -ESCALAR_RE(delta.m02) / delta.m00,
+                   -ESCALAR_IM(delta.m02) / delta.m00);
     ASSIGN_ESCALAR(meps->m12,
-      ESCALAR_RE(delta.m12)
-      - ESCALAR_MULT_CONJ_RE(delta.m02, delta.m01)/delta.m00,
-      ESCALAR_IM(delta.m12)
-      - ESCALAR_MULT_CONJ_IM(delta.m02, delta.m01)/delta.m00);
+                   ESCALAR_RE(delta.m12) - ESCALAR_MULT_CONJ_RE(delta.m02, delta.m01) / delta.m00,
+                   ESCALAR_IM(delta.m12) - ESCALAR_MULT_CONJ_IM(delta.m02, delta.m01) / delta.m00);
 
-#define SWAP(a,b) { double xxx = a; a = b; b = xxx; }
+#define SWAP(a, b)                                                                                 \
+  {                                                                                                \
+    double xxx = a;                                                                                \
+    a = b;                                                                                         \
+    b = xxx;                                                                                       \
+  }
     /* invert rotation matrix = transpose */
     SWAP(Rot[0][1], Rot[1][0]);
     SWAP(Rot[0][2], Rot[2][0]);
@@ -538,10 +507,10 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     maxwell_sym_matrix_rotate(meps, meps, Rot); /* rotate back */
 #undef SWAP
 
-#  ifdef DEBUG
+#ifdef DEBUG
     CHECK(negative_epsilon_ok || maxwell_sym_matrix_positive_definite(meps),
           "negative mean epsilon from Kottke algorithm");
-#  endif
+#endif
   }
   return 1;
 }
@@ -554,7 +523,7 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
 #ifndef WITH_HERMITIAN_EPSILON
   if (md->which_subclass == meep_geom::material_data::MATERIAL_USER ||
       md->which_subclass == meep_geom::material_data::MATERIAL_FILE) {
-      meep_geom::check_offdiag(&md->medium);
+    meep_geom::check_offdiag(&md->medium);
   }
 #endif
 
@@ -610,11 +579,9 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu_inv->m11 = -0.0;
         epsmu_inv->m22 = -0.0;
         break;
-      default:
-        meep::abort("Unknown material type");
+      default: meep::abort("Unknown material type");
     }
-  }
-  else {
+  } else {
     switch (md->which_subclass) {
       case meep_geom::material_data::MEDIUM:
       case meep_geom::material_data::MATERIAL_FILE:
@@ -666,25 +633,24 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         epsmu_inv->m12 = 0.0;
 #endif
         break;
-      default:
-        meep::abort("unknown material type");
+      default: meep::abort("unknown material type");
     }
   }
 }
 
 void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
   boolean inobject;
-  material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(p, geometry_tree, &inobject);
+  material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(
+      p, geometry_tree, &inobject);
   meep_geom::material_data *md = material;
 
-  switch(md->which_subclass) {
+  switch (md->which_subclass) {
     // material read from file: interpolate to get properties at r
     case meep_geom::material_data::MATERIAL_FILE:
       if (md->epsilon_data) {
         meep_geom::epsilon_file_material(md, p);
-      }
-      else {
-        material = (meep_geom::material_type) default_material;
+      } else {
+        material = (meep_geom::material_type)default_material;
       }
       return;
 
@@ -700,16 +666,12 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
 
     // position-independent material or metal: there is nothing to do
     case meep_geom::material_data::MEDIUM:
-    case meep_geom::material_data::PERFECT_METAL:
-      return;
-    default:
-      meep::abort("unknown material type");
-   }
+    case meep_geom::material_data::PERFECT_METAL: return;
+    default: meep::abort("unknown material type");
+  }
 }
 
-bool mode_solver::using_mu() {
-  return mdata && mdata->mu_inv != NULL;
-}
+bool mode_solver::using_mu() { return mdata && mdata->mu_inv != NULL; }
 
 void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
                        meep_geom::material_data *_default_material) {
@@ -721,9 +683,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
   n[1] = grid_size.y;
   n[2] = grid_size.z;
 
-  if (target_freq != 0.0) {
-    meep::master_printf("Target frequency is %g\n", target_freq);
-  }
+  if (target_freq != 0.0) { meep::master_printf("Target frequency is %g\n", target_freq); }
 
   int true_rank = n[2] > 1 ? 3 : (n[1] > 1 ? 2 : 1);
   if (true_rank < dimensions) {
@@ -732,12 +692,8 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
     meep::master_printf("WARNING: rank of grid is > dimensions.\n"
                         "         setting extra grid dims. to 1.\n");
     // force extra dims to be 1
-    if (dimensions <= 2) {
-      n[2] = 1;
-    }
-    if (dimensions <= 1) {
-      n[1] = 1;
-    }
+    if (dimensions <= 2) { n[2] = 1; }
+    if (dimensions <= 1) { n[1] = 1; }
   }
 
   meep::master_printf("Working in %d dimensions.\n", dimensions);
@@ -763,27 +719,21 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
         eigensolver_nwork + (mdata->mu_inv != NULL) == nwork_alloc) {
 
       have_old_fields = 1;
-    }
-    else {
+    } else {
       destroy_evectmatrix(H);
       for (int i = 0; i < nwork_alloc; ++i) {
         destroy_evectmatrix(W[i]);
       }
 
-      if (Hblock.data != H.data) {
-        destroy_evectmatrix(Hblock);
-      }
-      if (muinvH.data != H.data) {
-        destroy_evectmatrix(muinvH);
-      }
+      if (Hblock.data != H.data) { destroy_evectmatrix(Hblock); }
+      if (muinvH.data != H.data) { destroy_evectmatrix(muinvH); }
     }
     destroy_maxwell_target_data(mtdata);
     mtdata = NULL;
     destroy_maxwell_data(mdata);
     mdata = NULL;
     curfield_reset();
-  }
-  else {
+  } else {
     srand(time(NULL));
   }
 
@@ -796,17 +746,14 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
   }
 
   meep::master_printf("Creating Maxwell data...\n");
-  mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, block_size, NUM_FFT_BANDS);
+  mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, block_size,
+                              NUM_FFT_BANDS);
 
-  if (target_freq != 0.0) {
-    mtdata = create_maxwell_target_data(mdata, target_freq);
-  }
+  if (target_freq != 0.0) { mtdata = create_maxwell_target_data(mdata, target_freq); }
 
   init_epsilon(&geometry);
 
-  if (check_maxwell_dielectric(mdata, 0)) {
-    meep::abort("invalid dielectric function for MPB");
-  }
+  if (check_maxwell_dielectric(mdata, 0)) { meep::abort("invalid dielectric function for MPB"); }
 
   if (!have_old_fields) {
     meep::master_printf("Allocating fields...\n");
@@ -816,7 +763,6 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
 
     H = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
     nwork_alloc = eigensolver_nwork + (mdata->mu_inv != NULL);
-
 
     for (int i = 0; i < nwork_alloc; ++i) {
       W[i] = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
@@ -837,9 +783,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
 
   set_parity(p);
 
-  if (!have_old_fields || reset_fields) {
-    randomize_fields();
-  }
+  if (!have_old_fields || reset_fields) { randomize_fields(); }
 
   evectmatrix_flops = eigensolver_flops;
 }
@@ -880,9 +824,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
 
 #ifndef WITH_HERMITIAN_EPSILON
       meep_geom::medium_struct *mm;
-      if (meep_geom::is_medium(geometry->items[i].material, &mm)) {
-        meep_geom::check_offdiag(mm);
-      }
+      if (meep_geom::is_medium(geometry->items[i].material, &mm)) { meep_geom::check_offdiag(mm); }
 #endif
 
       display_geometric_object_info(5, geometry->items[i]);
@@ -924,7 +866,8 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   int tree_nobjects;
   geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
   meep::master_printf("Geometric object tree has depth %d and %d object nodes"
-                      " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry->num_items);
+                      " (vs. %d actual objects)\n",
+                      tree_depth, tree_nobjects, geometry->num_items);
 
   // restricted_tree = geometry_tree;
 
@@ -933,13 +876,13 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
 
 void mode_solver::reset_epsilon(geometric_object_list *geometry) {
   int mesh[3] = {
-    mesh_size,
-    (dimensions > 1) ? mesh_size : 1,
-    (dimensions > 2) ? mesh_size : 1,
+      mesh_size,
+      (dimensions > 1) ? mesh_size : 1,
+      (dimensions > 2) ? mesh_size : 1,
   };
 
   if (!epsilon_input_file.empty()) {
-      default_material = meep_geom::make_file_material(epsilon_input_file.c_str());
+    default_material = meep_geom::make_file_material(epsilon_input_file.c_str());
   }
 
   // TODO: support mu_input_file
@@ -961,14 +904,10 @@ void mode_solver::reset_epsilon(geometric_object_list *geometry) {
 
 bool mode_solver::has_mu(geometric_object_list *geometry) {
   // TODO: mu_file_func
-  if (material_has_mu(default_material) || force_mu) {
-    return true;
-  }
+  if (material_has_mu(default_material) || force_mu) { return true; }
 
   for (int i = 0; i < geometry->num_items; ++i) {
-    if (material_has_mu(geometry->items[i].material)) {
-      return true;
-    }
+    if (material_has_mu(geometry->items[i].material)) { return true; }
   }
   return false;
 }
@@ -981,26 +920,17 @@ bool mode_solver::material_has_mu(void *mt) {
     bool has_nonzero_mu_offdiag = false;
 
 #ifdef WITH_HERMITIAN_EPSILON
-    if (m->mu_offdiag.x.re != 0 ||
-        m->mu_offdiag.x.im != 0 ||
-        m->mu_offdiag.y.re != 0 ||
-        m->mu_offdiag.y.im != 0 ||
-        m->mu_offdiag.z.re != 0 ||
-        m->mu_offdiag.z.im != 0) {
+    if (m->mu_offdiag.x.re != 0 || m->mu_offdiag.x.im != 0 || m->mu_offdiag.y.re != 0 ||
+        m->mu_offdiag.y.im != 0 || m->mu_offdiag.z.re != 0 || m->mu_offdiag.z.im != 0) {
       has_nonzero_mu_offdiag = true;
     }
 #else
-    if (m->mu_offdiag.x.re != 0 ||
-        m->mu_offdiag.y.re != 0 ||
-        m->mu_offdiag.z.re != 0) {
+    if (m->mu_offdiag.x.re != 0 || m->mu_offdiag.y.re != 0 || m->mu_offdiag.z.re != 0) {
       has_nonzero_mu_offdiag = true;
     }
 #endif
 
-    if (m->mu_diag.x != 1 ||
-        m->mu_diag.y != 1 ||
-        m->mu_diag.z != 1 ||
-        has_nonzero_mu_offdiag) {
+    if (m->mu_diag.x != 1 || m->mu_diag.y != 1 || m->mu_diag.z != 1 || has_nonzero_mu_offdiag) {
       return true;
     }
   }
@@ -1014,9 +944,7 @@ void mode_solver::set_parity(integer p) {
     return;
   }
 
-  if (p == -1) {
-    p = last_parity < 0 ? NO_PARITY : last_parity;
-  }
+  if (p == -1) { p = last_parity < 0 ? NO_PARITY : last_parity; }
 
   set_maxwell_data_parity(mdata, p);
   if (mdata->parity != p) {
@@ -1026,7 +954,7 @@ void mode_solver::set_parity(integer p) {
   meep::master_printf("Solving for band polarization: %s.\n", parity_string(mdata));
 
   last_parity = p;
-  set_kpoint_index(0);  /* reset index */
+  set_kpoint_index(0); /* reset index */
 }
 
 void mode_solver::set_num_bands(int nb) {
@@ -1034,19 +962,13 @@ void mode_solver::set_num_bands(int nb) {
   freqs.resize(nb);
 }
 
-int mode_solver::get_kpoint_index() {
-  return kpoint_index;
-}
+int mode_solver::get_kpoint_index() { return kpoint_index; }
 
-void mode_solver::set_kpoint_index(int i) {
-  kpoint_index = i;
-}
+void mode_solver::set_kpoint_index(int i) { kpoint_index = i; }
 
 void mode_solver::randomize_fields() {
 
-  if (!mdata) {
-    return;
-  }
+  if (!mdata) { return; }
   meep::master_printf("Initializing fields to random numbers...\n");
 
   for (int i = 0; i < H.n * H.p; ++i) {
@@ -1058,9 +980,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   // if we get too close to singular k==0 point, just set k=0 exploit our
   // special handling of this k
-  if (vector3_norm(kvector) < 1e-10) {
-    kvector.x = kvector.y = kvector.z = 0;
-  }
+  if (vector3_norm(kvector) < 1e-10) { kvector.x = kvector.y = kvector.z = 0; }
 
   meep::master_printf("solve_kpoint (%g,%g,%g):\n", kvector.x, kvector.y, kvector.z);
 
@@ -1097,9 +1017,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   // TODO: Get flags from python
   int flags = EIGS_DEFAULT_FLAGS;
-  if (verbose) {
-   flags |= EIGS_VERBOSE;
-  }
+  if (verbose) { flags |= EIGS_VERBOSE; }
 
   // Constant (zero frequency) bands at k=0 are handled specially, so remove
   // them from the solutions for the eigensolver.
@@ -1112,8 +1030,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       }
     }
     evectmatrix_resize(&H, H.p - ib0, 1);
-  }
-  else {
+  } else {
     ib0 = 0; /* solve for all bands */
   }
 
@@ -1147,34 +1064,35 @@ void mode_solver::solve_kpoint(vector3 kvector) {
     meep::master_printf("Solving for bands %d to %d...\n", ib + 1, ib + Hblock.p);
 
     constraints = NULL;
-    constraints = evect_add_constraint(constraints, maxwell_parity_constraint, (void *) mdata);
+    constraints = evect_add_constraint(constraints, maxwell_parity_constraint, (void *)mdata);
 
     if (mdata->zero_k) {
-      constraints = evect_add_constraint(constraints, maxwell_zero_k_constraint, (void *) mdata);
+      constraints = evect_add_constraint(constraints, maxwell_zero_k_constraint, (void *)mdata);
     }
 
-    if (Hblock.data != H.data) {  /* initialize fields of block from H */
+    if (Hblock.data != H.data) { /* initialize fields of block from H */
       for (int in = 0; in < Hblock.n; ++in) {
         for (int ip = 0; ip < Hblock.p; ++ip) {
-          Hblock.data[in * Hblock.p + ip] = H.data[in * H.p + ip + (ib-ib0)];
+          Hblock.data[in * Hblock.p + ip] = H.data[in * H.p + ip + (ib - ib0)];
         }
       }
 
-      deflation.p = ib-ib0;
+      deflation.p = ib - ib0;
       if (deflation.p > 0) {
         if (deflation.BY.data != H.data) {
           evectmatrix_resize(&deflation.BY, deflation.p, 0);
-          maxwell_muinv_operator(H, deflation.BY, (void *) mdata, 1, deflation.BY);
+          maxwell_muinv_operator(H, deflation.BY, (void *)mdata, 1, deflation.BY);
         }
         constraints = evect_add_constraint(constraints, deflation_constraint, &deflation);
       }
     }
 
-    if (mtdata) {  /* solving for bands near a target frequency */
-      CHECK(mdata->mu_inv==NULL, "targeted solver doesn't handle mu");
+    if (mtdata) { /* solving for bands near a target frequency */
+      CHECK(mdata->mu_inv == NULL, "targeted solver doesn't handle mu");
 
       eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata, NULL, NULL,
-                  use_simple_preconditioner ? maxwell_target_preconditioner : maxwell_target_preconditioner2,
+                  use_simple_preconditioner ? maxwell_target_preconditioner
+                                            : maxwell_target_preconditioner2,
                   (void *)mtdata, evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
                   tolerance, &num_iters, flags);
 
@@ -1182,27 +1100,26 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       // get the true eigenvalues and eigenvectors
       CHECK(nwork_alloc >= 2, "not enough workspace");
       eigensolver_get_eigenvals(Hblock, eigvals.data() + ib, maxwell_operator, mdata, W[0], W[1]);
-    }
-    else {
-      eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
-                  mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
+    } else {
+      eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *)mdata,
+                  mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *)mdata,
                   use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
-                  (void *) mdata, evectconstraint_chain_func, (void *) constraints,
-                  W, nwork_alloc, tolerance, &num_iters, flags);
+                  (void *)mdata, evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
+                  tolerance, &num_iters, flags);
     }
 
-    if (Hblock.data != H.data) {  /* save solutions of current block */
+    if (Hblock.data != H.data) { /* save solutions of current block */
       for (int in = 0; in < Hblock.n; ++in) {
         for (int ip = 0; ip < Hblock.p; ++ip) {
-          H.data[in * H.p + ip + (ib-ib0)] = Hblock.data[in * Hblock.p + ip];
+          H.data[in * H.p + ip + (ib - ib0)] = Hblock.data[in * Hblock.p + ip];
         }
       }
     }
 
     evect_destroy_constraints(constraints);
 
-    meep::master_printf("Finished solving for bands %d to %d after %d iterations.\n",
-                        ib + 1, ib + Hblock.p, num_iters);
+    meep::master_printf("Finished solving for bands %d to %d after %d iterations.\n", ib + 1,
+                        ib + Hblock.p, num_iters);
 
     total_iters += num_iters * Hblock.p;
   }
@@ -1244,8 +1161,9 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   set_kpoint_index(kpoint_index + 1);
 
-  meep::master_printf("%sfreqs:, %d, %g, %g, %g, %g", parity_string(mdata), kpoint_index, (double)k[0],
-                      (double)k[1], (double)k[2], vector3_norm(matrix3x3_vector3_mult(Gm, kvector)));
+  meep::master_printf("%sfreqs:, %d, %g, %g, %g, %g", parity_string(mdata), kpoint_index,
+                      (double)k[0], (double)k[1], (double)k[2],
+                      vector3_norm(matrix3x3_vector3_mult(Gm, kvector)));
 
   for (int i = 0; i < num_bands; ++i) {
     freqs[i] = negative_epsilon_ok ? eigvals[i] : sqrt(eigvals[i]);
@@ -1270,8 +1188,8 @@ void mode_solver::get_epsilon() {
     return;
   }
 
-  curfield = (scalar_complex *) mdata->fft_data;
-  mpb_real *epsilon = (mpb_real *) curfield;
+  curfield = (scalar_complex *)mdata->fft_data;
+  mpb_real *epsilon = (mpb_real *)curfield;
   curfield_band = 0;
   curfield_type = epsilon_CURFIELD_TYPE;
 
@@ -1285,22 +1203,14 @@ void mode_solver::get_epsilon() {
   for (int i = 0; i < N; ++i) {
     if (mdata->eps_inv == NULL) {
       epsilon[i] = 1.0;
-    }
-    else {
+    } else {
       epsilon[i] = mean_medium_from_matrix(mdata->eps_inv + i);
     }
-    if (epsilon[i] < eps_low) {
-      eps_low = epsilon[i];
-    }
-    if (epsilon[i] > eps_high) {
-      eps_high = epsilon[i];
-    }
+    if (epsilon[i] < eps_low) { eps_low = epsilon[i]; }
+    if (epsilon[i] > eps_high) { eps_high = epsilon[i]; }
     eps_mean += epsilon[i];
-    eps_inv_mean += 1/epsilon[i];
-    if (epsilon[i] > 1.0001) {
-      ++fill_count;
-    }
-
+    eps_inv_mean += 1 / epsilon[i];
+    if (epsilon[i] > 1.0001) { ++fill_count; }
   }
 
   mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
@@ -1311,11 +1221,12 @@ void mode_solver::get_epsilon() {
 
   N = mdata->nx * mdata->ny * mdata->nz;
   eps_mean /= N;
-  eps_inv_mean = N/eps_inv_mean;
+  eps_inv_mean = N / eps_inv_mean;
 
-  meep::master_printf("epsilon: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n",
-                      eps_low, eps_high, eps_mean, eps_inv_mean, (100.0 * fill_count) / N,
-                      eps_high == eps_low ? 100.0 : 100.0 * (eps_mean-eps_low) / (eps_high-eps_low));
+  meep::master_printf("epsilon: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n", eps_low,
+                      eps_high, eps_mean, eps_inv_mean, (100.0 * fill_count) / N,
+                      eps_high == eps_low ? 100.0
+                                          : 100.0 * (eps_mean - eps_low) / (eps_high - eps_low));
 }
 
 /* get the mu function, and compute some statistics */
@@ -1331,8 +1242,8 @@ void mode_solver::get_mu() {
     return;
   }
 
-  curfield = (scalar_complex *) mdata->fft_data;
-  mpb_real *mu = (mpb_real *) curfield;
+  curfield = (scalar_complex *)mdata->fft_data;
+  mpb_real *mu = (mpb_real *)curfield;
   curfield_band = 0;
   curfield_type = mu_CURFIELD_TYPE;
 
@@ -1346,23 +1257,16 @@ void mode_solver::get_mu() {
   for (int i = 0; i < N; ++i) {
     if (mdata->mu_inv == NULL) {
       mu[i] = 1.0;
-    }
-    else {
+    } else {
       mu[i] = mean_medium_from_matrix(mdata->mu_inv + i);
     }
 
-    if (mu[i] < eps_low) {
-      eps_low = mu[i];
-    }
-    if (mu[i] > eps_high) {
-      eps_high = mu[i];
-    }
+    if (mu[i] < eps_low) { eps_low = mu[i]; }
+    if (mu[i] > eps_high) { eps_high = mu[i]; }
 
     eps_mean += mu[i];
-    mu_inv_mean += 1/mu[i];
-    if (mu[i] > 1.0001) {
-      ++fill_count;
-    }
+    mu_inv_mean += 1 / mu[i];
+    if (mu[i] > 1.0001) { ++fill_count; }
   }
 
   mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
@@ -1373,12 +1277,12 @@ void mode_solver::get_mu() {
 
   N = mdata->nx * mdata->ny * mdata->nz;
   eps_mean /= N;
-  mu_inv_mean = N/mu_inv_mean;
+  mu_inv_mean = N / mu_inv_mean;
 
-  meep::master_printf("mu: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n",
-                      eps_low, eps_high, eps_mean, mu_inv_mean, (100.0 * fill_count) / N,
-                      eps_high == eps_low ? 100.0 : 100.0 *
-                      (eps_mean-eps_low) / (eps_high-eps_low));
+  meep::master_printf("mu: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n", eps_low,
+                      eps_high, eps_mean, mu_inv_mean, (100.0 * fill_count) / N,
+                      eps_high == eps_low ? 100.0
+                                          : 100.0 * (eps_mean - eps_low) / (eps_high - eps_low));
 }
 
 void mode_solver::curfield_reset() {
@@ -1392,29 +1296,19 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
   int conj = 0, offset = 0;
 
   curfield_type = '-'; /* only used internally, for now */
-  mpb_real *epsilon = (mpb_real *) mdata->fft_data;
+  mpb_real *epsilon = (mpb_real *)mdata->fft_data;
   int N = mdata->fft_output_size;
 
   switch (c1 * 3 + c2) {
-    case 0:
-      offset = offsetof(symmetric_matrix, m00);
-      break;
-    case 1:
-      offset = offsetof(symmetric_matrix, m01);
-      break;
-    case 2:
-      offset = offsetof(symmetric_matrix, m02);
-      break;
+    case 0: offset = offsetof(symmetric_matrix, m00); break;
+    case 1: offset = offsetof(symmetric_matrix, m01); break;
+    case 2: offset = offsetof(symmetric_matrix, m02); break;
     case 3:
       offset = offsetof(symmetric_matrix, m01); /* = conj(m10) */
       conj = imag;
       break;
-    case 4:
-      offset = offsetof(symmetric_matrix, m11);
-      break;
-    case 5:
-      offset = offsetof(symmetric_matrix, m12);
-      break;
+    case 4: offset = offsetof(symmetric_matrix, m11); break;
+    case 5: offset = offsetof(symmetric_matrix, m12); break;
     case 6:
       offset = offsetof(symmetric_matrix, m02); /* = conj(m20) */
       conj = imag;
@@ -1423,37 +1317,28 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
       offset = offsetof(symmetric_matrix, m12); /* = conj(m21) */
       conj = imag;
       break;
-    case 8:
-      offset = offsetof(symmetric_matrix, m22);
-      break;
+    case 8: offset = offsetof(symmetric_matrix, m22); break;
   }
 
 #ifdef WITH_HERMITIAN_EPSILON
-  if (c1 != c2 && imag)
-    offset += offsetof(scalar_complex, im);
+  if (c1 != c2 && imag) offset += offsetof(scalar_complex, im);
 #endif
 
   for (int i = 0; i < N; ++i) {
     if (inv) {
-      epsilon[i] = *((mpb_real *) (((char *) &mdata->eps_inv[i]) + offset));
-    }
-    else {
+      epsilon[i] = *((mpb_real *)(((char *)&mdata->eps_inv[i]) + offset));
+    } else {
       symmetric_matrix eps;
       maxwell_sym_matrix_invert(&eps, &mdata->eps_inv[i]);
-      epsilon[i] = *((mpb_real *) (((char *) &eps) + offset));
+      epsilon[i] = *((mpb_real *)(((char *)&eps) + offset));
     }
-    if (conj)
-      epsilon[i] = -epsilon[i];
+    if (conj) epsilon[i] = -epsilon[i];
   }
 }
 
-std::vector<mpb_real> mode_solver::get_freqs() {
-  return freqs;
-}
+std::vector<mpb_real> mode_solver::get_freqs() { return freqs; }
 
-size_t mode_solver::get_field_size() {
-  return mdata ? mdata->fft_output_size * 3 : 0;
-}
+size_t mode_solver::get_field_size() { return mdata ? mdata->fft_output_size * 3 : 0; }
 
 void mode_solver::get_efield(int band) {
 
@@ -1490,8 +1375,7 @@ void mode_solver::get_dfield(int band) {
 
   if (mdata->mu_inv == NULL) {
     maxwell_compute_d_from_H(mdata, H, curfield, band - 1, 1);
-  }
-  else {
+  } else {
     evectmatrix_resize(&W[0], 1, 0);
     maxwell_compute_H_from_B(mdata, H, W[0], curfield, band - 1, 0, 1);
     maxwell_compute_d_from_H(mdata, W[0], curfield, 0, 1);
@@ -1511,8 +1395,7 @@ void mode_solver::get_dfield(int band) {
 
   if (freqs[band - 1] != 0.0) {
     scale = -1.0 / freqs[band - 1];
-  }
-  else
+  } else
     scale = -1.0; /* arbitrary */
 
   scale /= sqrt(vol);
@@ -1590,13 +1473,9 @@ void mode_solver::get_bfield(int band) {
   }
 }
 
-char mode_solver::get_curfield_type() {
-  return curfield_type;
-}
+char mode_solver::get_curfield_type() { return curfield_type; }
 
-void mode_solver::set_curfield_type(char t) {
-  curfield_type = t;
-}
+void mode_solver::set_curfield_type(char t) { curfield_type = t; }
 
 std::string mode_solver::get_parity_string() {
   std::string s(parity_string(mdata));
@@ -1606,15 +1485,9 @@ std::string mode_solver::get_parity_string() {
 std::vector<int> mode_solver::get_dims() {
   std::vector<int> dims;
 
-  if (mdata->nx > 1) {
-    dims.push_back(mdata->nx);
-  }
-  if (mdata->ny > 1) {
-    dims.push_back(mdata->ny);
-  }
-  if (mdata->nz > 1) {
-    dims.push_back(mdata->nz);
-  }
+  if (mdata->nx > 1) { dims.push_back(mdata->nx); }
+  if (mdata->ny > 1) { dims.push_back(mdata->ny); }
+  if (mdata->nz > 1) { dims.push_back(mdata->nz); }
 
   return dims;
 }
@@ -1625,25 +1498,15 @@ void mode_solver::set_grid_size(vector3 gs) {
   grid_size.z = gs.z;
 }
 
-int mode_solver::get_libctl_dimensions() {
-  return dimensions;
-}
+int mode_solver::get_libctl_dimensions() { return dimensions; }
 
-void mode_solver::set_libctl_dimensions(int val) {
-  dimensions = val;
-}
+void mode_solver::set_libctl_dimensions(int val) { dimensions = val; }
 
-bool mode_solver::get_libctl_ensure_periodicity() {
-  return ensure_periodicity;
-}
+bool mode_solver::get_libctl_ensure_periodicity() { return ensure_periodicity; }
 
-void mode_solver::set_libctl_ensure_periodicity(bool val) {
-  ensure_periodicity = val;
-}
+void mode_solver::set_libctl_ensure_periodicity(bool val) { ensure_periodicity = val; }
 
-void mode_solver::set_libctl_geometry_lattice(lattice val) {
-  geometry_lattice = val;
-}
+void mode_solver::set_libctl_geometry_lattice(lattice val) { geometry_lattice = val; }
 
 void mode_solver::get_curfield(double *data, int size) {
   mpb_real *p = (mpb_real *)curfield;
@@ -1682,7 +1545,7 @@ void mode_solver::set_curfield_cmplx(std::complex<mpb_real> *cdata, int size) {
 double mode_solver::compute_field_energy_internal(mpb_real comp_sum[6]) {
   mpb_real comp_sum2[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   mpb_real energy_sum = 0.0;
-  mpb_real *energy_density = (mpb_real *) curfield;
+  mpb_real *energy_density = (mpb_real *)curfield;
 
   int N = mdata->fft_output_size;
 
@@ -1693,29 +1556,28 @@ double mode_solver::compute_field_energy_internal(mpb_real comp_sum[6]) {
     /* energy is either |curfield|^2 / mu or |curfield|^2 / epsilon,
        depending upon whether it is B or D. */
     if (curfield_type == 'd') {
-      assign_symmatrix_vector(field, mdata->eps_inv[i], curfield+3*i);
-    }
-    else if (curfield_type == 'b' && mdata->mu_inv != NULL) {
-      assign_symmatrix_vector(field, mdata->mu_inv[i], curfield+3*i);
-    }
-    else {
-      field[0] = curfield[3*i];
-      field[1] = curfield[3*i+1];
-      field[2] = curfield[3*i+2];
+      assign_symmatrix_vector(field, mdata->eps_inv[i], curfield + 3 * i);
+    } else if (curfield_type == 'b' && mdata->mu_inv != NULL) {
+      assign_symmatrix_vector(field, mdata->mu_inv[i], curfield + 3 * i);
+    } else {
+      field[0] = curfield[3 * i];
+      field[1] = curfield[3 * i + 1];
+      field[2] = curfield[3 * i + 2];
     }
 
-    comp_sum2[0] += comp_sqr0 = field[0].re *   curfield[3*i].re;
-    comp_sum2[1] += comp_sqr1 = field[0].im *   curfield[3*i].im;
-    comp_sum2[2] += comp_sqr2 = field[1].re * curfield[3*i+1].re;
-    comp_sum2[3] += comp_sqr3 = field[1].im * curfield[3*i+1].im;
-    comp_sum2[4] += comp_sqr4 = field[2].re * curfield[3*i+2].re;
-    comp_sum2[5] += comp_sqr5 = field[2].im * curfield[3*i+2].im;
+    comp_sum2[0] += comp_sqr0 = field[0].re * curfield[3 * i].re;
+    comp_sum2[1] += comp_sqr1 = field[0].im * curfield[3 * i].im;
+    comp_sum2[2] += comp_sqr2 = field[1].re * curfield[3 * i + 1].re;
+    comp_sum2[3] += comp_sqr3 = field[1].im * curfield[3 * i + 1].im;
+    comp_sum2[4] += comp_sqr4 = field[2].re * curfield[3 * i + 2].re;
+    comp_sum2[5] += comp_sqr5 = field[2].im * curfield[3 * i + 2].im;
 
     /* Note: here, we write to energy_density[i]; this is
        safe, even though energy_density is aliased to curfield,
        since energy_density[i] is guaranteed to come at or before
        curfield[i] (which we are now done with). */
-    energy_sum += energy_density[i] = comp_sqr0+comp_sqr1+comp_sqr2+comp_sqr3+comp_sqr4+comp_sqr5;
+    energy_sum += energy_density[i] =
+        comp_sqr0 + comp_sqr1 + comp_sqr2 + comp_sqr3 + comp_sqr4 + comp_sqr5;
   }
 
   mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
@@ -1737,8 +1599,7 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   if (!curfield || !strchr("dhb", curfield_type)) {
     meep::master_fprintf(stderr, "The D or H field must be loaded first.\n");
     return retval;
-  }
-  else if (curfield_type == 'h' && mdata->mu_inv != NULL) {
+  } else if (curfield_type == 'h' && mdata->mu_inv != NULL) {
     meep::master_fprintf(stderr, "B, not H, must be loaded if we have mu.\n");
     return retval;
   }
@@ -1749,9 +1610,7 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   meep::master_printf("%c-energy-components:, %d, %d", curfield_type, kpoint_index, curfield_band);
   for (int i = 0; i < 6; ++i) {
     comp_sum[i] /= (energy_sum == 0 ? 1 : energy_sum);
-    if (i % 2 == 1) {
-         meep::master_printf(", %g", comp_sum[i] + comp_sum[i-1]);
-    }
+    if (i % 2 == 1) { meep::master_printf(", %g", comp_sum[i] + comp_sum[i - 1]); }
   }
   meep::master_printf("\n");
 
@@ -1768,34 +1627,30 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   return retval;
 }
 
-
 std::vector<mpb_real> mode_solver::get_output_k() {
   std::vector<mpb_real> output_k;
 
-  output_k.push_back(R[0][0]*mdata->current_k[0]
-                     + R[0][1]*mdata->current_k[1]
-                     + R[0][2]*mdata->current_k[2]);
+  output_k.push_back(R[0][0] * mdata->current_k[0] + R[0][1] * mdata->current_k[1] +
+                     R[0][2] * mdata->current_k[2]);
 
-  output_k.push_back(R[1][0]*mdata->current_k[0]
-                     + R[1][1]*mdata->current_k[1]
-                     + R[1][2]*mdata->current_k[2]);
+  output_k.push_back(R[1][0] * mdata->current_k[0] + R[1][1] * mdata->current_k[1] +
+                     R[1][2] * mdata->current_k[2]);
 
-  output_k.push_back(R[2][0]*mdata->current_k[0]
-                     + R[2][1]*mdata->current_k[1]
-                     + R[2][2]*mdata->current_k[2]);
+  output_k.push_back(R[2][0] * mdata->current_k[0] + R[2][1] * mdata->current_k[1] +
+                     R[2][2] * mdata->current_k[2]);
   return output_k;
 }
 
-mpb_real mode_solver::get_val(int ix, int iy, int iz, int nx, int ny, int nz,
-                              int last_dim_size, mpb_real *data, int stride, int conjugate) {
-// #ifdef HAVE_MPI
-//      CHECK(0, "get-*-point not yet implemented for MPI!");
-// #else
+mpb_real mode_solver::get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
+                              mpb_real *data, int stride, int conjugate) {
+  // #ifdef HAVE_MPI
+  //      CHECK(0, "get-*-point not yet implemented for MPI!");
+  // #else
   (void)nx;
   (void)last_dim_size;
   (void)conjugate;
   return data[(((ix * ny) + iy) * nz + iz) * stride];
-// #endif
+  // #endif
 }
 
 mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
@@ -1808,9 +1663,12 @@ mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim
   mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
   mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
 
-  rx = modf(p.x/latx + 0.5, &ipart); if (rx < 0) rx += 1;
-  ry = modf(p.y/laty + 0.5, &ipart); if (ry < 0) ry += 1;
-  rz = modf(p.z/latz + 0.5, &ipart); if (rz < 0) rz += 1;
+  rx = modf(p.x / latx + 0.5, &ipart);
+  if (rx < 0) rx += 1;
+  ry = modf(p.y / laty + 0.5, &ipart);
+  if (ry < 0) ry += 1;
+  rz = modf(p.z / latz + 0.5, &ipart);
+  if (rz < 0) rz += 1;
 
   /* get the point corresponding to r in the grid: */
   x = rx * nx;
@@ -1832,26 +1690,30 @@ mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim
   dy = fabs(dy);
   dz = fabs(dz);
 
-#define D(x,y,z) (get_val(x,y,z,nx,ny,nz,last_dim_size, data,stride,conjugate))
+#define D(x, y, z) (get_val(x, y, z, nx, ny, nz, last_dim_size, data, stride, conjugate))
 
-  return(((D(x,y,z)*(1.0-dx) + D(x2,y,z)*dx) * (1.0-dy) +
-          (D(x,y2,z)*(1.0-dx) + D(x2,y2,z)*dx) * dy) * (1.0-dz) +
-         ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
-          (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
+  return (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
+           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
+              (1.0 - dz) +
+          ((D(x, y, z2) * (1.0 - dx) + D(x2, y, z2) * dx) * (1.0 - dy) +
+           (D(x, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
+              dz);
 
 #undef D
 }
 
-scalar_complex mode_solver::interp_cval(vector3 p, int nx, int ny, int nz,
-                                        int last_dim_size, mpb_real *data, int stride) {
+scalar_complex mode_solver::interp_cval(vector3 p, int nx, int ny, int nz, int last_dim_size,
+                                        mpb_real *data, int stride) {
   scalar_complex cval;
-  cval.re = interp_val(p, nx,ny,nz,last_dim_size, data, stride, 0);
-  cval.im = interp_val(p, nx,ny,nz,last_dim_size,data + 1, stride, 1);
+  cval.re = interp_val(p, nx, ny, nz, last_dim_size, data, stride, 0);
+  cval.im = interp_val(p, nx, ny, nz, last_dim_size, data + 1, stride, 1);
   return cval;
 }
 
-#define f_interp_val(p,f,data,stride,conj) interp_val(p,f->nx,f->ny,f->nz,f->last_dim_size,data,stride,conj)
-#define f_interp_cval(p,f,data,stride) interp_cval(p,f->nx,f->ny,f->nz,f->last_dim_size,data,stride)
+#define f_interp_val(p, f, data, stride, conj)                                                     \
+  interp_val(p, f->nx, f->ny, f->nz, f->last_dim_size, data, stride, conj)
+#define f_interp_cval(p, f, data, stride)                                                          \
+  interp_cval(p, f->nx, f->ny, f->nz, f->last_dim_size, data, stride)
 
 symmetric_matrix mode_solver::interp_eps_inv(vector3 p) {
   int stride = sizeof(symmetric_matrix) / sizeof(mpb_real);
@@ -1883,22 +1745,20 @@ cmatrix3x3 mode_solver::get_epsilon_inverse_tensor_point(vector3 p) {
   eps_inv = interp_eps_inv(p);
 
 #ifdef WITH_HERMITIAN_EPSILON
-  return make_hermitian_cmatrix3x3(eps_inv.m00,eps_inv.m11,eps_inv.m22,
-                                   cscalar2cnumber(eps_inv.m01),
-                                   cscalar2cnumber(eps_inv.m02),
+  return make_hermitian_cmatrix3x3(eps_inv.m00, eps_inv.m11, eps_inv.m22,
+                                   cscalar2cnumber(eps_inv.m01), cscalar2cnumber(eps_inv.m02),
                                    cscalar2cnumber(eps_inv.m12));
 #else
-  return make_hermitian_cmatrix3x3(eps_inv.m00,eps_inv.m11,eps_inv.m22,
-                                   make_cnumber(eps_inv.m01,0),
-                                   make_cnumber(eps_inv.m02,0),
-                                   make_cnumber(eps_inv.m12,0));
+  return make_hermitian_cmatrix3x3(eps_inv.m00, eps_inv.m11, eps_inv.m22,
+                                   make_cnumber(eps_inv.m01, 0), make_cnumber(eps_inv.m02, 0),
+                                   make_cnumber(eps_inv.m12, 0));
 #endif
 }
 
 mpb_real mode_solver::get_energy_point(vector3 p) {
   CHECK(curfield && strchr("DHBR", curfield_type),
         "compute-field-energy must be called before get-energy-point");
-  return f_interp_val(p, mdata, (mpb_real *) curfield, 1, 0);
+  return f_interp_val(p, mdata, (mpb_real *)curfield, 1, 0);
 }
 
 cvector3 mode_solver::get_bloch_field_point(vector3 p) {
@@ -1921,7 +1781,7 @@ cvector3 mode_solver::get_field_point(vector3 p) {
   cvector3 F;
 
   CHECK(curfield && strchr("dhbecv", curfield_type),
-       "field must be must be loaded before get-*field*-point");
+        "field must be must be loaded before get-*field*-point");
   field[0] = f_interp_cval(p, mdata, &curfield[0].re, 6);
   field[1] = f_interp_cval(p, mdata, &curfield[1].re, 6);
   field[2] = f_interp_cval(p, mdata, &curfield[2].re, 6);
@@ -1931,8 +1791,7 @@ cvector3 mode_solver::get_field_point(vector3 p) {
     mpb_real laty = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
     mpb_real latz = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
 
-    double phase_phi = TWOPI * (cur_kvector.x * (p.x / latx) +
-                                cur_kvector.y * (p.y / laty) +
+    double phase_phi = TWOPI * (cur_kvector.x * (p.x / latx) + cur_kvector.y * (p.y / laty) +
                                 cur_kvector.z * (p.z / latz));
 
     CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
@@ -1952,7 +1811,7 @@ void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
 
   std::vector<mpb_real> kvector = get_output_k();
 
-  scalar_complex *data = cdata ? (scalar_complex*)cdata : (scalar_complex*)curfield;
+  scalar_complex *data = cdata ? (scalar_complex *)cdata : (scalar_complex *)curfield;
 
   int dims[] = {mdata->nx, mdata->ny, mdata->nz};
   int local_dims[] = {mdata->local_nx, mdata->ny, mdata->nz};
@@ -1996,7 +1855,7 @@ void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
       py.im = px.re * im + px.im * re;
 
       for (int k = 0; k < local_dims[2]; ++k) {
-        int ijk = ((i*local_dims[1] + j)*local_dims[2] + k)*3;
+        int ijk = ((i * local_dims[1] + j) * local_dims[2] + k) * 3;
         mpb_real p_re, p_im;
         mpb_real re = phasez[k].re, im = phasez[k].im;
 
@@ -2005,7 +1864,8 @@ void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
 
         for (int component = 0; component < 3; ++component) {
           int ijkc = ijk + component;
-          re = data[ijkc].re; im = data[ijkc].im;
+          re = data[ijkc].re;
+          im = data[ijkc].im;
           data[ijkc].re = re * p_re - im * p_im;
           data[ijkc].im = im * p_re + re * p_im;
         }
@@ -2015,11 +1875,11 @@ void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
 }
 
 // Replace the current field with its scalar divergence; only works for Bloch fields
-void mode_solver::compute_field_divergence()
-{
-  scalar *field = (scalar *) curfield;
-  scalar *field2 = mdata->fft_data == mdata->fft_data2 ? field :
-    (field == mdata->fft_data ? mdata->fft_data2 : mdata->fft_data);
+void mode_solver::compute_field_divergence() {
+  scalar *field = (scalar *)curfield;
+  scalar *field2 = mdata->fft_data == mdata->fft_data2
+                       ? field
+                       : (field == mdata->fft_data ? mdata->fft_data2 : mdata->fft_data);
   mpb_real scale;
 
   if (!curfield || !strchr("dhbec", curfield_type)) {
@@ -2036,13 +1896,14 @@ void mode_solver::compute_field_divergence()
       int ij = i * mdata->last_dim_size + j;
       k_data cur_k = mdata->k_plus_G[ij];
       /* k+G = |k+G| (m x n) */
-      mpb_real kx = cur_k.kmag * (cur_k.my*cur_k.nz-cur_k.mz*cur_k.ny);
-      mpb_real ky = cur_k.kmag * (cur_k.mz*cur_k.nx-cur_k.mx*cur_k.nz);
-      mpb_real kz = cur_k.kmag * (cur_k.mx*cur_k.ny-cur_k.my*cur_k.nz);
-      ASSIGN_SCALAR(field2[ij], SCALAR_RE(field2[3*ij+0]) * kx +
-                    SCALAR_RE(field2[3*ij+1]) * ky + SCALAR_RE(field2[3*ij+2]) * kz,
-                    SCALAR_IM(field2[3*ij+0]) * kx + SCALAR_IM(field2[3*ij+1]) * ky +
-                    SCALAR_IM(field2[3*ij+2]) * kz);
+      mpb_real kx = cur_k.kmag * (cur_k.my * cur_k.nz - cur_k.mz * cur_k.ny);
+      mpb_real ky = cur_k.kmag * (cur_k.mz * cur_k.nx - cur_k.mx * cur_k.nz);
+      mpb_real kz = cur_k.kmag * (cur_k.mx * cur_k.ny - cur_k.my * cur_k.nz);
+      ASSIGN_SCALAR(field2[ij],
+                    SCALAR_RE(field2[3 * ij + 0]) * kx + SCALAR_RE(field2[3 * ij + 1]) * ky +
+                        SCALAR_RE(field2[3 * ij + 2]) * kz,
+                    SCALAR_IM(field2[3 * ij + 0]) * kx + SCALAR_IM(field2[3 * ij + 1]) * ky +
+                        SCALAR_IM(field2[3 * ij + 2]) * kz);
     }
   }
 
@@ -2077,9 +1938,8 @@ void mode_solver::compute_field_divergence()
    is already fixed, to within a sign, by the choice to make the Fourier
    transform purely real.  So, in that case we simply pick a sign, in
    a manner similar to (2) and (3) above. */
-void mode_solver::fix_field_phase()
-{
-  mpb_real sq_sum2[2] = {0,0};
+void mode_solver::fix_field_phase() {
+  mpb_real sq_sum2[2] = {0, 0};
   mpb_real sq_sum[2];
   mpb_real maxabs = 0.0;
 
@@ -2102,8 +1962,8 @@ void mode_solver::fix_field_phase()
   for (i = 0; i < N; ++i) {
     mpb_real a = curfield[i].re;
     mpb_real b = curfield[i].im;
-    sq_sum2[0] += a*a - b*b;
-    sq_sum2[1] += 2*a*b;
+    sq_sum2[0] += a * a - b * b;
+    sq_sum2[1] += 2 * a * b;
   }
   mpi_allreduce(sq_sum2, sq_sum, 2, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
 
@@ -2131,9 +1991,7 @@ void mode_solver::fix_field_phase()
   for (i = 0; i < N; ++i) {
     mpb_real r = fabs(curfield[i].re * phase.re - curfield[i].im * phase.im);
 
-    if (r > maxabs) {
-      maxabs = r;
-    }
+    if (r > maxabs) { maxabs = r; }
   }
 
   mpi_allreduce_1(&maxabs, mpb_real, SCALAR_MPI_TYPE, MPI_MAX, mpb_comm);
@@ -2142,9 +2000,9 @@ void mode_solver::fix_field_phase()
     mpb_real r = curfield[i].re * phase.re - curfield[i].im * phase.im;
 
     if (fabs(r) >= 0.5 * maxabs) {
-         maxabs_index = i;
-         maxabs_sign = r < 0 ? -1 : 1;
-         break;
+      maxabs_index = i;
+      maxabs_sign = r < 0 ? -1 : 1;
+      break;
     }
   }
 
@@ -2155,17 +2013,22 @@ void mode_solver::fix_field_phase()
   {
     /* compute maximum index and corresponding sign over all the
        processors, using the MPI_MAXLOC reduction operation: */
-    struct twoint_struct {int i; int s;} x;
-    x.i = maxabs_index; x.s = maxabs_sign;
+    struct twoint_struct {
+      int i;
+      int s;
+    } x;
+    x.i = maxabs_index;
+    x.s = maxabs_sign;
     mpi_allreduce_1(&x, struct twoint_struct, MPI_2INT, MPI_MAXLOC, mpb_comm);
-    maxabs_index = x.i; maxabs_sign = x.s;
+    maxabs_index = x.i;
+    maxabs_sign = x.s;
   }
 
-  ASSIGN_SCALAR(phase, SCALAR_RE(phase)*maxabs_sign, SCALAR_IM(phase)*maxabs_sign);
+  ASSIGN_SCALAR(phase, SCALAR_RE(phase) * maxabs_sign, SCALAR_IM(phase) * maxabs_sign);
 
   meep::master_printf("Fixing %c-field (band %d) phase by %g + %gi; "
-                      "max ampl. = %g\n", curfield_type, curfield_band,
-                      SCALAR_RE(phase), SCALAR_IM(phase), maxabs);
+                      "max ampl. = %g\n",
+                      curfield_type, curfield_band, SCALAR_RE(phase), SCALAR_IM(phase), maxabs);
 
   /* Now, multiply everything by this phase, *including* the
      stored "raw" eigenvector in H, so that any future fields
@@ -2173,22 +2036,20 @@ void mode_solver::fix_field_phase()
   for (i = 0; i < N; ++i) {
     mpb_real a = curfield[i].re;
     mpb_real b = curfield[i].im;
-    curfield[i].re = a*SCALAR_RE(phase) - b*SCALAR_IM(phase);
-    curfield[i].im = a*SCALAR_IM(phase) + b*SCALAR_RE(phase);
+    curfield[i].re = a * SCALAR_RE(phase) - b * SCALAR_IM(phase);
+    curfield[i].im = a * SCALAR_IM(phase) + b * SCALAR_RE(phase);
   }
   for (int i = 0; i < H.n; ++i) {
-    mpb_real bbbb_re = H.data[i*H.p + curfield_band - 1].re;
-    mpb_real bbbb_im = H.data[i*H.p + curfield_band - 1].im;
+    mpb_real bbbb_re = H.data[i * H.p + curfield_band - 1].re;
+    mpb_real bbbb_im = H.data[i * H.p + curfield_band - 1].im;
     mpb_real cccc_re = phase.re;
     mpb_real cccc_im = phase.im;
-    H.data[i*H.p + curfield_band - 1].re = bbbb_re * cccc_re - bbbb_im * cccc_im;
-    H.data[i*H.p + curfield_band - 1].im = bbbb_re * cccc_im + bbbb_im * cccc_re;
+    H.data[i * H.p + curfield_band - 1].re = bbbb_re * cccc_re - bbbb_im * cccc_im;
+    H.data[i * H.p + curfield_band - 1].im = bbbb_re * cccc_im + bbbb_im * cccc_re;
   }
 }
 
-void mode_solver::get_lattice(double data[3][3]) {
-  matrix3x3_to_arr(data, Rm);
-}
+void mode_solver::get_lattice(double data[3][3]) { matrix3x3_to_arr(data, Rm); }
 
 std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {
   std::vector<int> res(3);
@@ -2220,13 +2081,9 @@ void mode_solver::set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, i
   curfield_reset();
 }
 
-double mode_solver::get_eigensolver_flops() {
-  return eigensolver_flops;
-}
+double mode_solver::get_eigensolver_flops() { return eigensolver_flops; }
 
-int mode_solver::get_iterations() {
-  return iterations;
-}
+int mode_solver::get_iterations() { return iterations; }
 
 std::vector<mpb_real> mode_solver::compute_zparities() {
   std::vector<mpb_real> z_parity(num_bands);
@@ -2286,7 +2143,7 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
       evectmatrix_resize(&W[0], num_bands - ib, 0);
       evectmatrix_resize(&Hblock, num_bands - ib, 0);
     }
-    maxwell_compute_H_from_B(mdata, H, Hblock, (scalar_complex *) mdata->fft_data, ib, 0, Hblock.p);
+    maxwell_compute_H_from_B(mdata, H, Hblock, (scalar_complex *)mdata->fft_data, ib, 0, Hblock.p);
     maxwell_ucross_op(Hblock, W[0], mdata, u);
     evectmatrix_XtY_diag_real(Hblock, W[0], gv_scratch.data(), gv_scratch.data() + group_v.size());
     {
@@ -2311,9 +2168,8 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
 
   for (int i = 0; i < num_bands; ++i) {
     if (freqs[i] == 0) { /* v is undefined in this case */
-         group_v[i] = 0.0;  /* just set to zero */
-    }
-    else {
+      group_v[i] = 0.0;  /* just set to zero */
+    } else {
       group_v[i] /= negative_epsilon_ok ? sqrt(fabs(freqs[i])) : freqs[i];
     }
   }
@@ -2350,7 +2206,7 @@ mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
   CHECK(nwork_alloc > 1, "eigensolver-nwork is too small");
   evectmatrix_resize(&W[1], 1, 0);
 
-  maxwell_compute_H_from_B(mdata, H, W[1], (scalar_complex *) mdata->fft_data, ib, 0, 1);
+  maxwell_compute_H_from_B(mdata, H, W[1], (scalar_complex *)mdata->fft_data, ib, 0, 1);
   maxwell_ucross_op(W[1], W[0], mdata, u);
   evectmatrix_XtY_diag_real(W[1], W[0], &group_v, &scratch);
 
@@ -2358,10 +2214,9 @@ mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
   evectmatrix_resize(&W[1], W[1].alloc_p, 0);
   evectmatrix_resize(&W[0], W[0].alloc_p, 0);
 
-  if (freqs[ib] == 0) {  /* v is undefined in this case */
-    group_v = 0.0;  /* just set to zero */
-  }
-  else {
+  if (freqs[ib] == 0) { /* v is undefined in this case */
+    group_v = 0.0;      /* just set to zero */
+  } else {
     group_v /= negative_epsilon_ok ? sqrt(fabs(freqs[ib])) : freqs[ib];
   }
   return group_v;
@@ -2375,15 +2230,15 @@ vector3 mode_solver::compute_1_group_velocity(int b) {
   d.x = 1;
   d.y = 0;
   d.z = 0;
-  v.x = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  v.x = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT, d), b);
   d.y = 1;
   d.x = 0;
   d.z = 0;
-  v.y = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  v.y = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT, d), b);
   d.z = 1;
   d.y = 0;
   d.x = 0;
-  v.z = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  v.z = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT, d), b);
 
   return v;
 }
@@ -2392,14 +2247,13 @@ vector3 mode_solver::compute_1_group_velocity(int b) {
    frequency with respect to k in reciprocal coords ... this is useful
    for band optimization. */
 vector3 mode_solver::compute_1_group_velocity_reciprocal(int b) {
-  return matrix3x3_vector3_mult(matrix3x3_transpose(Gm),
-                                compute_1_group_velocity(b));
+  return matrix3x3_vector3_mult(matrix3x3_transpose(Gm), compute_1_group_velocity(b));
 }
 
 /* compute the fraction of the field energy that is located in the
    given range of dielectric constants: */
 mpb_real mode_solver::compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high) {
-  mpb_real *energy = (mpb_real *) curfield;
+  mpb_real *energy = (mpb_real *)curfield;
   mpb_real epsilon = 0.0;
   mpb_real energy_sum = 0.0;
 
@@ -2411,10 +2265,8 @@ mpb_real mode_solver::compute_energy_in_dielectric(mpb_real eps_low, mpb_real ep
   int N = mdata->fft_output_size;
 
   for (int i = 0; i < N; ++i) {
-    epsilon = mean_medium_from_matrix(mdata->eps_inv +i);
-    if (epsilon >= eps_low && epsilon <= eps_high) {
-      energy_sum += energy[i];
-    }
+    epsilon = mean_medium_from_matrix(mdata->eps_inv + i);
+    if (epsilon >= eps_low && epsilon <= eps_high) { energy_sum += energy[i]; }
   }
   mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
   energy_sum *= vol / H.N;
@@ -2451,39 +2303,41 @@ double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
   LOOP_XYZ(mdata) {
     vector3 p;
     int n;
-    p.x = i1 * s1 - c1; p.y = i2 * s2 - c2; p.z = i3 * s3 - c3;
+    p.x = i1 * s1 - c1;
+    p.y = i2 * s2 - c2;
+    p.z = i3 * s3 - c3;
     for (n = objects.num_items - 1; n >= 0; --n) {
       if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
         // TODO:
-        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
+        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass ==
+        // MATERIAL_TYPE_SELF) {
         //   break; /* treat as a "nothing" object */
         // }
         energy_sum += energy[xyz_index];
         break;
       }
     }
-  }}}
+  }
+}
+} // namespace py_mpb
 
-  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
-  energy_sum *= vol / H.N;
-  return energy_sum;
+mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+energy_sum *= vol / H.N;
+return energy_sum;
 }
 
 cnumber mode_solver::compute_field_integral(field_integral_func field_func,
-                                            field_integral_energy_func energy_func,
-                                            void *py_func) {
-  mpb_real *energy = (mpb_real *) curfield;
-  cnumber integral = {0,0};
-  vector3 kvector = {0,0,0};
+                                            field_integral_energy_func energy_func, void *py_func) {
+  mpb_real *energy = (mpb_real *)curfield;
+  cnumber integral = {0, 0};
+  vector3 kvector = {0, 0, 0};
 
   if (!curfield || !strchr("dhbeDHBRcv", curfield_type)) {
     meep::master_fprintf(stderr, "The D or H energy/field must be loaded first.\n");
     return integral;
   }
 
-  if (curfield_type != 'v') {
-    kvector = cur_kvector;
-  }
+  if (curfield_type != 'v') { kvector = cur_kvector; }
 
   int integrate_energy = strchr("DHBR", curfield_type) != NULL;
 
@@ -2511,44 +2365,42 @@ cnumber mode_solver::compute_field_integral(field_integral_func field_func,
     p.z = i3 * s3 - c3;
 
     if (integrate_energy) {
-        integral.re += energy_func(energy[xyz_index], epsilon, p, py_func);
-    }
-    else {
-      double phase_phi = TWOPI *
-        (kvector.x * (p.x / latx) +
-        kvector.y * (p.y / laty) +
-        kvector.z * (p.z / latz));
+      integral.re += energy_func(energy[xyz_index], epsilon, p, py_func);
+    } else {
+      double phase_phi =
+          TWOPI * (kvector.x * (p.x / latx) + kvector.y * (p.y / laty) + kvector.z * (p.z / latz));
 
       scalar_complex phase;
       CASSIGN_SCALAR(phase, cos(phase_phi), sin(phase_phi));
 
       cvector3 F;
-      CASSIGN_MULT_RE(F.x.re, curfield[3*xyz_index+0], phase);
-      CASSIGN_MULT_IM(F.x.im, curfield[3*xyz_index+0], phase);
-      CASSIGN_MULT_RE(F.y.re, curfield[3*xyz_index+1], phase);
-      CASSIGN_MULT_IM(F.y.im, curfield[3*xyz_index+1], phase);
-      CASSIGN_MULT_RE(F.z.re, curfield[3*xyz_index+2], phase);
-      CASSIGN_MULT_IM(F.z.im, curfield[3*xyz_index+2], phase);
+      CASSIGN_MULT_RE(F.x.re, curfield[3 * xyz_index + 0], phase);
+      CASSIGN_MULT_IM(F.x.im, curfield[3 * xyz_index + 0], phase);
+      CASSIGN_MULT_RE(F.y.re, curfield[3 * xyz_index + 1], phase);
+      CASSIGN_MULT_IM(F.y.im, curfield[3 * xyz_index + 1], phase);
+      CASSIGN_MULT_RE(F.z.re, curfield[3 * xyz_index + 2], phase);
+      CASSIGN_MULT_IM(F.z.im, curfield[3 * xyz_index + 2], phase);
 
       cnumber integrand = field_func(F, epsilon, p, py_func);
 
       integral.re += integrand.re;
       integral.im += integrand.im;
     }
-  }}}
-
-  integral.re *= vol / H.N;
-  integral.im *= vol / H.N;
-  {
-    cnumber integral_sum;
-    mpi_allreduce(&integral, &integral_sum, 2, number, MPI_DOUBLE, MPI_SUM, mpb_comm);
-    return integral_sum;
   }
+}
+}
+
+integral.re *= vol / H.N;
+integral.im *= vol / H.N;
+{
+  cnumber integral_sum;
+  mpi_allreduce(&integral, &integral_sum, 2, number, MPI_DOUBLE, MPI_SUM, mpb_comm);
+  return integral_sum;
+}
 }
 
 number mode_solver::compute_energy_integral(field_integral_func field_func,
-                                            field_integral_energy_func energy_func,
-                                            void *py_func) {
+                                            field_integral_energy_func energy_func, void *py_func) {
   if (!curfield || !strchr("DHBR", curfield_type)) {
     meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
     return 0.0;
@@ -2558,7 +2410,7 @@ number mode_solver::compute_energy_integral(field_integral_func field_func,
 }
 
 vector3 mode_solver::get_dominant_planewave(int band) {
-  double kdom[3] = {0,0,0};
+  double kdom[3] = {0, 0, 0};
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
   maxwell_dominant_planewave(mdata, H, band, kdom);
 #endif
@@ -2573,35 +2425,40 @@ vector3 mode_solver::get_dominant_planewave(int band) {
    below, because x may start out as -0 or -1e-23 or something so that
    it is < 0 but x + 1.0 == 1.0, thanks to the wonders of floating point.
    (This has actually happened, on an Alpha.) */
-#define MODF_POSITIVE(x, xi) { \
-  x=modf(x, &xi); \
-  if (x < 0) { x += 1.0; if (x >= 1.0) x = 0; else xi -= 1.0; } \
-}
+#define MODF_POSITIVE(x, xi)                                                                       \
+  {                                                                                                \
+    x = modf(x, &xi);                                                                              \
+    if (x < 0) {                                                                                   \
+      x += 1.0;                                                                                    \
+      if (x >= 1.0)                                                                                \
+        x = 0;                                                                                     \
+      else                                                                                         \
+        xi -= 1.0;                                                                                 \
+    }                                                                                              \
+  }
 
-#define ADJ_POINT(i1, i2, nx, dx, xi, xi2) { \
-  if (dx >= 0.0) { \
-    i2 = i1 + 1; \
-    if (i2 >= nx) { \
-      i2 -= nx; \
-      xi2 = xi + 1.0; \
-    } \
-    else      \
-      xi2 = xi; \
-    } \
-  else {       \
-    i2 = i1 - 1; \
-    if (i2 < 0) { \
-      i2 += nx; \
-      xi2 = xi - 1.0; \
-    } \
-    else        \
-       xi2 = xi; \
-    dx = -dx; \
-  } \
-}
+#define ADJ_POINT(i1, i2, nx, dx, xi, xi2)                                                         \
+  {                                                                                                \
+    if (dx >= 0.0) {                                                                               \
+      i2 = i1 + 1;                                                                                 \
+      if (i2 >= nx) {                                                                              \
+        i2 -= nx;                                                                                  \
+        xi2 = xi + 1.0;                                                                            \
+      } else                                                                                       \
+        xi2 = xi;                                                                                  \
+    } else {                                                                                       \
+      i2 = i1 - 1;                                                                                 \
+      if (i2 < 0) {                                                                                \
+        i2 += nx;                                                                                  \
+        xi2 = xi - 1.0;                                                                            \
+      } else                                                                                       \
+        xi2 = xi;                                                                                  \
+      dx = -dx;                                                                                    \
+    }                                                                                              \
+  }
 
-#define MAX2(a,b) ((a) >= (b) ? (a) : (b))
-#define MIN2(a,b) ((a) < (b) ? (a) : (b))
+#define MAX2(a, b) ((a) >= (b) ? (a) : (b))
+#define MIN2(a, b) ((a) < (b) ? (a) : (b))
 
 void add_cmplx_times_phase(mpb_real *sum_re, mpb_real *sum_im, mpb_real d_re, mpb_real d_im,
                            double ix, double iy, double iz, mpb_real *s, mpb_real scale_by) {
@@ -2618,10 +2475,10 @@ void add_cmplx_times_phase(mpb_real *sum_re, mpb_real *sum_im, mpb_real d_re, mp
   *sum_im += (d_re * p_im + d_im * p_re) * scale_by;
 }
 
-void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
-              int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
-              int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
-              bool pick_nearest, bool verbose, bool multiply_bloch_phase) {
+void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im, int n_in[3],
+              mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im, int size_out_im,
+              int n_out[3], matrix3x3 coord_map, mpb_real *kvector, bool pick_nearest, bool verbose,
+              bool multiply_bloch_phase) {
   (void)size_in_re;
   (void)size_in_im;
   (void)size_out_re;
@@ -2647,145 +2504,116 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
 
   /* Compute shift so that the origin of the output cell
      is mapped to the origin of the original primitive cell: */
-  shiftx = 0.5 - (coord_map.c0.x*0.5*n_out[0] +
-           coord_map.c1.x*0.5*n_out[1] +
-           coord_map.c2.x*0.5*n_out[2]);
-  shifty = 0.5 - (coord_map.c0.y*0.5*n_out[0] +
-           coord_map.c1.y*0.5*n_out[1] +
-           coord_map.c2.y*0.5*n_out[2]);
-  shiftz = 0.5 - (coord_map.c0.z*0.5*n_out[0] +
-           coord_map.c1.z*0.5*n_out[1] +
-           coord_map.c2.z*0.5*n_out[2]);
+  shiftx = 0.5 - (coord_map.c0.x * 0.5 * n_out[0] + coord_map.c1.x * 0.5 * n_out[1] +
+                  coord_map.c2.x * 0.5 * n_out[2]);
+  shifty = 0.5 - (coord_map.c0.y * 0.5 * n_out[0] + coord_map.c1.y * 0.5 * n_out[1] +
+                  coord_map.c2.y * 0.5 * n_out[2]);
+  shiftz = 0.5 - (coord_map.c0.z * 0.5 * n_out[0] + coord_map.c1.z * 0.5 * n_out[1] +
+                  coord_map.c2.z * 0.5 * n_out[2]);
 
   for (int i = 0; i < n_out[0]; ++i)
     for (int j = 0; j < n_out[1]; ++j)
-       for (int k = 0; k < n_out[2]; ++k) {
-         mpb_real x, y, z;
-         double xi, yi, zi, xi2, yi2, zi2;
-         double dx, dy, dz, mdx, mdy, mdz;
-         int i1, j1, k1, i2, j2, k2;
-         int ijk;
+      for (int k = 0; k < n_out[2]; ++k) {
+        mpb_real x, y, z;
+        double xi, yi, zi, xi2, yi2, zi2;
+        double dx, dy, dz, mdx, mdy, mdz;
+        int i1, j1, k1, i2, j2, k2;
+        int ijk;
 
-         ijk = (i * n_out[1] + j) * n_out[2] + k;
+        ijk = (i * n_out[1] + j) * n_out[2] + k;
 
-         /* find the point corresponding to d_out[i,j,k] in
-            the input array, and also find the next-nearest
-            points. */
-         x = coord_map.c0.x*i + coord_map.c1.x*j + coord_map.c2.x*k + shiftx;
-         y = coord_map.c0.y*i + coord_map.c1.y*j + coord_map.c2.y*k + shifty;
-         z = coord_map.c0.z*i + coord_map.c1.z*j + coord_map.c2.z*k + shiftz;
-         MODF_POSITIVE(x, xi);
-         MODF_POSITIVE(y, yi);
-         MODF_POSITIVE(z, zi);
+        /* find the point corresponding to d_out[i,j,k] in
+           the input array, and also find the next-nearest
+           points. */
+        x = coord_map.c0.x * i + coord_map.c1.x * j + coord_map.c2.x * k + shiftx;
+        y = coord_map.c0.y * i + coord_map.c1.y * j + coord_map.c2.y * k + shifty;
+        z = coord_map.c0.z * i + coord_map.c1.z * j + coord_map.c2.z * k + shiftz;
+        MODF_POSITIVE(x, xi);
+        MODF_POSITIVE(y, yi);
+        MODF_POSITIVE(z, zi);
 
-         if (multiply_bloch_phase) {
-           xi += x;
-           yi += y;
-           zi += z;
-         }
+        if (multiply_bloch_phase) {
+          xi += x;
+          yi += y;
+          zi += z;
+        }
 
-         i1 = x * n_in[0]; j1 = y * n_in[1]; k1 = z * n_in[2];
-         dx = x * n_in[0] - i1;
-         dy = y * n_in[1] - j1;
-         dz = z * n_in[2] - k1;
-         ADJ_POINT(i1, i2, n_in[0], dx, xi, xi2);
-         ADJ_POINT(j1, j2, n_in[1], dy, yi, yi2);
-         ADJ_POINT(k1, k2, n_in[2], dz, zi, zi2);
+        i1 = x * n_in[0];
+        j1 = y * n_in[1];
+        k1 = z * n_in[2];
+        dx = x * n_in[0] - i1;
+        dy = y * n_in[1] - j1;
+        dz = z * n_in[2] - k1;
+        ADJ_POINT(i1, i2, n_in[0], dx, xi, xi2);
+        ADJ_POINT(j1, j2, n_in[1], dy, yi, yi2);
+        ADJ_POINT(k1, k2, n_in[2], dz, zi, zi2);
 
-         /* dx, mdx, etcetera, are the weights for the various
-            points in the input data, which we use for linearly
-            interpolating to get the output point. */
-         if (pick_nearest) {
-           /* don't interpolate */
-           dx = dx <= 0.5 ? 0.0 : 1.0;
-           dy = dy <= 0.5 ? 0.0 : 1.0;
-           dz = dz <= 0.5 ? 0.0 : 1.0;
-         }
-         mdx = 1.0 - dx;
-         mdy = 1.0 - dy;
-         mdz = 1.0 - dz;
+        /* dx, mdx, etcetera, are the weights for the various
+           points in the input data, which we use for linearly
+           interpolating to get the output point. */
+        if (pick_nearest) {
+          /* don't interpolate */
+          dx = dx <= 0.5 ? 0.0 : 1.0;
+          dy = dy <= 0.5 ? 0.0 : 1.0;
+          dz = dz <= 0.5 ? 0.0 : 1.0;
+        }
+        mdx = 1.0 - dx;
+        mdy = 1.0 - dy;
+        mdz = 1.0 - dz;
 
-         /* Now, linearly interpolate the input to get the
-            output.  If the input/output are complex, we
-            also need to multiply by the appropriate phase
-            factor, depending upon which unit cell we are in. */
+        /* Now, linearly interpolate the input to get the
+           output.  If the input/output are complex, we
+           also need to multiply by the appropriate phase
+           factor, depending upon which unit cell we are in. */
 
-#define IN_INDEX(i,j,k) ((i * n_in[1] + j) * n_in[2] + k)
-         if (size_out_im > 0) {
-           d_out_re[ijk] = 0.0;
-           d_out_im[ijk] = 0.0;
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                                 d_in_re[IN_INDEX(i1,j1,k1)],
-                                 d_in_im[IN_INDEX(i1,j1,k1)],
-                                 xi, yi, zi, s,
-                                 mdx * mdy * mdz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                           d_in_re[IN_INDEX(i1,j1,k2)],
-                           d_in_im[IN_INDEX(i1,j1,k2)],
-                           xi, yi, zi2, s,
-                           mdx * mdy * dz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                           d_in_re[IN_INDEX(i1,j2,k1)],
-                           d_in_im[IN_INDEX(i1,j2,k1)],
-                           xi, yi2, zi, s,
-                           mdx * dy * mdz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                          d_in_re[IN_INDEX(i1,j2,k2)],
-                           d_in_im[IN_INDEX(i1,j2,k2)],
-                           xi, yi2, zi2, s,
-                           mdx * dy * dz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                           d_in_re[IN_INDEX(i2,j1,k1)],
-                           d_in_im[IN_INDEX(i2,j1,k1)],
-                           xi2, yi, zi, s,
-                           dx * mdy * mdz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                           d_in_re[IN_INDEX(i2,j1,k2)],
-                           d_in_im[IN_INDEX(i2,j1,k2)],
-                           xi2, yi, zi2, s,
-                           dx * mdy * dz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                           d_in_re[IN_INDEX(i2,j2,k1)],
-                           d_in_im[IN_INDEX(i2,j2,k1)],
-                           xi2, yi2, zi, s,
-                           dx * dy * mdz);
-           add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk,
-                           d_in_re[IN_INDEX(i2,j2,k2)],
-                           d_in_im[IN_INDEX(i2,j2,k2)],
-                           xi2, yi2, zi2, s,
-                           dx * dy * dz);
-           min_out_im = MIN2(min_out_im, d_out_im[ijk]);
-           max_out_im = MAX2(max_out_im, d_out_im[ijk]);
-         }
-         else {
-           d_out_re[ijk] =
-                  d_in_re[IN_INDEX(i1,j1,k1)] * mdx * mdy * mdz +
-                  d_in_re[IN_INDEX(i1,j1,k2)] * mdx * mdy * dz +
-                  d_in_re[IN_INDEX(i1,j2,k1)] * mdx * dy * mdz +
-                  d_in_re[IN_INDEX(i1,j2,k2)] * mdx * dy * dz +
-                  d_in_re[IN_INDEX(i2,j1,k1)] * dx * mdy * mdz +
-                  d_in_re[IN_INDEX(i2,j1,k2)] * dx * mdy * dz +
-                  d_in_re[IN_INDEX(i2,j2,k1)] * dx * dy * mdz +
-                  d_in_re[IN_INDEX(i2,j2,k2)] * dx * dy * dz;
-         }
-         min_out_re = MIN2(min_out_re, d_out_re[ijk]);
-         max_out_re = MAX2(max_out_re, d_out_re[ijk]);
+#define IN_INDEX(i, j, k) ((i * n_in[1] + j) * n_in[2] + k)
+        if (size_out_im > 0) {
+          d_out_re[ijk] = 0.0;
+          d_out_im[ijk] = 0.0;
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i1, j1, k1)],
+                                d_in_im[IN_INDEX(i1, j1, k1)], xi, yi, zi, s, mdx * mdy * mdz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i1, j1, k2)],
+                                d_in_im[IN_INDEX(i1, j1, k2)], xi, yi, zi2, s, mdx * mdy * dz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i1, j2, k1)],
+                                d_in_im[IN_INDEX(i1, j2, k1)], xi, yi2, zi, s, mdx * dy * mdz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i1, j2, k2)],
+                                d_in_im[IN_INDEX(i1, j2, k2)], xi, yi2, zi2, s, mdx * dy * dz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i2, j1, k1)],
+                                d_in_im[IN_INDEX(i2, j1, k1)], xi2, yi, zi, s, dx * mdy * mdz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i2, j1, k2)],
+                                d_in_im[IN_INDEX(i2, j1, k2)], xi2, yi, zi2, s, dx * mdy * dz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i2, j2, k1)],
+                                d_in_im[IN_INDEX(i2, j2, k1)], xi2, yi2, zi, s, dx * dy * mdz);
+          add_cmplx_times_phase(d_out_re + ijk, d_out_im + ijk, d_in_re[IN_INDEX(i2, j2, k2)],
+                                d_in_im[IN_INDEX(i2, j2, k2)], xi2, yi2, zi2, s, dx * dy * dz);
+          min_out_im = MIN2(min_out_im, d_out_im[ijk]);
+          max_out_im = MAX2(max_out_im, d_out_im[ijk]);
+        } else {
+          d_out_re[ijk] = d_in_re[IN_INDEX(i1, j1, k1)] * mdx * mdy * mdz +
+                          d_in_re[IN_INDEX(i1, j1, k2)] * mdx * mdy * dz +
+                          d_in_re[IN_INDEX(i1, j2, k1)] * mdx * dy * mdz +
+                          d_in_re[IN_INDEX(i1, j2, k2)] * mdx * dy * dz +
+                          d_in_re[IN_INDEX(i2, j1, k1)] * dx * mdy * mdz +
+                          d_in_re[IN_INDEX(i2, j1, k2)] * dx * mdy * dz +
+                          d_in_re[IN_INDEX(i2, j2, k1)] * dx * dy * mdz +
+                          d_in_re[IN_INDEX(i2, j2, k2)] * dx * dy * dz;
+        }
+        min_out_re = MIN2(min_out_re, d_out_re[ijk]);
+        max_out_re = MAX2(max_out_re, d_out_re[ijk]);
 #undef IN_INDEX
-  }
+      }
 
   if (verbose) {
     printf("real part range: %g .. %g\n", min_out_re, max_out_re);
-    if (size_out_im > 0)
-      printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
+    if (size_out_im > 0) printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
   }
 }
 
 bool with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
-    return true;
+  return true;
 #else
-    return false;
+  return false;
 #endif
-
 }
 } // namespace meep_mpb

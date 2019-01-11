@@ -54,11 +54,11 @@ typedef std::complex<double> cdouble;
 #define TINY 1e-20
 
 struct dft_data {
-    int num_freqs;
-    int num_components;
-    std::vector<meep::volume> vols;
+  int num_freqs;
+  int num_components;
+  std::vector<meep::volume> vols;
 
-    dft_data(int freqs, int components, std::vector<meep::volume> volumes);
+  dft_data(int freqs, int components, std::vector<meep::volume> volumes);
 };
 
 struct fragment_stats {
@@ -86,7 +86,7 @@ struct fragment_stats {
   geom_box box;
 
   fragment_stats() {}
-  fragment_stats(geom_box& bx, size_t pixels);
+  fragment_stats(geom_box &bx, size_t pixels);
   void update_stats_from_material(material_type mat, size_t pixels);
   void compute_stats(geometric_object_list *geom);
   void count_anisotropic_pixels(medium_struct *med, size_t pixels);
@@ -101,20 +101,13 @@ struct fragment_stats {
   void print_stats();
 };
 
-std::vector<fragment_stats> compute_fragment_stats(geometric_object_list geom,
-                                                   meep::grid_volume *gv,
-                                                   vector3 cell_size,
-                                                   vector3 cell_center,
-                                                   material_type default_mat,
-                                                   std::vector<dft_data> dft_data_list,
-                                                   std::vector<meep::volume> pml_1d_vols,
-                                                   std::vector<meep::volume> pml_2d_vols,
-                                                   std::vector<meep::volume> pml_3d_vols,
-                                                   std::vector<meep::volume> absorber_vols,
-                                                   double tol,
-                                                   int maxeval,
-                                                   bool ensure_per,
-                                                   double box_size=10);
+std::vector<fragment_stats>
+compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv, vector3 cell_size,
+                       vector3 cell_center, material_type default_mat,
+                       std::vector<dft_data> dft_data_list, std::vector<meep::volume> pml_1d_vols,
+                       std::vector<meep::volume> pml_2d_vols, std::vector<meep::volume> pml_3d_vols,
+                       std::vector<meep::volume> absorber_vols, double tol, int maxeval,
+                       bool ensure_per, double box_size = 10);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */
@@ -136,36 +129,32 @@ typedef absorber_list_type *absorber_list;
 
 absorber_list create_absorber_list();
 void destroy_absorber_list(absorber_list alist);
-void add_absorbing_layer(absorber_list alist,
-                         double thickness,
-                         int direction=ALL_DIRECTIONS, int side=ALL_SIDES,
-                         double R_asymptotic=1.0e-15, double mean_stretch=1.0,
-                         meep::pml_profile_func func=meep::pml_quadratic_profile, void *func_data=0);
+void add_absorbing_layer(absorber_list alist, double thickness, int direction = ALL_DIRECTIONS,
+                         int side = ALL_SIDES, double R_asymptotic = 1.0e-15,
+                         double mean_stretch = 1.0,
+                         meep::pml_profile_func func = meep::pml_quadratic_profile,
+                         void *func_data = 0);
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-inline vector3 make_vector3(double x=0.0, double y=0.0, double z=0.0) {
-    vector3 v = {x, y, z};
-    return v;
+inline vector3 make_vector3(double x = 0.0, double y = 0.0, double z = 0.0) {
+  vector3 v = {x, y, z};
+  return v;
 }
 
 void set_dimensions(int dims);
-void set_materials_from_geometry(meep::structure *s,
-                                 geometric_object_list g,
-                                 vector3 center=make_vector3(),
-                                 bool use_anisotropic_averaging=true,
-                                 double tol=DEFAULT_SUBPIXEL_TOL,
-                                 int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
-                                 bool ensure_periodicity=false,
-                                 bool verbose=false,
-                                 material_type _default_material=vacuum,
-                                 absorber_list alist=0,
-                                 material_type_list extra_materials=material_type_list());
+void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
+                                 vector3 center = make_vector3(),
+                                 bool use_anisotropic_averaging = true,
+                                 double tol = DEFAULT_SUBPIXEL_TOL,
+                                 int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+                                 bool ensure_periodicity = false, bool verbose = false,
+                                 material_type _default_material = vacuum, absorber_list alist = 0,
+                                 material_type_list extra_materials = material_type_list());
 
 material_type make_dielectric(double epsilon);
-material_type make_user_material(user_material_func user_func,
-                                 void *user_data);
+material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(const char *eps_input_file);
 
 vector3 vec_to_vector3(const meep::vec &pt);
@@ -178,11 +167,11 @@ bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2);
 void material_gc(material_type m);
 bool material_type_equal(const material_type m1, const material_type m2);
 bool is_variable(material_type mt);
-bool is_variable(void* md);
+bool is_variable(void *md);
 bool is_file(material_type md);
-bool is_file(void* md);
+bool is_file(void *md);
 bool is_medium(material_type md, medium_struct **m);
-bool is_medium(void* md, medium_struct **m);
+bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
 void check_offdiag(medium_struct *m);
 
@@ -190,13 +179,20 @@ void check_offdiag(medium_struct *m);
 /* routines in GDSIIgeom.cc ************************************/
 /***************************************************************/
 bool with_libGDSII();
-meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, const char *Text, int Layer=-1, double zsize=0.0);
-meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer, double zsize=0.0);
-geometric_object_list get_GDSII_prisms(material_type material, const char *GDSIIFile, int Layer=-1, double zmin=0.0, double zmax=0.0);
-geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
-geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
-meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer=-1, double zmin=0.0, double zmax=0.0);
-meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin=0.0, double zmax=0.0);
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile,
+                                          const char *Text, int Layer = -1, double zsize = 0.0);
+meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer,
+                                          double zsize = 0.0);
+geometric_object_list get_GDSII_prisms(material_type material, const char *GDSIIFile,
+                                       int Layer = -1, double zmin = 0.0, double zmax = 0.0);
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text,
+                                 int Layer = -1, double zmin = 0.0, double zmax = 0.0);
+geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, int Layer,
+                                 double zmin = 0.0, double zmax = 0.0);
+meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer = -1,
+                              double zmin = 0.0, double zmax = 0.0);
+meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin = 0.0,
+                              double zmax = 0.0);
 
 }; // namespace meep_geom
 

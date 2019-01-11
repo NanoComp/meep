@@ -22,54 +22,48 @@ using namespace std;
 
 namespace meep {
 
-static void fields_to_array(const fields &f, complex<realnum> *x)
-{
+static void fields_to_array(const fields &f, complex<realnum> *x) {
   size_t ix = 0;
-  for (int i=0;i<f.num_chunks;i++)
-    if (f.chunks[i]->is_mine())
-      FOR_COMPONENTS(c) {
+  for (int i = 0; i < f.num_chunks; i++)
+    if (f.chunks[i]->is_mine()) FOR_COMPONENTS(c) {
         if (is_D(c) || is_B(c)) {
-	  realnum *fr, *fi;
-#define COPY_FROM_FIELD(fld)					\
-	  if ((fr = f.chunks[i]->fld[0]) &&			\
-	      (fi = f.chunks[i]->fld[1]))			\
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx)		\
-	      x[ix++] = complex<double>(fr[idx], fi[idx]);
-	  COPY_FROM_FIELD(f[c]);
-	  COPY_FROM_FIELD(f_u[c]);
-	  COPY_FROM_FIELD(f_cond[c]);
-	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
-	  COPY_FROM_FIELD(f_w[c2]);
-	  if (f.chunks[i]->f_w[c2][0]) COPY_FROM_FIELD(f[c2]);
+          realnum *fr, *fi;
+#define COPY_FROM_FIELD(fld)                                                                       \
+  if ((fr = f.chunks[i]->fld[0]) && (fi = f.chunks[i]->fld[1]))                                    \
+    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx)                                                   \
+  x[ix++] = complex<double>(fr[idx], fi[idx]);
+          COPY_FROM_FIELD(f[c]);
+          COPY_FROM_FIELD(f_u[c]);
+          COPY_FROM_FIELD(f_cond[c]);
+          component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+          COPY_FROM_FIELD(f_w[c2]);
+          if (f.chunks[i]->f_w[c2][0]) COPY_FROM_FIELD(f[c2]);
 #undef COPY_FROM_FIELD
-	}
+        }
       }
 }
 
-static void array_to_fields(const complex<realnum> *x, fields &f)
-{
+static void array_to_fields(const complex<realnum> *x, fields &f) {
   size_t ix = 0;
-  for (int i=0;i<f.num_chunks;i++)
-    if (f.chunks[i]->is_mine())
-      FOR_COMPONENTS(c) {
+  for (int i = 0; i < f.num_chunks; i++)
+    if (f.chunks[i]->is_mine()) FOR_COMPONENTS(c) {
         if (is_D(c) || is_B(c)) {
-	  realnum *fr, *fi;
-#define COPY_TO_FIELD(fld)					\
-	  if ((fr = f.chunks[i]->fld[0]) &&			\
-	      (fi = f.chunks[i]->fld[1]))			\
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx) {	\
-	      fr[idx] = real(x[ix]);				\
-	      fi[idx] = imag(x[ix++]);				\
-	    }
-	  COPY_TO_FIELD(f[c]);
-	  COPY_TO_FIELD(f_u[c]);
-	  COPY_TO_FIELD(f_cond[c]);
-	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
-	  COPY_TO_FIELD(f_w[c2]);
-	  if (f.chunks[i]->f_w[c2][0]) COPY_TO_FIELD(f[c2]);
+          realnum *fr, *fi;
+#define COPY_TO_FIELD(fld)                                                                         \
+  if ((fr = f.chunks[i]->fld[0]) && (fi = f.chunks[i]->fld[1]))                                    \
+    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx) {                                                 \
+      fr[idx] = real(x[ix]);                                                                       \
+      fi[idx] = imag(x[ix++]);                                                                     \
+    }
+          COPY_TO_FIELD(f[c]);
+          COPY_TO_FIELD(f_u[c]);
+          COPY_TO_FIELD(f_cond[c]);
+          component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+          COPY_TO_FIELD(f_w[c2]);
+          if (f.chunks[i]->f_w[c2][0]) COPY_TO_FIELD(f[c2]);
 #undef COPY_TO_FIELD
-	}
-  }
+        }
+      }
 
   f.step_boundaries(D_stuff);
   f.update_eh(E_stuff, true);
@@ -88,19 +82,18 @@ typedef struct {
   int iters;
 } fieldop_data;
 
-static void fieldop(const realnum *xr, realnum *yr, void *data_)
-{
-  const complex<realnum> *x = reinterpret_cast<const complex<realnum>*>(xr);
-  complex<realnum> *y = reinterpret_cast<complex<realnum>*>(yr);
-  fieldop_data *data = (fieldop_data *) data_;
+static void fieldop(const realnum *xr, realnum *yr, void *data_) {
+  const complex<realnum> *x = reinterpret_cast<const complex<realnum> *>(xr);
+  complex<realnum> *y = reinterpret_cast<complex<realnum> *>(yr);
+  fieldop_data *data = (fieldop_data *)data_;
   array_to_fields(x, *data->f);
   data->f->step();
   fields_to_array(*data->f, y);
   size_t n = data->n;
   realnum dt_inv = 1.0 / data->f->dt;
-  complex<realnum> iomega = complex<realnum>(real(data->iomega),
-					     imag(data->iomega));
-  for (size_t i = 0; i < n; ++i) y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
+  complex<realnum> iomega = complex<realnum>(real(data->iomega), imag(data->iomega));
+  for (size_t i = 0; i < n; ++i)
+    y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
   data->iters++;
 }
 
@@ -114,40 +107,38 @@ static void fieldop(const realnum *xr, realnum *yr, void *data_)
    that is used.  L should always be positive and should normally be
    >= 2.  Larger values of L will often lead to faster convergence, at
    the expense of more memory and more work per iteration. */
-bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
-		      int L) {
+bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L) {
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
   if (L < 1) abort("solve_cw called with L = %d < 1", L);
   int tsave = t; // save time (gets incremented by iterations)
 
-  set_solve_cw_omega(2*pi*frequency);
+  set_solve_cw_omega(2 * pi * frequency);
 
   step(); // step once to make sure everything is allocated
 
   size_t N = 0; // size of linear system (on this processor, at least)
-  for (int i=0;i<num_chunks;i++)
+  for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       FOR_COMPONENTS(c) {
-	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
-	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
-	  /* unknowns are just D and B in non-PML regions, but in PML
-	     regions the E, U, W, and C fields are also unknowns (in
-	     principle, we might be able to compute these extra fields
-	     in frequency domain via scalinb by the appropriate s
-	     factors, rather than storing them, but I had some
-	     problems getting that working) */
-	  N += 2 * chunks[i]->gv.nowned(c) *
-	    (1 + (chunks[i]->f_u[c][0] != NULL)
-	     + (chunks[i]->f_w[c2][0] != NULL) * 2
-	     + (chunks[i]->f_cond[c][0] != NULL));
-	}
-    }
+        if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
+          component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+          /* unknowns are just D and B in non-PML regions, but in PML
+             regions the E, U, W, and C fields are also unknowns (in
+             principle, we might be able to compute these extra fields
+             in frequency domain via scalinb by the appropriate s
+             factors, rather than storing them, but I had some
+             problems getting that working) */
+          N += 2 * chunks[i]->gv.nowned(c) *
+               (1 + (chunks[i]->f_u[c][0] != NULL) + (chunks[i]->f_w[c2][0] != NULL) * 2 +
+                (chunks[i]->f_cond[c][0] != NULL));
+        }
+      }
     }
 
-  size_t nwork = (size_t) bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
-  realnum *work = new realnum[nwork + 2*N];
-  complex<realnum> *x = reinterpret_cast<complex<realnum>*>(work + nwork);
-  complex<realnum> *b = reinterpret_cast<complex<realnum>*>(work + nwork + N);
+  size_t nwork = (size_t)bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
+  realnum *work = new realnum[nwork + 2 * N];
+  complex<realnum> *x = reinterpret_cast<complex<realnum> *>(work + nwork);
+  complex<realnum> *b = reinterpret_cast<complex<realnum> *>(work + nwork + N);
 
   fields_to_array(*this, x); // initial guess = initial fields
 
@@ -157,16 +148,17 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   step_source(B_stuff, true);
   step_boundaries(B_stuff);
   update_eh(H_stuff);
-  calc_sources(time() + 0.5*dt);
+  calc_sources(time() + 0.5 * dt);
   step_source(D_stuff, true);
   step_boundaries(D_stuff);
   update_eh(E_stuff);
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;
-  for (size_t i = 0; i < N/2; ++i) b[i] *= mdt_inv;
+  for (size_t i = 0; i < N / 2; ++i)
+    b[i] *= mdt_inv;
   {
     double bmax = 0;
-    for (size_t i = 0; i < N/2; ++i) {
+    for (size_t i = 0; i < N / 2; ++i) {
       double babs = abs(b[i]);
       if (babs > bmax) bmax = babs;
     }
@@ -176,19 +168,15 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   fieldop_data data;
   data.f = this;
   data.n = N / 2;
-  data.iomega = ((1.0 - exp(complex<double>(0.,-1.) * (2*pi*frequency) * dt))
-		 * (1.0 / dt));
+  data.iomega = ((1.0 - exp(complex<double>(0., -1.) * (2 * pi * frequency) * dt)) * (1.0 / dt));
   data.iters = 0;
 
-  int ierr = (int) bicgstabL(L, N, reinterpret_cast<realnum*>(x),
-		       fieldop, &data, reinterpret_cast<realnum*>(b),
-		       tol, &maxiters, work, quiet);
+  int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
+                            reinterpret_cast<realnum *>(b), tol, &maxiters, work, quiet);
 
   if (!quiet) {
-    master_printf("Finished solve_cw after %d steps and %d CG iters.\n",
-		  data.iters, maxiters);
-    if (ierr)
-      master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
+    master_printf("Finished solve_cw after %d steps and %d CG iters.\n", data.iters, maxiters);
+    if (ierr) master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
   }
 
   array_to_fields(x, *this);
@@ -210,11 +198,9 @@ bool fields::solve_cw(double tol, int maxiters, int L) {
     complex<double> sf = s->frequency();
     if (sf != freq && freq != 0.0 && sf != 0.0)
       abort("must pass frequency to solve_cw if sources do not agree");
-    if (sf != 0.0)
-      freq = sf;
+    if (sf != 0.0) freq = sf;
   }
-  if (freq == 0.0)
-    abort("must pass frequency to solve_cw if sources do not specify one");
+  if (freq == 0.0) abort("must pass frequency to solve_cw if sources do not specify one");
   return solve_cw(tol, maxiters, freq, L);
 }
 

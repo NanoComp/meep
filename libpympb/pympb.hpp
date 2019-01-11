@@ -11,15 +11,15 @@ namespace py_mpb {
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
-void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im,
-              int n_in[3], mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im,
-              int size_out_im, int n_out[3], matrix3x3 coord_map, mpb_real *kvector,
-              bool pick_nearest, bool verbose, bool multiply_bloch_phase);
+void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im, int n_in[3],
+              mpb_real *d_out_re, int size_out_re, mpb_real *d_out_im, int size_out_im,
+              int n_out[3], matrix3x3 coord_map, mpb_real *kvector, bool pick_nearest, bool verbose,
+              bool multiply_bloch_phase);
 
 bool with_hermitian_epsilon();
 
-typedef mpb_real (*field_integral_energy_func)(mpb_real, mpb_real, vector3, void*);
-typedef cnumber (*field_integral_func)(cvector3, mpb_real, vector3, void*);
+typedef mpb_real (*field_integral_energy_func)(mpb_real, mpb_real, vector3, void *);
+typedef cnumber (*field_integral_func)(cvector3, mpb_real, vector3, void *);
 
 struct mode_solver {
   static const int MAX_NWORK = 10;
@@ -81,30 +81,17 @@ struct mode_solver {
   bool verbose;
   bool deterministic;
 
-  mode_solver(int num_bands,
-              double resolution[3],
-              lattice lat,
-              double tolerance,
-              int mesh_size,
-              meep_geom::material_data *_default_material,
-              bool deterministic,
-              double target_freq,
-              int dims,
-              bool verbose,
-              bool periodicity,
-              double flops,
-              bool negative_epsilon_ok,
-              std::string epsilon_input_file,
-              std::string mu_input_file,
-              bool force_mu,
-              bool use_simple_preconditioner,
-              vector3 grid_size,
-              int eigensolver_nwork,
+  mode_solver(int num_bands, double resolution[3], lattice lat, double tolerance, int mesh_size,
+              meep_geom::material_data *_default_material, bool deterministic, double target_freq,
+              int dims, bool verbose, bool periodicity, double flops, bool negative_epsilon_ok,
+              std::string epsilon_input_file, std::string mu_input_file, bool force_mu,
+              bool use_simple_preconditioner, vector3 grid_size, int eigensolver_nwork,
               int eigensolver_block_size);
 
   ~mode_solver();
 
-  void init(int p, bool reset_fields, geometric_object_list geometry, meep_geom::material_data *_default_material);
+  void init(int p, bool reset_fields, geometric_object_list geometry,
+            meep_geom::material_data *_default_material);
   void solve_kpoint(vector3 kpoint);
   bool using_mu();
   void set_parity(int p);
@@ -116,9 +103,9 @@ struct mode_solver {
   void get_epsilon_tensor(int c1, int c2, int imag, int inv);
   void get_material_pt(meep_geom::material_type &material, vector3 p);
   void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
-                      symmetric_matrix *epsmu_inv, bool eps=true);
-  int mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv, mpb_real n[3],
-                    mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3]);
+                      symmetric_matrix *epsmu_inv, bool eps = true);
+  int mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3], mpb_real d1,
+                   mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3]);
 
   void randomize_fields();
   void init_epsilon(geometric_object_list *geometry);
@@ -165,10 +152,10 @@ struct mode_solver {
 
   mpb_real get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
                    mpb_real *data, int stride, int conjugate);
-  mpb_real interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
-                      mpb_real *data, int stride, int conjugate);
-  scalar_complex interp_cval(vector3 p, int nx, int ny, int nz, int last_dim_size,
-                             mpb_real *data, int stride);
+  mpb_real interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size, mpb_real *data,
+                      int stride, int conjugate);
+  scalar_complex interp_cval(vector3 p, int nx, int ny, int nz, int last_dim_size, mpb_real *data,
+                             int stride);
   symmetric_matrix interp_eps_inv(vector3 p);
 
   mpb_real get_epsilon_point(vector3 p);
@@ -177,7 +164,7 @@ struct mode_solver {
   cvector3 get_field_point(vector3 p);
   cvector3 get_bloch_field_point(vector3 p);
 
-  void multiply_bloch_phase(std::complex<double> *cdata=NULL);
+  void multiply_bloch_phase(std::complex<double> *cdata = NULL);
   void fix_field_phase();
   void compute_field_divergence();
   std::vector<mpb_real> compute_zparities();
@@ -189,11 +176,9 @@ struct mode_solver {
   mpb_real compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high);
 
   cnumber compute_field_integral(field_integral_func field_func,
-                                 field_integral_energy_func energy_func,
-                                 void *py_func);
+                                 field_integral_energy_func energy_func, void *py_func);
   number compute_energy_integral(field_integral_func field_func,
-                                 field_integral_energy_func energy_func,
-                                 void *py_func);
+                                 field_integral_energy_func energy_func, void *py_func);
 
   vector3 get_dominant_planewave(int band);
 

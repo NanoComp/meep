@@ -23,39 +23,35 @@ namespace meep {
 
 void fields::finished_working() {
   double now = wall_time();
-  if (last_wall_time >= 0)
-    times_spent[working_on] += now - last_wall_time;
+  if (last_wall_time >= 0) times_spent[working_on] += now - last_wall_time;
   last_wall_time = now;
   working_on = was_working_on[0];
-  for (int i = 0; i+1 < MEEP_TIMING_STACK_SZ; ++i)
-    was_working_on[i] = was_working_on[i+1];
-  was_working_on[MEEP_TIMING_STACK_SZ-1] = Other;
+  for (int i = 0; i + 1 < MEEP_TIMING_STACK_SZ; ++i)
+    was_working_on[i] = was_working_on[i + 1];
+  was_working_on[MEEP_TIMING_STACK_SZ - 1] = Other;
 }
 
 void fields::am_now_working_on(time_sink s) {
   double now = wall_time();
-  if (last_wall_time >= 0)
-    times_spent[working_on] += now - last_wall_time;
+  if (last_wall_time >= 0) times_spent[working_on] += now - last_wall_time;
   last_wall_time = now;
-  for (int i = 0; i+1 < MEEP_TIMING_STACK_SZ; ++i)
-    was_working_on[i+1] = was_working_on[i];
+  for (int i = 0; i + 1 < MEEP_TIMING_STACK_SZ; ++i)
+    was_working_on[i + 1] = was_working_on[i];
   was_working_on[0] = working_on;
   working_on = s;
 }
 
-double fields::time_spent_on(time_sink s) {
-  return times_spent[s];
-}
+double fields::time_spent_on(time_sink s) { return times_spent[s]; }
 
 static const char *ts2n(time_sink s) {
   switch (s) {
-  case Stepping: return "time stepping";
-  case Connecting: return "connecting chunks";
-  case Boundaries: return "copying borders";
-  case MpiTime: return "communicating";
-  case FieldOutput: return "outputting fields";
-  case FourierTransforming: return "Fourier transforming";
-  case Other: break;
+    case Stepping: return "time stepping";
+    case Connecting: return "connecting chunks";
+    case Boundaries: return "copying borders";
+    case MpiTime: return "communicating";
+    case FieldOutput: return "outputting fields";
+    case FourierTransforming: return "Fourier transforming";
+    case Other: break;
   }
   return "everything else";
 }
@@ -66,8 +62,8 @@ static void pt(double ts[], time_sink s) {
 
 void fields::print_times() {
   master_printf("\nField time usage:\n");
-  for (int i=0;i<=Other;i++)
-    pt(times_spent, (time_sink) i);
+  for (int i = 0; i <= Other; i++)
+    pt(times_spent, (time_sink)i);
   master_printf("\n");
 }
 

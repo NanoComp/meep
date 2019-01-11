@@ -10,7 +10,8 @@ const double sw = 1.0;
 const double res = 20;
 
 double two_waveguides(const vec &p) {
-  if ((fabs(p.x()) >= 0.5*d) && (fabs(p.x()) <= 0.5*d+sw) && (p.y() <= 0.5*sw) && (p.y() >= -0.5*sw))
+  if ((fabs(p.x()) >= 0.5 * d) && (fabs(p.x()) <= 0.5 * d + sw) && (p.y() <= 0.5 * sw) &&
+      (p.y() >= -0.5 * sw))
     return 11.9;
   else
     return 1.0;
@@ -19,15 +20,15 @@ double two_waveguides(const vec &p) {
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   quiet = true;
-  grid_volume gv = vol3d(sx+2*dpml,sy+2*dpml,0,res);
+  grid_volume gv = vol3d(sx + 2 * dpml, sy + 2 * dpml, 0, res);
   gv.center_origin();
-  const symmetry S = mirror(X,gv) - mirror(Y,gv);
-  structure s(gv, two_waveguides, pml(dpml,X)+pml(dpml,Y), S);
+  const symmetry S = mirror(X, gv) - mirror(Y, gv);
+  structure s(gv, two_waveguides, pml(dpml, X) + pml(dpml, Y), S);
   s.set_epsilon(two_waveguides);
   fields f(&s);
-  f.use_bloch(vec(0,0,0.5));
-  f.add_point_source(Ey, 0.22, 0.06, 0.0, 4.0, vec(0.5*(d+sw),0,0));
-  f.add_point_source(Ey, 0.22, 0.06, 0.0, 4.0, vec(-0.5*(d+sw),0,0));
+  f.use_bloch(vec(0, 0, 0.5));
+  f.add_point_source(Ey, 0.22, 0.06, 0.0, 4.0, vec(0.5 * (d + sw), 0, 0));
+  f.add_point_source(Ey, 0.22, 0.06, 0.0, 4.0, vec(-0.5 * (d + sw), 0, 0));
 
 #if 0
   double T = f.last_source_time();
@@ -63,25 +64,24 @@ int main(int argc, char **argv) {
 #endif
 
   double dpad = 0.1;
-  volume box(vec(0.5*d-dpad,-0.5*sw-dpad,0),vec(0.5*d+sw+dpad,0.5*sw+dpad,0));
+  volume box(vec(0.5 * d - dpad, -0.5 * sw - dpad, 0),
+             vec(0.5 * d + sw + dpad, 0.5 * sw + dpad, 0));
   dft_flux fluxR = f.add_dft_flux_plane(box, freq, freq, 1);
   dpad = 0.02;
-  volume_list line(volume(vec(0.5*d-dpad,-0.5*sy,0),vec(0.5*d-dpad,0.5*sy,0)),
-		   Sx);
+  volume_list line(volume(vec(0.5 * d - dpad, -0.5 * sy, 0), vec(0.5 * d - dpad, 0.5 * sy, 0)), Sx);
   dft_force forceR = f.add_dft_force(&line, freq, freq, 1);
   f.zero_fields();
   f.t = 0;
   while (f.time() < T3) {
-    if (f.t % 2000 == 0)
-      master_printf("%g%% done with flux and force\n", f.time()/T3 * 100);
+    if (f.t % 2000 == 0) master_printf("%g%% done with flux and force\n", f.time() / T3 * 100);
     f.step();
   }
-  double *fl  = fluxR.flux();
+  double *fl = fluxR.flux();
   double *fr = forceR.force();
-  master_printf("flux is %0.8g, force is %0.8g, F/P = %0.8g\n",
-		fl[0], fr[0], -0.5*fr[0]/fl[0]);
-  double FoverP = -0.5*fr[0]/fl[0];
-  delete fl; delete fr;
-  return fabs(FoverP+0.33628872)/0.33628872 > 0.1;
+  master_printf("flux is %0.8g, force is %0.8g, F/P = %0.8g\n", fl[0], fr[0], -0.5 * fr[0] / fl[0]);
+  double FoverP = -0.5 * fr[0] / fl[0];
+  delete fl;
+  delete fr;
+  return fabs(FoverP + 0.33628872) / 0.33628872 > 0.1;
   // MPB: -0.33628872
 }

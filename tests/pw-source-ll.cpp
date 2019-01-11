@@ -35,19 +35,18 @@ typedef std::complex<double> cdouble;
   (exp (* 0+1i (vector3-dot k (vector3+ x x0)))))
 */
 /***************************************************************/
-typedef struct pw_amp_data
- { vec k;
-   vec x0;
- } pw_amp_data;
+typedef struct pw_amp_data {
+  vec k;
+  vec x0;
+} pw_amp_data;
 
-cdouble pw_amp(vec x, void *UserData)
-{
+cdouble pw_amp(vec x, void *UserData) {
   pw_amp_data *data = (pw_amp_data *)UserData;
-  vec k  = data->k;
+  vec k = data->k;
   vec x0 = data->x0;
 
-  const cdouble II(0.0,1.0);
-  return exp( II * ( k & (x+x0)) );
+  const cdouble II(0.0, 1.0);
+  return exp(II * (k & (x + x0)));
 }
 
 /***************************************************************/
@@ -57,12 +56,10 @@ cdouble pw_amp(vec x, void *UserData)
 /* amplitude functions and global variables.                   */
 /***************************************************************/
 pw_amp_data pw_amp_data_left;
-cdouble pw_amp_left(const vec &x)
-{ return pw_amp(x, (void *)&pw_amp_data_left); }
+cdouble pw_amp_left(const vec &x) { return pw_amp(x, (void *)&pw_amp_data_left); }
 
 pw_amp_data pw_amp_data_bottom;
-cdouble pw_amp_bottom(const vec &x)
-{ return pw_amp(x, (void *)&pw_amp_data_bottom); }
+cdouble pw_amp_bottom(const vec &x) { return pw_amp(x, (void *)&pw_amp_data_bottom); }
 
 /***************************************************************/
 /* dummy material function needed to pass to structure( )      */
@@ -74,25 +71,24 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   meep::initialize mpi(argc, argv);
 
-  int s=11;           // size of computational cell, excluding PML
-  int dpml=1;         // thickness of PML layers
-  int sxy = s+2*dpml; // cell size, including PML
-  int resolution=10;  // pixel spacing
+  int s = 11;             // size of computational cell, excluding PML
+  int dpml = 1;           // thickness of PML layers
+  int sxy = s + 2 * dpml; // cell size, including PML
+  int resolution = 10;    // pixel spacing
 
   // (set! geometry-lattice (make lattice (size sxy sxy no-size)))
   // (set! pml-layers (list (make pml (thickness dpml))))
-  geometry_lattice.size.x=sxy;
-  geometry_lattice.size.y=sxy;
-  geometry_lattice.size.z=0.0;
+  geometry_lattice.size.x = sxy;
+  geometry_lattice.size.y = sxy;
+  geometry_lattice.size.z = 0.0;
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(dpml));
 
-  geometric_object_list g={0,0};
+  geometric_object_list g = {0, 0};
   meep_geom::set_materials_from_geometry(&the_structure, g);
 
   fields f(&the_structure);
@@ -108,37 +104,36 @@ int main(int argc, char **argv)
   //     (src (make continuous-src (frequency fcen) (fwidth df)))
   //      (component Ez) (center 0 (* -0.5 s)) (size s 0)
   //      (amp-func (pw-amp k (vector3 0 (* -0.5 s)))))
-  double fcen  = 0.8;  // pulse center frequency
-  double df    = 0.02; // turn-on bandwidth
+  double fcen = 0.8; // pulse center frequency
+  double df = 0.02;  // turn-on bandwidth
   continuous_src_time src(fcen, df);
 
   vec kdir(1.0, 1.0); // k direction (length is irrelevant)
-  vec k = kdir * 2.0*pi*fcen / abs(kdir);
+  vec k = kdir * 2.0 * pi * fcen / abs(kdir);
 
-  vec x0_left(-0.5*s, 0.0);
+  vec x0_left(-0.5 * s, 0.0);
   vec size_left(0.0, s);
 
-  vec x0_bottom(0.0, -0.5*s);
+  vec x0_bottom(0.0, -0.5 * s);
   vec size_bottom(s, 0.0);
 
-  pw_amp_data_left.k=k;
-  pw_amp_data_left.x0=x0_left;
+  pw_amp_data_left.k = k;
+  pw_amp_data_left.x0 = x0_left;
   meep::volume vleft(x0_left, size_left);
   f.add_volume_source(Ez, src, vleft, pw_amp_left);
 
-  pw_amp_data_bottom.k=k;
-  pw_amp_data_bottom.x0=x0_bottom;
+  pw_amp_data_bottom.k = k;
+  pw_amp_data_bottom.x0 = x0_bottom;
   meep::volume vbottom(x0_bottom, size_bottom);
   f.add_volume_source(Ez, src, vbottom, pw_amp_bottom);
 
   // (run-until T (at-end output-efield-z))
-  double T=400.0;
+  double T = 400.0;
   while (f.time() < T)
-   f.step();
+    f.step();
 
   f.output_hdf5(Ez, f.total_volume());
 
   // success if we made it here
   return 0;
-
 }
