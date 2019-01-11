@@ -6,7 +6,6 @@
 
 #include "config.h"
 #include "pympb.hpp"
-#include "mpb/scalar.h"
 #include "meep/mympi.hpp"
 
 // xyz_loop.h
@@ -29,7 +28,7 @@
           int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
 #  endif /* HAVE_MPI */
 
-typedef  mpb_real real;
+typedef  mpb_real real; // needed for the CASSIGN macros below
 
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
