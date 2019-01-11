@@ -214,21 +214,23 @@ void lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           SWAP(const realnum *, s1, s2);
         }
         if (s1 && s2) { // 3x3 anisotropic
-          LOOP_OVER_VOL_OWNED(gv, c, i) {
-            realnum pcur = p[i];
-            p[i] =
+          LOOP_OVER_VOL_OWNED(gv, c, i)
+	    if (s[i] != 0) {
+	      realnum pcur = p[i];
+	      p[i] =
                 gamma1inv *
                 (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
                  omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is) + OFFDIAG(s2, w2, is2, is)));
-            pp[i] = pcur;
-          }
+	      pp[i] = pcur;
+	    }
         } else if (s1) { // 2x2 anisotropic
-          LOOP_OVER_VOL_OWNED(gv, c, i) {
-            realnum pcur = p[i];
-            p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
-                                omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is)));
-            pp[i] = pcur;
-          }
+          LOOP_OVER_VOL_OWNED(gv, c, i)
+	    if (s[i] != 0) {
+	      realnum pcur = p[i];
+	      p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
+				  omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is)));
+	      pp[i] = pcur;
+	    }
         } else { // isotropic
           LOOP_OVER_VOL_OWNED(gv, c, i) {
             realnum pcur = p[i];
