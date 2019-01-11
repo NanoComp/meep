@@ -7,3 +7,4 @@ AllowShortCaseLabelsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: true
 ColumnLimit: 100
 Standard: Cpp03
+SortIncludes: false
