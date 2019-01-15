@@ -24,7 +24,7 @@ def f(r, ex, hz, eps):
 
 Note that the argument `r` is a [`Vector3`](Python_User_Interface.md#vector3) (Python) or [`vector3`](https://libctl.readthedocs.io/en/latest/User_Reference) (Scheme) object.
 
-Now, suppose we want to compute the integral of this function, over the whole computational cell. We can do this by calling the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme), as follows:
+Now, suppose we want to compute the integral of this function, over the whole cell. We can do this by calling the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme), as follows:
 
 **Python**
 ```py
@@ -38,9 +38,9 @@ print("The integral of our weird function is: {}"
        (integrate-field-function (list Ex Hz Dielectric) f) "\n")
 ```
 
-Note that the first argument to `integrate_field_function` (Python) or `integrate-field-function` (Scheme) is a list, which is a standard type, of `component` constants, specifying in order the list of field components the function `f` expects to be passed. Meep will then call `f` for every point in the computational cell in parallel on a parallel machine, and return the integral approximated by a [trapezoidal rule](https://en.wikipedia.org/wiki/trapezoidal_rule).
+Note that the first argument to `integrate_field_function` (Python) or `integrate-field-function` (Scheme) is a list, which is a standard type, of `component` constants, specifying in order the list of field components the function `f` expects to be passed. Meep will then call `f` for every point in the cell in parallel on a parallel machine, and return the integral approximated by a [trapezoidal rule](https://en.wikipedia.org/wiki/trapezoidal_rule).
 
-You can also specify an optional third argument to `integrate_field_function` (Python) or `integrate-field-function` (Scheme), specifying an integration volume in case you don't want the integral over the whole computational cell. For example, the following code computes the integral of `f` along a line from (-1,0,0) to (1,0,0):
+You can also specify an optional third argument to `integrate_field_function` (Python) or `integrate-field-function` (Scheme), specifying an integration volume in case you don't want the integral over the whole cell. For example, the following code computes the integral of `f` along a line from (-1,0,0) to (1,0,0):
 
 **Python**
 ```py
@@ -68,7 +68,7 @@ print("The maximum absolute value of our weird function from (-1,0,0) to (1,0,0)
        (max-abs-field-function (list Ex Hz Dielectric) f (volume (size 2 0 0) (center 0 0 0))) "\n")
 ```
 
-Finally, we can also output our function to an HDF5 file, similar to the built-in functions to output selected field components, and so on. The following outputs an HDF5 file consisting of our function `f` evaluated at every point in the computational cell:
+Finally, we can also output our function to an HDF5 file, similar to the built-in functions to output selected field components, and so on. The following outputs an HDF5 file consisting of our function `f` evaluated at every point in the cell:
 
 **Python**
 ```py

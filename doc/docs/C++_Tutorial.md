@@ -11,7 +11,7 @@ Differences from libctl
 
 The C++ interface has several differences from the libctl interface besides the obvious difference in syntax.
 
-The most notable difference is that, while the libctl interface puts the origin (0,0,0) at the *center* of the computational cell, the C++ interface by default puts the origin at the *corner* of the computational cell. That is, an $L\times L\times L$ cell goes from ($-L/2$,$-L/2$,$-L/2$) to ($L/2$,$L/2$,$L/2$) in libctl, but from (0,0,0) to ($L$,$L$,$L$) in C++. This can be changed by calling `grid_volume::shift_origin`.
+The most notable difference is that, while the libctl interface puts the origin (0,0,0) at the *center* of the cell, the C++ interface by default puts the origin at the *corner* of the cell. That is, an $L\times L\times L$ cell goes from ($-L/2$,$-L/2$,$-L/2$) to ($L/2$,$L/2$,$L/2$) in libctl, but from (0,0,0) to ($L$,$L$,$L$) in C++. This can be changed by calling `grid_volume::shift_origin`.
 
 Overview
 --------
@@ -60,14 +60,14 @@ double eps(const vec &p) {
 }
 ```
 
-which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2$\times$3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
+which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2$\times$3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the cell.
 
 Now that you have the basic flavor, we can proceed to some more specific examples.
 
 Computing the Quality Factor of a Resonator
 -------------------------------------------
 
-In this first tutorial, we will write the script to compute the quality factor of a 1d Fabry-Perot cavity. For a 1d system, Meep considers a computational cell along the $z$ coordinate. The control file will be a C++ file having extension \*.cpp. In order to use all the classes and subroutines available in Meep, the first two lines of any control file must be the following:
+In this first tutorial, we will write the script to compute the quality factor of a 1d Fabry-Perot cavity. For a 1d system, Meep considers a cell along the $z$ coordinate. The control file will be a C++ file having extension \*.cpp. In order to use all the classes and subroutines available in Meep, the first two lines of any control file must be the following:
 
 ```c++
 #include <meep.hpp>
@@ -86,7 +86,7 @@ const double half_cavity_width = d2;
 const int N = 5;
 ```
 
-Meep supports perfectly matching layers (PML) as absorbing boundary conditions. The PML begins at the edge of the computational volume and works inwards. Hence, we specify the size of the computational cell as follows: 
+Meep supports perfectly matching layers (PML) as absorbing boundary conditions. The PML begins at the edge of the computational volume and works inwards. Hence, we specify the size of the cell as follows: 
 
 ```c++
 const double pml_thickness = 1.0;
@@ -109,7 +109,7 @@ double eps(const vec &p) {
 }
 ```
 
-We are now ready to set up the computational cell, excite the sources, time step the fields, and compute the resulting quality factor. Here we set up the main part of the control file incorporating some of Meep's classes and sub routines. We will excite the mode at the midgap of the bandgap, which we expect to have the largest quality factor since it will have the largest exponential decay.
+We are now ready to set up the cell, excite the sources, time step the fields, and compute the resulting quality factor. Here we set up the main part of the control file incorporating some of Meep's classes and sub routines. We will excite the mode at the midgap of the bandgap, which we expect to have the largest quality factor since it will have the largest exponential decay.
 
 ```c++
 int main(int argc, char **argv) {
@@ -161,7 +161,7 @@ The variable `maxbands` is the number of mode frequencies we will be looking for
 }
 ```
 
-The `get_field` function does exactly that, obtains the value of the field at a given position within the computational cell using linear interpolation where necessary. Now we have all the information we need and must obtain the frequencies of the modes which we do by invoking a special tool for harmonic inversion, `harminv`, to extract the real and imaginary frequencies:
+The `get_field` function does exactly that, obtains the value of the field at a given position within the cell using linear interpolation where necessary. Now we have all the information we need and must obtain the frequencies of the modes which we do by invoking a special tool for harmonic inversion, `harminv`, to extract the real and imaginary frequencies:
 
 ```c++
  int num = do_harminv(p, ttot, f.dt, 0.8*w_midgap, 1.2*w_midgap, maxbands, amps, freq_re, freq_im);
@@ -177,7 +177,7 @@ return 0;
 }
 ```
 
-That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of Bragg reflectors ($N$=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the computational cell at each time step:
+That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of Bragg reflectors ($N$=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the cell at each time step:
 
 ```c++
 double curr_time = f.time();

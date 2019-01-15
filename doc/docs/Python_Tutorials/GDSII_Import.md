@@ -2,13 +2,13 @@
 # GDSII Import
 ---
 
-This tutorial demonstrates how to set up a simulation based on importing a [GDSII](https://en.wikipedia.org/wiki/GDSII) file. The example involves a silicon directional coupler. These devices are used in [photonic integrated circuits](https://en.wikipedia.org/wiki/Photonic_integrated_circuit) to split and/or combine an input signal. For more information on directional couplers, see Section 4.1 of [Silicon Photonics Design](https://www.amazon.com/Silicon-Photonics-Design-Devices-Systems/dp/1107085454) by Chrostowski and Hochberg.
+This tutorial demonstrates how to set up a simulation based on importing a [GDSII](https://en.wikipedia.org/wiki/GDSII) file. The example involves a silicon directional coupler. These devices are used in [photonic integrated circuits](https://en.wikipedia.org/wiki/Photonic_integrated_circuit) to split or combine an input signal. For more information on directional couplers, see Section 4.1 of [Silicon Photonics Design](https://www.amazon.com/Silicon-Photonics-Design-Devices-Systems/dp/1107085454) by Chrostowski and Hochberg.
 
 ---
 ## GDSII File
 ---
 
-The directional coupler geometry we will investigate is described by the GDSII file [examples/coupler.gds](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical strip waveguides which are positioned close together via an adiabatic taper such that their modes couple evanescently. An input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance which maximizes power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section; the taper profile is described by a hyperbolic tangent (tanh) function.
+The directional coupler geometry we will investigate is described by the GDSII file [examples/coupler.gds](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical strip waveguides which are positioned close together via an adiabatic taper such that their modes couple evanescently. An input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance which maximizes power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section (the taper profile is described by a hyperbolic tangent (tanh) function).
 
 <center>
 ![](../images/klayout_schematic.png)
@@ -16,15 +16,15 @@ The directional coupler geometry we will investigate is described by the GDSII f
 
 The GDSII file is adapted from the [SiEPIC EBeam PDK](https://github.com/lukasc-ubc/SiEPIC_EBeam_PDK) with four major modifications:
 
-+ the computational cell is centered at the origin of the XY plane and defined on layer 0
++ the computational cell is centered at the origin of the *xy* plane and defined on layer 0
 
-+ the eigenmode source and flux monitors are each defined on layers 1-5
++ the eigenmode source and flux monitors are defined on layers 1-5
 
-+ the lower and upper branches of the coupler are each defined on layers 31 and 32
++ the lower and upper branches of the coupler are defined on layers 31 and 32
 
-+ the straight waveguide sections are perfectly flat
++ the straight waveguide sections are perfectly linear
 
-Rather than being specified as part of the GDSII file, the volume regions of the source and flux monitors could have been specified in the simulation script.
+Note that rather than being specified as part of the GDSII file, the volume regions of the source and flux monitors could have been specified in the simulation script.
 
 ---
 ## Simulation Script
@@ -116,6 +116,8 @@ def main(args):
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                                   size=src_vol.size,
                                   center=src_vol.center,
+                                  eig_band=1,
+                                  eig_parity=mp.NO_PARITY if args.three_d else mp.ODD_Z,                                  
                                   eig_match_freq=True)]
 
     sim = mp.Simulation(resolution=resolution,
@@ -150,9 +152,13 @@ if __name__ == '__main__':
     main(args)
 ```
 
-For a given waveguide separation distance (`d`), the simulation computes the fraction of the input power exiting Ports 2-4. Note that there is a flux monitor at Port 1 to compute the input power from the adjacent eigenmode source. Each of the eight layers of the GDSII file is converted into a simulation object: the upper and lower branches are defined as a [Prism](../Python_User_Interface.md#prism), the rectilinear source and flux monitor regions as a [Volume](../Python_User_Interface.md#volume) and [FluxRegion](../Python_User_Interface.md#fluxregion). The default simulation is 2d. The size of the computational cell in the $y$ direction is set by the separation distance of the two branches. An optional parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the Z direction and adding an oxide layer beneath. A schematic of the 3d design is shown below.
+For a given waveguide separation distance (`d`), the simulation computes the fraction of the input power exiting Ports 2-4. Note that there is a flux monitor at Port 1 to compute the input power from the adjacent eigenmode source. Each of the eight layers of the GDSII file is converted into a `Simulation` object: the upper and lower branches are defined as a [`Prism`](../Python_User_Interface.md#prism), the rectilinear regions of the source and flux monitor as a [`Volume`](../Python_User_Interface.md#volume) and [`FluxRegion`](../Python_User_Interface.md#fluxregion). The default dimension is 2d. The size of the cell in the $y$ direction is set by the separation distance of the two branches. An optional parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the *z* direction and adding an oxide layer beneath. A schematic of the 3d design generated using MayaVi is shown below.
 
-We compute the coupler properties for a range of separation distances from 0.02 μm to 0.30 μm with increments of 0.02 μm.
+<center>
+![](../images/coupler3D.png)
+</center>
+
+We compute the coupler properties for a range of separation distances from 0.02 μm to 0.30 μm with increments of 0.02 μm:
 
 ```
 for d in `seq 0.02 0.02 0.30`; do
@@ -162,12 +168,8 @@ done
 grep data: directional_coupler.out |cut -d , -f2- > directional_coupler.dat;
 ```
 
-The results are plotted below. When the two waveguide branches are sufficiently separated (`d` > 0.2 μm), practically all of the input power is transferred to Port 3. Some of the input power is lost due to scattering in the tapered sections where the translational symmetry of the incident waveguide structure is broken. This is why the power in Port 3 never reaches exactly 100%. For separation distances less than approximately 0.2 μm, evanescent coupling of the modes in the two branches transfers some of the input power to Port 4. For `d` of 0.06 μm, the power in Port 4 is maximized. For `d` less than 0.06 μm, the evanescent coupling becomes rapidly ineffective. Note that there is never any power in Port 2 given the particular location of the input source in Port 1.
+Results are shown in the figure below. When the two waveguide branches are sufficiently separated (`d` > 0.2 μm), practically all of the input power is transferred to Port 3. Some of the input power is lost due to scattering into radiative modes within the light cone in the tapered sections where the translational symmetry of the waveguide input port is broken. This is why the power in Port 3 never reaches exactly 100%. For separation distances of less than approximately 0.2 μm, evanescent coupling of the modes from one branch to the other begins to transfer some of the input power to Port 4. For `d` of 0.13 μm, the input signal is split evenly into Ports 3 and 4. For `d` of 0.06 μm, the input power is transferred completely to Port 4. Finally, for `d` of less than 0.06 μm, the evanescent coupling becomes rapidly ineffective and the signal ends up mostly in Port 3 again. Note that there is never any power in Port 2 given its location relative to the input from Port 1.
 
 <center>
 ![](../images/directional_coupler_flux.png)
-</center>
-
-<center>
-![](../images/coupler3D.png)
 </center>

@@ -81,6 +81,8 @@ def main(args):
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                                   size=src_vol.size,
                                   center=src_vol.center,
+                                  eig_band=1,
+                                  eig_parity=mp.NO_PARITY if args.three_d else mp.ODD_Z,                                  
                                   eig_match_freq=True)]
 
     sim = mp.Simulation(resolution=resolution,
