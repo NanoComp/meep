@@ -1917,6 +1917,66 @@ class Simulation(object):
     def get_sfield_p(self):
         return self.get_array(cmplx=True, component=mp.Sp)
 
+    def visualize_chunks(self):
+        if self.structure is None:
+            self.init_sim()
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.cm
+            import matplotlib.colors
+            from mpl_toolkits.mplot3d import Axes3D
+            from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_chunks", ImportWarning)
+            return
+
+        vols = self.structure.get_chunk_volumes()
+        owners = self.structure.get_chunk_owners()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
+
+        def plot_box(box, proc):
+            low = mp.Vector3(box.low.x, box.low.y, box.low.z)
+            high = mp.Vector3(box.high.x, box.high.y, box.high.z)
+            points = [low, high]
+
+            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
+            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
+            xy_len = mp.Vector3(high.x, high.y) - mp.Vector3(low.x, low.y)
+
+            points += [low + x_len]
+            points += [low + y_len]
+            points += [low + xy_len]
+            points += [high - x_len]
+            points += [high - y_len]
+            points += [high - xy_len]
+            points = np.array([np.array(v) for v in points])
+
+            edges = [
+                [points[0], points[2], points[4], points[3]],
+                [points[1], points[5], points[7], points[6]],
+                [points[0], points[3], points[5], points[7]],
+                [points[1], points[4], points[2], points[6]],
+                [points[3], points[4], points[1], points[5]],
+                [points[0], points[7], points[6], points[2]]
+            ]
+
+            faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
+            color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc], alpha=0.2)
+            faces.set_facecolor(color_with_alpha)
+            ax.add_collection3d(faces)
+
+            # Plot the points themselves to force the scaling of the axes
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
+
+        if mp.am_master():
+            for i, v in enumerate(vols):
+                plot_box(mp.gv2box(v), owners[i])
+            ax.set_aspect('auto')
+            plt.show()
+
 
 def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
     br = mp.boundary_region()

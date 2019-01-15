@@ -708,6 +708,8 @@ public:
 
   bool equal_layout(const structure &) const;
   void print_layout(void) const;
+  std::vector<volume> get_chunk_volumes() const;
+  std::vector<int> get_chunk_owners() const;
 
   // structure_dump.cpp
   void dump(const char *filename);

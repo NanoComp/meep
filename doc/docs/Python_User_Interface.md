@@ -1361,6 +1361,12 @@ Returns a `mp.Volume` read from a GDSII file `fname` on `layer` with `zmin` and 
 fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 ```
 
+### Data Visualization
+
+**`Simulation.visualize_chunks()`**
+—
+Displays an interactive image of how the cell is divided into chunks. Each rectangular region is a chunk, and each color represents a different processor. Requires [matplotlib](https://matplotlib.org).
+
 Run and Step Functions
 ----------------------
 
