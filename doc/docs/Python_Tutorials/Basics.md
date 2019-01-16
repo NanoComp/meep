@@ -37,7 +37,7 @@ We can begin specifying each of the simulation objects starting with the computa
 ```py
 cell = mp.Vector3(16,8,0)
 ```
-The `Vector3` object stores the size of the computational cell in each of the three coordinate directions. This is a 2d computational cell in *x* and *y* where the *z* direction has size 0.
+The `Vector3` object stores the size of the cell in each of the three coordinate directions. This is a 2d cell in *x* and *y* where the *z* direction has size 0.
 
 Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface.md#geometricobject) stored in the `geometry` object.
 
@@ -47,7 +47,7 @@ geometry = [mp.Block(mp.Vector3(1e20,1,1e20),
                      material=mp.Medium(epsilon=12))]
 ```
 
-The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε=12$, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air ($ε=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
+The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε=12$, centered at (0,0) which is the center of the cell. By default, any place where there are no objects there is air ($ε=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
 
 <center>![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png)</center>
 
@@ -131,7 +131,7 @@ We'll start a new simulation where we look at the fields propagating through a w
 import meep as mp
 ```
 
-Then let's set up the bent waveguide in a slightly larger computational cell:
+Then let's set up the bent waveguide in a slightly larger cell:
 
 ```py
 cell = mp.Vector3(16,16,0)
@@ -145,7 +145,7 @@ pml_layers = [mp.PML(1.0)]
 resolution = 10
 ```
 
-Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the computational cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
+Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
@@ -273,7 +273,7 @@ dpml = 1.0
 pml_layers = [mp.PML(dpml)]
 ```
 
-We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
+We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the cell:
 
 ```py
 pad = 4  # padding distance between waveguide and cell edge
@@ -327,7 +327,7 @@ tran_fr = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml,wvg_ycen,0), size=mp.Vecto
 tran = sim.add_flux(fcen, df, nfreq, tran_fr)
 ```
 
-We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by length `dpml` from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the computational cell, depending on whether the waveguide is straight or bent.
+We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by length `dpml` from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the cell, depending on whether the waveguide is straight or bent.
 
 The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
@@ -444,7 +444,7 @@ def main(args):
     resolution = args.res
 
     dpml = 1.0              # PML thickness
-    sz = 10                 # size of computational cell (without PMLs)
+    sz = 10                 # size of cell (without PMLs)
     sz = 10 + 2*dpml
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [mp.PML(dpml)]

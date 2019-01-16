@@ -19,7 +19,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 
 **`geometry-center` [ `vector3` class ]**
 —
-Specifies the coordinates of the center of the computational cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
+Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
 
 **`sources` [ list of `source` class ]**
 —
@@ -43,7 +43,7 @@ Holds the default material that is used for points not in any object of the geom
 
 **`epsilon-input-file` [`string`]**
 —
-If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default-material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need *not* match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
+If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default-material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need *not* match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
 
 **`dimensions` [`integer`]**
 —
@@ -66,7 +66,7 @@ If `false` (the default), then the boundaries are perfect metallic (zero electri
 
 **`ensure-periodicity` [`boolean`]**
 —
-If `true` (the default) *and* if the boundary conditions are periodic (`k-point` is not `false`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the computational cell.
+If `true` (the default) *and* if the boundary conditions are periodic (`k-point` is not `false`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the cell.
 
 **`eps-averaging?` [`boolean`]**
 —
@@ -86,7 +86,7 @@ Specify the Courant factor $S$ which relates the time step size to the spatial d
 
 **`output-volume` [`meep::volume*`]**
 —
-Specifies the default region of space that is output by the HDF5 output functions (below); see also the `(volume ...)` function to create `meep::volume*` objects. Default is `'()` (null), which means that the whole computational cell is output. Normally, you should use the `(in-volume ...)` function to modify the output volume instead of setting `output-volume` directly.
+Specifies the default region of space that is output by the HDF5 output functions (below); see also the `(volume ...)` function to create `meep::volume*` objects. Default is `'()` (null), which means that the whole cell is output. Normally, you should use the `(in-volume ...)` function to modify the output volume instead of setting `output-volume` directly.
 
 **`output-single-precision?` [`boolean`]**
 —
@@ -98,7 +98,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 
 **`extra-materials` [ list of `material-type` class ]**
 —
-By default, Meep turns off support for material dispersion, nonlinearities, and similar properties if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work however if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the computational cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
+By default, Meep turns off support for material dispersion, nonlinearities, and similar properties if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work however if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -177,11 +177,11 @@ Meep defines several types of classes, the most numerous of which are the variou
 
 ### lattice
 
-The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](https://mpb.readthedocs.io), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
+The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the cell. In [MPB](https://mpb.readthedocs.io), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian cells are supported, so the only property of lattice that you should normally use is its `size`.
 
 **`size` [`vector3`]**
 —
-The size of the computational cell. Defaults to unit lengths.
+The size of the cell. Defaults to unit lengths.
 
 If any dimension has the special size `no-size`, then the dimensionality of the problem is essentially reduced by one. Strictly speaking, the dielectric function is taken to be uniform along that dimension.
 
@@ -513,7 +513,7 @@ Note the use of `(center auto-center)` to establish that the prism center will b
 
 ### symmetry
 
-This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the computational cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
+This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
 
 **`symmetry`**
 
@@ -551,7 +551,7 @@ A single PML layer specification, which sets up one or more PML layers around th
 
 **`thickness` [`number`]**
 —
-The spatial thickness of the PML layer which extends from the boundary towards the *inside* of the computational cell. The thinner it is, the more numerical reflections become a problem. No default value.
+The spatial thickness of the PML layer which extends from the boundary towards the *inside* of the cell. The thinner it is, the more numerical reflections become a problem. No default value.
 
 **`direction` [`direction` constant ]**
 —
@@ -583,7 +583,7 @@ The main reason to use `absorber` is if you have **a case in which PML fails:**
 
 -   No true PML exists for *periodic* media, and a scalar absorber is computationally less expensive and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 -   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can readily occur in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601, 2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
--   PML can fail if you have a waveguide hitting the edge of your computational cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
+-   PML can fail if you have a waveguide hitting the edge of your cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
 
 ### source
 
@@ -605,11 +605,11 @@ Specify the direction and type of the current component: e.g. `Ex`, `Ey`, etcete
 
 **`center` [`vector3`]**
 —
-The location of the center of the current source in the computational cell. No default.
+The location of the center of the current source in the cell. No default.
 
 **`size` [`vector3`]**
 —
-The size of the current distribution along each direction of the computational cell. Default is (0,0,0): a point-dipole source.
+The size of the current distribution along each direction of the cell. Default is (0,0,0): a point-dipole source.
 
 **`amplitude` [`cnumber`]**
 —
@@ -631,7 +631,7 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`X`, `Y`, or `Z;` default `AUTOMATIC`], `eig-match-freq?` [`boolean;` default `true`], `eig-kpoint` [`vector3`]**
 —
-By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig-match-freq?` is `false`, you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/$a$). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* computational cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively if `eig-match-freq?` is `false`, you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/$a$). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig-parity` [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]**
 —
@@ -820,7 +820,7 @@ Equivalent to `(get-field-point Dielectric pt)`.
 
 **`(add-dft-fields cs freq-min freq-max nfreq [where])`**
 —
-Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire computational cell).
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire cell).
 
 **`(flux-in-box dir box)`**
 —
@@ -840,13 +840,13 @@ Given a `meep::volume*`, returns the integral of the electric- and magnetic-fiel
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields-complex?=true`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
-Often, you want the integration box to be the entire computational cell. A useful function to return this box, which you can then use for the `box` arguments above, is `(meep-fields-total-volume fields)`, where `fields` is the global variable (above) holding the current `meep::fields` object.
+Often, you want the integration box to be the entire cell. A useful function to return this box, which you can then use for the `box` arguments above, is `(meep-fields-total-volume fields)`, where `fields` is the global variable (above) holding the current `meep::fields` object.
 
 One versatile feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output-field-function`, described later). This is done via the functions:
 
 **`(integrate-field-function cs func [where] [fields-var])`**
 —
-Returns the integral of the complex-valued function `func` over the `meep::volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
+Returns the integral of the complex-valued function `func` over the `meep::volume` specified by `where` (defaults to entire cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
 
@@ -856,7 +856,7 @@ As `integrate-field-function`, but returns the maximum absolute value of `func` 
 
 The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Functions](Field_Functions.md) for examples of how to call `integrate-field-function` and `max-abs-field-function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
-Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* computational cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
+Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
 
 **`(integrate2-field-function fields2 cs1 cs2 func [where] [fields-var])`**
 —
@@ -932,7 +932,7 @@ Save the Fourier-transformed fields corresponding to the given flux object in an
 
 **`(load-flux filename flux)`**
 —
-Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of the same dimensions (for both the computational cell and the flux regions) with the same number of processors.
+Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
 
 **`(load-minus-flux filename flux)`**
 —
@@ -1014,7 +1014,7 @@ Save the Fourier-transformed fields corresponding to the given force object in a
 
 **`(load-force filename force)`**
 —
-Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-force` in a simulation of the same dimensions for both the computational cell and the force regions with the same number of processors.
+Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-force` in a simulation of the same dimensions for both the cell and the force regions with the same number of processors.
 
 **`(load-minus-force filename force)`**
 —
@@ -1042,7 +1042,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 ### Near-to-Far-Field Spectra
 
-Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the computational cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the computational cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
+Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
@@ -1058,7 +1058,7 @@ After the simulation run is complete, you can compute the far fields. This is us
 
 **`(get_farfield near2far x)`**
 —
-Given a `vector3` point `x` which can lie anywhere outside the near-field surface, including outside the computational cell and a near2far object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (Ex1,Ey1,Ez1,Hx1,Hy1,Hz1,Ex2,Ey2,Ez2,Hx2,Hy2,Hz2,...) for the frequencies 1,2,…,`nfreq`.
+Given a `vector3` point `x` which can lie anywhere outside the near-field surface, including outside the cell and a near2far object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (Ex1,Ey1,Ez1,Hx1,Hy1,Hz1,Ex2,Ey2,Ez2,Hx2,Hy2,Hz2,...) for the frequencies 1,2,…,`nfreq`.
 
 **`(get-near2far-freqs n2f)`**
 —
@@ -1066,7 +1066,7 @@ Given a near2far object, returns a list of the frequencies that it is computing 
 
 **`(output-farfields near2far fname where resolution)`**
 —
-Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted.
+Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted.
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
@@ -1078,7 +1078,7 @@ Save the Fourier-transformed fields corresponding to the given `near2far` object
 
 **`(load-near2far filename near2far)`**
 —
-Load the Fourier-transformed fields into the given `near2far` object replacing any values currently there from an HDF5 file of the given name (without the ".h5" suffix) the current filename-prefix is prepended automatically. You must load from a file that was saved by `save-near2far` in a simulation of *the same dimensions* for both the computational cell and the near2far regions with the same number of processors.
+Load the Fourier-transformed fields into the given `near2far` object replacing any values currently there from an HDF5 file of the given name (without the ".h5" suffix) the current filename-prefix is prepended automatically. You must load from a file that was saved by `save-near2far` in a simulation of *the same dimensions* for both the cell and the near2far regions with the same number of processors.
 
 **`(load-minus-near2far filename near2far)`**
 —
@@ -1183,7 +1183,7 @@ Output the relative permeability function μ. Note that this only outputs the fr
 
 **`(output-dft dft-fields fname [where])`**
 —
-Output the Fourier-transformed fields in `dft-fields` (created by `add-dft-fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `volume` `where` defaults to the entire computational cell.
+Output the Fourier-transformed fields in `dft-fields` (created by `add-dft-fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `volume` `where` defaults to the entire cell.
 
 **`output-poynting`**
 —
@@ -1337,7 +1337,7 @@ Given zero or more step functions, evaluates them only once, at the end of the r
 
 **`(in-volume v step-functions...)`**
 —
-Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the computational cell, corresponding to the `meep::volume* v` (created by the `volume` function).
+Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the cell, corresponding to the `meep::volume* v` (created by the `volume` function).
 
 **`(in-point pt step-functions...)`**
 —

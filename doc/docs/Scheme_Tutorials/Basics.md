@@ -44,7 +44,7 @@ Before we define the structure, however, we have to define the computational cel
 (set! geometry-lattice (make lattice (size 16 8 no-size)))
 ```
 
-The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported. `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter indicates that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
+The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported. `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter indicates that the cell has no size in the *z* direction, i.e. it is two-dimensional.
 
 We can add the waveguide. Most commonly, the structure is specified by a `list` of [`geometric-object`s](../Scheme_User_Interface.md#geometric-object), stored in the `geometry` variable.
 
@@ -54,7 +54,7 @@ We can add the waveguide. Most commonly, the structure is specified by a `list` 
                       (material (make medium (epsilon 12))))))
 ```
 
-The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) which is the center of the computational cell. By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
+The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) which is the center of the cell. By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
@@ -120,7 +120,7 @@ We'll start a new simulation where we look at the fields in a *bent* waveguide, 
 (reset-meep)
 ```
 
-Then let's set up the bent waveguide, in a slightly bigger computational cell, via:
+Then let's set up the bent waveguide, in a slightly bigger cell, via:
 
 ```scm
 (set! geometry-lattice (make lattice (size 16 16 no-size)))
@@ -133,7 +133,7 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 (set! resolution 10)
 ```
 
-Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
+Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
@@ -213,7 +213,7 @@ The above command outputs zillions of PNG files, and it is somewhat annoying to 
 
 This will put *all* of the output files (.h5, .png, etcetera) into a newly-created subdirectory, called by default `filename-out/` if our script file is `filename.ctl`.
 
-What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful Meep output feature &mdash; Meep allows us to output only **a subset of the computational cell**. This is done using the `in-volume` function, which similar to `at-every` and `to-appended` is another function that modifies the behavior of other output functions. In particular, we can do:
+What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful Meep output feature &mdash; Meep allows us to output only **a subset of the cell**. This is done using the `in-volume` function, which similar to `at-every` and `to-appended` is another function that modifies the behavior of other output functions. In particular, we can do:
 
 ```scm
  (run-until 200 
@@ -242,7 +242,7 @@ Above, we hard-coded all of the parameters like the cell size, the waveguide wid
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 ```
 
-Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could do `meep sx=17 bend-flux.ctl` to change the $x$ size to 17, without editing the script file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
+Notice that a semicolon "`;`" begins a comment, which is ignored by Meep. `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could do `meep sx=17 bend-flux.ctl` to change the $x$ size to 17, without editing the script file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the cell:
 
 ```scm
 (define-param pad 4) ; padding distance between waveguide and cell edge         
@@ -324,7 +324,7 @@ Finally, we have to specify where we want Meep to compute the flux spectra, and 
                    (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
 ```
 
-We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by 1 μm from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the computational cell, depending on whether the waveguide is straight or bent.
+We compute the fluxes through a line segment twice the width of the waveguide, located at the beginning or end of the waveguide. Note that the flux lines are separated by 1 μm from the boundary of the cell, so that they do not lie within the absorbing PML regions. Again, there are two cases: the transmitted flux is either computed at the right or the bottom of the cell, depending on whether the waveguide is straight or bent.
 
 The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
@@ -414,7 +414,7 @@ The simulation script is [examples/refl-angular.ctl](https://github.com/NanoComp
 (set-param! resolution 200)         ; pixels/um
 
 (define-param dpml 1)               ; PML thickness
-(define-param sz 10)                ; size of computational cell (without PMLs)
+(define-param sz 10)                ; size of cell (without PMLs)
 (set! sz (+ sz (* 2 dpml)))
 (set! pml-layers (list (make pml (thickness dpml))))
 
