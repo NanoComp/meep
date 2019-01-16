@@ -236,7 +236,7 @@ meep::vec vector3_to_vec(const vector3 v3) {
   }
 }
 
-static geom_box gv2box(const meep::volume &v) {
+geom_box gv2box(const meep::volume &v) {
   geom_box box;
   box.low = vec_to_vector3(v.get_min_corner());
   box.high = vec_to_vector3(v.get_max_corner());

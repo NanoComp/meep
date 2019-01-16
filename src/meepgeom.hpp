@@ -174,6 +174,7 @@ bool is_medium(material_type md, medium_struct **m);
 bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
 void check_offdiag(medium_struct *m);
+geom_box gv2box(const meep::volume &v);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/

@@ -940,4 +940,21 @@ void structure::print_layout(void) const {
   }
 }
 
+std::vector<volume> structure::get_chunk_volumes() const {
+  std::vector<volume> result;
+
+  for (int i = 0; i < num_chunks; ++i) {
+    result.push_back(chunks[i]->gv.surroundings());
+  }
+  return result;
+}
+
+std::vector<int> structure::get_chunk_owners() const {
+  std::vector<int> result;
+
+  for (int i = 0; i < num_chunks; ++i) {
+    result.push_back(chunks[i]->n_proc());
+  }
+  return result;
+}
 } // namespace meep
