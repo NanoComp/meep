@@ -45,6 +45,7 @@ pages:
     - 'Units and Nonlinearity': 'Units_and_Nonlinearity.md'
 - 'Python Interface':
     - 'User Interface': 'Python_User_Interface.md'
+    - 'Developer Information': 'Python_Developer_Information.md'
     - 'Tutorial/Basics': 'Python_Tutorials/Basics.md'
     - 'Tutorial/Ring Resonator in Cylindrical Coordinates': 'Python_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md'
     - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
