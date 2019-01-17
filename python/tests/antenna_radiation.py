@@ -1,121 +1,84 @@
 from __future__ import division
 
+import meep as mp
 import math
+import numpy as np
 import unittest
 
-import numpy as np
-import meep as mp
-
+## compute the Poynting flux of an Ez-polarized dipole point source
+## from the fields in 3 arrangements:
+##      (1) bounding box of the near fields
+##      (2) bounding circle of the far fields
+##      (3) bounding box of the far fields
 
 class TestAntennaRadiation(unittest.TestCase):
 
-    def setUp(self):
+    def test_farfield(self):
         resolution = 50
         sxy = 4
         dpml = 1
-        cell = mp.Vector3(sxy + 2 * dpml, sxy + 2 * dpml, 0)
+        cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
 
         pml_layers = mp.PML(dpml)
 
         fcen = 1.0
         df = 0.4
-        self.src_cmpt = mp.Ez
 
-        sources = mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=df),
-            center=mp.Vector3(),
-            component=self.src_cmpt
-        )
+        sources = mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
+                            center=mp.Vector3(),
+                            component=mp.Ez)
 
-        if self.src_cmpt == mp.Ex:
-            symmetries = [mp.Mirror(mp.Y)]
-        elif self.src_cmpt == mp.Ey:
-            symmetries = [mp.Mirror(mp.X)]
-        elif self.src_cmpt == mp.Ez:
-            symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
+        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
 
-        self.sim = mp.Simulation(
-            cell_size=cell,
-            resolution=resolution,
-            sources=[sources],
-            symmetries=symmetries,
-            boundary_layers=[pml_layers]
-        )
+        sim = mp.Simulation(cell_size=cell,
+                            resolution=resolution,
+                            sources=[sources],
+                            symmetries=symmetries,
+                            boundary_layers=[pml_layers])
 
-        self.nearfield = self.sim.add_near2far(
-            fcen,
-            0,
-            1,
-            mp.Near2FarRegion(mp.Vector3(0, 0.5 * sxy), size=mp.Vector3(sxy)),
-            mp.Near2FarRegion(mp.Vector3(0, -0.5 * sxy), size=mp.Vector3(sxy), weight=-1.0),
-            mp.Near2FarRegion(mp.Vector3(0.5 * sxy), size=mp.Vector3(0, sxy)),
-            mp.Near2FarRegion(mp.Vector3(-0.5 * sxy), size=mp.Vector3(0, sxy), weight=-1.0)
-        )
+        nearfield_box = sim.add_near2far(fcen, 0, 1,
+                                         mp.Near2FarRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
+                                         mp.Near2FarRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
+                                         mp.Near2FarRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
+                                         mp.Near2FarRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
 
-    def test_farfield(self):
+        flux_box = sim.add_flux(fcen, 0, 1,
+                                mp.FluxRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
+                                mp.FluxRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
+                                mp.FluxRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
+                                mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
 
-        expected = [
-            (0j, 0j,
-             0.013561672901190156 - 0.014417985982674887j,
-             -0.007972091889832573 + 0.008474039259808384j,
-             -0.010972504173533907 + 0.011663526883728901j, 0j),
-            (0j, 0j,
-             0.013580605154131353 - 0.014437805790483897j,
-             -0.00727747760452799 + 0.007735510886150803j,
-             -0.011467448148229137 + 0.01218937654274057j, 0j),
-            (0j, 0j,
-             0.013623909088910181 - 0.0144248508451555j,
-             -0.006563855061778871 + 0.0069485969930299695j,
-             -0.011939764884917667 + 0.012639701096677738j, 0j),
-            (0j, 0j,
-             0.01366551237281673 - 0.014382588988355682j,
-             -0.005818861980069385 + 0.006123274021053104j,
-             -0.012366016128341942 + 0.013012805294365515j, 0j),
-            (0j, 0j,
-             0.013680914029322 - 0.014330104120260687j,
-             -0.00503658263321274 + 0.005274864846985408j,
-             -0.012721298907853191 + 0.013322780730790889j, 0j),
-            (0j, 0j,
-             0.013666069573084385 - 0.014288938849212545j,
-             -0.004223325784559204 + 0.004415251197679649j,
-             -0.01299830976630439 + 0.0135885339986728j, 0j),
-            (0j, 0j,
-             0.013636004904245425 - 0.014270749446931172j,
-             -0.003391403389081595 + 0.003548797079942323j,
-             -0.013208708739843122 + 0.013821337222637264j, 0j),
-            (0j, 0j,
-             0.013609442340491029 - 0.014273698854090303j,
-             -0.0025503938754594265 + 0.0026744729386901805j,
-             -0.013369492605877786 + 0.014019798855923278j, 0j),
-            (0j, 0j,
-             0.013595569402532206 - 0.014287439152148014j,
-             -0.0017041572263699332 + 0.001790574472119783j,
-             -0.013489487541122221 + 0.014173702684166192j, 0j),
-            (0j, 0j,
-             0.01359208053488311 - 0.014300667598824968j,
-             -8.535506874711307e-4 + 8.978801355605307e-4j,
-             -0.01356639388716244 + 0.01427136892007339j, 0j)
-        ]
+        sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-8))
 
-        self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, self.src_cmpt, mp.Vector3(), 1e-8))
-        r = 1000
-        npts = 100
+        near_flux = mp.get_fluxes(flux_box)[0]
 
-        # Test store and load of near2far as numpy array
-        n2fdata = self.sim.get_near2far_data(self.nearfield)
-        self.sim.load_near2far_data(self.nearfield, n2fdata)
-
-        result = []
+        r = 1000/fcen      # circle of radius 1000 wavelengths
+        npts = 100         # number of points in [0,2*pi) range of angles
+        E = np.zeros((npts,3),dtype=np.complex128)
+        H = np.zeros((npts,3),dtype=np.complex128)
         for n in range(npts):
-            ff = self.sim.get_farfield(
-                self.nearfield,
-                mp.Vector3(r * math.cos(2 * math.pi * (n / npts)),
-                           r * math.sin(2 * math.pi * (n / npts)))
-            )
-            result.append(ff)
+            ff = sim.get_farfield(nearfield_box,
+                                  mp.Vector3(r*math.cos(2*math.pi*n/npts),
+                                             r*math.sin(2*math.pi*n/npts)))
+            E[n,:] = [np.conj(ff[j]) for j in range(3)]
+            H[n,:] = [ff[j+3] for j in range(3)]
 
-        np.testing.assert_allclose(expected, result[-10:])
+        Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
+        Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
+        Pz = np.real(np.multiply(E[:,0],H[:,1])-np.multiply(E[:,1],H[:,0]))
+        Pr = np.sqrt(np.square(Px)+np.square(Py))
+        far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
+        rr = 20/fcen      # square of side length 20 wavelengths
+        far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
+                           - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
+                           + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]
+                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]) * 1/resolution
+
+        print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_circle,far_flux_square))
+        self.assertAlmostEqual(near_flux, far_flux_circle, places=2)
+        self.assertAlmostEqual(near_flux, far_flux_square, places=2)
+        self.assertAlmostEqual(far_flux_circle, far_flux_square, places=2)
 
 if __name__ == '__main__':
     unittest.main()

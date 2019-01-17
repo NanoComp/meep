@@ -685,6 +685,9 @@
   (meep-dft-near2far-save-farfields near2far fname (get-filename-prefix)
                                     where resolution))
 
+(define (output-farflux near2far df where resolution)
+  (meep-dft-near2far-flux near2far df where resolution))
+
 (define (load-near2far fname near2far)
   (if (null? fields) (init-fields))
   (meep-dft-near2far-load-hdf5 near2far fields fname "" (get-filename-prefix)))
