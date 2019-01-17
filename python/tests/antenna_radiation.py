@@ -76,9 +76,10 @@ class TestAntennaRadiation(unittest.TestCase):
                            - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]) * 1/resolution
 
         print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_circle,far_flux_square))
+
         self.assertAlmostEqual(near_flux, far_flux_circle, places=2)
-        self.assertAlmostEqual(near_flux, far_flux_square, places=2)
         self.assertAlmostEqual(far_flux_circle, far_flux_square, places=2)
+        self.assertAlmostEqual(far_flux_square, far_flux_circle, places=2)
 
 if __name__ == '__main__':
     unittest.main()

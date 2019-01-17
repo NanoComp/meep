@@ -383,7 +383,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
       abort("cannot get flux for near2far: co-ordinate mismatch");
 
-    double *F = new double[Nfreq];
+    double *F_ = new double[Nfreq];
     std::complex<double> *ff_EH[6];
     std::complex<double> *cE[2], *cH[2];
     for (int i = 0; i < Nfreq; ++i) {
@@ -395,16 +395,18 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
       case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
       case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
       }
-      F[i] = 0;
+      F_[i] = 0;
       for (int j = 0; j < 2; ++j) {
         double flux_sum = 0;
 	for (int p = 0; p < N; ++p)
 	  flux_sum += real(cE[j][p]*conj(cH[j][p]));
-	F[i] += flux_sum * (1 - 2*j);
+	F_[i] += flux_sum * (1 - 2*j);
       }
-      master_printf("near2far-flux:, %0.2g, %0.5g\n",freq_min+i*dfreq,F[i]);
     }
     delete[] EH;
+    double *F = new double[Nfreq];
+    sum_to_all(F_, F, Nfreq);
+    delete[] F_;
     return F;
 }
 
