@@ -79,7 +79,7 @@ class TestAntennaRadiation(unittest.TestCase):
 
         self.assertAlmostEqual(near_flux, far_flux_circle, places=2)
         self.assertAlmostEqual(far_flux_circle, far_flux_square, places=2)
-        self.assertAlmostEqual(far_flux_square, far_flux_circle, places=2)
+        self.assertAlmostEqual(far_flux_square, near_flux, places=2)
 
 if __name__ == '__main__':
     unittest.main()
