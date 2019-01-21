@@ -2,13 +2,13 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's [near-to-far-field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature using two examples. There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or possibly, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
+We demonstrate Meep's [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature using two examples. There are three steps involved in this type of calculation. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
 ### Radiation Pattern of an Antenna
 
-In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of the 2d cell which is surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed along the circumference of a circle having a radius many times larger than the source wavelength and lying beyond the cell. From the near and far fields, we will also compute the total outgoing flux and demonstrate that they are equivalent. The radiation pattern and flux will be computed for three orthogonal polarizations of the input source.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of a 2d cell which is surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed along the circumference of a circle having a radius many times larger than the source wavelength and lying beyond the cell. From the near and far fields, we will also compute the total outgoing flux and demonstrate that they are equivalent. The radiation pattern and flux will be computed for three orthogonal polarizations of the input source.
 
 The simulation geometry is shown in the following schematic.
 
@@ -69,10 +69,10 @@ flux_box = sim.add_flux(fcen, 0, 1,
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
 ```
 
-In the second part, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm (which is 1000 times larger than the source wavelength). The six far field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$) are stored as separate arrays. Note that these fields which are returned by `get_farfield` are always complex. From the far fields at each point $\mathbf{r}$, we compute the radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Since this is a 2d simulation, $P_z$ is always 0.
+In the second part, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm (which is 1000 times larger than the source wavelength). The six far field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation.
 
 ```py
-r = 1000/fcen      # 1000 wavelengths out from the source
+r = 1000/fcen      # radius of far field surface
 npts = 100         # number of points in [0,2*pi) range of angles
 angles = 2*math.pi/npts*np.arange(npts)
 
@@ -106,7 +106,7 @@ plt.show()
 ![](../images/Source_radiation_pattern.png)
 </center>
 
-By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). Slight differences may be due to discretization errors. This can be verified using the simulation data:
+By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). Slight differences are due to discretization errors. This is verified using the simulation data:
 
 ```py
 near_flux = mp.get_fluxes(flux_box)[0]
@@ -114,7 +114,7 @@ far_flux = np.sum(Pr)*2*np.pi*r/len(Pr)
 print("flux:, {:.6f}, {:.6f}".format(near_flux,far_flux))
 ```
 
-The near- and far-field flux for the J$_z$ source are `2.456196` and `2.457249`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` and `1.227260` which is a ratio of `1.000429`. This ratio will converge to one as the resolution is increased.
+The near- and far-field flux for the J$_z$ source are `2.456196` and `2.457249`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` and `1.227260` which is a ratio of `1.000429`. These ratios will converge to one as the resolution is increased.
 
 ### Far-Field Intensity of a Cavity
 

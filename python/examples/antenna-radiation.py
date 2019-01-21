@@ -48,7 +48,7 @@ flux_box = sim.add_flux(fcen, 0, 1,
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
 
-r = 1000/fcen      # 1000 wavelengths out from the source
+r = 1000/fcen      # radius of far field surface
 npts = 100         # number of points in [0,2*pi) range of angles
 angles = 2*math.pi/npts*np.arange(npts)
 
