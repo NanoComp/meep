@@ -369,7 +369,7 @@ which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \ha
 ```py
 k_interp = 19
 
-sim.run_k_points(k_points=300, mp.interpolate(k_interp, [mp.Vector3(0), mp.Vector3(0.5)]))
+sim.run_k_points(300, mp.interpolate(k_interp, [mp.Vector3(0), mp.Vector3(0.5)]))
 ```
 
 Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2π \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs Harminv, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:

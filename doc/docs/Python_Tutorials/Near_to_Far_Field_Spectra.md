@@ -2,25 +2,31 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's [near-to-far-field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature using two examples. There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or possibly, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
+We demonstrate Meep's [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature using two examples. There are three steps involved in this type of calculation. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
 ### Radiation Pattern of an Antenna
 
-In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. We will compute the radiation pattern for three different polarizations of the input source. The source is placed in the middle of the 2d cell which is surrounded by PMLs. The near fields are obtained on a bounding box positioned just outside of the PML. The far fields are computed at equally-spaced points along the circumference of a circle having a radius many (i.e., 1000) times larger than the source wavelength and lying outside of the cell. The simulation geometry is shown in the following schematic.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of a 2d cell which is surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed along the circumference of a circle having a radius many times larger than the source wavelength and lying beyond the cell. From the near and far fields, we will also compute the total outgoing flux and demonstrate that they are equivalent. The radiation pattern and flux will be computed for three orthogonal polarizations of the input source.
+
+The simulation geometry is shown in the following schematic.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
 </center>
+
+In the first part of the simulation, we define the cell and sources as well as the near field and flux regions. Since we are using a pulsed source (with center wavelength of 1 μm), the fields are timestepped until they have sufficiently decayed away.
 
 The simulation script is in [examples/antenna-radiation.py](https://github.com/NanoComp/meep/blob/master/python/examples/antenna-radiation.py).
 
 ```py
 import meep as mp
 import math
+import numpy as np
+import matplotlib.pyplot as plt
 
-resolution = 50
+resolution = 50  # pixels/um
 
 sxy = 4
 dpml = 1
@@ -36,11 +42,11 @@ sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
                      component=src_cmpt)]
 
 if src_cmpt == mp.Ex:
-    symmetries = [mp.Mirror(mp.Y)]
+    symmetries = [mp.Mirror(mp.X,phase=-1),mp.Mirror(mp.Y,phase=+1)]
 elif src_cmpt == mp.Ey:
-    symmetries = [mp.Mirror(mp.X)]
+    symmetries = [mp.Mirror(mp.X,phase=+1),mp.Mirror(mp.Y,phase=-1)]
 elif src_cmpt == mp.Ez:
-    symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
+    symmetries = [mp.Mirror(mp.X,phase=+1),mp.Mirror(mp.Y,phase=+1)]
 
 sim = mp.Simulation(cell_size=cell,
                     resolution=resolution,
@@ -61,53 +67,32 @@ flux_box = sim.add_flux(fcen, 0, 1,
                         mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
-
-flux = mp.get_fluxes(flux_box)
-print("flux:, {}".format(flux[0]))
-
-r = 1000/fcen      # 1000 wavelengths out from the source
-npts = 100         # number of points in [0,2*pi) range of angles
-
-for n in range(npts):
-    ff = sim.get_farfield(nearfield_box, mp.Vector3(r*math.cos(2*math.pi*n/npts),
-                                                    r*math.sin(2*math.pi*n/npts)))
-    print("farfield:, {}, {}, ".format(n, 2*math.pi*n/npts), end='')
-    print(", ".join([str(f).strip('()').replace('j', 'i') for f in ff]))
 ```
 
-We use the `get_farfield` routine to compute the far fields by looping over a set of 100 points along the circumference of the circle with radius of 1 mm. We compute the far fields at a wavelength of 1 μm for three different polarizations of the current source by setting the `src_cmpt` parameter to E$_x$, E$_y$, and E$_z$ in separate runs. The output consists of eight columns containing for each point: index identifier (integer), angle (radians), and six field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$). Note that the far fields are always complex even though the near fields are real (as in this example). We also compute the flux from the source using the same bounding box.
-
-The script is run and the output piped to a file using the following shell commands. The far field results are extracted from the output and placed in a separate file.
-
-```sh
-python antenna-radiation.py |tee source_Jz_farfields.out
-grep farfield: source_Jz_farfields.out |cut -d , -f2- > source_Jz_farfields.dat
-```
-
-From the far fields at each point $\mathbf{r}$, we can compute the radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Since this is a 2d simulation, $P_z$ is always 0. We plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern. These plots were generated using the following Python script.
+In the second part, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm (which is 1000 times larger than the source wavelength). The six far field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation.
 
 ```py
-import matplotlib.pyplot as plt
-import numpy as np
+r = 1000/fcen      # radius of far field surface
+npts = 100         # number of points in [0,2*pi) range of angles
+angles = 2*math.pi/npts*np.arange(npts)
 
-d = np.genfromtxt('source_Jz_farfields.dat', delimiter=",", dtype='str')
-d = np.char.replace(d,'i','j').astype(np.complex128)
+E = np.zeros((npts,3),dtype=np.complex128)
+H = np.zeros((npts,3),dtype=np.complex128)
+for n in range(npts):
+    ff = sim.get_farfield(nearfield_box,
+                          mp.Vector3(r*math.cos(angles[n]),
+                                     r*math.sin(angles[n])))
+    E[n,:] = [np.conj(ff[j]) for j in range(3)]
+    H[n,:] = [ff[j+3] for j in range(3)]
 
-Ex = np.conj(d[:,2])
-Ey = np.conj(d[:,3])
-Ez = np.conj(d[:,4])
+Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
+Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
+Pr = np.sqrt(np.square(Px)+np.square(Py))
+```
 
-Hx = d[:,5]
-Hy = d[:,6]
-Hz = d[:,7]
+We plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src_cmpt` of E$_x$, E$_y$, and E$_z$. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern.
 
-Px = np.real(np.multiply(Ey,Hz)-np.multiply(Ez,Hy))
-Py = np.real(np.multiply(Ez,Hx)-np.multiply(Ex,Hz))
-Pz = np.real(np.multiply(Ex,Hy)-np.multiply(Ey,Hx))
-Pr = np.sqrt(np.square(Px)+np.square(Py));
-
-angles = np.real(d[:,1])
-
+```py
 ax = plt.subplot(111, projection='polar')
 ax.plot(angles,Pr/max(Pr),'b-')
 ax.set_rmax(1)
@@ -117,18 +102,19 @@ ax.set_rlabel_position(22)
 plt.show()
 ```
 
-By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the flux spectrum which is obtained by integrating around a closed surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between), with slight differences due to discretization errors. The integral of the radial flux along the circumference of a circle with radius 1000 μm is obtained via:
-
-```py
-r = 1000     # circle radius (same units as Meep simulation)
-print("flux:, {}".format(np.sum(Pr)*2*np.pi*r/len(Pr)))
-```
-
-The far-field flux for the J$_z$ source is `2.457249`. The near-field flux, shown in the simulation output in the line prefixed by `flux:,`, is `2.456196`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.227260` and `1.227786` which is a ratio of `0.999571`. This ratio will converge to one as the resolution is increased.
-
 <center>
 ![](../images/Source_radiation_pattern.png)
 </center>
+
+By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). Slight differences are due to discretization errors. This is verified using the simulation data:
+
+```py
+near_flux = mp.get_fluxes(flux_box)[0]
+far_flux = np.sum(Pr)*2*np.pi*r/len(Pr)
+print("flux:, {:.6f}, {:.6f}".format(near_flux,far_flux))
+```
+
+The near- and far-field flux for the J$_z$ source are `2.456196` and `2.457249`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` and `1.227260` which is a ratio of `1.000429`. These ratios will converge to one as the resolution is increased.
 
 ### Far-Field Intensity of a Cavity
 
