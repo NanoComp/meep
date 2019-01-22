@@ -472,7 +472,7 @@ class Simulation(object):
                  load_structure='',
                  geometry_center=mp.Vector3(),
                  force_all_components=False,
-                 split_chunks_evenly=False):
+                 split_chunks_evenly=True):
 
         self.cell_size = cell_size
         self.geometry = geometry

@@ -994,44 +994,61 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
         .split_by_effort(n - num_low, which - num_low, Ngv, v, effort);
 }
 
-grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
+grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num, int factor) const {
   const size_t grid_points_owned = nowned_min();
-  if (size_t(desired_chunks) > grid_points_owned)
+  if (size_t(desired_chunks) > grid_points_owned) {
     abort("Cannot split %zd grid points into %d parts\n", nowned_min(), desired_chunks);
+  }
   if (desired_chunks == 1) return *this;
-  double best_split_measure = 1e20, left_effort_fraction = 0;
+
+  double best_split_measure = 1e20;
+  double left_effort_fraction = 0;
   int best_split_point = 0;
   direction best_split_direction = NO_DIRECTION;
+  direction longest_axis = NO_DIRECTION;
+  int num_in_longest_axis = 0;
 
   LOOP_OVER_DIRECTIONS(dim, d) {
-    int biglen = num_direction(d);
-    direction splitdir = d;
+    if (num_direction(d) > num_in_longest_axis) {
+      longest_axis = d;
+      num_in_longest_axis = num_direction(d);
+    }
+  }
 
-    for (int split_point = 1; split_point < biglen; split_point += 1) {
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    for (int split_point = 1; split_point < num_direction(d); ++split_point) {
       grid_volume v_left = *this;
-      v_left.set_num_direction(splitdir, split_point);
+      v_left.set_num_direction(d, split_point);
       grid_volume v_right = *this;
-      v_right.set_num_direction(splitdir, num_direction(splitdir) - split_point);
-      v_right.shift_origin(splitdir, split_point * 2);
+      v_right.set_num_direction(d, num_direction(d) - split_point);
+      v_right.shift_origin(d, split_point * 2);
 
       geom_box left_box = meep_geom::gv2box(v_left.surroundings());
       geom_box right_box = meep_geom::gv2box(v_right.surroundings());
-
       meep_geom::fragment_stats left_stats(left_box);
       meep_geom::fragment_stats right_stats(right_box);
-
       left_stats.compute();
       right_stats.compute();
-      double total_left_effort = left_stats.cost();
-      double total_right_effort = right_stats.cost();
+      double left_cost = left_stats.cost();
+      double right_cost = right_stats.cost();
+      double total_cost = left_cost + right_cost;
 
-      double split_measure = max(total_left_effort / (desired_chunks / 2),
-                                 total_right_effort / (desired_chunks - desired_chunks / 2));
+      double split_measure = max(left_cost / (desired_chunks / 2),
+                                 right_cost / (desired_chunks - desired_chunks / 2));
       if (split_measure < best_split_measure) {
-        best_split_measure = split_measure;
-        best_split_point = split_point;
-        best_split_direction = d;
-        left_effort_fraction = total_left_effort / (total_left_effort + total_right_effort);
+        if (d == longest_axis ||
+            split_measure < (best_split_measure - (0.3 * best_split_measure))) {
+          // Only use this split_measure if we're on the longest_axis, or if the split_measure is
+          // more than 30% better than the best_split_measure. This is a heuristic to prefer lower
+          // communication costs when the split_measure is somewhat close.
+          // TODO: Use machine learning to get a cost function for the communication instead of hard
+          // coding 0.3
+
+          best_split_measure = split_measure;
+          best_split_point = split_point;
+          best_split_direction = d;
+          left_effort_fraction = left_cost / total_cost;
+        }
       }
     }
   }
