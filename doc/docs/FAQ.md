@@ -267,9 +267,10 @@ The value of the `k_point` determines the phase relation between the fields and 
 
 Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), the boundary conditions are mostly irrelevant. For example, if there is a PML in front of a periodic boundary, the periodicity doesn't matter because the field will have decayed almost to zero by the time it "wraps around" to the other side of the cell.
 
-### Do I need to include the 2π factor when defining the frequency or the wavevector?
+### Should I include the 2π factor when defining the frequency or the wavevector?
 
-No. The frequency and wavevector are multiplied by 2π interally. The 2π factors are "there", you just don't include them when you specify them in the interface. For example, if you specify a `frequency` of 0.3 in the `Source`, then the time-dependence of the source is exp(-2πi0.3t), where time t is also in Meep units. What you are specifying is frequency, not angular frequency. And when you specify the `k_point` for Bloch-periodic boundary conditions, you are also specifying it without the 2π factor. Thus, if you specify `k_point = meep.Vector3(0.4,0,0)` in the interface, then the phase factor between adjacent unit cells with period L in the x direction is exp(2πi0.4L).
+No. Frequency inputs and outputs in Meep are the ordinary frequency `f`, not the angular frequency ω=2πf. Similarly, spatial wavevectors k (e.g. for Bloch-periodic boundary conditions) are specified without the 2π factor, so that the spatial dependence is exp(2πikx).
+For example, if you specify a `frequency=0.3` in a source, then the time-dependence of the source is exp(-2πi0.3t), where time t is also in Meep units. Similarly, if you specify `k_point = meep.Vector3(0.4,0,0)` in the interface, then the phase factor between adjacent unit cells with period L in the x direction is exp(2πi0.4L).
 
 ### Can Meep simulate time-varying structures?
 
