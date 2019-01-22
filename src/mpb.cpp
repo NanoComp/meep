@@ -216,7 +216,7 @@ static complex<double> meep_mpb_A(const vec &p) {
 static void cross_product(mpb_real axb[3], const mpb_real a[3], const mpb_real b[3]) {
   axb[0] = a[1] * b[2] - a[2] * b[1];
   axb[1] = a[2] * b[0] - a[0] * b[2];
-  axb[2] = a[0] * b[1] - a[1] * b[2];
+  axb[2] = a[0] * b[1] - a[1] * b[0];
 }
 static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -316,12 +316,12 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   for (int i = 0; i < 3; ++i) {
     n[i] = int(resolution * s[i] + 0.5);
     if (n[i] == 0) n[i] = 1;
-    if (s[i] == 0)
+    if (s[i] != 0)
       R[i][i] = s[i];
     else {
-      if (abs(_kpoint) == 0)
+      if (d != NO_DIRECTION)
         R[i][i] = 1;
-      else {
+      else { // get lattice vector from kpoint
         for (int j = 0; j < 3; ++j)
           R[i][j] = kcart[j] / kcart_len;
       }
