@@ -342,6 +342,10 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     direction dirs[3] = {X,Y,Z};
     int rank = 0, N = 1;
     double vol = 1;
+
+    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
+      abort("cannot get flux for near2far: co-ordinate mismatch");
+
     LOOP_OVER_DIRECTIONS(where.dim, d) {
       dims[rank] = int(floor(where.in_direction(d) * resolution));
       if (dims[rank] <= 1) {
@@ -356,15 +360,12 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
       dirs[rank++] = d;
     }
 
-    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
-      abort("cannot get flux for near2far: co-ordinate mismatch");
-
     /* fields for farfield_lowlevel for a single output point x */
     std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
 
     double *F_ = new double[Nfreq];
-    std::complex<double> *ff_EH[6];
-    std::complex<double> *cE[2], *cH[2];
+    std::complex<double> ff_EH[6], ff_EH_[6];
+    std::complex<double> cE[2], cH[2];
 
     for (int i = 0; i < Nfreq; ++i)
       F_[i] = 0;
@@ -377,10 +378,10 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 	for (int i2 = 0; i2 < dims[2]; ++i2) {
 	  x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2*dx[2]);
 	  farfield_lowlevel(EH1, x);
-          int idx = (i0 * dims[1] + i1) * dims[2] + i2;
           for (int i = 0; i < Nfreq; ++i) {
             for (int k = 0; k < 6; ++k)
-              ff_EH[k] = EH1 + (i * 6 + k);
+              ff_EH_[k] = EH1[i * 6 + k];
+            sum_to_master(ff_EH_, ff_EH, 6);
             switch (df) {
             case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
             case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
@@ -388,7 +389,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
             case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
             }
             for (int j = 0; j < 2; ++j)
-              F_[i] += real(cE[j][0]*conj(cH[j][0])) * (1 - 2*j);
+              F_[i] += real(cE[j]*conj(cH[j])) * (1 - 2*j);
           }
 	}
       }
