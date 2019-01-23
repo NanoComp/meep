@@ -65,7 +65,6 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thegv, num, br, s);
-
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -95,109 +94,10 @@ static std::vector<int> get_prime_factors(int n) {
   } else if (n >= 2 && n <= 5) {
     result.push_back(n);
   }
-
   return result;
 }
 
-static double get_cost_of_volume(grid_volume gv) {
-  geom_box box = meep_geom::gv2box(gv.surroundings());
-  meep_geom::fragment_stats fstats(box);
-  fstats.compute();
-  return fstats.cost();
-}
-
-static void split_into_three(grid_volume gvol, std::vector<grid_volume> &result) {
-
-  grid_volume best_low, best_mid, best_high;
-  double best_overall_split_measure = 1e20;
-  int best_low_split_point = 0;
-  int best_high_split_point = 0;
-
-  double total_cost = get_cost_of_volume(gvol);
-  double ideal_cost_per_chunk = total_cost / 3;
-
-  direction longest_axis = NO_DIRECTION;
-  int num_in_longest_axis = 0;
-  LOOP_OVER_DIRECTIONS(gvol.dim, d) {
-    if (gvol.num_direction(d) > num_in_longest_axis) {
-      longest_axis = d;
-      num_in_longest_axis = gvol.num_direction(d);
-    }
-  }
-
-  LOOP_OVER_DIRECTIONS(gvol.dim, d) {
-    double best_low_split_measure = 1e20;
-    for (int split_point = 1; split_point < gvol.num_direction(d); ++split_point) {
-      grid_volume v_low = gvol;
-      v_low.set_num_direction(d, split_point);
-      double low_cost = get_cost_of_volume(v_low);
-      double split_measure = fabs(low_cost - ideal_cost_per_chunk);
-
-      if (split_measure < best_low_split_measure) {
-        best_low_split_measure = split_measure;
-        best_low_split_point = split_point;
-      }
-    }
-
-    grid_volume low_gv = gvol.split_at_fraction(false, best_low_split_point, d,
-                                                gvol.num_direction(d));
-    grid_volume high_two_gvs = gvol.split_at_fraction(true, best_low_split_point, d,
-                                                      gvol.num_direction(d));
-
-    double best_high_split_measure = 1e20;
-    for (int split_point = 1; split_point < high_two_gvs.num_direction(d); ++split_point) {
-      grid_volume v_low = high_two_gvs;
-      v_low.set_num_direction(d, split_point);
-      double low_cost = get_cost_of_volume(v_low);
-      double split_measure = fabs(low_cost - ideal_cost_per_chunk);
-
-      if (split_measure < best_high_split_measure) {
-        best_high_split_measure = split_measure;
-        best_high_split_point = split_point;
-      }
-    }
-    grid_volume mid_gv = high_two_gvs.split_at_fraction(false, best_high_split_point, d,
-                                                        high_two_gvs.num_direction(d));
-    grid_volume high_gv = high_two_gvs.split_at_fraction(true, best_high_split_point, d,
-                                                        high_two_gvs.num_direction(d));
-
-    double low_cost = get_cost_of_volume(low_gv);
-    double mid_cost = get_cost_of_volume(mid_gv);
-    double high_cost = get_cost_of_volume(high_gv);
-
-    double overall_split_measure = max(max(low_cost, mid_cost), high_cost);
-    bool within_thirty_percent = (overall_split_measure > best_overall_split_measure * 0.7 &&
-                                  overall_split_measure < best_overall_split_measure * 1.3);
-    bool at_least_thirty_percent_better = overall_split_measure < best_overall_split_measure * 0.7;
-
-    if ((within_thirty_percent && d == longest_axis) || at_least_thirty_percent_better) {
-      best_overall_split_measure = overall_split_measure;
-      best_low = low_gv;
-      best_mid = mid_gv;
-      best_high = high_gv;
-    }
-  }
-  result.push_back(best_low);
-  result.push_back(best_mid);
-  result.push_back(best_high);
-}
-
-static std::vector<grid_volume> make_gvols(grid_volume gvol, int split_num) {
-  std::vector<grid_volume> result;
-
-  if (split_num == 3) {
-    split_into_three(gvol, result);
-  } else {
-    for (int i = 0; i < split_num; ++i) {
-      grid_volume split_gv = gvol.split_by_cost(split_num, i);
-      result.push_back(split_gv);
-    }
-  }
-
-  return result;
-}
-
-static void do_it(std::vector<int> factors, grid_volume gvol, std::vector<grid_volume> &result) {
+static void split_by_cost(std::vector<int> factors, grid_volume gvol, std::vector<grid_volume> &result) {
 
   if (factors.size() == 0) {
     result.push_back(gvol);
@@ -207,12 +107,12 @@ static void do_it(std::vector<int> factors, grid_volume gvol, std::vector<grid_v
   int n = factors.back();
   factors.pop_back();
 
-  std::vector<grid_volume> new_gvs = make_gvols(gvol, n);
+  std::vector<grid_volume> new_gvs = gvol.split_into_n(n);
   if (new_gvs.size() != (size_t)n) {
-    master_printf("Error splitting by cost: %zu != %d", new_gvs.size(), n);
+    abort("Error splitting by cost: expected %d grid_volumes but got %zu", n, new_gvs.size());
   }
   for (int i = 0; i < n; ++i) {
-    do_it(factors, new_gvs[i], result);
+    split_by_cost(factors, new_gvs[i], result);
   }
 }
 
@@ -277,6 +177,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     adjusted_num_chunks *= prime_factors[i];
   }
 
+  // Finally, create the chunks:
   num_chunks = 0;
   chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
   std::vector<grid_volume> chunk_volumes;
@@ -290,7 +191,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       chunk_volumes.push_back(vi);
     }
   } else {
-    do_it(prime_factors, gv, chunk_volumes);
+    split_by_cost(prime_factors, gv, chunk_volumes);
   }
 
   // Break off PML regions into their own chunks
@@ -304,32 +205,6 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       }
     }
   }
-
-  // Finally, create the chunks:
-  // num_chunks = 0;
-  // chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
-  // for (int i = 0; i < adjusted_num_chunks; i++) {
-  //   const int proc = i * count_processors() / adjusted_num_chunks;
-
-  //   grid_volume vi;
-  //   if (meep_geom::fragment_stats::resolution == 0 ||
-  //       meep_geom::fragment_stats::has_non_medium_material() || gv.dim == Dcyl ||
-  //       meep_geom::fragment_stats::split_chunks_evenly) {
-  //     // Fall back to split_by_effort method
-  //     vi = gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes, effort);
-  //   } else {
-  //     vi = gv.split_by_cost(adjusted_num_chunks, i);
-  //   }
-
-  //   for (int j = 0; j < num_effort_volumes; j++) {
-  //     grid_volume vc;
-  //     if (vi.intersect_with(effort_volumes[j], &vc)) {
-  //       chunks[num_chunks] = new structure_chunk(vc, v, Courant, proc);
-  //       br.apply(this, chunks[num_chunks++]);
-  //     }
-  //   }
-  // }
-
   check_chunks();
 }
 

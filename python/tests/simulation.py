@@ -327,8 +327,7 @@ class TestSimulation(unittest.TestCase):
                             cell_size=cell,
                             boundary_layers=pml_layers,
                             geometry=geometry,
-                            sources=[sources],
-                            split_chunks_evenly=True)
+                            sources=[sources])
 
         sample_point = mp.Vector3(0.12, -0.29)
         ref_field_points = []
