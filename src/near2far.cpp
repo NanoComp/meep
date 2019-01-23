@@ -341,24 +341,33 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     double dx[3] = {0,0,0};
     direction dirs[3] = {X,Y,Z};
     int rank = 0, N = 1;
+    double vol = 1;
     LOOP_OVER_DIRECTIONS(where.dim, d) {
       dims[rank] = int(floor(where.in_direction(d) * resolution));
       if (dims[rank] <= 1) {
 	dims[rank] = 1;
 	dx[rank] = 0;
       }
-      else
+      else {
 	dx[rank] = where.in_direction(d) / (dims[rank] - 1);
+        vol *= dx[rank];
+      }
       N *= dims[rank];
       dirs[rank++] = d;
     }
 
-    /* 6 x N x Nfreq array of fields in row-major order */
-    std::complex<double> *EH = new std::complex<double>[6*N*Nfreq];
-    std::complex<double> *EH_ = new std::complex<double>[6*N*Nfreq]; // temp array for sum_to_master
+    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
+      abort("cannot get flux for near2far: co-ordinate mismatch");
 
     /* fields for farfield_lowlevel for a single output point x */
     std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
+
+    double *F_ = new double[Nfreq];
+    std::complex<double> *ff_EH[6];
+    std::complex<double> *cE[2], *cH[2];
+
+    for (int i = 0; i < Nfreq; ++i)
+      F_[i] = 0;
 
     vec x(where.dim);
     for (int i0 = 0; i0 < dims[0]; ++i0) {
@@ -368,42 +377,26 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 	for (int i2 = 0; i2 < dims[2]; ++i2) {
 	  x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2*dx[2]);
 	  farfield_lowlevel(EH1, x);
-	  int idx = (i0 * dims[1] + i1) * dims[2] + i2;
-	  for (int i = 0; i < Nfreq; ++i)
-	    for (int k = 0; k < 6; ++k)
-	      EH_[(k * N + idx) + (6 * N * i)] = EH1[i * 6 + k];
+          int idx = (i0 * dims[1] + i1) * dims[2] + i2;
+          for (int i = 0; i < Nfreq; ++i) {
+            for (int k = 0; k < 6; ++k)
+              ff_EH[k] = EH1 + (i * 6 + k);
+            switch (df) {
+            case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
+            case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
+            case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
+            case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
+            }
+            for (int j = 0; j < 2; ++j)
+              F_[i] += real(cE[j][0]*conj(cH[j][0])) * (1 - 2*j);
+          }
 	}
       }
     }
 
-    delete[] EH1;
-    sum_to_master(EH_, EH, 6*N*Nfreq);
-    delete[] EH_;
+    for (int i = 0; i < Nfreq; ++i)
+      F_[i] *= vol;
 
-    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
-      abort("cannot get flux for near2far: co-ordinate mismatch");
-
-    double *F_ = new double[Nfreq];
-    std::complex<double> *ff_EH[6];
-    std::complex<double> *cE[2], *cH[2];
-    for (int i = 0; i < Nfreq; ++i) {
-      for (int k = 0; k < 6; ++k)
-	ff_EH[k] = EH + (k * N) + (6 * N * i);
-      switch (df) {
-      case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
-      case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
-      case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
-      case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
-      }
-      F_[i] = 0;
-      for (int j = 0; j < 2; ++j) {
-        double flux_sum = 0;
-	for (int p = 0; p < N; ++p)
-	  flux_sum += real(cE[j][p]*conj(cH[j][p]));
-	F_[i] += flux_sum * (1 - 2*j);
-      }
-    }
-    delete[] EH;
     double *F = new double[Nfreq];
     sum_to_all(F_, F, Nfreq);
     delete[] F_;

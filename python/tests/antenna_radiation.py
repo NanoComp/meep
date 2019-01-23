@@ -73,7 +73,7 @@ class TestAntennaRadiation(unittest.TestCase):
         far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
                            - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
                            + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]
-                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]) * 1/resolution
+                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0])
 
         print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_circle,far_flux_square))
 
