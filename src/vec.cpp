@@ -1133,9 +1133,7 @@ void grid_volume::split_into_three(std::vector<grid_volume> &result) const {
     double mid_cost = mid_gv.get_cost();
     double high_cost = high_gv.get_cost();
 
-    double overall_split_measure = fabs(ideal_cost_per_chunk - low_cost) +
-                                   fabs(ideal_cost_per_chunk - mid_cost) +
-                                   fabs(ideal_cost_per_chunk - high_cost);
+    double overall_split_measure = max(max(low_cost, mid_cost), high_cost);
     bool within_thirty_percent = (overall_split_measure > best_overall_split_measure * 0.7 &&
                                   overall_split_measure < best_overall_split_measure * 1.3);
     bool at_least_thirty_percent_better = overall_split_measure < best_overall_split_measure * 0.7;
