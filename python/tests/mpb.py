@@ -553,7 +553,7 @@ class TestModeSolver(unittest.TestCase):
         ms.num_bands = 2
         ms.mesh_size = 7
 
-        result = minimize_scalar(first_tm_gap, method='bounded', bounds=[0.1, 0.5], tol=0.1)
+        result = minimize_scalar(first_tm_gap, method='bounded', bounds=[0.1, 0.5], options={'xatol': 0.1})
         expected = 39.10325687542367
         self.assertAlmostEqual(expected, result.fun * -1, places=2)
 
