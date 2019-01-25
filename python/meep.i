@@ -787,6 +787,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete $1;
 }
 
+// For some reason SWIG needs the namespaced version too
+%apply material_type { meep_geom::material_type };
+
 // Typemap suite for get_array_metadata
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
@@ -1110,6 +1113,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         delete[] $1.items;
     }
 }
+
+// For some reason SWIG needs the namespaced version too
+%apply material_type_list { meep_geom::material_type_list };
 
 // Typemap suite for custom_src_time
 
@@ -1478,4 +1484,57 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 
     import atexit
     atexit.register(report_elapsed_time)
+%}
+
+%inline %{
+meep::structure *create_structure_and_set_materials(vector3 cell_size,
+                                                    std::vector<meep_geom::dft_data> dft_data_list_,
+                                                    std::vector<meep::volume> pml_1d_vols_,
+                                                    std::vector<meep::volume> pml_2d_vols_,
+                                                    std::vector<meep::volume> pml_3d_vols_,
+                                                    std::vector<meep::volume> absorber_vols_,
+                                                    meep::grid_volume &gv,
+                                                    const meep::boundary_region &br,
+                                                    const meep::symmetry &sym,
+                                                    int num_chunks,
+                                                    double Courant,
+                                                    bool use_anisotropic_averaging,
+                                                    double tol,
+                                                    int maxeval,
+                                                    geometric_object_list gobj_list,
+                                                    vector3 center,
+                                                    bool _ensure_periodicity,
+                                                    bool verbose,
+                                                    meep_geom::material_type _default_material,
+                                                    meep_geom::absorber_list alist,
+                                                    meep_geom::material_type_list extra_materials,
+                                                    bool split_chunks_evenly) {
+    // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
+    meep_geom::fragment_stats::geom = gobj_list;
+    meep_geom::fragment_stats::dft_data_list = dft_data_list_;
+    meep_geom::fragment_stats::pml_1d_vols = pml_1d_vols_;
+    meep_geom::fragment_stats::pml_2d_vols = pml_2d_vols_;
+    meep_geom::fragment_stats::pml_3d_vols = pml_3d_vols_;
+    meep_geom::fragment_stats::absorber_vols = absorber_vols_;
+    meep_geom::fragment_stats::tol = tol;
+    meep_geom::fragment_stats::maxeval = maxeval;
+    meep_geom::fragment_stats::resolution = gv.a;
+    meep_geom::fragment_stats::dims = gv.dim;
+    meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
+    meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
+                                           &gv, cell_size, center, &gobj_list);
+
+    meep::structure *s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
+                                             use_anisotropic_averaging, tol, maxeval);
+    s->shared_chunks = true;
+
+    meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol, maxeval,
+                                           _ensure_periodicity, verbose, _default_material, alist, extra_materials);
+
+    // Return params to default state
+    meep_geom::fragment_stats::resolution = 0;
+    meep_geom::fragment_stats::split_chunks_evenly = false;
+
+    return s;
+}
 %}
