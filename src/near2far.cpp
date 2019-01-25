@@ -362,9 +362,10 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
     /* fields for farfield_lowlevel for a single output point x */
     std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
+    std::complex<double> *EH1_ = new std::complex<double>[6*Nfreq];
 
     double *F_ = new double[Nfreq];
-    std::complex<double> ff_EH[6], ff_EH_[6];
+    std::complex<double> ff_EH[6];
     std::complex<double> cE[2], cH[2];
 
     for (int i = 0; i < Nfreq; ++i)
@@ -377,11 +378,11 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 	x.set_direction(dirs[1], where.in_direction_min(dirs[1]) + i1*dx[1]);
 	for (int i2 = 0; i2 < dims[2]; ++i2) {
 	  x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2*dx[2]);
-	  farfield_lowlevel(EH1, x);
+	  farfield_lowlevel(EH1_, x);
+          sum_to_master(EH1_, EH1, 6*Nfreq);          
           for (int i = 0; i < Nfreq; ++i) {
             for (int k = 0; k < 6; ++k)
-              ff_EH_[k] = EH1[i * 6 + k];
-            sum_to_master(ff_EH_, ff_EH, 6);
+              ff_EH[k] = EH1[i * 6 + k];
             switch (df) {
             case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
             case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
@@ -395,6 +396,9 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
       }
     }
 
+    delete[] EH1_;
+    delete[] EH1;
+    
     for (int i = 0; i < Nfreq; ++i)
       F_[i] *= vol;
 
