@@ -10,11 +10,11 @@
 (set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df))) (center 0) (component src-cmpt))))
 
 (if (= src-cmpt Ex)
-    (set! symmetries (list (make mirror-sym (direction Y)))))
+    (set! symmetries (list (make mirror-sym (direction X) (phase -1)) (make mirror-sym (direction Y) (phase +1)))))
 (if (= src-cmpt Ey)
-    (set! symmetries (list (make mirror-sym (direction X)))))
+    (set! symmetries (list (make mirror-sym (direction X) (phase +1)) (make mirror-sym (direction Y) (phase -1)))))
 (if (= src-cmpt Ez)
-    (set! symmetries (list (make mirror-sym (direction X)) (make mirror-sym (direction Y)))))
+    (set! symmetries (list (make mirror-sym (direction X) (phase +1)) (make mirror-sym (direction Y) (phase +1)))))
 
 (define nearfield-box
   (add-near2far fcen 0 1
@@ -32,9 +32,9 @@
 
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
 
-(print "flux:, " (list-ref (get-fluxes flux-box) 0) "\n")
+(print "near-flux:, " (list-ref (get-fluxes flux-box) 0) "\n")
 
-(define-param r (/ 1000 fcen))    ; 1000 wavelengths out from the source
+(define-param r (/ 1000 fcen))    ; radius of far field surface
 (define-param npts 100)           ; number of points in [0,2*pi) range of angles
 (map (lambda (n)
        (let ((ff (get-farfield nearfield-box (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
