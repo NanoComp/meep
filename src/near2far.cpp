@@ -336,15 +336,15 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
 }
 
 double *dft_near2far::flux(direction df, const volume &where, double resolution) {
+    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
+      abort("cannot get flux for near2far: co-ordinate mismatch");
+
     /* compute output grid size etc. */
     int dims[4] = {1,1,1,1};
     double dx[3] = {0,0,0};
     direction dirs[3] = {X,Y,Z};
     int rank = 0, N = 1;
     double vol = 1;
-
-    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
-      abort("cannot get flux for near2far: co-ordinate mismatch");
 
     LOOP_OVER_DIRECTIONS(where.dim, d) {
       dims[rank] = int(floor(where.in_direction(d) * resolution));
@@ -398,7 +398,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
     delete[] EH1_;
     delete[] EH1;
-    
+
     for (int i = 0; i < Nfreq; ++i)
       F_[i] *= vol;
 

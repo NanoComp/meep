@@ -52,7 +52,7 @@ class TestAntennaRadiation(unittest.TestCase):
 
         near_flux = mp.get_fluxes(flux_box)[0]
 
-        r = 1000/fcen      # circle of radius 1000 wavelengths
+        r = 1000/fcen      # radius of far field circle
         npts = 100         # number of points in [0,2*pi) range of angles
         E = np.zeros((npts,3),dtype=np.complex128)
         H = np.zeros((npts,3),dtype=np.complex128)
@@ -65,11 +65,10 @@ class TestAntennaRadiation(unittest.TestCase):
 
         Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
         Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
-        Pz = np.real(np.multiply(E[:,0],H[:,1])-np.multiply(E[:,1],H[:,0]))
         Pr = np.sqrt(np.square(Px)+np.square(Py))
         far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
-        rr = 20/fcen      # square of side length 20 wavelengths
+        rr = 20/fcen      # length of far field square box
         far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
                            - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
                            + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]
