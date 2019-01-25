@@ -257,11 +257,15 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         kpoint.set_direction(dd, real(k[dd]));
   }
 
+  bool empty_dim[3] = { false, false, false };
+
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
       (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (kpoint.z() == 0) &&
-      (real(k[Z]) != 0))
+      (real(k[Z]) != 0)) {
     kpoint.set_direction(Z, real(k[Z]));
+    empty_dim[2] = true;
+  }
 
   // bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
@@ -300,11 +304,13 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       s[1] = eig_vol.in_direction(Y);
       kcart[0] = kpoint.in_direction(X);
       kcart[1] = kpoint.in_direction(Y);
+      empty_dim[2] = true;
       break;
     case D1:
       o[2] = eig_vol.in_direction_min(Z);
       s[2] = eig_vol.in_direction(Z);
       kcart[2] = kpoint.in_direction(Z);
+      empty_dim[0] = empty_dim[1] = true;
       break;
     default: abort("unsupported dimensionality in add_eigenmode_source");
   }
@@ -319,7 +325,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     if (s[i] != 0)
       R[i][i] = s[i];
     else {
-      if (d != NO_DIRECTION)
+      if (d != NO_DIRECTION || empty_dim[i])
         R[i][i] = 1;
       else { // get lattice vector from kpoint
         for (int j = 0; j < 3; ++j)
@@ -660,6 +666,12 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
   int n = (d == X ? 0 : (d == Y ? 1 : 2));
+  if (d == NO_DIRECTION) {
+    n = where.in_direction(X) == 0 ? 0 : where.in_direction(Y) == 0 ? 1 :
+        where.in_direction(Z) == 0 ? 2 : -1;
+    if (n == -1)
+      abort("can't determine source direction for non-empty source volume with NO_DIRECTION source");
+  }
   int np1 = (n + 1) % 3;
   int np2 = (n + 2) % 3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
