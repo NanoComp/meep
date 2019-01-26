@@ -1095,6 +1095,9 @@ public:
   void save_farfields(const char *fname, const char *prefix, const volume &where,
                       double resolution);
 
+  /* output Poynting flux of far fields */
+  double *flux(direction df, const volume &where, double resolution);
+
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
 

@@ -23,6 +23,7 @@
 #include <meep.hpp>
 #include <assert.h>
 #include "config.h"
+#include <math.h>
 
 using namespace std;
 
@@ -332,6 +333,79 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   }
 
   delete[] EH;
+}
+
+double *dft_near2far::flux(direction df, const volume &where, double resolution) {
+    if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
+      abort("cannot get flux for near2far: co-ordinate mismatch");
+
+    /* compute output grid size etc. */
+    int dims[4] = {1,1,1,1};
+    double dx[3] = {0,0,0};
+    direction dirs[3] = {X,Y,Z};
+    int rank = 0, N = 1;
+    double vol = 1;
+
+    LOOP_OVER_DIRECTIONS(where.dim, d) {
+      dims[rank] = int(floor(where.in_direction(d) * resolution));
+      if (dims[rank] <= 1) {
+	dims[rank] = 1;
+	dx[rank] = 0;
+      }
+      else {
+	dx[rank] = where.in_direction(d) / (dims[rank] - 1);
+        vol *= dx[rank];
+      }
+      N *= dims[rank];
+      dirs[rank++] = d;
+    }
+
+    /* fields for farfield_lowlevel for a single output point x */
+    std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
+    std::complex<double> *EH1_ = new std::complex<double>[6*Nfreq];
+
+    double *F_ = new double[Nfreq];
+    std::complex<double> ff_EH[6];
+    std::complex<double> cE[2], cH[2];
+
+    for (int i = 0; i < Nfreq; ++i)
+      F_[i] = 0;
+
+    vec x(where.dim);
+    for (int i0 = 0; i0 < dims[0]; ++i0) {
+      x.set_direction(dirs[0], where.in_direction_min(dirs[0]) + i0*dx[0]);
+      for (int i1 = 0; i1 < dims[1]; ++i1) {
+	x.set_direction(dirs[1], where.in_direction_min(dirs[1]) + i1*dx[1]);
+	for (int i2 = 0; i2 < dims[2]; ++i2) {
+	  x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2*dx[2]);
+	  farfield_lowlevel(EH1_, x);
+          sum_to_master(EH1_, EH1, 6*Nfreq);          
+          for (int i = 0; i < Nfreq; ++i) {
+            for (int k = 0; k < 6; ++k)
+              ff_EH[k] = EH1[i * 6 + k];
+            switch (df) {
+            case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
+            case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
+            case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
+            case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
+            }
+            for (int j = 0; j < 2; ++j)
+              F_[i] += real(cE[j]*conj(cH[j])) * (1 - 2*j);
+          }
+	}
+      }
+    }
+
+    delete[] EH1_;
+    delete[] EH1;
+
+    for (int i = 0; i < Nfreq; ++i)
+      F_[i] *= vol;
+
+    double *F = new double[Nfreq];
+    sum_to_all(F_, F, Nfreq);
+    delete[] F_;
+    return F;
 }
 
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
