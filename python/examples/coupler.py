@@ -1,7 +1,6 @@
 import meep as mp
 import argparse
 
-resolution = 25    # pixels/um
 gdsII_file = 'coupler.gds'
 CELL_LAYER = 0
 PORT1_LAYER = 1
@@ -17,24 +16,20 @@ t_oxide = 1.0
 t_Si = 0.22
 t_air = 0.78
 
-eps_oxide = 2.25
-oxide = mp.Medium(epsilon=eps_oxide)
-eps_silicon = 12
-silicon=mp.Medium(epsilon=eps_silicon)
-
 dpml = 1
+cell_thickness = dpml+t_oxide+t_Si+t_air+dpml
+si_zmin = 0
+
+oxide = mp.Medium(epsilon=2.25)
+silicon=mp.Medium(epsilon=12)
 
 lcen = 1.55
 fcen = 1/lcen
 df = 0.2*fcen
 
 def main(args):
-    d  = args.d
-
-    cell_thickness = dpml+t_oxide+t_Si+t_air+dpml
     cell_zmax = 0.5*cell_thickness if args.three_d else 0
     cell_zmin = -0.5*cell_thickness if args.three_d else 0
-    si_zmin = 0
     si_zmax = t_Si if args.three_d else 0
 
     # read cell size, volumes for source region and flux monitors,
@@ -50,8 +45,8 @@ def main(args):
     src_vol = mp.GDSII_vol(gdsII_file, SOURCE_LAYER, si_zmin, si_zmax)
 
     # displace upper and lower branches of coupler (as well as source and flux regions)
-    if d != default_d:
-        delta_y = 0.5*(d-default_d)
+    if args.d != default_d:
+        delta_y = 0.5*(args.d-default_d)
         delta = mp.Vector3(y=delta_y)
         p1.center += delta
         p2.center -= delta
@@ -83,33 +78,36 @@ def main(args):
                                   eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z,
                                   eig_match_freq=True)]
 
-    sim = mp.Simulation(resolution=resolution,
+    sim = mp.Simulation(resolution=args.res,
                         cell_size=cell.size,
                         boundary_layers=[mp.PML(dpml)],
                         sources=sources,
                         geometry=geometry)
 
-    p1_region = mp.FluxRegion(volume=p1)
-    flux1 = sim.add_flux(fcen,0,1,p1_region)
-    p2_region = mp.FluxRegion(volume=p2)
-    flux2 = sim.add_flux(fcen,0,1,p2_region)
-    p3_region = mp.FluxRegion(volume=p3)
-    flux3 = sim.add_flux(fcen,0,1,p3_region)
-    p4_region = mp.FluxRegion(volume=p4)
-    flux4 = sim.add_flux(fcen,0,1,p4_region)
+    mode1 = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(volume=p1))
+    mode2 = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(volume=p2))
+    mode3 = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(volume=p3))
+    mode4 = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(volume=p4))
 
-    sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,p3.center,1e-9))
+    sim.run(until_after_sources=100)
 
-    p1_flux = mp.get_fluxes(flux1)
-    p2_flux = mp.get_fluxes(flux2)
-    p3_flux = mp.get_fluxes(flux3)
-    p4_flux = mp.get_fluxes(flux4)
+    # S parameters
+    p1_coeff = sim.get_eigenmode_coefficients(mode1, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,0]
+    p2_coeff = sim.get_eigenmode_coefficients(mode2, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,1]
+    p3_coeff = sim.get_eigenmode_coefficients(mode3, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,0]
+    p4_coeff = sim.get_eigenmode_coefficients(mode4, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,0]
 
-    mp.master_printf("data:, {}, {}, {}, {}".format(d,-p2_flux[0]/p1_flux[0],p3_flux[0]/p1_flux[0],p4_flux[0]/p1_flux[0]))
+    # transmittance
+    p2_trans = abs(p2_coeff)**2/abs(p1_coeff)**2
+    p3_trans = abs(p3_coeff)**2/abs(p1_coeff)**2
+    p4_trans = abs(p4_coeff)**2/abs(p1_coeff)**2
+
+    print("trans:, {:.2f}, {:.6f}, {:.6f}, {:.6f}".format(args.d,p2_trans,p3_trans,p4_trans))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d',type=float,default=0.1,help='branch separation (default: 0.1 um)')
-    parser.add_argument('--three_d',action='store_true',default=False,help='3d calculation? (default: False)')
+    parser.add_argument('-res', type=int, default=50, help='resolution (default: 50 pixels/um)')
+    parser.add_argument('-d', type=float, default=0.1, help='branch separation (default: 0.1 um)')
+    parser.add_argument('--three_d', action='store_true', default=False, help='3d calculation? (default: False)')
     args = parser.parse_args()
     main(args)

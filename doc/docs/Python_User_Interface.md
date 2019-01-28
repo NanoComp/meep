@@ -1103,7 +1103,7 @@ Given a structure, Meep can decompose the Fourier-transformed fields into a supe
 —
 Given a flux object and list of band indices, return a `namedtuple` with the following fields:
 
-+ `alpha`: the eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
++ `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
 + `vgrp`: the group velocity as a NumPy array.
 + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
 + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
