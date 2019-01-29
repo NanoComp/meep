@@ -38,6 +38,8 @@ For our first example, let's examine the field pattern excited by a localized [C
 
 ### A Straight Waveguide
 
+The simulation script is in [examples/straight-waveguide.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/straight-waveguide.ctl).
+
 Before we define the structure, however, we have to define the computational cell. We're going to put a source at one end and watch it propagate down the waveguide in the *x* direction, so let's use a cell of length 16 μm in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries don't affect the waveguide mode; let's give it a size of 8 μm. We specify these sizes via the `geometry-lattice` variable:
 
 ```scm
@@ -114,7 +116,7 @@ We see that the the source has excited the waveguide mode, but has also excited 
 
 ### A 90° Bend
 
-We'll start a new simulation where we look at the fields in a *bent* waveguide, and we'll do a couple of other things differently as well. If you are running Meep interactively, you will want to get rid of the old structure and fields so that Meep will re-initialize them:
+We'll start a new simulation where we look at the fields in a *bent* waveguide, and we'll do a couple of other things differently as well. The simulation script is in [examples/bent-waveguide.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/bent-waveguide.ctl). If you are running Meep interactively, you will want to get rid of the old structure and fields so that Meep will re-initialize them:
 
 ```scm
 (reset-meep)
@@ -124,12 +126,15 @@ Then let's set up the bent waveguide, in a slightly bigger cell, via:
 
 ```scm
 (set! geometry-lattice (make lattice (size 16 16 no-size)))
+
 (set! geometry (list
                 (make block (center -2 -3.5) (size 12 1 infinity)
                       (material (make medium (epsilon 12))))
                 (make block (center 3.5 2) (size 1 12 infinity)
                       (material (make medium (epsilon 12))))))
+
 (set! pml-layers (list (make pml (thickness 1.0))))
+
 (set! resolution 10)
 ```
 
@@ -142,10 +147,10 @@ There are a couple of items to note. First, a point source does not couple very 
 ```scm
 (set! sources (list
                (make source
-                 (src (make continuous-src
-                        (wavelength (* 2 (sqrt 11))) (width 20)))
+                 (src (make continuous-src (wavelength (* 2 (sqrt 11))) (width 20)))
                  (component Ez)
-                 (center -7 -3.5) (size 0 1))))
+                 (center -7 -3.5)
+                 (size 0 1))))
 ```
 
 Finally, we'll run the simulation. Instead of running `output-efield-z` only at the *end* of the simulation, however, we'll run it at every 0.6 time units (about 10 times per period) via `(at-every 0.6 output-efield-z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature of Meep to output to a *single* three-dimensional HDF5 file, where the third dimension is time:
@@ -163,13 +168,13 @@ unix% h5ls ez.h5 
 ez                       Dataset {161, 161, 330/Inf}
 ```
 
-That is, the file contains a single dataset `ez` that is a 162$\times$162$\times$330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. We have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
+That is, the file contains a single dataset `ez` that is a 160$\times$160$\times$333 array, where the last dimension is time. This is rather a large file, 66MB; later, we'll see ways to reduce this size if we only want images. We have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 332` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
 ```sh
-unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
+unix% h5topng -t 0:332 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
 ```
 
-This is similar to the command before, with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image instead of scaling each image independently. Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program and there are other tools that work as well.
+This is similar to the command before, with two new options: `-t 0:332` outputs images for *all* time indices from 0 to 332, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image instead of scaling each image independently. Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program and there are other tools that work as well.
 
 ```sh
 unix% convert ez.t*.png ez.gif
@@ -223,7 +228,7 @@ What if we want to output an $x \times t$ slice, as above? To do this, we only r
          output-efield-z))))
 ```
 
-The first argument to `in-volume` is a volume, specified by `(volume (center ...) (size ...))`, which applies to all of the nested output functions. Note that `to-appended`, `at-every`, and `in-volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
+The first argument to `in-volume` is a volume, specified by `(volume (center ...) (size ...))`, which applies to all of the nested output functions. Note that `to-appended`, `at-every`, and `in-volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 160x333 corresponding to the desired $x \times t$ slice.
 
 Transmittance Spectrum of a Waveguide Bend
 ------------------------------------------
@@ -232,7 +237,7 @@ We have computed the field patterns for light propagating around a waveguide ben
 
 The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
-This script will be more complicated than before, so it is more convenient to run as a file ([bend-flux.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/bend-flux.ctl)) rather than typing it interactively.
+The simulation script is in [examples/bend-flux.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/bend-flux.ctl).
 
 Above, we hard-coded all of the parameters like the cell size, the waveguide width, etcetera. For serious work, however, this is inefficient &mdash; we often want to explore many different values of such parameters. For example, we may want to change the size of the cell, so we'll define it as:
 
@@ -674,7 +679,7 @@ In this case, we actually have a lot more symmetry that we could potentially exp
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on 1d or 2d structures which can be visualized using [h5topng](https://github.com/NanoComp/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
+The previous examples were based on a 1d or 2d cell in which the structures and fields can be visualized using [h5topng](https://github.com/NanoComp/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
 
 ```scm
 (set-param! resolution 50)

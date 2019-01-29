@@ -54,7 +54,7 @@ Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft
 
 ### Are there precompiled binary packages for Ubuntu?
 
-Yes. These packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the current packages are for version 1.3 which is out of date. Up to date packages are being prepared. In the meantime, you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the source repository.
+Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for version [1.3](https://github.com/NanoComp/meep/releases) (March 2015) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 based on the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
 
 ### Guile is installed, but configure complains that it can't find `guile`
 
@@ -116,7 +116,7 @@ Usage
 
 ### Is there a Python interface?
 
-Yes. An official [Python interface](Python_User_Interface.md) was released in [version 1.4](https://github.com/NanoComp/meep/releases). An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which predates and is **incompatible** with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
+Yes. An official [Python interface](Python_User_Interface.md) was released in [version 1.4](https://github.com/NanoComp/meep/releases) and replaces the [Scheme interface](Scheme_User_Interface.md) which is no longer being supported. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which predates and is **incompatible** with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
 ### What are the different ways to define a structure?
 
@@ -247,7 +247,7 @@ Numerical dispersion can be analyzed and quantified analytically for a homogeneo
 
 ### How do I compute S-parameters?
 
-Meep contains a [mode-decomposition feature](Mode_Decomposition) which can be used to compute complex [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a two-port network in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
+Meep contains a [mode-decomposition feature](Mode_Decomposition.md) which can be used to compute complex-valued [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a [two-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) based on a silicon directional coupler in [Tutorial/GDSII Import](/Python_Tutorials/GDSII_Import/). An additional example is available for a [waveguide mode converter](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
 
 ### `Harminv` is unable to find the resonant modes of my structure
 
