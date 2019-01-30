@@ -422,7 +422,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   if (PyObject_IsInstance(po, py_material_object())) {
     md = make_dielectric(1);
     if (!pymedium_to_medium(po, &md->medium)) { return 0; }
-  } else if (PyFunction_Check(po)) {
+  } else if (PyCallable_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
     if (!eps) { return 0; }
     if (eps == Py_True) {

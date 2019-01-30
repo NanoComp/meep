@@ -763,7 +763,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     int py_material = PyObject_IsInstance($input, py_material_object());
-    int user_material = PyFunction_Check($input);
+    int user_material = PyCallable_Check($input);
     int file_material = IsPyString($input);
     int numpy_material = PyArray_Check($input);
 
