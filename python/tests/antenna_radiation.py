@@ -69,10 +69,10 @@ class TestAntennaRadiation(unittest.TestCase):
         far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
         rr = 20/fcen      # length of far field square box
-        far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
-                           - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)).swigobj, resolution)[0]
-                           + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0]
-                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)).swigobj, resolution)[0])
+        far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)), resolution)[0]
+                           - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)), resolution)[0]
+                           + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)), resolution)[0]
+                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)), resolution)[0])
 
         print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_circle,far_flux_square))
 

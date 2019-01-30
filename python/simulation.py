@@ -321,9 +321,8 @@ class DftNear2Far(DftObj):
     def mu(self):
         return self.swigobj_attr('mu')
 
-    @property
-    def flux(self):
-        return self.swigobj_attr('flux')
+    def flux(self, direction, where, resolution):
+        return self.swigobj_attr('flux')(direction, where.swigobj, resolution)
 
 class DftFields(DftObj):
 
