@@ -98,7 +98,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 
 **`extra-materials` [ list of `material-type` class ]**
 —
-By default, Meep turns off support for material dispersion, nonlinearities, and similar properties if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work however if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
+By default, Meep turns off support for material dispersion (via susceptibilities or conductivity) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -413,11 +413,11 @@ Polygonal prism type.
 
 **`vertices` [list of `vector3`]**
 —
-The vertices that define the polygonal *floor* of the prism; the vertices must be coplanar, and if `axis` is specified it must be normal to the plane of the vertices. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. The *ceiling* of the prism is just its floor polygon rigidly translated through the displacement vector `height*axis`.   
+The vertices that define the polygonal *floor* of the prism; the vertices must be coplanar, and if `axis` is specified it must be normal to the plane of the vertices. Note that infinite prism lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell. The *ceiling* of the prism is just its floor polygon rigidly translated through the displacement vector `height*axis`.
 
 **`height` [`number`]**
 —
-The prism thickness, extruded in the direction of `axis`. `infinity` can be used for infinite height.   
+The prism thickness, extruded in the direction of `axis`. `infinity` can be used for infinite height.
 
 **`axis` [`vector3`]**
 —
@@ -425,8 +425,8 @@ The prism thickness, extruded in the direction of `axis`. `infinity` can be used
 $$ \mathbf{a}
   =(\mathbf{v}_1 - \overline{\mathbf v})
    \times
-   (\mathbf{v}_2 - \overline{\mathbf{v}}), 
-   \quad 
+   (\mathbf{v}_2 - \overline{\mathbf{v}}),
+   \quad
    \texttt{axis}\equiv \frac{\mathbf{a}}{|\mathbf{a}|}
 $$
 where $\mathbf{v}_{1,2}$ are the first and second `vertices` and $\overline{\mathbf{v}}\equiv\frac{1}{N}\sum_{n=1}^N \mathbf{v}_n$
@@ -476,7 +476,7 @@ These are some examples of geometric objects created using the above classes:
       (list
        (make prism
          (vertices
-           (list 
+           (list
                  (vector3 -1 0 0)
                  (vector3 -0.5 (/ (sqrt 3) 2) 0)
                  (vector3 0.5 (/ (sqrt 3) 2) 0)
@@ -498,7 +498,7 @@ Note the use of `(center auto-center)` to establish that the prism center will b
       (list
        (make prism
          (vertices
-           (list 
+           (list
                  (vector3 -1 0 0)
                  (vector3 -0.5 (/ (sqrt 3) 2) 0)
                  (vector3 0.5 (/ (sqrt 3) 2) 0)
