@@ -8,11 +8,15 @@ We demonstrate Meep's [near-to-far-field transformation](../Scheme_User_Interfac
 
 ### Radiation Pattern of an Antenna
 
-In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. We will compute the radiation pattern for three different polarizations of the input source. The source is placed in the middle of the 2d cell which is surrounded by PMLs. The near fields are obtained on a bounding box positioned just outside of the PML. The far fields are computed at equally-spaced points along the circumference of a circle having a radius many (i.e., 1000) times larger than the source wavelength and lying outside of the cell. The simulation geometry is shown in the following schematic.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of a 2d cell which is surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed along the circumference of a circle having a radius many times larger than the source wavelength and lying beyond the cell. From the near and far fields, we will also compute the total outgoing flux and demonstrate that they are equivalent. The radiation pattern and flux will be computed for three orthogonal polarizations of the input source.
+
+The simulation geometry is shown in the following schematic.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
 </center>
+
+In the first part of the simulation, we define the cell and sources as well as the near field and flux regions. Since we are using a pulsed source (with center wavelength of 1 μm), the fields are timestepped until they have sufficiently decayed away.
 
 The simulation script is in [examples/antenna-radiation.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/antenna-radiation.ctl).
 
@@ -29,11 +33,11 @@ The simulation script is in [examples/antenna-radiation.ctl](https://github.com/
 (set! sources (list (make source (src (make gaussian-src (frequency fcen) (fwidth df))) (center 0) (component src-cmpt))))
 
 (if (= src-cmpt Ex)
-    (set! symmetries (list (make mirror-sym (direction Y)))))
+    (set! symmetries (list (make mirror-sym (direction X) (phase -1)) (make mirror-sym (direction Y) (phase +1)))))
 (if (= src-cmpt Ey)
-    (set! symmetries (list (make mirror-sym (direction X)))))
+    (set! symmetries (list (make mirror-sym (direction X) (phase +1)) (make mirror-sym (direction Y) (phase -1)))))
 (if (= src-cmpt Ez)
-    (set! symmetries (list (make mirror-sym (direction X)) (make mirror-sym (direction Y)))))
+    (set! symmetries (list (make mirror-sym (direction X) (phase +1)) (make mirror-sym (direction Y) (phase +1)))))
 
 (define nearfield-box
   (add-near2far fcen 0 1
@@ -50,10 +54,18 @@ The simulation script is in [examples/antenna-radiation.ctl](https://github.com/
 	    (make flux-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
+```
 
-(print "flux:, " (list-ref (get-fluxes flux-box) 0) "\n")
+After the time stepping, the total flux in the near fields is displayed:
 
-(define-param r (/ 1000 fcen))    ; 1000 wavelengths out from the source
+```scm
+(print "near-flux:, " (list-ref (get-fluxes flux-box) 0) "\n")
+```
+
+In the second part, we use the `get-farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm (which is 1000 times larger than the source wavelength). The six far field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$) are displayed in separate columns as complex numbers.
+
+```scm
+(define-param r (/ 1000 fcen))    ; radius of far field surface
 (define-param npts 100)           ; number of points in [0,2*pi) range of angles
 (map (lambda (n)
        (let ((ff (get-farfield nearfield-box (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
@@ -65,16 +77,14 @@ The simulation script is in [examples/antenna-radiation.ctl](https://github.com/
          (arith-sequence 0 1 npts))
 ```
 
-We use the `get-farfield` routine to compute the far fields by looping over a set of 100 points along the circumference of the circle with radius 1 mm. We compute the far fields at a wavelength of 1 μm for three different polarizations of the current source by setting the `src-cmpt` parameter to E$_x$, E$_y$, and E$_z$ in separate runs. The output consists of eight columns containing for each point: index identifier (integer), angle (radians), and six field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$). Note that the far fields are always complex even though the near fields are real (as in this example). We also compute the flux from the source using the same bounding box.
-
-The script is run and the output piped to a file using the following shell commands. The far field results are extracted from the output and placed in a separate file.
+The script is run and the output piped to a file using the following shell commands. The far field data is extracted from the output and placed in a separate file.
 
 ```sh
 meep src-cmpt=Ez antenna-radiation.ctl |tee source_Jz_farfields.out
 grep farfield: source_Jz_farfields.out |cut -d , -f2- > source_Jz_farfields.dat
 ```
 
-From the far fields at each point $\mathbf{r}$, we can compute the radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Since this is a 2d simulation, $P_z$ is always 0. We plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern. These plots were generated using the following Octave/Matlab script.
+From the far fields at each point $\mathbf{r}$, we compute using Matlab/Octave the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation.
 
 ```matlab
 d = dlmread("source_Jz_farfields.dat",",");
@@ -89,27 +99,29 @@ Hz = d(:,8);
 
 Px = real(Ey.*Hz-Ez.*Hy);
 Py = real(Ez.*Hx-Ex.*Hz);
-Pz = real(Ex.*Hy-Ey.*Hx);
 Pr = sqrt(Px.^2+Py.^2);
+```
 
+We plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src-cmpt` of E$_x$, E$_y$, and E$_z$. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern.
+
+```matlab
 angles = d(:,2)
-
 polar(angles,Pr/max(Pr),'b-');
 set(gca, 'xtick', [0 0.5 1.0]);
 ```
 
-By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the flux spectrum which is obtained by integrating around a closed surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between), with slight differences due to discretization errors. The integral of the radial flux along the circumference of a circle with radius 1000 μm is obtained via:
-
-```matlab
-r = 1000    % circle radius (same units as Meep simulation)
-disp(sprintf("flux:, %0.16f",sum(Pr)*2*pi*r/length(Pr)))
-```
-
-The far-field flux for the J$_z$ source is `2.457249`. The near-field flux, shown in the simulation output in the line prefixed by `flux:,`, is `2.456196`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the far- and near-field flux values are `1.227260` and `1.227786` which is a ratio of `0.999571`. This ratio will converge to one as the resolution is increased.
-
 <center>
 ![](../images/Source_radiation_pattern.png)
 </center>
+
+By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). Slight differences are due to discretization errors. This is verified using the simulation data:
+
+```matlab
+r = 1000    % radius of far field surface
+disp(sprintf("far-flux:, %0.6f",sum(Pr)*2*pi*r/length(Pr)))
+```
+
+The near- and far-field flux for the J$_z$ source are `2.456196` and `2.457249`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` and `1.227260` which is a ratio of `1.000429`. These ratios will converge to one as the resolution is increased.
 
 ### Far-Field Intensity of a Cavity
 

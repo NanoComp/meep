@@ -73,7 +73,7 @@ def first_tm_gap(r):
 ms.num_bands = 2
 ms.mesh_size = 7
 
-result = minimize_scalar(first_tm_gap, method='bounded', bounds=[0.1, 0.5], tol=0.1)
+result = minimize_scalar(first_tm_gap, method='bounded', bounds=[0.1, 0.5], options={'xatol': 0.1})
 print("radius at maximum: {}".format(result.x))
 print("gap size at maximum: {}".format(result.fun * -1))
 

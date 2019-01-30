@@ -321,6 +321,9 @@ class DftNear2Far(DftObj):
     def mu(self):
         return self.swigobj_attr('mu')
 
+    @property
+    def flux(self):
+        return self.swigobj_attr('flux')
 
 class DftFields(DftObj):
 
@@ -471,7 +474,8 @@ class Simulation(object):
                  output_single_precision=False,
                  load_structure='',
                  geometry_center=mp.Vector3(),
-                 force_all_components=False):
+                 force_all_components=False,
+                 split_chunks_evenly=True):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -518,6 +522,7 @@ class Simulation(object):
         self._is_initialized = False
         self._fragment_size = 10
         self.force_all_components = force_all_components
+        self.split_chunks_evenly = split_chunks_evenly
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -823,7 +828,7 @@ class Simulation(object):
 
         return vols1, vols2, vols3
 
-    def _compute_fragment_stats(self, gv):
+    def _make_fragment_lists(self, gv):
 
         def convert_volumes(dft_obj):
             volumes = []
@@ -846,6 +851,12 @@ class Simulation(object):
         pml_vols1, pml_vols2, pml_vols3 = self._boundary_layers_to_vol_list(pmls)
         absorber_vols1, absorber_vols2, absorber_vols3 = self._boundary_layers_to_vol_list(absorbers)
         absorber_vols = absorber_vols1 + absorber_vols2 + absorber_vols3
+
+        return (dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols)
+
+    def _compute_fragment_stats(self, gv):
+
+        dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
 
         stats = mp.compute_fragment_stats(
             self.geometry,
@@ -886,7 +897,6 @@ class Simulation(object):
         gv = self._create_grid_volume(k)
         sym = self._create_symmetries(gv)
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
-
         absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         if self.material_function:
@@ -899,22 +909,33 @@ class Simulation(object):
             self.default_material = self.epsilon_input_file
 
         self.fragment_stats = self._compute_fragment_stats(gv) if isinstance(self.default_material, mp.Medium) else []
+        dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
 
-        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.Courant,
-                                      self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
-        self.structure.shared_chunks = True
+        self.structure = mp.create_structure_and_set_materials(
+            self.cell_size,
+            dft_data_list,
+            pml_vols1,
+            pml_vols2,
+            pml_vols3,
+            absorber_vols,
+            gv,
+            br,
+            sym,
+            self.num_chunks,
+            self.Courant,
+            self.eps_averaging,
+            self.subpixel_tol,
+            self.subpixel_maxeval,
+            self.geometry,
+            self.geometry_center,
+            self.ensure_periodicity and not not self.k_point,
+            self.verbose,
+            self.default_material,
+            absorbers,
+            self.extra_materials,
+            self.split_chunks_evenly
+       )
 
-        mp.set_materials_from_geometry(self.structure,
-                                       self.geometry,
-                                       self.geometry_center,
-                                       self.eps_averaging,
-                                       self.subpixel_tol,
-                                       self.subpixel_maxeval,
-                                       self.ensure_periodicity and not not self.k_point,
-                                       False,
-                                       self.default_material,
-                                       absorbers,
-                                       self.extra_materials)
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 

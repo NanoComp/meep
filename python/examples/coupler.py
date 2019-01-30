@@ -1,10 +1,8 @@
 import meep as mp
-import os
 import argparse
 
 resolution = 25    # pixels/um
-examples_dir = os.path.realpath(os.path.dirname(__file__))
-gdsII_file = os.path.join(examples_dir, 'coupler.gds')
+gdsII_file = 'coupler.gds'
 CELL_LAYER = 0
 PORT1_LAYER = 1
 PORT2_LAYER = 2
@@ -82,7 +80,7 @@ def main(args):
                                   size=src_vol.size,
                                   center=src_vol.center,
                                   eig_band=1,
-                                  eig_parity=mp.NO_PARITY if args.three_d else mp.ODD_Z,                                  
+                                  eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z,
                                   eig_match_freq=True)]
 
     sim = mp.Simulation(resolution=resolution,

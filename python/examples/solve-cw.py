@@ -17,7 +17,9 @@ c2 = mp.Cylinder(radius=r)
 
 fcen = 0.118
 df = 0.08
-src = mp.Source(mp.ContinuousSource(fcen,fwidth=df), mp.Ez, mp.Vector3(r+0.1))
+src = [mp.Source(mp.ContinuousSource(fcen,fwidth=df),
+                 component=mp.Ez,
+                 center=mp.Vector3(r+0.1))]
 
 sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     geometry=[c1,c2],
@@ -40,7 +42,7 @@ err_dat = np.zeros(num_tols-1)
 for i in range(num_tols-1):
     err_dat[i] = LA.norm(ez_dat[:,:,i]-ez_dat[:,:,num_tols-1])
 
-plt.figure(dpi=100)
+plt.figure()
 plt.loglog(tols[:num_tols-1], err_dat, 'bo-');
 plt.xlabel("frequency-domain solver tolerance");
 plt.ylabel("L2 norm of error in fields");
@@ -49,7 +51,7 @@ plt.show()
 eps_data = sim.get_array(vol, component=mp.Dielectric)
 ez_data = np.absolute(ez_dat[:,:,num_tols-1])
 
-plt.figure(dpi=100)
+plt.figure()
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='Reds', alpha=0.9)
 plt.axis('off')
@@ -62,7 +64,9 @@ else:
 
 sim.reset_meep()
 
-src = mp.Source(mp.GaussianSource(fcen,fwidth=df), mp.Ez, mp.Vector3(r+0.1))
+src = mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                component=mp.Ez,
+                center=mp.Vector3(r+0.1))
 
 sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     geometry=[c1,c2],
@@ -72,20 +76,13 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     boundary_layers=[mp.PML(dpml)])
 
 dfts = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, where=vol)
+
 sim.run(until_after_sources=100)
-sim.output_dft(dfts, "dft_fields")
-
-import h5py
-
-f = h5py.File("dft_fields.h5", 'r')
-ezi = f["ez_0.i"].value
-ezr = f["ez_0.r"].value
-ez_dat = ezr+1j*ezi
 
 eps_data = sim.get_array(vol, component=mp.Dielectric)
-ez_data = np.absolute(ez_dat)
+ez_data = np.absolute(sim.get_dft_array(dfts, mp.Ez, 0))
 
-plt.figure(dpi=100)
+plt.figure()
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='Reds', alpha=0.9)
 plt.axis('off')

@@ -22,6 +22,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "meepgeom.hpp"
 
 using namespace std;
 
@@ -67,6 +68,51 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
+  }
+}
+
+static std::vector<int> get_prime_factors(int n) {
+  int initial_n = n;
+  std::vector<int> result;
+
+  while (n % 2 == 0) {
+    result.push_back(2);
+    n /= 2;
+  }
+
+  for (int i = 3; i <= sqrt(n); i += 2) {
+    while (n % i == 0) {
+      result.push_back(i);
+      n /= i;
+    }
+  }
+
+  if (n > 5) {
+    // If we end up with a prime number greater than 5, then start over with n -1 in order to get
+    // the largest number that is a multiple of 2, 3, or 5.
+    return get_prime_factors(initial_n - 1);
+  } else if (n >= 2 && n <= 5) {
+    result.push_back(n);
+  }
+  return result;
+}
+
+static void split_by_cost(std::vector<int> factors, grid_volume gvol, std::vector<grid_volume> &result) {
+
+  if (factors.size() == 0) {
+    result.push_back(gvol);
+    return;
+  }
+
+  int n = factors.back();
+  factors.pop_back();
+
+  std::vector<grid_volume> new_gvs = gvol.split_into_n(n);
+  if (new_gvs.size() != (size_t)n) {
+    abort("Error splitting by cost: expected %d grid_volumes but got %zu", n, new_gvs.size());
+  }
+  for (int i = 0; i < n; ++i) {
+    split_by_cost(factors, new_gvs[i], result);
   }
 }
 
@@ -123,22 +169,42 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   // Next, add effort volumes for PML boundary regions:
   br.apply(this);
 
+  std::vector<int> prime_factors = get_prime_factors(desired_num_chunks);
+
+  // We may have to use a different number of chunks than the user requested
+  int adjusted_num_chunks = 1;
+  for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i) {
+    adjusted_num_chunks *= prime_factors[i];
+  }
+
   // Finally, create the chunks:
   num_chunks = 0;
-  chunks = new structure_chunk_ptr[desired_num_chunks * num_effort_volumes];
-  for (int i = 0; i < desired_num_chunks; i++) {
-    const int proc = i * count_processors() / desired_num_chunks;
-    grid_volume vi =
-        gv.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
-    for (int j = 0; j < num_effort_volumes; j++) {
+  chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
+  std::vector<grid_volume> chunk_volumes;
+
+  if (meep_geom::fragment_stats::resolution == 0 ||
+      meep_geom::fragment_stats::has_non_medium_material() || gv.dim == Dcyl ||
+      meep_geom::fragment_stats::split_chunks_evenly) {
+    for (int i = 0; i < adjusted_num_chunks; i++) {
+      grid_volume vi = gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes,
+                                          effort);
+      chunk_volumes.push_back(vi);
+    }
+  } else {
+    split_by_cost(prime_factors, gv, chunk_volumes);
+  }
+
+  // Break off PML regions into their own chunks
+  for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
+    const int proc = i * count_processors() / adjusted_num_chunks;
+    for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
-      if (vi.intersect_with(effort_volumes[j], &vc)) {
+      if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
         chunks[num_chunks] = new structure_chunk(vc, v, Courant, proc);
         br.apply(this, chunks[num_chunks++]);
       }
     }
   }
-
   check_chunks();
 }
 
