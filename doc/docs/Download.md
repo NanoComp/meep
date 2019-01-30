@@ -22,7 +22,7 @@ To receive notifications when new versions are released, subscribe to the **meep
 Precompiled Packages for Ubuntu
 -------------------------------
 
-Precompiled packages of Meep 1.3 are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep version 1.3 are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
 
 ```sh
 sudo apt-get install meep h5utils
@@ -34,7 +34,7 @@ You can also install the [parallel version of Meep](http://packages.debian.org/t
 sudo apt-get install meep-mpi-default
 ```
 
-Newer packages for Ubuntu and Debian are currently being prepared.
+The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep).
 
 Amazon Web Services (AWS)
 -------------------------
