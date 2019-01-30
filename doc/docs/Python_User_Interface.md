@@ -1058,11 +1058,11 @@ As described in [Tutorial/Basics](Python_Tutorials/Basics.md#angular-reflectance
 
 **`save_flux(filename, flux)`**
 —
-Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
+Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
 **`load_flux(filename, flux)`**
 —
-Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_flux` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_flux` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
 
 **`load_minus_flux(filename, flux)`**
 —
@@ -1103,7 +1103,7 @@ Given a structure, Meep can decompose the Fourier-transformed fields into a supe
 —
 Given a flux object and list of band indices, return a `namedtuple` with the following fields:
 
-+ `alpha`: the eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
++ `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
 + `vgrp`: the group velocity as a NumPy array.
 + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
 + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
@@ -1207,11 +1207,11 @@ As described in [Tutorial/Basics](Python_Tutorials/Basics.md), to compute the fo
 
 **`save_force(filename, force)`**
 —
-Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
+Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
 **`load_force(filename, force)`**
 —
-Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_force` in a simulation of the same dimensions for both the cell and the force regions with the same number of processors.
+Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_force` in a simulation of the same dimensions for both the cell and the force regions with the same number of processors.
 
 **`load_minus_force(filename, force)`**
 —
@@ -1275,9 +1275,9 @@ After the simulation run is complete, you can compute the far fields. This is us
 —
 Given a `Vector3` point `x` which can lie anywhere outside the near-field surface, including outside the cell and a `near2far` object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...) for the frequencies 1,2,…,`nfreq`.
 
-**`get_near2far_freqs(n2f)`**
+**`get_near2far_freqs(near2far)`**
 —
-Given a near2far object, returns a list of the frequencies that it is computing the spectrum for.
+Given a `near2far` object, returns a list of the frequencies that it is computing the spectrum for.
 
 **`output_farfields(near2far, fname, resolution, where=None, center=None, size=None)`**
 —
@@ -1289,11 +1289,11 @@ For a scattered-field computation, you often want to separate the scattered and 
 
 **`save_near2far(filename, near2far)`**
 —
-Save the Fourier-transformed fields corresponding to the given `near2far` object in an HDF5 file of the given name (without the ".h5" suffix). The current filename-prefix is prepended automatically.
+Save the Fourier-transformed fields corresponding to the given `near2far` object in an HDF5 file of the given `filename` (without the ".h5" suffix). The current filename-prefix is prepended automatically.
 
 **`load_near2far(filename, near2far)`**
 —
-Load the Fourier-transformed fields into the given `near2far` object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_near2far` in a simulation of *the same dimensions* for both the cell and the near2far regions with the same number of processors.
+Load the Fourier-transformed fields into the given `near2far` object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_near2far` in a simulation of *the same dimensions* for both the cell and the near2far regions with the same number of processors.
 
 **`load_minus_near2far(filename, near2far)`**
 —
@@ -1301,21 +1301,25 @@ As `load_near2far`, but negates the Fourier-transformed fields after they are lo
 
 To keep the fields in memory and avoid writing to and reading from a file, use the following three methods:
 
-**`get_near2far_data(n2f)`**
+**`get_near2far_data(near2far)`**
 —
-Get the Fourier-transformed fields corresponding to the given near2far object as a `NearToFarData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_near2far_data` below and should be considered opaque.
+Get the Fourier-transformed fields corresponding to the given `near2far` object as a `NearToFarData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_near2far_data` below and should be considered opaque.
 
-**`load_near2far_data(n2f, n2fdata)`**
+**`load_near2far_data(near2far, n2fdata)`**
 —
-Load the Fourier-transformed fields into the given near2far object (replacing any values currently there) from the `NearToFarData` object `n2fdata`. You must load from an object that was created by `get_near2far_data` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+Load the Fourier-transformed fields into the `near2far` object (replacing any values currently there) from the `NearToFarData` object `n2fdata`. You must load from an object that was created by `get_near2far_data` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
 
-**`load_minus_near2far_data(n2f, n2fdata)`**
+**`load_minus_near2far_data(near2far, n2fdata)`**
 —
 As `load_near2far_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
 **`scale_near2far_fields(s, near2far)`**
 —
 Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.g. `load_minus_near2far` is equivalent to `load_near2far` followed by `scale_near2far_fields` with `s=-1`.
+
+**`flux(direction, where, resolution)`**
+—
+Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a Numpy array. The dataset is a 1d array of nfreq dimensions.
 
 ### Load and Dump Structure
 

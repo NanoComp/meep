@@ -4,7 +4,7 @@
 
 This page is a listing of the functions exposed by the Scheme interface. For a gentler introduction, see [Tutorial/Basics](Scheme_Tutorials/Basics.md). This page does not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). Also, note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users. See also the instructions for [parallel Meep](Parallel_Meep.md).
 
-**Note:** The Scheme interface is being deprecated. We highly recommend using the [Python interface](Python_User_Interface.md).
+**Note:** The Scheme interface is being deprecated and has been replaced by the [Python interface](Python_User_Interface.md).
 
 [TOC]
 
@@ -928,11 +928,11 @@ As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), for a reflection 
 
 **`(save-flux filename flux)`**
 —
-Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
+Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
 **`(load-flux filename flux)`**
 —
-Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
 
 **`(load-minus-flux filename flux)`**
 —
@@ -1010,11 +1010,11 @@ As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the fo
 
 **`(save-force filename force)`**
 —
-Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
+Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
 **`(load-force filename force)`**
 —
-Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-force` in a simulation of the same dimensions for both the cell and the force regions with the same number of processors.
+Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-force` in a simulation of the same dimensions for both the cell and the force regions with the same number of processors.
 
 **`(load-minus-force filename force)`**
 —
@@ -1060,9 +1060,9 @@ After the simulation run is complete, you can compute the far fields. This is us
 —
 Given a `vector3` point `x` which can lie anywhere outside the near-field surface, including outside the cell and a near2far object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...) for the frequencies 1,2,…,`nfreq`.
 
-**`(get-near2far-freqs n2f)`**
+**`(get-near2far-freqs near2far)`**
 —
-Given a near2far object, returns a list of the frequencies that it is computing the spectrum for.
+Given a `near2far` object, returns a list of the frequencies that it is computing the spectrum for.
 
 **`(output-farfields near2far fname where resolution)`**
 —
@@ -1074,11 +1074,11 @@ For a scattered-field computation, you often want to separate the scattered and 
 
 **`(save-near2far filename near2far)`**
 —
-Save the Fourier-transformed fields corresponding to the given `near2far` object in an HDF5 file of the given name (without the ".h5" suffix). The current filename-prefix is prepended automatically.
+Save the Fourier-transformed fields corresponding to the given `near2far` object in an HDF5 file of the given `filename` (without the ".h5" suffix). The current filename-prefix is prepended automatically.
 
 **`(load-near2far filename near2far)`**
 —
-Load the Fourier-transformed fields into the given `near2far` object replacing any values currently there from an HDF5 file of the given name (without the ".h5" suffix) the current filename-prefix is prepended automatically. You must load from a file that was saved by `save-near2far` in a simulation of *the same dimensions* for both the cell and the near2far regions with the same number of processors.
+Load the Fourier-transformed fields into the given `near2far` object replacing any values currently there from an HDF5 file of the given `filename` (without the ".h5" suffix) the current filename-prefix is prepended automatically. You must load from a file that was saved by `save-near2far` in a simulation of *the same dimensions* for both the cell and the near2far regions with the same number of processors.
 
 **`(load-minus-near2far filename near2far)`**
 —
@@ -1087,6 +1087,10 @@ As `load-near2far`, but negates the Fourier-transformed fields after they are lo
 **`(scale-near2far-fields s near2far)`**
 —
 Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.g. `load-minus-near2far` is equivalent to `load-near2far` followed by `scale-near2far-fields` with `s=-1`.
+
+**`(get-farflux near2far direction where resolution)`**
+—
+Given a `volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a list. The dataset is a 1d array of nfreq dimensions.
 
 ### Load and Dump Structure
 

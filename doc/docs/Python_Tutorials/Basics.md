@@ -26,6 +26,8 @@ For our first example, let's examine the field pattern excited by a localized [C
 
 ### A Straight Waveguide
 
+The simulation script is in [examples/straight-waveguide.py](https://github.com/NanoComp/meep/blob/master/python/examples/straight-waveguide.py).
+
 The first thing to do always is to load the Meep library:
 
 ```py
@@ -42,8 +44,8 @@ The `Vector3` object stores the size of the cell in each of the three coordinate
 Next we add the waveguide. Most commonly, the device structure is specified by a set of [`GeometricObject`s](../Python_User_Interface.md#geometricobject) stored in the `geometry` object.
 
 ```py
-geometry = [mp.Block(mp.Vector3(1e20,1,1e20),
-                     center=mp.Vector3(0,0),
+geometry = [mp.Block(mp.Vector3(mp.inf,1,mp.inf),
+                     center=mp.Vector3(),
                      material=mp.Medium(epsilon=12))]
 ```
 
@@ -125,7 +127,7 @@ We see that the the source has excited the waveguide mode but has also excited r
 
 ### A 90° Bend
 
-We'll start a new simulation where we look at the fields propagating through a waveguide bend, and we'll do a couple of other things differently as well. As usual, the first thing to do is to load the Meep library:
+We'll start a new simulation where we look at the fields propagating through a waveguide bend, and we'll do a couple of other things differently as well. The simulation script is in [examples/bent-waveguide.py](https://github.com/NanoComp/meep/blob/master/python/examples/bent-waveguide.py). As usual, the first thing to do is to load the Meep library:
 
 ```py
 import meep as mp
@@ -135,10 +137,10 @@ Then let's set up the bent waveguide in a slightly larger cell:
 
 ```py
 cell = mp.Vector3(16,16,0)
-geometry = [mp.Block(mp.Vector3(12,1,1e20),
+geometry = [mp.Block(mp.Vector3(12,1,mp.inf),
                      center=mp.Vector3(-2.5,-3.5),
                      material=mp.Medium(epsilon=12)),
-            mp.Block(mp.Vector3(1,12,1e20),
+            mp.Block(mp.Vector3(1,12,mp.inf),
                      center=mp.Vector3(3.5,2),
                      material=mp.Medium(epsilon=12))]
 pml_layers = [mp.PML(1.0)]
@@ -178,16 +180,16 @@ Instead of running `output_efield_z` only at the end of the simulation, however,
 
 ```sh
 unix% h5ls ez.h5
-ez                       Dataset {161, 161, 330/Inf}
+ez                       Dataset {160, 160, 333/Inf}
 ```
 
-That is, the file contains a single dataset `ez` that is a 162x162x330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. We have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
+That is, the file contains a single dataset `ez` that is a 160x160x333 array, where the last dimension is time. This is rather a large file, 66MB; later, we'll see ways to reduce this size if we only want images. We have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 332` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
 ```sh
-unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
+unix% h5topng -t 0:332 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
 ```
 
-This is similar to the command before with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program and there are other tools that work as well.
+This is similar to the command before with two new options: `-t 0:332` outputs images for *all* time indices from 0 to 332, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program and there are other tools that work as well.
 
 ```sh
 unix% convert ez.t*.png ez.gif
@@ -207,15 +209,15 @@ Instead of doing an animation, another interesting possibility is to make an ima
 vals = []
 
 def get_slice(sim):
-    center = mp.Vector3(0,-3.5)
-    size = mp.Vector3(16,0)
-    vals.append(sim.get_array(center=center, size=size, component=mp.Ez))
+    vals.append(sim.get_array(center=mp.Vector3(0,-3.5), mp.Vector3(16,0), component=mp.Ez))
 
 sim.run(mp.at_beginning(mp.output_epsilon),
         mp.at_every(0.6, get_slice),
         until=200)
 
-plt.figure(dpi=100)
+import matplotlib.pyplot as plt
+
+plt.figure()
 plt.imshow(vals, interpolation='spline36', cmap='RdBu')
 plt.axis('off')
 plt.show()
@@ -258,7 +260,7 @@ We have computed the field patterns for light propagating around a waveguide ben
 
 The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
-This script will be more complicated than before, so it is more convenient to run as a file ([bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py)) rather than typing it interactively.
+The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py).
 
 ```py
 import meep as mp
@@ -739,9 +741,7 @@ In this case, we actually have a lot more symmetry that we could potentially exp
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on 1d or 2d structures which can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface.md#prism) with index 3.5 perforated by a [conical](../Python_User_Interface.md#cone) hole. There are no other simulation parameters specified. The permittivity data is visualized using an isosurface plot via the [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d) module. A snapshot of this plot is shown below. For visualization of the vector fields in 3d, you can use the [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d) module.
-
-Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
+The previous examples were based on a 1d or 2d cell in which the structure and fields can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface.md#prism) with index 3.5 perforated by a [conical](../Python_User_Interface.md#cone) hole. There are no other simulation parameters specified. The permittivity data is visualized using an isosurface plot via the [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d) module. A snapshot of this plot is shown below. For visualization of the vector fields in 3d, you can use the [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d) module.
 
 ```py
 import meep as mp
@@ -767,7 +767,7 @@ sim = mp.Simulation(resolution=50,
 
 sim.init_sim()
 
-eps_data = sim.get_array(center=mp.Vector3(), size=cell_size, component=mp.Dielectric)
+eps_data = sim.get_epsilon()
 
 from mayavi import mlab
 s = mlab.contour3d(eps_data, colormap="YlGnBu")
@@ -777,3 +777,5 @@ mlab.show()
 <center>
 ![](../images/prism_epsilon.png)
 </center>
+
+Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
