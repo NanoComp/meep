@@ -10,12 +10,11 @@ from meep import mpb
 examples_dir = os.path.realpath(os.path.dirname(__file__))
 sys.path.insert(0, examples_dir)
 
-# Import the ModeSolver from the mpb_tri_rods.py example
-from mpb_tri_rods import ms as tr_ms
-from mpb_diamond import ms as d_ms
-
 
 def tri_rods():
+    # Import the ModeSolver defined in the mpb_tri_rods.py example
+    from mpb_tri_rods import ms as tr_ms
+
     efields = []
 
     # Band function to collect the efields
@@ -57,6 +56,9 @@ def tri_rods():
 
 
 def diamond():
+    # Import the ModeSolver from the mpb_diamond.py example
+    from mpb_diamond import ms as d_ms
+
     dpwr = []
 
     def get_dpwr(ms, band):
