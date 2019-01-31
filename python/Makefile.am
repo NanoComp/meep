@@ -90,6 +90,7 @@ TESTS =                                   \
     $(MODE_COEFFS_TEST)                   \
     $(MODE_DECOMPOSITION_TEST)            \
     $(TEST_DIR)/multilevel_atom.py        \
+    $(TEST_DIR)/oblique_source.py        \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/refl_angular.py           \

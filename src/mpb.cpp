@@ -212,6 +212,16 @@ static complex<double> meep_mpb_A(const vec &p) {
   return eigenmode_amplitude((void *)global_eigenmode_data, p, global_eigenmode_component);
 }
 
+// compute axb = a cross b
+static void cross_product(mpb_real axb[3], const mpb_real a[3], const mpb_real b[3]) {
+  axb[0] = a[1] * b[2] - a[2] * b[1];
+  axb[1] = a[2] * b[0] - a[0] * b[2];
+  axb[2] = a[0] * b[1] - a[1] * b[0];
+}
+static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
 /****************************************************************/
 /* call MPB to get the band_numth eigenmode at freq omega_src.  */
 /*                                                              */
@@ -247,23 +257,27 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         kpoint.set_direction(dd, real(k[dd]));
   }
 
+  bool empty_dim[3] = { false, false, false };
+
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
       (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (kpoint.z() == 0) &&
-      (real(k[Z]) != 0))
+      (real(k[Z]) != 0)) {
     kpoint.set_direction(Z, real(k[Z]));
+    empty_dim[2] = true;
+  }
 
   // bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1, 1, 1};
-  mpb_real k[3] = {0, 0, 0};
+  mpb_real k[3] = {0, 0, 0}, kcart[3] = {0, 0, 0};
   double s[3] = {0, 0, 0}, o[3] = {0, 0, 0};
   mpb_real R[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
   mpb_real G[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
   mpb_real kdir[3] = {0, 0, 0};
   double match_tol = eigensolver_tol * 10;
 
-  if (d == NO_DIRECTION || coordinate_mismatch(gv.dim, d))
+  if ((d == NO_DIRECTION && abs(_kpoint) == 0) || coordinate_mismatch(gv.dim, d))
     abort("invalid direction in add_eigenmode_source");
   if (where.dim != gv.dim || eig_vol.dim != gv.dim)
     abort("invalid volume dimensionality in add_eigenmode_source");
@@ -279,34 +293,55 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       s[0] = eig_vol.in_direction(X);
       s[1] = eig_vol.in_direction(Y);
       s[2] = eig_vol.in_direction(Z);
-      k[0] = kpoint.in_direction(X);
-      k[1] = kpoint.in_direction(Y);
-      k[2] = kpoint.in_direction(Z);
+      kcart[0] = kpoint.in_direction(X);
+      kcart[1] = kpoint.in_direction(Y);
+      kcart[2] = kpoint.in_direction(Z);
       break;
     case D2:
       o[0] = eig_vol.in_direction_min(X);
       o[1] = eig_vol.in_direction_min(Y);
       s[0] = eig_vol.in_direction(X);
       s[1] = eig_vol.in_direction(Y);
-      k[0] = kpoint.in_direction(X);
-      k[1] = kpoint.in_direction(Y);
+      kcart[0] = kpoint.in_direction(X);
+      kcart[1] = kpoint.in_direction(Y);
+      empty_dim[2] = true;
       break;
     case D1:
       o[2] = eig_vol.in_direction_min(Z);
       s[2] = eig_vol.in_direction(Z);
-      k[2] = kpoint.in_direction(Z);
+      kcart[2] = kpoint.in_direction(Z);
+      empty_dim[0] = empty_dim[1] = true;
       break;
     default: abort("unsupported dimensionality in add_eigenmode_source");
   }
 
   if (!quiet && verbose) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
 
+  double kcart_len = sqrt(dot_product(kcart, kcart));
+
   for (int i = 0; i < 3; ++i) {
     n[i] = int(resolution * s[i] + 0.5);
     if (n[i] == 0) n[i] = 1;
-    R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
-    G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
-    k[i] *= R[i][i];       // convert k to reciprocal basis
+    if (s[i] != 0)
+      R[i][i] = s[i];
+    else {
+      if (d != NO_DIRECTION || empty_dim[i])
+        R[i][i] = 1;
+      else { // get lattice vector from kpoint
+        for (int j = 0; j < 3; ++j)
+          R[i][j] = kcart[j] / kcart_len;
+      }
+      s[i] = 1;
+    }
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    k[i] = dot_product(R[i], kcart); // convert k to reciprocal basis
+    // G = inverse of R transpose, via cross-product formula
+    cross_product(G[i], R[(i + 1) % 3], R[(i + 2) % 3]);
+    double GdotR = dot_product(G[i], R[i]);
+    for (int j = 0; j < 3; ++j)
+      G[i][j] /= GdotR;
   }
 
   maxwell_data *mdata =
@@ -321,18 +356,30 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
   if (check_maxwell_dielectric(mdata, 0)) abort("invalid dielectric function for MPB");
 
-  double kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
-  kdir[d - X] = 1;                            // kdir = unit vector in d direction
+  double kmatch;
+  if (d == NO_DIRECTION) {
+    for (int i = 0; i < 3; ++i)
+      kdir[i] = kcart[i] / kcart_len;
+    kmatch = kcart_len;
+  } else {
+    kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
+    kdir[d - X] = 1;                     // kdir = unit vector in d direction
+  }
 
   // if match_frequency is true, we need at least a crude guess for kmatch;
   // which we automatically pick if kmatch == 0.
   if (match_frequency && kmatch == 0) {
     vec cen = eig_vol.center();
     kmatch = omega_src * sqrt(get_eps(cen) * get_mu(cen));
-    k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
-    if (eig_vol.in_direction(d) > 0 &&
-        fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
-      k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
+    if (d == NO_DIRECTION) {
+      for (int i = 0; i < 3; ++i)
+        k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
+    } else {
+      k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
+      if (eig_vol.in_direction(d) > 0 &&
+          fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
+        k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
+    }
     if (!quiet && verbose) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
@@ -416,7 +463,12 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
           eigvals[band_num - 1] = -1;
           break;
         }
-        k[d - X] = kmatch * R[d - X][d - X];
+        if (d == NO_DIRECTION) {
+          for (int i = 0; i < 3; ++i)
+            k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
+        } else {
+          k[d - X] = kmatch * R[d - X][d - X];
+        }
         update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       }
     } while (match_frequency &&
@@ -433,7 +485,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   /* We only run MPB eigensolver on the master process to avoid
      any possibility of inconsistent mode solutions (#568) */
   eigval = broadcast(0, eigval);
-  k[d - X] = broadcast(0, k[d - X]);
+  broadcast(0, k, 3);
   vgrp = broadcast(0, vgrp);
   if (eigval < 0) { // no mode found
     destroy_evectmatrix(H);
@@ -614,6 +666,12 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
   int n = (d == X ? 0 : (d == Y ? 1 : 2));
+  if (d == NO_DIRECTION) {
+    n = where.in_direction(X) == 0 ? 0 : where.in_direction(Y) == 0 ? 1 :
+        where.in_direction(Z) == 0 ? 2 : -1;
+    if (n == -1)
+      abort("can't determine source direction for non-empty source volume with NO_DIRECTION source");
+  }
   int np1 = (n + 1) % 3;
   int np2 = (n + 2) % 3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
