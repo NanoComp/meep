@@ -1088,7 +1088,7 @@ As `load-near2far`, but negates the Fourier-transformed fields after they are lo
 —
 Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.g. `load-minus-near2far` is equivalent to `load-near2far` followed by `scale-near2far-fields` with `s=-1`.
 
-**`(get-farflux near2far direction where resolution)`**
+**`(flux near2far direction where resolution)`**
 —
 Given a `volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a list. The dataset is a 1d array of nfreq dimensions.
 

@@ -8,7 +8,7 @@ We demonstrate Meep's [near-to-far field transformation](../Python_User_Interfac
 
 ### Radiation Pattern of an Antenna
 
-In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of a 2d cell which is surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed along the circumference of a circle having a radius many times larger than the source wavelength and lying beyond the cell. From the near and far fields, we will also compute the total outgoing flux and demonstrate that they are equivalent. The radiation pattern and flux will be computed for three orthogonal polarizations of the input source.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of a 2d square cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways: along the (1) sides of a square box and (2) circumference of a circle, having a length/radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal polarizations of the input source.
 
 The simulation geometry is shown in the following schematic.
 
@@ -31,22 +31,25 @@ resolution = 50  # pixels/um
 sxy = 4
 dpml = 1
 cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
+
 pml_layers = [mp.PML(dpml)]
 
 fcen = 1.0
 df = 0.4
 src_cmpt = mp.Ez
-
 sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
                      center=mp.Vector3(),
                      component=src_cmpt)]
 
 if src_cmpt == mp.Ex:
-    symmetries = [mp.Mirror(mp.X,phase=-1),mp.Mirror(mp.Y,phase=+1)]
+    symmetries = [mp.Mirror(mp.X,phase=-1),
+                  mp.Mirror(mp.Y,phase=+1)]
 elif src_cmpt == mp.Ey:
-    symmetries = [mp.Mirror(mp.X,phase=+1),mp.Mirror(mp.Y,phase=-1)]
+    symmetries = [mp.Mirror(mp.X,phase=+1),
+                  mp.Mirror(mp.Y,phase=-1)]
 elif src_cmpt == mp.Ez:
-    symmetries = [mp.Mirror(mp.X,phase=+1),mp.Mirror(mp.Y,phase=+1)]
+    symmetries = [mp.Mirror(mp.X,phase=+1),
+                  mp.Mirror(mp.Y,phase=+1)]
 
 sim = mp.Simulation(cell_size=cell,
                     resolution=resolution,
@@ -69,10 +72,26 @@ flux_box = sim.add_flux(fcen, 0, 1,
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
 ```
 
-In the second part, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm (which is 1000 times larger than the source wavelength). The six far field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation.
+After the time stepping, the flux of the near fields is computed using `get_fluxes`:
 
 ```py
-r = 1000/fcen      # radius of far field surface
+near_flux = mp.get_fluxes(flux_box)[0]
+```
+
+In the first of two cases, the flux of the far fields is computed using the `flux` routine for a square box of side length 2 mm which is 2000 times larger than the source wavelength. This requires computing the outgoing flux on each of the four sides of the box separately and summing the values. The resolution of the far fields is chosen arbitrarily as 1 point/μm. This means there are 2x10<sup>6</sup> points per side length.
+
+```py
+r = 1000/fcen      # half side length of far-field square box OR radius of far-field circle
+res_ff = 1         # resolution of far fields (points/μm)
+far_flux_box = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=r), size=mp.Vector3(2*r)), res_ff)[0]
+               - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-r), size=mp.Vector3(2*r)), res_ff)[0]
+               + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(r), size=mp.Vector3(y=2*r)), res_ff)[0]
+               - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-r), size=mp.Vector3(y=2*r)), res_ff)[0])
+```
+
+For the second of two cases, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm. The six far field components (E$_x$, E$_y$, E$_z$, H$_x$, H$_y$, H$_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where P$_x$ and P$_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation. The total flux is computed and the three flux values are displayed.
+
+```py
 npts = 100         # number of points in [0,2*pi) range of angles
 angles = 2*math.pi/npts*np.arange(npts)
 
@@ -88,9 +107,15 @@ for n in range(npts):
 Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
 Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
 Pr = np.sqrt(np.square(Px)+np.square(Py))
+
+far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
+
+print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_box,far_flux_circle))
 ```
 
-We plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src_cmpt` of E$_x$, E$_y$, and E$_z$. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern.
+By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). The flux of the near fields for the J$_z$ source is `2.456196` and that for the far fields is `2.458030` (box) and `2.457249` (circle). The ratio of near- to far-field (circle) flux is `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` (near-field), `1.227651` (far-field box), and `1.227260` (far-field circle). The ratio of near- to far-field (circle) flux is `1.000429`. The slight differences in the flux values are due to discretization effects and will decrease as the resolution is increased.
+
+Finally, we plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src_cmpt` of E$_x$, E$_y$, and E$_z$. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern.
 
 ```py
 ax = plt.subplot(111, projection='polar')
@@ -105,16 +130,6 @@ plt.show()
 <center>
 ![](../images/Source_radiation_pattern.png)
 </center>
-
-By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). Slight differences are due to discretization errors. This is verified using the simulation data:
-
-```py
-near_flux = mp.get_fluxes(flux_box)[0]
-far_flux = np.sum(Pr)*2*np.pi*r/len(Pr)
-print("flux:, {:.6f}, {:.6f}".format(near_flux,far_flux))
-```
-
-The near- and far-field flux for the J$_z$ source are `2.456196` and `2.457249`. This is a ratio of `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` and `1.227260` which is a ratio of `1.000429`. These ratios will converge to one as the resolution is increased.
 
 ### Far-Field Intensity of a Cavity
 
