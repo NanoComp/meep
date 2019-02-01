@@ -81,19 +81,7 @@ void structure::dump(const char *filename) {
   h5file file(filename, h5file::WRITE, true);
 
   // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
-  int gv_dim;
-  switch(gv.dim) {
-    case D1:
-      gv_dim = 1;
-      break;
-    case D2:
-    case Dcyl:
-      gv_dim = 2;
-      break;
-    case D3:
-      gv_dim = 3;
-      break;
-  }
+  int gv_dim = number_of_directions(gv.dim);
   size_t origins_sz = num_chunks * gv_dim;
   realnum *origins = new realnum[origins_sz];
   size_t nums_sz = num_chunks * 3;
@@ -402,20 +390,7 @@ void structure::load(const char *filename, boundary_region &br) {
   if (!quiet) master_printf("reading epsilon from file \"%s\"...\n", filename);
 
   // Load chunk grid_volumes and adjust chunks (necessary when split_by_cost is used)
-  int gv_dim;
-  switch(gv.dim) {
-  case D1:
-    gv_dim = 1;
-    break;
-  case D2:
-  case Dcyl:
-    gv_dim = 2;
-    break;
-  case D3:
-    gv_dim = 3;
-    break;
-  }
-
+  int gv_dim = number_of_directions(gv.dim);
   size_t origins_sz = num_chunks * gv_dim;
   realnum *origins = new realnum[origins_sz];
   memset(origins, 0, sizeof(realnum) * origins_sz);
