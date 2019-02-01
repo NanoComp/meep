@@ -79,6 +79,48 @@ void structure::dump(const char *filename) {
   size_t ntotal = sum_to_all(my_ntot);
 
   h5file file(filename, h5file::WRITE, true);
+
+  // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
+  int gv_dim;
+  switch(gv.dim) {
+    case D1:
+      gv_dim = 1;
+      break;
+    case D2:
+    case Dcyl:
+      gv_dim = 2;
+      break;
+    case D3:
+      gv_dim = 3;
+      break;
+  }
+  size_t origins_sz = num_chunks * gv_dim;
+  realnum *origins = new realnum[origins_sz];
+  size_t nums_sz = num_chunks * 3;
+  size_t *nums = new size_t[nums_sz];
+  memset(nums, 0, sizeof(size_t) * nums_sz);
+  for (int i = 0; i < num_chunks; ++i) {
+    int origins_idx = i * gv_dim;
+    int nums_idx = i * 3;
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      origins[origins_idx++] = chunks[i]->gv.origin_in_direction(d);
+      nums[nums_idx + ((int)d % 3)] = chunks[i]->gv.num_direction(d);
+    }
+  }
+  file.create_data("gv_origins", 1, &origins_sz);
+  if (am_master()) {
+    size_t gv_origins_start = 0;
+    file.write_chunk(1, &gv_origins_start, &origins_sz, origins);
+  }
+  file.create_data("gv_nums", 1, &nums_sz);
+  if (am_master()) {
+    size_t nums_start = 0;
+    file.write_chunk(1, &nums_start, &nums_sz, nums);
+  }
+  delete[] origins;
+  delete[] nums;
+
+  // Write chi1inv sizes
   size_t dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
@@ -354,10 +396,78 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
-void structure::load(const char *filename) {
+void structure::load(const char *filename, boundary_region &br) {
   h5file file(filename, h5file::READONLY, true);
 
   if (!quiet) master_printf("reading epsilon from file \"%s\"...\n", filename);
+
+  // Load chunk grid_volumes and adjust chunks (necessary when split_by_cost is used)
+  int gv_dim;
+  switch(gv.dim) {
+  case D1:
+    gv_dim = 1;
+    break;
+  case D2:
+  case Dcyl:
+    gv_dim = 2;
+    break;
+  case D3:
+    gv_dim = 3;
+    break;
+  }
+
+  size_t origins_sz = num_chunks * gv_dim;
+  realnum *origins = new realnum[origins_sz];
+  memset(origins, 0, sizeof(realnum) * origins_sz);
+  size_t nums_sz = num_chunks * 3;
+  size_t *nums = new size_t[nums_sz];
+  memset(nums, 0, sizeof(size_t) * nums_sz);
+
+  int origins_rank;
+  size_t origins_dims;
+  file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
+  if (origins_rank != 1 || origins_dims != origins_sz) {
+    abort("chunk mismatch in structure::load");
+  }
+  if (am_master()) {
+    size_t gv_origins_start = 0;
+    file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
+  }
+  file.prevent_deadlock();
+  broadcast(0, origins, origins_sz);
+
+  int nums_rank;
+  size_t nums_dims;
+  file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
+  if (nums_rank != 1 || nums_dims != nums_sz) {
+    abort("chunk mismatch in structure::load");
+  }
+  if (am_master()) {
+    size_t gv_nums_start = 0;
+    file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
+  }
+  file.prevent_deadlock();
+  broadcast(0, nums, nums_sz);
+
+  for (int i = 0; i < num_chunks; ++i) {
+    int origins_idx = i * gv_dim;
+    int nums_idx = i * 3;
+    grid_volume new_gv = gv;
+    vec new_origin(new_gv.dim);
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      new_origin.set_direction(d, origins[origins_idx++]);
+      new_gv.set_num_direction(d, nums[nums_idx + ((int)d % 3)]);
+    }
+    new_gv.set_origin(new_origin);
+    delete chunks[i];
+    int proc = i * count_processors() / num_chunks;
+    chunks[i] = new structure_chunk(new_gv, v, Courant, proc);
+    br.apply(this, chunks[i]);
+  }
+  check_chunks();
+
+  delete[] origins;
+  delete[] nums;
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.

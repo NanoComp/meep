@@ -1329,9 +1329,11 @@ These functions dump the raw ε and μ data to disk and load it back for doing m
 —
 Dumps the structure to the file `fname`.
 
-**`Simulation.load_structure(fname)`**
-—
-Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
+To load a structure from a file, pass the file name to the `Simulation` constructor via the `load_structure` keyword argument:
+
+```py
+sim = mp.Simulation(..., load_structure='my_saved_structure.h5')
+```
 
 ### Frequency-Domain Solver
 

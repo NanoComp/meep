@@ -936,7 +936,7 @@ class Simulation(object):
        )
 
         if self.load_structure_file:
-            self.load_structure(self.load_structure_file)
+            self.load_structure(self.load_structure_file, br)
 
     def set_materials(self, geometry=None, default_material=None):
         if self.fields:
@@ -958,10 +958,10 @@ class Simulation(object):
             self.extra_materials
         )
 
-    def load_structure(self, fname):
+    def load_structure(self, fname, br):
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling load_structure")
-        self.structure.load(fname)
+        self.structure.load(fname, br)
 
     def dump_structure(self, fname):
         if self.structure is None:
