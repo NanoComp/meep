@@ -17,36 +17,37 @@ The `Simulation` [class](#classes) contains all the attributes that you can set 
 class Simulation(object):
 
     def __init__(self,
-                 accurate_fields_near_cylorigin=False,
-                 boundary_layers=[],
                  cell_size,
-                 Courant=0.5,
-                 default_material=mp.Medium(),
-                 dimensions=2,
-                 ensure_periodicity=True,
-                 eps_averaging=True,
-                 epsilon_func=None,
-                 epsilon_input_file='',
-                 extra_materials=[],
-                 filename_prefix='',
-                 force_complex_fields=False,
-                 force_all_components=False,
-                 geometry=[],
-                 k_point=False,
-                 load_structure='',
-                 m=0,
-                 material_function=None,
-                 num_chunks=0,
-                 output_single_precision=False,
-                 output_volume=None,
-                 progress_interval=4,
                  resolution,
+                 geometry=[],
                  sources=[],
-                 subpixel_maxeval=100000,
-                 subpixel_tol=1e-4,
+                 eps_averaging=True,
+                 dimensions=3,
+                 boundary_layers=[],
                  symmetries=[],
                  verbose=False,
-                 geometry_center=mp.Vector3()):
+                 force_complex_fields=False,
+                 default_material=mp.Medium(),
+                 m=0,
+                 k_point=False,
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None,
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=True,
+                 num_chunks=0,
+                 Courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix=None,
+                 output_volume=None,
+                 output_single_precision=False,
+                 load_structure='',
+                 geometry_center=mp.Vector3(),
+                 force_all_components=False,
+                 split_chunks_evenly=True):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -169,6 +170,10 @@ Pointer to the current fields being simulated; initialized by `init_sim()` which
 **`num_chunks` [`integer`]**
 —
 Minimum number of "chunks" (subarrays) to divide the structure/fields into (default 0). Actual number is determined by number of processors, PML layers, etcetera. Mainly useful for debugging.
+
+**`split_chunks_evenly` [`boolean`]**
+—
+When `True` (the default), the work per chunk is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of parallel simulations.
 
 Predefined Variables
 --------------------
