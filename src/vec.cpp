@@ -1173,6 +1173,8 @@ grid_volume grid_volume::split_at_fraction(bool want_high, int numer, int bestd,
         bestd = i;
         bestlen = num[i];
       }
+  } else {
+    bestd %= 3;
   }
 
   if (bestd == -1) {

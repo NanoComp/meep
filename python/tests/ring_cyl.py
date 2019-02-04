@@ -46,7 +46,8 @@ class TestRingCyl(unittest.TestCase):
             resolution=resolution,
             sources=sources,
             dimensions=dimensions,
-            m=m
+            m=m,
+            split_chunks_evenly=False
         )
 
     def test_ring_cyl(self):
@@ -61,7 +62,6 @@ class TestRingCyl(unittest.TestCase):
 
         h = mp.Harminv(mp.Ez, mp.Vector3(self.r + 0.1), self.fcen, self.df)
         self.sim.run(mp.after_sources(h), until_after_sources=200)
-
         m = h.modes[0]
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
