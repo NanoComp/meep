@@ -39,7 +39,7 @@ This creates an environment called "mp" (you can name this anything you like) wi
 Next, we need to activate the environment before we can start using it.
 
 ```bash
-source activate mp
+conda activate mp
 ```
 
 Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
@@ -50,7 +50,7 @@ Installing parallel PyMeep follows the same pattern, but the package is called `
 
 ```bash
 conda create -n pmp -c chogan -c conda-forge pymeep-parallel
-source activate pmp
+conda activate pmp
 ```
 
 The environment includes `mpi4py`, so you can run an MPI job with 4 processes like this:
@@ -59,7 +59,12 @@ The environment includes `mpi4py`, so you can run an MPI job with 4 processes li
 mpirun -np 4 python <script_name>.py
 ```
 
-If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
+If you run into issues, make sure your `PYTHONPATH** environment variable is unset.
+
+**Note:** If you experience crashes when using `matplotlib` on macOS, try importing `meep` before importing `matplotlib`. In addition add the following line to your `~/.matplotlib/matplotlibrc` file to force the `TkAgg` backend:
+```
+backend: TkAgg
+```
 
 **Note:** For pymeep-parallel on macOS, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
 
