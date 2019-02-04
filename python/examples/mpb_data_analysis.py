@@ -2,9 +2,9 @@ from __future__ import division
 
 import os
 import sys
-import matplotlib.pyplot as plt
 import numpy as np
 import meep as mp
+import matplotlib.pyplot as plt
 from meep import mpb
 
 examples_dir = os.path.realpath(os.path.dirname(__file__))
