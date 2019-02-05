@@ -55,8 +55,6 @@ class TestSourceTime(unittest.TestCase):
 
 class TestSourceTypemaps(unittest.TestCase):
 
-    expected_msg = "Expected a meep.source.SourceTime or a meep.src_time\n"
-
     def setUp(self):
 
         def dummy_eps(v):
@@ -79,22 +77,6 @@ class TestSourceTypemaps(unittest.TestCase):
     def test_typemap_py(self):
         src = GaussianSource(0.15, 0.1)
         self.f.add_volume_source(mp.Ez, src, self.v)
-
-    def test_typemap_swig_raises(self):
-        src = mp.gaussian_src_time(0.15, 0.1)
-        self.assertTrue(src.is_equal(src))
-
-        with self.assertRaises(TypeError) as error:
-            src.is_equal(mp.vec())
-            self.assertEqual(error.exception.message, self.expected_msg)
-
-    def test_typemap_py_raises(self):
-        src = GaussianSource(0.15, 0.1)
-        self.assertTrue(src.swigobj.is_equal(src))
-
-        with self.assertRaises(TypeError) as error:
-            src.swigobj.is_equal(Vector3())
-            self.assertEqual(error.exception.message, self.expected_msg)
 
     def test_custom_source(self):
         n = 3.4

@@ -35,6 +35,11 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
+static void abort_with_stack_trace() {
+  PyErr_PrintEx(0);
+  meep::abort("Error in typemaps");
+}
+
 static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
 
@@ -136,9 +141,9 @@ static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct
 
   PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
 
-  if (!pyret) { PyErr_PrintEx(0); }
+  if (!pyret) {abort_with_stack_trace(); }
 
-  if (!pymedium_to_medium(pyret, medium)) { PyErr_PrintEx(0); }
+  if (!pymedium_to_medium(pyret, medium)) { abort_with_stack_trace(); }
 
   Py_DECREF(pyret);
 }
@@ -148,7 +153,7 @@ static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medi
 
   PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
 
-  if (!pyret) { PyErr_PrintEx(0); }
+  if (!pyret) { abort_with_stack_trace(); }
 
   double eps = PyFloat_AsDouble(pyret);
 
@@ -179,10 +184,7 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
   PyObject *py_y = PyObject_GetAttrString(po, "y");
   PyObject *py_z = PyObject_GetAttrString(po, "z");
 
-  if (!py_x || !py_y || !py_z) {
-    PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
-    return 0;
-  }
+  if (!py_x || !py_y || !py_z) { abort_with_stack_trace(); }
 
   double x = PyFloat_AsDouble(py_x);
   double y = PyFloat_AsDouble(py_y);
@@ -203,10 +205,7 @@ static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
   PyObject *py_y = PyObject_GetAttrString(po, "y");
   PyObject *py_z = PyObject_GetAttrString(po, "z");
 
-  if (!py_x || !py_y || !py_z) {
-    PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
-    return 0;
-  }
+  if (!py_x || !py_y || !py_z) { abort_with_stack_trace(); }
 
   std::complex<double> x =
       std::complex<double>(PyComplex_RealAsDouble(py_x), PyComplex_ImagAsDouble(py_x));
@@ -241,10 +240,7 @@ static PyObject *v3_to_pyv3(vector3 *v) {
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) {
-    PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-    return 0;
-  }
+  if (!py_attr) { abort_with_stack_trace(); }
 
   if (!pyv3_to_v3(py_attr, v)) { return 0; }
 
@@ -256,10 +252,7 @@ static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
 
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) {
-    PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-    return 0;
-  }
+  if (!py_attr) { abort_with_stack_trace(); }
 
   if (!pyv3_to_cv3(py_attr, v)) { return 0; }
 
@@ -270,10 +263,7 @@ static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) {
-    PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-    return 0;
-  }
+  if (!py_attr) { abort_with_stack_trace(); }
 
   *result = PyFloat_AsDouble(py_attr);
   Py_XDECREF(py_attr);
@@ -283,10 +273,7 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
 static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) {
-    PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-    return 0;
-  }
+  if (!py_attr) { abort_with_stack_trace(); }
 
   *result = PyInteger_AsLong(py_attr);
   Py_XDECREF(py_attr);
@@ -296,10 +283,7 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
 static int get_attr_material(PyObject *po, material_type *m) {
   PyObject *py_material = PyObject_GetAttrString(po, "material");
 
-  if (!py_material) {
-    PyErr_SetString(PyExc_ValueError, "Object's material is not set\n");
-    return 0;
-  }
+  if (!py_material) { abort_with_stack_trace(); }
 
   if (!pymaterial_to_material(py_material, m)) { return 0; }
 
@@ -400,10 +384,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 }
 
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl) {
-  if (!PyList_Check(po)) {
-    PyErr_SetString(PyExc_TypeError, "Expected a list\n");
-    return 0;
-  }
+  if (!PyList_Check(po)) { abort_with_stack_trace(); }
 
   int length = PyList_Size(po);
   sl->num_items = length;
@@ -438,8 +419,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyArrayObject *pao = (PyArrayObject *)po;
 
     if (!PyArray_ISCARRAY(pao)) {
-      PyErr_SetString(PyExc_TypeError, "Numpy array must be C-style contiguous.");
-      return 0;
+      meep::abort("Numpy array must be C-style contiguous.");
     }
     md = new material_data();
     md->which_subclass = material_data::MATERIAL_FILE;
@@ -454,8 +434,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     master_printf("read in %zdx%zdx%zd numpy array for epsilon\n", md->epsilon_dims[0],
                   md->epsilon_dims[1], md->epsilon_dims[2]);
   } else {
-    PyErr_SetString(PyExc_TypeError, "Expected a Medium, a function, or a filename");
-    return 0;
+    meep::abort("Expected a Medium, a function, or a filename");
   }
 
   *mt = md;
@@ -565,8 +544,7 @@ static PyObject *material_to_py_material(material_type mat) {
     }
     default:
       // Only Medium is supported at this time.
-      PyErr_SetString(PyExc_NotImplementedError, "Can only convert C++ medium_struct to Python");
-      return NULL;
+      meep::abort("Can only convert C++ medium_struct to Python");
   }
 }
 
@@ -740,14 +718,10 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
 
   PyObject *py_vert_list = PyObject_GetAttrString(py_prism, "vertices");
 
-  if (!py_vert_list) {
-    PyErr_PrintEx(0);
-    return 0;
-  }
+  if (!py_vert_list) { abort_with_stack_trace(); }
 
   if (!PyList_Check(py_vert_list)) {
-    PyErr_SetString(PyExc_TypeError, "Expected Prism.vertices to be a list\n");
-    return 0;
+    meep::abort("Expected Prism.vertices to be a list\n");
   }
 
   int num_vertices = PyList_Size(py_vert_list);
@@ -787,8 +761,7 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   } else if (go_type == "Prism") {
     success = pyprism_to_prism(po, o);
   } else {
-    PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type\n",
-                 go_type.c_str());
+    meep::abort("Error: %s is not a valid GeometricObject type\n", go_type.c_str());
     return 0;
   }
 
@@ -797,8 +770,7 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
 
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
   if (!PyList_Check(po)) {
-    PyErr_SetString(PyExc_TypeError, "Expected a list");
-    return 0;
+    meep::abort("Expected a list");
   }
 
   int length = PyList_Size(po);
@@ -856,9 +828,7 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
     default:
       // We currently only have the need to create python Prisms from C++.
       // Other geometry can be added as needed.
-      PyErr_SetString(PyExc_RuntimeError,
-                      "Conversion of non-prism geometric_object to Python is not supported");
-      return NULL;
+      meep::abort("Conversion of non-prism geometric_object to Python is not supported");
   }
 }
 
