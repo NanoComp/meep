@@ -130,6 +130,14 @@ ctlio::cnumber_list dft_near2far_farfield(dft_near2far *f, const vec &x) {
   return res;
 }
 
+ctlio::number_list dft_near2far_flux(dft_near2far *f, direction df, const volume &where,
+                                     double resolution) {
+  ctlio::number_list res;
+  res.num_items = f->Nfreq;
+  res.items = f->flux(df, where, resolution);
+  return res;
+}
+
 /***************************************************************************/
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
