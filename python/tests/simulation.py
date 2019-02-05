@@ -319,16 +319,16 @@ class TestSimulation(unittest.TestCase):
         cell = mp.Vector3(5, 5)
         sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(), component=mp.Ez)
         one_by_one = mp.Vector3(1, 1, mp.inf)
-        geometry = [mp.Block(material=Al, center=mp.Vector3(-1.5, -1.5), size=one_by_one),
-                    mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1.5, 1.5), size=one_by_one)]
+        geometry = [mp.Block(material=Al, center=mp.Vector3(), size=one_by_one),
+                    mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1), size=one_by_one)]
         pml_layers = [mp.PML(0.5)]
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
                             boundary_layers=pml_layers,
                             geometry=geometry,
-                            sources=[sources],
-                            split_chunks_evenly=False)
+                            symmetries=[mp.Mirror(mp.Y)],
+                            sources=[sources])
 
         sample_point = mp.Vector3(0.12, -0.29)
         ref_field_points = []
@@ -345,8 +345,8 @@ class TestSimulation(unittest.TestCase):
                             cell_size=cell,
                             boundary_layers=pml_layers,
                             sources=[sources],
-                            load_structure=dump_fn,
-                            split_chunks_evenly=False)
+                            symmetries=[mp.Mirror(mp.Y)],
+                            load_structure=dump_fn)
 
         field_points = []
 

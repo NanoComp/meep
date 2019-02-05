@@ -713,7 +713,9 @@ public:
 
   // structure_dump.cpp
   void dump(const char *filename);
-  void load(const char *filename, boundary_region &br);
+  void dump_chunk_layout(const char *filename);
+  void load(const char *filename);
+  void load_chunk_layout(const char *filename, boundary_region &br);
 
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &origloc) const;
