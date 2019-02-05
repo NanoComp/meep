@@ -18,7 +18,7 @@
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, and **saturable** gain/absorption.
 -   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
--   Arbitrary current sources including a guided-mode launcher.
+-   Arbitrary current sources including a [guided-mode launcher](https://meep.readthedocs.io/en/latest/Python_Tutorials/Eigenmode_Source/).
 -   Frequency-domain solver for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   **GDSII** file import for planar geometries.
