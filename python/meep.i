@@ -332,7 +332,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->Nfreq);
 
     delete[] arr_dims;
-
+    delete[] EH;
     return py_arr;
 
 }
