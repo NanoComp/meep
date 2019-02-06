@@ -68,7 +68,7 @@ void structure::dump_chunk_layout(const char *filename) {
       nums[i * 3 + ((int)d % 3)] = chunks[i]->gv.num_direction(d);
     }
   }
-  h5file file(filename, h5file::WRITE, false);
+  h5file file(filename, h5file::WRITE, true);
   file.create_data("gv_origins", 1, &sz);
   if (am_master()) {
     size_t gv_origins_start = 0;
@@ -109,8 +109,6 @@ void structure::dump(const char *filename) {
   size_t ntotal = sum_to_all(my_ntot);
 
   h5file file(filename, h5file::WRITE, true);
-
-  // Write chi1inv sizes
   size_t dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
@@ -386,59 +384,68 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
-void structure::load_chunk_layout(const char *filename, boundary_region &br) {
-  h5file file(filename, h5file::READONLY, false);
-  // Load chunk grid_volumes and adjust chunks (necessary when split_by_cost is used)
-  size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
-  memset(origins, 0, sizeof(realnum) * sz);
-  size_t *nums = new size_t[sz];
-  memset(nums, 0, sizeof(size_t) * sz);
+void structure::load_chunk_layout(const char *filename, boundary_region &br,
+                                  std::vector<grid_volume> gvs) {
+  if (filename) {
+    // Load chunk grid_volumes from a file
+    h5file file(filename, h5file::READONLY, true);
+    size_t sz = num_chunks * 3;
+    realnum *origins = new realnum[sz];
+    memset(origins, 0, sizeof(realnum) * sz);
+    size_t *nums = new size_t[sz];
+    memset(nums, 0, sizeof(size_t) * sz);
 
-  int origins_rank;
-  size_t origins_dims;
-  file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
-  if (origins_rank != 1 || origins_dims != sz) {
-    abort("chunk mismatch in structure::load");
-  }
-  if (am_master()) {
-    size_t gv_origins_start = 0;
-    file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
-  }
-  file.prevent_deadlock();
-  broadcast(0, origins, sz);
-
-  int nums_rank;
-  size_t nums_dims;
-  file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
-  if (nums_rank != 1 || nums_dims != sz) {
-    abort("chunk mismatch in structure::load");
-  }
-  if (am_master()) {
-    size_t gv_nums_start = 0;
-    file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
-  }
-  file.prevent_deadlock();
-  broadcast(0, nums, sz);
-
-  for (int i = 0; i < num_chunks; ++i) {
-    int idx = i * 3;
-    grid_volume new_gv = gv;
-    vec new_origin(new_gv.dim);
-    LOOP_OVER_DIRECTIONS(gv.dim, d) {
-      new_origin.set_direction(d, origins[idx++]);
-      new_gv.set_num_direction(d, nums[i * 3 + ((int)d % 3)]);
+    int origins_rank;
+    size_t origins_dims;
+    file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
+    if (origins_rank != 1 || origins_dims != sz) {
+      abort("chunk mismatch in structure::load");
     }
-    new_gv.set_origin(new_origin);
+    if (am_master()) {
+      size_t gv_origins_start = 0;
+      file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
+    }
+    file.prevent_deadlock();
+    broadcast(0, origins, sz);
+
+    int nums_rank;
+    size_t nums_dims;
+    file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
+    if (nums_rank != 1 || nums_dims != sz) {
+      abort("chunk mismatch in structure::load");
+    }
+    if (am_master()) {
+      size_t gv_nums_start = 0;
+      file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
+    }
+    file.prevent_deadlock();
+    broadcast(0, nums, sz);
+
+    // Populate the gvs vector with the new grid_volumes
+    for (int i = 0; i < num_chunks; ++i) {
+      int idx = i * 3;
+      grid_volume new_gv = gv;
+      vec new_origin(new_gv.dim);
+      LOOP_OVER_DIRECTIONS(gv.dim, d) {
+        new_origin.set_direction(d, origins[idx++]);
+        new_gv.set_num_direction(d, nums[i * 3 + ((int)d % 3)]);
+      }
+      new_gv.set_origin(new_origin);
+      gvs.push_back(new_gv);
+    }
+    delete[] origins;
+    delete[] nums;
+  }
+
+  // Recreate the chunks with the new grid_volumes
+  for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
     int proc = i * count_processors() / num_chunks;
-    chunks[i] = new structure_chunk(new_gv, v, Courant, proc);
+    chunks[i] = new structure_chunk(gvs[i], v, Courant, proc);
     br.apply(this, chunks[i]);
   }
   check_chunks();
 
-  delete[] origins;
-  delete[] nums;
 }
 
 void structure::load(const char *filename) {

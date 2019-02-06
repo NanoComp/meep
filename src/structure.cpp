@@ -1006,11 +1006,11 @@ void structure::print_layout(void) const {
   }
 }
 
-std::vector<volume> structure::get_chunk_volumes() const {
-  std::vector<volume> result;
+std::vector<grid_volume> structure::get_chunk_volumes() const {
+  std::vector<grid_volume> result;
 
   for (int i = 0; i < num_chunks; ++i) {
-    result.push_back(chunks[i]->gv.surroundings());
+    result.push_back(chunks[i]->gv);
   }
   return result;
 }

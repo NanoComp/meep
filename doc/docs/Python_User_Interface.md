@@ -47,7 +47,8 @@ class Simulation(object):
                  load_structure='',
                  geometry_center=mp.Vector3(),
                  force_all_components=False,
-                 split_chunks_evenly=True):
+                 split_chunks_evenly=True,
+                 chunk_layout=None):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -155,7 +156,11 @@ By default, Meep turns off support for material dispersion (via susceptibilities
 
 **`load_structure` [`string`]**
 —
-If not empty, Meep will load the structure specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+If not empty, Meep will load the structure file specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+
+**`chunk_layout` [`string` or `Simulation` instance]**
+—
+This will cause the `Simulation` to use the chunk layout described by either an h5 file (created by `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -1328,17 +1333,21 @@ Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid 
 
 ### Load and Dump Structure
 
-These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (i.e. the same grid, number of processors, symmetries, and PML). Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
+These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
 **`Simulation.dump_structure(fname)`**
 —
 Dumps the structure to the file `fname`.
 
-To load a structure from a file, pass the file name to the `Simulation` constructor via the `load_structure` keyword argument:
+**`Simulation.load_structure(fname)`**
+—
+Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
 
-```py
-sim = mp.Simulation(..., load_structure='my_saved_structure.h5')
-```
+**`Simulation.dump_chunk_layout(fname)`**
+—
+Dumps the chunk layout to file `fname`.
+
+To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor.
 
 ### Frequency-Domain Solver
 

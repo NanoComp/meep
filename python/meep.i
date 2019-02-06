@@ -1196,6 +1196,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 %template(DftDataVector) std::vector<meep_geom::dft_data>;
 %template(VolumeVector) std::vector<meep::volume>;
+%template(GridVolumeVector) std::vector<meep::grid_volume>;
 %template(IntVector) std::vector<int>;
 %template(DoubleVector) std::vector<double>;
 
