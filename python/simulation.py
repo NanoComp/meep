@@ -983,7 +983,7 @@ class Simulation(object):
             raise ValueError("Fields must be initialized before calling load_structure")
 
         if isinstance(source, Simulation):
-            vols = sim.structure.get_chunk_volumes()
+            vols = source.structure.get_chunk_volumes()
             fname = None
         else:
             vols = []
