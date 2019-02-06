@@ -88,7 +88,7 @@ Additionally, we can demonstrate the eigenmode source for a rotated waveguide. T
 ![](../images/oblique_source_singlemode.png)
 </center>
 
-There are numerical dispersion artifacts due to the FDTD spatial and temporal discretizations which create negligible backwards (leftward-propagating) wave artifacts by the eigenmode current source, carrying approximately 10<sup>-5</sup> of the power of the desired rightward-propagating mode. These can be seen as small artifacts in the field profiles.
+There are numerical dispersion artifacts due to the FDTD spatial and temporal discretizations which create negligible backwards (leftward-propagating) wave artifacts by the eigenmode current source, carrying approximately 10<sup>-5</sup> of the power of the desired rightward-propagating mode. These can be seen as artifacts in the field profiles.
 
 <center>
 ![](../images/oblique_source_multimode.png)
