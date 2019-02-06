@@ -383,7 +383,6 @@ class TestSimulation(unittest.TestCase):
         self._load_dump_structure(chunk_file=True)
 
     def test_load_dump_chunk_layout_sim(self):
-        # TODO: Test with symmetry
         self._load_dump_structure(chunk_sim=True)
 
     def test_get_array_output(self):
