@@ -15,12 +15,12 @@
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, and **saturable** gain/absorption.
 -   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
--   Arbitrary current sources including a guided-mode launcher.
+-   Arbitrary current sources including a [guided-mode launcher](Python_Tutorials/Eigenmode_Source.md).
 -   Frequency-domain solver for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   **GDSII** file import for planar geometries.
 -   **Materials library** containing predefined broadband, complex refractive indices.
--   Field analyses including [Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), [mode decomposition](Python_Tutorials/Mode_Decomposition.md), [near to far transformations](Python_Tutorials/Near_to_Far_Field_Spectra.md), [frequency extraction](Python_Tutorials/Basics.md#modes-of-a-ring-resonator), [local density of states](Python_Tutorials/Local_Density_of_States.md) (LDOS), [modal volume](Python_User_Interface.md#field-computations), [Maxwell stress tensor](Python_Tutorials/Optical_Forces.md), [arbitrary functions](Field_Functions.md); completely programmable.
+-   Field analyses including [Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), [mode decomposition](Python_Tutorials/Mode_Decomposition.md) (for [S-parameters](Python_Tutorials/GDSII_Import.md)), [near to far transformations](Python_Tutorials/Near_to_Far_Field_Spectra.md), [frequency extraction](Python_Tutorials/Basics.md#modes-of-a-ring-resonator), [local density of states](Python_Tutorials/Local_Density_of_States.md) (LDOS), [modal volume](Python_User_Interface.md#field-computations), [Maxwell stress tensor](Python_Tutorials/Optical_Forces.md), [arbitrary functions](Field_Functions.md); completely programmable.
 
 Time-Domain Simulation
 ----------------------

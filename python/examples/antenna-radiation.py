@@ -1,4 +1,4 @@
-from __future__ import division, print_function
+from __future__ import division
 
 import meep as mp
 import math
@@ -16,17 +16,19 @@ pml_layers = [mp.PML(dpml)]
 fcen = 1.0
 df = 0.4
 src_cmpt = mp.Ez
-
 sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
                     center=mp.Vector3(),
                     component=src_cmpt)]
 
 if src_cmpt == mp.Ex:
-    symmetries = [mp.Mirror(mp.X,phase=-1),mp.Mirror(mp.Y,phase=+1)]
+    symmetries = [mp.Mirror(mp.X,phase=-1),
+                  mp.Mirror(mp.Y,phase=+1)]
 elif src_cmpt == mp.Ey:
-    symmetries = [mp.Mirror(mp.X,phase=+1),mp.Mirror(mp.Y,phase=-1)]
+    symmetries = [mp.Mirror(mp.X,phase=+1),
+                  mp.Mirror(mp.Y,phase=-1)]
 elif src_cmpt == mp.Ez:
-    symmetries = [mp.Mirror(mp.X,phase=+1),mp.Mirror(mp.Y,phase=+1)]
+    symmetries = [mp.Mirror(mp.X,phase=+1),
+                  mp.Mirror(mp.Y,phase=+1)]
 
 sim = mp.Simulation(cell_size=cell,
                     resolution=resolution,
@@ -48,7 +50,15 @@ flux_box = sim.add_flux(fcen, 0, 1,
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
 
-r = 1000/fcen      # radius of far field surface
+near_flux = mp.get_fluxes(flux_box)[0]
+
+r = 1000/fcen      # half side length of far-field square box OR radius of far-field circle
+res_ff = 1         # resolution of far fields (points/μm)
+far_flux_box = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=r), size=mp.Vector3(2*r)), res_ff)[0]
+               - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-r), size=mp.Vector3(2*r)), res_ff)[0]
+               + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(r), size=mp.Vector3(y=2*r)), res_ff)[0]
+               - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-r), size=mp.Vector3(y=2*r)), res_ff)[0])
+
 npts = 100         # number of points in [0,2*pi) range of angles
 angles = 2*math.pi/npts*np.arange(npts)
 
@@ -65,6 +75,10 @@ Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
 Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
 Pr = np.sqrt(np.square(Px)+np.square(Py))
 
+far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
+
+print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_box,far_flux_circle))
+
 ax = plt.subplot(111, projection='polar')
 ax.plot(angles,Pr/max(Pr),'b-')
 ax.set_rmax(1)
@@ -72,7 +86,3 @@ ax.set_rticks([0,0.5,1])
 ax.grid(True)
 ax.set_rlabel_position(22)
 plt.show()
-
-near_flux = mp.get_fluxes(flux_box)[0]
-far_flux = np.sum(Pr)*2*np.pi*r/len(Pr)
-print("flux:, {:.6f}, {:.6f}".format(near_flux,far_flux))

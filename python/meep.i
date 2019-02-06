@@ -146,9 +146,7 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
 
     PyObject *pyret = PyObject_CallObject(data->func, py_args);
 
-    if (!pyret) {
-        PyErr_PrintEx(0);
-    }
+    if (!pyret) { abort_with_stack_trace(); }
 
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
@@ -215,8 +213,7 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
     PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
 
     if (!py_pml_profile_func) {
-        PyErr_Format(PyExc_ValueError, "Class attribute 'pml_profile' is None\n");
-        return 0;
+      meep::abort("Class attribute 'pml_profile' is None\n");
     }
 
     a->pml_profile_data = py_pml_profile_func;
@@ -229,12 +226,9 @@ double py_pml_profile(double u, void *f) {
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
-    if (!PyCallable_Check(func)) {
-        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Expected a callable");
-        PyErr_Print();
-    }
-
     PyObject *pyret = PyObject_CallFunctionObjArgs(func, d, NULL);
+
+    if (!pyret) { abort_with_stack_trace(); }
 
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
@@ -711,8 +705,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         swig_obj = $input;
         Py_XINCREF(swig_obj);
     } else {
-        PyErr_SetString(PyExc_TypeError, "Expected a meep.source.SourceTime or a meep.src_time\n");
-        SWIG_fail;
+      meep::abort("Expected a meep.source.SourceTime or a meep.src_time\n");
     }
 
     tmp_res = SWIG_ConvertPtr(swig_obj, &tmp_ptr, $1_descriptor, 0);
@@ -897,8 +890,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 %typemap(in) (meep::component *components, int num_components) {
     if (!PyList_Check($input)) {
-        PyErr_SetString(PyExc_ValueError, "Expected a list");
-        SWIG_fail;
+        meep::abort("Expected a list");
     }
     $2 = PyList_Size($input);
     $1 = new meep::component[$2];
@@ -927,22 +919,19 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     (py_field_func_data tmp_data) {
 
     if (!PySequence_Check($input)) {
-        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
-        SWIG_fail;
+        meep::abort("Expected a sequence");
     }
 
     PyObject *cs = PyList_GetItem($input, 0);
 
     if (!PySequence_Check(cs)) {
-        PyErr_SetString(PyExc_ValueError, "Expected first item in list to be a list");
-        SWIG_fail;
+        meep::abort("Expected first item in list to be a list");
     }
 
     PyObject *func = PyList_GetItem($input, 1);
 
     if (!PyCallable_Check(func)) {
-        PyErr_SetString(PyExc_ValueError, "Expected a function");
-        SWIG_fail;
+        meep::abort("Expected a function");
     }
 
     $1 = PyList_Size(cs);
@@ -980,28 +969,25 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
               void *integrand_data_) (py_field_func_data data) {
 
     if (!PySequence_Check($input)) {
-        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
-        SWIG_fail;
+        meep::abort("Expected a sequence");
     }
 
     PyObject *cs1 = PyList_GetItem($input, 0);
 
     if (!PySequence_Check(cs1)) {
-        PyErr_SetString(PyExc_ValueError, "Expected 1st item in list to be a sequence");
-        SWIG_fail;
+        meep::abort("Expected 1st item in list to be a sequence");
     }
 
     PyObject *cs2 = PyList_GetItem($input, 1);
 
     if (!PySequence_Check(cs2)) {
-        PyErr_SetString(PyExc_ValueError, "Expected 2nd item in list to be a sequence");
+        meep::abort("Expected 2nd item in list to be a sequence");
     }
 
     PyObject *func = PyList_GetItem($input, 2);
 
     if (!PyCallable_Check(func)) {
-        PyErr_SetString(PyExc_ValueError, "Expected 3rd item in list to be a function");
-        SWIG_fail;
+        meep::abort("Expected 3rd item in list to be a function");
     }
 
     $1 = PyList_Size(cs1);

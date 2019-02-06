@@ -54,8 +54,9 @@ pages:
     - 'Tutorial/Near-to-Far Field Spectra': 'Python_Tutorials/Near_to_Far_Field_Spectra.md'
     - 'Tutorial/Local Density of States': 'Python_Tutorials/Local_Density_of_States.md'
     - 'Tutorial/Optical Forces': 'Python_Tutorials/Optical_Forces.md'
-    - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'    
+    - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'
     - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
+    - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
 - 'Scheme Interface':
@@ -69,8 +70,9 @@ pages:
     - 'Tutorial/Local Density of States': 'Scheme_Tutorials/Local_Density_of_States.md'
     - 'Tutorial/Optical Forces': 'Scheme_Tutorials/Optical_Forces.md'
     - 'Tutorial/Frequency-Domain Solver': 'Scheme_Tutorials/Frequency_Domain_Solver.md'
-    - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
+    - 'Tutorial/Eigenmode Source': 'Scheme_Tutorials/Eigenmode_Source.md'
     - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
+    - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
     - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
 - 'C++ Interface':
     - 'Developer Information': 'C++_Developer_Information.md'

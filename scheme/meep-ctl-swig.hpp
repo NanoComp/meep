@@ -43,6 +43,8 @@ ctlio::number_list dft_ldos_ldos(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_F(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_J(meep::dft_ldos *f);
 ctlio::cnumber_list dft_near2far_farfield(meep::dft_near2far *f, const meep::vec &x);
+ctlio::number_list dft_near2far_flux(meep::dft_near2far *f, meep::direction df,
+                                     const meep::volume &where, double resolution);
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
                                    std::complex<double> (*eps_func)(std::complex<double> omega) = 0,
