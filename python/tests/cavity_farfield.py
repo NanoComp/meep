@@ -9,7 +9,7 @@ class TestCavityFarfield(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
-    def test_cavity_farfield(self):
+    def run_test(self, nfreqs):
         eps = 13
         w = 1.2
         r = 0.36
@@ -49,18 +49,18 @@ class TestCavityFarfield(unittest.TestCase):
                             resolution=resolution)
 
         nearfield = sim.add_near2far(
-            fcen, 0, 1,
+            fcen, 0, nfreqs,
             mp.Near2FarRegion(mp.Vector3(0, 0.5 * w + d1), size=mp.Vector3(2 * dpml - sx)),
             mp.Near2FarRegion(mp.Vector3(-0.5 * sx + dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1), weight=-1.0),
             mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1))
         )
-
         sim.run(until=200)
         d2 = 20
         h = 4
         vol = mp.Volume(mp.Vector3(0, (0.5 * w) + d2 + (0.5 * h)), size=mp.Vector3(sx - 2 * dpml, h))
         result = sim.get_farfields(nearfield, resolution, where=vol)
-        ref_file = os.path.join(self.data_dir, 'cavity-farfield.h5')
+        fname = 'cavity-farfield.h5' if nfreqs == 1 else 'cavity-farfield-4-freqs.h5'
+        ref_file = os.path.join(self.data_dir, fname)
 
         with h5py.File(ref_file, 'r') as f:
             # Get reference data into memory
@@ -77,6 +77,12 @@ class TestCavityFarfield(unittest.TestCase):
             np.testing.assert_allclose(ref_hx, result['Hx'])
             np.testing.assert_allclose(ref_hy, result['Hy'])
             np.testing.assert_allclose(ref_hz, result['Hz'])
+
+    def test_cavity_farfield(self):
+        self.run_test(nfreqs=1)
+
+    def test_cavity_farfield_four_freqs(self):
+        self.run_test(nfreqs=4)
 
 
 if __name__ == '__main__':
