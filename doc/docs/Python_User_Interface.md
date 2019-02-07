@@ -1347,7 +1347,21 @@ Loads a structure from the file `fname`. A file name to load can also be passed 
 —
 Dumps the chunk layout to file `fname`.
 
-To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor.
+To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor, passing either a file obtained from `dump_chunk_layout` or another `Simulation` instance. Note that when using `split_chunks_evenly=False` this parameter is required when saving and loading flux spectra, force spectra, or near-to-far spectra so that the two runs have the same chunk layout. Just pass the `Simulation` object from the first run to the second run:
+
+```python
+# Split chunks based on amount of work instead of size
+sim1 = mp.Simulation(..., split_chunks_evenly=False)
+norm_flux = sim1.add_flux(...)
+sim1.run(...)
+sim1.save_flux(...)
+
+# Make sure the second run uses the same chunk layout as the first
+sim2 = mp.Simulation(..., chunk_layout=sim1)
+flux = sim2.add_flux(...)
+sim2.load_minus_flux(...)
+sim2.run(...)
+```
 
 ### Frequency-Domain Solver
 

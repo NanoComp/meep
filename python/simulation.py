@@ -939,6 +939,7 @@ class Simulation(object):
 
         if self.chunk_layout:
             self.load_chunk_layout(br, self.chunk_layout)
+            self.set_materials()
 
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
