@@ -798,9 +798,9 @@ The end time for the source. Default is 10<sup>20</sup> (never turn off).
 —
 Roughly, the temporal width of the smoothing (technically, the inverse of the exponential rate at which the current turns off and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
 
-**`cutoff` [`number`]**
+**`slowness` [`number`]**
 —
-How many `width`s the current decays for before we cut it off and set it to zero. Default is 3.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times.
+Controls how far into the exponential tail of the tanh function the source turns on. Default is 3.0. A larger value means that the source turns on more gradually at the beginning.
 
 **`is_integrated` [`boolean`]**
 —

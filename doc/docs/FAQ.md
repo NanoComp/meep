@@ -210,7 +210,7 @@ There are two possible approaches for computing the group velocity: (1) compute 
 
 ### How do I compute the time average of the harmonic fields?
 
-For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. The instantaneous steady-state field is equivalent to the time average.
+For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
 
 ### How do I set up an oblique planewave source?
 
@@ -316,11 +316,15 @@ No. Meep does not support non-orthogonal grids with spatially varying resolution
 
 In principle, this corresponds to the limit as the frequency goes to zero or the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for such [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) (or magnetostatic) calculation; this includes [lumped circuit models](https://en.wikipedia.org/wiki/Lumped_element_model) such as resistance, voltage, capacitance, etc. In this regime, you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
 
-### Why does the continuous-wave (CW) source produce a finite bandwidth response?
+### Why doesn't the continuous-wave (CW) source produce a single-frequency response?
 
-The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single frequency response due to its finite turn-on time (which is described by a hyperbolic tangent function). If you Fourier transform the response, the finite turn-on time will produce other frequency components. After the turn-on, the continuous source is described by a sinusoid of the given frequency.
+The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single frequency response due to its finite turn-on time which is described by a hyperbolic tangent function. If you Fourier transform the response, the finite turn-on time will produce additional frequency components. After the turn-on, the CW source is described by a sinusoid of the given frequency.
 
-If the `width` is 0 (the default) then the source turns on sharply. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter (a fixed quantity) controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually to start with (i.e., farther in the exponential tail).
+If the `width` is 0 (the default) then the source turns on sharply. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
+
+<center>
+![](images/cwsrc_turnon.png)
+</center>
 
 ### How do I access or visualize the structure, fields, or sources in a subregion of the cell?
 
