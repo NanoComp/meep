@@ -856,7 +856,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
-void destroy_eigenmode_data(void *vedata) { (void)vedata; }
+void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
+  (void)vedata;
+  (void)destroy_mdata;
+}
 
 std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
   (void)vedata;
