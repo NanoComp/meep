@@ -384,59 +384,62 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
-void structure::load_chunk_layout(const char *filename, boundary_region &br,
-                                  std::vector<grid_volume> gvs) {
-  if (filename) {
-    // Load chunk grid_volumes from a file
-    h5file file(filename, h5file::READONLY, true);
-    size_t sz = num_chunks * 3;
-    realnum *origins = new realnum[sz];
-    memset(origins, 0, sizeof(realnum) * sz);
-    size_t *nums = new size_t[sz];
-    memset(nums, 0, sizeof(size_t) * sz);
+void structure::load_chunk_layout(const char *filename, boundary_region &br) {
+  // Load chunk grid_volumes from a file
+  h5file file(filename, h5file::READONLY, true);
+  size_t sz = num_chunks * 3;
+  realnum *origins = new realnum[sz];
+  memset(origins, 0, sizeof(realnum) * sz);
+  size_t *nums = new size_t[sz];
+  memset(nums, 0, sizeof(size_t) * sz);
 
-    int origins_rank;
-    size_t origins_dims;
-    file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
-    if (origins_rank != 1 || origins_dims != sz) {
-      abort("chunk mismatch in structure::load");
-    }
-    if (am_master()) {
-      size_t gv_origins_start = 0;
-      file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
-    }
-    file.prevent_deadlock();
-    broadcast(0, origins, sz);
+  int origins_rank;
+  size_t origins_dims;
+  file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
+  if (origins_rank != 1 || origins_dims != sz) {
+    abort("chunk mismatch in structure::load");
+  }
+  if (am_master()) {
+    size_t gv_origins_start = 0;
+    file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
+  }
+  file.prevent_deadlock();
+  broadcast(0, origins, sz);
 
-    int nums_rank;
-    size_t nums_dims;
-    file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
-    if (nums_rank != 1 || nums_dims != sz) {
-      abort("chunk mismatch in structure::load");
-    }
-    if (am_master()) {
-      size_t gv_nums_start = 0;
-      file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
-    }
-    file.prevent_deadlock();
-    broadcast(0, nums, sz);
+  int nums_rank;
+  size_t nums_dims;
+  file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
+  if (nums_rank != 1 || nums_dims != sz) {
+    abort("chunk mismatch in structure::load");
+  }
+  if (am_master()) {
+    size_t gv_nums_start = 0;
+    file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
+  }
+  file.prevent_deadlock();
+  broadcast(0, nums, sz);
 
-    // Populate the gvs vector with the new grid_volumes
-    for (int i = 0; i < num_chunks; ++i) {
-      int idx = i * 3;
-      grid_volume new_gv = gv;
-      vec new_origin(new_gv.dim);
-      LOOP_OVER_DIRECTIONS(gv.dim, d) {
-        new_origin.set_direction(d, origins[idx++]);
-        new_gv.set_num_direction(d, nums[i * 3 + ((int)d % 3)]);
-      }
-      new_gv.set_origin(new_origin);
-      gvs.push_back(new_gv);
+  std::vector<grid_volume> gvs;
+  // Populate a vector with the new grid_volumes
+  for (int i = 0; i < num_chunks; ++i) {
+    int idx = i * 3;
+    grid_volume new_gv = gv;
+    vec new_origin(new_gv.dim);
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      new_origin.set_direction(d, origins[idx++]);
+      new_gv.set_num_direction(d, nums[i * 3 + ((int)d % 3)]);
     }
-    delete[] origins;
-    delete[] nums;
+    new_gv.set_origin(new_origin);
+    gvs.push_back(new_gv);
   }
 
+  load_chunk_layout(gvs, br);
+
+  delete[] origins;
+  delete[] nums;
+}
+
+void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br) {
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
@@ -445,7 +448,6 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br,
     br.apply(this, chunks[i]);
   }
   check_chunks();
-
 }
 
 void structure::load(const char *filename) {

@@ -715,8 +715,8 @@ public:
   void dump(const char *filename);
   void dump_chunk_layout(const char *filename);
   void load(const char *filename);
-  void load_chunk_layout(const char *filename, boundary_region &br,
-                         std::vector<grid_volume> gvs = std::vector<grid_volume>());
+  void load_chunk_layout(const char *filename, boundary_region &br);
+  void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &origloc) const;

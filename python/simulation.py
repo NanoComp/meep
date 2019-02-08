@@ -985,12 +985,9 @@ class Simulation(object):
 
         if isinstance(source, Simulation):
             vols = source.structure.get_chunk_volumes()
-            fname = None
+            self.structure.load_chunk_layout(vols, br)
         else:
-            vols = []
-            fname = source
-
-        self.structure.load_chunk_layout(fname, br, vols)
+            self.structure.load_chunk_layout(source, br)
 
     def init_sim(self):
         if self._is_initialized:
