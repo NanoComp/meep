@@ -1412,6 +1412,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         at_every,
         at_time,
         before_time,
+        complexarray,
         dft_ldos,
         display_progress,
         during_sources,
