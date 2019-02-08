@@ -196,7 +196,7 @@ Note: the amplitude of the Fourier transform grows linearly with time and the Po
 
 ### How do I compute the effective index of an eigenmode of a lossy waveguide?
 
-You will need to first compute the *complex* ω (the loss in time) for a *real* β (the propagation constant) and then convert this into a loss in space (*complex* β at a *real* ω) by dividing by the group velocity v<sub>g</sub>.
+To compute the [effective index](https://www.rp-photonics.com/effective_refractive_index.html), you will need to first compute the *complex* ω (the loss in time) for a *real* β (the propagation constant) and then convert this quantity into a loss in space (*complex* β at a *real* ω) by dividing by the group velocity v<sub>g</sub>. This procedure is described in more detail below.
 
 To obtain the loss in time, you make your computational cell a cross-section of your waveguide (i.e. 2d for a waveguide with constant cross-section), and set Bloch-periodic boundary conditions via the `k_point` input variable &mdash; this specifies your (real) β. You then treat it exactly the same as a [resonant-cavity problem](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes): you excite the system with a short pulse source, monitor the field at some point, and then analyze the result with [`Harminv`](Python_User_Interface.md#harminv); all of which is done if you call `run_kpoints`. This will give you the complex ω at the given β, where the imaginary part is the loss rate in time. Note: the loss in a uniform waveguide, with no absorption or disorder, is zero, even in the discretized system.
 
@@ -210,7 +210,7 @@ There are two possible approaches for computing the group velocity: (1) compute 
 
 ### How do I compute the time average of the harmonic fields?
 
-For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
+For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. An alternative to time-stepping, which may be more efficient, is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
 
 ### How do I set up an oblique planewave source?
 
@@ -265,7 +265,7 @@ Numerical dispersion can be analyzed and quantified analytically for a homogeneo
 
 ### How do I create a circularly-polarized planewave source in cylindrical coordinates?
 
-A circularly-polarized planewave in [cylindrical coordinates](Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude` 1 and a constant E<sub>p</sub> (φ) current source with `amplitude` 0+1i as well as `m`=1.
+A circularly-polarized planewave in [cylindrical coordinates](Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude`=1 and a constant E<sub>p</sub> (φ) current source with `amplitude`=0+1i as well as `m`=1.
 
 ### How do I compute S-parameters?
 
@@ -318,7 +318,7 @@ In principle, this corresponds to the limit as the frequency goes to zero or the
 
 ### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
 
-The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic tangent function. If you Fourier transform the response, the finite turn-on time will produce additional frequency components. After the turn-on, the CW source is described by a sinusoid of the given frequency.
+The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic tangent function. If you Fourier transform the response, the finite turn-on time will produce additional frequency components. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
 
 If the `width` is 0 (the default) then the source turns on sharply. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
 
