@@ -241,7 +241,7 @@ Meep can run in parallel on a shared-memory machine using MPI. However, it doesn
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
 
-### What normalization convention does meep use for the fields of eigenmode sources?
+### What normalization convention does MEEP use for the fields of eigenmode sources?
 
 An [eigenmode source](Python_User_Interface.md#eigenmodesource)
 is a localized distribution of electric and magnetic currents 
@@ -253,22 +253,30 @@ electric and magnetic fields radiated by the sources
 exactly reproduces the spatial distribution of
 one specific (quasi-)normal mode of the
 geometry (and is thus orthogonal to all other modes).
-This condition leaves unspecified an overall scale
-factor---if a field distribution
+This condition determines the fields only up to
+an arbitrary overall scale factor---if a field distribution
 $\{\mathbf{E}(\mathbf x), \mathbf{H}(\mathbf x)\}$
 satisfies the single-mode condition,
-then so does the scaled distribution
+then so does the scaled field distribution
 $\{\lambda \mathbf{E}(\mathbf x), \lambda \mathbf{H}(\mathbf x)\}$
-for any arbitrary $\lambda.$ To pin down this
-ambiguity, MEEP chooses the overall amplitude of eigenmode
-sources to ensure that the total power flux
-carried by the fields they produce---the integral
+for any arbitrary $\lambda$---whereupon by linearity
+the spatial current distributions $\mathbf{J,M}(\mathbf x)$
+
+To pin down this
+ambiguity, MEEP chooses the overall amplitude of
+eigenmode
+sources to ensure that, for the specific case of a time-harmonic
+problem with all sources and fields x
+time dependence $e^{-i\omega_m t}$ (where $\omega_m$
+is the eigenfrequency of the mode)
+ the total power flux
+carried by the fields they produce (the integral
 of the normal Poynting vector over the cross-sectional
-line or plane---evaluates numerically to 1.
+line or plane) evaluates numerically to 1 in a
+time-harmonic 
 
 More specifically,
-in a time-harmonic problem in which all sources and fields
-have time dependence $e^{-i\omega_m t}$ (where $\omega$
+in a time-harmonic problem 
 
 In practice, this has the following ramifications for MEEP
 calculations using eigenmode sources:
