@@ -241,6 +241,56 @@ Meep can run in parallel on a shared-memory machine using MPI. However, it doesn
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
 
+### What normalization convention does meep use for the fields of eigenmode sources?
+
+An [eigenmode source](Python_User_Interface.md#eigenmodesource)
+is a localized distribution of electric and magnetic currents 
+$\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$, 
+confined to a cross-sectional line (2D) or plane (3D) through a
+waveguide or similar geometry, with the property that the
+spatial distribution of the
+electric and magnetic fields radiated by the sources
+exactly reproduces the spatial distribution of
+one specific (quasi-)normal mode of the
+geometry (and is thus orthogonal to all other modes).
+This condition leaves unspecified an overall scale
+factor---if a field distribution
+$\{\mathbf{E}(\mathbf x), \mathbf{H}(\mathbf x)\}$
+satisfies the single-mode condition,
+then so does the scaled distribution
+$\{\lambda \mathbf{E}(\mathbf x), \lambda \mathbf{H}(\mathbf x)\}$
+for any arbitrary $\lambda.$ To pin down this
+ambiguity, MEEP chooses the overall amplitude of eigenmode
+sources to ensure that the total power flux
+carried by the fields they produce---the integral
+of the normal Poynting vector over the cross-sectional
+line or plane---evaluates numerically to 1.
+
+More specifically,
+in a time-harmonic problem in which all sources and fields
+have time dependence $e^{-i\omega_m t}$ (where $\omega$
+
+In practice, this has the following ramifications for MEEP
+calculations using eigenmode sources:
+
++ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver)
+  involving an eigenmode source with a `ContinuousSrc` time envelope---corresponding
+  to monochromatic fields and sources that oscillate forever at the eigenfrequency
+  of the mode---the total flux 
+
++ On the other hand, for the typical case of *time-domain* calculations,
+  in which the spatial current distributions
+  $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf x)}$ of the eigenmode source
+  are paired with a temporal envelope function $W(t)$---in practice
+  either a 
+  [gaussian](Python_User_Interface.md#gaussiansource) or a
+  [user-specified custom envelope](Python_User_Interface.md#customsource)---the
+  values reported by MEEP for all frequency-domain field amplitudes at
+  frequency $\omega$ will include factors of $\widetwiddle{W}(\omega)$
+  (the Fourier transform of the temporal envelope), while
+  while field-bilinear quantities like Poynting vectors and power fluxes
+  will include factors of $|\widetwiddle{W}(\omega)|^2.$
+
 ### How does Meep deal with numerical dispersion?
 
 Numerical dispersion can be analyzed and quantified analytically for a homogeneous medium. For details, see e.g., Chapter 4 ("Numerical Dispersion and Stability") of [Computational Electrodynamics: The Finite Difference Time-Domain Method (3rd edition)](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320). However, in practice numerical dispersion is rarely the dominant source of error in FDTD calculations which almost always involve material inhomogeneities that give rise to much larger errors. Similar to other errors associated with the finite grid resolution, numerical dispersion decreases with resolution, so you can deal with it by increasing the resolution until convergence is obtained to the desired accuracy. In particular, the errors from numerical dispersion vary *quadratically* with resolution (in the ordinary center-difference FDTD scheme). On the other hand, the errors introduced by discretization of material interfaces go *linearly* with the resolution, so they are almost always dominant. Meep can partially correct for these errors using [subpixel averaging](Introduction.md#the-illusion-of-continuity).

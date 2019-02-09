@@ -834,6 +834,7 @@ public:
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
+  std::complex<double> fourier_transform(const double omega);
 
 private:
   double freq, width, peak_time, cutoff;
