@@ -50,7 +50,7 @@ Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, 
 
 ### Can I install Meep on Windows machines?
 
-Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). Support for visualization is enabled using a browser-based [Jupyter notebook](https://jupyter.org/) which can be installed via the Ubuntu terminal. For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 ### Are there precompiled binary packages for Ubuntu?
 
@@ -136,7 +136,7 @@ No. Currently, Meep only supports anisotropic, real-symmetric, permittivity tens
 
 ### Why are the fields blowing up in my simulation?
 
-Instability in the fields is likely due to one of four causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the resolution and/or reduce the Courant factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), or (4) a grid voxel contains more than one dielectric interface (fix: turn off subpixel averaging).
+Instability in the fields is likely due to one of four causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the resolution and/or reduce the Courant factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), or (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging).
 
 ### Does Meep support importing GDSII files?
 
@@ -210,7 +210,7 @@ There are two possible approaches for computing the group velocity: (1) compute 
 
 ### How do I compute the time average of the harmonic fields?
 
-For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. An alternative to time-stepping, which may be more efficient, is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
+For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
 
 ### How do I set up an oblique planewave source?
 
@@ -318,9 +318,9 @@ In principle, this corresponds to the limit as the frequency goes to zero or the
 
 ### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
 
-The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic tangent function. If you Fourier transform the response, the finite turn-on time will produce additional frequency components. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
+The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
 
-If the `width` is 0 (the default) then the source turns on sharply. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
+If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
 
 <center>
 ![](images/cwsrc_turnon.png)
