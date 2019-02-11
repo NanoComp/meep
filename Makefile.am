@@ -3,7 +3,9 @@ ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = src tests
 
 if WITH_LIBCTL
+if WITH_SCHEME
   SUBDIRS += scheme
+endif
 endif
 if WITH_MPB
 if WITH_LIBCTLGEOM

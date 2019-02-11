@@ -241,10 +241,14 @@ fi
 
 AM_CONDITIONAL(WITH_LIBCTL, test "x$with_libctl" != xno)
 
+AC_ARG_WITH(scheme, [AC_HELP_STRING([--without-scheme], [compile without Scheme interface])],
+            with_scheme=$withval, with_scheme=yes)
+AM_CONDITIONAL(WITH_SCHEME, test x"$with_scheme" = "xyes")
+
 ##############################################################################
 # Check for Guile library and its behavior (for libctl front end):
 
-if test "x$with_libctl" != xno; then
+if test "x$with_libctl" != xno -a "x$with_scheme" = "xyes"; then
 
 save_LIBS=$LIBS
 save_CPPFLAGS=$CPPFLAGS
