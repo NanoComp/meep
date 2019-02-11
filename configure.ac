@@ -241,10 +241,14 @@ fi
 
 AM_CONDITIONAL(WITH_LIBCTL, test "x$with_libctl" != xno)
 
+AC_ARG_WITH(scheme, [AC_HELP_STRING([--without-scheme], [compile without Scheme interface])],
+            with_scheme=$withval, with_scheme=yes)
+AM_CONDITIONAL(WITH_SCHEME, test x"$with_scheme" = "xyes")
+
 ##############################################################################
 # Check for Guile library and its behavior (for libctl front end):
 
-if test "x$with_libctl" != xno; then
+if test "x$with_libctl" != xno -a "x$with_scheme" = "xyes"; then
 
 save_LIBS=$LIBS
 save_CPPFLAGS=$CPPFLAGS
@@ -544,10 +548,6 @@ fi # with_python
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
 AM_CONDITIONAL(WITH_COVERAGE, test x"$have_coverage" = "xyes")
-
-AC_ARG_WITH(scheme, [AC_HELP_STRING([--without-scheme], [compile without Scheme interface])],
-            with_scheme=$withval, with_scheme=yes)
-AM_CONDITIONAL(WITH_SCHEME, test x"$with_scheme" = "xyes")
 
 # Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds
 AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)
