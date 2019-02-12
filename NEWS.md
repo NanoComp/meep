@@ -1,5 +1,39 @@
 # Meep Release Notes
 
+## Meep 1.8.0
+
+2/12/19
+
+  * libctl 4.2 is required
+
+  * Add --without-scheme flag to configure (#705)
+
+  * Improve error messages in Python interface (#699)
+
+  * Allow kguess to specify MPB lattice vector (#675)
+
+  * Allow user materials when checking for conductivity (#689)
+
+  * Add `split_chunks_evenly` flag to `Simulation` constructor. Setting to `False` will improve parallel simulation performance by dividing chunks based on work instead of size (#681)
+
+  * Added `Simulation.visualize_chunks()` to visualize the chunk layout (#671)
+
+  * Improved stability of lorentzian susceptibility (#666)
+
+  * Get array metadata for `get_array` and `get_dft_array` (#655)
+
+  * Add ability to get a source slice as a numpy array (#652)
+
+  * Fixed performance issues in ModeSolver.find_k (#644)
+
+  * Add `force_all_components` flag to `Simulation` constructor (#631)
+
+  * libmeepgeom was merged into libmeep (#630)
+
+  * Expose `run_k_point` to access more Harminv data (#626)
+
+  * Various other bug fixes, documentation improvements, etc.
+
 ## Meep 1.7
 
 11/16/18
