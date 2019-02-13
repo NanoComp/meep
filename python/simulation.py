@@ -1316,6 +1316,24 @@ class Simulation(object):
     def get_farfield(self, f, v):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
+    def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
+        vol = self._volume_from_kwargs(where, center, size)
+        result = mp._get_farfields_array(near2far.swigobj, vol, resolution)
+        res_ex = complexarray(result[0], result[1])
+        res_ey = complexarray(result[2], result[3])
+        res_ez = complexarray(result[4], result[5])
+        res_hx = complexarray(result[6], result[7])
+        res_hy = complexarray(result[8], result[9])
+        res_hz = complexarray(result[10], result[11])
+        return {
+            'Ex': res_ex,
+            'Ey': res_ey,
+            'Ez': res_ez,
+            'Hx': res_hx,
+            'Hy': res_hy,
+            'Hz': res_hz,
+        }
+
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
         vol = self._volume_from_kwargs(where, center, size)
         near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
@@ -2617,3 +2635,9 @@ def GDSII_vol(fname, layer, zmin, zmax):
     center, size = get_center_and_size(meep_vol)
 
     return Volume(center, size, dims, is_cyl)
+
+
+def complexarray(re, im):
+    z = im * 1j
+    z += re
+    return z

@@ -1091,6 +1091,10 @@ public:
      by other output routine to efficiently get far field on a grid of pts */
   void farfield_lowlevel(std::complex<double> *F, const vec &x);
 
+  /* Return a newly allocated array with all far fields */
+  realnum *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
+                               double resolution);
+
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix, const volume &where,
                       double resolution);

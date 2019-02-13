@@ -294,6 +294,43 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     return res;
 }
 
+// Wrapper around meep::dft_near2far::get_farfields_array
+ PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
+                                double resolution) {
+    size_t dims[4] = {1, 1, 1, 1};
+    int rank = 0;
+    size_t N = 1;
+
+    // TODO: Support single precision?
+    if (sizeof(realnum) == sizeof(float)) abort("Single precision not supported for get_farfields");
+
+    meep::realnum *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
+
+    if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
+
+    // collapse trailing singleton dimensions
+    while (rank > 0 && dims[rank - 1] == 1) {
+        --rank;
+    }
+    // frequencies are the last dimension
+    if (n2f->Nfreq > 1) dims[rank++] = n2f->Nfreq;
+
+    rank++;
+    npy_intp *arr_dims = new npy_intp[rank];
+    arr_dims[0] = 12;
+    for (int i = 1; i < rank; ++i) {
+        arr_dims[i] = dims[i - 1];
+    }
+
+    PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_DOUBLE);
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->Nfreq);
+
+    delete[] arr_dims;
+    delete[] EH;
+    return py_arr;
+
+}
+
 // Wrapper around meep::dft_ldos::ldos
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
     Py_ssize_t len = f->Nomega;
@@ -511,6 +548,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
                      double err_thresh, double rel_amp_thresh, double amp_thresh);
 
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
+PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where, double resolution);
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
 PyObject *_dft_ldos_F(meep::dft_ldos *f);
 PyObject *_dft_ldos_J(meep::dft_ldos *f);
@@ -1360,6 +1398,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         at_every,
         at_time,
         before_time,
+        complexarray,
         dft_ldos,
         display_progress,
         during_sources,
