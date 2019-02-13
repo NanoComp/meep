@@ -50,7 +50,7 @@ Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, 
 
 ### Can I install Meep on Windows machines?
 
-Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). Support for visualization is enabled using a browser-based [Jupyter notebook](https://jupyter.org/) which can be installed via the Ubuntu terminal. For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 ### Are there precompiled binary packages for Ubuntu?
 
@@ -73,7 +73,7 @@ If you are worried about this, then you are probably setting up your calculation
 
 ### How is the source current defined?
 
-The source current in Meep is defined as a [free charge current **J** in Maxwell's equations](Introduction.md#maxwells-equations). Meep does not simulate the driving force behind this free charge current, nor does the current have to be placed in a conductor. Specifying a current means that somehow you are shaking a [charge](https://en.wikipedia.org/wiki/Electric_charge) at that point (by whatever means, Meep doesn't care) and you want to know the [resulting fields](#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude).
+The source current in Meep is defined as a [free charge current **J** in Maxwell's equations](Introduction.md#maxwells-equations). Meep does not simulate the driving force behind this free charge current, nor does the current have to be placed in a conductor. Specifying a current means that somehow you are shaking a [charge](https://en.wikipedia.org/wiki/Electric_charge) at that point (by whatever means, Meep doesn't care) and you want to know the [resulting fields](#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude). In a linear system, multiplying J by 2 results in multiplying the fields by 2.
 
 In the [interface](Python_User_Interface.md#source), the source currents are labeled E<sub>x</sub> or H<sub>y</sub> etc. according to what components of the electric/magnetic fields they correspond to.
 
@@ -136,7 +136,7 @@ No. Currently, Meep only supports anisotropic, real-symmetric, permittivity tens
 
 ### Why are the fields blowing up in my simulation?
 
-Instability in the fields is likely due to one of four causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the resolution and/or reduce the Courant factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), or (4) a grid voxel contains more than one dielectric interface (fix: turn off subpixel averaging).
+Instability in the fields is likely due to one of four causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the resolution and/or reduce the Courant factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), or (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging).
 
 ### Does Meep support importing GDSII files?
 
@@ -153,6 +153,8 @@ For flux calculations involving pulsed (i.e., Gaussian) sources, it is important
 ### Why are my reflectance/transmittance values less than zero and/or greater than one?
 
 There are four possible explanations: (1) the normalization and the scattering runs are not comparable because e.g., the sources or flux monitors are not in the same position within the structure, (2) the [run time is not long enough](#checking-convergence) and hence all of the flux is not being collected in either or both runs, (3) the flux is being computed at a frequency which is too far away from the center of the source bandwidth; in such cases the flux values are too small and may be dominated by rounding errors, or (4) the source or flux monitor is positioned too close to the scatterer which [modifies the local density of states (LDOS)](#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude); for example, a source emits more power near a band edge and less power within a bandgap than the same source surrounded by many wavelengths of vacuum.
+
+Note: the Poynting flux is a dimensionful quantity which can be *any* value (positive or negative).
 
 ### How do I compute the modes of a non-orthogonal (i.e., triangular) lattice?
 
@@ -190,9 +192,37 @@ There are at least two possible reasons due to using: (1) a `material_function` 
 
 A continuous-wave source ([ContinuousSource](Python_User_Interface.md#continuoussource)) produces fields which are not integrable: their Fourier transform will not converge as the run time of the simulation is increased because the source never terminates. The Fourier-transformed fields are therefore arbitrarily defined by the run time. This [windowing](https://en.wikipedia.org/wiki/Window_function) does different things to the normalization and scattering runs because the spectra are different in the two cases. In contrast, a pulsed source ([GaussianSource](Python_User_Interface.md#gaussiansource)) produces fields which are [L2](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm)-integrable: their Fourier transform is well defined and convergent as long as the run time is sufficiently large and the [fields have decayed away](#checking-convergence).
 
+Note: the amplitude of the Fourier transform grows linearly with time and the Poynting flux, which is proportional to the amplitude squared, grows quadratically.
+
+### How do I create a focused beam with a Gaussian envelope?
+
+A focused beam with a Gaussian envelope can be created using the amplitude function (`amp_func`) of the [`Source`](Python_User_Interface.md#source) object. Examples are provided for [Python](https://github.com/NanoComp/meep/blob/master/python/examples/gaussian-beam.py) and [Scheme](https://github.com/NanoComp/meep/blob/master/scheme/examples/gaussian-beam.ctl). Four snapshots of the resulting field profile generated using this script for different values of the beam width (`sigma`) and rotation angle (`tilt_angle`) are shown in the following image:
+
+<center>
+![](images/gaussian_beam.png)
+</center>
+
+The [numerical aperture (NA)](https://en.wikipedia.org/wiki/Gaussian_beam#Beam_divergence) of a Gaussian beam of width w (2*`sigma` from the example script) and vacuum wavelength λ in a medium of index n is n⋅sin(λ/(πnw)).
+
+Note: in this example, the beam waist is at the source position (i.e., top center of the cell). If you want the beam waist to be at a position other than the position of the source, you need to adjust the *phase* of the beam accordingly. If you assume you have a Gaussian beam profile with zero phase at some plane y=y0, then you can work out the beam profile (including phase) at any other plane y=y1 by taking the Fourier transform and looking at the propagation of each planewave component, and then inverse Fourier transforming. In this way, you can work out the desired source profile at any plane y=y1 to get a Gaussian beam waist at y=y0.
+
+### How do I compute the effective index of an eigenmode of a lossy waveguide?
+
+To compute the [effective index](https://www.rp-photonics.com/effective_refractive_index.html), you will need to first compute the *complex* ω (the loss in time) for a *real* β (the propagation constant) and then convert this quantity into a loss in space (*complex* β at a *real* ω) by dividing by the group velocity v<sub>g</sub>. This procedure is described in more detail below.
+
+To obtain the loss in time, you make your computational cell a cross-section of your waveguide (i.e. 2d for a waveguide with constant cross-section), and set Bloch-periodic boundary conditions via the `k_point` input variable &mdash; this specifies your (real) β. You then treat it exactly the same as a [resonant-cavity problem](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes): you excite the system with a short pulse source, monitor the field at some point, and then analyze the result with [`Harminv`](Python_User_Interface.md#harminv); all of which is done if you call `run_kpoints`. This will give you the complex ω at the given β, where the imaginary part is the loss rate in time. Note: the loss in a uniform waveguide, with no absorption or disorder, is zero, even in the discretized system.
+
+That is, you have ω(β<sub>r</sub>) = ω<sub>r</sub>+iω<sub>i</sub> where the subscripts r and i denote real and imaginary parts. Now, what you want to do is to get the complex β at the real ω which is given by: β(ω<sub>r</sub>)=β<sub>r</sub>-iω<sub>i</sub>/v<sub>g</sub>+O(ω<sub>i</sub><sup>2</sup>). That is, to first order in the loss, the imaginary part of β (the propagation loss) at the real frequency ω<sub>r</sub> is given just by dividing ω<sub>i</sub> by the group velocity v<sub>g</sub>=dω/dβ, which you can [get from the dispersion relation in the absence of loss](#how-do-i-compute-the-group-velocity-of-a-mode). This relationship is just a consequence of the first-order Taylor expansion of the dispersion relation ω(β) in the complex plane.
+
+This analysis is only valid if the loss is small, i.e. ω<sub>i</sub> << ω<sub>r</sub>. This should always be the case in any reasonable waveguide, where the light can travel for many wavelengths before dissipating/escaping. If you have extremely large losses so that it only propagates for a few wavelengths or less, then you would have to treat the problem differently &mdash; but in this case, the whole concept of a "waveguide mode" is not clearly defined.
+
 ### How do I compute the group velocity of a mode?
 
-There are two possible approaches for computing the group velocity: (1) compute the [band diagram](https://en.wikipedia.org/wiki/Band_diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference), or (2) excite the mode using a narrowband pulse and compute the ratio of the flux to energy density.
+There are two possible approaches for computing the group velocity: (1) compute the [band diagram](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference), or (2) excite the mode using a narrowband pulse and compute the ratio of the flux to energy density.
+
+### How do I compute the time average of the harmonic fields?
+
+For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
 
 ### How do I set up an oblique planewave source?
 
@@ -245,13 +275,17 @@ The field from a point source is singular &mdash; it blows up as you approach th
 
 Numerical dispersion can be analyzed and quantified analytically for a homogeneous medium. For details, see e.g., Chapter 4 ("Numerical Dispersion and Stability") of [Computational Electrodynamics: The Finite Difference Time-Domain Method (3rd edition)](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320). However, in practice numerical dispersion is rarely the dominant source of error in FDTD calculations which almost always involve material inhomogeneities that give rise to much larger errors. Similar to other errors associated with the finite grid resolution, numerical dispersion decreases with resolution, so you can deal with it by increasing the resolution until convergence is obtained to the desired accuracy. In particular, the errors from numerical dispersion vary *quadratically* with resolution (in the ordinary center-difference FDTD scheme). On the other hand, the errors introduced by discretization of material interfaces go *linearly* with the resolution, so they are almost always dominant. Meep can partially correct for these errors using [subpixel averaging](Introduction.md#the-illusion-of-continuity).
 
+### How do I create a circularly-polarized planewave source in cylindrical coordinates?
+
+A circularly-polarized planewave in [cylindrical coordinates](Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude`=1 and a constant E<sub>p</sub> (φ) current source with `amplitude`=0+1i as well as `m`=1.
+
 ### How do I compute S-parameters?
 
 Meep contains a [mode-decomposition feature](Mode_Decomposition.md) which can be used to compute complex-valued [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a [two-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) based on a silicon directional coupler in [Tutorial/GDSII Import](/Python_Tutorials/GDSII_Import/). An additional example is available for a [waveguide mode converter](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
 
 ### `Harminv` is unable to find the resonant modes of my structure
 
-There are five possible explanations for why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) the run time was not long enough and the decay rate of the mode is so small that the `Harminv` data was mainly noise, (2) the `Harminv` call was not wrapped in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps sources turning on and off it will get confused because the sources are not exponentially decaying fields, (3) the `Harminv` monitor is near the mode's nodal point (e.g., in a symmetry plane), (4) there are field instabilities where the fields are actually [blowing up](#why-are-the-fields-blowing-up-in-my-simulation); this may result in `Harminv` returning a negative [quality factor](https://en.wikipedia.org/wiki/Q_factor), or (5) the decay rate of the mode is *too high*; `Harminv` discards any modes which have a quality factor less than 50 (and thus `Harminv` won't find any modes inside [metals](Materials.md#material-dispersion)).
+There are six possible explanations for why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) the run time was not long enough and the decay rate of the mode is so small that the `Harminv` data was mainly noise, (2) the `Harminv` call was not wrapped in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps sources turning on and off it will get confused because the sources are not exponentially decaying fields, (3) the `Harminv` monitor is near the mode's nodal point (e.g., in a symmetry plane), (4) there are field instabilities where the fields are actually [blowing up](#why-are-the-fields-blowing-up-in-my-simulation); this may result in `Harminv` returning a negative [quality factor](https://en.wikipedia.org/wiki/Q_factor), (5) the decay rate of the mode is too fast; `Harminv` discards any modes which have a quality factor less than 50 (and thus `Harminv` won't likely find any modes inside a [metal](Materials.md#material-dispersion)), or (6) the PML overlaps the non-radiated/evanescent field and has introduced artificial absorption effects in the local density of states (LDOS).
 
 In order to resolve two closely-spaced modes, in general it is preferable to run with a narrow bandwidth source around the frequency of interest to excite/analyze as few modes as possible and/or increase the run time to improve the frequency resolution.
 
@@ -261,7 +295,7 @@ Note: any real-valued signal consists of both positive and negative frequency co
 
 If you set the `k_point` to any `meep.Vector3`, the structure will be periodic in **all** directions. (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
 
-The value of the `k_point` determines the phase relation between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction. This is known as a [Bloch wave](https://en.wikipedia.org/wiki/Bloch_wave).
+A periodic structure does **not** imply periodic fields. The value of the `k_point` determines the *phase relation* between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction. This is known as a [Bloch wave](https://en.wikipedia.org/wiki/Bloch_wave).
 
 Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), the boundary conditions are mostly irrelevant. For example, if there is a PML in front of a periodic boundary, the periodicity doesn't matter because the field will have decayed almost to zero by the time it "wraps around" to the other side of the cell.
 
@@ -293,6 +327,16 @@ No. Meep does not support non-orthogonal grids with spatially varying resolution
 ### Can Meep model electrostatic effects?
 
 In principle, this corresponds to the limit as the frequency goes to zero or the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for such [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) (or magnetostatic) calculation; this includes [lumped circuit models](https://en.wikipedia.org/wiki/Lumped_element_model) such as resistance, voltage, capacitance, etc. In this regime, you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
+
+### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
+
+The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
+
+If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
+
+<center>
+![](images/cwsrc_turnon.png)
+</center>
 
 ### How do I access or visualize the structure, fields, or sources in a subregion of the cell?
 

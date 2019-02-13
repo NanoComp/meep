@@ -798,9 +798,9 @@ The end time for the source. Default is 10<sup>20</sup> (never turn off).
 —
 Roughly, the temporal width of the smoothing (technically, the inverse of the exponential rate at which the current turns off and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
 
-**`cutoff` [`number`]**
+**`slowness` [`number`]**
 —
-How many `width`s the current decays for before we cut it off and set it to zero. Default is 3.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times.
+Controls how far into the exponential tail of the tanh function the source turns on. Default is 3.0. A larger value means that the source turns on more gradually at the beginning.
 
 **`is_integrated` [`boolean`]**
 —
@@ -1319,7 +1319,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 **`flux(direction, where, resolution)`**
 —
-Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a Numpy array. The dataset is a 1d array of nfreq dimensions.
+Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a list. The dataset is a 1d array of nfreq dimensions.
 
 ### Load and Dump Structure
 
@@ -1451,7 +1451,7 @@ Output the total electric and magnetic energy density. Note that you might want 
 
 **`output_Xfield_x(), output_Xfield_y(), output_Xfield_z(), output_Xfield_r(), output_Xfield_p()`**
 —
-Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting field, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting field, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting flux, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 **`output_Xfield()`**
 —
