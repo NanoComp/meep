@@ -1220,6 +1220,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 %template(DftDataVector) std::vector<meep_geom::dft_data>;
 %template(VolumeVector) std::vector<meep::volume>;
+%template(GridVolumeVector) std::vector<meep::grid_volume>;
 %template(IntVector) std::vector<int>;
 %template(DoubleVector) std::vector<double>;
 
@@ -1533,7 +1534,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     meep_geom::material_type _default_material,
                                                     meep_geom::absorber_list alist,
                                                     meep_geom::material_type_list extra_materials,
-                                                    bool split_chunks_evenly) {
+                                                    bool split_chunks_evenly,
+                                                    bool set_materials) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1553,8 +1555,11 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                              use_anisotropic_averaging, tol, maxeval);
     s->shared_chunks = true;
 
-    meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol, maxeval,
-                                           _ensure_periodicity, verbose, _default_material, alist, extra_materials);
+    if (set_materials) {
+      meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
+                                             maxeval, _ensure_periodicity, verbose, _default_material,
+                                             alist, extra_materials);
+    }
 
     // Return params to default state
     meep_geom::fragment_stats::resolution = 0;

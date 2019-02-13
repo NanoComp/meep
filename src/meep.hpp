@@ -708,12 +708,15 @@ public:
 
   bool equal_layout(const structure &) const;
   void print_layout(void) const;
-  std::vector<volume> get_chunk_volumes() const;
+  std::vector<grid_volume> get_chunk_volumes() const;
   std::vector<int> get_chunk_owners() const;
 
   // structure_dump.cpp
   void dump(const char *filename);
+  void dump_chunk_layout(const char *filename);
   void load(const char *filename);
+  void load_chunk_layout(const char *filename, boundary_region &br);
+  void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &origloc) const;

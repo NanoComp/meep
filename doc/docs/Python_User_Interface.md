@@ -17,36 +17,38 @@ The `Simulation` [class](#classes) contains all the attributes that you can set 
 class Simulation(object):
 
     def __init__(self,
-                 accurate_fields_near_cylorigin=False,
-                 boundary_layers=[],
                  cell_size,
-                 Courant=0.5,
-                 default_material=mp.Medium(),
-                 dimensions=2,
-                 ensure_periodicity=True,
-                 eps_averaging=True,
-                 epsilon_func=None,
-                 epsilon_input_file='',
-                 extra_materials=[],
-                 filename_prefix='',
-                 force_complex_fields=False,
-                 force_all_components=False,
-                 geometry=[],
-                 k_point=False,
-                 load_structure='',
-                 m=0,
-                 material_function=None,
-                 num_chunks=0,
-                 output_single_precision=False,
-                 output_volume=None,
-                 progress_interval=4,
                  resolution,
+                 geometry=[],
                  sources=[],
-                 subpixel_maxeval=100000,
-                 subpixel_tol=1e-4,
+                 eps_averaging=True,
+                 dimensions=3,
+                 boundary_layers=[],
                  symmetries=[],
                  verbose=False,
-                 geometry_center=mp.Vector3()):
+                 force_complex_fields=False,
+                 default_material=mp.Medium(),
+                 m=0,
+                 k_point=False,
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None,
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=True,
+                 num_chunks=0,
+                 Courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix=None,
+                 output_volume=None,
+                 output_single_precision=False,
+                 load_structure='',
+                 geometry_center=mp.Vector3(),
+                 force_all_components=False,
+                 split_chunks_evenly=True,
+                 chunk_layout=None):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -154,7 +156,11 @@ By default, Meep turns off support for material dispersion (via susceptibilities
 
 **`load_structure` [`string`]**
 —
-If not empty, Meep will load the structure specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+If not empty, Meep will load the structure file specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+
+**`chunk_layout` [`string` or `Simulation` instance]**
+—
+This will cause the `Simulation` to use the chunk layout described by either an h5 file (created by `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -169,6 +175,10 @@ Pointer to the current fields being simulated; initialized by `init_sim()` which
 **`num_chunks` [`integer`]**
 —
 Minimum number of "chunks" (subarrays) to divide the structure/fields into (default 0). Actual number is determined by number of processors, PML layers, etcetera. Mainly useful for debugging.
+
+**`split_chunks_evenly` [`boolean`]**
+—
+When `True` (the default), the work per chunk is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of parallel simulations.
 
 Predefined Variables
 --------------------
@@ -1327,7 +1337,7 @@ Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid 
 
 ### Load and Dump Structure
 
-These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (i.e. the same grid, number of processors, symmetries, and PML). Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
+These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
 **`Simulation.dump_structure(fname)`**
 —
@@ -1336,6 +1346,26 @@ Dumps the structure to the file `fname`.
 **`Simulation.load_structure(fname)`**
 —
 Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
+
+**`Simulation.dump_chunk_layout(fname)`**
+—
+Dumps the chunk layout to file `fname`.
+
+To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor, passing either a file obtained from `dump_chunk_layout` or another `Simulation` instance. Note that when using `split_chunks_evenly=False` this parameter is required when saving and loading flux spectra, force spectra, or near-to-far spectra so that the two runs have the same chunk layout. Just pass the `Simulation` object from the first run to the second run:
+
+```python
+# Split chunks based on amount of work instead of size
+sim1 = mp.Simulation(..., split_chunks_evenly=False)
+norm_flux = sim1.add_flux(...)
+sim1.run(...)
+sim1.save_flux(...)
+
+# Make sure the second run uses the same chunk layout as the first
+sim2 = mp.Simulation(..., chunk_layout=sim1)
+flux = sim2.add_flux(...)
+sim2.load_minus_flux(...)
+sim2.run(...)
+```
 
 ### Frequency-Domain Solver
 
