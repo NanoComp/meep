@@ -6,11 +6,11 @@
 
   * libctl 4.2 is required
 
-  * Add --without-scheme flag to configure (#705)
+  * Add `--without-scheme` flag to `./configure` (#705)
 
   * Improve error messages in Python interface (#699)
 
-  * Allow kguess to specify MPB lattice vector (#675)
+  * Allow `kguess` to specify MPB lattice vector for launching oblique waveguide modes (#675)
 
   * Allow user materials when checking for conductivity (#689)
 
