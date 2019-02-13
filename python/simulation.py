@@ -934,7 +934,8 @@ class Simulation(object):
             self.default_material,
             absorbers,
             self.extra_materials,
-            self.split_chunks_evenly
+            self.split_chunks_evenly,
+            False if self.chunk_layout else True
        )
 
         if self.chunk_layout:
