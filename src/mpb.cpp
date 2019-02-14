@@ -554,11 +554,16 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   scalar_complex *fft_data_E = (scalar_complex *)malloc(NFFT * sizeof(scalar_complex));
 
   maxwell_compute_d_from_H(mdata, H, fft_data_E, band_num - 1, 1);
-  // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
-  double scale = -1.0 / omega_src;
-  cdouble *efield = (cdouble *)fft_data_E;
+
+  // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c),
+  // so we need to divide the E-field amplitudes by -omega; we also take this
+  // opportunity to rescale the overall E and H amplitudes to yield unit power flux.
+  double scale = -1.0/omega_src, factor=2.0/sqrt(vgrp);
+  cdouble *efield = (cdouble *)fft_data_E, *hfield = (cdouble *)(mdata->fft_data);
   for (int n = 0; n < NFFT; ++n)
-    efield[n] *= scale;
+    { efield[n] *= factor * scale;
+      hfield[n] *= factor;
+    }
 
   maxwell_compute_e_from_d(mdata, fft_data_E, 1);
 

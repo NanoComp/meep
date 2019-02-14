@@ -271,6 +271,86 @@ Meep can run in parallel on a shared-memory machine using MPI. However, it doesn
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
 
+### What normalization convention does MEEP use for the fields of eigenmode sources?
+
+An [eigenmode source](Python_User_Interface.md#eigenmodesource)
+is a localized distribution of electric and magnetic currents
+$\{\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})\}$,
+confined to a cross-sectional line (2D) or plane (3D) through a
+waveguide or similar geometry, with the property that the
+spatial distribution of the electric and magnetic fields
+radiated by the sources exactly reproduces the spatial distribution
+of one specific (quasi-)normal mode of the
+geometry (and is thus orthogonal to all other modes).
+This condition determines the fields only up to
+an arbitrary overall scale factor---if a field distribution
+$\{\mathbf{E}(\mathbf x), \mathbf{H}(\mathbf x)\}$
+satisfies the single-mode condition,
+then so does the scaled field distribution
+$\{\lambda \mathbf{E}(\mathbf x), \lambda \mathbf{H}(\mathbf x)\}$
+for any arbitrary $\lambda$---whereupon by linearity
+the source-amplitude functions $\mathbf{J,M}$ also
+contain an arbitrary undetermined overall scale factor.
+
+To pin down this ambiguity, MEEP chooses the overall scale
+of the $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$
+source distributions to ensure that, in the specific case
+of a time-harmonic problem with all sources and fields 
+having monochromatic time dependence $e^{-i\omega_m t}$
+(with $\omega_m$ the eigenfrequency of the mode), the
+total time-average power carried by the fields radiated
+by the sources---that is, the integral of the normal Poynting
+vector over the full cross-sectional line or plane---comes
+out equal to 1.0 power units
+(where [the choice of power units is up to you](Introduction.md#units-in-meep)).
+This convention has the following practical ramifications for MEEP
+calculations using eigenmode sources.
+
++ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver)
+  involving an eigenmode source with a `ContinuousSrc` time envelope---corresponding
+  to monochromatic sources that oscillate forever at frequency $\omega_m$, producing
+  monochromatic fields that oscillate forever at the same frequency---the
+  total time-average power carried by those fields takes the numerical
+  value 1. 
+
+  **Note:** Due to discretization effects, the normalization of eigenmode 
+   sources to yield unit power transmission is only *approximate;* 
+   at any finite resolution, the power carried by the fields of 
+   eigenmode sources as computed by MEEP will not take the precise
+   numerical value 1, but will rather include discretization errors
+   that shrink with resolution.
+
++ On the other hand, for the typical case of *time-domain* calculations,
+  in which the spatial current distributions
+  $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$ of the eigenmode source
+  are paired with a temporal envelope function $W(t)$---which, in practice,
+  is either a [Gaussian](Python_User_Interface.md#gaussiansource) or a
+  [user-specified custom envelope](Python_User_Interface.md#customsource)---the
+  values reported by MEEP for all frequency-domain field amplitudes at
+  frequency $\omega$ will include factors of $\widetilde W(\omega)$
+  (the Fourier transform of the temporal envelope),
+  while field-bilinear quantities like Poynting vectors and power fluxes
+  will include factors of $|\widetilde W(\omega)|^2$.
+
+  In particular,
+
+    +In a MEEP time-stepping run excited by an eigenmode source
+     with Gaussian temporal envelope $G(t;\omega_0, \Delta \omega)$
+     centered at angular frequency $\omega_0$ and frequency width
+     $\Delta \omega$,    
+
+    +the time-harmonic power carried by the frequency-domain fields
+     at angular frequency $\omega$ is numerically equal to
+     $|\widetilde{G}(\omega; \omega_0, \Delta\omega)|^2$,
+     where values of $\widetilde{G}$, the Fourier transform
+     of the temporal profile, are computed by
+     by the `fourier_transform` method of the
+     [`GaussianSource`](Python_User_Interface.md#GaussianSource)
+     class in the python `meep` module.
+
+  [Here's](index.html) an example showing how the unit-power normalization
+  of eigenmode sources may be put to convenient use in MEEP calculations.
+
 ### How does Meep deal with numerical dispersion?
 
 Numerical dispersion can be analyzed and quantified analytically for a homogeneous medium. For details, see e.g., Chapter 4 ("Numerical Dispersion and Stability") of [Computational Electrodynamics: The Finite Difference Time-Domain Method (3rd edition)](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320). However, in practice numerical dispersion is rarely the dominant source of error in FDTD calculations which almost always involve material inhomogeneities that give rise to much larger errors. Similar to other errors associated with the finite grid resolution, numerical dispersion decreases with resolution, so you can deal with it by increasing the resolution until convergence is obtained to the desired accuracy. In particular, the errors from numerical dispersion vary *quadratically* with resolution (in the ordinary center-difference FDTD scheme). On the other hand, the errors introduced by discretization of material interfaces go *linearly* with the resolution, so they are almost always dominant. Meep can partially correct for these errors using [subpixel averaging](Introduction.md#the-illusion-of-continuity).
