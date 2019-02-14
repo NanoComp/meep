@@ -20,7 +20,7 @@
 
 #include <meep.hpp>
 using namespace meep;
-using namespace std;
+using std::complex;
 
 #include "config.h"
 

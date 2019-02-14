@@ -25,7 +25,7 @@
 
 #include <meep.hpp>
 using namespace meep;
-using namespace std;
+using std::complex;
 
 double sz[3] = {3.0, 3.0, 2.6};
 
