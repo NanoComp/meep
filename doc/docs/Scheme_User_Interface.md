@@ -942,6 +942,37 @@ As `load-flux`, but negates the Fourier-transformed fields after they are loaded
 —
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load-minus-flux` is equivalent to `load-flux` followed by `scale-flux-fields` with `s=-1`.
 
+### Mode Decomposition
+
+Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
+
+**`(get-eigenmode-coefficients flux bands eig-parity eig-vol eig-resolution eig-tolerance kpoint-func verbose=False)`**
+—
+Given a flux object and list of band indices, return a list with the following data:
+
++ `alpha`: the complex eigenmode coefficients as a 3d Guile [array](https://www.gnu.org/software/guile/manual/html_node/Arrays.html#Arrays) of size (`(length bands)`, `flux.Nfreq`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
++ `vgrp`: the group velocity as a Guile array.
++ `kpoints`: a list of `vector3`s of the `kpoint` used in the mode calculation.
++ `kdom`: a list of `vector3`s of the mode's dominant wavevector.
+
+Here is an example of calling `get-eigenmode-coefficients` overriding the default `eig-parity` with a keyword argument, and then printing the coefficient for first band, first frequency, and forward direction:
+
+```scheme
+(let ((result (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y))))
+    (print (array-ref (list-ref result 0) 0 0 0)))
+```
+The flux object must be created using `add-mode-monitor` (an alias for `add-flux`). `eig-vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `(meep-dft-flux-where-get flux)`). `eig-parity` should be one of [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `eigenmode-source` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `(+ EVEN-Z ODD-Y)`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig-resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig-tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.)
+
+Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig-vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint-func`, which is a function `(kpoint-func f n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig-vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint-func`.)
+
+**Note:** for planewaves in homogeneous media, the `kpoints` may *not* necessarily be equivalent to the actual wavevector of the mode. This quantity is given by `kdom`.
+
+**`(add_mode_monitor fcen df nfreq ModeRegions...)`**
+—
+Similar to `add-flux`, but for use with `get-eigenmode-coefficients`.
+
+`add-mode-monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add-flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig-parity` to `get-eigenmode-coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
+
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
