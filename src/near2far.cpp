@@ -260,14 +260,12 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
   return EH;
 }
 
-void dft_near2far::save_farfields(const char *fname, const char *prefix, const volume &where,
-                                  double resolution) {
+realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
+                                           double resolution) {
   /* compute output grid size etc. */
-  size_t dims[4] = {1, 1, 1, 1};
   double dx[3] = {0, 0, 0};
   direction dirs[3] = {X, Y, Z};
-  int rank = 0;
-  size_t N = 1;
+
   LOOP_OVER_DIRECTIONS(where.dim, d) {
     dims[rank] = int(floor(where.in_direction(d) * resolution));
     if (dims[rank] <= 1) {
@@ -279,11 +277,11 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
     dirs[rank++] = d;
   }
 
-  if (N * Nfreq < 1) return; /* nothing to output */
+  if (N * Nfreq < 1) return NULL; /* nothing to output */
 
   /* 6 x 2 x N x Nfreq array of fields in row-major order */
   realnum *EH = new realnum[6 * 2 * N * Nfreq];
-  realnum *EH_ = new realnum[6 * 2 * N * Nfreq]; // temp array for sum_to_master
+  realnum *EH_ = new realnum[6 * 2 * N * Nfreq]; // temp array for sum_to_all
 
   /* fields for farfield_lowlevel for a single output point x */
   std::complex<double> *EH1 = new std::complex<double>[6 * Nfreq];
@@ -305,10 +303,20 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
       }
     }
   }
-
-  delete[] EH1;
-  sum_to_master(EH_, EH, 6 * 2 * N * Nfreq);
+  sum_to_all(EH_, EH, 6 * 2 * N * Nfreq);
   delete[] EH_;
+  delete[] EH1;
+  return EH;
+}
+
+void dft_near2far::save_farfields(const char *fname, const char *prefix, const volume &where,
+                                  double resolution) {
+  size_t dims[4] = {1, 1, 1, 1};
+  int rank = 0;
+  size_t N = 1;
+
+  realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
+  if (!EH) return; /* nothing to output */
 
   /* collapse trailing singleton dimensions */
   while (rank > 0 && dims[rank - 1] == 1)

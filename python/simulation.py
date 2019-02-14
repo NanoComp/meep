@@ -474,7 +474,8 @@ class Simulation(object):
                  load_structure='',
                  geometry_center=mp.Vector3(),
                  force_all_components=False,
-                 split_chunks_evenly=True):
+                 split_chunks_evenly=True,
+                 chunk_layout=None):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -522,6 +523,7 @@ class Simulation(object):
         self._fragment_size = 10
         self.force_all_components = force_all_components
         self.split_chunks_evenly = split_chunks_evenly
+        self.chunk_layout = chunk_layout
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -932,8 +934,13 @@ class Simulation(object):
             self.default_material,
             absorbers,
             self.extra_materials,
-            self.split_chunks_evenly
+            self.split_chunks_evenly,
+            False if self.chunk_layout else True
        )
+
+        if self.chunk_layout:
+            self.load_chunk_layout(br, self.chunk_layout)
+            self.set_materials()
 
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
@@ -958,15 +965,30 @@ class Simulation(object):
             self.extra_materials
         )
 
+    def dump_structure(self, fname):
+        if self.structure is None:
+            raise ValueError("Fields must be initialized before calling dump_structure")
+        self.structure.dump(fname)
+
     def load_structure(self, fname):
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling load_structure")
         self.structure.load(fname)
 
-    def dump_structure(self, fname):
+    def dump_chunk_layout(self, fname):
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling dump_structure")
-        self.structure.dump(fname)
+            raise ValueError("Fields must be initialized before calling load_structure")
+        self.structure.dump_chunk_layout(fname)
+
+    def load_chunk_layout(self, br, source):
+        if self.structure is None:
+            raise ValueError("Fields must be initialized before calling load_structure")
+
+        if isinstance(source, Simulation):
+            vols = source.structure.get_chunk_volumes()
+            self.structure.load_chunk_layout(vols, br)
+        else:
+            self.structure.load_chunk_layout(source, br)
 
     def init_sim(self):
         if self._is_initialized:
@@ -1315,6 +1337,24 @@ class Simulation(object):
 
     def get_farfield(self, f, v):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
+
+    def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
+        vol = self._volume_from_kwargs(where, center, size)
+        result = mp._get_farfields_array(near2far.swigobj, vol, resolution)
+        res_ex = complexarray(result[0], result[1])
+        res_ey = complexarray(result[2], result[3])
+        res_ez = complexarray(result[4], result[5])
+        res_hx = complexarray(result[6], result[7])
+        res_hy = complexarray(result[8], result[9])
+        res_hz = complexarray(result[10], result[11])
+        return {
+            'Ex': res_ex,
+            'Ey': res_ey,
+            'Ez': res_ez,
+            'Hx': res_hx,
+            'Hy': res_hy,
+            'Hz': res_hz,
+        }
 
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
         vol = self._volume_from_kwargs(where, center, size)
@@ -1993,7 +2033,7 @@ class Simulation(object):
 
         if mp.am_master():
             for i, v in enumerate(vols):
-                plot_box(mp.gv2box(v), owners[i])
+                plot_box(mp.gv2box(v.surroundings()), owners[i])
             ax.set_aspect('auto')
             plt.show()
 
@@ -2617,3 +2657,9 @@ def GDSII_vol(fname, layer, zmin, zmax):
     center, size = get_center_and_size(meep_vol)
 
     return Volume(center, size, dims, is_cyl)
+
+
+def complexarray(re, im):
+    z = im * 1j
+    z += re
+    return z

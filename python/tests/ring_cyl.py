@@ -46,7 +46,8 @@ class TestRingCyl(unittest.TestCase):
             resolution=resolution,
             sources=sources,
             dimensions=dimensions,
-            m=m
+            m=m,
+            split_chunks_evenly=False
         )
 
     def test_ring_cyl(self):

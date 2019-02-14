@@ -242,7 +242,8 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
 /****************************************************************/
 void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
-                            double resolution, double eigensolver_tol, bool verbose, double *kdom) {
+                            double resolution, double eigensolver_tol, bool verbose, double *kdom,
+                            void **user_mdata) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -344,16 +345,26 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       G[i][j] /= GdotR;
   }
 
-  maxwell_data *mdata =
-      create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, band_num, band_num);
-  if (local_N != n[0] * n[1] * n[2]) abort("MPI version of MPB library not supported");
+  maxwell_data *mdata;
+  if (!user_mdata || *user_mdata == NULL) {
+    mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, band_num, band_num);
+    if (local_N != n[0] * n[1] * n[2]) abort("MPI version of MPB library not supported");
 
-  meep_mpb_eps_data eps_data;
-  eps_data.s = s;
-  eps_data.o = o;
-  eps_data.dim = gv.dim;
-  eps_data.f = this;
-  set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
+    meep_mpb_eps_data eps_data;
+    eps_data.s = s;
+    eps_data.o = o;
+    eps_data.dim = gv.dim;
+    eps_data.f = this;
+    set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
+    if (user_mdata) *user_mdata = (void *)mdata;
+  } else {
+    mdata = (maxwell_data *)(*user_mdata);
+    maxwell_set_num_bands(mdata, band_num);
+    N_start = mdata->N_start;
+    local_N = mdata->local_N;
+    alloc_N = mdata->alloc_N;
+  }
+
   if (check_maxwell_dielectric(mdata, 0)) abort("invalid dielectric function for MPB");
 
   double kmatch;
@@ -489,7 +500,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   vgrp = broadcast(0, vgrp);
   if (eigval < 0) { // no mode found
     destroy_evectmatrix(H);
-    destroy_maxwell_data(mdata);
+    if (!user_mdata) destroy_maxwell_data(mdata);
     return NULL;
   }
   if (!am_master()) update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
@@ -593,10 +604,10 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   return (void *)edata;
 }
 
-void destroy_eigenmode_data(void *vedata) {
+void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
   destroy_evectmatrix(edata->H);
-  destroy_maxwell_data(edata->mdata);
+  if (destroy_mdata) destroy_maxwell_data(edata->mdata);
   free(edata->fft_data_E);
   delete edata;
 }
@@ -733,8 +744,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 
   vec kpoint(0.0, 0.0, 0.0); // default guess
 
+  // get_eigenmode will create mdata only once and then reuse it on each iteration of the loop
+  maxwell_data *mdata = NULL;
+
   // loop over all bands and all frequencies
-  for (int nb = 0; nb < num_bands; nb++)
+  for (int nb = 0; nb < num_bands; nb++) {
     for (int nf = 0; nf < num_freqs; nf++) {
       /*--------------------------------------------------------------*/
       /*- call mpb to compute the eigenmode --------------------------*/
@@ -745,7 +759,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       void *mode_data =
           get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint, match_frequency, parity,
-                        eig_resolution, eigensolver_tol, verbose, kdom);
+                        eig_resolution, eigensolver_tol, verbose, kdom, (void **)&mdata);
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
         if (vgrp) vgrp[nb * num_freqs + nf] = 0;
@@ -772,8 +786,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       double cscale = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
       coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * cscale;
       coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * cscale;
-      destroy_eigenmode_data((void *)mode_data);
+      destroy_eigenmode_data((void *)mode_data, false);
     }
+  }
+  destroy_maxwell_data(mdata);
 }
 
 /**************************************************************/
@@ -782,7 +798,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 #else // #ifdef HAVE_MPB
 void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &kpoint, bool match_frequency, int parity,
-                            double resolution, double eigensolver_tol, bool verbose, double *kdom) {
+                            double resolution, double eigensolver_tol, bool verbose, double *kdom,
+                            void **user_mdata) {
 
   (void)omega_src;
   (void)d;
@@ -796,6 +813,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   (void)eigensolver_tol;
   (void)verbose;
   (void)kdom;
+  (void)user_mdata;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
@@ -843,7 +861,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
-void destroy_eigenmode_data(void *vedata) { (void)vedata; }
+void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
+  (void)vedata;
+  (void)destroy_mdata;
+}
 
 std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
   (void)vedata;

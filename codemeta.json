@@ -3,9 +3,9 @@
   "@type": "SoftwareSourceCode",
   "name": "Meep",
   "description": "Meep is a software package for simulating electromagnetic systems via the finite-difference time-domain (FDTD) method.",
-  "url": "https://github.com/stevengj/meep",
-  "codeRepository": "https://github.com/stevengj/meep",
-  "issueTracker": "https://github.com/stevengj/meep/issues",
+  "url": "https://github.com/NanoComp/meep",
+  "codeRepository": "https://github.com/NanoComp/meep",
+  "issueTracker": "https://github.com/stevengj/NanoComp/issues",
   "license": "https://spdx.org/licenses/GPL-2.0-or-later.html",
   "citation": "http://dx.doi.org/10.1016/j.cpc.2009.11.008",
   "author": [
@@ -68,8 +68,8 @@
     }
   ],
   "developmentStatus": "active",
-  "downloadUrl": "https://github.com/stevengj/meep/releases",
-  "version":"1.7",
+  "downloadUrl": "https://github.com/stevengj/NanoComp/releases",
+  "version":"1.8",
   "dateCreated":"2003-02-12",
   "datePublished":"2006-04-01",
   "programmingLanguage": ["C++", "Python", "Scheme"]

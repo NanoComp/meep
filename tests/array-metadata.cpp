@@ -15,7 +15,7 @@
 #include "meepgeom.hpp"
 
 using namespace meep;
-using namespace std;
+using std::vector;
 
 vector3 v3(double x = 0.0, double y = 0.0, double z = 0.0) {
   vector3 v;

@@ -1,12 +1,12 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.7.0, meep@ab-initio.mit.edu)
+AC_INIT(meep, 1.8.0)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="12:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="13:0:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -241,188 +241,180 @@ fi
 
 AM_CONDITIONAL(WITH_LIBCTL, test "x$with_libctl" != xno)
 
-##############################################################################
-# the scheme interface is built by default, but this may be changed by
-# configuring --without-scheme
-##############################################################################
-AM_CONDITIONAL(WITH_SCHEME, test "x$with_scheme" != xno)
-AC_ARG_WITH(scheme,
-            [AC_HELP_STRING([--without-scheme], [compile without scheme interface])],
-            with_scheme=$withval,with_scheme=yes)
+AC_ARG_WITH(scheme, [AC_HELP_STRING([--without-scheme], [compile without Scheme interface])],
+            with_scheme=$withval, with_scheme=yes)
+AM_CONDITIONAL(WITH_SCHEME, test x"$with_scheme" = "xyes")
 
 ##############################################################################
-# Check for Guile library and its behavior (not needed if building
-# --without-scheme). Note that scheme-related checks occupy the next
-# 167 lines.
-##############################################################################
-if test "x$with_scheme" != xno -a "x$with_libctl" != xno; then
-  
-  save_LIBS=$LIBS
-  save_CPPFLAGS=$CPPFLAGS
-  
-  AC_CHECK_PROG(GUILE_CONFIG, guile-config, guile-config, unknown)
-  if test "x$GUILE_CONFIG" = "xunknown"; then
-    AC_CHECK_LIB(readline, readline)
-    AC_CHECK_LIB(dl, dlopen)
-    AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
-    AC_CHECK_LIB(guile, gh_eval_str, [],
-      [AC_CHECK_LIB(guile, scm_eval_string, [],
-      [AC_MSG_ERROR([linking to guile failed])])])
-    GUILE_LIBS="-lguile -lguile-ltdl -lreadline"
-    GUILE_CPPFLAGS=""
-  else
-    GUILE_LIBS=`$GUILE_CONFIG link`
-    GUILE_CPPFLAGS=`$GUILE_CONFIG compile`
-    CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
-    LIBS="$GUILE_LIBS $LIBS"
-    AC_MSG_CHECKING([if linking to guile works])
-    AC_TRY_LINK_FUNC(gh_enter, AC_MSG_RESULT(yes),
-      [AC_TRY_LINK_FUNC(scm_boot_guile, AC_MSG_RESULT(yes),
-      [AC_MSG_RESULT(no)
-       AC_MSG_ERROR([guile-config is broken])])])
-  fi
-  AC_CHECK_HEADERS([libguile.h guile/gh.h])
-  
-  # Check how smob types work in this Guile version:
+# Check for Guile library and its behavior (for libctl front end):
 
-  AC_CHECK_FUNCS(scm_make_smob_type)
-  AC_MSG_CHECKING([for SCM_SMOB_PREDICATE])
-  AC_TRY_LINK([#include <guile/gh.h>
-  #include <libguile/smob.h>],
-                      [int x; SCM_SMOB_PREDICATE(1,x);],
-                      ok=yes, ok=no)
-  AC_MSG_RESULT($ok)
-  if test $ok = yes; then
-    AC_DEFINE(HAVE_SCM_SMOB_PREDICATE, 1, [define if we have SCM_SMOB_PREDICATE])
-  fi
-  AC_MSG_CHECKING([for SCM_SMOB_DATA])
-  AC_TRY_LINK([#include <guile/gh.h>
+if test "x$with_libctl" != xno -a "x$with_scheme" = "xyes"; then
+
+save_LIBS=$LIBS
+save_CPPFLAGS=$CPPFLAGS
+
+AC_CHECK_PROG(GUILE_CONFIG, guile-config, guile-config, unknown)
+if test "x$GUILE_CONFIG" = "xunknown"; then
+  AC_CHECK_LIB(readline, readline)
+  AC_CHECK_LIB(dl, dlopen)
+  AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
+  AC_CHECK_LIB(guile, gh_eval_str, [],
+    [AC_CHECK_LIB(guile, scm_eval_string, [],
+    [AC_MSG_ERROR([linking to guile failed])])])
+  GUILE_LIBS="-lguile -lguile-ltdl -lreadline"
+  GUILE_CPPFLAGS=""
+else
+  GUILE_LIBS=`$GUILE_CONFIG link`
+  GUILE_CPPFLAGS=`$GUILE_CONFIG compile`
+  CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
+  LIBS="$GUILE_LIBS $LIBS"
+  AC_MSG_CHECKING([if linking to guile works])
+  AC_TRY_LINK_FUNC(gh_enter, AC_MSG_RESULT(yes),
+    [AC_TRY_LINK_FUNC(scm_boot_guile, AC_MSG_RESULT(yes),
+    [AC_MSG_RESULT(no)
+     AC_MSG_ERROR([guile-config is broken])])])
+fi
+AC_CHECK_HEADERS([libguile.h guile/gh.h])
+
+# Check how smob types work in this Guile version:
+
+AC_CHECK_FUNCS(scm_make_smob_type)
+AC_MSG_CHECKING([for SCM_SMOB_PREDICATE])
+AC_TRY_LINK([#include <guile/gh.h>
+#include <libguile/smob.h>],
+                    [int x; SCM_SMOB_PREDICATE(1,x);],
+                    ok=yes, ok=no)
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_SMOB_PREDICATE, 1, [define if we have SCM_SMOB_PREDICATE])
+fi
+AC_MSG_CHECKING([for SCM_SMOB_DATA])
+AC_TRY_LINK([#include <guile/gh.h>
 #include <libguile/smob.h>],
                     [int x; SCM_SMOB_DATA(x);],
                     ok=yes, ok=no)
-  AC_MSG_RESULT($ok)
-  if test $ok = yes; then
-    AC_DEFINE(HAVE_SCM_SMOB_DATA, 1, [define if we have SCM_SMOB_DATA])
-  fi
-
-  AC_MSG_CHECKING([for SCM_NEWSMOB])
-  AC_TRY_LINK([#include <guile/gh.h>
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_SMOB_DATA, 1, [define if we have SCM_SMOB_DATA])
+fi
+AC_MSG_CHECKING([for SCM_NEWSMOB])
+AC_TRY_LINK([#include <guile/gh.h>
 #include <libguile/smob.h>],
                     [int x; SCM_NEWSMOB(x,1,0);],
                     ok=yes, ok=no)
-  AC_MSG_RESULT($ok)
-  if test $ok = yes; then
-	  AC_DEFINE(HAVE_SCM_NEWSMOB, 1, [define if we have SCM_NEWSMOB])
-  fi
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_NEWSMOB, 1, [define if we have SCM_NEWSMOB])
+fi
 
-  # Check how to activate Guile readline support:
-  ACTIVATE_READLINE=""
-  if test "x$cross_compiling" = xno; then
-    AC_MSG_CHECKING(how to activate readline in Guile)
-    ractivate="(use-modules (readline-activator)) (activate-readline)"
-    if guile -c "$ractivate" > /dev/null 2>&1; then
-      AC_MSG_RESULT(readline-activator)
-      ACTIVATE_READLINE="$ractivate"
-    else
-      ractivate="(use-modules (ice-9 readline)) (activate-readline)"
-      if guile -c "$ractivate" >& /dev/null; then
-        AC_MSG_RESULT(ice-9 readline)
-        ACTIVATE_READLINE="$ractivate"
-      else
-	AC_MSG_RESULT(cannot)
-	ACTIVATE_READLINE=""
-      fi
-    fi
-  fi
+# Check how to activate Guile readline support:
 
-  AC_SUBST(ACTIVATE_READLINE)
+ACTIVATE_READLINE=""
+if test "x$cross_compiling" = xno; then
+AC_MSG_CHECKING(how to activate readline in Guile)
+ractivate="(use-modules (readline-activator)) (activate-readline)"
+if guile -c "$ractivate" > /dev/null 2>&1; then
+	AC_MSG_RESULT(readline-activator)
+	ACTIVATE_READLINE="$ractivate"
+else
+	ractivate="(use-modules (ice-9 readline)) (activate-readline)"
+	if guile -c "$ractivate" >& /dev/null; then
+	        AC_MSG_RESULT(ice-9 readline)
+	        ACTIVATE_READLINE="$ractivate"
+	else
+		AC_MSG_RESULT(cannot)
+		ACTIVATE_READLINE=""
+	fi
+fi
+fi
+AC_SUBST(ACTIVATE_READLINE)
 
-  AC_SUBST(GUILE_LIBS)
-  AC_SUBST(GUILE_CPPFLAGS)
-  LIBS=$save_LIBS
-  CPPFLAGS=$save_CPPFLAGS
+AC_SUBST(GUILE_LIBS)
+AC_SUBST(GUILE_CPPFLAGS)
+LIBS=$save_LIBS
+CPPFLAGS=$save_CPPFLAGS
 
-fi # if with_scheme -a with_libctl
+fi # if with_libctl
 
 ##############################################################################
 # Check for libctl library and files
 
-if test "x$with_scheme" != xno -a "x$with_libctl" != xno; then
+if test "x$with_libctl" != xno; then
 
-  save_LIBS=$LIBS
+save_LIBS=$LIBS
+save_CPPFLAGS=$CPPFLAGS
+LIBS="$GUILE_LIBS $LIBS"
+CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
+
+AC_MSG_CHECKING([for libctl dir])
+if test x != x"$LIBCTL_DIR" -a ! -r "$LIBCTL_DIR/base/ctl.scm"; then
+	LIBCTL_DIR=""
+fi
+if test x = x"$LIBCTL_DIR" -a -r /usr/local/share/libctl/base/ctl.scm; then
+	LIBCTL_DIR="/usr/local/share/libctl"
+fi
+if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl3/base/ctl.scm; then
+        LIBCTL_DIR="/usr/share/libctl3"
+fi
+if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl/base/ctl.scm; then
+        LIBCTL_DIR="/usr/share/libctl"
+fi
+if test x = x"$LIBCTL_DIR"; then
+	AC_MSG_ERROR([could not find libctl files; use --with-libctl=<dir>])
+fi
+AC_MSG_RESULT($LIBCTL_DIR)
+AC_SUBST(LIBCTL_DIR)
+
+AC_CHECK_PROGS(GEN_CTL_IO, gen-ctl-io, echo)
+if test x"$GEN_CTL_IO" = xecho; then
+	AC_MSG_ERROR([could not find gen-ctl-io program; check your PATH])
+fi
+
+# check for -lctl:
+AC_CHECK_LIB(ctl, ctl_get_vector3, [], [AC_MSG_ERROR([Couldn't find the required libctl library.])])
+
+# check for ctl.h (Fedora puts it in /usr/include/ctl, grrr)
+CTL_H_CPPFLAG=""
+AC_CHECK_HEADER(ctl.h, [CTL_H_CPPFLAG=" "], [
   save_CPPFLAGS=$CPPFLAGS
-  LIBS="$GUILE_LIBS $LIBS"
-  CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
+  AC_MSG_CHECKING([for alternate ctl.h location])
+  for ctl_h_path in /usr/include/ctl /usr/local/include/ctl; do
+     CPPFLAGS="$save_CPPFLAGS -I$ctl_h_path"
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctl.h>]],[])], [CTL_H_CPPFLAG=-I$ctl_h_path; break])
+  done
+  AC_MSG_RESULT([$CTL_H_CPPFLAG])
+  CPPFLAGS=$save_CPPFLAGS])
+if test "x$CTL_H_CPPFLAG" = "x"; then
+  AC_MSG_ERROR([Couldn't find the ctl.h header file for libctl.])
+fi
+AC_SUBST(CTL_H_CPPFLAG)
 
-  AC_MSG_CHECKING([for libctl dir])
-  if test x != x"$LIBCTL_DIR" -a ! -r "$LIBCTL_DIR/base/ctl.scm"; then
-    LIBCTL_DIR=""
-  fi
-  if test x = x"$LIBCTL_DIR" -a -r /usr/local/share/libctl/base/ctl.scm; then
-    LIBCTL_DIR="/usr/local/share/libctl"
-  fi
-  if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl3/base/ctl.scm; then
-    LIBCTL_DIR="/usr/share/libctl3"
-  fi
-  if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl/base/ctl.scm; then
-    LIBCTL_DIR="/usr/share/libctl"
-  fi
-  if test x = x"$LIBCTL_DIR"; then
-    AC_MSG_ERROR([could not find libctl files; use --with-libctl=<dir>])
-  fi
-  AC_MSG_RESULT($LIBCTL_DIR)
-  AC_SUBST(LIBCTL_DIR)
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$CPPFLAGS $CTL_H_CPPFLAG"
+# Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
+LIBCTL_MAJOR=4; LIBCTL_MINOR=2; LIBCTL_BUGFIX=0
+AC_MSG_CHECKING([whether libctl version is at least ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX}])
+AC_EGREP_CPP(yes, [[
+#include <ctl.h>
+#if LIBCTL_MAJOR_VERSION > $LIBCTL_MAJOR || (LIBCTL_MAJOR_VERSION == $LIBCTL_MAJOR && (LIBCTL_MINOR_VERSION > $LIBCTL_MINOR || (LIBCTL_MINOR_VERSION == $LIBCTL_MINOR && LIBCTL_BUGFIX_VERSION >= $LIBCTL_BUGFIX)))
+  yes
+#endif
+]], [AC_MSG_RESULT(ok)], [AC_MSG_ERROR([libctl version ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX} or later is required])])
+CPPFLAGS=$save_CPPFLAGS
 
-  AC_CHECK_PROGS(GEN_CTL_IO, gen-ctl-io, echo)
-  if test x"$GEN_CTL_IO" = xecho; then
-    AC_MSG_ERROR([could not find gen-ctl-io program; check your PATH])
-  fi
-
-  # check for -lctl:
-  AC_CHECK_LIB(ctl, ctl_get_vector3, [], [AC_MSG_ERROR([Couldn't find the required libctl library.])])
-  
-  # check for ctl.h (Fedora puts it in /usr/include/ctl, grrr)
-  CTL_H_CPPFLAG=""
-  AC_CHECK_HEADER(ctl.h, [CTL_H_CPPFLAG=" "], [
-    save_CPPFLAGS=$CPPFLAGS
-    AC_MSG_CHECKING([for alternate ctl.h location])
-    for ctl_h_path in /usr/include/ctl /usr/local/include/ctl; do
-       CPPFLAGS="$save_CPPFLAGS -I$ctl_h_path"
-       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctl.h>]],[])], [CTL_H_CPPFLAG=-I$ctl_h_path; break])
-    done
-    AC_MSG_RESULT([$CTL_H_CPPFLAG])
-    CPPFLAGS=$save_CPPFLAGS])
-  if test "x$CTL_H_CPPFLAG" = "x"; then
-    AC_MSG_ERROR([Couldn't find the ctl.h header file for libctl.])
-  fi
-  AC_SUBST(CTL_H_CPPFLAG)
-  
-  save_CPPFLAGS=$CPPFLAGS
-  CPPFLAGS="$CPPFLAGS $CTL_H_CPPFLAG"
-  # Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
-  LIBCTL_MAJOR=4; LIBCTL_MINOR=2; LIBCTL_BUGFIX=0
-  AC_MSG_CHECKING([whether libctl version is at least ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX}])
-  AC_EGREP_CPP(yes, [[
-  #include <ctl.h>
-  #if LIBCTL_MAJOR_VERSION > $LIBCTL_MAJOR || (LIBCTL_MAJOR_VERSION == $LIBCTL_MAJOR && (LIBCTL_MINOR_VERSION > $LIBCTL_MINOR || (LIBCTL_MINOR_VERSION == $LIBCTL_MINOR && LIBCTL_BUGFIX_VERSION >= $LIBCTL_BUGFIX)))
-    yes
-  #endif
-  ]], [AC_MSG_RESULT(ok)], [AC_MSG_ERROR([libctl version ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX} or later is required])])
-  CPPFLAGS=$save_CPPFLAGS
-  
-  # Check for libctl_quiet feature (in libctl 3.1.1 or later):
-  AC_MSG_CHECKING([for libctl_quiet feature])
-  if grep libctl_quiet "$LIBCTL_DIR/base/main.c" 2>&1 > /dev/null; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE([HAVE_LIBCTL_QUIET], [1], [If we have the libctl_quiet variable])
-  else
+# Check for libctl_quiet feature (in libctl 3.1.1 or later):
+AC_MSG_CHECKING([for libctl_quiet feature])
+if grep libctl_quiet "$LIBCTL_DIR/base/main.c" 2>&1 > /dev/null; then
+   AC_MSG_RESULT(yes)
+   AC_DEFINE([HAVE_LIBCTL_QUIET], [1], [If we have the libctl_quiet variable])
+else
    AC_MSG_RESULT(no)
-  fi
+fi
 
-  LIBS=$save_LIBS
-  CPPFLAGS=$save_CPPFLAGS
+LIBS=$save_LIBS
+CPPFLAGS=$save_CPPFLAGS
 
-fi # if with_scheme && with_libctl
+fi # if with_libctl
 
 ##############################################################################
 
@@ -432,6 +424,7 @@ AC_SUBST(LIBCTL_LIBS)
 AC_SUBST(LIBCTL_CPPFLAGS)
 
 ##############################################################################
+
 # check for -lctlgeom:
 AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes], [have_libctlgeom=no])
 AM_CONDITIONAL(WITH_LIBCTLGEOM, test x"$have_libctlgeom" = "xyes")
@@ -494,6 +487,7 @@ AC_C_RESTRICT
 AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to nothing if C99 _Pragma is not supported])])
 
 ##############################################################################
+
 # checks for python
 ##############################################################################
 AC_ARG_WITH(python,
@@ -555,22 +549,21 @@ AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
 AM_CONDITIONAL(WITH_COVERAGE, test x"$have_coverage" = "xyes")
 
+# Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds
+AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)
+AC_CONFIG_LINKS(scheme/materials.scm:scheme/materials.scm)
+
 ##############################################################################
+
 AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
+	scheme/Makefile
+	scheme/meep.scm
 	libpympb/Makefile
 	python/Makefile
 ])
-
-if test "x$with_scheme" != xno; then
-  # Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds
-  AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)
-  AC_CONFIG_LINKS(scheme/materials.scm:scheme/materials.scm)
-
-  AC_CONFIG_FILES([scheme/Makefile scheme/meep.scm])
-fi
 
 AC_OUTPUT
