@@ -98,11 +98,12 @@ for Lt in Lts:
     print("refl:, {}, {:.8f}, {:.8f}".format(Lt,R_coeffs[-1],R_flux[-1]))
 
 
-plt.figure()
-plt.loglog(Lts,R_coeffs,'bo-',label='mode decomposition')
-plt.loglog(Lts,R_flux,'ro-',label='Poynting flux')
-plt.loglog(Lts,[0.005/Lt**2 for Lt in Lts],'k-',label=r'quadratic reference (1/Lt$^2$)')
-plt.legend(loc='upper right')
-plt.xlabel('taper length Lt (μm)')
-plt.ylabel('reflectance')
-plt.show()
+if mp.am_master():
+    plt.figure()
+    plt.loglog(Lts,R_coeffs,'bo-',label='mode decomposition')
+    plt.loglog(Lts,R_flux,'ro-',label='Poynting flux')
+    plt.loglog(Lts,[0.005/Lt**2 for Lt in Lts],'k-',label=r'quadratic reference (1/Lt$^2$)')
+    plt.legend(loc='upper right')
+    plt.xlabel('taper length Lt (μm)')
+    plt.ylabel('reflectance')
+    plt.show()
