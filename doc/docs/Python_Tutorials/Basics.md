@@ -104,7 +104,7 @@ We will first create an image of the dielectric function ε. This involves obtai
 
 ```py
 eps_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric)
-plt.figure(dpi=100)
+plt.figure()
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.axis('off')
 plt.show()
@@ -114,7 +114,7 @@ Next, we create an image of the scalar electric field E<sub>z</sub> by overlayin
 
 ```py
 ez_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Ez)
-plt.figure(dpi=100)
+plt.figure()
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
 plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)
 plt.axis('off')
@@ -264,6 +264,8 @@ The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/
 
 ```py
 import meep as mp
+import numpy as np
+import matplotlib.pyplot as plt
 
 resolution = 10 # pixels/um
 
@@ -302,9 +304,10 @@ The source is a `GaussianSource` instead of a `ContinuousSrc`, parameterized by 
 ```py
 fcen = 0.15  # pulse center frequency
 df = 0.1     # pulse width (in frequency)
-
-sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
-                     center=mp.Vector3(-0.5*sx+1,wvg_ycen,0), size=mp.Vector3(0,w,0))]
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                     component=mp.Ez,
+                     center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0),
+                     size=mp.Vector3(0,w,0))]
 ```
 
 Notice how we're using our parameters like `wvg_ycen` and `w`: if we change the dimensions, everything will shift automatically.
@@ -391,25 +394,23 @@ flux_freqs = mp.get_flux_freqs(refl)
 With the flux data, we are ready to compute and plot the reflectance and transmittance. The reflectance is the reflected flux divided by the incident flux. We also have to multiply by -1 because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. The transmittance is the transmitted flux divided by the incident flux. Finally, the scattered loss is simply $1-transmittance-reflectance$. The results are plotted in the accompanying figure.
  
 ```py
-import numpy as np
-import matplotlib.pyplot as plt
-
 wl = []
 Rs = []
 Ts = []
-
 for i in range(nfreq):
     wl = np.append(wl, 1/flux_freqs[i])
     Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
     Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])    
 
-plt.plot(wl,Rs,'bo-',label='reflectance')
-plt.plot(wl,Ts,'ro-',label='transmittance')
-plt.plot(wl,1-Rs-Ts,'go-',label='loss')
-plt.axis([5.0, 10.0, 0, 1])
-plt.xlabel("wavelength (μm)")
-plt.legend(loc="upper right")
-plt.show()
+if mp.am_master():
+    plt.figure()
+    plt.plot(wl,Rs,'bo-',label='reflectance')
+    plt.plot(wl,Ts,'ro-',label='transmittance')
+    plt.plot(wl,1-Rs-Ts,'go-',label='loss')
+    plt.axis([5.0, 10.0, 0, 1])
+    plt.xlabel("wavelength (μm)")
+    plt.legend(loc="upper right")
+    plt.show()
 ```
 
 <center>![](../images/Tut-bend-flux.png)</center>
@@ -557,7 +558,7 @@ wvl = f[:,1]
 # create a 2d matrix for the wavelength by repeating the column vector for each angle
 wvls = np.matlib.repmat(np.reshape(wvl, (wvl.size,1)),1,theta_in.size)
 
-plt.figure(dpi=100)
+plt.figure()
 plt.pcolormesh(kxs, wvls, Rmeep, cmap='hot', shading='gouraud', vmin=0, vmax=Rmeep.max())
 plt.axis([kxs[0,0], kxs[0,-1], wvl[-1], wvl[0]])
 plt.yticks([t for t in np.arange(0.4,0.9,0.1)])
@@ -569,7 +570,7 @@ cbar.set_ticks([t for t in np.arange(0,0.4,0.1)])
 cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 
-plt.figure(dpi=100)
+plt.figure()
 plt.pcolormesh(thetas, wvls, Rmeep, cmap='hot', shading='gouraud', vmin=0, vmax=Rmeep.max())
 plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
 plt.xticks([t for t in range(0,100,20)])
@@ -598,7 +599,7 @@ for m in range(wvl.size):
     for n in range(theta_in.size):
         Ranalytic[m,n] = Rfresnel(math.radians(thetas[m,n]))
 
-plt.figure(dpi=100)
+plt.figure()
 plt.pcolormesh(thetas, wvls, Ranalytic, cmap='hot', shading='gouraud', vmin=0, vmax=Ranalytic.max())
 plt.axis([thetas.min(), thetas.max(), wvl[-1], wvl[0]])
 plt.xticks([t for t in range(0,100,20)])

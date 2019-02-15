@@ -164,6 +164,8 @@ The simulation script is in [examples/binary_grating.py](https://github.com/Nano
 ```py
 import meep as mp
 import math
+import numpy as np
+import matplotlib.pyplot as plt
 
 resolution = 60        # pixels/μm
 
@@ -236,53 +238,35 @@ res = sim.get_eigenmode_coefficients(mode_mon, range(1,nmode+1), eig_parity=mp.O
 coeffs = res.alpha
 kdom = res.kdom
 
+mode_wvl = []
+mode_angle = []
+mode_tran = []
+
 for nm in range(nmode):
   for nf in range(nfreq):
-    mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf]))
-    mode_tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
-    if nm != 0:
-      mode_tran = 0.5*mode_tran
-    print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
+    mode_wvl.append(1/freqs[nf])
+    mode_angle.append(math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf])))
+    tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
+    mode_tran.append(0.5*tran if nm != 0 else tran)
+    print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl[-1],mode_angle[-1],mode_tran[-1]))
 ```
 
 Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarization. `EVEN_Y` is necessary since each diffraction order which is based on a given k<sub>x</sub> consists of *two* modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. As a result, the total transmittance must be halved in this case to obtain the transmittance for the individual +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the +k<sub>y</sub> - -k<sub>y</sub> (sine) mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Alternatively, in this example an input planewave with H<sub>z</sub> instead of E<sub>z</sub> polarization can be used which requires `eig_parity=mp.EVEN_Z+mp.ODD_Y` as well as an odd mirror symmetry plane in *y*. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
 
-The simulation is run and the results piped to a file (the grating data is extracted to a separate file for plotting) using the following shell script:
-
-```sh
-#!/bin/bash
-
-python -u binary_grating.py |tee grating.out
-grep grating grating.out |cut -d , -f2- > grating.dat
-```
-
-The diffraction spectrum is plotted using the following script and shown in the figure below.
+The diffraction spectrum is then plotted and shown in the figure below.
 
 ```py
+tran_max = round(max(mode_tran),1)
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-d = np.genfromtxt("grating.dat",delimiter=",")
-
-nmode = 10
-nfreq = 21
-
-thetas = np.empty((nmode,nfreq))
-wvls = np.empty((nmode,nfreq))
-tran = np.empty((nmode,nfreq))
-
-for j in range(nfreq):
-    tran[:,j] = d[j::nfreq,2]
-    thetas[:,j] = d[j::nfreq,1]
-    wvls[:,j] = d[j,0]
-
-tran_max = round(tran.max(),1)
-
-plt.figure(dpi=150)
-plt.pcolormesh(wvls, thetas, tran, cmap='Blues', shading='flat', vmin=0, vmax=tran_max)
-plt.axis([wvls.min(), wvls.max(), thetas.min(), thetas.max()])
+plt.figure()
+plt.pcolormesh(np.reshape(mode_wvl,(nmode,nfreq)),
+               np.reshape(mode_angle,(nmode,nfreq)),
+               np.reshape(mode_tran,(nmode,nfreq)),
+               cmap='Blues',
+               shading='flat',
+               vmin=0,
+               vmax=tran_max)
+plt.axis([min(mode_wvl), max(mode_wvl), min(mode_angle), max(mode_angle)])
 plt.xlabel("wavelength (μm)")
 plt.ylabel("diffraction angle (degrees)")
 plt.xticks([t for t in np.arange(0.4,0.7,0.1)])
@@ -306,7 +290,9 @@ In the limit where the grating periodicity is much larger than the wavelength an
 
 To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
-We can also use the complex mode coefficients to compute the phase of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in metalenses. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs. The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py).
+We can also use the complex mode coefficients to compute the phase of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in metalenses. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
+
+The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py).
 
 ```py
 import meep as mp
@@ -444,7 +430,9 @@ As an additional demonstration of the mode-decomposition feature, the reflectanc
 
 The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two separate lines prefixed by `mode-coeff:` and `poynting-flux:`.
 
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders. The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py).
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
+
+The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py).
 
 ```py
 import meep as mp
@@ -644,7 +632,9 @@ A schematic of the grating geometry is shown below. The grating is a 2d slab in 
 
 In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of λ=0.54 μm. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. As usual, this requires a separate normalization run to compute the power of the input planewave.
 
-The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x* axis. For φ=0°, the nematic director is oriented along the *z* axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction. The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py).
+The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x* axis. For φ=0°, the nematic director is oriented along the *z* axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
+
+The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py).
 
 ```py
 import meep as mp
