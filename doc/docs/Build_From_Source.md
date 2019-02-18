@@ -250,6 +250,8 @@ The following instructions are for building parallel PyMeep with all optional fe
 
 #### Ubuntu 16.04 and 18.04
 
+There are a few differences in building for 16.04 and 18.04, so be sure to read the script and adjust appropriately.
+
 ```bash
 #!/bin/bash
 
@@ -264,6 +266,8 @@ sudo apt-get update
 # If building on Ubuntu 18.04LTS, replace libpng16-dev with libpng-dev,
 # and libpython3.5-dev with libpython3-dev.
 sudo apt-get -y install     \
+    build-essential         \
+    gfortran                \
     libblas-dev             \
     liblapack-dev           \
     libgmp-dev              \
@@ -315,8 +319,9 @@ cd libGDSII/
 sh autogen.sh
 make && sudo make install
 
+# The next line is only required on Ubuntu  16.04
 sudo pip3 install --upgrade pip
-# If pip3 doesn't work on ubuntu 18.04, just use pip
+
 pip3 install --user --no-cache-dir mpi4py
 export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
