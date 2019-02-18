@@ -199,11 +199,12 @@ ez_data = np.real(sim.get_efield_z())
 
 import matplotlib.pyplot as plt
 
-plt.figure(dpi=150)
-plt.imshow(np.transpose(eps_data), interpolation='spline36', cmap='binary')
-plt.imshow(np.flipud(np.transpose(ez_data)), interpolation='spline36', cmap='RdBu', alpha=0.9)
-plt.axis('off')
-plt.show()
+if mp.am_master():
+   plt.figure()
+   plt.imshow(np.transpose(eps_data), interpolation='spline36', cmap='binary')
+   plt.imshow(np.flipud(np.transpose(ez_data)), interpolation='spline36', cmap='RdBu', alpha=0.9)
+   plt.axis('off')
+   plt.show()
 ```
 
 <center>

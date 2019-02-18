@@ -1077,6 +1077,8 @@ Meep can compute a near-to-far-field transformation in the frequency domain as d
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
+Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* 2D<sup>2</sup>/λ, the Fraunhofer distance, where D is the largest dimension of the radiator and λ is the vacuum wavelength.
+
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
 **`(add-near2far fcen df nfreq near2far-regions...)`**
