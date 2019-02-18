@@ -435,8 +435,6 @@ is the *centroid* of the polygon (with $N\ge 3$ the length of the
 
 There are two options for specifying the `center` of a prism. In contrast to the other types of `geometric-object`, the center of a prism does not need to be explicitly specified, because it may be calculated from `vertices`, `height`, and `axis.` (Specifically, we have `center = centroid + 0.5*height*axis,` where the `centroid` was defined above). To create a `prism` with the center computed automatically in this way, simply initialize the `center` field of the `prism` class (inherited from `geometric_object`) to the special initializer keyword `auto-center`. On the other hand, in some cases you may want to override this automatic calculation and instead specify your own `center` for a prism; this will have the effect of rigidly translating the entire prism so that it is centered at the point you specify. See below for examples of both possibilities.
 
-### Examples of geometric objects
-
 These are some examples of geometric objects created using the above classes:
 
 ```scm
