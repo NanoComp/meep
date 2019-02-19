@@ -113,9 +113,9 @@ For simulations involving [solar radiation](https://en.wikipedia.org/wiki/Sunlig
 
 ### Are complex fields physical?
 
-No. Unlike quantum mechanics, complex fields are not physical in classical electromagnetism. In a linear system, one can always take the real part at the end of the simulation to obtain a physical result. When there are nonlinearities, the physical interpretation is much more non-obvious.
+No. Unlike quantum mechanics, complex fields in classical electromagnetics are not physical. In a linear system, one can always take the real part at the end of the computation to obtain a physical result. When there are nonlinearities, the physical interpretation is much more non-obvious.
 
-Note: specifying a complex amplitude for the sources does *not* imply complex fields. Unless `force_complex_fields` is set to `True` in the `Simulation` constructor, only the real part of the source is used. The complex amplitude is just a phase shift of the real sinusoidal source.
+Note: specifying a complex amplitude for the source does *not* automatically yield complex fields. Unless the parameter `force_complex_fields=True` is specified, only the real part of the source is used. The complex amplitude is just a phase shift of the real sinusoidal source.
 
 Usage: Sources
 --------------
@@ -171,7 +171,7 @@ Usage: Fields
 
 ### Why are the fields blowing up in my simulation?
 
-Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the resolution and/or reduce the Courant factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), or (5) a material with a wavelength-independent refractive index between 0 and 1 (fix: for a `ContinuousSource`, increase the resolution and/or reduce the Courant factor; for a `GaussianSource`, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
+Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the `resolution` and/or reduce the `Courant` factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), or (5) a material with a wavelength-independent refractive index between 0 and 1 (fix: for a `ContinuousSource`, increase the `resolution` and/or reduce the `Courant` factor; for a `GaussianSource`, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
 
 Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling).
 
@@ -185,7 +185,7 @@ There are seven possible explanations for why [`Harminv`](Python_User_Interface.
 
 `Harminv` will find modes in perfect-conductor cavities (i.e. with no loss) with a quality factor that is very large and has an arbitrary sign; it has no way to tell that the decay rate is zero, it just knows it is very small.
 
-In order to resolve two closely-spaced modes, in general it is preferable to run with a narrow bandwidth source around the frequency of interest to excite/analyze as few modes as possible and/or increase the run time to improve the frequency resolution. If you want to analyze an arbitrary spectrum, the best thing to do is to just use the Fourier transform as computed by the [dft_fields](Python_User_Interface.md#field-computations) feature.
+In order to resolve two closely-spaced modes, in general it is preferable to run with a narrow bandwidth source around the frequency of interest to excite/analyze as few modes as possible and/or increase the run time to improve the frequency resolution. If you want to analyze an arbitrary spectrum, just use the Fourier transform as computed by [`dft_fields`](Python_User_Interface.md#field-computations).
 
 Note: any real-valued signal consists of both positive and negative frequency components (with complex-conjugate amplitudes) in a Fourier domain decomposition into complex exponentials. `Harminv` usually is set up to find just one sign of the frequency, but occasionally converges to a negative-frequency component as well; these are just as meaningful as the positive frequencies.
 
@@ -219,7 +219,7 @@ For an example, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://
 
 A continuous-wave source ([ContinuousSource](Python_User_Interface.md#continuoussource)) produces fields which are not integrable: their Fourier transform will not converge as the run time of the simulation is increased because the source never terminates. The Fourier-transformed fields are therefore arbitrarily defined by the run time. This [windowing](https://en.wikipedia.org/wiki/Window_function) does different things to the normalization and scattering runs because the spectra are different in the two cases. In contrast, a pulsed source ([GaussianSource](Python_User_Interface.md#gaussiansource)) produces fields which are [L2](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm)-integrable: their Fourier transform is well defined and convergent as long as the run time is sufficiently large and the [fields have decayed away](#checking-convergence). Note that the amplitude of the Fourier transform grows linearly with time and the Poynting flux, which is proportional to the amplitude squared, grows quadratically.
 
-When computing the reflectance/transmittance for linear materials, you should get the same results if you put in a narrow- or broad-band Gaussian and look at only one frequency component of the Fourier transform. The latter has the advantage that it requires a shorter simulation for the fields to decay away. Morever, if you want the scattering properties as a function of both frequency *and* angle, then the short pulses have a further advantage: each simulation with a short pulse and fixed `k_point` gives you a broad spectrum result, each frequency of which corresponds to a different angle. Then you repeat the simulation for a range of `k_point`'s, and at the end you'll have a 2d dataset of reflectance/transmittance vs. both frequency and angle. For an example, see [Tutorial/Basics/Angular Reflectance Spectrum of a Planar Interface](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface).
+When computing the reflectance/transmittance for linear materials, you should get the same results if you put in a narrow- or broad-band Gaussian and look at only one frequency component of the Fourier transform. The latter has the advantage that it requires a shorter simulation for the fields to decay away. Morever, if you want the scattering properties as a function of both frequency *and* angle, then the short pulses have a further advantage: each simulation with a short pulse and fixed `k_point` yields a broad spectrum result, each frequency of which corresponds to a different angle. Then you repeat the simulation for a range of `k_point`'s, and at the end you'll have a 2d dataset of reflectance/transmittance vs. both frequency and angle. For an example, see [Tutorial/Basics/Angular Reflectance Spectrum of a Planar Interface](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface).
 
 ### How does `k_point` define the phase relation between adjacent unit cells?
 
@@ -231,7 +231,7 @@ Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), 
 
 ### How do I compute the integral of the intensity over a given region?
 
-You can use `electric_energy_in_box` to get the integral of ε|E|<sup>2</sup>/2 in some region. To get the integral of |E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Ez], def f(ez): return 0.5*abs(ez), ...)`.
+You can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to get the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. To get the integral of the intensity for a single field component e.g. |E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Ez], def f(ez): return 0.5*abs(ez), ...)`.
 
 Usage: Materials
 ----------------
@@ -254,7 +254,7 @@ Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is writ
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
-For modeling 2d materials, you will need to use a one-pixel-thick [conductor](Materials.md#conductivity-and-complex). It is not necessary for the `resolution` to specify a pixel size of one atom because of [subpixel averaging](#can-subpixel-averaging-be-applied-to-dispersive-materials).
+For modeling 2d materials, you can use a planar one-pixel-thick [conductor](Materials.md#conductivity-and-complex) via e.g. a [`Block`](Python_User_Interface.md#block) with `size` of `meep.Vector3(x,y,0)` in a 3d cell. It is not necessary for the grid `resolution` to specify a pixel size of one atom due to [subpixel averaging](#can-subpixel-averaging-be-applied-to-dispersive-materials). However, because of the layer's finite thickness you will need to *multiply* the value of the surface conductivity by the `resolution`.
 
 Usage: Structures
 -----------------
@@ -320,11 +320,11 @@ Unless the computational parallelism outweighs the extra communications overhead
 
 ### Why are simulations involving Fourier-transformed fields slow?
 
-The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-time_Fourier_transform) (DTFT) of the fields, which is necessary for computing the [Poynting flux](Python_User_Interface.md#flux-spectra), [local density of states](Python_User_Interface.md#ldos-spectra) (LDOS), [near to far field transformation](Python_User_Interface.md#near-to-far-field-spectra), etc., is accumulated at every time step for every point in the [FluxRegion](Python_User_Interface.md#fluxregion). The DTFT computation is parallelized but only in the sense that each processor computes the DTFT fields at points in its own [chunk](Chunks_and_Symmetry.md) of the grid. If the division of the grid among processors into approximately equal-sized chunks, which is the default behavior via `split_chunks_evenly=True`, allocates most of the points where the DTFT fields are computed to one processor, it is *not* going to parallelize.
+The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-time_Fourier_transform) (DTFT) of the fields, which is necessary for computing the [Poynting flux](Python_User_Interface.md#flux-spectra), [local density of states](Python_User_Interface.md#ldos-spectra) (LDOS), [near to far field transformation](Python_User_Interface.md#near-to-far-field-spectra), etc., is accumulated at every time step for every point in the [FluxRegion](Python_User_Interface.md#fluxregion). The DTFT computation is parallelized but only in the sense that each processor computes the DTFT fields at points in its own [chunk](Chunks_and_Symmetry.md) of the grid. If the division of the grid among processors into approximately equal-sized chunks (which is the default specified by `split_chunks_evenly=True`) allocates most of the points where the DTFT fields are computed to one processor, it is *not* going to parallelize.
 
-To improve [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)), the parallelization can be made to take the DTFT computation into account by setting `split_chunks_evenly=False`. The grid is divided into [chunks](Chunks_and_Symmetry.md) with nearly-equal *cost* rather than *size* such that the region in which the DTFT fields are computed is divided among the processors.
+To improve [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)), the parallelization can be made to take the DTFT computation into account by specifying `split_chunks_evenly=False`. This option divides the grid into [chunks](Chunks_and_Symmetry.md) with nearly-equal *cost* rather than *size* such that the region in which the DTFT fields are computed is optimally partitioned among the processors.
 
-A simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
+Note: a simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
 
 ### Does Meep support shared-memory parallelism?
 
