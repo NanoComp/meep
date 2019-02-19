@@ -67,8 +67,8 @@ def main(args):
 
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
-    
-    for i in range(0,nfreq):
+
+    for i in range(nfreq):
         print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
     
 if __name__ == '__main__':

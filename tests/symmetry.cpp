@@ -21,7 +21,7 @@
 
 #include <meep.hpp>
 using namespace meep;
-using namespace std;
+using std::complex;
 
 const char *mydirname = "symmetry-out";
 

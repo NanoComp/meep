@@ -294,6 +294,43 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     return res;
 }
 
+// Wrapper around meep::dft_near2far::get_farfields_array
+ PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
+                                double resolution) {
+    size_t dims[4] = {1, 1, 1, 1};
+    int rank = 0;
+    size_t N = 1;
+
+    // TODO: Support single precision?
+    if (sizeof(realnum) == sizeof(float)) abort("Single precision not supported for get_farfields");
+
+    meep::realnum *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
+
+    if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
+
+    // collapse trailing singleton dimensions
+    while (rank > 0 && dims[rank - 1] == 1) {
+        --rank;
+    }
+    // frequencies are the last dimension
+    if (n2f->Nfreq > 1) dims[rank++] = n2f->Nfreq;
+
+    rank++;
+    npy_intp *arr_dims = new npy_intp[rank];
+    arr_dims[0] = 12;
+    for (int i = 1; i < rank; ++i) {
+        arr_dims[i] = dims[i - 1];
+    }
+
+    PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_DOUBLE);
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->Nfreq);
+
+    delete[] arr_dims;
+    delete[] EH;
+    return py_arr;
+
+}
+
 // Wrapper around meep::dft_ldos::ldos
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
     Py_ssize_t len = f->Nomega;
@@ -511,6 +548,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
                      double err_thresh, double rel_amp_thresh, double amp_thresh);
 
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
+PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where, double resolution);
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
 PyObject *_dft_ldos_F(meep::dft_ldos *f);
 PyObject *_dft_ldos_J(meep::dft_ldos *f);
@@ -1182,6 +1220,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 %template(DftDataVector) std::vector<meep_geom::dft_data>;
 %template(VolumeVector) std::vector<meep::volume>;
+%template(GridVolumeVector) std::vector<meep::grid_volume>;
 %template(IntVector) std::vector<int>;
 %template(DoubleVector) std::vector<double>;
 
@@ -1360,6 +1399,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         at_every,
         at_time,
         before_time,
+        complexarray,
         dft_ldos,
         display_progress,
         during_sources,
@@ -1494,7 +1534,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     meep_geom::material_type _default_material,
                                                     meep_geom::absorber_list alist,
                                                     meep_geom::material_type_list extra_materials,
-                                                    bool split_chunks_evenly) {
+                                                    bool split_chunks_evenly,
+                                                    bool set_materials) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1514,8 +1555,11 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                              use_anisotropic_averaging, tol, maxeval);
     s->shared_chunks = true;
 
-    meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol, maxeval,
-                                           _ensure_periodicity, verbose, _default_material, alist, extra_materials);
+    if (set_materials) {
+      meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
+                                             maxeval, _ensure_periodicity, verbose, _default_material,
+                                             alist, extra_materials);
+    }
 
     // Return params to default state
     meep_geom::fragment_stats::resolution = 0;

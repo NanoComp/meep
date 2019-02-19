@@ -17,36 +17,38 @@ The `Simulation` [class](#classes) contains all the attributes that you can set 
 class Simulation(object):
 
     def __init__(self,
-                 accurate_fields_near_cylorigin=False,
-                 boundary_layers=[],
                  cell_size,
-                 Courant=0.5,
-                 default_material=mp.Medium(),
-                 dimensions=2,
-                 ensure_periodicity=True,
-                 eps_averaging=True,
-                 epsilon_func=None,
-                 epsilon_input_file='',
-                 extra_materials=[],
-                 filename_prefix='',
-                 force_complex_fields=False,
-                 force_all_components=False,
-                 geometry=[],
-                 k_point=False,
-                 load_structure='',
-                 m=0,
-                 material_function=None,
-                 num_chunks=0,
-                 output_single_precision=False,
-                 output_volume=None,
-                 progress_interval=4,
                  resolution,
+                 geometry=[],
                  sources=[],
-                 subpixel_maxeval=100000,
-                 subpixel_tol=1e-4,
+                 eps_averaging=True,
+                 dimensions=3,
+                 boundary_layers=[],
                  symmetries=[],
                  verbose=False,
-                 geometry_center=mp.Vector3()):
+                 force_complex_fields=False,
+                 default_material=mp.Medium(),
+                 m=0,
+                 k_point=False,
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None,
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=True,
+                 num_chunks=0,
+                 Courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix=None,
+                 output_volume=None,
+                 output_single_precision=False,
+                 load_structure='',
+                 geometry_center=mp.Vector3(),
+                 force_all_components=False,
+                 split_chunks_evenly=True,
+                 chunk_layout=None):
 ```
 
 All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -154,7 +156,11 @@ By default, Meep turns off support for material dispersion (via susceptibilities
 
 **`load_structure` [`string`]**
 —
-If not empty, Meep will load the structure specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+If not empty, Meep will load the structure file specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+
+**`chunk_layout` [`string` or `Simulation` instance]**
+—
+This will cause the `Simulation` to use the chunk layout described by either an h5 file (created by `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -169,6 +175,10 @@ Pointer to the current fields being simulated; initialized by `init_sim()` which
 **`num_chunks` [`integer`]**
 —
 Minimum number of "chunks" (subarrays) to divide the structure/fields into (default 0). Actual number is determined by number of processors, PML layers, etcetera. Mainly useful for debugging.
+
+**`split_chunks_evenly` [`boolean`]**
+—
+When `True` (the default), the work per chunk is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of parallel simulations.
 
 Predefined Variables
 --------------------
@@ -742,6 +752,7 @@ Like `amp_func_file` above, but instead of interpolating into an HDF5 file, inte
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
+<a name="EigenmodeSource">
 ### EigenModeSource
 
 This is a subclass of `Source` and has **all of the properties** of `Source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r}) e^{i \mathbf{k} \cdot \mathbf{r}}$, of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp_func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
@@ -774,6 +785,11 @@ Once the MPB modes are computed, equivalent electric and magnetic sources are cr
 —
 Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig_lattice_size` and `eig_lattice_center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
 
+**`eig_power(freq)`
+This class method returns the total power carried by the fields
+of the eigenmode source at frequency `freq`.
+—
+
 Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
 
 The `src_time` object (`Source.src`), which specifies the time dependence of the source, can be one of the following three classes.
@@ -798,9 +814,9 @@ The end time for the source. Default is 10<sup>20</sup> (never turn off).
 —
 Roughly, the temporal width of the smoothing (technically, the inverse of the exponential rate at which the current turns off and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
 
-**`cutoff` [`number`]**
+**`slowness` [`number`]**
 —
-How many `width`s the current decays for before we cut it off and set it to zero. Default is 3.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times.
+Controls how far into the exponential tail of the tanh function the source turns on. Default is 3.0. A larger value means that the source turns on more gradually at the beginning.
 
 **`is_integrated` [`boolean`]**
 —
@@ -829,6 +845,20 @@ How many `width`s the current decays for before we cut it off and set it to zero
 **`is_integrated` [`boolean`]**
 —
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources. Default is `False`.
+
+**`fourier_transform(omega)` [`number`]**
+-Returns the Fourier transform of the envelope evaluated at angular
+frequency `omega`, given by
+$$
+   \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
+   \int e^{i\omega t}G(t)\,dt \equiv
+   \frac{1}{\Delta f}
+   e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
+$$
+where $G(t)$ is the envelope of the *current* (not the dipole moment).
+(In this formula, $\Delta f$ is the `fwidth` of the source,
+$\omega_0$ is $2\pi$ times its `frequency,` and $t_0$ is the peak
+time discussed above.)
 
 ### CustomSource
 
@@ -1261,6 +1291,8 @@ Meep can compute a near-to-far-field transformation in the frequency domain as d
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
+Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* 2D<sup>2</sup>/λ, the Fraunhofer distance, where D is the largest dimension of the radiator and λ is the vacuum wavelength.
+
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
 **`add_near2far(fcen, df, nfreq, Near2FarRegions...)`**
@@ -1282,6 +1314,10 @@ Given a `near2far` object, returns a list of the frequencies that it is computin
 **`output_farfields(near2far, fname, resolution, where=None, center=None, size=None)`**
 —
 Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted. The volume can optionally be specified via `center` and `size`.
+
+**`get_farfields(near2far, resolution, where=None, center=None, size=None)`**
+—
+Like `output_farfields` but returns a dictionary of numpy arrays instead of writing to a file. The dictionary keys are `Ex`, `Ey`, `Ez`, `Hx`, `Hy`, `Hz`. Each array has the same shape as described in `output_farfields`.
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
@@ -1319,11 +1355,11 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 **`flux(direction, where, resolution)`**
 —
-Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a Numpy array. The dataset is a 1d array of nfreq dimensions.
+Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a list. The dataset is a 1d array of nfreq dimensions.
 
 ### Load and Dump Structure
 
-These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (i.e. the same grid, number of processors, symmetries, and PML). Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
+These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
 **`Simulation.dump_structure(fname)`**
 —
@@ -1332,6 +1368,26 @@ Dumps the structure to the file `fname`.
 **`Simulation.load_structure(fname)`**
 —
 Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
+
+**`Simulation.dump_chunk_layout(fname)`**
+—
+Dumps the chunk layout to file `fname`.
+
+To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor, passing either a file obtained from `dump_chunk_layout` or another `Simulation` instance. Note that when using `split_chunks_evenly=False` this parameter is required when saving and loading flux spectra, force spectra, or near-to-far spectra so that the two runs have the same chunk layout. Just pass the `Simulation` object from the first run to the second run:
+
+```python
+# Split chunks based on amount of work instead of size
+sim1 = mp.Simulation(..., split_chunks_evenly=False)
+norm_flux = sim1.add_flux(...)
+sim1.run(...)
+sim1.save_flux(...)
+
+# Make sure the second run uses the same chunk layout as the first
+sim2 = mp.Simulation(..., chunk_layout=sim1)
+flux = sim2.add_flux(...)
+sim2.load_minus_flux(...)
+sim2.run(...)
+```
 
 ### Frequency-Domain Solver
 
@@ -1451,7 +1507,7 @@ Output the total electric and magnetic energy density. Note that you might want 
 
 **`output_Xfield_x(), output_Xfield_y(), output_Xfield_z(), output_Xfield_r(), output_Xfield_p()`**
 —
-Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting field, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting field, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting flux, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 **`output_Xfield()`**
 —

@@ -2,7 +2,7 @@
 #include <meep.hpp>
 using namespace meep;
 #include "config.h"
-using namespace std;
+using std::complex;
 
 double eps(const vec &pt) { return ((pt.r() < 0.5 + 1e-6) ? 9.0 : 1.0); }
 

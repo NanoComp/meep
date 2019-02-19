@@ -2,33 +2,37 @@
 # Mode Decomposition
 ---
 
-This tutorial demonstrates the mode-decomposition feature which is used to decompose a given mode profile into a superposition of harmonic basis modes. There are examples for two kinds of modes in lossless, dielectric media: (1) localized (i.e., guided) and (2) non-localized (i.e., planewave).
+This tutorial demonstrates the [mode-decomposition](../Mode_Decomposition.md) feature which is used to decompose a given mode profile via the Fourier-transformed fields into a superposition of harmonic basis modes. Examples are provided for two kinds of modes in lossless, dielectric media: (1) localized (i.e., guided) and (2) non-localized (i.e., radiative planewave).
 
 [TOC]
 
 Reflectance of a Waveguide Taper
 --------------------------------
 
-This example involves computing the reflectance &mdash; the fraction of the incident power which is reflected &mdash; of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance using two different methods produces nearly identical results: (1) mode decomposition and (2) directly from the fields via its [Poynting flux](../Introduction.md#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This example involves computing the reflectance of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance, the fraction of the incident power which is reflected, using two different methods produces nearly identical results: (1) mode decomposition and (2) [Poynting flux](../Introduction.md#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
 </center>
 
-The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width `w1` (1 μm)  coupled to a second waveguide of width `w2` (2 μm) via a linearly-sloped taper of length `Lt`. The structure is homogeneous ε=12 in vacuum. PML absorbing boundaries surround the computational cell. An eigenmode source with E<sub>z</sub> polarization is used to launch the fundamental mode with a wavelength of 6.67 μm. There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to span the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes. These are computed separately via the eigenmode solver [MPB](https://mpb.readthedocs.io). Technical details are described in [Mode Decomposition](../Mode_Decomposition.md) where it is shown that the squared magnitude of the mode coefficient is equivalent to the power (i.e., Poynting flux) in the given eigenmode. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). In this example, we are computing |S<sub>11</sub>|<sup>2</sup> which is the reflectance. Another line monitor could have been placed in the second waveguide to compute the transmittance or |S<sub>21</sub>|<sup>2</sup>. Also not considered is the scattering into radiative modes.
+The structure, which can be viewed as a [two-port network](https://en.wikipedia.org/wiki/Two-port_network), consists of a single-mode waveguide of width 1 μm (`w1`) at a wavelength of 6.67 μm and coupled to a second waveguide of width 2 μm (`w2`) via a linearly-sloped taper of variable length `Lt`. The material is silicon with ε=12. The taper geometry is defined using a single [`Prism`](../Python_User_Interface.md#prism) object with eight vertices. PML absorbing boundaries surround the entire cell. An eigenmode current source with E<sub>z</sub> polarization is used to launch the fundamental mode. The dispersion relation (or "band diagram") of the single-mode waveguide is shown in [Tutorial/Eigenmode Source](Eigenmode_Source.md). There is an eigenmode-expansion monitor placed at the midpoint of the first waveguide. This is a line monitor which extends beyond the waveguide in order to span the entire mode profile including its evanescent tails. The Fourier-transformed fields along this line monitor are used to compute the basis coefficients of the harmonic modes. These are computed separately via the eigenmode solver [MPB](https://mpb.readthedocs.io/en/latest/). This is described in [Mode Decomposition](../Mode_Decomposition.md) where it is also shown that the squared magnitude of the mode coefficient is equivalent to the power (Poynting flux) in the given eigenmode. The ratio of the complex mode coefficients can be used to compute the [S parameters](https://en.wikipedia.org/wiki/Scattering_parameters). In this example, we are computing |S<sub>11</sub>|<sup>2</sup> which is the reflectance (shown in the line prefixed by "refl:,"). Another line monitor could have been placed in the second waveguide to compute the transmittance or |S<sub>21</sub>|<sup>2</sup> into the various guided modes (since the second waveguide is multi mode). The scattered power into the radiative modes can then be computed as 1-|S<sub>11</sub>|<sup>2</sup>-|S<sub>21</sub>|<sup>2</sup>. As usual, a normalization run is required involving a straight waveguide to compute the power in the source.
 
-The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires that we use `add_flux` and specify `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is because `add_mode_monitor`, which is an alias for `add_flux`, is not optimized for symmetry.
+The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires that we use `add_flux` rather than `add_mode_monitor` (which is not optimized for symmetry) and specify `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`.
 
-At the end of the simulation, the reflectance of the fundamental mode computed using the two methods are displayed. The simulation script is in [examples/mode-decomposition.py](https://github.com/NanoComp/meep/blob/master/python/examples/mode-decomposition.py).
+The simulation script is in [examples/mode-decomposition.py](https://github.com/NanoComp/meep/blob/master/python/examples/mode-decomposition.py).
 
 ```py
 import meep as mp
+import matplotlib.pyplot as plt
 
 resolution = 61   # pixels/μm
 
-w1 = 1            # width of waveguide 1
-w2 = 2            # width of waveguide 2
-Lw = 10           # length of waveguide 1/2
+w1 = 1.0          # width of waveguide 1
+w2 = 2.0          # width of waveguide 2
+Lw = 10.0         # length of waveguides 1 and 2
+
+# lengths of waveguide taper
+Lts = [2**m for m in range(5)]
 
 dair = 3.0        # length of air region
 dpml_x = 6.0      # length of PML in x direction
@@ -41,23 +45,22 @@ Si = mp.Medium(epsilon=12.0)
 boundary_layers = [mp.PML(dpml_x,direction=mp.X),
                    mp.PML(dpml_y,direction=mp.Y)]
 
-# mode wavelength
-lcen = 6.67
-# mode frequency
-fcen = 1/lcen
+lcen = 6.67       # mode wavelength
+fcen = 1/lcen     # mode frequency
 
 symmetries = [mp.Mirror(mp.Y)]
 
-for m in range(5):
-    Lt = 2**m
+R_coeffs = []
+R_flux = []
+
+for Lt in Lts:
     sx = dpml_x+Lw+Lt+Lw+dpml_x
     cell_size = mp.Vector3(sx,sy,0)
 
-    src_pt = mp.Vector3(-0.5*sx+dpml_x+0.2*Lw,0,0)
+    src_pt = mp.Vector3(-0.5*sx+dpml_x+0.2*Lw)
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                                  component=mp.Ez,
                                   center=src_pt,
-                                  size=mp.Vector3(0,sy-2*dpml_y,0),
+                                  size=mp.Vector3(y=sy-2*dpml_y),
                                   eig_match_freq=True,
                                   eig_parity=mp.ODD_Z+mp.EVEN_Y)]
 
@@ -74,18 +77,18 @@ for m in range(5):
                         sources=sources,
                         symmetries=symmetries)
 
-    mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw,0,0)
-    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml_y,0)))
+    mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw)
+    flux1 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    incident_coeffs = res.alpha
-    incident_flux = mp.get_fluxes(flux)
-    incident_flux_data = sim.get_flux_data(flux)
+    res1 = sim.get_eigenmode_coefficients(flux1,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    incident_coeffs = res1.alpha
+    incident_flux = mp.get_fluxes(flux1)
+    incident_flux_data = sim.get_flux_data(flux1)
 
-    sim.reset_meep()    
-    
+    sim.reset_meep()
+
     # linear taper
     vertices = [mp.Vector3(-0.5*sx-1,0.5*w1),
                 mp.Vector3(-0.5*Lt,0.5*w1),
@@ -103,48 +106,39 @@ for m in range(5):
                         sources=sources,
                         symmetries=symmetries)
 
-    refl_flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml_y,0)))
-    sim.load_minus_flux_data(refl_flux,incident_flux_data)
-    
+    flux2 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
+    sim.load_minus_flux_data(flux2,incident_flux_data)
+
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
-        
-    res = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    coeffs = res.alpha
-    taper_flux = mp.get_fluxes(refl_flux)
-    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2,-taper_flux[0]/incident_flux[0]))
+
+    res2 = sim.get_eigenmode_coefficients(flux2,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    taper_coeffs = res2.alpha
+    taper_flux = mp.get_fluxes(flux2)
+
+    R_coeffs.append(abs(taper_coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2)
+    R_flux.append(-taper_flux[0]/incident_flux[0])
+    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,R_coeffs[-1],R_flux[-1]))
 ```
 
-We compute the reflectance for five different taper lengths: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. The Bash commands to run the simulation and extract the plotting data from the output are:
-
-```sh
-mpirun -np 3 python -u mode-decomposition.py |tee taper_data.out;
-grep refl: taper_data.out |cut -d , -f2- > taper_data.dat
-```
-
-The results are plotted using the Python script below. The plot is shown in the accompanying figure. The reflectance values computed using the two methods of mode decomposition and flux are nearly identical. For reference, a line with quadratic scaling is shown in black. The reflectance of the linear waveguide taper decreases quadratically with the taper length consistent with analytic theory.
+Note that the reflectance is computed for five different taper lengths: 1, 2, 4, 8, and 16 μm. A quadratic scaling of the reflectance with the taper length appears as a straight line on a log-log plot. The results are plotted using the commands below with the plot shown in the accompanying figure.
 
 ```py
-import numpy as np
-import matplotlib.pyplot as plt
-
-f = np.genfromtxt("taper_data.dat", delimiter=",")
-Lt = f[:,0]
-Rmode = f[:,1]
-Rflux = f[:,2]
-
-plt.figure(dpi=150)
-plt.loglog(Lt,Rmode,'bo-',label='mode decomposition')
-plt.loglog(Lt,Rflux,'ro-',label='flux')
-plt.loglog(Lt,0.005/Lt**2,'k-',label=r'quadratic reference (1/Lt$^2$)')
-plt.legend(loc='upper right')
-plt.xlabel('taper length Lt (μm)')
-plt.ylabel('reflectance')
-plt.show()
+if mp.am_master():
+    plt.figure()
+    plt.loglog(Lts,R_coeffs,'bo-',label='mode decomposition')
+    plt.loglog(Lts,R_flux,'ro-',label='Poynting flux')
+    plt.loglog(Lts,[0.005/Lt**2 for Lt in Lts],'k-',label=r'quadratic reference (1/Lt$^2$)')
+    plt.legend(loc='upper right')
+    plt.xlabel('taper length Lt (μm)')
+    plt.ylabel('reflectance')
+    plt.show()
 ```
 
 <center>
 ![](../images/refl_coeff_vs_taper_length.png)
 </center>
+
+The reflectance values computed using the two methods are nearly identical. For reference, a line with quadratic scaling is shown in black. The reflectance of the linear waveguide taper decreases quadratically with the taper length which is consistent with the analytic theory.
 
 Diffraction Spectrum of a Binary Grating
 ----------------------------------------
@@ -164,6 +158,8 @@ The simulation script is in [examples/binary_grating.py](https://github.com/Nano
 ```py
 import meep as mp
 import math
+import numpy as np
+import matplotlib.pyplot as plt
 
 resolution = 60        # pixels/μm
 
@@ -236,53 +232,35 @@ res = sim.get_eigenmode_coefficients(mode_mon, range(1,nmode+1), eig_parity=mp.O
 coeffs = res.alpha
 kdom = res.kdom
 
+mode_wvl = []
+mode_angle = []
+mode_tran = []
+
 for nm in range(nmode):
   for nf in range(nfreq):
-    mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf]))
-    mode_tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
-    if nm != 0:
-      mode_tran = 0.5*mode_tran
-    print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
+    mode_wvl.append(1/freqs[nf])
+    mode_angle.append(math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf])))
+    tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
+    mode_tran.append(0.5*tran if nm != 0 else tran)
+    print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl[-1],mode_angle[-1],mode_tran[-1]))
 ```
 
 Note the use of the keyword parameter argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. This is important for specifying **non-degenerate** modes in MPB since the `k_point` is (0,0,0). `ODD_Z` is for modes with E<sub>z</sub> polarization. `EVEN_Y` is necessary since each diffraction order which is based on a given k<sub>x</sub> consists of *two* modes: one going in the +y direction and the other in the -y direction. `EVEN_Y` forces MPB to compute only the +k<sub>y</sub> + -k<sub>y</sub> (cosine) mode. As a result, the total transmittance must be halved in this case to obtain the transmittance for the individual +k<sub>y</sub> or -k<sub>y</sub> mode. For `ODD_Y`, MPB will compute the +k<sub>y</sub> - -k<sub>y</sub> (sine) mode but this will have zero power because the source is even. If the $y$ parity is left out, MPB will return a random superposition of the cosine and sine modes. Alternatively, in this example an input planewave with H<sub>z</sub> instead of E<sub>z</sub> polarization can be used which requires `eig_parity=mp.EVEN_Z+mp.ODD_Y` as well as an odd mirror symmetry plane in *y*. Finally, note the use of `add_flux` instead of `add_mode_monitor` when using symmetries.
 
-The simulation is run and the results piped to a file (the grating data is extracted to a separate file for plotting) using the following shell script:
-
-```sh
-#!/bin/bash
-
-python -u binary_grating.py |tee grating.out
-grep grating grating.out |cut -d , -f2- > grating.dat
-```
-
-The diffraction spectrum is plotted using the following script and shown in the figure below.
+The diffraction spectrum is then plotted and shown in the figure below.
 
 ```py
+tran_max = round(max(mode_tran),1)
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-d = np.genfromtxt("grating.dat",delimiter=",")
-
-nmode = 10
-nfreq = 21
-
-thetas = np.empty((nmode,nfreq))
-wvls = np.empty((nmode,nfreq))
-tran = np.empty((nmode,nfreq))
-
-for j in range(nfreq):
-    tran[:,j] = d[j::nfreq,2]
-    thetas[:,j] = d[j::nfreq,1]
-    wvls[:,j] = d[j,0]
-
-tran_max = round(tran.max(),1)
-
-plt.figure(dpi=150)
-plt.pcolormesh(wvls, thetas, tran, cmap='Blues', shading='flat', vmin=0, vmax=tran_max)
-plt.axis([wvls.min(), wvls.max(), thetas.min(), thetas.max()])
+plt.figure()
+plt.pcolormesh(np.reshape(mode_wvl,(nmode,nfreq)),
+               np.reshape(mode_angle,(nmode,nfreq)),
+               np.reshape(mode_tran,(nmode,nfreq)),
+               cmap='Blues',
+               shading='flat',
+               vmin=0,
+               vmax=tran_max)
+plt.axis([min(mode_wvl), max(mode_wvl), min(mode_angle), max(mode_angle)])
 plt.xlabel("wavelength (μm)")
 plt.ylabel("diffraction angle (degrees)")
 plt.xticks([t for t in np.arange(0.4,0.7,0.1)])
@@ -306,7 +284,9 @@ In the limit where the grating periodicity is much larger than the wavelength an
 
 To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
-We can also use the complex mode coefficients to compute the phase of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in metalenses. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs. The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py).
+We can also use the complex mode coefficients to compute the phase of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in metalenses. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
+
+The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py).
 
 ```py
 import meep as mp
@@ -444,7 +424,9 @@ As an additional demonstration of the mode-decomposition feature, the reflectanc
 
 The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two separate lines prefixed by `mode-coeff:` and `poynting-flux:`.
 
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders. The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py).
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
+
+The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py).
 
 ```py
 import meep as mp
@@ -644,7 +626,9 @@ A schematic of the grating geometry is shown below. The grating is a 2d slab in 
 
 In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of λ=0.54 μm. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. As usual, this requires a separate normalization run to compute the power of the input planewave.
 
-The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x* axis. For φ=0°, the nematic director is oriented along the *z* axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction. The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py).
+The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x* axis. For φ=0°, the nematic director is oriented along the *z* axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
+
+The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py).
 
 ```py
 import meep as mp

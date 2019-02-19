@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# From the Meep tutorial: transmission around a 90-degree waveguide bend in 2d.
+# transmission around a 90-degree waveguide bend in 2d
 from __future__ import division
 
 import meep as mp
+import numpy as np
+import matplotlib.pyplot as plt
 
 resolution = 10 # pixels/um
 
@@ -26,8 +28,10 @@ geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
 
 fcen = 0.15  # pulse center frequency
 df = 0.1     # pulse width (in frequency)
-sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ez,
-                     center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0),size=mp.Vector3(0,w,0))]
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                     component=mp.Ez,
+                     center=mp.Vector3(-0.5*sx+dpml,wvg_ycen,0),
+                     size=mp.Vector3(0,w,0))]
 
 sim = mp.Simulation(cell_size=cell,
                     boundary_layers=pml_layers,
@@ -84,22 +88,20 @@ bend_tran_flux = mp.get_fluxes(tran)
 
 flux_freqs = mp.get_flux_freqs(refl)
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 wl = []
 Rs = []
 Ts = []
-
-for i in range(0,nfreq):
+for i in range(nfreq):
     wl = np.append(wl, 1/flux_freqs[i])
     Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
     Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])
 
-plt.plot(wl,Rs,'bo-',label='reflectance')
-plt.plot(wl,Ts,'ro-',label='transmittance')
-plt.plot(wl,1-Rs-Ts,'go-',label='loss')
-plt.axis([5.0, 10.0, 0, 1])
-plt.xlabel("wavelength (μm)")
-plt.legend(loc="upper right")
-plt.show()
+if mp.am_master():
+    plt.figure()
+    plt.plot(wl,Rs,'bo-',label='reflectance')
+    plt.plot(wl,Ts,'ro-',label='transmittance')
+    plt.plot(wl,1-Rs-Ts,'go-',label='loss')
+    plt.axis([5.0, 10.0, 0, 1])
+    plt.xlabel("wavelength (μm)")
+    plt.legend(loc="upper right")
+    plt.show()
