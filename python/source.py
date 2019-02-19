@@ -160,6 +160,6 @@ class EigenModeSource(Source):
         self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)
 
     def eig_power(self,freq):
-        if has_attr(src,'fourier_transform') and callable(src.fourier_transform):
+        if hasattr(src,'fourier_transform') and callable(src.fourier_transform):
            return np.abs(src.fourier_transform(2.0*np.pi*freq))**2
         return 1.0
