@@ -98,7 +98,7 @@ complex<double> gaussian_src_time::dipole(double time) const {
 std::complex<double> gaussian_src_time::fourier_transform(const double omega)
 { double omega0=2.0*pi*freq;
   double delta=(omega-omega0)*width;
-  return width * polar(1.0,omega0*peak_time) * exp(-0.5*delta*delta);
+  return width * polar(1.0,omega*peak_time) * exp(-0.5*delta*delta);
 }
 
 bool gaussian_src_time::is_equal(const src_time &t) const {
