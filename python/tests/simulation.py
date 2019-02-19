@@ -313,20 +313,23 @@ class TestSimulation(unittest.TestCase):
         sim.field_energy_in_box(tv)
         sim.field_energy_in_box(v)
 
-    def test_load_dump_structure(self):
+    def _load_dump_structure(self, chunk_file=False, chunk_sim=False):
         from meep.materials import Al
         resolution = 50
         cell = mp.Vector3(5, 5)
         sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(), component=mp.Ez)
         one_by_one = mp.Vector3(1, 1, mp.inf)
-        geometry = [mp.Block(material=Al, center=mp.Vector3(-1.5, -1.5), size=one_by_one),
-                    mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1.5, 1.5), size=one_by_one)]
+        geometry = [mp.Block(material=Al, center=mp.Vector3(), size=one_by_one),
+                    mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1), size=one_by_one)]
         pml_layers = [mp.PML(0.5)]
 
-        sim = mp.Simulation(resolution=resolution,
+        symmetries = [mp.Mirror(mp.Y)]
+
+        sim1 = mp.Simulation(resolution=resolution,
                             cell_size=cell,
                             boundary_layers=pml_layers,
                             geometry=geometry,
+                            symmetries=symmetries,
                             sources=[sources])
 
         sample_point = mp.Vector3(0.12, -0.29)
@@ -336,14 +339,24 @@ class TestSimulation(unittest.TestCase):
             p = sim.get_field_point(mp.Ez, sample_point)
             ref_field_points.append(p.real)
 
-        sim.run(mp.at_every(5, get_ref_field_point), until=50)
+        sim1.run(mp.at_every(5, get_ref_field_point), until=50)
         dump_fn = 'test_load_dump_structure.h5'
-        sim.dump_structure(dump_fn)
+        dump_chunk_fname = None
+        chunk_layout = None
+        sim1.dump_structure(dump_fn)
+        if chunk_file:
+            dump_chunk_fname = 'test_load_dump_structure_chunks.h5'
+            sim1.dump_chunk_layout(dump_chunk_fname)
+            chunk_layout = dump_chunk_fname
+        if chunk_sim:
+            chunk_layout = sim1
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell,
                             boundary_layers=pml_layers,
                             sources=[sources],
+                            symmetries=symmetries,
+                            chunk_layout=chunk_layout,
                             load_structure=dump_fn)
 
         field_points = []
@@ -360,6 +373,17 @@ class TestSimulation(unittest.TestCase):
         mp.all_wait()
         if mp.am_master():
             os.remove(dump_fn)
+            if dump_chunk_fname:
+                os.remove(dump_chunk_fname)
+
+    def test_load_dump_structure(self):
+        self._load_dump_structure()
+
+    def test_load_dump_chunk_layout_file(self):
+        self._load_dump_structure(chunk_file=True)
+
+    def test_load_dump_chunk_layout_sim(self):
+        self._load_dump_structure(chunk_sim=True)
 
     def test_get_array_output(self):
         sim = self.init_simple_simulation()

@@ -20,7 +20,8 @@ class TestChunks(unittest.TestCase):
         sim = mp.Simulation(cell_size=cell,
                             boundary_layers=pml_layers,
                             sources=sources,
-                            resolution=resolution)
+                            resolution=resolution,
+                            split_chunks_evenly=False)
 
         top = mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy-dpml), size=mp.Vector3(sxy-2*dpml,0), weight=+1.0)
         bot = mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy+dpml), size=mp.Vector3(sxy-2*dpml,0), weight=-1.0)
@@ -32,8 +33,7 @@ class TestChunks(unittest.TestCase):
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-5))
 
         sim.save_flux('tot_flux', tot_flux)
-
-        sim.reset_meep()
+        sim1 = sim
 
         geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(sxy, sxy, mp.inf), material=mp.Medium(index=3.5)),
                     mp.Block(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml, sxy-2*dpml, mp.inf), material=mp.air)]
@@ -42,7 +42,8 @@ class TestChunks(unittest.TestCase):
                             geometry=geometry,
                             boundary_layers=pml_layers,
                             sources=sources,
-                            resolution=resolution)
+                            resolution=resolution,
+                            chunk_layout=sim1)
 
         tot_flux = sim.add_flux(fcen, 0, 1, top, bot, rgt, lft)
 

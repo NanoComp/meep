@@ -74,6 +74,7 @@ TESTS =                                   \
     $(TEST_DIR)/bend_flux.py              \
     $(BINARY_GRATING_TEST)                \
     $(TEST_DIR)/cavity_arrayslice.py      \
+    $(TEST_DIR)/cavity_farfield.py        \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
     $(TEST_DIR)/dft_fields.py             \

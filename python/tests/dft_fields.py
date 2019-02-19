@@ -63,10 +63,10 @@ class TestDFTFields(unittest.TestCase):
         sim.output_dft(thin_y_flux, 'thin-y-flux')
 
         with h5py.File('thin-x-flux.h5', 'r') as thin_x:
-            thin_x_h5 = thin_x['ez_0.r'].value + 1j * thin_x['ez_0.i'].value
+            thin_x_h5 = mp.complexarray(thin_x['ez_0.r'].value, thin_x['ez_0.i'].value)
 
         with h5py.File('thin-y-flux.h5', 'r') as thin_y:
-            thin_y_h5 = thin_y['ez_0.r'].value + 1j * thin_y['ez_0.i'].value
+            thin_y_h5 = mp.complexarray(thin_y['ez_0.r'].value, thin_y['ez_0.i'].value)
 
         np.testing.assert_allclose(thin_x_array, thin_x_h5)
         np.testing.assert_allclose(thin_y_array, thin_y_h5)
@@ -79,8 +79,8 @@ class TestDFTFields(unittest.TestCase):
         sim.output_dft(dft_flux, 'dft-flux')
 
         with h5py.File('dft-fields.h5', 'r') as fields, h5py.File('dft-flux.h5', 'r') as flux:
-            exp_fields = fields['ez_0.r'].value + 1j * fields['ez_0.i'].value
-            exp_flux = flux['ez_0.r'].value + 1j * flux['ez_0.i'].value
+            exp_fields = mp.complexarray(fields['ez_0.r'].value, fields['ez_0.i'].value)
+            exp_flux = mp.complexarray(flux['ez_0.r'].value, flux['ez_0.i'].value)
 
         np.testing.assert_allclose(exp_fields, fields_arr)
         np.testing.assert_allclose(exp_flux, flux_arr)

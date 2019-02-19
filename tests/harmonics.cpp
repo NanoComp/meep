@@ -19,7 +19,7 @@
 
 #include <meep.hpp>
 using namespace meep;
-using namespace std;
+using std::max;
 
 double the_value = 1.0;
 double value(const vec &) { return the_value; }

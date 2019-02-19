@@ -708,12 +708,15 @@ public:
 
   bool equal_layout(const structure &) const;
   void print_layout(void) const;
-  std::vector<volume> get_chunk_volumes() const;
+  std::vector<grid_volume> get_chunk_volumes() const;
   std::vector<int> get_chunk_owners() const;
 
   // structure_dump.cpp
   void dump(const char *filename);
+  void dump_chunk_layout(const char *filename);
   void load(const char *filename);
+  void load_chunk_layout(const char *filename, boundary_region &br);
+  void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &origloc) const;
@@ -1090,6 +1093,10 @@ public:
      summation by the caller is required to get the final result ... used
      by other output routine to efficiently get far field on a grid of pts */
   void farfield_lowlevel(std::complex<double> *F, const vec &x);
+
+  /* Return a newly allocated array with all far fields */
+  realnum *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
+                               double resolution);
 
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix, const volume &where,
@@ -1562,7 +1569,7 @@ public:
   void *get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, bool verbose = false,
-                      double *kdom = 0);
+                      double *kdom = 0, void **user_mdata = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
@@ -1865,7 +1872,7 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 
 // non-class methods for working with mpb eigenmode data
 //
-void destroy_eigenmode_data(void *vedata);
+void destroy_eigenmode_data(void *vedata, bool destroy_mdata = true);
 std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c);
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);

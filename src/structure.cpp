@@ -183,7 +183,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   std::vector<grid_volume> chunk_volumes;
 
   if (meep_geom::fragment_stats::resolution == 0 ||
-      meep_geom::fragment_stats::has_non_medium_material() || gv.dim == Dcyl ||
+      meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     for (int i = 0; i < adjusted_num_chunks; i++) {
       grid_volume vi = gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes,
@@ -1006,11 +1006,11 @@ void structure::print_layout(void) const {
   }
 }
 
-std::vector<volume> structure::get_chunk_volumes() const {
-  std::vector<volume> result;
+std::vector<grid_volume> structure::get_chunk_volumes() const {
+  std::vector<grid_volume> result;
 
   for (int i = 0; i < num_chunks; ++i) {
-    result.push_back(chunks[i]->gv.surroundings());
+    result.push_back(chunks[i]->gv);
   }
   return result;
 }

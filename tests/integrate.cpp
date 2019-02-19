@@ -25,9 +25,9 @@
 
 #include <meep.hpp>
 using namespace meep;
-using namespace std;
+using std::complex;
 
-double size[3] = {3.0, 3.0, 2.6};
+double sz[3] = {3.0, 3.0, 2.6};
 
 static double one(const vec &p) {
   (void)p;
@@ -109,20 +109,20 @@ static volume random_gv(ndim dim) {
     case 0: break;
     case 1: {
       int d = rand() % (idim + 1);
-      s[d] = urand(0, size[d]);
+      s[d] = urand(0, sz[d]);
       break;
     }
     case 2: {
       int d1 = rand() % (idim + 1);
       int d2 = (d1 + 1 + rand() % 2) % 3;
-      s[d1] = urand(0, size[d1]);
-      s[d2] = urand(0, size[d2]);
+      s[d1] = urand(0, sz[d1]);
+      s[d2] = urand(0, sz[d2]);
       break;
     }
     case 3:
-      s[0] = urand(0, size[0]);
-      s[1] = urand(0, size[1]);
-      s[2] = urand(0, size[2]);
+      s[0] = urand(0, sz[0]);
+      s[1] = urand(0, sz[1]);
+      s[2] = urand(0, sz[2]);
   }
 
   switch (dim) {
@@ -147,7 +147,7 @@ static volume random_gv(ndim dim) {
       v.set_direction_max(X, 0);
       v.set_direction_min(Y, 0);
       v.set_direction_max(Y, 0);
-      v.set_direction_min(R, 0.1 + urand(0, size[0] - s[0]));
+      v.set_direction_min(R, 0.1 + urand(0, sz[0] - s[0]));
       v.set_direction_min(Z, urand(-100, 100));
       v.set_direction_max(R, s[0] + v.in_direction_min(R));
       v.set_direction_max(Z, s[1] + v.in_direction_min(Z));
@@ -315,12 +315,12 @@ int main(int argc, char **argv) {
   const double a = 10.0;
   initialize mpi(argc, argv);
   quiet = true;
-  const grid_volume v3d = vol3d(size[0], size[1], size[2], a);
-  const grid_volume v3d0 = vol3d(size[0], size[1], 0, a);
-  const grid_volume v3d00 = vol3d(size[0], 0, 0, a);
-  const grid_volume v2d = vol2d(size[0], size[1], a);
-  const grid_volume v1d = vol1d(size[0], a);
-  const grid_volume vcyl = volcyl(size[0], size[1], a);
+  const grid_volume v3d = vol3d(sz[0], sz[1], sz[2], a);
+  const grid_volume v3d0 = vol3d(sz[0], sz[1], 0, a);
+  const grid_volume v3d00 = vol3d(sz[0], 0, 0, a);
+  const grid_volume v2d = vol2d(sz[0], sz[1], a);
+  const grid_volume v1d = vol1d(sz[0], a);
+  const grid_volume vcyl = volcyl(sz[0], sz[1], a);
 
   for (int ic = Ex; ic <= Dielectric; ++ic) {
     component c = component(ic);
@@ -350,7 +350,7 @@ int main(int argc, char **argv) {
     check_splitsym(v2d, splitting, rotate4(Z, v2d), "rotate4");
   }
 
-  const grid_volume vcyl_pad = volcyl(size[0] + 0.2, size[1], a);
+  const grid_volume vcyl_pad = volcyl(sz[0] + 0.2, sz[1], a);
   for (int splitting = 0; splitting < 5; ++splitting) {
     check_splitsym(vcyl_pad, splitting, identity(), "identity");
     check_splitsym(vcyl_pad, splitting, mirror(Z, vcyl), "mirrorz");

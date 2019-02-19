@@ -54,6 +54,36 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
   }
 }
 
+void structure::dump_chunk_layout(const char *filename) {
+  // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
+  size_t sz = num_chunks * 3;
+  realnum *origins = new realnum[sz];
+  size_t *nums = new size_t[sz];
+  memset(nums, 0, sizeof(size_t) * sz);
+  memset(origins, 0, sizeof(realnum) * sz);
+  for (int i = 0; i < num_chunks; ++i) {
+    int idx = i * 3;
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      origins[idx++] = chunks[i]->gv.origin_in_direction(d);
+      nums[i * 3 + ((int)d % 3)] = chunks[i]->gv.num_direction(d);
+    }
+  }
+  h5file file(filename, h5file::WRITE, true);
+  file.create_data("gv_origins", 1, &sz);
+  if (am_master()) {
+    size_t gv_origins_start = 0;
+    file.write_chunk(1, &gv_origins_start, &sz, origins);
+  }
+  file.create_data("gv_nums", 1, &sz);
+  if (am_master()) {
+    size_t nums_start = 0;
+    file.write_chunk(1, &nums_start, &sz, nums);
+  }
+  delete[] origins;
+  delete[] nums;
+
+}
+
 void structure::dump(const char *filename) {
   if (!quiet) master_printf("creating epsilon output file \"%s\"...\n", filename);
 
@@ -352,6 +382,72 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
       chunks[i]->chiP[ft] = make_sus_list_from_params(file, rank, dims, chunks[i]->gv.ntot());
     }
   }
+}
+
+void structure::load_chunk_layout(const char *filename, boundary_region &br) {
+  // Load chunk grid_volumes from a file
+  h5file file(filename, h5file::READONLY, true);
+  size_t sz = num_chunks * 3;
+  realnum *origins = new realnum[sz];
+  memset(origins, 0, sizeof(realnum) * sz);
+  size_t *nums = new size_t[sz];
+  memset(nums, 0, sizeof(size_t) * sz);
+
+  int origins_rank;
+  size_t origins_dims;
+  file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
+  if (origins_rank != 1 || origins_dims != sz) {
+    abort("chunk mismatch in structure::load");
+  }
+  if (am_master()) {
+    size_t gv_origins_start = 0;
+    file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
+  }
+  file.prevent_deadlock();
+  broadcast(0, origins, sz);
+
+  int nums_rank;
+  size_t nums_dims;
+  file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
+  if (nums_rank != 1 || nums_dims != sz) {
+    abort("chunk mismatch in structure::load");
+  }
+  if (am_master()) {
+    size_t gv_nums_start = 0;
+    file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
+  }
+  file.prevent_deadlock();
+  broadcast(0, nums, sz);
+
+  std::vector<grid_volume> gvs;
+  // Populate a vector with the new grid_volumes
+  for (int i = 0; i < num_chunks; ++i) {
+    int idx = i * 3;
+    grid_volume new_gv = gv;
+    vec new_origin(new_gv.dim);
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      new_origin.set_direction(d, origins[idx++]);
+      new_gv.set_num_direction(d, nums[i * 3 + ((int)d % 3)]);
+    }
+    new_gv.set_origin(new_origin);
+    gvs.push_back(new_gv);
+  }
+
+  load_chunk_layout(gvs, br);
+
+  delete[] origins;
+  delete[] nums;
+}
+
+void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br) {
+  // Recreate the chunks with the new grid_volumes
+  for (int i = 0; i < num_chunks; ++i) {
+    if (chunks[i]->refcount-- <= 1) delete chunks[i];
+    int proc = i * count_processors() / num_chunks;
+    chunks[i] = new structure_chunk(gvs[i], v, Courant, proc);
+    br.apply(this, chunks[i]);
+  }
+  check_chunks();
 }
 
 void structure::load(const char *filename) {

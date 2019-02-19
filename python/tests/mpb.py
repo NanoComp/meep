@@ -222,9 +222,9 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, 'r') as ref:
             # Reshape the reference data into a component-wise 1d array like
             # [x1,y1,z1,x2,y2,z2,etc.]
-            ref_x = ref["x.r{}".format(suffix)].value + ref["x.i{}".format(suffix)].value * 1j
-            ref_y = ref["y.r{}".format(suffix)].value + ref["y.i{}".format(suffix)].value * 1j
-            ref_z = ref["z.r{}".format(suffix)].value + ref["z.i{}".format(suffix)].value * 1j
+            ref_x = mp.complexarray(ref["x.r{}".format(suffix)].value, ref["x.i{}".format(suffix)].value)
+            ref_y = mp.complexarray(ref["y.r{}".format(suffix)].value, ref["y.i{}".format(suffix)].value)
+            ref_z = mp.complexarray(ref["z.r{}".format(suffix)].value, ref["z.i{}".format(suffix)].value)
 
             ref_arr = np.zeros(np.prod(field.shape), dtype=np.complex128)
             ref_arr[0::3] = ref_x.ravel()

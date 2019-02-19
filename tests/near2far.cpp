@@ -23,7 +23,8 @@
 
 #include <meep.hpp>
 using namespace meep;
-using namespace std;
+using std::complex;
+using std::polar;
 
 double two(const vec &) { return 2.0; }
 
