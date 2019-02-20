@@ -423,14 +423,8 @@ AC_SUBST(LIBCTL_CPPFLAGS)
 ##############################################################################
 
 # check for -lctlgeom:
-AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes], [have_libctlgeom=no])
+AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes; LIBS="-lctlgeom $LIBS"], [have_libctlgeom=no])
 AM_CONDITIONAL(WITH_LIBCTLGEOM, test x"$have_libctlgeom" = "xyes")
-
-if test "x$have_libctlgeom" = xyes; then
-   LIBCTLGEOM_LIBS="-lctlgeom"
-fi
-
-AC_SUBST(LIBCTLGEOM_LIBS)
 
 ##############################################################################
 # check for libGDSII
