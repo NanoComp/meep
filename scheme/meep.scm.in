@@ -502,7 +502,8 @@
 
 (define (reset-meep)
   (delete-meep-fields fields) (set! fields '())
-  (delete-meep-structure structure) (set! structure '()))
+  (delete-meep-structure structure) (set! structure '())
+  (set! default-material vacuum))
 
 (define (restart-fields)
   (if (not (null? fields))
