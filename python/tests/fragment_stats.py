@@ -854,6 +854,11 @@ class TestPMLToVolList(unittest.TestCase):
         self.checkcyl(v2[2], mp.Vector3(-5, 0, -5), mp.Vector3(-4, 0, -4))
         self.checkcyl(v2[3], mp.Vector3(4, 0, -5), mp.Vector3(5, 0, -4))
 
+    def test_edge_size_zero(self):
+        # Issue #736
+        sim = mp.Simulation(resolution=100, cell_size=mp.Vector3(1.50, 0.1, 0))
+        sim.init_sim()
+
 
 if __name__ == '__main__':
     unittest.main()

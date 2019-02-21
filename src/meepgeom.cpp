@@ -1611,6 +1611,7 @@ static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
   double half_box = box_size / 2;
   double half_z = cell_size.z / 2;
   double edge_size_z = fmod(half_z + half_box, box_size);
+  if (edge_size_z == 0) edge_size_z = box_size;
   std::vector<geom_box> boxes;
 
   for (double z = -half_z; z < half_z;) {
@@ -1632,7 +1633,9 @@ static std::vector<geom_box> split_cell_2d(double box_size, vector3 cell_size) {
   double half_x = cell_size.x / 2;
   double half_y = cell_size.y / 2;
   double edge_size_x = fmod(half_x + half_box, box_size);
+  if (edge_size_x == 0) edge_size_x = box_size;
   double edge_size_y = fmod(half_y + half_box, box_size);
+  if (edge_size_y == 0) edge_size_y = box_size;
   std::vector<geom_box> boxes;
 
   for (double x = -half_x; x < half_x;) {
@@ -1660,8 +1663,11 @@ static std::vector<geom_box> split_cell_3d(double box_size, vector3 cell_size) {
   double half_y = cell_size.y / 2;
   double half_z = cell_size.z / 2;
   double edge_size_x = fmod(half_x + half_box, box_size);
+  if (edge_size_x == 0) edge_size_x = box_size;
   double edge_size_y = fmod(half_y + half_box, box_size);
+  if (edge_size_y == 0) edge_size_y = box_size;
   double edge_size_z = fmod(half_z + half_box, box_size);
+  if (edge_size_z == 0) edge_size_z = box_size;
   std::vector<geom_box> boxes;
 
   for (double x = -half_x; x < half_x;) {
