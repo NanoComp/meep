@@ -86,5 +86,5 @@
        (let ((mode-wvl (/ (list-ref freqs nf)))
              (mode-tran (/ (sqr (magnitude (array-ref coeffs 0 nf 0))) (list-ref input-flux nf)))
              (mode-phase (angle (array-ref coeffs 0 nf 0))))
-         (print "grating" (number->string nf) ":, " (number->string mode-wvl) ", " (number->string mode-tran) ", " (number->string mode-phase) "\n")))
+         (print "grating" nf ":, " mode-wvl ", " mode-tran ", " mode-phase "\n")))
      (arith-sequence 0 1 nfreq))

@@ -88,6 +88,6 @@
                     (mode-angle (rad->deg (acos (/ (vector3-x (list-ref kdom (+ (* nm nfreq) nf))) (list-ref freqs nf)))))
                     (mode-tran (/ (sqr (magnitude (array-ref coeffs nm nf 0))) (list-ref input-flux nf))))
                 (if (> nm 0) (set! mode-tran (* 0.5 mode-tran)))
-                (print "grating" (number->string nm) ":, " (number->string mode-wvl) ", " (number->string mode-angle) ", " (number->string mode-tran) "\n")))
+                (print "grating" nm ":, " mode-wvl ", " mode-angle ", " mode-tran "\n")))
               (arith-sequence 0 1 nfreq)))
      (arith-sequence 0 1 nmode))
