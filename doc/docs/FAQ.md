@@ -221,6 +221,8 @@ In either case, the `eig_power(freq)` class method of the
 [`EigenmodeSource`](Python_User_Interface.md#EigenmodeSource)
 python class returns the total power
 carried by the fields of the source at frequency `freq`.
+A documented example of the use of `eig_power` may be found in the `mode_coeffs.py`
+unit test in the [python unit-test suite](Python_Developer_Information.md#testing)
 
 **Note:** Due to discretization effects, the normalization of eigenmode 
 sources to yield unit power transmission is only *approximate;*

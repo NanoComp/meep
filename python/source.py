@@ -109,10 +109,6 @@ class EigenModeSource(Source):
         self.eig_resolution = eig_resolution
         self.eig_tolerance = eig_tolerance
 
-    @eig_tolerance.setter
-    def eig_tolerance(self, val):
-        self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)
-
     @property
     def eig_lattice_size(self):
         return self._eig_lattice_size
@@ -155,8 +151,12 @@ class EigenModeSource(Source):
     def eig_tolerance(self):
         return self._eig_tolerance
 
+    @eig_tolerance.setter
+    def eig_tolerance(self, val):
+        self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)
+
     def eig_power(self,freq):
-        amp=src.amplitude
-        if callable(getattr(envelope, "fourier_transform", None)):
-           amp*=src.fourier_transform(2.0*np.pi*freq)
-        return np.abs(amp)**2
+        amp=self.amplitude
+        if callable(getattr(self.src, "fourier_transform", None)):
+           amp*=self.src.fourier_transform(2.0*mp.pi*freq)
+        return abs(amp)**2

@@ -7,9 +7,7 @@ import meep as mp
 
 class TestModeCoeffs(unittest.TestCase):
 
-    def run_mode_coeffs(self, mode_num, kpoint_func):
-
-        resolution = 15
+    def run_mode_coeffs(self, mode_num, kpoint_func, nf=1, resolution=15):
 
         w = 1   # width of waveguide
         L = 10  # length of waveguide
@@ -36,27 +34,44 @@ class TestModeCoeffs(unittest.TestCase):
 
         # mode frequency
         fcen = 0.20  # > 0.5/sqrt(11) to have at least 2 modes
+        df   = 0.5*fcen
 
-        sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.5*fcen),
-                                      eig_band=mode_num,
-                                      size=mp.Vector3(0,sy-2*dpml,0),
-                                      center=mp.Vector3(-0.5*sx+dpml,0,0),
-                                      eig_match_freq=True,
-                                      eig_resolution=32) ]
+        source=mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
+                                  eig_band=mode_num,
+                                  size=mp.Vector3(0,sy-2*dpml,0),
+                                  center=mp.Vector3(-0.5*sx+dpml,0,0),
+                                  eig_match_freq=True,
+                                  eig_resolution=2*resolution)
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell_size,
                             boundary_layers=boundary_layers,
                             geometry=geometry,
-                            sources=sources,
+                            sources=[source],
                             symmetries=[mp.Mirror(mp.Y, phase=1 if mode_num % 2 == 1 else -1)])
 
         xm = 0.5*sx - dpml  # x-coordinate of monitor
-        mflux = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
-        mode_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
+        mflux = sim.add_mode_monitor(fcen, df, nf, mp.ModeRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
+        mode_flux = sim.add_flux(fcen, df, nf, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
 
         # sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(-0.5*sx+dpml,0), 1e-10))
-        sim.run(until_after_sources=100)
+        sim.run(until_after_sources=200)
+
+        ##################################################
+        # If the number of analysis frequencies is >1, we
+        # are testing the unit-power normalization
+        # of the eigenmode source: we observe the total
+        # power flux through the mode_flux monitor (which
+        # equals the total power emitted by the source as
+        # there is no scattering in this ideal waveguide)
+        # and check that it agrees with the prediction
+        # of the eig_power() class method in EigenmodeSource.
+        ##################################################
+        if nf>1:
+            power_observed=mp.get_fluxes(mode_flux)
+            freqs=[mode_flux.freq_min + n*mode_flux.dfreq for n in range(len(power_observed))]
+            power_expected=[source.eig_power(f) for f in freqs]
+            return freqs, power_expected, power_observed
 
         modes_to_check = [1, 2]  # indices of modes for which to compute expansion coefficients
         res = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
@@ -101,8 +116,8 @@ class TestModeCoeffs(unittest.TestCase):
         eval_point = mp.Vector3(0.7, -0.2, 0.3)
         ex_at_eval_point = emdata.amplitude(eval_point, mp.Ex)
         hz_at_eval_point = emdata.amplitude(eval_point, mp.Hz)
-        self.assertAlmostEqual(ex_at_eval_point, 0.10591314723115094+0.12458333138964374j, places=2)
-        self.assertAlmostEqual(hz_at_eval_point, 0.8681206797182762-0.737695596449452j, places=2)
+        self.assertAlmostEqual(ex_at_eval_point, 0.45358518109307083+0.5335421986481814j)
+        self.assertAlmostEqual(hz_at_eval_point, 3.717865162096829-3.1592989829386298j)
 
     def test_kpoint_func(self):
 
@@ -110,6 +125,10 @@ class TestModeCoeffs(unittest.TestCase):
             return mp.Vector3()
 
         self.run_mode_coeffs(1, kpoint_func)
+
+    def test_eigensource_normalization(self):
+        f, p_exp, p_obs=self.run_mode_coeffs(1, None, nf=51, resolution=15)
+        self.assertAlmostEqual(max(p_exp),max(p_obs),places=1)
 
 
 if __name__ == '__main__':
