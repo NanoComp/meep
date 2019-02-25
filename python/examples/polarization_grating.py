@@ -15,6 +15,8 @@ dpad = 1.0             # padding thickness
 
 k_point = mp.Vector3(0,0,0)
 
+pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
+
 n_0 = 1.55
 delta_n = 0.159
 epsilon_diag = mp.Matrix(mp.Vector3(n_0**2,0,0),mp.Vector3(0,n_0**2,0),mp.Vector3(0,0,(n_0+delta_n)**2))
@@ -27,7 +29,6 @@ def pol_grating(d,ph,gp,nmode):
     sy = gp
 
     cell_size = mp.Vector3(sx,sy,0)
-    pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
 
     # twist angle of nematic director; from equation 1b
     def phi(p):
@@ -61,13 +62,13 @@ def pol_grating(d,ph,gp,nmode):
                         sources=sources,
                         default_material=mp.Medium(index=n_0))
 
-    refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
-    refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
+    tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+    tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
     sim.run(until_after_sources=100)
 
-    input_flux = mp.get_fluxes(refl_flux)
-    input_flux_data = sim.get_flux_data(refl_flux)
+    input_flux = mp.get_fluxes(tran_flux)
+    input_flux_data = sim.get_flux_data(tran_flux)
 
     sim.reset_meep()
 
@@ -78,10 +79,6 @@ def pol_grating(d,ph,gp,nmode):
                         sources=sources,
                         geometry=geometry)
 
-    refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
-    sim.load_minus_flux_data(refl_flux,input_flux_data)
-
-    tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
     tran_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
     sim.run(until_after_sources=300)

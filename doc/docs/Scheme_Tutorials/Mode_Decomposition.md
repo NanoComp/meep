@@ -132,7 +132,7 @@ done
 grep refl: waveguide_taper.out |cut -d, -f2- > waveguide_taper.dat
 ```
 
-The results are plotted using the Octave/Matlab script below. The plot is shown in the accompanying figure. 
+The results are plotted using the Octave/Matlab script below. The plot is shown in the accompanying figure.
 
 ```matlab
 f = load('waveguide_taper.dat');
@@ -674,3 +674,227 @@ poynting-flux:, 0.061102475360487296, 0.938344211286383, 0.9994466866468703
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
+
+Diffraction Spectra of Liquid-Crystal Polarization Gratings
+-----------------------------------------------------------
+
+As a final demonstration of mode decomposition, we compute the diffraction spectrum of a [liquid-crystal](https://en.wikipedia.org/wiki/Liquid_crystal) polarization grating. These types of beam splitters use [birefringence](https://en.wikipedia.org/wiki/Birefringence) to produce diffraction orders which are [circularly polarized](https://en.wikipedia.org/wiki/Circular_polarization). We will investigate two kinds of polarization gratings: (1) a homogeneous [uniaxial](https://en.wikipedia.org/wiki/Birefringence#Uniaxial_materials) grating (commonly known as a circular-polarization grating), and (2) a [twisted-nematic](https://en.wikipedia.org/wiki/Liquid_crystal#Chiral_phases) bilayer grating as described in [Optics Letters, Vol. 33, No. 20, pp. 2287-9, 2008](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-33-20-2287) ([pdf](https://www.imagineoptix.com/cms/wp-content/uploads/2017/01/OL_08_Oh-broadband_PG.pdf)). The homogeneous uniaxial grating is just a special case of the twisted-nematic grating with a nematic [director](https://en.wikipedia.org/wiki/Liquid_crystal#Director) rotation angle of φ=0°.
+
+A schematic of the grating geometry is shown below. The grating is a 2d slab in the *xy*-plane with two parameters: birefringence (Δn) and thickness (d). The twisted-nematic grating consists of two layers of thickness d each with equal and opposite rotation angles of φ=70° for the nematic director. Both gratings contain only three diffraction orders: m=0, ±1. The m=0 order is linearly polarized and the m=±1 orders are circularly polarized with opposite chirality. For the uniaxial grating, the diffraction efficiencies for a mode with wavelength λ can be computed analytically: η<sub>0</sub>=cos<sup>2</sup>(πΔnd/λ), η<sub>±1</sub>=0.5sin<sup>2</sup>(πΔnd/λ). The derivation of these formulas is presented in [Optics Letters, Vol. 24, No. 9, pp. 584-6, 1999](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-24-9-584). We will verify these analytic results and also demonstrate that the twisted-nematic grating produces a broader bandwidth response for the ±1 orders than the homogeneous uniaxial grating. An important property of these polarization gratings for e.g. display applications is that for a circular-polarized input planewave and phase delay (Δnd/λ) of nearly 0.5, there is only a single diffraction order (+1 or -1) with *opposite* chiraity to that of the input. This is also demonstrated below.
+
+<center>
+![](../images/polarization_grating_schematic.png)
+</center>
+
+In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of λ=0.54 μm. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD-Z+EVEN-Y` and `EVEN-Z+ODD-Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD-Z+EVEN-Y|<sup>2</sup>+|EVEN-Z+ODD-Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. As usual, this requires a separate normalization run to compute the power of the input planewave.
+
+The anisotropic permittivity of the grating is specified using the [material function](../Scheme_User_Interface.md#material) `lc-mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x* axis. For φ=0°, the nematic director is oriented along the *z* axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
+
+The simulation script is in [examples/polarization_grating.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/polarization_grating.ctl).
+
+```scm
+(set-param! resolution 50)    ; pixels/μm
+
+(define-param dpml 1.0)       ; PML thickness
+(define-param dsub 1.0)       ; substrate thickness
+(define-param dpad 1.0)       ; padding thickness
+
+(set! k-point (vector3 0 0 0))
+
+(define boundary-layers (list (make pml (thickness dpml) (direction X))))
+(set! pml-layers boundary-layers)
+
+(define n0 1.55)
+(define delta-n 0.159)
+(define eps-diag (matrix3x3 (vector3 (sqr n0) 0 0)
+                            (vector3 0 (sqr n0) 0)
+                            (vector3 0 0 (sqr (+ n0 delta-n)))))
+
+(define-param wvl 0.54)      ; center wavelength
+(define fcen (/ wvl))        ; center frequency
+
+(define-param d 1.7)         ; chiral layer thickness
+(define-param ph 70)         ; chiral layer twist angle
+(define-param gp 6.5)        ; grating period
+(define-param nmode 5)       ; number of mode coefficients to compute
+
+(set! ph (deg->rad ph))
+
+(define sx (+ dpml dsub d d dpad dpml))
+(define sy gp)
+
+(define cell (make lattice (size sx sy no-size)))
+(set! geometry-lattice cell)
+
+; linear-polarized planewave pulse source
+(define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.3 dsub)) 0 0))
+(define lp-src (list (make source
+                       (src (make gaussian-src (frequency fcen) (fwidth (* 0.05 fcen))))
+                       (component Ez)
+                       (center src-pt)
+                       (size 0 sy 0))
+                     (make source
+                       (src (make gaussian-src (frequency fcen) (fwidth (* 0.05 fcen))))
+                       (component Ey)
+                       (center src-pt)
+                       (size 0 sy 0))))
+
+(set! sources lp-src)
+
+(set! default-material (make medium (index n0)))
+
+(define tran-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
+(define tran-flux1 (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+
+(run-sources+ 100)
+
+(define input-flux (get-fluxes tran-flux1))
+
+(reset-meep)
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! sources lp-src)
+
+(set! k-point (vector3 0 0 0))
+
+(set! default-material air)
+
+; twist angle of nematic director; from equation 1b
+(define phi (lambda (p)
+              (let ((xx (- (vector3-x p) (+ (* -0.5 sx) dpml dsub))))
+                (if (and (>= xx 0) (<= xx d))
+                    (+ (* pi (vector3-y p) (/ gp)) (* ph xx (/ d)))
+                    (+ (* pi (vector3-y p) (/ gp)) (- (* ph xx (/ d))) (* 2 ph))))))
+
+(define lc-epsilon-diag (vector3 0 0 0))
+(define lc-epsilon-offdiag (vector3 0 0 0))
+(define lc-epsilon (matrix3x3 (vector3 0 0 0) (vector3 0 0 0) (vector3 0 0 0)))
+
+; return the anisotropic permittivity tensor for a uniaxial, twisted nematic liquid crystal
+(define lc-mat (lambda (p)
+                 (let
+                     ; rotation matrix for rotation around x axis
+                     ((Rx (matrix3x3 (vector3 1 0 0)
+                                     (vector3 0 (cos (phi p)) (sin (phi p)))
+                                     (vector3 0 (- (sin (phi p))) (cos (phi p))))))
+                   (set! lc-epsilon (matrix3x3* Rx (matrix3x3* eps-diag (matrix3x3-transpose Rx))))
+                   (set! lc-epsilon-diag (vector3 (vector3-x (vector3-x lc-epsilon))
+                                                  (vector3-y (vector3-y lc-epsilon))
+                                                  (vector3-z (vector3-z lc-epsilon))))
+                   (set! lc-epsilon-offdiag (vector3 (vector3-x (vector3-y lc-epsilon))
+                                                     (vector3-x (vector3-z lc-epsilon))
+                                                     (vector3-y (vector3-z lc-epsilon))))
+                   (make medium (epsilon-diag lc-epsilon-diag) (epsilon-offdiag lc-epsilon-offdiag)))))
+
+(set! geometry (list
+                (make block
+                  (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub))) 0 0)
+                  (size (+ dpml dsub) infinity infinity)
+                  (material (make medium (index n0))))
+                (make block
+                  (center (+ (* -0.5 sx) dpml dsub d) 0 0)
+                  (size (* 2 d) infinity infinity)
+                  (material (make material-function (material-func lc-mat))))))
+
+(define tran-flux2 (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+
+(run-sources+ 300)
+
+(define res1 (get-eigenmode-coefficients tran-flux2 (arith-sequence 1 1 nmode) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define res2 (get-eigenmode-coefficients tran-flux2 (arith-sequence 1 1 nmode) #:eig-parity (+ EVEN-Z ODD-Y)))
+
+(define t-coeffs1 (list-ref res1 0))
+(define t-coeffs2 (list-ref res2 0))
+(define kdom (list-ref res1 3))
+
+(map (lambda (nm)
+       (let ((mode-angle (acos (/ (vector3-x (list-ref kdom nm)) fcen)))
+             (mode-tran (/ (+ (sqr (magnitude (array-ref t-coeffs1 nm 0 0))) (sqr (magnitude (array-ref t-coeffs2 nm 0 0)))) (list-ref input-flux 0))))
+         (print "tran:, " nm ", " (rad->deg mode-angle) ", " mode-tran "\n")))
+     (arith-sequence 0 1 nmode))
+```
+
+The Bash script below runs the grating simulations over a range of grating thicknesses from 0.1 to 3.4 μm corresponding to phase delays (Δnd/λ) of approximately 0 to 1. The entire output is saved to a file and the transmittance data is extracted from the output and placed in a separate file.
+
+```sh
+for d in `seq 0.1 0.1 3.4`; do
+    echo "circular polarization grating with d=${d}";
+    dd=$(printf "%0.2f" $(echo "scale=2;0.5*${d}" |bc));
+    meep d=${dd} ph=0 polarization_grating.ctl |tee -a circ_pol_grating.out;
+
+    echo "bilayer twisted nematic polarization grating with d=${d}";
+    meep d=${d} ph=70 polarization_grating.ctl |tee -a bilayer_pol_grating.out;
+done
+
+grep tran: circ_pol_grating.out |cut -d, -f2- > circ_pol_grating.dat;
+grep tran: bilayer_pol_grating.out |cut -d, -f2- > bilayer_pol_grating.dat;
+```
+
+The output from the simulation for the homogeneous uniaxial grating is plotted using the script below. The diffraction spectra for the two gratings are shown in the accompanying figures.
+
+```matlab
+d = dlmread('circ_pol_grating.dat');
+
+m0 = d(1:5:end,3);
+m1 = d(2:5:end,3);
+angles = d(1:5:end,2);
+
+cos_angles = cos(deg2rad(angles));
+
+tran = m0+2*m1;
+eff_m0 = m0./tran;
+eff_m1 = (2*m1./tran)./cos_angles;
+
+dd = [0.1:0.1:3.4];
+delta_n = 0.159;
+wvl = 0.54;
+phase = delta_n*dd/wvl;
+
+eff_m0_analytic = cos(pi*phase).^2;
+eff_m1_analytic = sin(pi*phase).^2;
+
+plot(phase,eff_m0,'bo-',phase,eff_m0_analytic,'b--');
+hold on;
+plot(phase,eff_m1,'ro-',phase,eff_m1_analytic,'r--');
+
+axis([0,1.0,0,1.0]);
+set(gca, 'xtick', [0:0.2:1.0]);
+legend('0th order (meep)','0th order (analytic)','±1 orders (meep)','±1 orders (analytic)',"location","east");
+xlabel("phase delay Δnd/λ");
+ylabel("diffraction efficiency @ λ = 0.54 μm");
+title("homogeneous uniaxial grating");
+```
+
+<center>
+![](../images/polarization_grating_diffraction_spectra.png)
+</center>
+
+The left figure shows good agreement between the simulation results and analytic theory for the homogeneous uniaxial grating. Approximately 6% of the power in the input planewave is lost due to reflection from the grating. This value is an average over all phase delays. The total transmittance is therefore around 94%. The twisted-nematic grating, with results shown in the right figure, produces ±1 diffraction orders with nearly-constant peak transmittance over a broader bandwidth around Δnd/λ=0.5 than the homogeneous uniaxial polarization grating. This is consistent with results from the reference. The average reflectance and transmittance for the twisted-nematic grating are similar to those for the homogeneous uniaxial grating.
+
+
+Finally, we demonstrate that when Δnd/λ=0.5 a circular-polarized planewave input produces just a single ±1 diffraction order. To specify a E<sub>z</sub>+iE<sub>y</sub> circular-polarized planewave requires setting the `amplitude` of the E<sub>y</sub> source to an imaginary number (from its default of 1):
+
+```scm
+(set! sources (list (make source
+                      (src (make gaussian-src (frequency fcen) (fwidth (* 0.05 fcen))))
+                      (component Ez)
+                      (center src-pt)
+                      (size 0 sy 0))
+                    (make source
+                      (src (make gaussian-src (frequency fcen) (fwidth (* 0.05 fcen))))
+                      (component Ey)
+                      (center src-pt)
+                      (size 0 sy 0)
+                      (amplitude 0+1i))))
+```
+
+Note that even though the J<sub>y</sub> current amplitude is complex in this example, only its real part is used and the resulting fields are therefore still real (the default).
+
+The figure below shows a snapshot of E<sub>z</sub> within the cell for four different cases: phase delays (Δnd/λ) of 0.5 and 1.0, and planewave circular polarization of E<sub>z</sub>+iE<sub>y</sub> and E<sub>z</sub>-iE<sub>y</sub>. The empty regions on the cell sides are PMLs. The thin solid black line denotes the boundary between the grating (on the left) and air. As expected, for Δnd/λ=0.5 there is just a single ±1 diffraction order which depends on the chirality of the input planewave (this is not the case for a linear-polarized planewave). The angle of this diffracted order (±4.8°) agrees with the analytic result. Snapshots of E<sub>y</sub> are similar.
+
+<center>
+![](../images/polarization_grating_diffraction_orders.png)
+</center>
