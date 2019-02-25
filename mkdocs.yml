@@ -1,6 +1,7 @@
 site_name: MEEP Documentation
 site_author: MEEP Developers
 repo_url: https://github.com/NanoComp/meep/
+edit_uri: blob/master/doc/docs
 
 use_directory_urls: True
 
