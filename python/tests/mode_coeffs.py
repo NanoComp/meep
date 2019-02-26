@@ -71,7 +71,6 @@ class TestModeCoeffs(unittest.TestCase):
             power_observed=mp.get_fluxes(mode_flux)
             freqs=mp.get_flux_freqs(mode_flux)
             power_expected=[source.eig_power(f) for f in freqs]
-            import ipdb; ipdb.set_trace()
             return freqs, power_expected, power_observed
 
         modes_to_check = [1, 2]  # indices of modes for which to compute expansion coefficients
