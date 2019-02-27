@@ -9,7 +9,7 @@ GitHub Source Repository
 
 The source repository is available via [GitHub](https://github.com/NanoComp/meep).
 
-The current stable release is **version 1.7** which can be obtained from:
+The current stable release is **version 1.8** which can be obtained from:
 
 -   <https://github.com/NanoComp/meep/releases>
 
@@ -22,19 +22,19 @@ To receive notifications when new versions are released, subscribe to the **meep
 Precompiled Packages for Ubuntu
 -------------------------------
 
-Precompiled packages of Meep version 1.3 are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep version 1.3 (September 2017) are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
 
 ```sh
 sudo apt-get install meep h5utils
 ```
 
-You can also install the [parallel version of Meep](http://packages.debian.org/testing/science/meep-mpi-default) which is based on [Open MPI](https://www.open-mpi.org/) using:
+You can also install the parallel version of Meep which is based on [OpenMPI](https://www.open-mpi.org/) using:
 
 ```sh
-sudo apt-get install meep-mpi-default
+sudo apt-get install meep-openmpi
 ```
 
-The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep).
+The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [Debian package](https://packages.debian.org/search?searchon=names&keywords=meep).
 
 Amazon Web Services (AWS)
 -------------------------
