@@ -175,6 +175,7 @@ class FluxRegion(object):
 ModeRegion = FluxRegion
 Near2FarRegion = FluxRegion
 ForceRegion = FluxRegion
+EnergyRegion = FluxRegion
 
 
 class FieldsRegion(object):
@@ -323,6 +324,29 @@ class DftNear2Far(DftObj):
 
     def flux(self, direction, where, resolution):
         return self.swigobj_attr('flux')(direction, where.swigobj, resolution)
+
+
+class DftEnergy(DftObj):
+
+    def __init__(self, func, args):
+        super(DftEnergy, self).__init__(func, args)
+        self.nfreqs = args[2]
+        self.regions = args[3]
+        # TODO: How many components?
+        self.num_components = 1
+
+    @property
+    def electric():
+        return self.swigobj_attr('electric')
+
+    @property
+    def magnetic():
+        return self.swigobj_attr('magnetic')
+
+    @property
+    def total():
+        return self.swigobj_attr('total')
+
 
 class DftFields(DftObj):
 
@@ -1335,6 +1359,44 @@ class Simulation(object):
         if self.fields is None:
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
+
+    def add_energy(self, fcen, df, nfreq, *energys):
+        en = DftEnergy(self._add_dft_energy, [fcen, df, nfreq, energys])
+        self.dft_objects.ppend(en)
+        return en
+
+    def _add_energy(self, fcen, df, nfreq, energys):
+        if self.fields is None:
+            self.init_sim()
+        return self._add_fluxish_stuff(self.fields.add_dft_energy, fcen, df, nfreq, energys)
+
+    def _display_energy(self, name, func, energys):
+        if energys:
+            freqs = get_energy_freqs(energys[0])
+            display_csv(self, "{}-energy".format(name), zip(freqs, *[func(f) for f in energys]))
+
+    def display_electric_energy(self, *energys):
+        self._display_energy('electric', get_electric_energy, energys)
+
+    def display_magnetic_energy(self, *energys):
+        self._display_energy('magnetic', get_magnetic_energy, energys)
+
+    def display_total_energy(self, *energys):
+        self._display_energy('total', get_total_energy, energys)
+
+    def load_energy(self, fname, energy):
+        if self.fields is None:
+            self.init_sim()
+        energy.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
+
+    def save_energy(self, fname, energy):
+        if self.fields is None:
+            self.init_sim()
+        energy.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
+
+    def load_minus_energy(self, fname, energy):
+        self.load_energy(fname, energy)
+        energy.scale_dfts(-1.0)
 
     def get_farfield(self, f, v):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
@@ -2605,6 +2667,26 @@ def scale_near2far_fields(s, n2f):
 
 def get_near2far_freqs(f):
     return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+
+
+def scale_energy_fields(s, ef):
+    df.scale_dfts(s)
+
+
+def get_energy_freqs(f):
+    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+
+
+def get_electric_energy(f):
+    return f.electric()
+
+
+def get_magnetic_energy(f):
+    return f.magnetic()
+
+
+def get_total_energy(f):
+    return f.total()
 
 
 def interpolate(n, nums):
