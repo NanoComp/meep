@@ -38,6 +38,9 @@ kpoint_list do_get_eigenmode_coefficients(meep::fields *f, meep::dft_flux flux,
                                           void *user_kpoint_data);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
+ctlio::number_list dft_energy_electric(meep::dft_energy *f);
+ctlio::number_list dft_energy_magnetic(meep::dft_energy *f);
+ctlio::number_list dft_energy_total(meep::dft_energy *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);
 ctlio::number_list dft_ldos_ldos(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_F(meep::dft_ldos *f);
