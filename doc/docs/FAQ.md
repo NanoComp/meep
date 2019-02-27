@@ -160,7 +160,6 @@ If the `width` is 0 (the default) then the source turns on sharply which creates
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
 
-
 Usage: Fields
 -------------
 
