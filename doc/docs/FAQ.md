@@ -160,78 +160,6 @@ If the `width` is 0 (the default) then the source turns on sharply which creates
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
 
-### What normalization convention does MEEP use for the fields of eigenmode sources?
-
-An [eigenmode source](Python_User_Interface.md#eigenmodesource)
-is a localized distribution of electric and magnetic currents
-$\{\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})\}$,
-confined to a cross-sectional line (2D) or plane (3D) through a
-waveguide or similar geometry, with the property that the
-spatial distribution of the electric and magnetic fields
-radiated by the sources exactly reproduces the spatial distribution
-of one specific (quasi-)normal mode of the
-geometry (and is thus orthogonal to all other modes).
-This condition determines the fields only up to
-an arbitrary overall scale factor---if a field distribution
-$\{\mathbf{E}(\mathbf x), \mathbf{H}(\mathbf x)\}$
-satisfies the single-mode condition,
-then so does the scaled field distribution
-$\{\lambda \mathbf{E}(\mathbf x), \lambda \mathbf{H}(\mathbf x)\}$
-for any arbitrary $\lambda$---whereupon by linearity
-the source-amplitude functions $\mathbf{J,M}$ also
-contain an arbitrary undetermined overall scale factor.
-
-To pin down this ambiguity, MEEP chooses the overall scale
-of the $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$
-source distributions to ensure that, in the specific case
-of a time-harmonic problem with all sources and fields 
-having monochromatic time dependence $e^{-i\omega_m t}$
-(with $\omega_m$ the eigenfrequency of the mode), the
-total time-average power carried by the fields radiated
-by the sources---that is, the integral of the normal Poynting
-vector over the full cross-sectional line or plane---comes
-out equal to 1.0 power units
-(where [the choice of power units is up to you](Introduction.md#units-in-meep)).
-This convention has the following practical ramifications for MEEP
-calculations using eigenmode sources.
-
-+ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver)
-  involving an eigenmode source with a `ContinuousSrc` time envelope---corresponding
-  to monochromatic sources that oscillate forever at frequency $\omega_m$, producing
-  monochromatic fields that oscillate forever at the same frequency---the
-  total time-average power carried by those fields takes the numerical
-  value 1. 
-
-+ On the other hand, for the typical case of *time-domain* calculations,
-  in which the spatial current distributions
-  $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$ of the eigenmode source
-  are paired with a temporal envelope function $W(t)$---which, in practice,
-  is either a [Gaussian](Python_User_Interface.md#gaussiansource) or a
-  [user-specified custom envelope](Python_User_Interface.md#customsource)---the
-  values reported by MEEP for all frequency-domain field amplitudes at
-  frequency $\omega$ will include factors of $\widetilde W(\omega)$
-  (the Fourier transform of the temporal envelope),
-  while field-bilinear quantities like Poynting vectors and power fluxes
-  will include factors of $|\widetilde W(\omega)|^2$.
-  (For the particular case of a Gaussian source, the Fourier transform
-   at $\omega$ may be obtained by calling 
-   [the `fourier_transform` class method of MEEP's built-in `GaussianSource` class](Python_User_Interface.md#GaussianSource).)
-
-In either case, the `eig_power(freq)` class method of the
-[`EigenmodeSource`](Python_User_Interface.md#EigenmodeSource)
-python class returns the total power
-carried by the fields of the source at frequency `freq`.
-A documented example of the use of `eig_power` may be found in the `mode_coeffs.py`
-unit test in the [python unit-test suite](Python_Developer_Information.md#testing)
-
-**Note:** Due to discretization effects, the normalization of eigenmode 
-sources to yield unit power transmission is only *approximate;*
-at any finite resolution, the power carried by the fields of
-eigenmode sources as measured using DFT flux monitors
-will not *precisely* match the result of calling `eig_power()`
-but will rather include discretization errors
-that shrink with resolution.
-
 
 Usage: Fields
 -------------
@@ -274,7 +202,7 @@ For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#c
 
 Meep does not support non-rectangular unit cells. To deal with a triangular lattice, you have to use a supercell. This will cause the band structure to be [folded](#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures).  However, if you take your point source and replicate it according to the underlying triangular lattice vectors, with the right phase relationship according to the Bloch wavevector, then it should excite the folded bands only with very low amplitude as reported by [`Harminv`](Python_User_Interface.md#harminv). Also, for every `Harminv` point you put in, you should analyze the fields from the periodic copies of that point (with the periodicity of the underlying lattice). Then, reject any frequency that is not detected at *all* points, with an amplitude that is related by something close to the correct exp(ikx) phase.
 
-In principle, the excitation of the folded bands would be exactly zero if you place your sources correctly in the supercell. However, this doesn't happen in FDTD because the finite grid spoils the symmetry slightly. It also means that the detection of folded bands will vary with resolution. 
+In principle, the excitation of the folded bands would be exactly zero if you place your sources correctly in the supercell. However, this doesn't happen in FDTD because the finite grid spoils the symmetry slightly. It also means that the detection of folded bands will vary with resolution.
 
 For an example, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 

@@ -95,8 +95,10 @@ complex<double> gaussian_src_time::dipole(double time) const {
 // (1/\sqrt{2*pi}) \int e^{i\omega t} G(t) dt
 // where G(t) is the *current* envelope, i.e. the time derivative
 // of the dipole envelope
-std::complex<double> gaussian_src_time::fourier_transform(const double omega)
-{ double omega0=2.0*pi*freq;
+std::complex<double> gaussian_src_time::fourier_transform(const double f)
+{
+  double omega=2.0*pi*f;
+  double omega0=2.0*pi*freq;
   double delta=(omega-omega0)*width;
   return width * polar(1.0,omega*peak_time) * exp(-0.5*delta*delta);
 }
