@@ -11,8 +11,7 @@ DAC = $(SRC:.cpp=.dac)
 DONE = $(SRC:.cpp=.done)
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
-LIBCTLGEOM = @LIBCTLGEOM_LIBS@
-MEEPLIBS = $(LIBMEEP) $(LIBCTLGEOM)
+MEEPLIBS = $(LIBMEEP)
 AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
 
 .SUFFIXES = .dac .done
