@@ -1,3 +1,5 @@
+;; reflectance spectra of a waveguide taper from the Meep tutorial
+
 (set-param! resolution 61)  ; pixels/μm
 
 (define-param w1 1.0)       ; width of waveguide 1
@@ -83,6 +85,8 @@
                        (center auto-center)
                        (height infinity)
                        (material Si))))
+
+(set! symmetries symm)
 
 (define flux2 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
 (load-minus-flux "flux" flux2)
