@@ -802,7 +802,7 @@ This convention has the following practical ramifications for MEEP
 calculations using eigenmode sources.
 
 + For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver)
-  involving an eigenmode source with a `ContinuousSrc` time envelope---corresponding
+  involving an eigenmode source with a `ContinuousSrc` time dependence---corresponding
   to monochromatic sources that oscillate forever at frequency $\omega_m$, producing
   monochromatic fields that oscillate forever at the same frequency---the
   total time-average power carried by those fields takes the numerical
@@ -814,7 +814,7 @@ calculations using eigenmode sources.
   are are multiplied by a time dependence $W(t)$ (typically a Gaussian), the
   values reported by Meep for all frequency-domain field amplitudes at
   frequency $\omega$ will be multiplied by $\widetilde W(f)$
-  (the Fourier transform of the temporal envelope),
+  (the Fourier transform of $W(t)$),
   while field-bilinear quantities like Poynting vectors and power fluxes
   are multiplied by $|\widetilde W(f)|^2$.
   (For the particular case of a Gaussian source, the Fourier transform
