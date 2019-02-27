@@ -256,7 +256,8 @@ Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is writ
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
-For modeling 2d materials, you can use a planar one-pixel-thick [conductor](Materials.md#conductivity-and-complex) via e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,0)` in a 3d cell. It is not necessary for the grid `resolution` to specify a pixel size of one atom due to [subpixel averaging](#can-subpixel-averaging-be-applied-to-dispersive-materials). However, because of the layer's finite thickness you will need to *multiply* the value of the surface conductivity by the `resolution`.
+Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength. In
+a discretized computer model like Meep, this is approximated by a conductivity that is one pixel (`1/resolution`) thick and has an amplitude scaled by `resolution`.  Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
 
 Usage: Structures
 -----------------
