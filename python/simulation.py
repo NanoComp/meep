@@ -192,7 +192,29 @@ class FieldsRegion(object):
 
 
 class DftObj(object):
+    """Wrapper around dft objects that allows delayed initialization of the structure.
 
+    When splitting the structure into chunks for parallel simulations, we want to
+    know all of the details of the simulation in order to ensure that each processor
+    gets a similar amount of work. The problem with DFTs is that the 'add_flux' style
+    methods immediately initialize the structure and fields. So, if the user adds
+    multiple DFT objects to the simulation, the load balancing code only knows about
+    the first one and can't split the work up nicely. To circumvent this, we delay
+    the execution of the 'add_flux' methods as late as possible. When 'add_flux' (or
+    add_near2far, etc.) is called, we
+
+    1. Create an instance of the appropriate subclass of DftObj (DftForce, DftFlux,
+    etc.). Set its args property to the list of arguments passed to add_flux, and
+    set its func property to the 'real' add_flux, which is prefixed by an underscore.
+
+    2. Add this DftObj to the list Simulation.dft_objects. When we actually run the
+    simulation, we call Simulation._evaluate_dft_objects, which calls dft.func(*args)
+    for each dft in the list.
+
+    If the user tries to access a property or call a function on the DftObj before
+    Simulation._evaluate_dft_objects is called, then we initialize the C++ object
+    through swigobj_attr and return the property they requested.
+    """
     def __init__(self, func, args):
         self.func = func
         self.args = args
