@@ -446,18 +446,21 @@ dft_flux fields::add_dft_flux(const volume_list *where_, double freq_min, double
 
 dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_,
                        dft_chunk *D_, dft_chunk *B_,
-                       double fmin, double fmax, int Nf)
-{
+                       double fmin, double fmax, int Nf, const volume &where_)
+  : Nfreq(Nf), E(E_), H(H_), D(D_), B(B_), where(where_) {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
-  Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
-  E = E_; H = H_; D = D_; B = B_;
 }
 
-dft_energy::dft_energy(const dft_energy &f) {
-  freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
-  E = f.E; H = f.H; D = f.D; B = f.B;
+dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
+  freq_min = f.freq_min;
+  Nfreq = f.Nfreq;
+  dfreq = f.dfreq;
+  E = f.E;
+  H = f.H;
+  D = f.D;
+  B = f.B;
 }
 
 double *dft_energy::electric() {
@@ -502,8 +505,14 @@ double *dft_energy::total() {
 
 dft_energy fields::add_dft_energy(const volume_list *where_,
                                   double freq_min, double freq_max, int Nfreq) {
+  
+  if (!where_) // handle empty list of volumes
+    return dft_energy(NULL, NULL, NULL, NULL, freq_min, freq_max, Nfreq, v);
+
   dft_chunk *E = 0, *D = 0, *H = 0, *B = 0;
-  volume_list *where = S.reduce(where_);
+  volume firstvol(where_->v);
+  // volume_list *where = S.reduce(where_);
+  volume_list *where = new volume_list(where_);
   volume_list *where_save = where;
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
@@ -520,7 +529,7 @@ dft_energy fields::add_dft_energy(const volume_list *where_,
   }
   delete where_save;
 
-  return dft_energy(E, H, D, B, freq_min, freq_max, Nfreq);
+  return dft_energy(E, H, D, B, freq_min, freq_max, Nfreq, firstvol);
 }
 
 void dft_energy::save_hdf5(h5file *file, const char *dprefix) {
