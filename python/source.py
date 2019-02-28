@@ -66,6 +66,8 @@ class GaussianSource(SourceTime):
                                             self.start_time + 2 * self.width * self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
 
+    def fourier_transform(self, omega):
+        return self.swigobj.fourier_transform(omega)
 
 class CustomSource(SourceTime):
 
@@ -152,3 +154,9 @@ class EigenModeSource(Source):
     @eig_tolerance.setter
     def eig_tolerance(self, val):
         self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)
+
+    def eig_power(self,freq):
+        amp = self.amplitude
+        if callable(getattr(self.src, "fourier_transform", None)):
+           amp *= self.src.fourier_transform(freq)
+        return abs(amp)**2
