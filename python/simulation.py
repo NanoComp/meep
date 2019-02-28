@@ -520,7 +520,6 @@ class Simulation(object):
         self.load_structure_file = load_structure
         self.dft_objects = []
         self._is_initialized = False
-        self._fragment_size = 10
         self.force_all_components = force_all_components
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
@@ -873,21 +872,19 @@ class Simulation(object):
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
-            self._fragment_size
         )
 
         mirror_symmetries = [sym for sym in self.symmetries if isinstance(sym, Mirror)]
         for sym in mirror_symmetries:
-            for fs in stats:
-                fs.num_anisotropic_eps_pixels //= 2
-                fs.num_anisotropic_mu_pixels //= 2
-                fs.num_nonlinear_pixels //= 2
-                fs.num_susceptibility_pixels //= 2
-                fs.num_nonzero_conductivity_pixels //= 2
-                fs.num_1d_pml_pixels //= 2
-                fs.num_2d_pml_pixels //= 2
-                fs.num_3d_pml_pixels //= 2
-                fs.num_pixels_in_box //= 2
+            stats.num_anisotropic_eps_pixels //= 2
+            stats.num_anisotropic_mu_pixels //= 2
+            stats.num_nonlinear_pixels //= 2
+            stats.num_susceptibility_pixels //= 2
+            stats.num_nonzero_conductivity_pixels //= 2
+            stats.num_1d_pml_pixels //= 2
+            stats.num_2d_pml_pixels //= 2
+            stats.num_3d_pml_pixels //= 2
+            stats.num_pixels_in_box //= 2
 
         return stats
 
