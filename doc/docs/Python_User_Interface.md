@@ -752,7 +752,6 @@ Like `amp_func_file` above, but instead of interpolating into an HDF5 file, inte
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
-<a name="EigenmodeSource">
 ### EigenModeSource
 
 This is a subclass of `Source` and has **all of the properties** of `Source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r}) e^{i \mathbf{k} \cdot \mathbf{r}}$, of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp_func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
@@ -785,57 +784,19 @@ Once the MPB modes are computed, equivalent electric and magnetic sources are cr
 —
 Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig_lattice_size` and `eig_lattice_center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
 
-**`eig_power(freq)`
-This class method returns the total power carried by the fields
-of the eigenmode source at frequency `freq`.
-
-Eigenmode sources are normalized so that in the case
-of a time-harmonic problem with all sources and fields
-having monochromatic time dependence $e^{-i 2\pi f_m t}$
-(with $f_m$ the eigenfrequency of the mode), the
-total time-average power carried by the fields radiated
-by the sources---that is, the integral of the normal Poynting
-vector over the full cross-sectional line or plane---comes
-out equal to 1.0 power units
-(where [the choice of power units is up to you](Introduction.md#units-in-meep)).
-This convention has the following practical ramifications for MEEP
-calculations using eigenmode sources.
-
-+ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver)
-  involving an eigenmode source with a `ContinuousSrc` time dependence---corresponding
-  to monochromatic sources that oscillate forever at frequency $\omega_m$, producing
-  monochromatic fields that oscillate forever at the same frequency---the
-  total time-average power carried by those fields takes the numerical
-  value 1.
-
-+ On the other hand, for the typical case of *time-domain* calculations,
-  in which the spatial current distributions
-  of the eigenmode source
-  are are multiplied by a time dependence $W(t)$ (typically a Gaussian), the
-  values reported by Meep for all frequency-domain field amplitudes at
-  frequency $\omega$ will be multiplied by $\widetilde W(f)$
-  (the Fourier transform of $W(t)$),
-  while field-bilinear quantities like Poynting vectors and power fluxes
-  are multiplied by $|\widetilde W(f)|^2$.
-  (For the particular case of a Gaussian source, the Fourier transform
-   at $f$ may be obtained by calling
-   [the `fourier_transform` class method](Python_User_Interface.md#GaussianSource).)
-
-In either case, the `eig_power(freq)` class method of the
-[`EigenmodeSource`](Python_User_Interface.md#EigenmodeSource)
-python class returns the total power
-carried by the fields of the source at frequency `freq`.
-However,
-for a user-defined `CustomSource`, `eig_power` will not include the $|\widetilde W(f)|^2$ factor, since Meep doesn't know the Fourier transform of your source function $W(t)$, so you would have to multiply by this yourself if you need it.
-
-**Note:** Due to discretization effects, the normalization of eigenmode
-sources to yield unit power transmission is only *approximate*:
-at any finite resolution, the power carried by the fields of
-eigenmode sources as measured using DFT flux monitors
-will not *precisely* match the result of calling `eig_power()`
-but will rather include discretization errors
-that shrink with resolution.  Generally, the most reliable procedure is to normalize your calculations by the power computed in a separate normalization run at the same resolution, as shown in several of the tutorial examples.
+**`eig_power(f)`**
 —
+Returns the total power of the fields from the eigenmode source at frequency `f`.
+
+Eigenmode sources are normalized so that in the case of a time-harmonic simulation with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$ where $f_m$ is the frequency of the eigenmode, the total time-average power of the fields — the integral of the normal Poynting vector over the entire cross-sectional line or plane — is equal to 1.0 power [units](Introduction.md#units-in-meep). This convention has two use cases:
+
++ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver) involving a `ContinuousSrc` time dependence, the time-average power of the fields is 1.
+
++ For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the Poynting flux and energy density are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
+
+In either case, the `eig_power` class method returns the total power at frequency `f`. However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not* include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier transform of your source function $W(t)$. You will have to multiply by this yourself if you need it.
+
+**Note:** Due to discretization effects, the normalization of eigenmode sources to yield unit power transmission is only approximate: at any finite resolution, the power of the fields as measured using [DFT flux](#flux-spectra) monitors will not precisely match that of calling `eig_power` but will rather include discretization errors that decrease with resolution.  Generally, the most reliable procedure is to normalize your calculations by the power computed in a separate normalization run at the same resolution, as shown in several of the tutorial examples.
 
 Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
 
@@ -894,18 +855,15 @@ How many `width`s the current decays for before we cut it off and set it to zero
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources. Default is `False`.
 
 **`fourier_transform(f)`**
--Returns the Fourier transform of the current evaluated at a
-frequency `f` (`ω=2πf`), given by
+—
+Returns the Fourier transform of the current evaluated at frequency `f` (`ω=2πf`) given by:
 $$
    \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
    \int e^{i\omega t}G(t)\,dt \equiv
    \frac{1}{\Delta f}
    e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
 $$
-where $G(t)$ is the current (not the dipole moment).
-(In this formula, $\Delta f$ is the `fwidth` of the source,
-$\omega_0$ is $2\pi$ times its `frequency,` and $t_0$ is the peak
-time discussed above.)   Note that this does not include any `amplitude` or `amp_func` factor that you specified for the source.
+where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$ is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and $t_0$ is the peak time discussed above. Note that this does not include any `amplitude` or `amp_func` factor that you specified for the source.
 
 ### CustomSource
 
