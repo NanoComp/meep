@@ -475,7 +475,8 @@ class Simulation(object):
                  geometry_center=mp.Vector3(),
                  force_all_components=False,
                  split_chunks_evenly=True,
-                 chunk_layout=None):
+                 chunk_layout=None,
+                 collect_stats=False):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -520,10 +521,10 @@ class Simulation(object):
         self.load_structure_file = load_structure
         self.dft_objects = []
         self._is_initialized = False
-        self._fragment_size = 10
         self.force_all_components = force_all_components
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
+        self.collect_stats = collect_stats
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -873,21 +874,19 @@ class Simulation(object):
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
-            self._fragment_size
         )
 
         mirror_symmetries = [sym for sym in self.symmetries if isinstance(sym, Mirror)]
         for sym in mirror_symmetries:
-            for fs in stats:
-                fs.num_anisotropic_eps_pixels //= 2
-                fs.num_anisotropic_mu_pixels //= 2
-                fs.num_nonlinear_pixels //= 2
-                fs.num_susceptibility_pixels //= 2
-                fs.num_nonzero_conductivity_pixels //= 2
-                fs.num_1d_pml_pixels //= 2
-                fs.num_2d_pml_pixels //= 2
-                fs.num_3d_pml_pixels //= 2
-                fs.num_pixels_in_box //= 2
+            stats.num_anisotropic_eps_pixels //= 2
+            stats.num_anisotropic_mu_pixels //= 2
+            stats.num_nonlinear_pixels //= 2
+            stats.num_susceptibility_pixels //= 2
+            stats.num_nonzero_conductivity_pixels //= 2
+            stats.num_1d_pml_pixels //= 2
+            stats.num_2d_pml_pixels //= 2
+            stats.num_3d_pml_pixels //= 2
+            stats.num_pixels_in_box //= 2
 
         return stats
 
@@ -909,7 +908,9 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        self.fragment_stats = self._compute_fragment_stats(gv) if isinstance(self.default_material, mp.Medium) else []
+        if self.collect_stats and isinstance(self.default_material, mp.Medium):
+            self.fragment_stats = self._compute_fragment_stats(gv)
+
         dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
 
         self.structure = mp.create_structure_and_set_materials(
