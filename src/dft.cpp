@@ -465,13 +465,13 @@ dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
 
 double *dft_energy::electric() {
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) F[i] = 0;
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = 0;
   for (dft_chunk *curE = E, *curD = D; curE && curD;
        curE = curE->next_in_dft, curD = curD->next_in_dft)
     for (size_t k = 0; k < curE->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
-	F[i] += 0.5*real(conj(curE->dft[k*Nfreq + i])
-			 * curD->dft[k*Nfreq + i]);
+	F[i] += 0.5*real(conj(curE->dft[k * Nfreq + i]) * curD->dft[k * Nfreq + i]);
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;
@@ -480,13 +480,13 @@ double *dft_energy::electric() {
 
 double *dft_energy::magnetic() {
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) F[i] = 0;
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = 0;
   for (dft_chunk *curH = H, *curB = B; curH && curB;
        curH = curH->next_in_dft, curB = curB->next_in_dft)
     for (size_t k = 0; k < curH->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
-	F[i] += 0.5*real(conj(curH->dft[k*Nfreq + i])
-			 * curB->dft[k*Nfreq + i]);
+	F[i] += 0.5*real(conj(curH->dft[k * Nfreq + i]) * curB->dft[k * Nfreq + i]);
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;
@@ -497,7 +497,8 @@ double *dft_energy::total() {
   double *Fe = electric();
   double *Fm = magnetic();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) F[i] = Fe[i]+Fm[i];
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = Fe[i]+Fm[i];
   delete[] Fe;
   delete[] Fm;
   return F;
@@ -511,19 +512,14 @@ dft_energy fields::add_dft_energy(const volume_list *where_,
 
   dft_chunk *E = 0, *D = 0, *H = 0, *B = 0;
   volume firstvol(where_->v);
-  // volume_list *where = S.reduce(where_);
   volume_list *where = new volume_list(where_);
   volume_list *where_save = where;
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
-      E = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, E);
-      D = add_dft(direction_component(Dx, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, D);
-      H = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, H);
-      B = add_dft(direction_component(Bx, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, B);
+      E = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq, true, 1.0, E);
+      D = add_dft(direction_component(Dx, d), where->v, freq_min, freq_max, Nfreq, false, 1.0, D);
+      H = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq, true, 1.0, H);
+      B = add_dft(direction_component(Bx, d), where->v, freq_min, freq_max, Nfreq, false, 1.0, B);
     }
     where = where->next;
   }
