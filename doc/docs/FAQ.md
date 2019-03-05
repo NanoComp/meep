@@ -154,13 +154,15 @@ You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#conti
 
 ### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
 
-The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
+The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response $\exp(-i\omega t)$ due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
 
 If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
 
 <center>
 ![](images/cwsrc_turnon.png)
 </center>
+
+Note: even if you have a continuous wave (CW) source at a frequency ω, the time dependence of the electric field after transients have died away won't necessarily be cos(ωt), because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to cos(ωt-φ) for some phase φ which depends on the field component, the source position, and the surrounding geometry.
 
 ### Why does the amplitude of a point dipole source increase with resolution?
 
@@ -187,6 +189,8 @@ There are six possible explanations for why [`Harminv`](Python_User_Interface.md
 
 In order to resolve two closely-spaced modes, in general it is preferable to run with a narrow bandwidth source around the frequency of interest to excite/analyze as few modes as possible and/or increase the run time to improve the frequency resolution. If you want to analyze an arbitrary spectrum, just use the Fourier transform as computed by [`dft_fields`](Python_User_Interface.md#field-computations).
 
+For a structure with two doubly-degenerate modes (e.g., a dipole-like mode or two counter-propagating modes in a ring resonator), the grid discretization will almost certainly break the degeneracy slightly. In this case, `Harminv` may find two *distinct* nearly-degenerate modes.
+
 Note: any real-valued signal consists of both positive and negative frequency components (with complex-conjugate amplitudes) in a Fourier domain decomposition into complex exponentials. `Harminv` usually is set up to find just one sign of the frequency, but occasionally converges to a negative-frequency component as well; these are just as meaningful as the positive frequencies.
 
 ### How do I compute the effective index of an eigenmode of a lossy waveguide?
@@ -201,7 +205,9 @@ This analysis is only valid if the loss is small, i.e. ω<sub>i</sub> << ω<sub>
 
 ### How do I compute the group velocity of a mode?
 
-There are two possible approaches for computing the group velocity: (1) compute the [band diagram](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference), or (2) excite the mode using a narrowband pulse and compute the ratio of the flux to energy density.
+There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) dω(**k**)/d**k**: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. [ω(**k**+Δ**k**)-ω(**k**-Δ**k**)]/(2Δ**k**)), or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
+
+For eigenmodes obtained using [mode decomposition](Python_User_Interface.md#mode-decomposition), the group velocities are computed automatically along with the mode coefficients.
 
 ### How do I compute the time average of the harmonic fields?
 
@@ -294,6 +300,12 @@ There are at least two possible reasons due to using: (1) a `material_function` 
 ### Can subpixel averaging be applied to dispersive materials?
 
 No. Meep only does subpixel averaging of the non-dispersive part of ε and μ. The dispersive part is not averaged at all.  This means that any sharp interfaces between dispersive materials will dominate the error, and you will probably get only first-order convergence, the same as if you do no subpixel averaging at all. It is possible that the subpixel averaging may still improve the constant factor in the convergence if not the asymptotic convergence rate, if you also have a lot of interfaces between non-dispersive materials or if the dispersion is small (i.e., if ε is close to ε<sub>&#8734;</sub> over your bandwidth). On the other hand, if the dispersion is large and most of your interfaces are between large-dispersion materials, then subpixel averaging may not help at all and you might as well turn it off (which may improve [stability](#why-are-the-fields-blowing-up-in-my-simulation)). Generally, the subpixel averaging will not degrade accuracy though it will affect performance.
+
+### Why are there artifacts in the permittivity grid when two geometric objects are touching?
+
+Subpixel averaging affects pixels that contain **at most one** object interface. If a boundary pixel contains two object interfaces, Meep punts in this case because the analytical calculations for the material filling fraction are too messy to compute and brute-force numerical integration is too slow. Instead, subpixel averaguing just uses the ε at the grid point.
+
+A simple fix when objects are touching is to just add a tiny padding to the object size (e.g. 1e-8 should be more than enough), or specify your geometry in some other way that doesn't involve exactly tangent surfaces.
 
 Usage: Performance
 ----------------------------
