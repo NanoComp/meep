@@ -303,9 +303,7 @@ No. Meep only does subpixel averaging of the non-dispersive part of ε and μ. T
 
 ### Why are there artifacts in the permittivity grid when two geometric objects are touching?
 
-Subpixel averaging affects pixels that contain **at most one** object interface. If a boundary pixel contains two object interfaces, Meep punts in this case because the analytical calculations for the material filling fraction are too messy to compute and brute-force numerical integration is too slow. Instead, subpixel averaguing just uses the ε at the grid point.
-
-A simple fix when objects are touching is to just add a tiny padding to the object size (e.g. 1e-8 should be more than enough), or specify your geometry in some other way that doesn't involve exactly tangent surfaces.
+Subpixel averaging affects pixels that contain **at most one** object interface. If a boundary pixel contains two object interfaces, Meep punts in this case because the analytical calculations for the material filling fraction are too messy to compute and brute-force numerical integration is too slow. Instead, subpixel averaging just uses the ε at the grid point.  Sometimes if a grid point falls exactly on the boundary there are roundoff effects on which (if any) object the point lies within; you can eliminate some such artifacts by slightly padding the object sizes (e.g. by `1e-8`) or by specifying your geometry in some other way that doesn't involve exactly coincident.
 
 Usage: Performance
 ----------------------------
