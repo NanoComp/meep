@@ -1170,9 +1170,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %apply double *flux {
-    double *dft_energy::electric,
-    double *dft_energy::magnetic,
-    double *dft_energy::total
+    double *electric,
+    double *magnetic,
+    double *total
 };
 
 // Tells Python to take ownership of the h5file* this function returns so that

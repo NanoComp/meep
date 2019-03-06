@@ -77,6 +77,7 @@ TESTS =                                   \
     $(TEST_DIR)/cavity_farfield.py        \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
+    $(TEST_DIR)/dft_energy.py             \
     $(TEST_DIR)/dft_fields.py             \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
@@ -91,7 +92,7 @@ TESTS =                                   \
     $(MODE_COEFFS_TEST)                   \
     $(MODE_DECOMPOSITION_TEST)            \
     $(TEST_DIR)/multilevel_atom.py        \
-    $(TEST_DIR)/oblique_source.py        \
+    $(TEST_DIR)/oblique_source.py         \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/refl_angular.py           \

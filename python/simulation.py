@@ -354,19 +354,18 @@ class DftEnergy(DftObj):
         super(DftEnergy, self).__init__(func, args)
         self.nfreqs = args[2]
         self.regions = args[3]
-        # TODO: How many components?
-        self.num_components = 1
+        self.num_components = 12
 
     @property
-    def electric():
+    def electric(self):
         return self.swigobj_attr('electric')
 
     @property
-    def magnetic():
+    def magnetic(self):
         return self.swigobj_attr('magnetic')
 
     @property
-    def total():
+    def total(self):
         return self.swigobj_attr('total')
 
 
@@ -1383,8 +1382,8 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
     def add_energy(self, fcen, df, nfreq, *energys):
-        en = DftEnergy(self._add_dft_energy, [fcen, df, nfreq, energys])
-        self.dft_objects.ppend(en)
+        en = DftEnergy(self._add_energy, [fcen, df, nfreq, energys])
+        self.dft_objects.append(en)
         return en
 
     def _add_energy(self, fcen, df, nfreq, energys):
