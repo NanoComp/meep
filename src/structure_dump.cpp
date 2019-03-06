@@ -81,7 +81,6 @@ void structure::dump_chunk_layout(const char *filename) {
   }
   delete[] origins;
   delete[] nums;
-
 }
 
 void structure::dump(const char *filename) {
@@ -396,9 +395,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   int origins_rank;
   size_t origins_dims;
   file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
-  if (origins_rank != 1 || origins_dims != sz) {
-    abort("chunk mismatch in structure::load");
-  }
+  if (origins_rank != 1 || origins_dims != sz) { abort("chunk mismatch in structure::load"); }
   if (am_master()) {
     size_t gv_origins_start = 0;
     file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
@@ -409,9 +406,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   int nums_rank;
   size_t nums_dims;
   file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
-  if (nums_rank != 1 || nums_dims != sz) {
-    abort("chunk mismatch in structure::load");
-  }
+  if (nums_rank != 1 || nums_dims != sz) { abort("chunk mismatch in structure::load"); }
   if (am_master()) {
     size_t gv_nums_start = 0;
     file.read_chunk(1, &gv_nums_start, &nums_dims, nums);

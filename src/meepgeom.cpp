@@ -1126,9 +1126,7 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_data *md = material;
   switch (md->which_subclass) {
     case material_data::MEDIUM:
-    case material_data::MATERIAL_USER:
-      cond_val = get_cnd(c, &(md->medium));
-      break;
+    case material_data::MATERIAL_USER: cond_val = get_cnd(c, &(md->medium)); break;
     default: cond_val = 0;
   }
   material_gc(material);

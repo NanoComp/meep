@@ -4,8 +4,8 @@
 #include <meep.hpp>
 using namespace meep;
 using std::complex;
-using std::polar;
 using std::max;
+using std::polar;
 
 double Rasymp = 1e-15, stretch = 2.0; // PML parameters
 

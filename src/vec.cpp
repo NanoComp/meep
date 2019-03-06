@@ -1034,8 +1034,8 @@ grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
       double right_cost = v_right.get_cost();
       double total_cost = left_cost + right_cost;
 
-      double split_measure = max(left_cost / (desired_chunks / 2),
-                                 right_cost / (desired_chunks - desired_chunks / 2));
+      double split_measure =
+          max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - desired_chunks / 2));
       if (split_measure < best_split_measure) {
         if (d == longest_axis ||
             split_measure < (best_split_measure - (0.3 * best_split_measure))) {
@@ -1107,10 +1107,8 @@ void grid_volume::split_into_three(std::vector<grid_volume> &result) const {
       }
     }
 
-    grid_volume low_gv = split_at_fraction(false, best_low_split_point, d,
-                                           num_direction(d));
-    grid_volume high_two_gvs = split_at_fraction(true, best_low_split_point, d,
-                                                 num_direction(d));
+    grid_volume low_gv = split_at_fraction(false, best_low_split_point, d, num_direction(d));
+    grid_volume high_two_gvs = split_at_fraction(true, best_low_split_point, d, num_direction(d));
 
     double best_high_split_measure = 1e20;
     for (int split_point = 1; split_point < high_two_gvs.num_direction(d); ++split_point) {
@@ -1127,7 +1125,7 @@ void grid_volume::split_into_three(std::vector<grid_volume> &result) const {
     grid_volume mid_gv = high_two_gvs.split_at_fraction(false, best_high_split_point, d,
                                                         high_two_gvs.num_direction(d));
     grid_volume high_gv = high_two_gvs.split_at_fraction(true, best_high_split_point, d,
-                                                        high_two_gvs.num_direction(d));
+                                                         high_two_gvs.num_direction(d));
 
     double low_cost = low_gv.get_cost();
     double mid_cost = mid_gv.get_cost();
