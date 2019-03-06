@@ -97,7 +97,8 @@ static std::vector<int> get_prime_factors(int n) {
   return result;
 }
 
-static void split_by_cost(std::vector<int> factors, grid_volume gvol, std::vector<grid_volume> &result) {
+static void split_by_cost(std::vector<int> factors, grid_volume gvol,
+                          std::vector<grid_volume> &result) {
 
   if (factors.size() == 0) {
     result.push_back(gvol);
@@ -186,8 +187,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     for (int i = 0; i < adjusted_num_chunks; i++) {
-      grid_volume vi = gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes,
-                                          effort);
+      grid_volume vi =
+          gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes, effort);
       chunk_volumes.push_back(vi);
     }
   } else {

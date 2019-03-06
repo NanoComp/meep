@@ -1053,8 +1053,8 @@ public:
 // dft.cpp (normally created with fields::add_dft_energy)
 class dft_energy {
 public:
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
-             double fmin, double fmax, int Nf, const volume &where_);
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin, double fmax,
+             int Nf, const volume &where_);
   dft_energy(const dft_energy &f);
 
   double *electric();
@@ -1071,10 +1071,8 @@ public:
     if (B && fl.B) *B -= *fl.B;
   }
 
-  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0,
-                 const char *prefix = 0);
-  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0,
-                 const char *prefix = 0);
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
 
   void scale_dfts(std::complex<double> scale);
 

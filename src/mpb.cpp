@@ -258,7 +258,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         kpoint.set_direction(dd, real(k[dd]));
   }
 
-  bool empty_dim[3] = { false, false, false };
+  bool empty_dim[3] = {false, false, false};
 
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
@@ -558,12 +558,12 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c),
   // so we need to divide the E-field amplitudes by -omega; we also take this
   // opportunity to rescale the overall E and H amplitudes to yield unit power flux.
-  double scale = -1.0/omega_src, factor=2.0/sqrt(vgrp);
+  double scale = -1.0 / omega_src, factor = 2.0 / sqrt(vgrp);
   cdouble *efield = (cdouble *)fft_data_E, *hfield = (cdouble *)(mdata->fft_data);
-  for (int n = 0; n < NFFT; ++n)
-    { efield[n] *= factor * scale;
-      hfield[n] *= factor;
-    }
+  for (int n = 0; n < NFFT; ++n) {
+    efield[n] *= factor * scale;
+    hfield[n] *= factor;
+  }
 
   maxwell_compute_e_from_d(mdata, fft_data_E, 1);
 
@@ -683,10 +683,12 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
   int n = (d == X ? 0 : (d == Y ? 1 : 2));
   if (d == NO_DIRECTION) {
-    n = where.in_direction(X) == 0 ? 0 : where.in_direction(Y) == 0 ? 1 :
-        where.in_direction(Z) == 0 ? 2 : -1;
+    n = where.in_direction(X) == 0
+            ? 0
+            : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
     if (n == -1)
-      abort("can't determine source direction for non-empty source volume with NO_DIRECTION source");
+      abort(
+          "can't determine source direction for non-empty source volume with NO_DIRECTION source");
   }
   int np1 = (n + 1) % 3;
   int np2 = (n + 2) % 3;
