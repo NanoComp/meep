@@ -4,7 +4,8 @@
 
 (set! pml-layers (list (make pml (thickness 2))))
 
-(define-param rot-angle 0) ; rotation angle (in degrees) of waveguide, CCW around z-axis
+; rotation angle (in degrees) of waveguide, counter clockwise (CCW) around z-axis
+(define-param rot-angle 20)
 (set! rot-angle (deg->rad rot-angle))
 
 (set! geometry (list (make block
