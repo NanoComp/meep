@@ -352,8 +352,8 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   array_slice_data *data = (array_slice_data *)caller_data;
   if (data == 0) data = &local_data;
 
-  data->min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
-  data->max_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
+  data->min_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
+  data->max_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
   data->num_chunks = 0;
 
   loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, Centered, true, true);
