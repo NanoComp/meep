@@ -1054,7 +1054,7 @@ public:
 class dft_energy {
 public:
   dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
-             double fmin, double fmax, int Nf);
+             double fmin, double fmax, int Nf, const volume &where_);
   dft_energy(const dft_energy &f);
 
   double *electric();
@@ -1083,6 +1083,7 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *E, *H, *D, *B;
+  volume where;
 };
 
 // stress.cpp (normally created with fields::add_dft_force)

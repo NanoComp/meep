@@ -446,29 +446,32 @@ dft_flux fields::add_dft_flux(const volume_list *where_, double freq_min, double
 
 dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_,
                        dft_chunk *D_, dft_chunk *B_,
-                       double fmin, double fmax, int Nf)
-{
+                       double fmin, double fmax, int Nf, const volume &where_)
+  : Nfreq(Nf), E(E_), H(H_), D(D_), B(B_), where(where_) {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
-  Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
-  E = E_; H = H_; D = D_; B = B_;
 }
 
-dft_energy::dft_energy(const dft_energy &f) {
-  freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
-  E = f.E; H = f.H; D = f.D; B = f.B;
+dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
+  freq_min = f.freq_min;
+  Nfreq = f.Nfreq;
+  dfreq = f.dfreq;
+  E = f.E;
+  H = f.H;
+  D = f.D;
+  B = f.B;
 }
 
 double *dft_energy::electric() {
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) F[i] = 0;
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = 0;
   for (dft_chunk *curE = E, *curD = D; curE && curD;
        curE = curE->next_in_dft, curD = curD->next_in_dft)
     for (size_t k = 0; k < curE->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
-	F[i] += 0.5*real(conj(curE->dft[k*Nfreq + i])
-			 * curD->dft[k*Nfreq + i]);
+	F[i] += 0.5*real(conj(curE->dft[k * Nfreq + i]) * curD->dft[k * Nfreq + i]);
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;
@@ -477,13 +480,13 @@ double *dft_energy::electric() {
 
 double *dft_energy::magnetic() {
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) F[i] = 0;
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = 0;
   for (dft_chunk *curH = H, *curB = B; curH && curB;
        curH = curH->next_in_dft, curB = curB->next_in_dft)
     for (size_t k = 0; k < curH->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
-	F[i] += 0.5*real(conj(curH->dft[k*Nfreq + i])
-			 * curB->dft[k*Nfreq + i]);
+	F[i] += 0.5*real(conj(curH->dft[k * Nfreq + i]) * curB->dft[k * Nfreq + i]);
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;
@@ -494,7 +497,8 @@ double *dft_energy::total() {
   double *Fe = electric();
   double *Fm = magnetic();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) F[i] = Fe[i]+Fm[i];
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = Fe[i]+Fm[i];
   delete[] Fe;
   delete[] Fm;
   return F;
@@ -502,25 +506,26 @@ double *dft_energy::total() {
 
 dft_energy fields::add_dft_energy(const volume_list *where_,
                                   double freq_min, double freq_max, int Nfreq) {
+  
+  if (!where_) // handle empty list of volumes
+    return dft_energy(NULL, NULL, NULL, NULL, freq_min, freq_max, Nfreq, v);
+
   dft_chunk *E = 0, *D = 0, *H = 0, *B = 0;
-  volume_list *where = S.reduce(where_);
+  volume firstvol(where_->v);
+  volume_list *where = new volume_list(where_);
   volume_list *where_save = where;
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
-      E = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, E);
-      D = add_dft(direction_component(Dx, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, D);
-      H = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, H);
-      B = add_dft(direction_component(Bx, d), where->v, freq_min, freq_max, Nfreq,
-		  true, 1.0, B);
+      E = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq, true, 1.0, E);
+      D = add_dft(direction_component(Dx, d), where->v, freq_min, freq_max, Nfreq, false, 1.0, D);
+      H = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq, true, 1.0, H);
+      B = add_dft(direction_component(Bx, d), where->v, freq_min, freq_max, Nfreq, false, 1.0, B);
     }
     where = where->next;
   }
   delete where_save;
 
-  return dft_energy(E, H, D, B, freq_min, freq_max, Nfreq);
+  return dft_energy(E, H, D, B, freq_min, freq_max, Nfreq, firstvol);
 }
 
 void dft_energy::save_hdf5(h5file *file, const char *dprefix) {
