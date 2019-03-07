@@ -971,6 +971,72 @@ Similar to `add-flux`, but for use with `get-eigenmode-coefficients`.
 
 `add-mode-monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add-flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig-parity` to `get-eigenmode-coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
+### Energy Density Spectra
+
+Very similar to flux spectra, you can also compute **energy density spectra**: the energy density of the electromagnetic fields as a function of frequency, computed by Fourier transforming the fields and integrating the energy density:
+
+$$ \frac{1}{2}ε|\mathbf{E}|^2 + \frac{1}{2}μ|\mathbf{H}|^2 $$
+
+The usage is similar to the flux spectra: you define a set of `energy-region` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add-energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-electric-energy`, `display-magnetic-energy`, or `display-total-energy` to display the energy density spectra at the end. There are also `save-energy`, `load-energy`, and `load-minus-energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+
+**`energy-region`**
+
+A region (volume, plane, line, or point) in which to compute the integral of the energy density of the Fourier-transformed fields. Its properties are:
+
+**`center` [`vector3`]**
+—
+The center of the energy region (no default).
+
+**`size` [`vector3`]**
+—
+The size of the energy region along each of the coordinate axes. Default is (0,0,0): a single point.
+
+**`weight` [`cnumber`]**
+—
+A weight factor to multiply the energy density by when it is computed. Default is 1.0.
+
+**`(add-energy fcen df nfreq energy-regions...)`**
+—
+Add a bunch of `energy-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
+
+As for flux regions, you normally use `add-energy` via statements like:
+
+```scm
+(define Fx (add-energy ...))
+```
+
+to store the energy object in a variable. `add-energy` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many energy objects as you want, e.g. to look at the energy densities in different objects or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the energy region multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+
+Once you have called `add-energy`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current energy density spectrum via:
+
+**`(display-electric-energy energy...)`, `(display-magnetic-energy energy...)`, `(display-total-energy energy...)` **
+—
+Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric-energy1:", "magnetic-energy1:," "total-energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+
+You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `(display-electric-energy e1 e2 e3)` is actually equivalent to `(display-csv "electric-energy" (get-energy-freqs e1) (get-electric-energy e1) (get-electric-energy e2) (get-electric-energy e3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+
+**`(get-energy-freqs energy)`**
+—
+Given an energy object, returns a list of the frequencies that it is computing the spectrum for.
+
+**`(get-electric-energy energy)`, `(get-magnetic-energy energy)`, `(get-total-energy energy)`**
+—
+Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
+
+As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+
+**`(save-energy filename energy)`**
+—
+Save the Fourier-transformed fields corresponding to the given energy object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+
+**`(load-energy filename energy)`**
+—
+Load the Fourier-transformed fields into the given energy object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-energy` in a simulation of the same dimensions for both the cell and the energy regions with the same number of processors.
+
+**`(load-minus-energy filename energy)`**
+—
+As `load-energy`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
@@ -989,19 +1055,19 @@ The usage is similar to the flux spectra: you define a set of `force-region` obj
 
 A region (volume, plane, line, or point) in which to compute the integral of the stress tensor of the Fourier-transformed fields. Its properties are:
 
-**`center [ vector3 ]`**
+**`center` [`vector3`]**
 —
 The center of the force region (no default).
 
-**`size [ vector3 ]`**
+**`size` [`vector3`]**
 —
 The size of the force region along each of the coordinate axes. Default is (0,0,0): a single point.
 
-**`direction [ direction constant ]`**
+**`direction` [`direction constant`]**
 —
 The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). Unlike `flux-region`, you must specify this explicitly, because there is not generally any relationship between the direction of the force and the orientation of the force region.
 
-**`weight [ cnumber ]`**
+**`weight` [`cnumber`]**
 —
 A weight factor to multiply the force by when it is computed. Default is 1.0.
 
@@ -1017,7 +1083,7 @@ As for flux regions, you normally use `add-force` via statements like:
 (define Fx (add-force ...))
 ```
 
-to store the flux object in a variable. `add-force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+to store the force object in a variable. `add-force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
 Once you have called `add-force`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current force spectrum via:
 
@@ -1027,15 +1093,15 @@ Given a number of force objects, this displays a comma-separated table of freque
 
 You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `(display-forces f1 f2 f3)` is actually equivalent to `(display-csv "force" (get-force-freqs f1) (get-forces f1) (get-forces f2) (get-forces f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
-**`(get-force-freqs flux)`**
+**`(get-force-freqs force)`**
 —
 Given a force object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`(get-forces flux)`**
+**`(get-forces force)`**
 —
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the force from scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-force filename force)`**
 —

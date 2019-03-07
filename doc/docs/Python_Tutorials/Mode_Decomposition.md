@@ -461,11 +461,11 @@ tol = 1e-6             # CW solver tolerance
 max_iters = 2000       # CW solver max iterations
 L = 10                 # CW solver L
 
-# rotation angle of incident planewave; CCW about Z axis, 0 degrees along +X axis
+# rotation angle of incident planewave; counter clockwise (CCW) about Z axis, 0 degrees along +X axis
 theta_in = math.radians(10.7)
 
 # k (in source medium) with correct length (plane of incidence: XY)
-k = mp.Vector3(math.cos(theta_in),math.sin(theta_in),0).scale(fcen*ng)
+k = mp.Vector3(fcen*ng).rotate(mp.Vector3(z=1), theta_in)
 
 symmetries = []
 eig_parity = mp.ODD_Z

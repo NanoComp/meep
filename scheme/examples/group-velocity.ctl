@@ -23,6 +23,8 @@
                       (eig-parity (+ ODD-Z EVEN-Y))
                       (eig-match-freq? true))))
 
+(set! symmetries (list (make mirror-sym (direction Y))))
+
 (define flux (add-flux fsrc 0 1 (make flux-region (center 3 0 0) (size 0 5 0))))
 (define energy (add-energy fsrc 0 1 (make energy-region (center 3 0 0) (size 0 5 0))))
 (run-sources+ 100)

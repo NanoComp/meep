@@ -144,8 +144,8 @@ The MPB simulation is in [examples/parallel-wvgs-mpb.ctl](https://github.com/Nan
 (define-param yodd? true)
 (if yodd? (run-yodd-zodd) (run-yeven-zodd))
 
-(print "data:, " (number->string s) ", " (number->string (list-ref freqs 0)) ", "
-       (number->string (list-ref (compute-group-velocity-component (vector3 1 0 0)) 0)) "\n")
+(print "data:, " s ", " (list-ref freqs 0) ", "
+       (list-ref (compute-group-velocity-component (vector3 1 0 0)) 0) "\n")
 ```
 
 The shell script below runs the MPB simulation for each of the two symmetry configurations over a range of waveguide separate distances and pipes the results to a file. The flux and force data are extracted from the output and placed in a separate file.
