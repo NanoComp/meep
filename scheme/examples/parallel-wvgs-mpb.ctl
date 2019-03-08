@@ -22,5 +22,5 @@
 (define-param yodd? true)
 (if yodd? (run-yodd-zodd) (run-yeven-zodd))
 
-(print "data:, " (number->string s) ", " (number->string (list-ref freqs 0)) ", "
-       (number->string (list-ref (compute-group-velocity-component (vector3 1 0 0)) 0)) "\n")
+(print "data:, " s ", " (list-ref freqs 0) ", "
+       (list-ref (compute-group-velocity-component (vector3 1 0 0)) 0) "\n")

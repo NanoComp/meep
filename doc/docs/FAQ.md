@@ -215,11 +215,11 @@ For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#c
 
 ### How do I compute the modes of a non-orthogonal (i.e., triangular) lattice?
 
-Meep does not support non-rectangular unit cells. To deal with a triangular lattice, you have to use a supercell. This will cause the band structure to be [folded](#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures).  However, if you take your point source and replicate it according to the underlying triangular lattice vectors, with the right phase relationship according to the Bloch wavevector, then it should excite the folded bands only with very low amplitude as reported by [`Harminv`](Python_User_Interface.md#harminv). Also, for every `Harminv` point you put in, you should analyze the fields from the periodic copies of that point (with the periodicity of the underlying lattice). Then, reject any frequency that is not detected at *all* points, with an amplitude that is related by something close to the correct exp(ikx) phase.
+Meep does not support non-rectangular unit cells. To model a triangular lattice, you have to use a supercell. This will cause the band structure to be [folded](#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures).  However, if you take your point source and replicate it according to the underlying triangular lattice vectors, with the right phase relationship according to the Bloch wavevector, then it should excite the folded bands only with very low amplitude as reported by [`Harminv`](Python_User_Interface.md#harminv). Also, for every `Harminv` point you put in, you should analyze the fields from the periodic copies of that point (with the periodicity of the underlying lattice). Then, reject any frequency that is not detected at *all* points, with an amplitude that is related by something close to the correct $\exp(i\vec{k}\cdot\vec{r})$ phase.
 
-In principle, the excitation of the folded bands would be exactly zero if you place your sources correctly in the supercell. However, this doesn't happen in FDTD because the finite grid spoils the symmetry slightly. It also means that the detection of folded bands will vary with resolution.
+In principle, the excitation of the folded bands would be exactly zero if you place your sources correctly in the supercell. However, this doesn't happen in FDTD because the finite grid spoils the symmetry slightly. It also means that the detection of folded bands will vary with resolution. For an example, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-For an example, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+For structures with a lossless (i.e., purely real) permittivity, you can also use [MPB](https://mpb.readthedocs.io/en/latest/) to compute the dispersion relation which does support a non-orthogonal lattice.
 
 ### For calculations involving Fourier-transformed fields, why should the source be a pulse rather than a continuous wave?
 
@@ -235,9 +235,9 @@ A periodic structure does **not** imply periodic fields. The value of the `k_poi
 
 Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), the boundary conditions are mostly irrelevant. For example, if there is a PML in front of a periodic boundary, the periodicity doesn't matter because the field will have decayed almost to zero by the time it "wraps around" to the other side of the cell.
 
-### How do I compute the integral of the intensity over a given region?
+### How do I compute the integral of the energy density over a given region?
 
-For the instantaneous fields, you can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to get the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. To get the integral of the intensity for a *single* field component e.g. |E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Ez], def f(ez): return 0.5*abs(ez)**2, ...)`.
+For the instantaneous fields, you can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to compute the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. When computing the total field energy, you will need to first [synchronize the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md). To compute the integral of the energy density for a *single* field component e.g. ε|E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Dielectric, meep.Ez], def f(eps,ez): return 0.5*eps*abs(ez)**2, where=meep.Volume(...))`.
 
 Usage: Materials
 ----------------
@@ -304,6 +304,10 @@ No. Meep only does subpixel averaging of the non-dispersive part of ε and μ. T
 ### Why are there artifacts in the permittivity grid when two geometric objects are touching?
 
 Subpixel averaging affects pixels that contain **at most one** object interface. If a boundary pixel contains two object interfaces, Meep punts in this case because the analytical calculations for the material filling fraction are too messy to compute and brute-force numerical integration is too slow. Instead, subpixel averaging just uses the ε at the grid point.  Sometimes if a grid point falls exactly on the boundary there are roundoff effects on which (if any) object the point lies within; you can eliminate some such artifacts by slightly padding the object sizes (e.g. by `1e-8`) or by specifying your geometry in some other way that doesn't involve exactly coincident.
+
+### Can subpixel averaging be applied to a user-defined material function?
+
+No. Subpixel averaging is only performed for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the effective permittivity, can be computed analytically. Computing these quantities using adaptive numerical integration is too slow. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
 
 Usage: Performance
 ----------------------------
@@ -392,6 +396,15 @@ In principle, this corresponds to the limit as the frequency goes to zero or the
 ### Can Meep model lasing phenomena?
 
 Yes. More specifically, Meep can be used to model saturable gain and absorption via multilevel atomic susceptibility. This feature may be used to investigate optically-pumped lasing phenomena such as [Raman lasers](https://en.wikipedia.org/wiki/Raman_laser). For details, see [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
+
+### Can Meep model Raman scattering?
+
+Yes. There are two different possible approaches to model [stimulated Raman scattering](https://en.wikipedia.org/wiki/Raman_scattering#Stimulated_Raman_scattering_and_Raman_amplification).
+
+The first approach in the weak-scattering (undepleted pump) approximation would be to do two linear calculations. First, you do a linear calculation with your source field to get the incident electric field at the location of the Raman material. Then you multiply the field by the Raman susceptibility to get a polarization (i.e., the induced dipole moment) at the scattered (Stokes or anti-Stokes) frequency. Using this polarization as a source at the new frequency, you can do a second linear calculation to compute the Raman-scattered field. This is called a first [Born approximation](https://en.wikipedia.org/wiki/Born_approximation) or alternatively a "volume-current method".
+
+The second approach is based on a full nonlinear simulation of the Raman process. This involves modeling the populations of the atomic vibrational states corresponding to the Raman bands using [saturable gain and absorption](Materials.md#saturable-gain-and-absorption).
+
 
 ### Does Meep support adjoint-based optimization?
 

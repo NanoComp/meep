@@ -32,11 +32,12 @@
 (define-param cw-solver-max-iters 2000)   ; CW solver max iterations
 (define-param cw-solver-L 10)             ; CW solver L
 
-; rotation angle of incident planewave; CCW about Z axis, 0 degrees along +X axis
+; rotation angle of incident planewave; counter clockwise (CCW) about Z axis, 0 degrees along +X axis
 (define-param theta-in 10.7)
 (set! theta-in (deg->rad theta-in))
 
-(define k (vector3* (vector3 (cos theta-in) (sin theta-in) 0) (* fcen ng)))
+; k (in source medium) with correct length (plane of incidence: XY)
+(define k (rotate-vector3 (vector3 0 0 1) theta-in (vector3 (* fcen ng) 0 0)))
 
 (define symm '())
 (define eig-parity ODD-Z)
