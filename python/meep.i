@@ -1169,6 +1169,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%apply double *flux {
+    double *electric,
+    double *magnetic,
+    double *total
+};
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
@@ -1378,6 +1384,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     from .simulation import (
         Absorber,
         Ldos,
+        EnergyRegion,
         FluxRegion,
         ForceRegion,
         Harminv,
@@ -1405,12 +1412,16 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         during_sources,
         GDSII_vol,
         get_center_and_size,
+        get_eigenmode_freqs,
+        get_electric_energy,
+        get_energy_freqs,
         get_flux_freqs,
         get_fluxes,
-        get_eigenmode_freqs,
         get_force_freqs,
         get_forces,
+        get_magnetic_energy,
         get_near2far_freqs,
+        get_total_energy,
         in_point,
         in_volume,
         interpolate,
@@ -1457,6 +1468,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         output_sfield_r,
         output_sfield_p,
         py_v3_to_vec,
+        scale_energy_fields,
         scale_flux_fields,
         scale_force_fields,
         scale_near2far_fields,
