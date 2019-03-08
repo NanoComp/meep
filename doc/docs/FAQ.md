@@ -307,7 +307,7 @@ Subpixel averaging affects pixels that contain **at most one** object interface.
 
 ### Can subpixel averaging be applied to a user-defined material function?
 
-No. Subpixel averaging is only performed for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the effective permittivity, can be computed analytically. Computing these quantities using adaptive numerical integration is too slow. As a result, simulations involving a `material_function` may require higher spatial resolution for accurate results.
+No. Subpixel averaging is only performed for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the effective permittivity, can be computed analytically. Computing these quantities using adaptive numerical integration is too slow. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
 
 Usage: Performance
 ----------------------------
