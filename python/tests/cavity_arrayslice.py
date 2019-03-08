@@ -59,27 +59,27 @@ class TestCavityArraySlice(unittest.TestCase):
     def test_1d_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
-        hl_slice1d = self.sim.get_array(vol, component=mp.Hz)
+        hl_slice1d = self.sim.get_array(mp.Hz, vol)
         np.testing.assert_allclose(self.expected_1d, hl_slice1d)
 
     def test_2d_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
-        hl_slice2d = self.sim.get_array(vol, component=mp.Hz)
+        hl_slice2d = self.sim.get_array(mp.Hz, vol)
         np.testing.assert_allclose(self.expected_2d, hl_slice2d)
 
     def test_1d_slice_user_array(self):
         self.sim.run(until_after_sources=0)
         arr = np.zeros(126, dtype=np.float64)
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
-        self.sim.get_array(vol, component=mp.Hz, arr=arr)
+        self.sim.get_array(mp.Hz, vol, arr=arr)
         np.testing.assert_allclose(self.expected_1d, arr)
 
     def test_2d_slice_user_array(self):
         self.sim.run(until_after_sources=0)
         arr = np.zeros((126, 38), dtype=np.float64)
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
-        self.sim.get_array(vol, component=mp.Hz, arr=arr)
+        self.sim.get_array(mp.Hz, vol, arr=arr)
         np.testing.assert_allclose(self.expected_2d, arr)
 
     def test_illegal_user_array(self):
@@ -88,29 +88,29 @@ class TestCavityArraySlice(unittest.TestCase):
         with self.assertRaises(ValueError):
             arr = np.zeros(128)
             vol = mp.Volume(center=self.center_1d, size=self.size_1d)
-            self.sim.get_array(vol, component=mp.Hz, arr=arr)
+            self.sim.get_array(mp.Hz, vol, arr=arr)
 
         with self.assertRaises(ValueError):
             arr = np.zeros((126, 39))
             vol = mp.Volume(center=self.center_2d, size=self.size_2d)
-            self.sim.get_array(vol, component=mp.Hz, arr=arr)
+            self.sim.get_array(mp.Hz, vol, arr=arr)
 
         with self.assertRaises(ValueError):
             arr = np.zeros((126, 38))
             vol = mp.Volume(center=self.center_2d, size=self.size_2d)
-            self.sim.get_array(vol, component=mp.Hz, cmplx=True, arr=arr)
+            self.sim.get_array(mp.Hz, vol, cmplx=True, arr=arr)
 
     def test_1d_complex_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
-        hl_slice1d = self.sim.get_array(vol, component=mp.Hz, cmplx=True)
+        hl_slice1d = self.sim.get_array(mp.Hz, vol, cmplx=True)
         self.assertTrue(hl_slice1d.dtype == np.complex128)
         self.assertTrue(hl_slice1d.shape[0] == 126)
 
     def test_2d_complex_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
-        hl_slice2d = self.sim.get_array(vol, component=mp.Hz, cmplx=True)
+        hl_slice2d = self.sim.get_array(mp.Hz, vol, cmplx=True)
         self.assertTrue(hl_slice2d.dtype == np.complex128)
         self.assertTrue(hl_slice2d.shape[0] == 126 and hl_slice2d.shape[1] == 38)
 
