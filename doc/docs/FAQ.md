@@ -71,6 +71,14 @@ For a mathematical description, see Section 4.4 ("Currents and Fields: The Local
 
 If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmittance: the transmitted power relative to the transmitted power in some reference calculation. Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
 
+### What determines the radiated power of a leaky resonant mode?
+
+The power expended by a dipole source at a given frequency and position is proportional to the ratio of its [quality factor](https://en.wikipedia.org/wiki/Q_factor) (Q) and modal volume (V<sub>m</sub>). This is known as [Purcell enhancement](https://en.wikipedia.org/wiki/Purcell_effect) of the local density of states (LDOS): the same current source in a higher Q cavity emits more power if the coupling to the mode is the same.
+
+On the other hand, if you were to put in a dipole source with a fixed *voltage*, instead of a fixed *current*, you would get less power out with higher Q. For an antenna, the Purcell enhancement factor Q/V<sub>m</sub> is proportional to its [radiation resistance](https://en.wikipedia.org/wiki/Radiation_resistance) R. If you fix current I, then power I²R increases with resistance whereas if you fix voltage V then the power V²/R decreases with resistance.
+
+For a mathematical description, see Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+
 ### How is the source current defined?
 
 The source current in Meep is defined as a [free charge current **J** in Maxwell's equations](Introduction.md#maxwells-equations). Meep does not simulate the driving force behind this free charge current, nor does the current have to be placed in a conductor. Specifying a current means that somehow you are shaking a [charge](https://en.wikipedia.org/wiki/Electric_charge) at that point (by whatever means, Meep doesn't care) and you want to know the [resulting fields](#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude). In a linear system, multiplying J by 2 results in multiplying the fields by 2.
@@ -205,7 +213,7 @@ This analysis is only valid if the loss is small, i.e. ω<sub>i</sub> << ω<sub>
 
 ### How do I compute the group velocity of a mode?
 
-There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) dω(**k**)/d**k**: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. [ω(**k**+Δ**k**)-ω(**k**-Δ**k**)]/(2Δ**k**)), or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
+There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) ∇<sub>**k**</sub>ω: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. [ω(**k**+Δ**k**)-ω(**k**-Δ**k**)]/(2|Δ**k**|)), or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
 
 For eigenmodes obtained using [mode decomposition](Python_User_Interface.md#mode-decomposition), the group velocities are computed automatically along with the mode coefficients.
 
@@ -389,6 +397,10 @@ You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `
 
 To output the data to an HDF5 file, you can use the [`in_volume`](Python_User_Interface.md#modifying-hdf5-output) or `in_point` routines as part of your [run function](../Python_User_Interface/#run-functions). For example, to restrict the output to a line, you could use: `meep.in_volume(meep.Volume(center=meep.Vector3(0,0,0), size=meep.Vector3(10,0,0)), meep.output_dpwr)` which outputs ε|E|<sup>2</sup> along a line of length 10 in the x direction centered at (0,0,0). You can even wrap this statement in `to_appended("line.h5", ...)` to output the intensity along the line as a function of time to a 2d HDF5 dataset. This would enable you to plot intensity vs. time and space as a 2d color image.
 
+### What happens if I specify an output volume that lies beyond or is larger than a cell with periodic boundaries?
+
+Any [output](Python_User_Interface.md#output-functions) or [computation](Python_User_Interface.md#field-computations) function that requires a `Volume`, such as `in_volume`, or the [field integration routines](Field_Functions.md), etcetera, doesn't restrict the output volume to lie within, or even to intersect, the cell. As long as `ensure_periodicity=True` (the default), Meep will extend the data according to the periodic boundary conditions as needed.
+
 ### Can Meep model electrostatic effects?
 
 In principle, this corresponds to the limit as the frequency goes to zero or the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) or magnetostatic calculation; this includes [lumped circuit models](https://en.wikipedia.org/wiki/Lumped_element_model) involving resistance, voltage, capacitance, etc. In this regime, you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
@@ -404,7 +416,6 @@ Yes. There are two different possible approaches to model [stimulated Raman scat
 The first approach in the weak-scattering (undepleted pump) approximation would be to do two linear calculations. First, you do a linear calculation with your source field to get the incident electric field at the location of the Raman material. Then you multiply the field by the Raman susceptibility to get a polarization (i.e., the induced dipole moment) at the scattered (Stokes or anti-Stokes) frequency. Using this polarization as a source at the new frequency, you can do a second linear calculation to compute the Raman-scattered field. This is called a first [Born approximation](https://en.wikipedia.org/wiki/Born_approximation) or alternatively a "volume-current method".
 
 The second approach is based on a full nonlinear simulation of the Raman process. This involves modeling the populations of the atomic vibrational states corresponding to the Raman bands using [saturable gain and absorption](Materials.md#saturable-gain-and-absorption).
-
 
 ### Does Meep support adjoint-based optimization?
 

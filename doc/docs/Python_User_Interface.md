@@ -494,7 +494,7 @@ Methods:
 —
 Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geometric_obj + Vector3(10,10,10)`.
 
-**`info`(indent_by [integer])**
+**`info`(indent_by [`integer`])**
 —
 Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
 
@@ -528,7 +528,7 @@ Direction of the cylinder's axis; the length of this vector is ignored. Defaults
 
 ### Cone
 
-A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
+A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `Cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
 
 **`radius2` [`number`]**
 —
@@ -611,7 +611,8 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 ### 3x3 Matrix
 
 **`Matrix`(c1 [`Vector3`], c2 [`Vector3`], c3 [`Vector3`])**
-The `Matrix` class represents a 3x3 matrix with c1, c2 and c3 as its columns.
+—
+The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
 
 ```
 m.transpose()
@@ -635,7 +636,7 @@ v * m
 m * v
 ```
 
-Returns the (3-vector) product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
+Returns the `Vector3` product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
 
 ```
 s * m
@@ -644,7 +645,7 @@ m * s
 
 Scales the matrix `m` by the number `s`.
 
-**`meep.get_rotation_matrix`(axis [`Vector3`], theta)**
+**`meep.get_rotation_matrix`(axis [`Vector3`], theta [`number`])**
 
 Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result as `v.rotate(axis, theta)`.
 
@@ -1079,7 +1080,7 @@ Once you have called `add_flux`, the Fourier transforms of the fields are accumu
 —
 Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
-You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `display_csv("flux", get_flux_freqs(f1), get_fluxes(f1), get_fluxes(f2), get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `meep.display_csv("flux", meep.get_flux_freqs(f1), meep.get_fluxes(f1), meep.get_fluxes(f2), meep.get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
 **`get_flux_freqs(flux)`**
 —
@@ -1170,6 +1171,72 @@ The parameters of this routine are the same as that of `get_eigenmode_coefficien
 —
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
 
+### Energy Density Spectra
+
+Very similar to flux spectra, you can also compute **energy density spectra**: the energy density of the electromagnetic fields as a function of frequency, computed by Fourier transforming the fields and integrating the energy density:
+
+$$ \frac{1}{2}ε|\mathbf{E}|^2 + \frac{1}{2}μ|\mathbf{H}|^2 $$
+
+The usage is similar to the flux spectra: you define a set of `EnergyRegion` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add_energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display_electric_energy`, `display_magnetic_energy`, or `display_total_energy` to display the energy density spectra at the end. There are also `save_energy`, `load_energy`, and `load_minus_energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+
+**`EnergyRegion`**
+
+A region (volume, plane, line, or point) in which to compute the integral of the energy density of the Fourier-transformed fields. Its properties are:
+
+**`center` [`Vector3`]**
+—
+The center of the energy region (no default).
+
+**`size` [`Vector3`]**
+—
+The size of the energy region along each of the coordinate axes. Default is (0,0,0): a single point.
+
+**`weight` [`complex`]**
+—
+A weight factor to multiply the energy density by when it is computed. Default is 1.0.
+
+**`Simulation.add_energy(fcen, df, nfreq, EnergyRegions...)`**
+—
+Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
+
+As for energy regions, you normally use `add_energy` via statements like:
+
+```py
+En = sim.add_energy(...)
+```
+
+to store the energy object in a variable. `add_energy` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many energy objects as you want, e.g. to look at the energy densities in different objects or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the energy region multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+
+Once you have called `add_energy`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current energy density spectrum via:
+
+**`display_electric_energy(energy...)`, `display_magnetic_energy(energy...)`, `display_total_energy(energy...)` **
+—
+Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric_energy1:", "magnetic_energy1:," "total_energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+
+You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `display_electric_energy(e1, e2, e3)` is actually equivalent to `meep.display_csv("electric_energy", meep.get_energy_freqs(e1), meep.get_electric_energy(e1), meep.get_electric_energy(e2), meep.get_electric_energy(e3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+
+**`get_energy_freqs(energy)`**
+—
+Given an energy object, returns a list of the frequencies that it is computing the spectrum for.
+
+**`get_electric_energy(energy)`, `get_magnetic_energy(energy)`, `get_total_energy(energy)`**
+—
+Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
+
+As described in [Tutorial/Basics](Python_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+
+**`save_energy(filename, energy)`**
+—
+Save the Fourier-transformed fields corresponding to the given energy object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+
+**`load_energy(filename, energy)`**
+—
+Load the Fourier-transformed fields into the given energy object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_energy` in a simulation of the same dimensions for both the cell and the energy regions with the same number of processors.
+
+**`load_minus_energy(filename, energy)`**
+—
+As `load_energy`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
@@ -1214,13 +1281,13 @@ In most circumstances, you should define a set of `ForceRegion`s whose union is 
 —
 Add a bunch of `ForceRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
 
-As for flux regions, you normally use `add_force` via statements like:
+As for force regions, you normally use `add_force` via statements like:
 
 ```py
 Fx = sim.add_force(...)
 ```
 
-to store the flux object in a variable. `add_force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* initializing your `Simulation` object which includes specifying `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+to store the force object in a variable. `add_force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* initializing your `Simulation` object which includes specifying `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
 Once you have called `add_force`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current force spectrum via:
 
@@ -1228,7 +1295,7 @@ Once you have called `add_force`, the Fourier transforms of the fields are accum
 —
 Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the force spectra.
 
-You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `display_csv("force", get_force_freqs(f1), get_forces(f1), get_forces(f2), get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `meep.display_csv("force", meep.get_force_freqs(f1), meep.get_forces(f1), meep.get_forces(f2), meep.get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
 **`get_force_freqs(force)`**
 —
