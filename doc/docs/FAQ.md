@@ -65,19 +65,15 @@ Physics
 
 ### How does the current amplitude relate to the resulting field amplitude?
 
-There is no simple formula relating the input current amplitude (**J** in Maxwell's equations) to the resulting fields (**E**) etcetera, even at the same point as the current. The exact same current will produce a different field and radiate a different total power depending upon the surrounding materials/geometry, and depending on the frequency. This is a physical consequence of the geometry's effect on the local density of states; it can also be thought of as feedback from reflections on the source. A classic example is an antenna in front of a ground plane, which radiates very different amounts of power depending on the distance between the antenna and the plane (half wavelength vs. quarter wavelength, for example). Alternatively, if you put a current source inside a perfect electric conductor, the resulting field will be zero. Also, as the frequency of the current increases, the amplitude of the resulting field will also increase. This is related to why the sky is blue: scattered power increases with frequency (alternatively the density of states increases as the frequency to the d-1 power in d dimensions).
+There is no simple formula relating the input current amplitude (**J** in Maxwell's equations) to the resulting fields (**E**) etcetera, even at the same point as the current. The exact same current will produce a different field and radiate a different total power depending upon the surrounding materials/geometry, and depending on the frequency. This is a physical consequence of the geometry's effect on the local density of states (LDOS); it can also be thought of as feedback from reflections on the source. A classic example is an antenna in front of a ground plane, which radiates very different amounts of power depending on the distance between the antenna and the plane (half wavelength vs. quarter wavelength, for example). Alternatively, if you put a current source inside a perfect electric conductor, the resulting field will be zero. Also, as the frequency of the current increases, the amplitude of the resulting field will also increase. This is due to [Rayleigh scattering](https://en.wikipedia.org/wiki/Rayleigh_scattering) which explains why the sky is blue: scattered power increases with frequency; alternatively the density of states increases as the frequency to the d-1 power in d dimensions.
+
+For a leaky resonant mode where the fields are spatially confined and decaying away exponentially with time, the power expended by a dipole source at a given frequency and position is proportional to the ratio of the [quality factor](https://en.wikipedia.org/wiki/Q_factor) (Q) and modal volume (V<sub>m</sub>). This is known as [Purcell enhancement](https://en.wikipedia.org/wiki/Purcell_effect) of the LDOS: the same current source in a higher Q cavity emits more power if the coupling to the mode is the same.
+
+(On the other hand, if you were to put in a dipole source with a fixed *voltage*, instead of a fixed *current*, you would get less power out with higher Q. For an antenna, the Purcell enhancement factor Q/V<sub>m</sub> is proportional to its [radiation resistance](https://en.wikipedia.org/wiki/Radiation_resistance) R. If you fix current I, then power I²R increases with resistance whereas if you fix voltage V then the power V²/R decreases with resistance.)
 
 For a mathematical description, see Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmittance: the transmitted power relative to the transmitted power in some reference calculation. Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
-
-### What determines the radiated power of a leaky resonant mode?
-
-The power expended by a dipole source at a given frequency and position is proportional to the ratio of its [quality factor](https://en.wikipedia.org/wiki/Q_factor) (Q) and modal volume (V<sub>m</sub>). This is known as [Purcell enhancement](https://en.wikipedia.org/wiki/Purcell_effect) of the local density of states (LDOS): the same current source in a higher Q cavity emits more power if the coupling to the mode is the same.
-
-On the other hand, if you were to put in a dipole source with a fixed *voltage*, instead of a fixed *current*, you would get less power out with higher Q. For an antenna, the Purcell enhancement factor Q/V<sub>m</sub> is proportional to its [radiation resistance](https://en.wikipedia.org/wiki/Radiation_resistance) R. If you fix current I, then power I²R increases with resistance whereas if you fix voltage V then the power V²/R decreases with resistance.
-
-For a mathematical description, see Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 ### How is the source current defined?
 
@@ -269,7 +265,7 @@ Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is writ
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
 Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength. In
-a discretized computer model like Meep, this is approximated by a conductivity that is one pixel (`1/resolution`) thick and has an amplitude scaled by `resolution`.  Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
+a discretized computer model like Meep, this is approximated by a volume conductivity that is one pixel (`1/resolution`) thick *and* has an amplitude scaled by `resolution`. Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
 
 Usage: Structures
 -----------------
@@ -399,7 +395,7 @@ To output the data to an HDF5 file, you can use the [`in_volume`](Python_User_In
 
 ### What happens if I specify an output volume that lies beyond or is larger than a cell with periodic boundaries?
 
-Any [output](Python_User_Interface.md#output-functions) or [computation](Python_User_Interface.md#field-computations) function that requires a `Volume`, such as `in_volume`, or the [field integration routines](Field_Functions.md), etcetera, doesn't restrict the output volume to lie within, or even to intersect, the cell. As long as `ensure_periodicity=True` (the default), Meep will extend the data according to the periodic boundary conditions as needed.
+Any [output](Python_User_Interface.md#output-functions) or [computation](Python_User_Interface.md#field-computations) function that requires a `Volume`, such as `in_volume` or the [field integration routines](Field_Functions.md), etcetera, doesn't restrict the output volume to lie within, or even to intersect, the cell. As long as `ensure_periodicity=True` (the default), Meep will extend the data according to the periodic boundary conditions as needed.
 
 ### Can Meep model electrostatic effects?
 
