@@ -902,7 +902,7 @@ Add a bunch of `flux-region`s to the current simulation (initializing the fields
 
 As described in the tutorial, you normally use `add-flux` via statements like:
 
-**`(define transmission (add-flux ...))`**
+**`(define transmission (add-flux ...))`**
 —
 to store the flux object in a variable. `add-flux` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many flux objects as you want, e.g. to look at powers flowing in different regions or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the flux region multiplied by the number of electric and magnetic field components required to get the Poynting vector multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
@@ -999,10 +999,10 @@ A weight factor to multiply the energy density by when it is computed. Default i
 —
 Add a bunch of `energy-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
 
-As for flux regions, you normally use `add-energy` via statements like:
+As for energy regions, you normally use `add-energy` via statements like:
 
 ```scm
-(define Fx (add-energy ...))
+(define En (add-energy ...))
 ```
 
 to store the energy object in a variable. `add-energy` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many energy objects as you want, e.g. to look at the energy densities in different objects or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the energy region multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
@@ -1077,7 +1077,7 @@ In most circumstances, you should define a set of `force-region`s whose union is
 —
 Add a bunch of `force-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
 
-As for flux regions, you normally use `add-force` via statements like:
+As for force regions, you normally use `add-force` via statements like:
 
 ```scm
 (define Fx (add-force ...))

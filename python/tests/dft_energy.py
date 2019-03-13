@@ -22,7 +22,7 @@ class TestDftEnergy(unittest.TestCase):
                                       eig_match_freq=True)]
 
         sim = mp.Simulation(resolution=resolution, cell_size=cell, geometry=geom,
-                            boundary_layers=pml, sources=sources)
+                            boundary_layers=pml, sources=sources, symmetries=[mp.Mirror(direction=mp.Y)])
 
         flux = sim.add_flux(fsrc, 0, 1, mp.FluxRegion(center=mp.Vector3(3), size=mp.Vector3(y=5)))
         energy = sim.add_energy(fsrc, 0, 1, mp.EnergyRegion(center=mp.Vector3(3), size=mp.Vector3(y=5)))
