@@ -30,16 +30,30 @@ using namespace std;
 namespace meep {
 
 dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, double eps_, double mu_,
-                           const volume &where_)
+                           const volume &where_, const direction periodic_d_[2],
+                           const int periodic_n_[2], const double periodic_k_[2], const double period_[2])
     : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
+  for (int i = 0; i < 2; ++i) {
+    periodic_d[i] = periodic_d_[i];
+    periodic_n[i] = periodic_n_[i];
+    periodic_k[i] = periodic_k_[i];
+    period[i] = period_[i];
+  }
 }
 
 dft_near2far::dft_near2far(const dft_near2far &f)
     : freq_min(f.freq_min), dfreq(f.dfreq), Nfreq(f.Nfreq), F(f.F), eps(f.eps), mu(f.mu),
-      where(f.where) {}
+      where(f.where) {
+  for (int i = 0; i < 2; ++i) {
+    periodic_d[i] = f.periodic_d[i];
+    periodic_n[i] = f.periodic_n[i];
+    periodic_k[i] = f.periodic_k[i];
+    period[i] = f.period[i];
+  }
+}
 
 void dft_near2far::remove() {
   while (F) {
@@ -241,9 +255,21 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
       x0 = f->S.transform(x0, f->sn) + rshift;
       for (int i = 0; i < Nfreq; ++i) {
         double freq = freq_min + i * dfreq;
-        green(EH6, x, freq, eps, mu, x0, c0, f->dft[Nfreq * idx_dft + i]);
-        for (int j = 0; j < 6; ++j)
-          EH[i * 6 + j] += EH6[j];
+        vec xs(x0);
+        for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
+          if (periodic_d[0] != NO_DIRECTION)
+            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0*period[0]);
+          double phase0 = i0*periodic_k[0];
+          for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
+            if (periodic_d[1] != NO_DIRECTION)
+              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1*period[1]);
+            double phase = phase0 + i1*periodic_k[1];
+            std::complex<double> cphase = std::polar(1.0, phase);
+            green(EH6, x, freq, eps, mu, x0, c0, f->dft[Nfreq * idx_dft + i]);
+            for (int j = 0; j < 6; ++j)
+              EH[i * 6 + j] += EH6[j] * cphase;
+          }
+        }
       }
       idx_dft++;
     }
@@ -423,6 +449,10 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
   double eps = 0, mu = 0;
   volume everywhere = where->v;
 
+  direction periodic_d[2] = {NO_DIRECTION, NO_DIRECTION};
+  int periodic_n[2] = {0, 0};
+  double periodic_k[2] = {0, 0}, period[2] = {0, 0};
+
   for (const volume_list *w = where; w; w = w->next) {
     everywhere = everywhere | where->v;
     direction nd = component_direction(w->c);
@@ -465,6 +495,17 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
       default: abort("invalid normal direction in dft_near2far!");
     }
 
+    for (int i = 0; i < 2; ++i) {
+      if (has_direction(v.dim, fd[i]) &&
+          boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic &&
+          float(w->v.in_direction(fd[i])) == float(v.in_direction(fd[i]))) {
+        periodic_d[i] = fd[i];
+        periodic_n[i] = 10; // just hard-code a 10x10 supercell for now
+        period[i] = v.in_direction(fd[i]);
+        periodic_k[i] = 2*pi*real(k[fd[i]]) * period[i];
+      }
+    }
+
     for (int i = 0; i < 2; ++i) {   /* E or H */
       for (int j = 0; j < 2; ++j) { /* first or second component */
         component c = direction_component(i == 0 ? Ex : Hx, fd[j]);
@@ -480,7 +521,8 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
     }
   }
 
-  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere);
+  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere,
+                      periodic_d, periodic_n, periodic_k, period);
 }
 
 } // namespace meep

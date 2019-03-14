@@ -1117,7 +1117,8 @@ public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
   dft_near2far(dft_chunk *F, double fmin, double fmax, int Nf, double eps, double mu,
-               const volume &where_);
+               const volume &where_, const direction periodic_d_[2],
+               const int periodic_n_[2], const double periodic_k_[2], const double period_[2]);
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
@@ -1157,6 +1158,9 @@ public:
   dft_chunk *F;
   double eps, mu;
   volume where;
+  direction periodic_d[2];
+  int periodic_n[2];
+  double periodic_k[2], period[2];
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
