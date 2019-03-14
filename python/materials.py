@@ -217,10 +217,10 @@ Si3N4_VISNIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_VISNIR_susc, vali
 
 Si3N4_NIR_range = mp.FreqRange(min=um_scale/5.504, max=um_scale/0.310)
 
-Si3N4_NIR_frq1 = 0.1353406
+Si3N4_NIR_frq1 = 1/(0.1353406*um_scale)
 Si3N4_NIR_gam1 = 0
 Si3N4_NIR_sig1 = 3.0249
-Si3N4_NIR_frq2 = 1239.842
+Si3N4_NIR_frq2 = 1/(1239.842*um_scale)
 Si3N4_NIR_gam2 = 0
 Si3N4_NIR_sig2 = 40314
 
