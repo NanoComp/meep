@@ -15,7 +15,7 @@ from collections import Sequence
 import numpy as np
 
 import meep as mp
-from meep.geom import Vector3
+from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
 
 
@@ -945,9 +945,11 @@ class Simulation(object):
         absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         if self.material_function:
+            init_do_averaging(self.material_function)
             self.material_function.eps = False
             self.default_material = self.material_function
         elif self.epsilon_func:
+            init_do_averaging(self.epsilon_func)
             self.epsilon_func.eps = True
             self.default_material = self.epsilon_func
         elif self.epsilon_input_file:

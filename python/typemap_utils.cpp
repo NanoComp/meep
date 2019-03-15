@@ -405,13 +405,18 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     if (!pymedium_to_medium(po, &md->medium)) { return 0; }
   } else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
-    if (!eps) { return 0; }
-    if (eps == Py_True) {
-      md = make_user_material(py_epsilon_func_wrap, po);
-    } else {
-      md = make_user_material(py_user_material_func_wrap, po);
+    PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
+    bool do_averaging = false;
+    if (py_do_averaging) {
+      do_averaging = PyObject_IsTrue(py_do_averaging);
     }
-    Py_DECREF(eps);
+    if (eps && eps == Py_True) {
+      md = make_user_material(py_epsilon_func_wrap, po, do_averaging);
+    } else {
+      md = make_user_material(py_user_material_func_wrap, po, do_averaging);
+    }
+    Py_XDECREF(eps);
+    Py_XDECREF(py_do_averaging);
   } else if (IsPyString(po)) {
     const char *eps_input_file = PyObject_ToCharPtr(po);
     md = make_file_material(eps_input_file);

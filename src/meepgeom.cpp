@@ -346,7 +346,7 @@ public:
                                double tol, int maxeval);
 
   void eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
-                          const meep::volume &v, double tol, int maxeval);
+                          const meep::volume &v, double tol, int maxeval, bool &fallback);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                             double tol, int maxeval);
@@ -685,38 +685,46 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                    double tol, int maxeval) {
   symmetric_matrix meps_inv;
-  eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval);
+  bool fallback;
+  eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);;
 
-  switch (component_direction(c)) {
-    case meep::X:
-    case meep::R:
-      chi1inv_row[0] = meps_inv.m00;
-      chi1inv_row[1] = meps_inv.m01;
-      chi1inv_row[2] = meps_inv.m02;
-      break;
-    case meep::Y:
-    case meep::P:
-      chi1inv_row[0] = meps_inv.m01;
-      chi1inv_row[1] = meps_inv.m11;
-      chi1inv_row[2] = meps_inv.m12;
-      break;
-    case meep::Z:
-      chi1inv_row[0] = meps_inv.m02;
-      chi1inv_row[1] = meps_inv.m12;
-      chi1inv_row[2] = meps_inv.m22;
-      break;
-    case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+  if (fallback) {
+    fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
+  }
+  else {
+    switch (component_direction(c)) {
+      case meep::X:
+      case meep::R:
+        chi1inv_row[0] = meps_inv.m00;
+        chi1inv_row[1] = meps_inv.m01;
+        chi1inv_row[2] = meps_inv.m02;
+        break;
+      case meep::Y:
+      case meep::P:
+        chi1inv_row[0] = meps_inv.m01;
+        chi1inv_row[1] = meps_inv.m11;
+        chi1inv_row[2] = meps_inv.m12;
+        break;
+      case meep::Z:
+        chi1inv_row[0] = meps_inv.m02;
+        chi1inv_row[1] = meps_inv.m12;
+        chi1inv_row[2] = meps_inv.m22;
+        break;
+      case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+    }
   }
 }
 
 void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
-                                      const meep::volume &v, double tol, int maxeval) {
+                                      const meep::volume &v, double tol, int maxeval,
+                                      bool &fallback) {
   const geometric_object *o;
   material_type mat, mat_behind;
   symmetric_matrix meps;
   vector3 p, shiftby, normal;
+  fallback = false;
 
-  if (maxeval == 0 || !get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
+  if (maxeval == 0) {
   noavg:
     get_material_pt(mat, v.center());
   trivial:
@@ -725,13 +733,15 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
     return;
   }
 
-  // FIXME: reimplement support for fallback integration, without
-  //        messing up anisotropic support
-  //  if (!get_front_object(v, geometry_tree,
-  //                        p, &o, shiftby, mat, mat_behind)) {
-  //     fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
-  //     return;
-  //  }
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
+    get_material_pt(mat, v.center());
+    if (mat && mat->which_subclass == material_data::MATERIAL_USER && mat->do_averaging) {
+      fallback = true;
+      return;
+    } else {
+      goto trivial;
+    }
+  }
 
   /* check for trivial case of only one object/material */
   if (material_type_equal(mat, mat_behind)) goto trivial;
@@ -1525,11 +1535,12 @@ material_type make_dielectric(double epsilon) {
   return md;
 }
 
-material_type make_user_material(user_material_func user_func, void *user_data) {
+material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_USER;
   md->user_func = user_func;
   md->user_data = user_data;
+  md->do_averaging = do_averaging;
   return md;
 }
 
