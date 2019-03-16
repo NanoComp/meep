@@ -5,7 +5,7 @@ import meep as mp
 
 from meep.adjoint import (OptimizationProblem, DFTCell, adjoint_options,
                           xHat, yHat, zHat, origin, FluxLine,
-                          parameterized_dielectric, fourier_legendre_basis)
+                          parameterized_dielectric, FourierLegendreBasis)
 
 ##################################################
 ##################################################
@@ -81,8 +81,7 @@ class HoleyWaveguide(OptimizationProblem):
         #----------------------------------------
         # basis set
         #----------------------------------------
-        basis = fourier_legendre_basis(radius=args.r_disc,
-                                       nr_max=args.nr_max, kphi_max=args.kphi_max)
+        basis = FourierLegendreBasis(radius=args.r_disc, nr_max=args.nr_max, kphi_max=args.kphi_max)
 
         #----------------------------------------
         #- source location

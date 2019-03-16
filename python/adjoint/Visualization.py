@@ -1,4 +1,4 @@
-###################################################extent
+###################################################
 # visualize.py -- various routines for visualizing
 # the inputs and outputs of pymeep calculations in
 # simple standardized ways
@@ -23,7 +23,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import meep as mp
 
 from .ObjectiveFunction import global_dft_cell_names
-from .Basis import fl_basis_names
 
 ########################################################
 # the next few routines are some of my older general-purpose
@@ -721,7 +720,10 @@ def visualize_sim(sim, fig=None, plot3D=None,
     return fig
 
 ######################################################################
-######################################################################
+# useful options:
+#
+# matplotlib.rcParams['axes.titlesize']='medium'
+# plt.rc('font',size=20)
 ######################################################################
 def plot_basis(opt_prob):
 
@@ -729,24 +731,32 @@ def plot_basis(opt_prob):
     xyzw=opt_prob.dft_cells[-1].xyzw
     x,y,z,w = xyzw[0],xyzw[1],xyzw[2],xyzw[3]
     xyz=[mp.Vector3(xx,yy,zz) for xx in x for yy in y for zz in z]
-    bm=np.zeros(np.shape(w))
+    bmatrix=np.zeros(np.shape(w))
 
-    blen=len(opt_prob.basis())
-    cols=5
-    rows=blen//5
+    rows,cols=opt_prob.basis.shape
     fig, axes = plt.subplots(rows,cols)
+    plt.tight_layout()
     extent=(min(x), max(x), min(y), max(y))
 
-    bfnames=fl_basis_names(opt_prob.args.nr_max, opt_prob.args.kphi_max)
-    for nb in range(blen):
-        fig.sca(axes.flat[nb])
-        axes.flat[nb].set_title('b{}: {}'.format(nb,bfnames[nb]))
+    usetex=matplotlib.rcParams['text.usetex']
+
+    if usetex:
+        titles=['$b_{' + str(n) + '}: ' + bn[1:] for n,bn in enumerate(opt_prob.basis.tex_names)]
+    else:
+        titles=['b{}: {}'.format(n,bn) for n,bn in enumerate(opt_prob.basis.names)]
+
+
+    for d in range(len(titles)):
+        fig.sca(axes.flat[d])
+        axes.flat[d].set_title(titles[d])
+        axes.flat[d].set_aspect('equal')
+        print('titles[d]={}'.format(titles[d]))
         it=np.nditer(w,flags=['f_index','multi_index'])
         while not it.finished:
             n, nn = it.index, it.multi_index
-            bm[nn] = opt_prob.basis(xyz[n]-x0)[nb]
+            bmatrix[nn] = opt_prob.basis(xyz[n]-x0)[d]
             it.iternext()
-        img=plt.imshow(np.transpose(bm),extent=extent,cmap=matplotlib.cm.Blues)
+        img=plt.imshow(np.transpose(bmatrix),extent=extent,cmap=matplotlib.cm.Blues)
         fig.colorbar(img)
 
     plt.show(False)

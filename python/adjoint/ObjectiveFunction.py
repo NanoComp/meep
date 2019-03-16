@@ -10,8 +10,6 @@ import sympy
 
 import meep as mp
 
-from .Basis import project_basis
-
 ######################################################################
 # various global options affecting the adjoint solver, user-tweakable
 # via command-line arguments or set_adjoint_option()
@@ -495,7 +493,7 @@ class AdjointSolver(object):
         # prefetch names of outputs computed by forward and
         # adjoint solves, for use in writing log files
         self.fqnames     = ['f'] + obj_func.qnames
-        self.bnames      = ['b'+str(n) for n in range(len(self.basis()))]
+        self.bnames      = basis.names
 
     #########################################################
     #########################################################
@@ -515,7 +513,7 @@ class AdjointSolver(object):
 #            if c not in Exyz:
 #                continue
 #            f+=EH_forward[nc]*EH_adjoint[nc]
-        return project_basis(self.basis,cell.xyzw,f)
+        return self.basis.project(f,cell.xyzw)
 
     #########################################################
     #########################################################
