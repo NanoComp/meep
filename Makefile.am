@@ -7,12 +7,13 @@ if WITH_SCHEME
   SUBDIRS += scheme
 endif
 endif
+
+if WITH_PYTHON
 if WITH_MPB
 if WITH_LIBCTLGEOM
   SUBDIRS += libpympb
 endif
 endif
-if WITH_PYTHON
   SUBDIRS += python
 endif
 
