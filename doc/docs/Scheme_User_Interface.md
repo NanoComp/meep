@@ -435,8 +435,6 @@ is the *centroid* of the polygon (with $N\ge 3$ the length of the
 
 There are two options for specifying the `center` of a prism. In contrast to the other types of `geometric-object`, the center of a prism does not need to be explicitly specified, because it may be calculated from `vertices`, `height`, and `axis.` (Specifically, we have `center = centroid + 0.5*height*axis,` where the `centroid` was defined above). To create a `prism` with the center computed automatically in this way, simply initialize the `center` field of the `prism` class (inherited from `geometric_object`) to the special initializer keyword `auto-center`. On the other hand, in some cases you may want to override this automatic calculation and instead specify your own `center` for a prism; this will have the effect of rigidly translating the entire prism so that it is centered at the point you specify. See below for examples of both possibilities.
 
-### Examples of geometric objects
-
 These are some examples of geometric objects created using the above classes:
 
 ```scm
@@ -631,7 +629,7 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`X`, `Y`, or `Z;` default `AUTOMATIC`], `eig-match-freq?` [`boolean;` default `true`], `eig-kpoint` [`vector3`]**
 —
-By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `NO-DIRECTION`, then `eig_kpoint` is not only initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique waveguides](Scheme_Tutorials/Eigenmode_Source.md) (not perpendicular to the source plane). If `eig-match-freq?` is `false`, then the specific **k** vector of the desired mode is specified with `eig-kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `NO-DIRECTION`, then `eig_kpoint` is not only initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Scheme_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane). If `eig-match-freq?` is `false`, then the specific **k** vector of the desired mode is specified with `eig-kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig-parity` [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]**
 —
@@ -659,7 +657,7 @@ The `src-time` object, which specifies the time dependence of the source, can be
 
 ### continuous-src
 
-A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
+A continuous-wave (CW) source is proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off. In practice, the CW source [never produces an exact single-frequency response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
 **`frequency` [`number`]**
 —
@@ -904,7 +902,7 @@ Add a bunch of `flux-region`s to the current simulation (initializing the fields
 
 As described in the tutorial, you normally use `add-flux` via statements like:
 
-**`(define transmission (add-flux ...))`**
+**`(define transmission (add-flux ...))`**
 —
 to store the flux object in a variable. `add-flux` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many flux objects as you want, e.g. to look at powers flowing in different regions or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the flux region multiplied by the number of electric and magnetic field components required to get the Poynting vector multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
@@ -973,6 +971,72 @@ Similar to `add-flux`, but for use with `get-eigenmode-coefficients`.
 
 `add-mode-monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add-flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig-parity` to `get-eigenmode-coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
+### Energy Density Spectra
+
+Very similar to flux spectra, you can also compute **energy density spectra**: the energy density of the electromagnetic fields as a function of frequency, computed by Fourier transforming the fields and integrating the energy density:
+
+$$ \frac{1}{2}ε|\mathbf{E}|^2 + \frac{1}{2}μ|\mathbf{H}|^2 $$
+
+The usage is similar to the flux spectra: you define a set of `energy-region` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add-energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-electric-energy`, `display-magnetic-energy`, or `display-total-energy` to display the energy density spectra at the end. There are also `save-energy`, `load-energy`, and `load-minus-energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+
+**`energy-region`**
+
+A region (volume, plane, line, or point) in which to compute the integral of the energy density of the Fourier-transformed fields. Its properties are:
+
+**`center` [`vector3`]**
+—
+The center of the energy region (no default).
+
+**`size` [`vector3`]**
+—
+The size of the energy region along each of the coordinate axes. Default is (0,0,0): a single point.
+
+**`weight` [`cnumber`]**
+—
+A weight factor to multiply the energy density by when it is computed. Default is 1.0.
+
+**`(add-energy fcen df nfreq energy-regions...)`**
+—
+Add a bunch of `energy-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
+
+As for energy regions, you normally use `add-energy` via statements like:
+
+```scm
+(define En (add-energy ...))
+```
+
+to store the energy object in a variable. `add-energy` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many energy objects as you want, e.g. to look at the energy densities in different objects or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the energy region multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+
+Once you have called `add-energy`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current energy density spectrum via:
+
+**`(display-electric-energy energy...)`, `(display-magnetic-energy energy...)`, `(display-total-energy energy...)` **
+—
+Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric-energy1:", "magnetic-energy1:," "total-energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+
+You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `(display-electric-energy e1 e2 e3)` is actually equivalent to `(display-csv "electric-energy" (get-energy-freqs e1) (get-electric-energy e1) (get-electric-energy e2) (get-electric-energy e3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+
+**`(get-energy-freqs energy)`**
+—
+Given an energy object, returns a list of the frequencies that it is computing the spectrum for.
+
+**`(get-electric-energy energy)`, `(get-magnetic-energy energy)`, `(get-total-energy energy)`**
+—
+Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
+
+As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+
+**`(save-energy filename energy)`**
+—
+Save the Fourier-transformed fields corresponding to the given energy object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+
+**`(load-energy filename energy)`**
+—
+Load the Fourier-transformed fields into the given energy object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-energy` in a simulation of the same dimensions for both the cell and the energy regions with the same number of processors.
+
+**`(load-minus-energy filename energy)`**
+—
+As `load-energy`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
@@ -991,19 +1055,19 @@ The usage is similar to the flux spectra: you define a set of `force-region` obj
 
 A region (volume, plane, line, or point) in which to compute the integral of the stress tensor of the Fourier-transformed fields. Its properties are:
 
-**`center [ vector3 ]`**
+**`center` [`vector3`]**
 —
 The center of the force region (no default).
 
-**`size [ vector3 ]`**
+**`size` [`vector3`]**
 —
 The size of the force region along each of the coordinate axes. Default is (0,0,0): a single point.
 
-**`direction [ direction constant ]`**
+**`direction` [`direction constant`]**
 —
 The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). Unlike `flux-region`, you must specify this explicitly, because there is not generally any relationship between the direction of the force and the orientation of the force region.
 
-**`weight [ cnumber ]`**
+**`weight` [`cnumber`]**
 —
 A weight factor to multiply the force by when it is computed. Default is 1.0.
 
@@ -1013,13 +1077,13 @@ In most circumstances, you should define a set of `force-region`s whose union is
 —
 Add a bunch of `force-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
 
-As for flux regions, you normally use `add-force` via statements like:
+As for force regions, you normally use `add-force` via statements like:
 
 ```scm
 (define Fx (add-force ...))
 ```
 
-to store the flux object in a variable. `add-force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+to store the force object in a variable. `add-force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
 Once you have called `add-force`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current force spectrum via:
 
@@ -1029,15 +1093,15 @@ Given a number of force objects, this displays a comma-separated table of freque
 
 You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `(display-forces f1 f2 f3)` is actually equivalent to `(display-csv "force" (get-force-freqs f1) (get-forces f1) (get-forces f2) (get-forces f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
-**`(get-force-freqs flux)`**
+**`(get-force-freqs force)`**
 —
 Given a force object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`(get-forces flux)`**
+**`(get-forces force)`**
 —
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the force from scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-force filename force)`**
 —
@@ -1076,6 +1140,8 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+
+Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* 2D<sup>2</sup>/λ, the Fraunhofer distance, where D is the largest dimension of the radiator and λ is the vacuum wavelength.
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 

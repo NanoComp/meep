@@ -175,6 +175,7 @@ class FluxRegion(object):
 ModeRegion = FluxRegion
 Near2FarRegion = FluxRegion
 ForceRegion = FluxRegion
+EnergyRegion = FluxRegion
 
 
 class FieldsRegion(object):
@@ -191,7 +192,29 @@ class FieldsRegion(object):
 
 
 class DftObj(object):
+    """Wrapper around dft objects that allows delayed initialization of the structure.
 
+    When splitting the structure into chunks for parallel simulations, we want to
+    know all of the details of the simulation in order to ensure that each processor
+    gets a similar amount of work. The problem with DFTs is that the 'add_flux' style
+    methods immediately initialize the structure and fields. So, if the user adds
+    multiple DFT objects to the simulation, the load balancing code only knows about
+    the first one and can't split the work up nicely. To circumvent this, we delay
+    the execution of the 'add_flux' methods as late as possible. When 'add_flux' (or
+    add_near2far, etc.) is called, we
+
+    1. Create an instance of the appropriate subclass of DftObj (DftForce, DftFlux,
+    etc.). Set its args property to the list of arguments passed to add_flux, and
+    set its func property to the 'real' add_flux, which is prefixed by an underscore.
+
+    2. Add this DftObj to the list Simulation.dft_objects. When we actually run the
+    simulation, we call Simulation._evaluate_dft_objects, which calls dft.func(*args)
+    for each dft in the list.
+
+    If the user tries to access a property or call a function on the DftObj before
+    Simulation._evaluate_dft_objects is called, then we initialize the C++ object
+    through swigobj_attr and return the property they requested.
+    """
     def __init__(self, func, args):
         self.func = func
         self.args = args
@@ -323,6 +346,28 @@ class DftNear2Far(DftObj):
 
     def flux(self, direction, where, resolution):
         return self.swigobj_attr('flux')(direction, where.swigobj, resolution)
+
+
+class DftEnergy(DftObj):
+
+    def __init__(self, func, args):
+        super(DftEnergy, self).__init__(func, args)
+        self.nfreqs = args[2]
+        self.regions = args[3]
+        self.num_components = 12
+
+    @property
+    def electric(self):
+        return self.swigobj_attr('electric')
+
+    @property
+    def magnetic(self):
+        return self.swigobj_attr('magnetic')
+
+    @property
+    def total(self):
+        return self.swigobj_attr('total')
+
 
 class DftFields(DftObj):
 
@@ -475,7 +520,8 @@ class Simulation(object):
                  geometry_center=mp.Vector3(),
                  force_all_components=False,
                  split_chunks_evenly=True,
-                 chunk_layout=None):
+                 chunk_layout=None,
+                 collect_stats=False):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -520,10 +566,10 @@ class Simulation(object):
         self.load_structure_file = load_structure
         self.dft_objects = []
         self._is_initialized = False
-        self._fragment_size = 10
         self.force_all_components = force_all_components
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
+        self.collect_stats = collect_stats
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -873,21 +919,19 @@ class Simulation(object):
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
-            self._fragment_size
         )
 
         mirror_symmetries = [sym for sym in self.symmetries if isinstance(sym, Mirror)]
         for sym in mirror_symmetries:
-            for fs in stats:
-                fs.num_anisotropic_eps_pixels //= 2
-                fs.num_anisotropic_mu_pixels //= 2
-                fs.num_nonlinear_pixels //= 2
-                fs.num_susceptibility_pixels //= 2
-                fs.num_nonzero_conductivity_pixels //= 2
-                fs.num_1d_pml_pixels //= 2
-                fs.num_2d_pml_pixels //= 2
-                fs.num_3d_pml_pixels //= 2
-                fs.num_pixels_in_box //= 2
+            stats.num_anisotropic_eps_pixels //= 2
+            stats.num_anisotropic_mu_pixels //= 2
+            stats.num_nonlinear_pixels //= 2
+            stats.num_susceptibility_pixels //= 2
+            stats.num_nonzero_conductivity_pixels //= 2
+            stats.num_1d_pml_pixels //= 2
+            stats.num_2d_pml_pixels //= 2
+            stats.num_3d_pml_pixels //= 2
+            stats.num_pixels_in_box //= 2
 
         return stats
 
@@ -909,7 +953,9 @@ class Simulation(object):
         elif self.epsilon_input_file:
             self.default_material = self.epsilon_input_file
 
-        self.fragment_stats = self._compute_fragment_stats(gv) if isinstance(self.default_material, mp.Medium) else []
+        if self.collect_stats and isinstance(self.default_material, mp.Medium):
+            self.fragment_stats = self._compute_fragment_stats(gv)
+
         dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
 
         self.structure = mp.create_structure_and_set_materials(
@@ -1335,6 +1381,44 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
+    def add_energy(self, fcen, df, nfreq, *energys):
+        en = DftEnergy(self._add_energy, [fcen, df, nfreq, energys])
+        self.dft_objects.append(en)
+        return en
+
+    def _add_energy(self, fcen, df, nfreq, energys):
+        if self.fields is None:
+            self.init_sim()
+        return self._add_fluxish_stuff(self.fields.add_dft_energy, fcen, df, nfreq, energys)
+
+    def _display_energy(self, name, func, energys):
+        if energys:
+            freqs = get_energy_freqs(energys[0])
+            display_csv(self, "{}-energy".format(name), zip(freqs, *[func(f) for f in energys]))
+
+    def display_electric_energy(self, *energys):
+        self._display_energy('electric', get_electric_energy, energys)
+
+    def display_magnetic_energy(self, *energys):
+        self._display_energy('magnetic', get_magnetic_energy, energys)
+
+    def display_total_energy(self, *energys):
+        self._display_energy('total', get_total_energy, energys)
+
+    def load_energy(self, fname, energy):
+        if self.fields is None:
+            self.init_sim()
+        energy.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
+
+    def save_energy(self, fname, energy):
+        if self.fields is None:
+            self.init_sim()
+        energy.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
+
+    def load_minus_energy(self, fname, energy):
+        self.load_energy(fname, energy)
+        energy.scale_dfts(-1.0)
+
     def get_farfield(self, f, v):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
@@ -1606,7 +1690,12 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, vol=None, center=None, size=None, component=mp.Ez, cmplx=None, arr=None):
+    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None):
+        if component is None:
+            raise ValueError("component is required")
+        if isinstance(component, mp.Volume) or isinstance(component, mp.volume):
+            raise ValueError("The first argument must be the component")
+
         dim_sizes = np.zeros(3, dtype=np.uintp)
 
         if vol is None and center is None and size is None:
@@ -1659,7 +1748,7 @@ class Simulation(object):
         else:
             raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
 
-    def get_source_slice(self, component, vol=None, center=None, size=None):
+    def get_source(self, component, vol=None, center=None, size=None):
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
@@ -1671,28 +1760,36 @@ class Simulation(object):
         self.fields.get_source_slice(v, component ,arr)
         return arr
 
-    def get_array_metadata(self, vol=None, center=None, size=None, collapse=False):
-         if vol is None and center is None and size is None:
-             v = self.fields.total_volume()
-         else:
-             v = self._volume_from_kwargs(vol, center, size)
-         dims = np.zeros(3, dtype=np.uintp)
-         rank, dirs = mp._get_array_slice_dimensions(self.fields, v, dims, collapse)
+    def get_source_slice(self, component, vol=None, center=None, size=None):
+        warnings.warn('get_source_slice is deprecated. Please use get_source instead', DeprecationWarning)
+        return self.get_source(component, vol=vol, center=center, size=size)
 
-         nxyz = np.ones(3, dtype=np.intp)
-         for r in range(0,rank):
-             nxyz[dirs[r]]=dims[r]
-         nw=nxyz[0]*nxyz[1]*nxyz[2]
-         xtics=np.zeros(nxyz[0],dtype=np.float64)
-         ytics=np.zeros(nxyz[1],dtype=np.float64)
-         ztics=np.zeros(nxyz[2],dtype=np.float64)
-         weights=np.zeros(nw,dtype=np.float64)
-         self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, collapse)
-         return (xtics,ytics,ztics,np.reshape(weights,dims[np.nonzero(dims)]))
+    def get_array_metadata(self, vol=None, center=None, size=None, dft=None):
+        if dft:
+            vol = dft_cell.where
+        if vol is None and center is None and size is None:
+            v = self.fields.total_volume()
+        else:
+            v = self._volume_from_kwargs(vol, center, size)
+        dims = np.zeros(3, dtype=np.uintp)
+        rank, dirs = mp._get_array_slice_dimensions(self.fields, v, dims, bool(dft))
+
+        nxyz = np.ones(3, dtype=np.intp)
+        for r in range(0,rank):
+            nxyz[dirs[r]]=dims[r]
+        nw=nxyz[0]*nxyz[1]*nxyz[2]
+        xtics=np.zeros(nxyz[0],dtype=np.float64)
+        ytics=np.zeros(nxyz[1],dtype=np.float64)
+        ztics=np.zeros(nxyz[2],dtype=np.float64)
+        weights=np.zeros(nw,dtype=np.float64)
+        self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, bool(dft))
+        return (xtics,ytics,ztics,np.reshape(weights,dims[np.nonzero(dims)]))
 
     def get_dft_array_metadata(self, dft_cell=None, vol=None, center=None, size=None):
-         return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
-                                        center=center, size=size, collapse=True)
+        warnings.warn('get_dft_array_metadata is deprecated. Please use get_array_metadata instead',
+                      DeprecationWarning)
+        return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
+                                       center=center, size=size)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
@@ -1849,133 +1946,133 @@ class Simulation(object):
 
     def get_hfield(self):
         if self.is_cylindrical:
-            r = self.get_array(cmplx=True, component=mp.Hr)
-            p = self.get_array(cmplx=True, component=mp.Hp)
+            r = self.get_array(mp.Hr, cmplx=True)
+            p = self.get_array(mp.Hp, cmplx=True)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(cmplx=True, component=mp.Hx)
-            y = self.get_array(cmplx=True, component=mp.Hy)
-            z = self.get_array(cmplx=True, component=mp.Hz)
+            x = self.get_array(mp.Hx, cmplx=True)
+            y = self.get_array(mp.Hy, cmplx=True)
+            z = self.get_array(mp.Hz, cmplx=True)
             return np.stack([x, y, z], axis=-1)
 
     def get_hfield_x(self):
-        return self.get_array(cmplx=True, component=mp.Hx)
+        return self.get_array(mp.Hx, cmplx=True)
 
     def get_hfield_y(self):
-        return self.get_array(cmplx=True, component=mp.Hy)
+        return self.get_array(mp.Hy, cmplx=True)
 
     def get_hfield_z(self):
-        return self.get_array(cmplx=True, component=mp.Hz)
+        return self.get_array(mp.Hz, cmplx=True)
 
     def get_hfield_r(self):
-        return self.get_array(cmplx=True, component=mp.Hr)
+        return self.get_array(mp.Hr, cmplx=True)
 
     def get_hfield_p(self):
-        return self.get_array(cmplx=True, component=mp.Hp)
+        return self.get_array(mp.Hp, cmplx=True)
 
     def get_bfield(self):
         if self.is_cylindrical:
-            r = self.get_array(cmplx=True, component=mp.Br)
-            p = self.get_array(cmplx=True, component=mp.Bp)
+            r = self.get_array(mp.Br, cmplx=True)
+            p = self.get_array(mp.Bp, cmplx=True)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(cmplx=True, component=mp.Bx)
-            y = self.get_array(cmplx=True, component=mp.By)
-            z = self.get_array(cmplx=True, component=mp.Bz)
+            x = self.get_array(mp.Bx, cmplx=True)
+            y = self.get_array(mp.By, cmplx=True)
+            z = self.get_array(mp.Bz, cmplx=True)
             return np.stack([x, y, z], axis=-1)
 
     def get_bfield_x(self):
-        return self.get_array(cmplx=True, component=mp.Bx)
+        return self.get_array(mp.Bx, cmplx=True)
 
     def get_bfield_y(self):
-        return self.get_array(cmplx=True, component=mp.By)
+        return self.get_array(mp.By, cmplx=True)
 
     def get_bfield_z(self):
-        return self.get_array(cmplx=True, component=mp.Bz)
+        return self.get_array(mp.Bz, cmplx=True)
 
     def get_bfield_r(self):
-        return self.get_array(cmplx=True, component=mp.Br)
+        return self.get_array(mp.Br, cmplx=True)
 
     def get_bfield_p(self):
-        return self.get_array(cmplx=True, component=mp.Bp)
+        return self.get_array(mp.Bp, cmplx=True)
 
     def get_efield(self):
         if self.is_cylindrical:
-            r = self.get_array(cmplx=True, component=mp.Er)
-            p = self.get_array(cmplx=True, component=mp.Ep)
+            r = self.get_array(mp.Er, cmplx=True)
+            p = self.get_array(mp.Ep, cmplx=True)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(cmplx=True, component=mp.Ex)
-            y = self.get_array(cmplx=True, component=mp.Ey)
-            z = self.get_array(cmplx=True, component=mp.Ez)
+            x = self.get_array(mp.Ex, cmplx=True)
+            y = self.get_array(mp.Ey, cmplx=True)
+            z = self.get_array(mp.Ez, cmplx=True)
             return np.stack([x, y, z], axis=-1)
 
     def get_efield_x(self):
-        return self.get_array(cmplx=True, component=mp.Ex)
+        return self.get_array(mp.Ex, cmplx=True)
 
     def get_efield_y(self):
-        return self.get_array(cmplx=True, component=mp.Ey)
+        return self.get_array(mp.Ey, cmplx=True)
 
     def get_efield_z(self):
-        return self.get_array(cmplx=True, component=mp.Ez)
+        return self.get_array(mp.Ez, cmplx=True)
 
     def get_efield_r(self):
-        return self.get_array(cmplx=True, component=mp.Er)
+        return self.get_array(mp.Er, cmplx=True)
 
     def get_efield_p(self):
-        return self.get_array(cmplx=True, component=mp.Ep)
+        return self.get_array(mp.Ep, cmplx=True)
 
     def get_dfield(self):
         if self.is_cylindrical:
-            r = self.get_array(cmplx=True, component=mp.Dr)
-            p = self.get_array(cmplx=True, component=mp.Dp)
+            r = self.get_array(mp.Dr, cmplx=True)
+            p = self.get_array(mp.Dp, cmplx=True)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(cmplx=True, component=mp.Dx)
-            y = self.get_array(cmplx=True, component=mp.Dy)
-            z = self.get_array(cmplx=True, component=mp.Dz)
+            x = self.get_array(mp.Dx, cmplx=True)
+            y = self.get_array(mp.Dy, cmplx=True)
+            z = self.get_array(mp.Dz, cmplx=True)
             return np.stack([x, y, z], axis=-1)
 
     def get_dfield_x(self):
-        return self.get_array(cmplx=True, component=mp.Dx)
+        return self.get_array(mp.Dx, cmplx=True)
 
     def get_dfield_y(self):
-        return self.get_array(cmplx=True, component=mp.Dy)
+        return self.get_array(mp.Dy, cmplx=True)
 
     def get_dfield_z(self):
-        return self.get_array(cmplx=True, component=mp.Dz)
+        return self.get_array(mp.Dz, cmplx=True)
 
     def get_dfield_r(self):
-        return self.get_array(cmplx=True, component=mp.Dr)
+        return self.get_array(mp.Dr, cmplx=True)
 
     def get_dfield_p(self):
-        return self.get_array(cmplx=True, component=mp.Dp)
+        return self.get_array(mp.Dp, cmplx=True)
 
     def get_sfield(self):
         if self.is_cylindrical:
-            r = self.get_array(cmplx=True, component=mp.Sr)
-            p = self.get_array(cmplx=True, component=mp.Sp)
+            r = self.get_array(mp.Sr, cmplx=True)
+            p = self.get_array(mp.Sp, cmplx=True)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(cmplx=True, component=mp.Sx)
-            y = self.get_array(cmplx=True, component=mp.Sy)
-            z = self.get_array(cmplx=True, component=mp.Sz)
+            x = self.get_array(mp.Sx, cmplx=True)
+            y = self.get_array(mp.Sy, cmplx=True)
+            z = self.get_array(mp.Sz, cmplx=True)
             return np.stack([x, y, z], axis=-1)
 
     def get_sfield_x(self):
-        return self.get_array(cmplx=True, component=mp.Sx)
+        return self.get_array(mp.Sx, cmplx=True)
 
     def get_sfield_y(self):
-        return self.get_array(cmplx=True, component=mp.Sy)
+        return self.get_array(mp.Sy, cmplx=True)
 
     def get_sfield_z(self):
-        return self.get_array(cmplx=True, component=mp.Sz)
+        return self.get_array(mp.Sz, cmplx=True)
 
     def get_sfield_r(self):
-        return self.get_array(cmplx=True, component=mp.Sr)
+        return self.get_array(mp.Sr, cmplx=True)
 
     def get_sfield_p(self):
-        return self.get_array(cmplx=True, component=mp.Sp)
+        return self.get_array(mp.Sp, cmplx=True)
 
     def visualize_chunks(self):
         if self.structure is None:
@@ -2604,6 +2701,26 @@ def scale_near2far_fields(s, n2f):
 
 def get_near2far_freqs(f):
     return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+
+
+def scale_energy_fields(s, ef):
+    df.scale_dfts(s)
+
+
+def get_energy_freqs(f):
+    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+
+
+def get_electric_energy(f):
+    return f.electric()
+
+
+def get_magnetic_energy(f):
+    return f.magnetic()
+
+
+def get_total_energy(f):
+    return f.total()
 
 
 def interpolate(n, nums):

@@ -494,7 +494,7 @@ Methods:
 —
 Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geometric_obj + Vector3(10,10,10)`.
 
-**`info`(indent_by [integer])**
+**`info`(indent_by [`integer`])**
 —
 Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
 
@@ -528,7 +528,7 @@ Direction of the cylinder's axis; the length of this vector is ignored. Defaults
 
 ### Cone
 
-A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
+A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `Cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
 
 **`radius2` [`number`]**
 —
@@ -611,7 +611,8 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 ### 3x3 Matrix
 
 **`Matrix`(c1 [`Vector3`], c2 [`Vector3`], c3 [`Vector3`])**
-The `Matrix` class represents a 3x3 matrix with c1, c2 and c3 as its columns.
+—
+The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
 
 ```
 m.transpose()
@@ -635,7 +636,7 @@ v * m
 m * v
 ```
 
-Returns the (3-vector) product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
+Returns the `Vector3` product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
 
 ```
 s * m
@@ -644,7 +645,7 @@ m * s
 
 Scales the matrix `m` by the number `s`.
 
-**`meep.get_rotation_matrix`(axis [`Vector3`], theta)**
+**`meep.get_rotation_matrix`(axis [`Vector3`], theta [`number`])**
 
 Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result as `v.rotate(axis, theta)`.
 
@@ -762,7 +763,7 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
 —
-By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique waveguides](Python_Tutorials/Eigenmode_Source.md) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the specific **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the specific **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]**
 —
@@ -784,13 +785,27 @@ Once the MPB modes are computed, equivalent electric and magnetic sources are cr
 —
 Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig_lattice_size` and `eig_lattice_center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
 
+**`eig_power(f)`**
+—
+Returns the total power of the fields from the eigenmode source at frequency `f`.
+
+Eigenmode sources are normalized so that in the case of a time-harmonic simulation with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$ where $f_m$ is the frequency of the eigenmode, the total time-average power of the fields — the integral of the normal Poynting vector over the entire cross-sectional line or plane — is equal to 1. This convention has two use cases:
+
++ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver) involving a `ContinuousSrc` time dependence, the time-average power of the fields is 1.
+
++ For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the Poynting flux and energy density are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
+
+In either case, the `eig_power` class method returns the total power at frequency `f`. However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not* include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier transform of your source function $W(t)$. You will have to multiply by this yourself if you need it.
+
+**Note:** Due to discretization effects, the normalization of eigenmode sources to yield unit power transmission is only approximate: at any finite resolution, the power of the fields as measured using [DFT flux](#flux-spectra) monitors will not precisely match that of calling `eig_power` but will rather include discretization errors that decrease with resolution.  Generally, the most reliable procedure is to normalize your calculations by the power computed in a separate normalization run at the same resolution, as shown in several of the tutorial examples.
+
 Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
 
 The `src_time` object (`Source.src`), which specifies the time dependence of the source, can be one of the following three classes.
 
 ### ContinuousSource
 
-A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off.
+A continuous-wave (CW) source is proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off. In practice, the CW source [never produces an exact single-frequency response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
 **`frequency` [`number`]**
 —
@@ -839,6 +854,17 @@ How many `width`s the current decays for before we cut it off and set it to zero
 **`is_integrated` [`boolean`]**
 —
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources. Default is `False`.
+
+**`fourier_transform(f)`**
+—
+Returns the Fourier transform of the current evaluated at frequency `f` (`ω=2πf`) given by:
+$$
+   \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
+   \int e^{i\omega t}G(t)\,dt \equiv
+   \frac{1}{\Delta f}
+   e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
+$$
+where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$ is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and $t_0$ is the peak time discussed above. Note that this does not include any `amplitude` or `amp_func` factor that you specified for the source.
 
 ### CustomSource
 
@@ -1054,7 +1080,7 @@ Once you have called `add_flux`, the Fourier transforms of the fields are accumu
 —
 Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
-You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `display_csv("flux", get_flux_freqs(f1), get_fluxes(f1), get_fluxes(f2), get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `meep.display_csv("flux", meep.get_flux_freqs(f1), meep.get_fluxes(f1), meep.get_fluxes(f2), meep.get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
 **`get_flux_freqs(flux)`**
 —
@@ -1145,6 +1171,72 @@ The parameters of this routine are the same as that of `get_eigenmode_coefficien
 —
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
 
+### Energy Density Spectra
+
+Very similar to flux spectra, you can also compute **energy density spectra**: the energy density of the electromagnetic fields as a function of frequency, computed by Fourier transforming the fields and integrating the energy density:
+
+$$ \frac{1}{2}ε|\mathbf{E}|^2 + \frac{1}{2}μ|\mathbf{H}|^2 $$
+
+The usage is similar to the flux spectra: you define a set of `EnergyRegion` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add_energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display_electric_energy`, `display_magnetic_energy`, or `display_total_energy` to display the energy density spectra at the end. There are also `save_energy`, `load_energy`, and `load_minus_energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+
+**`EnergyRegion`**
+
+A region (volume, plane, line, or point) in which to compute the integral of the energy density of the Fourier-transformed fields. Its properties are:
+
+**`center` [`Vector3`]**
+—
+The center of the energy region (no default).
+
+**`size` [`Vector3`]**
+—
+The size of the energy region along each of the coordinate axes. Default is (0,0,0): a single point.
+
+**`weight` [`complex`]**
+—
+A weight factor to multiply the energy density by when it is computed. Default is 1.0.
+
+**`Simulation.add_energy(fcen, df, nfreq, EnergyRegions...)`**
+—
+Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
+
+As for energy regions, you normally use `add_energy` via statements like:
+
+```py
+En = sim.add_energy(...)
+```
+
+to store the energy object in a variable. `add_energy` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many energy objects as you want, e.g. to look at the energy densities in different objects or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the energy region multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+
+Once you have called `add_energy`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current energy density spectrum via:
+
+**`display_electric_energy(energy...)`, `display_magnetic_energy(energy...)`, `display_total_energy(energy...)` **
+—
+Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric_energy1:", "magnetic_energy1:," "total_energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+
+You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `display_electric_energy(e1, e2, e3)` is actually equivalent to `meep.display_csv("electric_energy", meep.get_energy_freqs(e1), meep.get_electric_energy(e1), meep.get_electric_energy(e2), meep.get_electric_energy(e3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+
+**`get_energy_freqs(energy)`**
+—
+Given an energy object, returns a list of the frequencies that it is computing the spectrum for.
+
+**`get_electric_energy(energy)`, `get_magnetic_energy(energy)`, `get_total_energy(energy)`**
+—
+Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
+
+As described in [Tutorial/Basics](Python_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+
+**`save_energy(filename, energy)`**
+—
+Save the Fourier-transformed fields corresponding to the given energy object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+
+**`load_energy(filename, energy)`**
+—
+Load the Fourier-transformed fields into the given energy object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_energy` in a simulation of the same dimensions for both the cell and the energy regions with the same number of processors.
+
+**`load_minus_energy(filename, energy)`**
+—
+As `load_energy`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+
 ### Force Spectra
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor):
@@ -1189,13 +1281,13 @@ In most circumstances, you should define a set of `ForceRegion`s whose union is 
 —
 Add a bunch of `ForceRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
 
-As for flux regions, you normally use `add_force` via statements like:
+As for force regions, you normally use `add_force` via statements like:
 
 ```py
 Fx = sim.add_force(...)
 ```
 
-to store the flux object in a variable. `add_force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* initializing your `Simulation` object which includes specifying `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
+to store the force object in a variable. `add_force` initializes the fields if necessary, just like calling `run`, so you should only call it *after* initializing your `Simulation` object which includes specifying `geometry`, `sources`, `boundary_layers`, etcetera. You can create as many force objects as you want, e.g. to look at forces on different objects, in different directions, or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the force region, multiplied by the number of electric and magnetic field components required to get the stress vector, multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
 Once you have called `add_force`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current force spectrum via:
 
@@ -1203,7 +1295,7 @@ Once you have called `add_force`, the Fourier transforms of the fields are accum
 —
 Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the force spectra.
 
-You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `display_csv("force", get_force_freqs(f1), get_forces(f1), get_forces(f2), get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `meep.display_csv("force", meep.get_force_freqs(f1), meep.get_forces(f1), meep.get_forces(f2), meep.get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
 **`get_force_freqs(force)`**
 —
@@ -1270,6 +1362,8 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Python_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+
+Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* 2D<sup>2</sup>/λ, the Fraunhofer distance, where D is the largest dimension of the radiator and λ is the vacuum wavelength.
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
@@ -1541,10 +1635,9 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 #### Array Metadata
 
-**`get_array_metadata(vol=None, center=None, size=None, collapse=False)`**
-**`get_dft_array_metadata(dft_cell=None, vol=None, center=None, size=None)`**
+**`get_array_metadata(vol=None, center=None, size=None, dft=None)`**
 
-These routines provide geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where
+This routine provide geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where
 
 + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the grid slice
 + `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule for integrating over the spatial region (with the points in the cubature rule being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum:
@@ -1553,7 +1646,7 @@ $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
 
 This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is just one line: `np.sum(w*Q).`
 
-For `get_dft_array_metadata`, if the `dft_cell` argument is provided then all other arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided, then the entire cell is used.
+A convenience parameter `dft` is provided as an alternative to `vol` or `center/size`; set `dft` to a `dft_flux` or `dft_fields` object to define the region covered by the array. If the `dft` argument is provided then all other arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided, then the entire cell is used.
 
 Here are some examples of how array metadata can be used:
 
@@ -1602,34 +1695,19 @@ plt.show()
   dft_cell       = sim.add_flux(freq, freq, 1, monitor)
   sim.run(...)    # timestep until DFTs converged
   (Ey,Ez,Hy,Hz)  = [sim.get_dft_array(dft_cell,c,0) for c in [mp.Ey, mp.Ez, mp.Hy, mp.Hz]]
-  (x,y,z,w)      = sim.get_dft_array_metadata(dft_cell=dft_cell)
+  (x,y,z,w)      = sim.get_array_metadata(dft=dft_cell)
   flux_density   = np.real( np.conj(Ey)*Hz - np.conj(Ez)*Hy )    # array
   flux           = np.sum(w*flux_density)                        # scalar
 ```
 
-**Question:** What is the difference between `get_array_metadata` and `get_dft_array_metadata`? Also, what is the `collapse` parameter to `get_array_metadata`?
-
-**Answer** (tl;dr version):
-
-+ Use `get_array_metadata` for arrays of time-domain field components (as returned by `get_array`).
-+ Use `get_dft_array_metadata` for arrays of frequency-domain field components (as returned by `get_dft_array`).
-+ Ignore the `collapse` parameter to `get_array_metadata.`
-
-**Answer** (full version): **Collapsing empty dimensions in array slices**
-
-One complication of array slicing is that the array returned by `get_array` may have nonzero thickness (i.e. more than one point) in dimensions for which the region in question has zero extent. Thus, upon requesting an array slice for a vertical line with `size=mp.Vector3(0,3,0)`, we would expect to get back just a one-dimensional array of field values, but in fact `get_array` may return a $2\times N$ array. This occurs when the coordinate of the empty dimension falls between points of the computational grid; in this case, the field values at both of the two nearest grid points are needed to determine values at the intermediate point by interpolation, and the field array returned by `get_array` (as well as the `w` array returned by `get_array_metadata`) will have size 2 in the corresponding dimension to store field values and weights for both nearest-neighbor points. For many purposes it is convenient to *collapse* these dimensions by performing the interpolation to reduce e.g. a $2\times N$ array to a one-dimensional array of length $N$, and Meep adopts the following somewhat arbitrary convention regarding when this is done:
-
-+ in arrays of time-domain field components (as returned by `get_array`), empty dimensions *are not* collapsed;
-+ in arrays of frequency-domain field components (as returned by `get_dft_array`), empty dimensions *are* collapsed.
-
-The `collapse` flag to `get_array_metadata` may be set to `True` to specify that the metadata are to be computed for an array with empty dimensions collapsed &mdash; in other words, for an array of frequency-domain field components. The default is `collapse=False`, in which case `get_array_metadata` returns metadata appropriate for an array of time-domain field components
-
-The routine `get_dft_array_metadata` is equivalent to `get_array_metadata` with `collapse=True`. `get_dft_array_metadata` also accepts the convenience parameter `dft_cell` as an alternative to `vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object to define the region covered by the array.
-
 #### Source Slices
 
 **`get_source_slice(component, vol=None, center=None, size=None)`**
+—
+Deprecated. Use `get_source` below.
 
+**`get_source(component, vol=None, center=None, size=None)`**
+—
 Return an array of complex values of the [source](#source) amplitude for `component` over the given `vol` or `center`/`size`. The array has the same dimensions as that returned by [`get_array`](#array-slices).
 
 #### Harminv

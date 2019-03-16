@@ -29,7 +29,7 @@ Now, we'll define the dimensions and size of the computational cell:
 
 The key thing is to set the `dimensions` parameter to `CYLINDRICAL`. This means that all vectors will represent ($r$,φ,$z$) coordinates instead of ($x$,$y$,$z$). The computational cell in the $r$ direction is of size `sr = r + w + pad + dpml`, and runs from `0` to `sr` (by default) rather than from `-sr/2` to `sr/2` as it would for any other dimension. Note that our $z$ size is `no-size` because it is in 2d. The φ size is also `no-size`, corresponding to the continuous rotational symmetry. A finite φ size might correspond to discrete rotational symmetry, but this is not currently supported.
 
-In particular, in systems with continuous rotational symmetry, by an analogue of Bloch's theorem, the angular dependence of the fields can always be chosen in the form $\exp(i m \phi)$ for some integer $m$. Meep uses this fact to treat the angular dependence analytically, with $m$ given by the [input variable](../Scheme_User_Interface.md#input-variables) `m` which we'll set to 3, for now.
+In particular, in systems with continuous rotational symmetry, by an analogue of Bloch's theorem, the angular dependence of the fields can always be chosen in the form $\exp(i m φ)$ for some integer $m$. Meep uses this fact to treat the angular dependence analytically, with $m$ given by the [input variable](../Scheme_User_Interface.md#input-variables) `m` which we'll set to 3, for now.
 
 ```scm
 (set-param! m 3)

@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import meep as mp
+import matplotlib.pyplot as plt
 
 resolution = 61   # pixels/μm
 
-w1 = 1            # width of waveguide 1
-w2 = 2            # width of waveguide 2
-Lw = 10           # length of waveguide 1/2
+w1 = 1.0          # width of waveguide 1
+w2 = 2.0          # width of waveguide 2
+Lw = 10.0         # length of waveguides 1 and 2
+
+# lengths of waveguide taper
+Lts = [2**m for m in range(5)]
 
 dair = 3.0        # length of air region
 dpml_x = 6.0      # length of PML in x direction
@@ -19,23 +23,22 @@ Si = mp.Medium(epsilon=12.0)
 boundary_layers = [mp.PML(dpml_x,direction=mp.X),
                    mp.PML(dpml_y,direction=mp.Y)]
 
-# mode wavelength
-lcen = 6.67
-# mode frequency
-fcen = 1/lcen
+lcen = 6.67       # mode wavelength
+fcen = 1/lcen     # mode frequency
 
 symmetries = [mp.Mirror(mp.Y)]
 
-for m in range(5):
-    Lt = 2**m
+R_coeffs = []
+R_flux = []
+
+for Lt in Lts:
     sx = dpml_x+Lw+Lt+Lw+dpml_x
     cell_size = mp.Vector3(sx,sy,0)
 
-    src_pt = mp.Vector3(-0.5*sx+dpml_x+0.2*Lw,0,0)
+    src_pt = mp.Vector3(-0.5*sx+dpml_x+0.2*Lw)
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                                  component=mp.Ez,
                                   center=src_pt,
-                                  size=mp.Vector3(0,sy-2*dpml_y,0),
+                                  size=mp.Vector3(y=sy-2*dpml_y),
                                   eig_match_freq=True,
                                   eig_parity=mp.ODD_Z+mp.EVEN_Y)]
 
@@ -52,15 +55,15 @@ for m in range(5):
                         sources=sources,
                         symmetries=symmetries)
 
-    mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw,0,0)
-    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml_y,0)))
+    mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw)
+    flux1 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    incident_coeffs = res.alpha
-    incident_flux = mp.get_fluxes(flux)
-    incident_flux_data = sim.get_flux_data(flux)
+    res1 = sim.get_eigenmode_coefficients(flux1,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    incident_coeffs = res1.alpha
+    incident_flux = mp.get_fluxes(flux1)
+    incident_flux_data = sim.get_flux_data(flux1)
 
     sim.reset_meep()
 
@@ -81,12 +84,26 @@ for m in range(5):
                         sources=sources,
                         symmetries=symmetries)
 
-    refl_flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(0,sy-2*dpml_y,0)))
-    sim.load_minus_flux_data(refl_flux,incident_flux_data)
+    flux2 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
+    sim.load_minus_flux_data(flux2,incident_flux_data)
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res = sim.get_eigenmode_coefficients(refl_flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    coeffs = res.alpha
-    taper_flux = mp.get_fluxes(refl_flux)
-    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,abs(coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2,-taper_flux[0]/incident_flux[0]))
+    res2 = sim.get_eigenmode_coefficients(flux2,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    taper_coeffs = res2.alpha
+    taper_flux = mp.get_fluxes(flux2)
+
+    R_coeffs.append(abs(taper_coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2)
+    R_flux.append(-taper_flux[0]/incident_flux[0])
+    print("refl:, {}, {:.8f}, {:.8f}".format(Lt,R_coeffs[-1],R_flux[-1]))
+
+
+if mp.am_master():
+    plt.figure()
+    plt.loglog(Lts,R_coeffs,'bo-',label='mode decomposition')
+    plt.loglog(Lts,R_flux,'ro-',label='Poynting flux')
+    plt.loglog(Lts,[0.005/Lt**2 for Lt in Lts],'k-',label=r'quadratic reference (1/Lt$^2$)')
+    plt.legend(loc='upper right')
+    plt.xlabel('taper length Lt (μm)')
+    plt.ylabel('reflectance')
+    plt.show()

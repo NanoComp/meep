@@ -837,7 +837,7 @@ public:
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
-  std::complex<double> fourier_transform(const double omega);
+  std::complex<double> fourier_transform(const double f);
 
 private:
   double freq, width, peak_time, cutoff;
@@ -1048,6 +1048,40 @@ public:
   volume where;
   direction normal_direction;
   bool use_symmetry;
+};
+
+// dft.cpp (normally created with fields::add_dft_energy)
+class dft_energy {
+public:
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin, double fmax,
+             int Nf, const volume &where_);
+  dft_energy(const dft_energy &f);
+
+  double *electric();
+  double *magnetic();
+  double *total();
+
+  void save_hdf5(h5file *file, const char *dprefix = 0);
+  void load_hdf5(h5file *file, const char *dprefix = 0);
+
+  void operator-=(const dft_energy &fl) {
+    if (E && fl.E) *E -= *fl.E;
+    if (H && fl.H) *H -= *fl.H;
+    if (D && fl.D) *D -= *fl.D;
+    if (B && fl.B) *B -= *fl.B;
+  }
+
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0, const char *prefix = 0);
+
+  void scale_dfts(std::complex<double> scale);
+
+  void remove();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *E, *H, *D, *B;
+  volume where;
 };
 
 // stress.cpp (normally created with fields::add_dft_force)
@@ -1687,6 +1721,8 @@ public:
                              std::complex<double> overlaps[2]);
   void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                              std::complex<double> overlaps[2]);
+
+  dft_energy add_dft_energy(const volume_list *where, double freq_min, double freq_max, int Nfreq);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq);

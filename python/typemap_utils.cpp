@@ -141,7 +141,7 @@ static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct
 
   PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
 
-  if (!pyret) {abort_with_stack_trace(); }
+  if (!pyret) { abort_with_stack_trace(); }
 
   if (!pymedium_to_medium(pyret, medium)) { abort_with_stack_trace(); }
 
@@ -418,9 +418,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   } else if (PyArray_Check(po)) {
     PyArrayObject *pao = (PyArrayObject *)po;
 
-    if (!PyArray_ISCARRAY(pao)) {
-      meep::abort("Numpy array must be C-style contiguous.");
-    }
+    if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array must be C-style contiguous."); }
     md = new material_data();
     md->which_subclass = material_data::MATERIAL_FILE;
     md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
@@ -720,9 +718,7 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
 
   if (!py_vert_list) { abort_with_stack_trace(); }
 
-  if (!PyList_Check(py_vert_list)) {
-    meep::abort("Expected Prism.vertices to be a list\n");
-  }
+  if (!PyList_Check(py_vert_list)) { meep::abort("Expected Prism.vertices to be a list\n"); }
 
   int num_vertices = PyList_Size(py_vert_list);
   vector3 *vertices = new vector3[num_vertices];
@@ -769,9 +765,7 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
 }
 
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
-  if (!PyList_Check(po)) {
-    meep::abort("Expected a list");
-  }
+  if (!PyList_Check(po)) { meep::abort("Expected a list"); }
 
   int length = PyList_Size(po);
 

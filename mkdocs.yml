@@ -1,6 +1,7 @@
 site_name: MEEP Documentation
 site_author: MEEP Developers
 repo_url: https://github.com/NanoComp/meep/
+edit_uri: blob/master/doc/docs
 
 use_directory_urls: True
 
@@ -74,9 +75,10 @@ pages:
     - 'Tutorial/Near-to-Far Field Spectra': 'Scheme_Tutorials/Near_to_Far_Field_Spectra.md'
     - 'Tutorial/Local Density of States': 'Scheme_Tutorials/Local_Density_of_States.md'
     - 'Tutorial/Optical Forces': 'Scheme_Tutorials/Optical_Forces.md'
+    - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
     - 'Tutorial/Frequency-Domain Solver': 'Scheme_Tutorials/Frequency_Domain_Solver.md'
     - 'Tutorial/Eigenmode Source': 'Scheme_Tutorials/Eigenmode_Source.md'
-    - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
+    - 'Tutorial/Mode Decomposition': 'Scheme_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
     - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
 - 'C++ Interface':

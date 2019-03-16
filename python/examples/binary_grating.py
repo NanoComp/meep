@@ -2,6 +2,8 @@
 
 import meep as mp
 import math
+import numpy as np
+import matplotlib.pyplot as plt
 
 resolution = 60        # pixels/μm
 
@@ -74,11 +76,35 @@ res = sim.get_eigenmode_coefficients(mode_mon, range(1,nmode+1), eig_parity=mp.O
 coeffs = res.alpha
 kdom = res.kdom
 
+mode_wvl = []
+mode_angle = []
+mode_tran = []
+
 for nm in range(nmode):
   for nf in range(nfreq):
-    mode_wvl = 1/freqs[nf]
-    mode_angle = math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf]))
-    mode_tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
-    if nm != 0:
-      mode_tran = 0.5*mode_tran
-    print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl,mode_angle,mode_tran))
+    mode_wvl.append(1/freqs[nf])
+    mode_angle.append(math.degrees(math.acos(kdom[nm*nfreq+nf].x/freqs[nf])))
+    tran = abs(coeffs[nm,nf,0])**2/input_flux[nf]
+    mode_tran.append(0.5*tran if nm != 0 else tran)
+    print("grating{}:, {:.5f}, {:.2f}, {:.8f}".format(nm,mode_wvl[-1],mode_angle[-1],mode_tran[-1]))
+
+tran_max = round(max(mode_tran),1)
+
+plt.figure()
+plt.pcolormesh(np.reshape(mode_wvl,(nmode,nfreq)),
+               np.reshape(mode_angle,(nmode,nfreq)),
+               np.reshape(mode_tran,(nmode,nfreq)),
+               cmap='Blues',
+               shading='flat',
+               vmin=0,
+               vmax=tran_max)
+plt.axis([min(mode_wvl), max(mode_wvl), min(mode_angle), max(mode_angle)])
+plt.xlabel("wavelength (μm)")
+plt.ylabel("diffraction angle (degrees)")
+plt.xticks([t for t in np.arange(0.4,0.7,0.1)])
+plt.yticks([t for t in range(0,35,5)])
+plt.title("transmittance of diffraction orders")
+cbar = plt.colorbar()
+cbar.set_ticks([t for t in np.arange(0,tran_max+0.1,0.1)])
+cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,tran_max+0.1,0.1)])
+plt.show()

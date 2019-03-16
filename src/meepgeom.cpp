@@ -1126,9 +1126,7 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_data *md = material;
   switch (md->which_subclass) {
     case material_data::MEDIUM:
-    case material_data::MATERIAL_USER:
-      cond_val = get_cnd(c, &(md->medium));
-      break;
+    case material_data::MATERIAL_USER: cond_val = get_cnd(c, &(md->medium)); break;
     default: cond_val = 0;
   }
   material_gc(material);
@@ -1602,122 +1600,15 @@ std::vector<meep::volume> fragment_stats::pml_3d_vols;
 std::vector<meep::volume> fragment_stats::absorber_vols;
 bool fragment_stats::split_chunks_evenly = false;
 
-inline static bool is_edge_box(double pt, double half_cell, double box_size, double edge_size) {
-  return (pt == -half_cell && edge_size != 0) || pt + box_size > half_cell;
-}
+static geom_box make_box_from_cell(vector3 cell_size) {
+  double edgex = cell_size.x / 2;
+  double edgey = cell_size.y / 2;
+  double edgez = cell_size.z / 2;
+  vector3 low = {-edgex, -edgey, -edgez};
+  vector3 high = {edgex, edgey, edgez};
+  geom_box result = {low, high};
 
-static std::vector<geom_box> split_cell_1d(double box_size, vector3 cell_size) {
-  if (cell_size.z < box_size) { box_size = cell_size.z; }
-  double half_box = box_size / 2;
-  double half_z = cell_size.z / 2;
-  double edge_size_z = fmod(half_z + half_box, box_size);
-  std::vector<geom_box> boxes;
-
-  for (double z = -half_z; z < half_z;) {
-    double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
-    vector3 low = {0.0, 0.0, z};
-    vector3 high = {0.0, 0.0, z + z_increment};
-    geom_box b = {low, high};
-    boxes.push_back(b);
-    z += z_increment;
-  }
-  return boxes;
-}
-
-static std::vector<geom_box> split_cell_2d(double box_size, vector3 cell_size) {
-  if (cell_size.x < box_size || cell_size.y < box_size) {
-    box_size = MIN(cell_size.x, cell_size.y);
-  }
-  double half_box = box_size / 2;
-  double half_x = cell_size.x / 2;
-  double half_y = cell_size.y / 2;
-  double edge_size_x = fmod(half_x + half_box, box_size);
-  double edge_size_y = fmod(half_y + half_box, box_size);
-  std::vector<geom_box> boxes;
-
-  for (double x = -half_x; x < half_x;) {
-    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
-    for (double y = -half_y; y < half_y;) {
-      double y_increment = is_edge_box(y, half_y, box_size, edge_size_y) ? edge_size_y : box_size;
-      vector3 low = {x, y, 0.0};
-      vector3 high = {x + x_increment, y + y_increment, 0.0};
-      geom_box b = {low, high};
-      boxes.push_back(b);
-      y += y_increment;
-    }
-    x += x_increment;
-  }
-  return boxes;
-}
-
-static std::vector<geom_box> split_cell_3d(double box_size, vector3 cell_size) {
-  if (cell_size.x < box_size || cell_size.y < box_size || cell_size.z < box_size) {
-    box_size = MIN(cell_size.x, cell_size.y);
-    box_size = MIN(box_size, cell_size.z);
-  }
-  double half_box = box_size / 2;
-  double half_x = cell_size.x / 2;
-  double half_y = cell_size.y / 2;
-  double half_z = cell_size.z / 2;
-  double edge_size_x = fmod(half_x + half_box, box_size);
-  double edge_size_y = fmod(half_y + half_box, box_size);
-  double edge_size_z = fmod(half_z + half_box, box_size);
-  std::vector<geom_box> boxes;
-
-  for (double x = -half_x; x < half_x;) {
-    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
-    for (double y = -half_y; y < half_y;) {
-      double y_increment = is_edge_box(y, half_y, box_size, edge_size_y) ? edge_size_y : box_size;
-      for (double z = -half_z; z < half_z;) {
-        double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
-        vector3 low = {x, y, z};
-        vector3 high = {x + x_increment, y + y_increment, z + z_increment};
-        geom_box b = {low, high};
-        boxes.push_back(b);
-        z += z_increment;
-      }
-      y += y_increment;
-    }
-    x += x_increment;
-  }
-  return boxes;
-}
-
-static std::vector<geom_box> split_cell_cyl(double box_size, vector3 cell_size) {
-  if (cell_size.x < box_size || cell_size.z < box_size) {
-    box_size = MIN(cell_size.x, cell_size.z);
-  }
-  double half_box = box_size / 2;
-  double half_x = cell_size.x / 2;
-  double half_z = cell_size.z / 2;
-  double edge_size_x = fmod(half_x + half_box, box_size);
-  double edge_size_z = fmod(half_z + half_box, box_size);
-  std::vector<geom_box> boxes;
-
-  for (double x = -half_x; x < half_x;) {
-    double x_increment = is_edge_box(x, half_x, box_size, edge_size_x) ? edge_size_x : box_size;
-    for (double z = -half_z; z < half_z;) {
-      double z_increment = is_edge_box(z, half_z, box_size, edge_size_z) ? edge_size_z : box_size;
-      vector3 low = {x, 0.0, z};
-      vector3 high = {x + x_increment, 0.0, z + z_increment};
-      geom_box b = {low, high};
-      boxes.push_back(b);
-      z += z_increment;
-    }
-    x += x_increment;
-  }
-  return boxes;
-}
-
-static std::vector<geom_box> split_cell_into_boxes(meep::grid_volume *gv, double box_size,
-                                                   vector3 cell_size) {
-  switch (gv->dim) {
-    case meep::D1: return split_cell_1d(box_size, cell_size);
-    case meep::D2: return split_cell_2d(box_size, cell_size);
-    case meep::D3: return split_cell_3d(box_size, cell_size);
-    case meep::Dcyl: return split_cell_cyl(box_size, cell_size); break;
-    default: return std::vector<geom_box>();
-  }
+  return result;
 }
 
 static size_t get_pixels_in_box(geom_box *b, int empty_pixel = 1) {
@@ -1738,27 +1629,23 @@ static void center_box(geom_box *b) {
   b->high = vector3_plus(geometry_center, b->high);
 }
 
-static std::vector<fragment_stats> init_fragments(std::vector<geom_box> &boxes, double tol,
-                                                  int maxeval, meep::grid_volume *gv) {
-  std::vector<fragment_stats> fragments;
+static fragment_stats init_stats(geom_box &box, double tol, int maxeval, meep::grid_volume *gv) {
   fragment_stats::tol = tol;
   fragment_stats::maxeval = maxeval;
   fragment_stats::resolution = gv->a;
   fragment_stats::dims = gv->dim;
 
-  for (size_t i = 0; i < boxes.size(); ++i) {
-    center_box(&boxes[i]);
-    fragments.push_back(fragment_stats(boxes[i]));
-  }
-  return fragments;
+  center_box(&box);
+  fragment_stats result(box);
+  return result;
 }
 
-std::vector<fragment_stats> compute_fragment_stats(
+fragment_stats compute_fragment_stats(
     geometric_object_list geom_, meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
     material_type default_mat, std::vector<dft_data> dft_data_list_,
     std::vector<meep::volume> pml_1d_vols_, std::vector<meep::volume> pml_2d_vols_,
     std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_, double tol,
-    int maxeval, bool ensure_per, double box_size) {
+    int maxeval, bool ensure_per) {
 
   fragment_stats::geom = geom_;
   fragment_stats::dft_data_list = dft_data_list_;
@@ -1768,13 +1655,10 @@ std::vector<fragment_stats> compute_fragment_stats(
   fragment_stats::absorber_vols = absorber_vols_;
 
   fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
-  std::vector<geom_box> boxes = split_cell_into_boxes(gv, box_size, cell_size);
-  std::vector<fragment_stats> fragments = init_fragments(boxes, tol, maxeval, gv);
-
-  for (size_t i = 0; i < fragments.size(); ++i) {
-    fragments[i].compute();
-  }
-  return fragments;
+  geom_box box = make_box_from_cell(cell_size);
+  fragment_stats stats = init_stats(box, tol, maxeval, gv);
+  stats.compute();
+  return stats;
 }
 
 fragment_stats::fragment_stats(geom_box &bx)

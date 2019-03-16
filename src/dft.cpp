@@ -444,6 +444,151 @@ dft_flux fields::add_dft_flux(const volume_list *where_, double freq_min, double
   return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq, firstvol, flux_dir, use_symmetry);
 }
 
+dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin,
+                       double fmax, int Nf, const volume &where_)
+    : Nfreq(Nf), E(E_), H(H_), D(D_), B(B_), where(where_) {
+  if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
+  freq_min = fmin;
+  dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
+}
+
+dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
+  freq_min = f.freq_min;
+  Nfreq = f.Nfreq;
+  dfreq = f.dfreq;
+  E = f.E;
+  H = f.H;
+  D = f.D;
+  B = f.B;
+}
+
+double *dft_energy::electric() {
+  double *F = new double[Nfreq];
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = 0;
+  for (dft_chunk *curE = E, *curD = D; curE && curD;
+       curE = curE->next_in_dft, curD = curD->next_in_dft)
+    for (size_t k = 0; k < curE->N; ++k)
+      for (int i = 0; i < Nfreq; ++i)
+        F[i] += 0.5 * real(conj(curE->dft[k * Nfreq + i]) * curD->dft[k * Nfreq + i]);
+  double *Fsum = new double[Nfreq];
+  sum_to_all(F, Fsum, Nfreq);
+  delete[] F;
+  return Fsum;
+}
+
+double *dft_energy::magnetic() {
+  double *F = new double[Nfreq];
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = 0;
+  for (dft_chunk *curH = H, *curB = B; curH && curB;
+       curH = curH->next_in_dft, curB = curB->next_in_dft)
+    for (size_t k = 0; k < curH->N; ++k)
+      for (int i = 0; i < Nfreq; ++i)
+        F[i] += 0.5 * real(conj(curH->dft[k * Nfreq + i]) * curB->dft[k * Nfreq + i]);
+  double *Fsum = new double[Nfreq];
+  sum_to_all(F, Fsum, Nfreq);
+  delete[] F;
+  return Fsum;
+}
+
+double *dft_energy::total() {
+  double *Fe = electric();
+  double *Fm = magnetic();
+  double *F = new double[Nfreq];
+  for (int i = 0; i < Nfreq; ++i)
+    F[i] = Fe[i] + Fm[i];
+  delete[] Fe;
+  delete[] Fm;
+  return F;
+}
+
+dft_energy fields::add_dft_energy(const volume_list *where_, double freq_min, double freq_max,
+                                  int Nfreq) {
+
+  if (!where_) // handle empty list of volumes
+    return dft_energy(NULL, NULL, NULL, NULL, freq_min, freq_max, Nfreq, v);
+
+  dft_chunk *E = 0, *D = 0, *H = 0, *B = 0;
+  volume firstvol(where_->v);
+  volume_list *where = new volume_list(where_);
+  volume_list *where_save = where;
+  while (where) {
+    LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
+      E = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq, true, 1.0, E);
+      D = add_dft(direction_component(Dx, d), where->v, freq_min, freq_max, Nfreq, false, 1.0, D);
+      H = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq, true, 1.0, H);
+      B = add_dft(direction_component(Bx, d), where->v, freq_min, freq_max, Nfreq, false, 1.0, B);
+    }
+    where = where->next;
+  }
+  delete where_save;
+
+  return dft_energy(E, H, D, B, freq_min, freq_max, Nfreq, firstvol);
+}
+
+void dft_energy::save_hdf5(h5file *file, const char *dprefix) {
+  save_dft_hdf5(E, "E", file, dprefix);
+  file->prevent_deadlock(); // hackery
+  save_dft_hdf5(D, "D", file, dprefix);
+  file->prevent_deadlock(); // hackery
+  save_dft_hdf5(H, "H", file, dprefix);
+  file->prevent_deadlock(); // hackery
+  save_dft_hdf5(B, "B", file, dprefix);
+}
+
+void dft_energy::load_hdf5(h5file *file, const char *dprefix) {
+  load_dft_hdf5(E, "E", file, dprefix);
+  file->prevent_deadlock(); // hackery
+  load_dft_hdf5(D, "D", file, dprefix);
+  file->prevent_deadlock(); // hackery
+  load_dft_hdf5(H, "H", file, dprefix);
+  file->prevent_deadlock(); // hackery
+  load_dft_hdf5(B, "B", file, dprefix);
+}
+
+void dft_energy::save_hdf5(fields &f, const char *fname, const char *dprefix, const char *prefix) {
+  h5file *ff = f.open_h5file(fname, h5file::WRITE, prefix);
+  save_hdf5(ff, dprefix);
+  delete ff;
+}
+
+void dft_energy::load_hdf5(fields &f, const char *fname, const char *dprefix, const char *prefix) {
+  h5file *ff = f.open_h5file(fname, h5file::READONLY, prefix);
+  load_hdf5(ff, dprefix);
+  delete ff;
+}
+
+void dft_energy::scale_dfts(complex<double> scale) {
+  if (E) E->scale_dft(scale);
+  if (D) D->scale_dft(scale);
+  if (H) H->scale_dft(scale);
+  if (B) B->scale_dft(scale);
+}
+
+void dft_energy::remove() {
+  while (E) {
+    dft_chunk *nxt = E->next_in_dft;
+    delete E;
+    E = nxt;
+  }
+  while (D) {
+    dft_chunk *nxt = D->next_in_dft;
+    delete D;
+    D = nxt;
+  }
+  while (H) {
+    dft_chunk *nxt = H->next_in_dft;
+    delete H;
+    H = nxt;
+  }
+  while (B) {
+    dft_chunk *nxt = B->next_in_dft;
+    delete B;
+    B = nxt;
+  }
+}
+
 direction fields::normal_direction(const volume &where) const {
   direction d = where.normal_direction();
   if (d == NO_DIRECTION) {

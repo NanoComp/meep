@@ -2,7 +2,7 @@
 # FAQ
 ---
 
-The following are frequently asked questions.
+The following are frequently asked questions grouped by categories.
 
 [TOC]
 
@@ -21,10 +21,6 @@ Meep was originally developed as part of graduate research at MIT. The project i
 
 There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A useful place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings (6000+) since 2006 spanning a variety of topics. Bug reports and new feature requests should be filed as a [GitHub issue](https://github.com/NanoComp/meep/issues).
 
-### Are professional consulting services available?
-
-Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers and maintainers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
-
 ### How can I contribute to the Meep project?
 
 [Pull requests](https://github.com/NanoComp/meep/pulls) involving bug fixes, new features, and general improvements are welcome and can be made to the master branch on GitHub. This includes tweaks, revisions, and updates to this documentation, generated from [markdown](https://en.wikipedia.org/wiki/Markdown), which is also part of the [source repository](https://github.com/NanoComp/meep/tree/master/doc).
@@ -41,6 +37,10 @@ For a list of more than 2500 published works which have used Meep, see the [Goog
 
 Yes. Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
+### Are professional consulting services available?
+
+Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers and maintainers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
+
 Installation
 ------------
 
@@ -50,7 +50,7 @@ Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, 
 
 ### Can I install Meep on Windows machines?
 
-Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). Support for visualization is enabled using a browser-based [Jupyter notebook](https://jupyter.org/) which can be installed via the Ubuntu terminal. For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). Support for visualization is enabled using a browser-based [Jupyter notebook](https://jupyter.org/) which can also be installed via the Ubuntu terminal. For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 ### Are there precompiled binary packages for Ubuntu?
 
@@ -65,7 +65,11 @@ Physics
 
 ### How does the current amplitude relate to the resulting field amplitude?
 
-There is no simple formula relating the input current amplitude (**J** in Maxwell's equations) to the resulting fields (**E**) etcetera, even at the same point as the current. The exact same current will produce a different field and radiate a different total power depending upon the surrounding materials/geometry, and depending on the frequency. This is a physical consequence of the geometry's effect on the local density of states; it can also be thought of as feedback from reflections on the source. A classic example is an antenna in front of a ground plane, which radiates very different amounts of power depending on the distance between the antenna and the plane (half wavelength vs. quarter wavelength, for example). Alternatively, if you put a current source inside a perfect electric conductor, the resulting field will be zero. Also, as the frequency of the current increases, the amplitude of the resulting field will also increase. This is related to why the sky is blue: scattered power increases with frequency (alternatively the density of states increases as the frequency to the d-1 power in d dimensions).
+There is no simple formula relating the input current amplitude (**J** in Maxwell's equations) to the resulting fields (**E**) etcetera, even at the same point as the current. The exact same current will produce a different field and radiate a different total power depending upon the surrounding materials/geometry, and depending on the frequency. This is a physical consequence of the geometry's effect on the local density of states (LDOS); it can also be thought of as feedback from reflections on the source. A classic example is an antenna in front of a ground plane, which radiates very different amounts of power depending on the distance between the antenna and the plane (half wavelength vs. quarter wavelength, for example). Alternatively, if you put a current source inside a perfect electric conductor, the resulting field will be zero. Also, as the frequency of the current increases, the amplitude of the resulting field will also increase. This is due to [Rayleigh scattering](https://en.wikipedia.org/wiki/Rayleigh_scattering) which explains why the sky is blue: scattered power increases with frequency; alternatively the density of states increases as the frequency to the d-1 power in d dimensions.
+
+For a leaky resonant mode where the fields are spatially confined and decaying away exponentially with time, the power expended by a dipole source at a given frequency and position is proportional to the ratio of the [quality factor](https://en.wikipedia.org/wiki/Q_factor) (Q) and modal volume (V<sub>m</sub>). This is known as [Purcell enhancement](https://en.wikipedia.org/wiki/Purcell_effect) of the LDOS: the same current source in a higher Q cavity emits more power if the coupling to the mode is the same.
+
+(On the other hand, if you were to put in a dipole source with a fixed *voltage*, instead of a fixed *current*, you would get less power out with higher Q. For an antenna, the Purcell enhancement factor Q/V<sub>m</sub> is proportional to its [radiation resistance](https://en.wikipedia.org/wiki/Radiation_resistance) R. If you fix current I, then power I²R increases with resistance whereas if you fix voltage V then the power V²/R decreases with resistance.)
 
 For a mathematical description, see Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
@@ -111,88 +115,22 @@ There are two possible explanations: (1) the simulation run time may be too shor
 
 For simulations involving [solar radiation](https://en.wikipedia.org/wiki/Sunlight#Surface_illumination), including the [air mass](https://en.wikipedia.org/wiki/Air_mass_(solar_energy)), the [reflectance/transmittance spectra](Introduction.md#transmittancereflectance-spectra) is computed as normal. Since typical solar-cell problems are linear, the reflected or transmitted power can then be obtained by simply multiplying the reflectance or transmittance by the solar spectrum.
 
-Usage
------
+### Are complex fields physical?
 
-### Is there a Python interface?
+No. Unlike quantum mechanics, complex fields in classical electromagnetics are not physical. In a linear system, one can always take the real part at the end of the computation to obtain a physical result. When there are nonlinearities, the physical interpretation is much more non-obvious.
 
-Yes. An official [Python interface](Python_User_Interface.md) was released in [version 1.4](https://github.com/NanoComp/meep/releases) and replaces the [Scheme interface](Scheme_User_Interface.md) which is no longer being supported. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which predates and is **incompatible** with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
+Note: specifying a complex `amplitude` for the `Source` object does not automatically yield complex fields. Unless the parameter `force_complex_fields=True` is specified, only the real part of the source is used. The complex amplitude is just a phase shift of the real sinusoidal source.
 
-### What are the different ways to define a structure?
+Usage: Sources
+--------------
 
-There are four ways to define a structure: (1) the [`GeometricObject`](Python_User_Interface.md#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface.md#geometric-object) (Scheme) class used to specify a collection of predefined shapes including `Prism`, `Sphere`, `Cylinder`, `Cone`, `Block`, and `Ellipsoid`, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function: for a given position in the cell, return the ε/μ at that point, (3) import the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter, or (4) import planar geometries from a [GDSII file](Python_User_Interface.md#gdsii-support). Combinations of (1), (2), and (4) are allowed but not (3).
+### How do I create an oblique planewave source?
 
-### Is there a materials library?
+An arbitrary-angle planewave can be generated in two different ways: (1) by setting the amplitude function [`amp_func`](Python_User_Interface.md#source) of a 1d/line source for a 2d cell or 2d/planar source for a 3d cell, or (2) via the [EigenModeSource](Python_User_Interface.md#eigenmodesource). Bloch-periodic boundary conditions via the `k_point` may also be required.
 
-Yes. A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon) (c-Si), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (a-Si) including the hydrogenated form, [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO<sub>2</sub>), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al<sub>2</sub>O<sub>3</sub>), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [gallium nitride](https://en.wikipedia.org/wiki/Gallium_nitride) (GaN), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si<sub>3</sub>N<sub>4</sub>), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), [lithium niobate](https://en.wikipedia.org/wiki/Lithium_niobate) (LiNbO<sub>3</sub>), as well as 11 elemental metals: [silver](https://en.wikipedia.org/wiki/Silver) (Ag), [gold](https://en.wikipedia.org/wiki/Gold) (Au), [copper](https://en.wikipedia.org/wiki/Copper) (Cu), [aluminum](https://en.wikipedia.org/wiki/Aluminium) (Al), [berylium](https://en.wikipedia.org/wiki/Beryllium) (Be), [chromium](https://en.wikipedia.org/wiki/Chromium) (Cr), [nickel](https://en.wikipedia.org/wiki/Nickel) (Ni), [palladium](https://en.wikipedia.org/wiki/Palladium) (Pd), [platinum](https://en.wikipedia.org/wiki/Platinum) (Pt), [titanium](https://en.wikipedia.org/wiki/Titanium) (Ti), and [tungsten](https://en.wikipedia.org/wiki/Tungsten) (W). Additional information is provided in [Materials](Materials.md#materials-library).
+The first approach involving `amp_func` is based on the principle that just as you can create a directional antenna by a [phased array](https://en.wikipedia.org/wiki/Phased_array), you can create a directional source by setting the phase of the current appropriately. For a 1d example, see [Tutorial/Basics](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface) ([Scheme version](Scheme_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface)). For 2d, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence) ([Scheme version](Scheme_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence)) as well as [examples/pw-source.py](https://github.com/NanoComp/meep/blob/master/python/examples/pw-source.py) ([Scheme version](https://github.com/NanoComp/meep/blob/master/scheme/examples/pw-source.ctl)).
 
-### How do I import n and k values into Meep?
-
-You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the wavelength- or frequency-dependent data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials.md#material-dispersion). In general, you have to use nonlinear optimization to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. A wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented using the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation) can be directly [transferred to the Lorentz model using a simple substitution of variables](Materials.md#sellmeier-coefficients). Note that Meep only does [subpixel averaging of the nondispersive part of ε (and μ)](#can-subpixel-averaging-be-applied-to-dispersive-materials).
-
-### Does Meep support gyrotropic materials?
-
-No. Currently, Meep only supports anisotropic, real-symmetric, permittivity tensors. In the [magneto-optic effect](https://en.wikipedia.org/wiki/Magneto-optic_effect), an external magnetic field yields imaginary off-diagonal components of ε (with no absorption) which is not yet supported (issue [#60](https://github.com/NanoComp/meep/issues/60)).
-
-### Why are the fields blowing up in my simulation?
-
-Instability in the fields is likely due to one of four causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the resolution and/or reduce the Courant factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), or (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging).
-
-### Does Meep support importing GDSII files?
-
-Yes. The [`get_GDSII_prisms`](Python_User_Interface.md#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. See [Tutorial/GDSII Import](Python_Tutorials/GDSII_Import.md) for an example. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
-
-### Checking convergence
-
-In any computer simulation like Meep, you should check that your results are *converged* with respect to any approximation that was made. There is no simple formula that will tell you in advance exactly how much resolution (etc.) is required for a given level of accuracy; the most reliable procedure is to simply double the resolution and verify that the answers you care about don't change to your desired tolerance. Useful things to check (ideally by doubling) in this way are: **resolution**, **run time** (for Fourier spectra), **PML thickness**.
-
-Meep's [subpixel smoothing](Introduction.md#the-illusion-of-continuity) often improves the rate of convergence and makes convergence a smoother function of resolution. However, subpixel smoothing does not occur for [dispersive materials](#can-subpixel-averaging-be-applied-to-dispersive-materials) or [user-defined material functions](#why-does-subpixel-averaging-take-so-long) ε(x) instead of the built-in geometric objects.
-
-For flux calculations involving pulsed (i.e., Gaussian) sources, it is important to run the simulation long enough to ensure that all the transient fields have sufficiently decayed away (i.e., due to absorption by the PMLs, etc). Terminating the simulation prematurely will result in the Fourier-transformed fields, which are being accumulated during the time stepping (as explained in [Introduction](Introduction.md#transmittancereflectance-spectra)), to not be fully converged. Convergence of the fields is typically achieved by lowering the `decay_by` parameter in the `stop_when_fields_decayed` [run function](Python_User_Interface.md#run-functions).  Alternatively, you can explicitly set the run time to some numeric value that you repeatedly double, instead of using the field decay.  Sometimes it is also informative to double the `cutoff` parameter of sources to increase their smoothness (reducing the amplitude of long-lived high-frequency modes).
-
-### Why are my reflectance/transmittance values less than zero and/or greater than one?
-
-There are four possible explanations: (1) the normalization and the scattering runs are not comparable because e.g., the sources or flux monitors are not in the same position within the structure, (2) the [run time is not long enough](#checking-convergence) and hence all of the flux is not being collected in either or both runs, (3) the flux is being computed at a frequency which is too far away from the center of the source bandwidth; in such cases the flux values are too small and may be dominated by rounding errors, or (4) the source or flux monitor is positioned too close to the scatterer which [modifies the local density of states (LDOS)](#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude); for example, a source emits more power near a band edge and less power within a bandgap than the same source surrounded by many wavelengths of vacuum.
-
-Note: the Poynting flux is a dimensionful quantity which can be *any* value (positive or negative).
-
-### How do I compute the modes of a non-orthogonal (i.e., triangular) lattice?
-
-Meep does not support non-rectangular unit cells. To deal with a triangular lattice, you have to use a supercell. This will cause the band structure to be [folded](#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures).  However, if you take your point source and replicate it according to the underlying triangular lattice vectors, with the right phase relationship according to the Bloch wavevector, then it should excite the folded bands only with very low amplitude as reported by [`Harminv`](Python_User_Interface.md#harminv). Also, for every `Harminv` point you put in, you should analyze the fields from the periodic copies of that point (with the periodicity of the underlying lattice). Then, reject any frequency that is not detected at *all* points, with an amplitude that is related by something close to the correct exp(ikx) phase.
-
-In principle, the excitation of the folded bands would be exactly zero if you place your sources correctly in the supercell. However, this doesn't happen in FDTD because the finite grid spoils the symmetry slightly. It also means that the detection of folded bands will vary with resolution. 
-
-For an example, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
-
-### Why doesn't turning off subpixel averaging work?
-
-By default, when Meep assigns a dielectric constant ε or μ to each pixel, it uses a carefully designed average of the ε values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinuous ε it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) ε, as long as the averaging is done properly. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
-
-Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by setting `Simulation.eps_averaging = False` (Python) or `(set! eps-averaging? false)` (Scheme). For more details, see [Python User Interface](Python_User_Interface.md).
-
-Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and visualize it, you may notice that there are some pixels with intermediate ε values, right at the boundary between two materials. This is due to a completely different reason. Internally, Meep's simulation is performed on a [Yee grid](Yee_Lattice.md), in which every field component is stored on a slightly different grid which are offset from one another by half-pixels, and the ε values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid at the center of each pixel, so all quantities are interpolated onto this grid for output. Therefore, even though the internal ε values are indeed discontinuous when you disable subpixel averaging, the output file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.   For the same reason, if `k_point` is set and the boundaries are Bloch-periodic, the permittivity function of the entire cell obtained via `get_epsilon` or `output_epsilon` will show that a little of the cell from one edge "leaks" over to the other edge. This is independent of PML and the way the structure is defined (i.e., using geometric objects or a material function, etc.). An example is shown in the figure below comparing `output_epsilon` for two cases involving with and without `k_point`. The discretization artifacts are highlighted.
-
-<center>
-![](images/output_epsilon_kpoint.png)
-</center>
-
-### Can subpixel averaging be applied to dispersive materials?
-
-No. Meep only does subpixel averaging of the non-dispersive part of ε and μ. The dispersive part is not averaged at all.  This means that any sharp interfaces between dispersive materials will dominate the error, and you will probably get only first-order convergence, the same as if you do no subpixel averaging at all. It is possible that the subpixel averaging may still improve the constant factor in the convergence if not the asymptotic convergence rate, if you also have a lot of interfaces between non-dispersive materials or if the dispersion is small (i.e., if ε is close to ε<sub>&#8734;</sub> over your bandwidth). On the other hand, if the dispersion is large and most of your interfaces are between large-dispersion materials, then subpixel averaging may not help at all and you might as well turn it off (which may improve [stability](#why-are-the-fields-blowing-up-in-my-simulation)). Generally, the subpixel averaging will not degrade accuracy though it will affect performance.
-
-### What is a good rule of thumb for the grid resolution?
-
-At least 8 pixels per wavelength in the lossless dielectric material with the highest index. Resolving the [skin depth of metals](https://en.wikipedia.org/wiki/Skin_effect), which is typically tens of nanometers at optical frequencies, will require a pixel size of comparable dimensions since [subpixel averaging does not apply to dispersive materials](#can-subpixel-averaging-be-applied-to-dispersive-materials).
-
-### Why does subpixel averaging take so long?
-
-There are at least two possible reasons due to using: (1) a `material_function` to define a [`Medium`](Python_User_Interface.md#medium) object or (2) the [C++](C++_Tutorial) interface. Unlike either the [Python](Python_User_Interface/) or [Scheme](Scheme_User_Interface/) interfaces which are based on analytically computing the averaged permittivity for boundary voxels involving at most one [`GeometricObject`](Python_User_Interface.md#geometricobject) (e.g., `Sphere`, `Prism`, `Block`, etc.), the C++ interface computes these averages from the `material_function` using [numerical quadrature](https://en.wikipedia.org/wiki/Numerical_integration) if the parameter `use_anisotropic_averaging=true` is passed to the constructor of `set_materials`. This procedure involves calling the `material_function` many times for every voxel in the [structure object](C++_Developer_Information.md#data-structures-and-chunks) which can be slow due to the [SWIG](http://www.swig.org/) callbacks, particularly because the voxel density is repeatedly doubled until a given threshold tolerance (`subpixel_tol`) or maximum iteration number (`subpixel_maxeval`) is reached. Because of this discrepancy in the subpixel averaging, the results for the C++ and Python/Scheme interfaces may be slightly different at the same resolution. You can potentially speed up subpixel averaging by increasing `subpixel_tol` or decreasing `subpixel_maxeval`. Note that the slow callbacks may still be noticeable during the grid initialization even when subpixel averaging is turned off. Just remember that if you turn off subpixel averaging, it usually means that you may need to increase the grid resolution to obtain the same accuracy. You will have to determine how much accuracy you want to trade for time. Alternatively, in the C++ interface you can use the [`meepgeom.hpp`](https://github.com/NanoComp/meep/blob/master/src/meepgeom.hpp) routines to define your geometry in terms of blocks, cylinders, etcetera similar to Python and Scheme, with semi-analytical subpixel averaging.
-
-### For calculations involving Fourier-transformed fields, why should the source be a pulse rather than a continuous wave?
-
-A continuous-wave source ([ContinuousSource](Python_User_Interface.md#continuoussource)) produces fields which are not integrable: their Fourier transform will not converge as the run time of the simulation is increased because the source never terminates. The Fourier-transformed fields are therefore arbitrarily defined by the run time. This [windowing](https://en.wikipedia.org/wiki/Window_function) does different things to the normalization and scattering runs because the spectra are different in the two cases. In contrast, a pulsed source ([GaussianSource](Python_User_Interface.md#gaussiansource)) produces fields which are [L2](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm)-integrable: their Fourier transform is well defined and convergent as long as the run time is sufficiently large and the [fields have decayed away](#checking-convergence).
-
-Note: the amplitude of the Fourier transform grows linearly with time and the Poynting flux, which is proportional to the amplitude squared, grows quadratically.
+For an example of the second approach, see [Tutorial/Eigenmode Source](Python_Tutorials/Eigenmode_Source.md#planewaves-in-homogeneous-media) ([Scheme version](Scheme_Tutorials/Eigenmode_Source.md#planewaves-in-homogeneous-media)).
 
 ### How do I create a focused beam with a Gaussian envelope?
 
@@ -202,9 +140,62 @@ A focused beam with a Gaussian envelope can be created using the amplitude funct
 ![](images/gaussian_beam.png)
 </center>
 
-The [numerical aperture (NA)](https://en.wikipedia.org/wiki/Gaussian_beam#Beam_divergence) of a Gaussian beam of width w (2*`sigma` from the example script) and vacuum wavelength λ in a medium of index n is n⋅sin(λ/(πnw)).
+Beams in a homogeneous material do not have a fixed width in Maxwell's equations; they always spread out during propagation. The [numerical aperture (NA)](https://en.wikipedia.org/wiki/Gaussian_beam#Beam_divergence) of a Gaussian beam of width w (2*`sigma` from the example script) and vacuum wavelength λ in a medium of index n is n⋅sin(λ/(πnw)).
 
 Note: in this example, the beam waist is at the source position (i.e., top center of the cell). If you want the beam waist to be at a position other than the position of the source, you need to adjust the *phase* of the beam accordingly. If you assume you have a Gaussian beam profile with zero phase at some plane y=y0, then you can work out the beam profile (including phase) at any other plane y=y1 by taking the Fourier transform and looking at the propagation of each planewave component, and then inverse Fourier transforming. In this way, you can work out the desired source profile at any plane y=y1 to get a Gaussian beam waist at y=y0.
+
+### How do I create a circularly-polarized planewave source in cylindrical coordinates?
+
+A circularly-polarized planewave in [cylindrical coordinates](Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude`=1 and a constant E<sub>p</sub> (φ) current source with `amplitude`=0+1i as well as `m`=1.
+
+### How do I model a moving point charge?
+
+You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#continuoussource) with large wavelength (or nearly-zero frequency). This is analogous to a [direct current](https://en.wikipedia.org/wiki/Direct_current). You will also need to create a [run function](Python_User_Interface.md#run-functions) which contains [`change_sources`](Python_User_Interface.md#reloading-parameters) and specify the `center` property of the point source to be time dependent. As an example, the following image demonstrates [Cherenkov radiation](https://en.wikipedia.org/wiki/Cherenkov_radiation) involving a moving point charge with [superluminal phase velocity](https://en.wikipedia.org/wiki/Faster-than-light#Phase_velocities_above_c) (see [examples/cherenkov-radiation.py](https://github.com/NanoComp/meep/blob/master/python/examples/cherenkov-radiation.py)).
+
+<center>
+![](images/cherenkov_radiation.png)
+</center>
+
+### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
+
+The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response $\exp(-i\omega t)$ due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
+
+If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
+
+<center>
+![](images/cwsrc_turnon.png)
+</center>
+
+Note: even if you have a continuous wave (CW) source at a frequency ω, the time dependence of the electric field after transients have died away won't necessarily be cos(ωt), because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to cos(ωt-φ) for some phase φ which depends on the field component, the source position, and the surrounding geometry.
+
+### Why does the amplitude of a point dipole source increase with resolution?
+
+The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
+
+Usage: Fields
+-------------
+
+### Why are the fields blowing up in my simulation?
+
+Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the `resolution` and/or reduce the `Courant` factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), or (5) a material with a *wavelength-independent* refractive index between 0 and 1 (fix: reduce the `Courant` factor; alternatively, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
+
+Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling).
+
+### How do I compute S-parameters?
+
+Meep contains a [mode-decomposition feature](Mode_Decomposition.md) which can be used to compute complex-valued [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a [two-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) based on a silicon directional coupler in [Tutorial/GDSII Import](/Python_Tutorials/GDSII_Import/). An additional example is available for a [waveguide mode converter](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
+
+### `Harminv` is unable to find the resonant modes of my structure
+
+There are six possible explanations for why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) the run time was not long enough and the decay rate of the mode is so small that the `Harminv` data was mainly noise, (2) the `Harminv` call was not wrapped in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps sources turning on and off it will get confused because the sources are not exponentially decaying fields, (3) the `Harminv` monitor is near the mode's nodal point (e.g., in a symmetry plane), (4) there are field instabilities where the fields are actually [blowing up](#why-are-the-fields-blowing-up-in-my-simulation); this may result in `Harminv` returning a negative [quality factor](https://en.wikipedia.org/wiki/Q_factor), (5) the decay rate of the mode is too fast; `Harminv` discards any modes which have a quality factor less than 50 where the leaky-mode approximation of the modes as perfectly exponentially decaying (i.e. a Lorentzian lineshape) begins to break down (and thus `Harminv` won't likely find any modes inside a [metal](Materials.md#material-dispersion)), or (6) the PML overlaps the non-radiated/evanescent field and has introduced artificial absorption effects in the local density of states (LDOS).
+
+`Harminv` will find modes in perfect-conductor cavities (i.e. with no loss) with a quality factor that is very large and has an arbitrary sign; it has no way to tell that the decay rate is zero, it just knows it is very small.
+
+In order to resolve two closely-spaced modes, in general it is preferable to run with a narrow bandwidth source around the frequency of interest to excite/analyze as few modes as possible and/or increase the run time to improve the frequency resolution. If you want to analyze an arbitrary spectrum, just use the Fourier transform as computed by [`dft_fields`](Python_User_Interface.md#field-computations).
+
+For a structure with two doubly-degenerate modes (e.g., a dipole-like mode or two counter-propagating modes in a ring resonator), the grid discretization will almost certainly break the degeneracy slightly. In this case, `Harminv` may find two *distinct* nearly-degenerate modes.
+
+Note: any real-valued signal consists of both positive and negative frequency components (with complex-conjugate amplitudes) in a Fourier domain decomposition into complex exponentials. `Harminv` usually is set up to find just one sign of the frequency, but occasionally converges to a negative-frequency component as well; these are just as meaningful as the positive frequencies.
 
 ### How do I compute the effective index of an eigenmode of a lossy waveguide?
 
@@ -218,31 +209,124 @@ This analysis is only valid if the loss is small, i.e. ω<sub>i</sub> << ω<sub>
 
 ### How do I compute the group velocity of a mode?
 
-There are two possible approaches for computing the group velocity: (1) compute the [band diagram](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference), or (2) excite the mode using a narrowband pulse and compute the ratio of the flux to energy density.
+There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) ∇<sub>**k**</sub>ω: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. [ω(**k**+Δ**k**)-ω(**k**-Δ**k**)]/(2|Δ**k**|)), or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
+
+For eigenmodes obtained using [mode decomposition](Python_User_Interface.md#mode-decomposition), the group velocities are computed automatically along with the mode coefficients.
 
 ### How do I compute the time average of the harmonic fields?
 
-For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or Poynting flux Re[E*xH]/2 is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
+For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or [Poynting flux](https://en.wikipedia.org/wiki/Poynting_vector#Time-averaged_Poynting_vector) Re[E*xH]/2 is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
 
-### How do I set up an oblique planewave source?
+### How do I compute the modes of a non-orthogonal (i.e., triangular) lattice?
 
-A planewave incident at any angle can be generated by typically setting the amplitude function [`amp_func`](Python_User_Interface.md#source) of a 1d/line source for a 2d cell or 2d/planar source for a 3d cell, as well as the Bloch-periodic boundary conditions via `k_point`. For a 1d example, see [Tutorial/Basics](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface). There is also a [Scheme version](Scheme_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface). For 2d, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence). Additional examples are available for [Python](https://github.com/NanoComp/meep/blob/master/python/examples/pw-source.py) and [Scheme](https://github.com/NanoComp/meep/blob/master/scheme/examples/pw-source.ctl).
+Meep does not support non-rectangular unit cells. To model a triangular lattice, you have to use a supercell. This will cause the band structure to be [folded](#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures).  However, if you take your point source and replicate it according to the underlying triangular lattice vectors, with the right phase relationship according to the Bloch wavevector, then it should excite the folded bands only with very low amplitude as reported by [`Harminv`](Python_User_Interface.md#harminv). Also, for every `Harminv` point you put in, you should analyze the fields from the periodic copies of that point (with the periodicity of the underlying lattice). Then, reject any frequency that is not detected at *all* points, with an amplitude that is related by something close to the correct $\exp(i\vec{k}\cdot\vec{r})$ phase.
 
-The oblique planewave is incident at a given angle for only a *single* frequency component of the source. Alternatively, each frequency of a pulsed source corresponds to a *different* angle. This is a fundamental feature of FDTD simulations and not of Meep per se. Thus, to simulate an incident planewave at multiple angles for a given frequency ω, you will need to do separate simulations involving different values of k (`k_point`) since each set of (k,ω) specifying the Bloch-periodic boundaries and the frequency of the source will produce a different angle of the planewave.
+In principle, the excitation of the folded bands would be exactly zero if you place your sources correctly in the supercell. However, this doesn't happen in FDTD because the finite grid spoils the symmetry slightly. It also means that the detection of folded bands will vary with resolution. For an example, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-For more details, refer to Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+For structures with a lossless (i.e., purely real) permittivity, you can also use [MPB](https://mpb.readthedocs.io/en/latest/) to compute the dispersion relation which does support a non-orthogonal lattice.
 
-### What is Meep's frequency-domain solver and how does it work? 
+### For calculations involving Fourier-transformed fields, why should the source be a pulse rather than a continuous wave?
 
-Meep contains a [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) that directly computes the steady-state fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave), using an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. This is possible because the FDTD timestep can be used to formulate a frequency-domain problem via an iterative linear solver. The frequency-domain response can often be determined using many fewer timesteps while exploiting the FDTD code almost without modification. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
+A continuous-wave source ([ContinuousSource](Python_User_Interface.md#continuoussource)) produces fields which are not integrable: their Fourier transform will not converge as the run time of the simulation is increased because the source never terminates. The Fourier-transformed fields are therefore arbitrarily defined by the run time. This [windowing](https://en.wikipedia.org/wiki/Window_function) does different things to the normalization and scattering runs because the spectra are different in the two cases. In contrast, a pulsed source ([GaussianSource](Python_User_Interface.md#gaussiansource)) produces fields which are [L2](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm)-integrable: their Fourier transform is well defined and convergent as long as the run time is sufficiently large and the [fields have decayed away](#checking-convergence). Note that the amplitude of the Fourier transform grows linearly with time and the Poynting flux, which is proportional to the amplitude squared, grows quadratically.
 
-This means that all of the features from the time-domain solver (e.g., arbitrary materials, symmetries, subpixel averaging, parallelization, etc.) are also available as a frequency-domain solver. For certain problems, such as cavities (e.g., ring resonators) with long-lived resonant modes, the frequency-domain solver converges much faster than the straightforward approach of simply running a long simulation until transients have disappeared. Another benefit is that an arbitrary, complex, refractive index can be specified directly using the [electric conductivity](Materials.md#conductivity-and-complex) without having to fit the data to a sum of [Drude-Lorentz susceptibility terms](Materials.md#material-dispersion).
+When computing the reflectance/transmittance for linear materials, you should get the same results if you put in a narrow- or broad-band Gaussian and look at only one frequency component of the Fourier transform. The latter has the advantage that it requires a shorter simulation for the fields to decay away. Morever, if you want the scattering properties as a function of both frequency *and* angle, then the short pulses have a further advantage: each simulation with a short pulse and fixed `k_point` yields a broad spectrum result, each frequency of which corresponds to a different angle. Then you repeat the simulation for a range of `k_point`'s, and at the end you'll have a 2d dataset of reflectance/transmittance vs. both frequency and angle. For an example, see [Tutorial/Basics/Angular Reflectance Spectrum of a Planar Interface](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface).
 
-For examples, see [Tutorial/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver.md) and [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence).
+### How does `k_point` define the phase relation between adjacent unit cells?
+
+If you set the `k_point` to any `meep.Vector3`, the structure will be periodic in **all** directions. (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
+
+A periodic structure does **not** imply periodic fields. The value of the `k_point` determines the *phase relation* between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction. This is known as a [Bloch wave](https://en.wikipedia.org/wiki/Bloch_wave).
+
+Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), the boundary conditions are mostly irrelevant. For example, if there is a PML in front of a periodic boundary, the periodicity doesn't matter because the field will have decayed almost to zero by the time it "wraps around" to the other side of the cell.
+
+### How do I compute the integral of the energy density over a given region?
+
+For the instantaneous fields, you can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to compute the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. When computing the total field energy, you will need to first [synchronize the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md). To compute the integral of the energy density for a *single* field component e.g. ε|E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Dielectric, meep.Ez], def f(eps,ez): return 0.5*eps*abs(ez)**2, where=meep.Volume(...))`.
+
+Usage: Materials
+----------------
+
+### How do I import n and k values into Meep?
+
+You can import any arbitrary complex permittivity profile via n and k values into Meep by fitting the wavelength- or frequency-dependent data to a sum of Drude-Lorentz polarizability terms as described in [Materials](Materials.md#material-dispersion). In general, you have to use nonlinear optimization to do the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. A wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented using the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation) can be directly [transferred to the Lorentz model using a simple substitution of variables](Materials.md#sellmeier-coefficients). Note that Meep only does [subpixel averaging of the nondispersive part of ε (and μ)](#can-subpixel-averaging-be-applied-to-dispersive-materials).
+
+### Is there a materials library?
+
+Yes. A materials library is available containing [crystalline silicon](https://en.wikipedia.org/wiki/Crystalline_silicon) (c-Si), [amorphous silicon](https://en.wikipedia.org/wiki/Amorphous_silicon) (a-Si) including the hydrogenated form, [silicon dioxide](https://en.wikipedia.org/wiki/Silicon_dioxide) (SiO<sub>2</sub>), [indium tin oxide](https://en.wikipedia.org/wiki/Indium_tin_oxide) (ITO), [alumina](https://en.wikipedia.org/wiki/Aluminium_oxide) (Al<sub>2</sub>O<sub>3</sub>), [gallium arsenide](https://en.wikipedia.org/wiki/Gallium_arsenide) (GaAs), [gallium nitride](https://en.wikipedia.org/wiki/Gallium_nitride) (GaN), [aluminum arsenide](https://en.wikipedia.org/wiki/Aluminium_arsenide) (AlAs), [aluminum nitride](https://en.wikipedia.org/wiki/Aluminium_nitride) (AlN), [borosilicate glass](https://en.wikipedia.org/wiki/Borosilicate_glass) (BK7), [fused quartz](https://en.wikipedia.org/wiki/Fused_quartz), [silicon nitride](https://en.wikipedia.org/wiki/Silicon_nitride) (Si<sub>3</sub>N<sub>4</sub>), [germanium](https://en.wikipedia.org/wiki/Germanium) (Ge), [indium phosphide](https://en.wikipedia.org/wiki/Indium_phosphide) (InP), [lithium niobate](https://en.wikipedia.org/wiki/Lithium_niobate) (LiNbO<sub>3</sub>), as well as 11 elemental metals: [silver](https://en.wikipedia.org/wiki/Silver) (Ag), [gold](https://en.wikipedia.org/wiki/Gold) (Au), [copper](https://en.wikipedia.org/wiki/Copper) (Cu), [aluminum](https://en.wikipedia.org/wiki/Aluminium) (Al), [berylium](https://en.wikipedia.org/wiki/Beryllium) (Be), [chromium](https://en.wikipedia.org/wiki/Chromium) (Cr), [nickel](https://en.wikipedia.org/wiki/Nickel) (Ni), [palladium](https://en.wikipedia.org/wiki/Palladium) (Pd), [platinum](https://en.wikipedia.org/wiki/Platinum) (Pt), [titanium](https://en.wikipedia.org/wiki/Titanium) (Ti), and [tungsten](https://en.wikipedia.org/wiki/Tungsten) (W). Additional information is provided in [Materials](Materials.md#materials-library).
+
+### Does Meep support gyrotropic materials?
+
+No. Currently, Meep only supports anisotropic, real-symmetric, permittivity tensors. In the [magneto-optic effect](https://en.wikipedia.org/wiki/Magneto-optic_effect), an external magnetic field yields imaginary off-diagonal components of ε (with no absorption) which is not yet supported (issue [#60](https://github.com/NanoComp/meep/issues/60)).
+
+### When outputting the permittivity function to a file, I don't see any dispersive materials
+
+Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the `epsilon` value. If you want the frequency-dependent ε you must compute it yourself using the formula for [Lorentizian susceptbility](Materials.md#material-dispersion).
+
+### How do I model graphene or other 2d materials with single-atom thickness?
+
+Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength. In
+a discretized computer model like Meep, this is approximated by a volume conductivity that is one pixel (`1/resolution`) thick *and* has an amplitude scaled by `resolution`. Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
+
+Usage: Structures
+-----------------
+
+### What are the different ways to define a structure?
+
+There are four ways to define a structure: (1) the [`GeometricObject`](Python_User_Interface.md#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface.md#geometric-object) (Scheme) class used to specify a collection of predefined shapes including `Prism`, `Sphere`, `Cylinder`, `Cone`, `Block`, and `Ellipsoid`, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function: for a given position in the cell, return the ε/μ at that point, (3) import the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter, or (4) import planar geometries from a [GDSII file](Python_User_Interface.md#gdsii-support). Combinations of (1), (2), and (4) are allowed but not (3).
+
+### Does Meep support importing GDSII files?
+
+Yes. The [`get_GDSII_prisms`](Python_User_Interface.md#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. See [Tutorial/GDSII Import](Python_Tutorials/GDSII_Import.md) for an example. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+
+### Can Meep simulate time-varying structures?
+
+Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry` in C++, or `simulation.set_materials` in Python. However, this is potentially quite slow. One alternative is a function [`field::phase_in_material`](Python_User_Interface.md#field-computations) that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have a more general version of this functionality in the future (issue [#207](https://github.com/NanoComp/meep/issues/207)).
+
+Usage: Subpixel Averaging
+-------------------------
+
+### Why doesn't turning off subpixel averaging work?
+
+By default, when Meep assigns a dielectric constant ε or μ to each pixel, it uses a carefully designed average of the ε values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinuous ε it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) ε, as long as the averaging is done properly. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
+
+Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by setting `Simulation.eps_averaging = False` (Python) or `(set! eps-averaging? false)` (Scheme). For more details, see [Python User Interface](Python_User_Interface.md).
+
+Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and visualize it, you may notice that there are some pixels with intermediate ε values, right at the boundary between two materials. This is due to a completely different reason. Internally, Meep's simulation is performed on a [Yee grid](Yee_Lattice.md), in which every field component is stored on a slightly different grid which are offset from one another by half-pixels, and the ε values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid at the center of each pixel, so all quantities are interpolated onto this grid for output. Therefore, even though the internal ε values are indeed discontinuous when you disable subpixel averaging, the output file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.   For the same reason, if `k_point` is set and the boundaries are Bloch-periodic, the permittivity function of the entire cell obtained via `get_epsilon` or `output_epsilon` will show that a little of the cell from one edge "leaks" over to the other edge. This is independent of PML and the way the structure is defined (i.e., using geometric objects or a material function, etc.). An example is shown in the figure below comparing `output_epsilon` for two cases involving with and without `k_point`. The discretization artifacts are highlighted.
+
+<center>
+![](images/output_epsilon_kpoint.png)
+</center>
+
+### Why does subpixel averaging take so long?
+
+There are at least two possible reasons due to using: (1) a `material_function` to define a [`Medium`](Python_User_Interface.md#medium) object or (2) the [C++](C++_Tutorial) interface. Unlike either the [Python](Python_User_Interface/) or [Scheme](Scheme_User_Interface/) interfaces which are based on analytically computing the averaged permittivity for boundary voxels involving at most one [`GeometricObject`](Python_User_Interface.md#geometricobject) (e.g., `Sphere`, `Prism`, `Block`, etc.), the C++ interface computes these averages from the `material_function` using [numerical quadrature](https://en.wikipedia.org/wiki/Numerical_integration) if the parameter `use_anisotropic_averaging=true` is passed to the constructor of `set_materials`. This procedure involves calling the `material_function` many times for every voxel in the [structure object](C++_Developer_Information.md#data-structures-and-chunks) which can be slow due to the [SWIG](http://www.swig.org/) callbacks, particularly because the voxel density is repeatedly doubled until a given threshold tolerance (`subpixel_tol`) or maximum iteration number (`subpixel_maxeval`) is reached. Because of this discrepancy in the subpixel averaging, the results for the C++ and Python/Scheme interfaces may be slightly different at the same resolution. You can potentially speed up subpixel averaging by increasing `subpixel_tol` or decreasing `subpixel_maxeval`. Note that the slow callbacks may still be noticeable during the grid initialization even when subpixel averaging is turned off. Just remember that if you turn off subpixel averaging, it usually means that you may need to increase the grid resolution to obtain the same accuracy. You will have to determine how much accuracy you want to trade for time. Alternatively, in the C++ interface you can use the [`meepgeom.hpp`](https://github.com/NanoComp/meep/blob/master/src/meepgeom.hpp) routines to define your geometry in terms of blocks, cylinders, etcetera similar to Python and Scheme, with semi-analytical subpixel averaging.
+
+### Can subpixel averaging be applied to dispersive materials?
+
+No. Meep only does subpixel averaging of the non-dispersive part of ε and μ. The dispersive part is not averaged at all.  This means that any sharp interfaces between dispersive materials will dominate the error, and you will probably get only first-order convergence, the same as if you do no subpixel averaging at all. It is possible that the subpixel averaging may still improve the constant factor in the convergence if not the asymptotic convergence rate, if you also have a lot of interfaces between non-dispersive materials or if the dispersion is small (i.e., if ε is close to ε<sub>&#8734;</sub> over your bandwidth). On the other hand, if the dispersion is large and most of your interfaces are between large-dispersion materials, then subpixel averaging may not help at all and you might as well turn it off (which may improve [stability](#why-are-the-fields-blowing-up-in-my-simulation)). Generally, the subpixel averaging will not degrade accuracy though it will affect performance.
+
+### Why are there artifacts in the permittivity grid when two geometric objects are touching?
+
+Subpixel averaging affects pixels that contain **at most one** object interface. If a boundary pixel contains two object interfaces, Meep punts in this case because the analytical calculations for the material filling fraction are too messy to compute and brute-force numerical integration is too slow. Instead, subpixel averaging just uses the ε at the grid point.  Sometimes if a grid point falls exactly on the boundary there are roundoff effects on which (if any) object the point lies within; you can eliminate some such artifacts by slightly padding the object sizes (e.g. by `1e-8`) or by specifying your geometry in some other way that doesn't involve exactly coincident.
+
+### Can subpixel averaging be applied to a user-defined material function?
+
+No. Subpixel averaging is only performed for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the effective permittivity, can be computed analytically. Computing these quantities using adaptive numerical integration is too slow. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
+
+Usage: Performance
+----------------------------
+
+### Checking convergence
+
+In any computer simulation like Meep, you should check that your results are *converged* with respect to any approximation that was made. There is no simple formula that will tell you in advance exactly how much resolution (etc.) is required for a given level of accuracy; the most reliable procedure is to simply double the resolution and verify that the answers you care about don't change to your desired tolerance. Useful things to check (ideally by doubling) in this way are: **resolution**, **run time** (for Fourier spectra), **PML thickness**.
+
+Meep's [subpixel smoothing](Introduction.md#the-illusion-of-continuity) often improves the rate of convergence and makes convergence a smoother function of resolution. However, subpixel smoothing does not occur for [dispersive materials](#can-subpixel-averaging-be-applied-to-dispersive-materials) or [user-defined material functions](#why-does-subpixel-averaging-take-so-long) ε(x) instead of the built-in geometric objects.
+
+For flux calculations involving pulsed (i.e., Gaussian) sources, it is important to run the simulation long enough to ensure that all the transient fields have sufficiently decayed away (i.e., due to absorption by the PMLs, etc). Terminating the simulation prematurely will result in the Fourier-transformed fields, which are being accumulated during the time stepping (as explained in [Introduction](Introduction.md#transmittancereflectance-spectra)), to not be fully converged. Convergence of the fields is typically achieved by lowering the `decay_by` parameter in the `stop_when_fields_decayed` [run function](Python_User_Interface.md#run-functions).  Alternatively, you can explicitly set the run time to some numeric value that you repeatedly double, instead of using the field decay.  Sometimes it is also informative to double the `cutoff` parameter of sources to increase their smoothness (reducing the amplitude of long-lived high-frequency modes).
 
 ### Should I expect linear [speedup](https://en.wikipedia.org/wiki/Speedup) from the parallel Meep?
 
-For a given computational grid, Meep divides the grid points roughly equally among the processors,
+For a given computational grid when `split_chunks_evenly=True` (the default), Meep divides the grid points roughly equally among the processors,
 and each process is responsible for all computations involving its "own" grid points (computing
 ε from the materials, timestepping the fields, accumulating Fourier transforms, computing far fields, etcetera).
 How much speedup this parallelization translates into depends on a number of factors, especially:
@@ -255,178 +339,79 @@ Unless the computational parallelism outweighs the extra communications overhead
 
 ### Why are simulations involving Fourier-transformed fields slow?
 
-The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-time_Fourier_transform) (DTFT) of the fields, which is necessary for computing the [Poynting flux](Python_User_Interface.md#flux-spectra), [local density of states](Python_User_Interface.md#ldos-spectra) (LDOS), [near to far field transformation](Python_User_Interface.md#near-to-far-field-spectra), etc., is accumulated at every time step for every point in the [flux region](Python_User_Interface.md#fluxregion). The DTFT computation is parallelized but only in the sense that each processor computes the DTFT fields at points in its own [chunk](Chunks_and_Symmetry.md) of the grid. If the division of the grid among processors into approximately equal-sized chunks allocates most of the points where the DTFT fields are computed to one processor, it is *not* going to parallelize.
+The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-time_Fourier_transform) (DTFT) of the fields, which is necessary for computing the [Poynting flux](Python_User_Interface.md#flux-spectra), [local density of states](Python_User_Interface.md#ldos-spectra) (LDOS), [near to far field transformation](Python_User_Interface.md#near-to-far-field-spectra), etc., is accumulated at every time step for every point in the [FluxRegion](Python_User_Interface.md#fluxregion). The DTFT computation is parallelized but only in the sense that each processor computes the DTFT fields at points in its own [chunk](Chunks_and_Symmetry.md) of the grid. If the division of the grid among processors into approximately equal-sized chunks (which is the default specified by `split_chunks_evenly=True`) allocates most of the points where the DTFT fields are computed to one processor, it is *not* going to parallelize.
 
-Ideally, the parallelization should take the DTFT computation into account: the grid should be divided such that the flux region, if it is sufficiently expensive, is divided among the processors. The best approach would be some kind of adaptive [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)). However, nothing like this is currently implemented. Also, it is not possible in Meep to customize how the cell is divided among the processes.
+To improve [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)), the parallelization can be made to take the DTFT computation into account by specifying `split_chunks_evenly=False`. This option divides the grid into [chunks](Chunks_and_Symmetry.md) with nearly-equal *cost* rather than *size* such that the region in which the DTFT fields are computed is optimally partitioned among the processors.
 
-A simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
-
-Another approach might be to change your structure so that the flux region is closer to the center of the grid, which will increase the likelihood that the parallelization will divide the grid in such a way as to split the flux region between different processors.
+Note: a simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
 
 ### Does Meep support shared-memory parallelism?
 
 Meep can run in parallel on a shared-memory machine using MPI. However, it doesn't yet take special advantage of shared memory using [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) (issue [#228](https://github.com/NanoComp/meep/issues/228)).
 
-### Why does the amplitude of a dipole point source increase with resolution?
+Usage: Other
+------------
 
-The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
+### Is there a Python interface?
 
-### What normalization convention does MEEP use for the fields of eigenmode sources?
+Yes. An official [Python interface](Python_User_Interface.md) was released in [version 1.4](https://github.com/NanoComp/meep/releases) and replaces the [Scheme interface](Scheme_User_Interface.md) which is no longer being supported. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which predates and is **incompatible** with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
-An [eigenmode source](Python_User_Interface.md#eigenmodesource)
-is a localized distribution of electric and magnetic currents
-$\{\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})\}$,
-confined to a cross-sectional line (2D) or plane (3D) through a
-waveguide or similar geometry, with the property that the
-spatial distribution of the electric and magnetic fields
-radiated by the sources exactly reproduces the spatial distribution
-of one specific (quasi-)normal mode of the
-geometry (and is thus orthogonal to all other modes).
-This condition determines the fields only up to
-an arbitrary overall scale factor---if a field distribution
-$\{\mathbf{E}(\mathbf x), \mathbf{H}(\mathbf x)\}$
-satisfies the single-mode condition,
-then so does the scaled field distribution
-$\{\lambda \mathbf{E}(\mathbf x), \lambda \mathbf{H}(\mathbf x)\}$
-for any arbitrary $\lambda$---whereupon by linearity
-the source-amplitude functions $\mathbf{J,M}$ also
-contain an arbitrary undetermined overall scale factor.
+### What is a good rule of thumb for the grid resolution?
 
-To pin down this ambiguity, MEEP chooses the overall scale
-of the $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$
-source distributions to ensure that, in the specific case
-of a time-harmonic problem with all sources and fields 
-having monochromatic time dependence $e^{-i\omega_m t}$
-(with $\omega_m$ the eigenfrequency of the mode), the
-total time-average power carried by the fields radiated
-by the sources---that is, the integral of the normal Poynting
-vector over the full cross-sectional line or plane---comes
-out equal to 1.0 power units
-(where [the choice of power units is up to you](Introduction.md#units-in-meep)).
-This convention has the following practical ramifications for MEEP
-calculations using eigenmode sources.
+At least 8 pixels per wavelength in the lossless dielectric material with the highest index. Resolving the [skin depth of metals](https://en.wikipedia.org/wiki/Skin_effect), which is typically tens of nanometers at optical frequencies, will require a pixel size of comparable dimensions since [subpixel averaging does not apply to dispersive materials](#can-subpixel-averaging-be-applied-to-dispersive-materials).
 
-+ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver)
-  involving an eigenmode source with a `ContinuousSrc` time envelope---corresponding
-  to monochromatic sources that oscillate forever at frequency $\omega_m$, producing
-  monochromatic fields that oscillate forever at the same frequency---the
-  total time-average power carried by those fields takes the numerical
-  value 1. 
+### What is Meep's frequency-domain solver and how does it work?
 
-  **Note:** Due to discretization effects, the normalization of eigenmode 
-   sources to yield unit power transmission is only *approximate;* 
-   at any finite resolution, the power carried by the fields of 
-   eigenmode sources as computed by MEEP will not take the precise
-   numerical value 1, but will rather include discretization errors
-   that shrink with resolution.
+Meep contains a [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) that directly computes the steady-state fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave), using an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. This is possible because the FDTD timestep can be used to formulate a frequency-domain problem via an iterative linear solver. The frequency-domain response can often be determined using many fewer timesteps while exploiting the FDTD code almost without modification. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
 
-+ On the other hand, for the typical case of *time-domain* calculations,
-  in which the spatial current distributions
-  $\mathbf{J}(\mathbf{x}), \mathbf{M}(\mathbf{x})$ of the eigenmode source
-  are paired with a temporal envelope function $W(t)$---which, in practice,
-  is either a [Gaussian](Python_User_Interface.md#gaussiansource) or a
-  [user-specified custom envelope](Python_User_Interface.md#customsource)---the
-  values reported by MEEP for all frequency-domain field amplitudes at
-  frequency $\omega$ will include factors of $\widetilde W(\omega)$
-  (the Fourier transform of the temporal envelope),
-  while field-bilinear quantities like Poynting vectors and power fluxes
-  will include factors of $|\widetilde W(\omega)|^2$.
+This means that all of the features from the time-domain solver (e.g., arbitrary materials, symmetries, subpixel averaging, parallelization, etc.) are also available as a frequency-domain solver. For certain problems, such as cavities (e.g., ring resonators) with long-lived resonant modes, the frequency-domain solver converges much faster than the straightforward approach of simply running a long simulation until transients have disappeared. Another benefit is that an arbitrary, complex, refractive index can be specified directly using the [electric conductivity](Materials.md#conductivity-and-complex) without having to fit the data to a sum of [Drude-Lorentz susceptibility terms](Materials.md#material-dispersion).
 
-  In particular,
+For examples, see [Tutorial/Frequency-Domain Solver](Python_Tutorials/Frequency_Domain_Solver.md) and [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence).
 
-    +In a MEEP time-stepping run excited by an eigenmode source
-     with Gaussian temporal envelope $G(t;\omega_0, \Delta \omega)$
-     centered at angular frequency $\omega_0$ and frequency width
-     $\Delta \omega$,    
+### Why are my reflectance/transmittance values less than zero and/or greater than one?
 
-    +the time-harmonic power carried by the frequency-domain fields
-     at angular frequency $\omega$ is numerically equal to
-     $|\widetilde{G}(\omega; \omega_0, \Delta\omega)|^2$,
-     where values of $\widetilde{G}$, the Fourier transform
-     of the temporal profile, are computed by
-     by the `fourier_transform` method of the
-     [`GaussianSource`](Python_User_Interface.md#GaussianSource)
-     class in the python `meep` module.
+There are four possible explanations: (1) the normalization and the scattering runs are not comparable because e.g., the sources or flux monitors are not in the same position within the structure, (2) the [run time is not long enough](#checking-convergence) and hence all of the flux is not being collected in either or both runs, (3) the flux is being computed at a frequency which is too far away from the center of the source bandwidth; in such cases the flux values are too small and may be dominated by rounding errors, or (4) the source or flux monitor is positioned too close to the scatterer which [modifies the local density of states (LDOS)](#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude); for example, a source emits more power near a band edge and less power within a bandgap than the same source surrounded by many wavelengths of vacuum.
 
-  [Here's](index.html) an example showing how the unit-power normalization
-  of eigenmode sources may be put to convenient use in MEEP calculations.
+Note: the Poynting flux is a dimensionful quantity which can be *any* value (positive or negative).
 
 ### How does Meep deal with numerical dispersion?
 
 Numerical dispersion can be analyzed and quantified analytically for a homogeneous medium. For details, see e.g., Chapter 4 ("Numerical Dispersion and Stability") of [Computational Electrodynamics: The Finite Difference Time-Domain Method (3rd edition)](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320). However, in practice numerical dispersion is rarely the dominant source of error in FDTD calculations which almost always involve material inhomogeneities that give rise to much larger errors. Similar to other errors associated with the finite grid resolution, numerical dispersion decreases with resolution, so you can deal with it by increasing the resolution until convergence is obtained to the desired accuracy. In particular, the errors from numerical dispersion vary *quadratically* with resolution (in the ordinary center-difference FDTD scheme). On the other hand, the errors introduced by discretization of material interfaces go *linearly* with the resolution, so they are almost always dominant. Meep can partially correct for these errors using [subpixel averaging](Introduction.md#the-illusion-of-continuity).
-
-### How do I create a circularly-polarized planewave source in cylindrical coordinates?
-
-A circularly-polarized planewave in [cylindrical coordinates](Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude`=1 and a constant E<sub>p</sub> (φ) current source with `amplitude`=0+1i as well as `m`=1.
-
-### How do I compute S-parameters?
-
-Meep contains a [mode-decomposition feature](Mode_Decomposition.md) which can be used to compute complex-valued [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters). An example is provided for a [two-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) based on a silicon directional coupler in [Tutorial/GDSII Import](/Python_Tutorials/GDSII_Import/). An additional example is available for a [waveguide mode converter](Python_Tutorials/Mode_Decomposition.md#reflectance-of-a-waveguide-taper).
-
-### `Harminv` is unable to find the resonant modes of my structure
-
-There are six possible explanations for why [`Harminv`](Python_User_Interface.md#harminv) could not find the resonant modes: (1) the run time was not long enough and the decay rate of the mode is so small that the `Harminv` data was mainly noise, (2) the `Harminv` call was not wrapped in [`after_sources`](Python_User_Interface.md#controlling-when-a-step-function-executes); if `Harminv` overlaps sources turning on and off it will get confused because the sources are not exponentially decaying fields, (3) the `Harminv` monitor is near the mode's nodal point (e.g., in a symmetry plane), (4) there are field instabilities where the fields are actually [blowing up](#why-are-the-fields-blowing-up-in-my-simulation); this may result in `Harminv` returning a negative [quality factor](https://en.wikipedia.org/wiki/Q_factor), (5) the decay rate of the mode is too fast; `Harminv` discards any modes which have a quality factor less than 50 (and thus `Harminv` won't likely find any modes inside a [metal](Materials.md#material-dispersion)), or (6) the PML overlaps the non-radiated/evanescent field and has introduced artificial absorption effects in the local density of states (LDOS).
-
-In order to resolve two closely-spaced modes, in general it is preferable to run with a narrow bandwidth source around the frequency of interest to excite/analyze as few modes as possible and/or increase the run time to improve the frequency resolution.
-
-Note: any real-valued signal consists of both positive and negative frequency components (with complex-conjugate amplitudes) in a Fourier domain decomposition into complex exponentials. `Harminv` usually is set up to find just one sign of the frequency, but occasionally converges to a negative-frequency component as well; these are just as meaningful as the positive frequencies.
-
-### How does `k_point` define the phase relation between adjacent unit cells?
-
-If you set the `k_point` to any `meep.Vector3`, the structure will be periodic in **all** directions. (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
-
-A periodic structure does **not** imply periodic fields. The value of the `k_point` determines the *phase relation* between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction. This is known as a [Bloch wave](https://en.wikipedia.org/wiki/Bloch_wave).
-
-Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), the boundary conditions are mostly irrelevant. For example, if there is a PML in front of a periodic boundary, the periodicity doesn't matter because the field will have decayed almost to zero by the time it "wraps around" to the other side of the cell.
 
 ### Should I include the 2π factor when defining the frequency or the wavevector?
 
 No. Frequency inputs and outputs in Meep are the ordinary frequency `f`, not the angular frequency ω=2πf. Similarly, spatial wavevectors k (e.g. for Bloch-periodic boundary conditions) are specified without the 2π factor, so that the spatial dependence is exp(2πikx).
 For example, if you specify a `frequency=0.3` in a source, then the time-dependence of the source is exp(-2πi0.3t), where time t is also in Meep units. Similarly, if you specify `k_point = meep.Vector3(0.4,0,0)` in the interface, then the phase factor between adjacent unit cells with period L in the x direction is exp(2πi0.4L).
 
-### Can Meep simulate time-varying structures?
-
-Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry` in C++, or `simulation.set_materials` in Python. However, this is potentially quite slow. One alternative is a function [`field::phase_in_material`](Python_User_Interface.md#field-computations) that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have a more general version of this functionality in the future (issue [#207](https://github.com/NanoComp/meep/issues/207)).
-
-### How do I model a moving point charge?
-
-You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#continuoussource) with large wavelength (or nearly-zero frequency). This is analogous to a [direct current](https://en.wikipedia.org/wiki/Direct_current). You will also need to create a [run function](Python_User_Interface.md#run-functions) which contains [`change_sources`](Python_User_Interface.md#reloading-parameters) and specify the `center` property of the point source to be time dependent. As an example, the following image demonstrates [Cherenkov radiation](https://en.wikipedia.org/wiki/Cherenkov_radiation) involving a moving point charge with [superluminal phase velocity](https://en.wikipedia.org/wiki/Faster-than-light#Phase_velocities_above_c) (see [examples/cherenkov-radiation.py](https://github.com/NanoComp/meep/blob/master/python/examples/cherenkov-radiation.py)).
-
-<center>
-![](images/cherenkov_radiation.png)
-</center>
-
-### When outputting the dielectric function to a file, I don't see any dispersive materials
-
-Only the real, frequency-independent part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the `epsilon` value.
-
 ### Does Meep support grids with non-uniform discretization?
 
 No. Meep does not support non-orthogonal grids with spatially varying resolution. One possible approach, which does not require changes to the underlying code and is not yet implemented, is to use a coordinate transformation to selectively increase the resolution in a given region of the cell. This is possible using transformation optics which involves a change of materials: an arbitrary coordinate transformation can be mapped to Cartesian coordinates with transformed ε/μ. For more details, see the notes [Coordinate Transformation and Invariance in Electromagnetism](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) and [Variable Resolution in Meep](https://github.com/fesc3555/meep_variable_resolution) using this technique.
 
-### Can Meep model electrostatic effects?
-
-In principle, this corresponds to the limit as the frequency goes to zero or the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for such [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) (or magnetostatic) calculation; this includes [lumped circuit models](https://en.wikipedia.org/wiki/Lumped_element_model) such as resistance, voltage, capacitance, etc. In this regime, you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
-
-### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
-
-The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
-
-If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
-
-<center>
-![](images/cwsrc_turnon.png)
-</center>
-
-### How do I access or visualize the structure, fields, or sources in a subregion of the cell?
+### How do I access the structure, fields, or sources in a subregion/slice of the cell?
 
 You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source_slice`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) or `get_dft_array_metadata` to obtain information for the geometric slice. Visualization in 3d can be done with [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
 
 To output the data to an HDF5 file, you can use the [`in_volume`](Python_User_Interface.md#modifying-hdf5-output) or `in_point` routines as part of your [run function](../Python_User_Interface/#run-functions). For example, to restrict the output to a line, you could use: `meep.in_volume(meep.Volume(center=meep.Vector3(0,0,0), size=meep.Vector3(10,0,0)), meep.output_dpwr)` which outputs ε|E|<sup>2</sup> along a line of length 10 in the x direction centered at (0,0,0). You can even wrap this statement in `to_appended("line.h5", ...)` to output the intensity along the line as a function of time to a 2d HDF5 dataset. This would enable you to plot intensity vs. time and space as a 2d color image.
 
-### Can Meep be used to investigate lasing phenomena?
+### What happens if I specify an output volume that lies beyond or is larger than a cell with periodic boundaries?
+
+Any [output](Python_User_Interface.md#output-functions) or [computation](Python_User_Interface.md#field-computations) function that requires a `Volume`, such as `in_volume` or the [field integration routines](Field_Functions.md), etcetera, doesn't restrict the output volume to lie within, or even to intersect, the cell. As long as `ensure_periodicity=True` (the default), Meep will extend the data according to the periodic boundary conditions as needed.
+
+### Can Meep model electrostatic effects?
+
+In principle, this corresponds to the limit as the frequency goes to zero or the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) or magnetostatic calculation; this includes [lumped circuit models](https://en.wikipedia.org/wiki/Lumped_element_model) involving resistance, voltage, capacitance, etc. In this regime, you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSrc`](Python_User_Interface.md#continuoussource).
+
+### Can Meep model lasing phenomena?
 
 Yes. More specifically, Meep can be used to model saturable gain and absorption via multilevel atomic susceptibility. This feature may be used to investigate optically-pumped lasing phenomena such as [Raman lasers](https://en.wikipedia.org/wiki/Raman_laser). For details, see [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
+
+### Can Meep model Raman scattering?
+
+Yes. There are two different possible approaches to model [stimulated Raman scattering](https://en.wikipedia.org/wiki/Raman_scattering#Stimulated_Raman_scattering_and_Raman_amplification).
+
+The first approach in the weak-scattering (undepleted pump) approximation would be to do two linear calculations. First, you do a linear calculation with your source field to get the incident electric field at the location of the Raman material. Then you multiply the field by the Raman susceptibility to get a polarization (i.e., the induced dipole moment) at the scattered (Stokes or anti-Stokes) frequency. Using this polarization as a source at the new frequency, you can do a second linear calculation to compute the Raman-scattered field. This is called a first [Born approximation](https://en.wikipedia.org/wiki/Born_approximation) or alternatively a "volume-current method".
+
+The second approach is based on a full nonlinear simulation of the Raman process. This involves modeling the populations of the atomic vibrational states corresponding to the Raman bands using [saturable gain and absorption](Materials.md#saturable-gain-and-absorption).
 
 ### Does Meep support adjoint-based optimization?
 

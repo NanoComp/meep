@@ -23,7 +23,7 @@ src = [mp.Source(mp.ContinuousSource(fcen,fwidth=df),
 
 sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     geometry=[c1,c2],
-                    sources=[src],
+                    sources=src,
                     resolution=10,
                     force_complex_fields=True,
                     symmetries=[mp.Mirror(mp.Y)],

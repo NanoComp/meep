@@ -334,12 +334,8 @@ AC_SUBST(GUILE_CPPFLAGS)
 LIBS=$save_LIBS
 CPPFLAGS=$save_CPPFLAGS
 
-fi # if with_libctl
-
 ##############################################################################
 # Check for libctl library and files
-
-if test "x$with_libctl" != xno; then
 
 save_LIBS=$LIBS
 save_CPPFLAGS=$CPPFLAGS
@@ -414,23 +410,21 @@ fi
 LIBS=$save_LIBS
 CPPFLAGS=$save_CPPFLAGS
 
-fi # if with_libctl
+LIBCTL_LIBS="-lctl $GUILE_LIBS"
+LIBCTL_CPPFLAGS="$GUILE_CPPFLAGS"
+
+fi # if with_libctl && with_scheme
 
 ##############################################################################
 
-LIBCTL_LIBS="-lctl $GUILE_LIBS"
-LIBCTL_CPPFLAGS="$GUILE_CPPFLAGS"
 AC_SUBST(LIBCTL_LIBS)
 AC_SUBST(LIBCTL_CPPFLAGS)
 
 ##############################################################################
 
 # check for -lctlgeom:
-AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes], [have_libctlgeom=no])
+AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes; LIBS="-lctlgeom $LIBS"], [have_libctlgeom=no])
 AM_CONDITIONAL(WITH_LIBCTLGEOM, test x"$have_libctlgeom" = "xyes")
-
-LIBCTLGEOM_LIBS="-lctlgeom"
-AC_SUBST(LIBCTLGEOM_LIBS)
 
 ##############################################################################
 # check for libGDSII
@@ -549,9 +543,12 @@ AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
 AM_CONDITIONAL(WITH_COVERAGE, test x"$have_coverage" = "xyes")
 
-# Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds
-AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)
-AC_CONFIG_LINKS(scheme/materials.scm:scheme/materials.scm)
+if test "x$with_scheme" = xyes; then
+   # Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds
+   AC_CONFIG_LINKS(scheme/casimir.scm:scheme/casimir.scm)
+   AC_CONFIG_LINKS(scheme/materials.scm:scheme/materials.scm)
+   AC_CONFIG_FILES([scheme/Makefile scheme/meep.scm])
+fi
 
 ##############################################################################
 
@@ -560,8 +557,6 @@ AC_CONFIG_FILES([
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
-	scheme/Makefile
-	scheme/meep.scm
 	libpympb/Makefile
 	python/Makefile
 ])

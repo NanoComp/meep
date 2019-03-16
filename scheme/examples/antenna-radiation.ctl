@@ -55,9 +55,9 @@
 (define-param npts 100)  ; number of points in [0,2*pi) range of angles
 (map (lambda (n)
        (let ((ff (get-farfield nearfield-box (vector3 (* r (cos (* 2 pi (/ n npts)))) (* r (sin (* 2 pi (/ n npts)))) 0))))
-	 (print "farfield:, " (number->string n) ", " (number->string (* 2 pi (/ n npts))))
+	 (print "farfield:, " n ", " (* 2 pi (/ n npts)))
 	 (map (lambda (m)
-		(print ", " (number->string (list-ref ff m))))
+		(print ", " (list-ref ff m)))
 	      (arith-sequence 0 1 6))
 	 (print "\n")))
          (arith-sequence 0 1 npts))
