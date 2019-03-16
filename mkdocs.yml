@@ -19,11 +19,19 @@ markdown_extensions:
     - fenced_code
     - mdx_math:
         enable_dollar_delimiter: True
+    - smarty
+    - extra
+    - admonition
+    - pymdownx.details
+    - pymdownx.superfences
 
 extra_javascript:
  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
 
-pages:
+extra_css:
+ - 'meep_documentation.css'
+
+nav:
 - 'Manual': 'index.md'
 - 'Introduction': 'Introduction.md'
 - 'Download': 'Download.md'
@@ -60,6 +68,8 @@ pages:
     - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
+    - 'Tutorial/Adjoint-Based Optimization': 'Python_Tutorials/AdjointSolver.md'
+    - 'Tutorial/Adjoint-Solver Implementation Notes': 'Python_Tutorials/AdjointImplementationNotes.md'
 - 'Scheme Interface':
     - 'User Interface': 'Scheme_User_Interface.md'
     - 'Tutorial/Basics': 'Scheme_Tutorials/Basics.md'

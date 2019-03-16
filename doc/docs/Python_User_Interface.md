@@ -1171,6 +1171,8 @@ The parameters of this routine are the same as that of `get_eigenmode_coefficien
 —
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
 
+<a name="dft_energy"></a>
+
 ### Energy Density Spectra
 
 Very similar to flux spectra, you can also compute **energy density spectra**: the energy density of the electromagnetic fields as a function of frequency, computed by Fourier transforming the fields and integrating the energy density:

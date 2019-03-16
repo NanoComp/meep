@@ -1,0 +1,17 @@
+.SC{
+   font-variant: small-caps;
+   font-size: 110%;
+   font-variant-numeric: oldstyle-nums;
+}
+
+.note {
+ margin: auto;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ flex-direction: column;
+ width: 75%;
+ text-align: center;
+ background-color: rgba(33, 33, 33, .3);
+ align-items: center;
+}
