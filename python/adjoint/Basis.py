@@ -93,6 +93,23 @@ class Basis(ABC):
             it.iternext()
         return np.array( [ fdb/bdb for (fdb,bdb) in zip(f_dot_b,b_dot_b)] )
 
+    #########################################################j
+    ##########################################################
+    def gram_matrix(self,xyzw):
+        (x,y,z,w)=xyzw[0],xyzw[1],xyzw[2],xyzw[3]
+        xyz=[mp.Vector3(xx,yy,zz) for xx in x for yy in y for zz in z]
+        it=np.nditer(w,flags=['f_index','multi_index'])
+        dim=self.dim
+        gram=0.0*np.zeros([dim,dim])
+        while not it.finished:
+            n, nn       = it.index, it.multi_index
+            bvec        = self(xyz[n])
+            ww          = w[nn]
+            for dr in range(dim):
+                for dc in range(dim):
+                    gram[dr,dc]+=ww*bvec[dr]*bvec[dc]
+            it.iternext()
+        return gram
 
 ##################################################
 # Plane-wave basis for a rectangular region.
