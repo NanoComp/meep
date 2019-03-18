@@ -434,6 +434,11 @@ class TestVector3(unittest.TestCase):
         res = v.rotate_reciprocal(axis, 3, lattice)
         self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
 
+    def test_complex_norm(self):
+        # issue #722
+        v = mp.Vector3(1, 1j, 0)
+        self.assertAlmostEqual(v.norm(), math.sqrt(2))
+
 
 class TestLattice(unittest.TestCase):
 
