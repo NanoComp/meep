@@ -19,11 +19,15 @@ markdown_extensions:
     - fenced_code
     - mdx_math:
         enable_dollar_delimiter: True
-    - smarty
-    - extra
-    - admonition
-    - pymdownx.details
-    - pymdownx.superfences
+    - footnotes                # allow e.g. [^1] to define linked footnotes
+    - smarty                   # proper rendering of quotes and en/em-dashes
+    - extra                    # allow markdown inside raw HTML blocks
+    - pymdownx.details         # collapsible text snippets with icon+title
+    - pymdownx.highlight
+    - pymdownx.inlinehilite:   # syntax highlighting for inline code
+        css_class: 'manni'
+    - pymdownx.snippets:       # --<8-- directive for .md file inclusion
+        base_path: 'doc/docs'
 
 extra_javascript:
  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
@@ -68,8 +72,14 @@ nav:
     - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
-    - 'Tutorial/Adjoint-Based Optimization': 'Python_Tutorials/AdjointSolver.md'
-    - 'Tutorial/Adjoint-Solver Implementation Notes': 'Python_Tutorials/AdjointImplementationNotes.md'
+
+- 'Adjoint Module for Automated Design Optimization':
+    - 'Overview':               'AdjointSolver/Overview.md'
+    - 'Reference Manual':       'AdjointSolver/ReferenceManual.md'
+    - 'Example Gallery':        'AdjointSolver/ExampleGallery.md'
+    - 'Visualization':          'AdjointSolver/Visualization.md'
+    - 'Implementation Notes':   'AdjointSolver/AdjointImplementationNotes.md'
+
 - 'Scheme Interface':
     - 'User Interface': 'Scheme_User_Interface.md'
     - 'Tutorial/Basics': 'Scheme_Tutorials/Basics.md'

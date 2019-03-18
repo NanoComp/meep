@@ -886,8 +886,6 @@ The end time for the source. Default is 10<sup>20</sup> (never turn off).
 —
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources. Default is `False`.
 
-<a name="fluxregion"></a>
-
 ### FluxRegion
 
 A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a region in which Meep should accumulate the appropriate Fourier-transformed fields in order to compute a flux spectrum. It represents a region (volume, plane, line, or point) in which to compute the integral of the Poynting vector of the Fourier-transformed fields. `ModeRegion` is an alias for `FluxRegion` for use with `add_mode_monitor`.
@@ -910,8 +908,6 @@ Properties:
 —A `meep.Volume` can be used to specify the flux region instead of a center and a size.
 
 Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
-
-<a name="Volume"></a>
 
 ### Volume
 

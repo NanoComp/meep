@@ -1,21 +1,10 @@
-<!----------------------------------------------------->
-<!- LaTeX macros used only in adjoint documentation   ->
-<!----------------------------------------------------->
-$$
-   \newcommand{\vb}{\mathbf}
-   \newcommand{\wt}{\widetilde}
-   \newcommand{\mc}{\mathcal}
-   \newcommand{\bmc}[1]{\boldsymbol{\mathcal{#1}}}
-   \newcommand{\sup}[1]{^{\text{#1}}}
-   \newcommand{\pard}[2]{\frac{\partial #1}{\partial #2}}
-   \newcommand{\VMV}[3]{ \Big\langle #1 \Big| #2 \Big| #3 \Big\rangle}
-$$
+--8<-- "AdjointSolver/AdjointDocumentationStyleHeader.md"
 
 # Adjoint-based optimization in <span class="SC">meep</span>: Implementation Notes
  
 These notes are intended as something of a companion to the
 [user's manual and tutorial documentation for adjoint-based
-optimization in <span class="SC">meep</span>](AdjointSolver.md); 
+optimization in <span class="SC">meep</span>](Overview.md); 
 whereas the goal of those pages is to document the user interface
 and explain how to *use* the solver for practical problems,
 our focus here will be what's going on beneath the hood---how
@@ -47,7 +36,7 @@ $\epsilon\sup{des}$
 in a small "design region" $\mc{V}\sup{des}$
 centered at a third point $\vb{x}\sup{des}$.
 
-![AdjointToyGeometry1](/images/AdjointToyGeometry1.png)
+![AdjointToyGeometry1](images/AdjointToyGeometry1.png)
 
 ### Permittivity derivative by finite-differencing
 
@@ -62,10 +51,10 @@ Here are plots of the unperturbed field and the field perturbation
 
 + $\wt{E_{z0}}(\omega_0, \vb{x})$ (unperturbed):
 
-![Unperturbed field](/images/AdjointToyEz0.png)
+![Unperturbed field](images/AdjointToyEz0.png)
 
 + $\Delta {\wt E_z}(\omega_0, \vb{x})$ (perturbed-unperturbed):
-![Perturbation field](/images/AdjointToydEz_FD.png)
+![Perturbation field](images/AdjointToydEz_FD.png)
 
 (Here and below we use the tilde sign ($\sim$) to indicate frequency-domain
 fields and sources.)
@@ -110,7 +99,7 @@ $$
 \end{array}
 $$
 
-![AdjointToyGeometry1](/images/AdjointToyGeometry2.png) 
+![AdjointToyGeometry1](images/AdjointToyGeometry2.png) 
 
 Superposing this effective source with the original point source
 at $\vb{x}\sup{src}$ yields a source configuration that,
