@@ -2,9 +2,9 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method.
+ **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method spanning a broad range of applications.
 
-**Features**
+**Key Features**
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
@@ -15,7 +15,7 @@
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, and **saturable** gain/absorption.
 -   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
--   Arbitrary current sources including a [guided-mode launcher](Python_Tutorials/Eigenmode_Source.md).
+-   Arbitrary current sources including a [unidirectional mode launcher](Python_Tutorials/Eigenmode_Source.md).
 -   Frequency-domain solver for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   **GDSII** file import for planar geometries.

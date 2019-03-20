@@ -303,167 +303,7 @@ The diffraction orders/modes are a finite set of propagating planewaves. The wav
 
 In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is 4/(mπ)<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π. The phase difference/contrast is (2π/λ)(n-1)s where λ is the wavelength, n is the refractive index of the grating, and s is the propagation distance in the grating (`gh` in the script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above.
 
-To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
-
-### Phase Map of Subwavelength Binary Gratings
-
-We can also use the complex mode coefficients to compute the phase (or impedance) of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in a metasurface lens. When the period of the unit cell is subwavelength, the zeroth-diffraction order is the only propagating wave. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth-diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
-
-The simulation script is in [examples/binary_grating_phasemap.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/binary_grating_phasemap.ctl).
-
-```scm
-(set-param! resolution 60)  ; pixels/μm
-
-(define-param dpml 1.0)     ; PML thickness
-(define-param dsub 3.0)     ; substrate thickness
-(define-param dpad 3.0)     ; padding between grating and PML
-(define-param gp 0.35)      ; grating period
-(define-param gh 0.6)       ; grating height
-(define-param gdc 0.5)      ; grating duty cycle
-
-(define sx (+ dpml dsub gh dpad dpml))
-(define sy gp)
-
-(define cell (make lattice (size sx sy no-size)))
-(set! geometry-lattice cell)
-
-(define boundary-layers (list (make pml (thickness dpml) (direction X))))
-(set! pml-layers boundary-layers)
-
-(define-param wvl-min 0.4)          ; min wavelength
-(define-param wvl-max 0.6)          ; max wavelength
-(define fmin (/ wvl-max))           ; min frequency
-(define fmax (/ wvl-min))           ; max frequency
-(define fcen (* 0.5 (+ fmin fmax))) ; pulse frequency center
-(define df (- fmax fmin))           ; pulse frequency width
-(define-param nfreq 21)             ; number of frequency bins
-
-(define-param odd-z? true)
-
-(define pulse-src (list (make source
-                          (src (make gaussian-src (frequency fcen) (fwidth df)))
-                          (component (if odd-z? Ez Hz))
-                          (center (+ (* -0.5 sx) dpml (* 0.5 dsub)) 0 0)
-                          (size 0 sy 0))))
-
-(set! sources pulse-src)
-
-(set! k-point (vector3 0 0 0))
-
-(define glass (make medium (index 1.5)))
-(set! default-material glass)
-
-(define symm (list (make mirror-sym (direction Y) (phase (if odd-z? +1 -1)))))
-(set! symmetries symm)
-
-(define mon-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
-(define flux-mon (add-flux fcen df nfreq (make flux-region (center mon-pt) (size 0 sy 0))))
-
-(run-sources+ 100)
-
-(define input-flux (get-fluxes flux-mon))
-(define freqs (get-flux-freqs flux-mon))
-
-(reset-meep)
-
-(set! geometry-lattice cell)
-
-(set! pml-layers boundary-layers)
-
-(set! sources pulse-src)
-
-(set! k-point (vector3 0 0 0))
-
-(set! default-material air)
-
-(set! geometry (list (make block
-                       (material glass)
-                       (size (+ dpml dsub) infinity infinity)
-                       (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub))) 0 0))
-                     (make block
-                       (material glass)
-                       (size gh (* gdc gp) infinity)
-                       (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) 0 0))))
-
-(set! symmetries symm)
-
-(define mode-mon (add-flux fcen df nfreq (make flux-region (center mon-pt) (size 0 sy 0))))
-
-(run-sources+ 300)
-
-(define res (get-eigenmode-coefficients mode-mon (list 1) #:eig-parity (if odd-z? (+ ODD-Z EVEN-Y) (+ EVEN-Z ODD-Y))))
-(define coeffs (list-ref res 0))
-
-(map (lambda (nf)
-       (let ((mode-wvl (/ (list-ref freqs nf)))
-             (mode-tran (/ (sqr (magnitude (array-ref coeffs 0 nf 0))) (list-ref input-flux nf)))
-             (mode-phase (angle (array-ref coeffs 0 nf 0))))
-         (print "grating" (number->string nf) ":, " (number->string mode-wvl) ", " (number->string mode-tran) ", " (number->string mode-phase) "\n")))
-     (arith-sequence 0 1 nfreq))
-```
-
-The phase of the zeroth-diffraction order is simply the angle of its complex mode coefficient. Note that it is generally only the relative phase (the phase difference) between different structures that is useful. The overall mode coefficient α is multiplied by a complex number given by the source amplitude, as well as an arbitrary (but deterministic) phase choice by the mode solver MPB — but as long as you keep the current source fixed as you vary the parameters of the structure, the relative phases are meaningful.
-
-The script is run from the shell terminal using the following Bash commands:
-
-```
-for gdc in `seq 0.1 0.1 0.9`; do
-    meep odd-z?=true gp=0.35 gh=0.6 gdc=${gdc} binary_grating_phasemap.ctl |tee -a phasemap.out;
-done
-
-grep grating phasemap.out |cut -d, -f2- > phasemap.dat;
-```
-
-The results are plotted using the Octave/Matlab script below. The plot is shown in the accompanying figure.
-
-```matlab
-f = dlmread('phasemap.dat');
-nfreq = 21;
-ngdc = 9;
-
-gdc = ones(nfreq,1)*[0.1:0.1:0.9];
-
-wvl = reshape(f(:,1),nfreq,ngdc);
-tran = reshape(f(:,2),nfreq,ngdc);
-ang = reshape(f(:,3),nfreq,ngdc);
-
-h1 = subplot(1,2,1);
-pcolor(wvl,gdc,tran);
-c1 = colormap("hot");
-colormap(h1,flipud(c1));
-shading interp;
-colorbar;
-caxis([0 1.0]);
-
-axis([0.4 0.6 0.1 0.9]);
-set(gca, 'xtick', [0.4:0.1:0.6]);
-set(gca, 'ytick', [0.1:0.1:0.9]);
-
-xlabel("wavelength (um)");
-ylabel("grating duty cycle");
-title("transmittance");
-
-h2 = subplot(1,2,2);
-pcolor(wvl,gdc,ang);
-c2 = colormap("jet");
-colormap(h2, flipud(c2));
-shading interp;
-colorbar;
-
-axis([0.4 0.6 0.1 0.9]);
-set(gca, 'xtick', [0.4:0.1:0.6]);
-set(gca, 'ytick', [0.1:0.1:0.9]);
-
-xlabel("wavelength (um)");
-ylabel("grating duty cycle");
-title("phase (radians)");
-```
-
-The figure below shows the transmittance spectra (left) and phase map (right). The transmittance is nearly unity over most of the parameter space mainly because of the subwavlength dimensions of the grating. The phase variation spans the full range of -π to +π at each wavelength but varies weakly with the duty cycle due to the relatively low index of the glass grating. Higher-index materials such as [titanium dioxide](https://en.wikipedia.org/wiki/Titanium_dioxide#Thin_films) (TiO<sub>2</sub>) generally provide more control over the phase.
-
-<center>
-![](../images/grating_phasemap.png)
-</center>
+To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1 (2.9°), 3 (8.6°), 5 (14.5°), and 7 (20.5°). The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
 ### Reflectance and Transmittance Spectra for Planewave at Oblique Incidence
 
@@ -677,6 +517,167 @@ poynting-flux:, 0.061102475360487296, 0.938344211286383, 0.9994466866468703
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
+
+Phase Map of a Subwavelength Binary Grating
+-------------------------------------------
+
+We can also use the complex mode coefficients to compute the phase (or impedance) of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in a metasurface lens. When the period of the unit cell is subwavelength, the zeroth-diffraction order is the only propagating wave. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth-diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
+
+The simulation script is in [examples/binary_grating_phasemap.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/binary_grating_phasemap.ctl).
+
+```scm
+(set-param! resolution 60)  ; pixels/μm
+
+(define-param dpml 1.0)     ; PML thickness
+(define-param dsub 3.0)     ; substrate thickness
+(define-param dpad 3.0)     ; padding between grating and PML
+(define-param gp 0.35)      ; grating period
+(define-param gh 0.6)       ; grating height
+(define-param gdc 0.5)      ; grating duty cycle
+
+(define sx (+ dpml dsub gh dpad dpml))
+(define sy gp)
+
+(define cell (make lattice (size sx sy no-size)))
+(set! geometry-lattice cell)
+
+(define boundary-layers (list (make pml (thickness dpml) (direction X))))
+(set! pml-layers boundary-layers)
+
+(define-param wvl-min 0.4)          ; min wavelength
+(define-param wvl-max 0.6)          ; max wavelength
+(define fmin (/ wvl-max))           ; min frequency
+(define fmax (/ wvl-min))           ; max frequency
+(define fcen (* 0.5 (+ fmin fmax))) ; pulse frequency center
+(define df (- fmax fmin))           ; pulse frequency width
+(define-param nfreq 21)             ; number of frequency bins
+
+(define-param odd-z? true)
+
+(define pulse-src (list (make source
+                          (src (make gaussian-src (frequency fcen) (fwidth df)))
+                          (component (if odd-z? Ez Hz))
+                          (center (+ (* -0.5 sx) dpml (* 0.5 dsub)) 0 0)
+                          (size 0 sy 0))))
+
+(set! sources pulse-src)
+
+(set! k-point (vector3 0 0 0))
+
+(define glass (make medium (index 1.5)))
+(set! default-material glass)
+
+(define symm (list (make mirror-sym (direction Y) (phase (if odd-z? +1 -1)))))
+(set! symmetries symm)
+
+(define mon-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
+(define flux-mon (add-flux fcen df nfreq (make flux-region (center mon-pt) (size 0 sy 0))))
+
+(run-sources+ 100)
+
+(define input-flux (get-fluxes flux-mon))
+(define freqs (get-flux-freqs flux-mon))
+
+(reset-meep)
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! sources pulse-src)
+
+(set! k-point (vector3 0 0 0))
+
+(set! default-material air)
+
+(set! geometry (list (make block
+                       (material glass)
+                       (size (+ dpml dsub) infinity infinity)
+                       (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub))) 0 0))
+                     (make block
+                       (material glass)
+                       (size gh (* gdc gp) infinity)
+                       (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) 0 0))))
+
+(set! symmetries symm)
+
+(define mode-mon (add-flux fcen df nfreq (make flux-region (center mon-pt) (size 0 sy 0))))
+
+(run-sources+ 300)
+
+(define res (get-eigenmode-coefficients mode-mon (list 1) #:eig-parity (if odd-z? (+ ODD-Z EVEN-Y) (+ EVEN-Z ODD-Y))))
+(define coeffs (list-ref res 0))
+
+(map (lambda (nf)
+       (let ((mode-wvl (/ (list-ref freqs nf)))
+             (mode-tran (/ (sqr (magnitude (array-ref coeffs 0 nf 0))) (list-ref input-flux nf)))
+             (mode-phase (angle (array-ref coeffs 0 nf 0))))
+         (print "grating" (number->string nf) ":, " (number->string mode-wvl) ", " (number->string mode-tran) ", " (number->string mode-phase) "\n")))
+     (arith-sequence 0 1 nfreq))
+```
+
+The phase of the zeroth-diffraction order is simply the angle of its complex mode coefficient. Note that it is generally only the relative phase (the phase difference) between different structures that is useful. The overall mode coefficient α is multiplied by a complex number given by the source amplitude, as well as an arbitrary (but deterministic) phase choice by the mode solver MPB — but as long as you keep the current source fixed as you vary the parameters of the structure, the relative phases are meaningful.
+
+The script is run from the shell terminal using the following Bash commands:
+
+```
+for gdc in `seq 0.1 0.1 0.9`; do
+    meep odd-z?=true gp=0.35 gh=0.6 gdc=${gdc} binary_grating_phasemap.ctl |tee -a phasemap.out;
+done
+
+grep grating phasemap.out |cut -d, -f2- > phasemap.dat;
+```
+
+The results are plotted using the Octave/Matlab script below. The plot is shown in the accompanying figure.
+
+```matlab
+f = dlmread('phasemap.dat');
+nfreq = 21;
+ngdc = 9;
+
+gdc = ones(nfreq,1)*[0.1:0.1:0.9];
+
+wvl = reshape(f(:,1),nfreq,ngdc);
+tran = reshape(f(:,2),nfreq,ngdc);
+ang = reshape(f(:,3),nfreq,ngdc);
+
+h1 = subplot(1,2,1);
+pcolor(wvl,gdc,tran);
+c1 = colormap("hot");
+colormap(h1,flipud(c1));
+shading interp;
+colorbar;
+caxis([0 1.0]);
+
+axis([0.4 0.6 0.1 0.9]);
+set(gca, 'xtick', [0.4:0.1:0.6]);
+set(gca, 'ytick', [0.1:0.1:0.9]);
+
+xlabel("wavelength (um)");
+ylabel("grating duty cycle");
+title("transmittance");
+
+h2 = subplot(1,2,2);
+pcolor(wvl,gdc,ang);
+c2 = colormap("jet");
+colormap(h2, flipud(c2));
+shading interp;
+colorbar;
+
+axis([0.4 0.6 0.1 0.9]);
+set(gca, 'xtick', [0.4:0.1:0.6]);
+set(gca, 'ytick', [0.1:0.1:0.9]);
+
+xlabel("wavelength (um)");
+ylabel("grating duty cycle");
+title("phase (radians)");
+```
+
+The figure below shows the transmittance spectra (left) and phase map (right). The transmittance is nearly unity over most of the parameter space mainly because of the subwavlength dimensions of the grating. The phase variation spans the full range of -π to +π at each wavelength but varies weakly with the duty cycle due to the relatively low index of the glass grating. Higher-index materials such as [titanium dioxide](https://en.wikipedia.org/wiki/Titanium_dioxide#Thin_films) (TiO<sub>2</sub>) generally provide more control over the phase.
+
+<center>
+![](../images/grating_phasemap.png)
+</center>
 
 Diffraction Spectra of Liquid-Crystal Polarization Gratings
 -----------------------------------------------------------
