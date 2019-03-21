@@ -495,13 +495,16 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
       default: abort("invalid normal direction in dft_near2far!");
     }
 
-    for (int i = 0; i < 2; ++i) {
-      if (has_direction(v.dim, fd[i]) &&
-          boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic) {
-        periodic_d[i] = fd[i];
-        periodic_n[i] = Nperiods;
-        period[i] = v.in_direction(fd[i]);
-        periodic_k[i] = 2*pi*real(k[fd[i]]) * period[i];
+    if (Nperiods > 1) {
+      for (int i = 0; i < 2; ++i) {
+        if (has_direction(v.dim, fd[i]) &&
+            boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic &&
+            float(w->v.in_direction(fd[i])) >= 0.5*float(v.in_direction(fd[i]))) {
+          periodic_d[i] = fd[i];
+          periodic_n[i] = Nperiods;
+          period[i] = v.in_direction(fd[i]);
+          periodic_k[i] = 2*pi*real(k[fd[i]]) * period[i];
+        }
       }
     }
 
