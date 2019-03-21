@@ -80,3 +80,9 @@ A plot of the resonant frequency versus the ring radius is shown below for subpi
 ![](../images/ring_vary_radius.png)
 </center>
 
+To compare the convergence rate of the discretization error, the following plot shows the error of the resonant mode (relative to the "exact" result at a resolution of 300 pixels/μm) as a function of the grid resolution for a ring geometry with a fixed radius of 1.1 μm. The no smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel smoothing results have quadratic convergence.
+
+<center>
+![](../images/ring_subpixel_smoothing_rate.png)
+</center>
+

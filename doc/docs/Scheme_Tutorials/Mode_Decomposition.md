@@ -74,14 +74,14 @@ The simulation script is in [examples/mode-decomposition.ctl](https://github.com
 (set! symmetries symm)
 
 (define mon-pt (vector3 (+ (* -0.5 sx) dpml-x (* 0.7 Lw)) 0 0))
-(define flux1 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
+(define flux (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
 
 (run-sources+ (stop-when-fields-decayed 50 Ez mon-pt 1e-9))
 
-(save-flux "flux" flux1)
-(define res1 (get-eigenmode-coefficients flux1 (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define incident-coeffs (array-ref (list-ref res1 0) 0 0 0))
-(define incident-flux (list-ref (get-fluxes flux1) 0))
+(save-flux "flux" flux)
+(define res (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define incident-coeffs (array-ref (list-ref res 0) 0 0 0))
+(define incident-flux (list-ref (get-fluxes flux) 0))
 
 (reset-meep)
 
@@ -110,14 +110,14 @@ The simulation script is in [examples/mode-decomposition.ctl](https://github.com
 
 (set! symmetries symm)
 
-(define flux2 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
-(load-minus-flux "flux" flux2)
+(define flux (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
+(load-minus-flux "flux" flux)
 
 (run-sources+ (stop-when-fields-decayed 50 Ez mon-pt 1e-9))
 
-(define res2 (get-eigenmode-coefficients flux2 (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define taper-coeffs (array-ref (list-ref res2 0) 0 0 1))
-(define taper-flux (list-ref (get-fluxes flux2) 0))
+(set! res (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define taper-coeffs (array-ref (list-ref res 0) 0 0 1))
+(define taper-flux (list-ref (get-fluxes flux) 0))
 
 (print "refl:, " Lt ", " (/ (sqr (magnitude taper-coeffs)) (sqr (magnitude incident-coeffs))) ", " (/ (- taper-flux) incident-flux) "\n")
 ```
@@ -383,7 +383,7 @@ The simulation script is in [examples/binary_grating_oblique.ctl](https://github
 (set! sources pw-src)
 
 (define refl-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub)) 0 0))
-(define refl-flux1 (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
+(define refl-flux (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
 
 (if use-cw-solver?
     (begin
@@ -391,9 +391,9 @@ The simulation script is in [examples/binary_grating_oblique.ctl](https://github
       (meep-fields-solve-cw fields cw-solver-tol cw-solver-maxiters cw-solver-L))
     (run-sources+ 100))
 
-(save-flux "flux" refl-flux1)
-(define input-flux (get-fluxes refl-flux1))
-(define freqs (get-flux-freqs refl-flux1))
+(save-flux "flux" refl-flux)
+(define input-flux (get-fluxes refl-flux))
+(define freqs (get-flux-freqs refl-flux))
 
 (reset-meep)
 
@@ -418,8 +418,8 @@ The simulation script is in [examples/binary_grating_oblique.ctl](https://github
                        (size gh (* gdc gp) infinity)
                        (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) 0 0))))
 
-(define refl-flux2 (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
-(load-minus-flux "flux" refl-flux2)
+(set! refl-flux (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
+(load-minus-flux "flux" refl-flux)
 
 (define tran-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
 (define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
@@ -434,14 +434,14 @@ The simulation script is in [examples/binary_grating_oblique.ctl](https://github
 (define nm-r (- (floor (* (- (* fcen ng) (vector3-y k)) gp)) (ceiling (* (- (- (* fcen ng)) (vector3-y k)) gp))))
 (if (= theta-in 0) (set! nm-r (* 0.5 nm-r)))
 
-(define res1 (get-eigenmode-coefficients refl-flux2 (arith-sequence 1 1 nm-r) #:eig-parity eig-parity))
-(define r-coeffs (list-ref res1 0))
-(define kdom1 (list-ref res1 3))
+(define res (get-eigenmode-coefficients refl-flux (arith-sequence 1 1 nm-r) #:eig-parity eig-parity))
+(define r-coeffs (list-ref res 0))
+(define kdom (list-ref res 3))
 
 (define Rsum 0)
 (define r-angle 0)
 (map (lambda (nm)
-       (let ((r-kdom (list-ref kdom1 nm))
+       (let ((r-kdom (list-ref kdom nm))
              (Rmode (/ (sqr (magnitude (array-ref r-coeffs nm 0 1))) (list-ref input-flux 0))))
          (set! r-angle (* (if (positive? (vector3-y r-kdom)) +1 -1) (acos (/ (vector3-x r-kdom) (* ng fcen)))))
          (print "refl:, " nm ", " (rad->deg r-angle) ", " Rmode "\n")
@@ -452,14 +452,14 @@ The simulation script is in [examples/binary_grating_oblique.ctl](https://github
 (define nm-t (- (floor (* (- fcen (vector3-y k)) gp)) (ceiling (* (- (- fcen) (vector3-y k)) gp))))
 (if (= theta-in 0) (set! nm-t (* 0.5 nm-t)))
 
-(define res2 (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nm-t) #:eig-parity eig-parity))
-(define t-coeffs (list-ref res2 0))
-(define kdom2 (list-ref res2 3))
+(set! res (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nm-t) #:eig-parity eig-parity))
+(define t-coeffs (list-ref res 0))
+(set! kdom (list-ref res 3))
 
 (define Tsum 0)
 (define t-angle 0)
 (map (lambda (nm)
-       (let ((t-kdom (list-ref kdom2 nm))
+       (let ((t-kdom (list-ref kdom nm))
              (Tmode (/ (sqr (magnitude (array-ref t-coeffs nm 0 0))) (list-ref input-flux 0))))
          (set! t-angle (* (if (positive? (vector3-y t-kdom)) +1 -1) (acos (/ (vector3-x t-kdom) fcen))))
          (print "tran:, " nm ", " (rad->deg t-angle) ", " Tmode "\n")
@@ -468,7 +468,7 @@ The simulation script is in [examples/binary_grating_oblique.ctl](https://github
 
 (print "mode-coeff:, " Rsum ", " Tsum ", " (+ Rsum Tsum) "\n")
 
-(define r-flux (get-fluxes refl-flux2))
+(define r-flux (get-fluxes refl-flux))
 (define t-flux (get-fluxes tran-flux))
 
 (define Rflux (/ (- (list-ref r-flux 0)) (list-ref input-flux 0)))
@@ -748,11 +748,11 @@ The simulation script is in [examples/polarization_grating.ctl](https://github.c
 (set! default-material (make medium (index n0)))
 
 (define tran-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
-(define tran-flux1 (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+(define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
 
 (run-sources+ 100)
 
-(define input-flux (get-fluxes tran-flux1))
+(define input-flux (get-fluxes tran-flux))
 
 (reset-meep)
 
@@ -803,12 +803,12 @@ The simulation script is in [examples/polarization_grating.ctl](https://github.c
                   (size (* 2 d) infinity infinity)
                   (material (make material-function (material-func lc-mat))))))
 
-(define tran-flux2 (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+(define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
 
 (run-sources+ 300)
 
-(define res1 (get-eigenmode-coefficients tran-flux2 (arith-sequence 1 1 nmode) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define res2 (get-eigenmode-coefficients tran-flux2 (arith-sequence 1 1 nmode) #:eig-parity (+ EVEN-Z ODD-Y)))
+(define res1 (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nmode) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define res2 (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nmode) #:eig-parity (+ EVEN-Z ODD-Y)))
 
 (define t-coeffs1 (list-ref res1 0))
 (define t-coeffs2 (list-ref res2 0))

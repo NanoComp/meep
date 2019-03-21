@@ -78,14 +78,14 @@ for Lt in Lts:
                         symmetries=symmetries)
 
     mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw)
-    flux1 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
+    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res1 = sim.get_eigenmode_coefficients(flux1,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    incident_coeffs = res1.alpha
-    incident_flux = mp.get_fluxes(flux1)
-    incident_flux_data = sim.get_flux_data(flux1)
+    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    incident_coeffs = res.alpha
+    incident_flux = mp.get_fluxes(flux)
+    incident_flux_data = sim.get_flux_data(flux)
 
     sim.reset_meep()
 
@@ -106,14 +106,14 @@ for Lt in Lts:
                         sources=sources,
                         symmetries=symmetries)
 
-    flux2 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
-    sim.load_minus_flux_data(flux2,incident_flux_data)
+    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
+    sim.load_minus_flux_data(flux,incident_flux_data)
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res2 = sim.get_eigenmode_coefficients(flux2,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    taper_coeffs = res2.alpha
-    taper_flux = mp.get_fluxes(flux2)
+    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    taper_coeffs = res.alpha
+    taper_flux = mp.get_fluxes(flux)
 
     R_coeffs.append(abs(taper_coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2)
     R_flux.append(-taper_flux[0]/incident_flux[0])
