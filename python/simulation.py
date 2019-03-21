@@ -1372,11 +1372,8 @@ class Simulation(object):
         mp._get_dft_data(dft_chunk, arr)
         return arr
 
-    def add_near2far(self, fcen, df, nfreq, nperiods=1, *near2fars):
-        # hack around python 2's inability to put keyword args after varargs:
-        if not isinstance(nperiods, int):
-            near2fars = (nperiods,) + near2fars
-            nperiods = 1
+    def add_near2far(self, fcen, df, nfreq, *near2fars, **kwargs):
+        nperiods = kwargs.get('nperiods', 1)
         n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, nperiods, near2fars])
         self.dft_objects.append(n2f)
         return n2f
