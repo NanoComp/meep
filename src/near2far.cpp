@@ -265,7 +265,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
               xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1*period[1]);
             double phase = phase0 + i1*periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
-            green(EH6, x, freq, eps, mu, x0, c0, f->dft[Nfreq * idx_dft + i]);
+            green(EH6, x, freq, eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j)
               EH[i * 6 + j] += EH6[j] * cphase;
           }
