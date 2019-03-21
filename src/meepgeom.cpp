@@ -913,11 +913,12 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
 
   symmetric_matrix chi1p1, chi1p1_inv;
   material_type material;
+  meep::vec gradient(normal_vector(meep::type(c), v));
   get_material_pt(material, v.center());
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
   material_gc(material);
   if (chi1p1.m01 != 0 || chi1p1.m02 != 0 || chi1p1.m12 != 0 || chi1p1.m00 != chi1p1.m11 ||
-      chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22) {
+      chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22 || meep::abs(gradient) == 0) {
     int rownum = meep::component_direction(c) % 3;
     if (rownum == 0) {
       chi1inv_row[0] = chi1p1.m00;
@@ -982,7 +983,6 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     minveps = 1.0 / (meps = eps(v.center()));
 
   {
-    meep::vec gradient(normal_vector(meep::type(c), v));
     double n[3] = {0, 0, 0};
     double nabsinv = 1.0 / meep::abs(gradient);
     LOOP_OVER_DIRECTIONS(gradient.dim, k) { n[k % 3] = gradient.in_direction(k) * nabsinv; }
