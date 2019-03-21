@@ -1733,7 +1733,7 @@ public:
 
   // near2far.cpp
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                int Nfreq);
+                                int Nfreq, int Nperiods=1);
   // monitor.cpp
   double get_chi1inv(component, direction, const vec &loc) const;
   double get_inveps(component c, direction d, const vec &loc) const {

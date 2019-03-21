@@ -321,7 +321,8 @@ class DftNear2Far(DftObj):
     def __init__(self, func, args):
         super(DftNear2Far, self).__init__(func, args)
         self.nfreqs = args[2]
-        self.regions = args[3]
+        self.nperiods = args[3]
+        self.regions = args[4]
         self.num_components = 4
 
     @property
@@ -1371,15 +1372,19 @@ class Simulation(object):
         mp._get_dft_data(dft_chunk, arr)
         return arr
 
-    def add_near2far(self, fcen, df, nfreq, *near2fars):
-        n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, near2fars])
+    def add_near2far(self, fcen, df, nfreq, nperiods=1, *near2fars):
+        # hack around python 2's inability to put keyword args after varargs:
+        if not isinstance(nperiods, int):
+            near2fars = (nperiods,) + near2fars
+            nperiods = 1
+        n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, nperiods, near2fars])
         self.dft_objects.append(n2f)
         return n2f
 
-    def _add_near2far(self, fcen, df, nfreq, near2fars):
+    def _add_near2far(self, fcen, df, nfreq, nperiods, near2fars):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars, nperiods)
 
     def add_energy(self, fcen, df, nfreq, *energys):
         en = DftEnergy(self._add_energy, [fcen, df, nfreq, energys])
@@ -1634,7 +1639,7 @@ class Simulation(object):
         self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
-    def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
+    def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist, *args):
         vol_list = None
 
         for s in stufflist:
@@ -1647,7 +1652,7 @@ class Simulation(object):
                         is_cylindrical=self.is_cylindrical).swigobj
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
-        stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq, *args)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff

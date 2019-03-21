@@ -444,7 +444,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
 dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                      int Nfreq) {
+                                      int Nfreq, int Nperiods) {
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
   volume everywhere = where->v;
@@ -497,10 +497,9 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
 
     for (int i = 0; i < 2; ++i) {
       if (has_direction(v.dim, fd[i]) &&
-          boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic &&
-          float(w->v.in_direction(fd[i])) == float(v.in_direction(fd[i]))) {
+          boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic) {
         periodic_d[i] = fd[i];
-        periodic_n[i] = 10; // just hard-code a 10x10 supercell for now
+        periodic_n[i] = Nperiods;
         period[i] = v.in_direction(fd[i]);
         periodic_k[i] = 2*pi*real(k[fd[i]]) * period[i];
       }
