@@ -77,12 +77,12 @@ for rad in np.arange(1.800,2.001,0.005):
 A plot of the resonant frequency versus the ring radius is shown below for subpixel smoothing (red) and no smoothing (blue). Included for reference is the "exact" result (black) computed using *no smoothing* at a resolution of 70 pixels/μm. The no smoothing result shows a stairstepped discontinuous eigenfrequency. The subpixel-smoothing result varies continuously with the ring radius and is similar to the exact result which is at a resolution seven times larger. Finally, the inset shows the scalar H<sub>z</sub> field profile of the resonant mode for a structure with inner radius of 1.9 μm.
 
 <center>
-![](../images/ring_vary_radius.png)
+![](images/ring_vary_radius.png)
 </center>
 
 To compare the convergence rate of the discretization error, the following plot shows the error of the resonant mode (relative to the "exact" result at a resolution of 300 pixels/μm) as a function of the grid resolution for a ring geometry with a fixed radius of 1.1 μm. The no smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel smoothing results have roughly second-order convergence.
 
 <center>
-![](../images/ring_subpixel_smoothing_rate.png)
+![](images/ring_subpixel_smoothing_rate.png)
 </center>
 
