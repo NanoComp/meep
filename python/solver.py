@@ -12,8 +12,8 @@ import h5py
 import numpy as np
 import meep as mp
 from . import mode_solver, with_hermitian_epsilon
+from meep.geom import init_do_averaging
 from meep.simulation import get_num_args
-
 try:
     basestring
 except NameError:
@@ -123,6 +123,7 @@ class ModeSolver(object):
         grid_size = self._adjust_grid_size()
 
         if type(self.default_material) is not mp.Medium and callable(self.default_material):
+            init_do_averaging(self.default_material)
             self.default_material.eps = False
 
         self.mode_solver = mode_solver(

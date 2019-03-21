@@ -171,6 +171,7 @@ struct material_data {
   // these fields used only if which_subclass==MATERIAL_USER
   user_material_func user_func;
   void *user_data;
+  bool do_averaging;
 
   // these fields used only if which_subclass==MATERIAL_FILE
   meep::realnum *epsilon_data;
