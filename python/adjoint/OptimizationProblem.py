@@ -39,11 +39,9 @@ class OptimizationProblem(ABC):
     def init_problem(self, args):
         raise NotImplementedError("derived class must implement init_problem() method")
 
-
     @abstractmethod
     def create_sim(self, betavector, vacuum=False):
         raise NotImplementedError("derived class must implement create_sim() method")
-
 
     ######################################################################
     # virtual methods that *may* optionally be overridden by child
@@ -54,12 +52,13 @@ class OptimizationProblem(ABC):
     ######################################################################
     ######################################################################
     ######################################################################
-    def __init__(self):
+    def __init__(self, cmdline=None):
 
         # define and parse command-line arguments
         parser = self.init_args()       # general args
         self.add_args(parser)           # problem-specific arguments
-        self.args = args = parser.parse_args()
+        argv=sys.argv[1:] if cmdline is None else cmdline.split(' ')
+        self.args = args = parser.parse_args(argv)
 
         # call subclass for problem-specific initialization first...
         fstr, objective_regions, extra_regions, design_region, self.basis \
@@ -219,6 +218,28 @@ class OptimizationProblem(ABC):
         self.terminate("Finished visualization")
 
     ######################################################################
+    # compute the objective function, plus possibly its gradient (via
+    # adjoints), at a single point in design space
+    ######################################################################
+    def eval_objective(self, beta_vector, need_gradient=False, vis=None):
+        sim = self.create_sim(beta_vector)
+        solver = AdjointSolver(self.obj_func, self.dft_cells, self.basis, sim, vis=vis)
+        self.sim, self.solver = sim, solver # save copies for debugging; not strictly necessary
+        retval=solver.solve(need_gradient=need_gradient)
+        if need_gradient and self.args.pickle_data:
+            with open(self.filebase + '.pickle','wb') as f:
+                pickle.dump(self.solver.dfdEps,f)
+        return retval
+
+    ##################################################
+    ##################################################
+    ##################################################
+    def eval_fq(self, beta_vector, need_gradient=False, vis=None):
+        f,gradf = self.eval_objective(beta_vector, need_gradient=need_gradient, vis=vis)
+        fq = np.array( [f] + list(self.obj_func.qvals) )
+        return fq, gradf
+
+    ######################################################################
     # the 'run' class method of OptimizationProblem, which is where control
     # passes after __init__ if we were executed as a script, looks at
     # command-line flags to determine whether to (a) launch a full
@@ -283,10 +304,11 @@ class OptimizationProblem(ABC):
 
         self.output([],[],actions=['end'])
 
-        if args.pickle_data:
-            f = open(self.filebase + '.pickle', 'wb')
-            pickle.dump(self,f)
-            f.close()
+#        if args.pickle_data:
+#            f = open(self.filebase + '.pickle', 'wb')
+            #pickle.dump(self,f)
+#            pickle.dump(self.dfdEps,f)
+#            f.close()
 
         self.terminate("Completed single-point calculation")
 
@@ -356,21 +378,3 @@ class OptimizationProblem(ABC):
         print("Running optimization...")
         vis = AdjointVisualizer() if args.visualize else None # cases=ALL_CASES
         self.terminate("Finished optimization")
-
-    ######################################################################
-    # compute the objective function, plus possibly its gradient (via
-    # adjoints), at a single point in design space
-    ######################################################################
-    def eval_objective(self, beta_vector, need_gradient=False, vis=None):
-        sim = self.create_sim(beta_vector)
-        solver = AdjointSolver(self.obj_func, self.dft_cells, self.basis, sim, vis=vis)
-        self.sim, self.solver=sim,solver # save copies for debugging; not strictly necessary
-        return solver.solve(need_gradient=need_gradient)
-
-    ##################################################
-    ##################################################
-    ##################################################
-    def eval_fq(self, beta_vector, need_gradient=False, vis=None):
-        f,gradf = self.eval_objective(beta_vector, need_gradient=need_gradient, vis=vis)
-        fq = np.array( [f] + list(self.obj_func.qvals) )
-        return fq, gradf
