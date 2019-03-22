@@ -1257,6 +1257,7 @@ class Simulation(object):
             k_index += 1
 
             if k_index == 1:
+                self.change_k_point(k)
                 self.init_sim()
                 output_epsilon(self)
 

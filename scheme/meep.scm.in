@@ -1353,7 +1353,7 @@
   (define all-freqs '())
   (map (lambda (k)
 	 (set! k-index (+ k-index 1))
-	 (if (= k-index 1) (begin (init-fields) (output-epsilon)))
+	 (if (= k-index 1) (begin (change-k-point! k) (init-fields) (output-epsilon)))
 	 (let ((freqs (run-k-point T k)))
 	   (print "freqs:, " k-index
 		  ", " (vector3-x k) ", " (vector3-y k) ", " (vector3-z k))
