@@ -1,4 +1,4 @@
-###############################################
+##################################################
 # ObjectiveFunction.py --- routines for evaluating
 # objective quantities and objective functions for
 # adjoint-based optimization in meep
@@ -8,7 +8,12 @@ from collections import namedtuple
 import numpy as np
 import sympy
 
+import matplotlib.cm
+
 import meep as mp
+import meep.adjoint
+
+#from Visualization import (AFEClient, def_field_options)
 
 ######################################################################
 # various global options affecting the adjoint solver, user-tweakable
@@ -21,7 +26,7 @@ adjoint_options={
  'verbosity':           'default',
  'visualize':           False,
  'logfile':             None,
- 'plot_pause':          0.01,
+ 'plot_pause':          0.1,
  'animate_components':  None,
  'animate_interval':    1.0
 }
@@ -146,26 +151,29 @@ def FluxLine(x0,y0,length,dir,name=None):
 # Note: for now, all arrays are stored in memory. For large calculations with
 # many DFT frequencies this may become impractical. TODO: disk caching.
 ######################################################################
-global_dft_cell_names=[]
 class DFTCell(object):
 
-#    Why does this not work?! I would have thought DFTCell.DFTCellNames would
-#    be globally accessible like a static member of a C++ class, and in fact it
-#    **is** accessible from most code, but seems to go out of scope when we're
-#    in the body of a method of some other class.
-#    DFTCellNames=[]
-#    @classmethod
-#    def get_index(cls, region_name):
-#        cell_name = region_name + '_flux'
-#        if cell_name in cls.DFTCellNames:
-#            return cls.DFTCellNames.index(cell_name)
-#        raise ValueError("reference to nonexistent DFT cell {}",region_name)
+    cell_names=[]
+
+    @classmethod
+    def get_cell_names(cls):
+        return cls.cell_names
+
+    @classmethod
+    def add_cell_name(cls,cell_name):
+        cls.cell_names.append(cell_name)
+
+    @classmethod
+    def reset_cell_names(cls):
+        cls.cell_names=[]
+
     @classmethod
     def get_index(cls, region_name):
-        cell_name = region_name + '_flux'
-        if cell_name in global_dft_cell_names:
-            return global_dft_cell_names.index(cell_name)
-        raise ValueError("reference to nonexistent DFT cell {}",region_name)
+        if region_name + '_flux' in cls.cell_names:
+            return cls.cell_names.index(region_name + '_flux')
+        if region_name + '_fields' in cls.cell_names:
+            return cls.cell_names.index(region_name + '_fields')
+        raise ValueError("reference to nonexistent DFT cell {}".format(region_name))
 
 
     ######################################################################
@@ -204,10 +212,8 @@ class DFTCell(object):
             elif grid_info and self.size==grid_info.size:
                 self.name = 'fullgrid_{}'.format(self.celltype)
             else:
-                 self.name = '{}_{}'.format(self.celltype, len(global_dft_cell_names))
-#                self.name = '{}_{}'.format(self.celltype, len(self.DFTCellNames))
-#        self.DFTCellNames.append(self.name)
-        global_dft_cell_names.append(self.name)
+                 self.name = '{}_{}'.format(self.celltype, len(self.get_cell_names()))
+        self.add_cell_name(self.name)
 
         # FIXME At present the 'xyzw' metadata cannot be computed until a mp.simulation / meep::fields
         #       object has been created, but in fact the metadata only depend on the GridInfo
@@ -361,7 +367,7 @@ def qname_to_qrule(qname):
 
     pieces=qname.split('_')
     codemode, cellstr = pieces[0], '_'.join(pieces[1:])
-    ncell=int(cellstr) if cellstr.isdigit() else DFTCell.get_index(cellstr)
+    ncell=int(cellstr) if cellstr.isdigit() else meep.adjoint.DFTCell.get_index(cellstr)
     if codemode.upper()=='S':
         return qrule(codemode, 0, ncell)
     elif codemode[0] in 'PM':
@@ -489,6 +495,7 @@ class AdjointSolver(object):
         self.basis       = basis
         self.sim         = sim
         self.vis         = vis
+        self.dfdEps      = 0.0j*np.zeros(self.dft_cells[-1].slice_dims)
 
         # prefetch names of outputs computed by forward and
         # adjoint solves, for use in writing log files
@@ -502,18 +509,13 @@ class AdjointSolver(object):
         return self.obj_func.get_fq(self.dft_cells,nf=nf)
 
     def eval_gradf(self, nf=0):
-        gradient=0.0j*np.zeros(len(self.basis()))
+        gradient=0.0j*np.zeros(self.basis.dim)
         cell=self.dft_cells[-1] # design cell
         EH_forward=cell.get_EH_slices(nf,label='forward')
         EH_adjoint=cell.get_EH_slices(nf) # no label->current simulation
-        f=np.sum( [EH_forward[nc]*EH_adjoint[nc]
-                      for nc,c in enumerate(cell.components) if c in Exyz], 0 )
-#        f=0.0j*np.ones(cell.slice_dims)
-#        for nc,c in enumerate(cell.components):
-#            if c not in Exyz:
-#                continue
-#            f+=EH_forward[nc]*EH_adjoint[nc]
-        return self.basis.project(f,cell.xyzw)
+        self.dfdEps=np.sum( [EH_forward[nc]*EH_adjoint[nc]
+                               for nc,c in enumerate(cell.components) if c in Exyz], 0 )
+        return self.basis.project(self.dfdEps,cell.xyzw)
 
     #########################################################
     #########################################################
@@ -531,22 +533,24 @@ class AdjointSolver(object):
         self.sim.init_sim()
         [cell.register(self.sim) for cell in self.dft_cells]
 
-        #update_plot(self.sim, which='Geometry')
         if self.vis:
             self.vis.update(self.sim,'Geometry')
 
         # construct field-animation step function if requested
         step_funcs = []
-        acs = adjoint_options['animate_components']
-        if acs is not None:
+        clist = adjoint_options['animate_components']
+        if clist is not None:
             ivl=adjoint_options['animate_interval']
-            step_funcs = [ plot_field_components(self.sim, components=acs, interval=ivl) ]
+            ivl=0.5
+            options = dict(def_field_options)
+#            options['cmap']=matplotlib.cm.RdGy
+#            options['clim']=(-0.5,0.5)
+            step_funcs = [ AFEClient(self.sim, clist, interval=ivl, field_options=options) ]
 
+        import time
+        time.sleep(10)
         log("Beginning {} timestepping run...".format(case))
         self.sim.run(*step_funcs, until=self.sim.fields.last_source_time())
-
-        if self.vis:
-            self.vis.update(self.sim,'ForwardFD')
 
         # now continue timestepping with periodic convergence checks until
         # we converge or timeout
@@ -566,7 +570,8 @@ class AdjointSolver(object):
             log(' ** t={} MRD={} ** '.format(self.sim.round_time(),max_rel_delta))
             if verbose:
                 [log('{:10s}: {:+.4e}({:.1e})'.format(n,v,e)) for n,v,e in zip(names,vals,rel_delta)]
-                [log('')]
+            if self.vis:
+                self.vis.update(self.sim,'Forward') if case=='forward' else self.vis.update(self.sim,'Adjoint',dfdEps=self.dfdEps)
 
             if max_rel_delta<=reltol or self.sim.round_time()>=max_time:
                 return vals
@@ -627,7 +632,7 @@ class AdjointSolver(object):
         fq=self.run_until_converged(case='forward')
 
         if self.vis:
-            self.vis.update(self.sim,'ForwardFD')
+            self.vis.update(self.sim,'Forward')
 
         if need_gradient==False:
             return fq[0], 0
@@ -640,7 +645,7 @@ class AdjointSolver(object):
         self.place_adjoint_sources(qweights)
         gradf=self.run_until_converged(case='adjoint')
         if self.vis:
-            self.vis.update(self.sim,'AdjointFD')
+            self.vis.update(self.sim,'Adjoint',dfdEps=self.dfdEps)
 
         return fq[0], gradf
 

@@ -5,7 +5,7 @@ import meep as mp
 
 from meep.adjoint import (OptimizationProblem, DFTCell, adjoint_options,
                           xHat, yHat, zHat, origin, FluxLine,
-                          parameterized_dielectric, FourierLegendreBasis)
+                          ParameterizedDielectric, FourierLegendreBasis)
 
 ##################################################
 ##################################################
@@ -58,12 +58,6 @@ class HoleyWaveguide(OptimizationProblem):
         #----------------------------------------
         #- objective regions
         #----------------------------------------
-        fluxW_center  =  (+args.r_disc + dpml)*xHat
-        fluxE_center  =  (-args.r_disc - dpml)*xHat
-        flux_size     =  2.0*args.w_wvg*yHat
-
-        #fluxW_region  = mp.FluxRegion(center=fluxW_center, size=flux_size, direction=mp.X)
-        #fluxE_region  = mp.FluxRegion(center=fluxE_center, size=flux_size, direction=mp.X)
         x0_east       =  args.r_disc + dpml
         x0_west       = -args.r_disc - dpml
         y0            = 0.0
@@ -92,7 +86,7 @@ class HoleyWaveguide(OptimizationProblem):
         #----------------------------------------
         #- objective function
         #----------------------------------------
-        fstr='P1_east+0.0*(P2_0+P1_1+P2_1+M1_0+M2_0+M1_1+M2_1+S_0+S_1)'
+        fstr='P1_east+0.0*(P2_east+P1_west+P2_west+M1_east+M2_east+M1_west+M2_west+S_east+S_west)'
 
         #----------------------------------------
         #- internal storage for variables needed later
@@ -118,9 +112,9 @@ class HoleyWaveguide(OptimizationProblem):
         wvg=mp.Block(center=origin, material=mp.Medium(epsilon=args.eps_wvg),
                      size=mp.Vector3(self.cell_size.x,args.w_wvg))
         disc=mp.Cylinder(center=self.design_center, radius=args.r_disc,
-                         epsilon_func=parameterized_dielectric(self.design_center,
-                                                               self.basis,
-                                                               beta_vector))
+                         epsilon_func=ParameterizedDielectric(self.design_center,
+                                                              self.basis,
+                                                              beta_vector))
 
         geometry=[wvg] if vacuum else [wvg, disc]
 

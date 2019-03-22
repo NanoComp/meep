@@ -22,8 +22,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import meep as mp
 
-from .ObjectiveFunction import global_dft_cell_names
-
 ########################################################
 # the next few routines are some of my older general-purpose
 # utilities for working with DFT cells; for that purpose
@@ -48,14 +46,14 @@ def dft_cell_type(cell):
 
 def dft_cell_name(nc):
     try:
-        name=global_dft_cell_names[nc]
+        name=meep.adjoint.DFTCell.get_cell_names()[nc]
         if name.endswith('_flux'):
             name=name[0:-5]
         if name.endswith('_fields'):
             name=name[0:-7]
         return name.replace('_','\_')
     except NameError:
-        return 'flux_' + str(nc)
+        return 'flux' + str(nc)
 
 def is_flux_cell(cell):
     return dft_cell_type(cell)=='flux'
@@ -138,39 +136,41 @@ def get_eigenfields(sim, dft_cells, ncell, mode, nf=0, eigencache=None):
 # this routine configures some global matplotlib settings
 # (as distinct from the plot-specific settings handled
 # by the plot_options dicts). if you intend to set your
-# own values of these parameters, pass set_rmecParams=False
-# to visualize_sim.
+# own values of these parameters, pass set_rcParams=False
+# to e.g. visualize_sim and AdjointVisualizer
 ########################################################
 def set_meep_rcParams():
     plt.rc('xtick')
     plt.rc('ytick')
-    plt.rc('font', size=40)
+#    plt.rc('font', size=20)
     plt.rc('text', usetex=True)
-    matplotlib.rcParams['axes.labelsize']='large'
-    matplotlib.rcParams['axes.titlesize']='large'
+    matplotlib.rcParams['axes.labelsize']='medium'
+    matplotlib.rcParams['axes.titlesize']='medium'
     matplotlib.rcParams['axes.titlepad']=20
 
 ########################################################
 # general-purpose default option values, customized for
 # specific types of plots below, and everything settable
-# via set_plot_option
+# via set_plot_default
 ########################################################
-def_plot_options={ 'line_color'     : [1.0,0.0,1.0],
-                   'line_width'     : 4.0,
-                   'line_style'     : '-',
-                   'boundary_width' : 2.0,
-                   'boundary_color' : [0.0,1.0,0.0],
-                   'boundary_style' : '--',
-                   'z_offset'       : 0.0,
-                   'zmin'           : 0.60,
-                   'zmax'           : 1.00,
-                   'fill_color'     : 'none',
-                   'alpha'          : 1.0,
-                   'cmap'           : matplotlib.cm.plasma,
-                   'fontsize'       : 40,
-                   'colorbar_shrink': 0.60,
-                   'colorbar_pad'   : 0.04,
-                   'num_contours'   : 100
+def_plot_options={ 'line_color'           : [1.0,0.0,1.0],
+                   'line_width'           : 4.0,
+                   'line_style'           : '-',
+                   'boundary_width'       : 2.0,
+                   'boundary_color'       : [0.0,1.0,0.0],
+                   'boundary_style'       : '--',
+                   'zrel'                 : 0.0,
+                   'zrel_min'             : 0.60,
+                   'zrel_max'             : 1.00,
+                   'fill_color'           : 'none',
+                   'alpha'                : 1.0,
+                   'cmap'                 : matplotlib.cm.plasma,
+                   'fontsize'             : 20,
+                   'colorbar_shrink'      : 0.60,
+                   'colorbar_pad'         : 0.04,
+                   'colorbar_cannibalize' : True,
+                   'num_contours'         : 100,
+                   'plot_delay'           : 0.1,
                   }
 
 #--------------------------------------------------
@@ -183,24 +183,37 @@ def_eps_options={ **def_plot_options,
                   'num_contours':100
                 }
 
+#--------------------------------------------------
+# options for source region visualization (default: cyan line, no label)
+#--------------------------------------------------
 def_src_options={ **def_plot_options,
                   'line_width':4.0, 'line_color':[0.0,1.0,1.0],
-                  'fontsize':0, 'zmin':0.0, 'zmax':0.0
+                  'fontsize':0, 'zrel_min':0.0, 'zrel_max':0.0
                 }
 
+#--------------------------------------------------
+# options for PML visualization (default: grey semitransparent blocks)
+#--------------------------------------------------
 def_pml_options={ **def_plot_options,
                   'boundary_color':'none', 'boundary_width':0.0,
                   'fill_color': 0.75*np.ones(3), 'alpha':0.25
                 }
 
+#--------------------------------------------------
+# options for flux monitor visualization (default: magenta line with label)
+#--------------------------------------------------
 def_flux_options={ **def_plot_options,
                    'boundary_color':[0.0,0.0,0.0], 'boundary_width':2.0,
                    'boundary_style':'--',
                    'line_color': [1.0,0.0,1.0], 'line_width':4.0
                  }
 
+#--------------------------------------------------
+# options for dft_field cell visualization (default: green dashed border, not filled)
+#--------------------------------------------------
 def_field_options={ **def_plot_options,
-                    'line_width': 0.0, 'alpha': 0.5, 'z_offset':0.5
+                    'line_width': 0.0,   'alpha': 0.5,  'plot_method': 'contourf',
+                    'zrel_min':0.4, 'zrel_max':0.6
                   }
 
 def_dft_options={ **def_plot_options }
@@ -211,10 +224,12 @@ def set_plot_default(option, value, type=None):
             else def_src_options    if type=='src'      \
             else def_pml_optionss   if type=='pml'      \
             else def_flux_options   if type=='flux'     \
-            else def_fields_options if type=='fields'   \
+            else def_field_options  if type=='fields'   \
             else def_plot_options
     which[option]=value
 
+def plot_pause():
+    plt.pause(def_eps_options['plot_delay'])
 
 ###################################################
 ###################################################
@@ -264,7 +279,7 @@ def plot_eps(sim, eps_min=None, eps_max=None, options=None, plot3D=False, fig=No
         X, Y = np.meshgrid(x, y)
         zmin = 0.0
         zmax = max(sim.cell_size.x, sim.cell_size.y)
-        Z0   = zmin + options['z_offset']*(zmax-zmin)
+        Z0   = zmin + options['zrel']*(zmax-zmin)
         img  = ax.contourf(X, Y, eps, num_contours, zdir='z', offset=Z0,
                            vmin=eps_min, vmax=eps_max, cmap=cmap, alpha=alpha)
         ax.set_zlim3d(zmin, zmax)
@@ -283,7 +298,7 @@ def plot_eps(sim, eps_min=None, eps_max=None, options=None, plot3D=False, fig=No
         img  = ax.contourf(X, Y, eps, num_contours, vmin=eps_min, vmax=eps_max,
                            cmap=cmap, alpha=alpha)
 
-    ax.set_xlabel(r'$x$', fontsize=fontsize, labelpad=0.25*fontsize)
+    ax.set_xlabel(r'$x$', fontsize=fontsize, labelpad=0.50*fontsize)
     ax.set_ylabel(r'$y$', fontsize=fontsize, labelpad=fontsize, rotation=0)
     ax.tick_params(axis='both', labelsize=0.75*fontsize)
     cb=cb if cb else fig.colorbar(img)
@@ -294,7 +309,8 @@ def plot_eps(sim, eps_min=None, eps_max=None, options=None, plot3D=False, fig=No
 
 ##################################################
 # plot_volume() adds a polygon representing a given
-# mp.Volume to the current 2D or 3D plot.
+# mp.Volume to the current 2D or 3D plot, with an
+# optional text label.
 ##################################################
 def plot_volume(sim, vol=None, center=None, size=None,
                 options=None, plot3D=False, label=None):
@@ -310,7 +326,7 @@ def plot_volume(sim, vol=None, center=None, size=None,
     dx,dy=np.array([0.5*size.x,0.0]), np.array([0.0,0.5*size.y])
     if plot3D:
         zmin,zmax = ax.get_zlim3d()
-        z0 = zmin + options['z_offset']*(zmax-zmin)
+        z0 = zmin + options['zrel']*(zmax-zmin)
 
     ##################################################
     # add polygon(s) to the plot to represent the volume
@@ -346,7 +362,7 @@ def plot_volume(sim, vol=None, center=None, size=None,
     if label:
         x0, y0, r, h, v = np.mean(ax.get_xlim()),np.mean(ax.get_ylim()), 0, 'center', 'center'
         if size.y==0.0:
-            v = 'top' if center.y>y0 else 'bottom'
+            v = 'bottom' if center.y>y0 else 'top'
         elif size.x==0.0:
             r, h = (270,'left') if center.x>x0 else (90,'right')
         if plot3D:
@@ -378,8 +394,8 @@ def plot_data_curves(sim,center=None,size=None,superpose=True,
     options=options if options else def_flux_options
     lw=options['line_width']
     lc=options['line_color']
-    zeta_min=options['zmin']
-    zeta_max=options['zmax']
+    zrel_min=options['zrel_min']
+    zrel_max=options['zrel_max']
     draw_baseline=(options['boundary_width']>0.0)
 
     kwargs=dict()
@@ -403,8 +419,8 @@ def plot_data_curves(sim,center=None,size=None,superpose=True,
     if superpose:
         ax=plt.gcf().gca(projection='3d')
         (zfloor,zceil)=ax.get_zlim()
-        zmin=zfloor + zeta_min*(zceil-zfloor)
-        zmax=zfloor + zeta_max*(zceil-zfloor)
+        zmin=zfloor + zrel_min*(zceil-zfloor)
+        zmax=zfloor + zrel_max*(zceil-zfloor)
         z0,dz=0.5*(zmax+zmin),(zmax-zmin)
         dmin=dmin if dmin else np.min(data)
         dmax=dmax if dmax else np.max(data)
@@ -477,7 +493,7 @@ def visualize_dft_flux(sim, superpose=True, flux_cells=[],
             plt.subplot(len(flux_cells),1,n)
             plt.gca().set_title('Flux cell {}'.format(n))
         cn,sz=mp.get_center_and_size(cell.where)
-        max_flux=np.amax(flux_arrays)
+        max_flux=np.amax([np.amax(fa) for fa in flux_arrays])
         plot_data_curves(sim, center=cn, size=sz, data=[flux_arrays[n]],
                          superpose=superpose, options=options,
                          labels=['flux through cell {}'.format(n)],
@@ -524,34 +540,59 @@ def field_func_array(fexpr,x,y,z,w,cEH,EH):
 # this routine intended to be called by
 # visualize_dft_fields, not directly by user
 ##################################################
-def plot_dft_fields(sim, field_cells=[], options=None, nf=0):
+def plot_dft_fields(sim, field_cells=[], field_funcs=None, ff_arrays=None, options=None, nf=0):
 
     options       = options if options else def_field_options
     cmap          = options['cmap']
+    edgecolors    = options['line_color']
+    linewidth     = options['line_width']
     alpha         = options['alpha']
-    num_contours  = options['num_contours']
     fontsize      = options['fontsize']
+    plot_method   = options['plot_method']
+    num_contours  = options['num_contours']
+    shading       = 'gouraud' if linewidth==0.0 else 'none'
+    interpolation = 'gaussian' if linewidth==0.0 else 'none'
 
     for ncell, cell in enumerate(field_cells):
         (x,y,z,w,cEH,EH)=unpack_dft_cell(sim,cell,nf=nf)
         X, Y = np.meshgrid(x, y)
-        plt.figure()
-        plt.suptitle('DFT cell {}'.format(ncell+1))
-        ops=['Re', 'Im', 'Abs']
-        rows,cols=len(cEH),len(ops)
-        for row, c in enumerate(cEH):
-            for col, op in enumerate(ops):
-                plt.subplot(rows, cols, row*cols + col + 1)
+        if ff_arrays is None:
+            plt.figure()
+            plt.suptitle('DFT cell {}'.format(ncell+1))
+
+        if field_funcs==None:
+            ops=['Re', 'Im', 'Abs']
+            field_funcs=['{}({})'.format(op,mp.component_name(c)) for c in cEH for op in ops]
+            rows,cols=len(cEH),len(ops)
+        else:
+            rows,cols=1,len(field_funcs)
+
+        def op(F,index):
+            return np.real(F) if op=='Re' else np.imag(F) if op=='Im' else np.abs(F)
+
+        for row in range(rows):
+            for col in range(cols):
+                nplot = row*cols + col
+                data = ff_arrays[nplot] if ff_arrays else op(EH[row],ops[col])
+                plt.subplot(rows, cols, nplot+1)
                 ax=plt.gca()
-                ax.set_title('{}({})'.format(op,mp.component_name(c)))
-                ax.set_xlabel(r'$x$', fontsize=fontsize, labelpad=fontsize)
+                ax.set_title(field_funcs[nplot])
+                ax.set_xlabel(r'$x$', fontsize=fontsize, labelpad=0.5*fontsize)
                 ax.set_ylabel(r'$y$', fontsize=fontsize, labelpad=fontsize, rotation=0)
                 ax.tick_params(axis='both', labelsize=0.75*fontsize)
-                data=np.real(EH[row]) if op=='Re' else np.imag(EH[row]) if op=='Im' else np.abs(EH[row])
-                img = ax.contourf(X,Y,np.transpose(data),num_contours, cmap=cmap,alpha=alpha)
-                plt.colorbar(img)
-        #cb.set_label(r'$\epsilon$',fontsize=1.5*fontsize,rotation=0,labelpad=0.5*fontsize)
-        #cb.ax.tick_params(labelsize=0.75*fontsize)
+                ax.set_aspect('equal')
+                plt.tight_layout()
+                if plot_method=='imshow':
+                    img = plt.imshow(np.transpose(data), extent=(min(x), max(x), min(y), max(y)),
+                                     cmap=cmap, interpolation=interpolation, alpha=alpha)
+                elif plot_method=='pcolormesh':
+                    img = plt.pcolormesh(x,y,np.transpose(data), cmap=cmap, shading=shading,
+                                         edgecolors=edgecolors, linewidth=linewidth, alpha=alpha)
+                else:
+                    img = ax.contourf(X,Y,np.transpose(data),num_contours, cmap=cmap,alpha=alpha)
+                cb=plt.colorbar(img,shrink=options['colorbar_shrink'], pad=options['colorbar_pad'])
+                cb.locator = ticker.MaxNLocator(nbins=5)
+                cb.update_ticks()
 
     plt.show(False)
     plt.draw()
@@ -560,14 +601,17 @@ def plot_dft_fields(sim, field_cells=[], options=None, nf=0):
 ##################################################
 ##################################################
 ##################################################
-def visualize_dft_fields(sim, superpose=True, field_cells=[],
-                         field_funcs=None, z_offsets=None, options=None, nf=0):
+def visualize_dft_fields(sim, superpose=True, field_cells=[], field_funcs=None,
+                         ff_arrays=None, zrels=None, options=None, nf=0):
 
     if not mp.am_master():
         return
 
     if len(field_cells)==0:
         field_cells=[cl for cl in sim.dft_objects if dft_cell_type(cl)=='fields']
+        full_cells=[cell for cell in field_cells if cell.regions[0].size==sim.cell_size]
+        field_cells=full_cells if full_cells else field_cells
+
     if len(field_cells)==0:
         return
 
@@ -576,7 +620,7 @@ def visualize_dft_fields(sim, superpose=True, field_cells=[],
         superpose=False
 
     if not superpose:
-        return plot_dft_fields(sim, field_cells, options, nf=nf)
+        return plot_dft_fields(sim, field_cells, field_funcs, ff_arrays, options, nf=nf)
 
     # the remainder of this routine is for the superposition case
 
@@ -587,36 +631,34 @@ def visualize_dft_fields(sim, superpose=True, field_cells=[],
     fontsize      = options['fontsize']
 
     if field_funcs is None:
-        field_funcs, z_offsets = ['abs2(E)'], [options['z_offset']]
+        field_funcs = ['abs2(E)']
+    if zrels is None:
+        zrel_min, zrel_max, nz = options['zrel_min'], options['zrel_max'], len(field_funcs)
+        zrels=[0.5*(zrel_min+zrel_max)] if nz==1 else np.linspace(zrel_min,zrel_max,nz)
 
     for n, cell in enumerate(field_cells):
-
-        # skip if cell is entirely contained in another field_cell
-        Contained=False
-        for m, parent in enumerate(field_cells):
-            if m!=n and parent.where.contains(cell.where):
-                Contained=True
-        if Contained:
-            continue
-
         (x,y,z,w,cEH,EH)=unpack_dft_cell(sim,cell,nf=nf)
         X, Y = np.meshgrid(x, y)
         fig = plt.gcf()
         ax  = fig.gca(projection='3d')
         (zmin,zmax)=ax.get_zlim()
-        for f,z in zip(field_funcs,z_offsets):
-            data=field_func_array(f,x,y,z,w,cEH,EH)
-            Z0=zmin + z*(zmax-zmin)
-            img = ax.contourf(X, Y, np.transpose(data), num_contours,
-                              cmap=cmap, alpha=alpha, zdir='z', offset=Z0)
+        for n,(ff,zrel) in enumerate(zip(field_funcs,zrels)):
+            data = ff_arrays[n] if ff_arrays else field_func_array(ff,x,y,z,w,cEH,EH)
+            z0   = zmin + zrel*(zmax-zmin)
+            img  = ax.contourf(X, Y, np.transpose(data), num_contours,
+                               cmap=cmap, alpha=alpha, zdir='z', offset=z0)
             pad=options['colorbar_pad']
             shrink=options['colorbar_shrink']
-            cb=fig.colorbar(img, shrink=shrink, pad=pad, orientation='horizontal')
-            #cb.set_label(r'$|\mathbf{E}|^2$',fontsize=1.0*fontsize,rotation=0,labelpad=0.5*fontsize)
-            cb.set_label(f,fontsize=1.0*fontsize,rotation=0,labelpad=0.5*fontsize)
+            if options['colorbar_cannibalize']:
+                cax=fig.axes[-1]
+                cb=plt.colorbar(img, cax=cax)
+            else:
+                cb=plt.colorbar(img, shrink=shrink, pad=pad, panchor=(0.0,0.5))
+            cb.set_label(ff,fontsize=1.0*fontsize,rotation=0,labelpad=0.5*fontsize)
             cb.ax.tick_params(labelsize=0.75*fontsize)
             cb.locator = ticker.MaxNLocator(nbins=5)
             cb.update_ticks()
+            cb.draw_all()
 
     plt.show(False)
     plt.draw()
@@ -674,7 +716,7 @@ def visualize_sim(sim, fig=None, plot3D=None,
                     label=( None if src_options['fontsize']==0
                             else 'src' + ( '\_'+str(ns) if len(sim.sources)>1 else ''))
                    )
-    if src_options['zmin']!=src_options['zmax']:
+    if src_options['zrel_min']!=src_options['zrel_max']:
         visualize_source_distribution(sim, standalone=not plot3D, options=src_options)
 
     ###################################################
@@ -711,8 +753,10 @@ def visualize_sim(sim, fig=None, plot3D=None,
     if plot_dft_data is None:
         plot_dft_data=sources_finished
 
-    if plot_dft_data:
+    if plot_dft_data==True or plot_dft_data=='flux':
         visualize_dft_flux(sim, superpose=True, options=flux_options)
+
+    if plot_dft_data==True:
         visualize_dft_fields(sim, superpose=True, options=field_options)
 
     plt.show(False)
@@ -776,38 +820,44 @@ def message(msg):
 PFCRequest = namedtuple('PFCRequest', 't flist')
 
 ######################################################################
+# 'AnimateFieldEvolution' server class ###############################
 ######################################################################
-######################################################################
-class PFCServer(object):
+class AFEServer(object):
 
-    def __init__(self, x, y, clist, cumulative=True,
-                       poll_interval=None, options=None):
+    def __init__(self, x, y, components, field_options=None, poll_interval=None):
         self.X, self.Y     = np.meshgrid(x, y)
         self.extent        = (min(x), max(x), min(y), max(y))
-        self.clist         = clist
-        self.cumulative    = cumulative
+        self.components    = components
+        self.cumulative    = True; # cumulative
         self.poll_interval = poll_interval if poll_interval else 500
-        self.options       = options if options else def_field_options
+        self.options       = field_options if field_options else def_field_options
         self.num_contours  = self.options['num_contours']
+        self.alpha         = self.options['alpha']
         self.cmap          = self.options['cmap']
 
     ######################################################################
     ######################################################################
     ######################################################################
     def __call__(self, pipe):
-        self.pipe  = pipe
-        self.fig, self.axes = plt.subplots(1,len(self.clist))
-        self.imgs, self.cbs=[],[]
+        self.pipe = pipe
+        self.fig, self.axes = plt.subplots(1,len(self.components))
+        if len(self.components)==1:
+            self.axes=[self.axes]
+        self.imgs, self.cbs = [], []
+        self.fix_clim=True
+        self.clim=[0.0,0.025]
         for n, ax in enumerate(self.axes):
             self.fig.sca(ax)
-            ax.set_title(mp.component_name(self.clist[n]))
-            img = ax.contourf(self.X,self.Y,np.zeros(np.shape(self.X)),
-                              self.num_contours, cmap=self.cmap)
-#            img=plt.imshow(np.zeros(np.shape(np.transpose(self.X))), cmap=self.cmap,
-#                           extent=self.extent)
-#                           extent=self.extent)
-            cb=self.fig.colorbar(img)
-            self.imgs.append(img)
+#            ax.set_title(mp.component_name(self.components[n]))
+            img = plt.contourf(self.X,self.Y,np.zeros(np.shape(self.X)),
+                               self.num_contours, cmap=self.cmap)
+            ax.set_xlabel(r'$x$')
+            ax.set_ylabel(r'$y$')
+            cb = plt.colorbar(img) # , #orientation='horizontal',
+            cb.set_clim(self.clim[0],self.clim[1])
+            cb.set_ticks(np.linspace(self.clim[0],self.clim[1],3))
+            cb.draw_all()
+            ax.set_aspect('equal')
             self.cbs.append(cb)
 
         timer=self.fig.canvas.new_timer(interval=self.poll_interval)
@@ -824,36 +874,30 @@ class PFCServer(object):
             request = self.pipe.recv()
             if request is None:
                 return False
-            self.fig.suptitle('t={:.8f}'.format(request.t))
+#            self.fig.suptitle('t={:.8f}'.format(request.t))
             for n,f in enumerate(request.flist):
                 ax=self.axes[n]
                 self.fig.sca(ax)
                 plt.cla()
-                ax.set_title(mp.component_name(self.clist[n]))
-                vmin, vmax = np.amin(f), np.amax(f)
-                if self.cumulative:
-                   lvmin,lvmax = self.cbs[n].get_clim()
-                   vmin, vmax  = min(vmin,lvmin), max(vmax,lvmax)
-#                self.imgs[n].set_data(np.transpose(f))
-#                self.imgs[n].set_clim(vmin,vmax)
+#                ax.set_title(mp.component_name(self.components[n]) + ' @ t={:.2f} )
+                ax.set_title(r'$|E|^2, t={:.2f}$'.format(request.t))
+                ax.set_xlabel(r'$x$')
+                ax.set_ylabel(r'$y$')
+#mp.component_name(self.components[n]) + ' @ t={:.2f} )
+#                cb=self.cbs[n]
+#                clim = cb.get_clim()
+                f=f*f
+                if not self.fix_clim:
+                    self.clim[0] = min(self.clim[0],np.amin(f))
+                    self.clim[1] = max(self.clim[1],np.amax(f))
                 img = ax.contourf(self.X,self.Y,np.transpose(f),
                                   self.num_contours, cmap=self.cmap,
-                                  vmin=vmin,vmax=vmax)
-                #img.set_clim(vmin,vmax)
+                                  vmin=self.clim[0],vmax=self.clim[1])
+                ax.set_aspect('equal')
                 self.cbs[n]=self.fig.colorbar(img, cax=self.cbs[n].ax)
-                self.cbs[n].set_clim(vmin,vmax)
+                self.cbs[n].set_clim(self.clim[0],self.clim[1])
+                self.cbs[n].set_ticks(np.linspace(self.clim[0],self.clim[1],3))
                 self.cbs[n].draw_all()
-                # self.cbs[n].update_bruteforce(img)
-                #self.cbs[n].remove()
-                #self.cbs[n]=self.fig.colorbar(img)
-                #self.cbs[n].draw_all()
-                #self.cbs[n].update_bruteforce(img)
-                #self.cbs[n].
-                #self.cbs[n].set_clim(vmin=vmin,vmax=vmax)
-                #self.cbs[n].update
-                #self.cbs[n].draw_all()
-                #self.cbs[n].remove()
-                #self.cbs[n]=self.fig.colorbar(img)
             self.fig.canvas.draw()
             return True
 
@@ -862,111 +906,163 @@ class PFCServer(object):
 ##################################################
 ##################################################
 ##################################################
-def str_to_component(s):
-    for c in EHxyz:
-        if mp.component_name(c)==s.lower():
-            return c
-    raise ValueError("unknown field component " + s)
+def to_component(c):
+    if c in EHxyz:
+        return c
+    try:
+        EHxyz_names=['ex','ey','ez','hx','hy','hz']
+        return EHxyz[EHxyz_names.index(c.lower())]
+    except:
+        return ValueError("unknown field component " + c)
 
 ######################################################################
+# AFEClient (where AFE stands for 'Animate Field Evolution') is a
+# class whose constructor launches an AFEServer process,
+# the __call__ method of AFEClient becomes a MEEP step function,
+# each time it is hod of AFEClient becomes a MEEP step function;
 ######################################################################
-######################################################################
-def plot_field_components(sim, components, vol=None, size=None, center=origin,
-                          interval=1.0, options=None):
-
-    clist=[str_to_component(c) if isinstance(c,str) else c for c in components]
+class AFEClient(object):
 
     ##################################################
-    # initialization: launch server process
+    # the class constructor launches an AFEServer,
+    # which initiates a plot and then stands by
+    # awaiting updated field data
     ##################################################
-    closure = { 'next_plot_time': interval }
-    if vol is None:
-        vol=mp.Volume(center=center, size=(size if size else sim.cell_size) )
-    (x,y,z,w)=sim.get_array_metadata(vol=vol)
+    def __init__(self, sim, clist, interval=1.0,
+                 vol=None, size=None, center=origin,
+                 field_options=None):
 
-    pipe_to_server, pipe_from_client = Pipe()
-    server=PFCServer(x,y,clist,options=options)
-    server_process = Process(target=server, args=(pipe_from_client,), daemon=True)
-    server_process.start()
+        self.components=[to_component(c) for c in clist]
+        self.vol=vol if vol else mp.Volume(center=center,
+                                           size=(size if size else sim.cell_size) )
+        (x,y,z,w)=sim.get_array_metadata(vol=self.vol)
+        self.interval=interval
+        self.next_plot_time=sim.round_time() + interval
 
-    def _step_func(sim, todo):
-        if todo=='step' and sim.round_time()<closure['next_plot_time']:
-            return
-        closure['next_plot_time']+=interval
-        flist=[np.real(sim.get_array(vol=vol, component=c)) for c in clist]
-        request = PFCRequest(sim.round_time(), flist)
-        pipe_to_server.send(request)
+        server=AFEServer(x,y,self.components,field_options=field_options)
+        self.pipe_to_server, pipe_from_client = Pipe()
+        Process(target=server,daemon=True, args=(pipe_from_client,)).start()
+
+        # hack, explain and delete me
+        self.__code__ = namedtuple('gna_hack',['co_argcount'])
+        self.__code__.co_argcount=2
+
+
+    ##################################################
+    # the __call__ method has the appropriate prototype
+    # to allow an instance of AFECLient to serve as a
+    # meep step function; on each invocation it
+    # fetches arrays of the current instantaneous values
+    # of the time-domain MEEP fields and sends these to
+    # the server for visualization
+    ##################################################
+    def __call__(self, sim, todo):
         #if todo=='finish': # send 'None' request to shutdown server
         #    pipe_to_server.send(None)
+        #    return
+        if sim.round_time()<self.next_plot_time:
+            return
+        self.next_plot_time = sim.round_time() + self.interval
+        fslices=[np.real(sim.get_array(vol=self.vol, component=c)) for c in self.components]
+        self.pipe_to_server.send( PFCRequest(sim.round_time(),fslices) )
 
-    return _step_func
+#####################################################################
+# This routine attempts to position the current matplotlib window on
+# the user's monitor in a way that makes sense for the indexth in a
+# series of plot windows. It relies on the 'screeninfo' module
+# available from pypl.
+#####################################################################
+##################################################
+##################################################
+##################################################
+def set_figure_geometry(index):
+    try:
+        # attempt to fetch size of monitor
+        from screeninfo import get_monitors
+        w0, h0=get_monitors()[0].width, get_monitors()[0].height
+    except:
+        warnings.warn('could not find screeninfo module; run % pip install screeninfo')
+        return      # failed to fetch current monitor size
+
+    # attempt to fetch size of current window
+    window, n = plt.get_current_fig_manager().window, index+1
+    if callable(getattr(window,'winfo_width',None)):    # Tkagg
+        w,h=window.winfo_width(),window.winfo_height()
+        window.wm_geometry('+{}+{}'.format(w0-n*w,h0-h))
+    elif callable(getattr(window,'width',None)):        # qt{4,5}agg
+        w,h=window.width(), window.height()
+        window.setGeometry(w0-n*w,h0-h,w,h)
+    elif getattr(window,'Size',None):                   # works for wxagg
+        w,h=window.Size
+        window.Move(w0-n*w, h0-h)
+    else:
+        warnings.warn('failed to auto-position matplotlib windows: unknown backend')
 
 ######################################################################
 # AdjointVisualizer is an entity that knows how to create and update
-# various types of visualizations of meep simulations.
+# various types of MEEP simulation visualizations that are useful
+# to monitor during optimization sessions.
 ######################################################################
 class AdjointVisualizer(object):
 
-    ALL_CASES=['Geometry', 'ForwardTD', 'ForwardFD', 'AdjointTD', 'AdjointFD']
+    # TODO: add additional cases to support real-time plotting of time-domain fields
+    # using AFEClient/AFEServer
+    ALL_CASES=['Geometry', 'Forward', 'Adjoint']
 
-    def __init__(self, label_source_regions=False, eps_options=None, src_options=None, cases=None, set_rcParams=True):
-        self.cases=['Geometry', 'ForwardFD']
-        self.figs, self.axes, self.cbs=[0,0,0], [0,0,0], [0,0,0]
+    ##################################################
+    ##################################################
+    ##################################################
+    def __init__(self, cases=ALL_CASES, eps_options=None, src_options=None, set_rcParams=True):
+
+        self.cases=cases
         self.eps_options = eps_options if eps_options else def_eps_options
         self.src_options = src_options if src_options else def_src_options
-        if label_source_regions:
-            self.src_options['fontsize']=def_plot_options['fontsize']
-        self.plot_delay  = 0.1
         if set_rcParams:
             set_meep_rcParams()
 
-        if 'Geometry' in self.cases:
-            self.figs[0]=plt.figure(1)
-            self.axes[0]=self.figs[0].gca()
-            self.axes[0].set_title('Geometry')
-
-        if 'ForwardFD' in self.cases:
-            self.figs[1]=plt.figure(2)
-            self.axes[1]=self.figs[1].gca(projection='3d')
-            self.axes[1].set_title('Forward FD fields')
-
-#        if 'AdjointFD' in self.cases:
-#            fig=plt.figure(3)
-#            ax=fig.gca(projection='3d')
-#            ax.set_title('Adjoint FD fields')
-#            self.afd_fig=fig
+        for case in cases:
+            index = cases.index(case)
+            plt.figure(index + 1)
+            plot_pause()
+            set_figure_geometry(index)
+            if case=='Geometry':
+                plt.gcf().gca().set_title(case)
+            elif case=='Forward':
+                plt.gcf().gca(projection='3d').set_title(case)
+            else:
+                plt.gcf().gca().set_title('dfdEpsilon')
 
         plt.show(False)
         plt.draw()
-        plt.pause(self.plot_delay)
+        plot_pause()
 
+    ##################################################
+    ##################################################
+    ##################################################
+    def update(self, sim, case, dfdEps=None):
 
-    def update(self, sim, which):
+        if case not in self.cases:
+            warnings.warn("unknown case {} in AdjointVisualizer.update (ignoring)".format(case))
+            return
 
-        if which=='Geometry':
-            plot3D=False
-            fig=plt.figure(1)
-            fig.clf()
-            ax=fig.gca()
-            title='Geometry'
+        index = self.cases.index(case)
+        fig=plt.figure(index+1)
+        fig.clf()
+        plot3D = (case=='Forward')
 
-        if which=='ForwardFD':
-            plot3D=True
-            fig=plt.figure(2)
-            fig.clf()
-            #ax=fig.gca(projection='3d')
-            #ax.set_axis_off()
-            title='Forward FD fields, t={:.3f}'.format(sim.round_time())
+        if case in ['Forward', 'Adjoint']:
+            title='{} FD fields, t={:.3f}'.format(case,sim.round_time())
+        else: # case=='Geometry'
+            title=case
 
-#        elif which=='AdjointFD':
-#            plt.figure(3)
-#            plot3D=True
-#            fig=self.afd_fig.clf()
-#            fig.clf()
-#            ax=fig.gca(projection='3d')
-#            title='Adjoint FD fields, t={:.3f}'.format(sim.round_time())
+        if case=='Adjoint':
+            visualize_dft_fields(sim,superpose=False,field_cells=[sim.dft_objects[-1]],
+                                 field_funcs=['Re(dfdEps)','Im(dfdEps)','Abs(dfdEps)'],
+                                 ff_arrays=[np.real(dfdEps),np.imag(dfdEps),np.abs(dfdEps)])
+        else:
+            visualize_sim(sim,plot3D=plot3D,fig=fig,eps_options=self.eps_options,src_options=self.src_options,
+                          plot_dft_data=False if case=='Geometry' else True if case =='Forward' else 'flux')
 
-        visualize_sim(sim,plot3D=plot3D,fig=fig,eps_options=self.eps_options,src_options=self.src_options)
         plt.gcf().gca().set_title(title)
         plt.draw()
-        plt.pause(self.plot_delay)
+        plot_pause()

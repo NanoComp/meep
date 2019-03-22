@@ -1,5 +1,4 @@
 ######################################################################
-# Basis.py -- general support for spatially-varying permittivity
 #             functions described by expansions in user-defined sets
 #             of basis functions, plus predefined implementations of
 #             some simple basis sets for common cases
@@ -7,14 +6,27 @@
 from __future__ import division
 import numpy as np
 import meep as mp
+import fenics
 
 #################################################
-#################################################
+# ideally the following should be passable to meep
+# as an epsilon_function, but the typemaps in
+# typemap_utils.cpp don't seem to allow it
 ##################################################
-def parameterized_dielectric(center, basis, beta):
-    def _eps_func(p):
-       return np.dot(beta,basis( (p-center) ) )
-    return _eps_func
+#class ParameterizedDielectric(object):
+#
+#    def __init__(self, center, basis, beta_vector):
+#        self.center, self.basis = center, basis
+#        self.basis.set_coefficients(beta_vector)
+#
+#    def __call__(p):
+#       return self.basis.eval_expansion( p-self.center )
+
+def ParameterizedDielectric(center, basis, beta_vector):
+    basis.set_coefficients(beta_vector)
+    def eps_func(p):
+       return basis.eval_expansion( p-center )
+    return eps_func
 
 
 ##################################################
@@ -48,21 +60,27 @@ ABC = ABCMeta('ABC', (object,), {'__slots__': ()}) # compatible with Python 2 *a
 ######################################################################
 class Basis(ABC):
 
-    # derived classes must override __call__, which inputs the coordinates
-    # of an evaluation point and returns a np.array of basis-function values
-    @abstractmethod
-    def __call__(self, p=[0.0,0.0]):
-        raise NotImplementedError("derived class must implement __call__() method")
-
     def __init__(self, dim):
         self.dim=dim
+        self.beta_vector=np.zeros(dim)
 
     @property
     def dimension(self):
         return self.dim
 
-    # derived classes may override shape() and names(), for which
-    #
+    # derived classes must override __call__, which returns the full
+    # vector of basis-function values at a given evaluation point
+    @abstractmethod
+    def __call__(self, p=[0.0,0.0]):
+        raise NotImplementedError("derived class must implement __call__() method")
+
+    def set_coefficients(self,beta_vector):
+        self.beta_vector[:]=beta_vector[:]
+
+    def eval_expansion(self, p=[0.0,0.0]):
+        return np.dot(self.beta_vector, self.__call__(p) )
+
+    # derived classes may override shape(), names(), texnames()
     @property
     def shape(self):
         return (self.dim,1)
@@ -70,6 +88,10 @@ class Basis(ABC):
     @property
     def names(self):
         return ['b{}'.format(d) for d in range(self.dim)]
+
+    @property
+    def texnames(self):
+        return [r'$b_{}$'.format(d) for d in range(self.dim)]
 
     #########################################################j
     # project an arbitrary function f(x) onto the basis, i.e.
@@ -130,6 +152,8 @@ class PlaneWaveBasis(Basis):
         self.nn         = range(2*kx_max+1), range(2*ky_max+1)
         fxnames,fynames = [sinusoid_names(arg,kmax) for (arg,kmax) in zip('xy',self.kmax)]
         self.fnames     = [product_name(fxn,fyn) for fxn in fxnames for fyn in fynames]
+        fxnames,fynames = [sinusoid_names(arg,kmax,tex=True) for (arg,kmax) in zip(['\\overline{x}','\\overline{y}'],self.kmax)]
+        self.tex_fnames = [product_name(fx,fy,tex=True) for fx in fxnames for fy in fynames]
         super().__init__(len(self.fnames))
 
     @property
@@ -140,10 +164,13 @@ class PlaneWaveBasis(Basis):
     def names(self):
         return self.fnames
 
+    @property
+    def tex_names(self):
+        return self.tex_fnames
+
     def __call__(self, p=[0.0,0.0]):
         u=[pi/li for pi,li in zip(p,self.l)]
         return np.array([ sinusoid(nx,u[0])*sinusoid(ny,u[1]) for nx in self.nn[0] for ny in self.nn[1] ])
-
 
 ###################################################
 ## basis of expansion functions f{m,n}(r,phi) for
@@ -207,3 +234,45 @@ class FourierLegendreBasis(Basis):
             (Lm2,Lm1)=(Lm1,L)
             L = ( (2*nr+1)*ur*Lm1 - nr*Lm2 )/(nr+1)  # Legendre recursion
         return b
+
+###################################################
+## basis of 2D finite-element functions over a rectangle or disc
+###################################################
+class FiniteElementBasis(Basis):
+
+    def __init__(self, N=4, lx=None, ly=None, radius=None,
+                       fe_type='Lagrange', fe_order=1):
+
+        try:
+            import fenics
+        except ImportError:
+            raise ImportError('failed to load fenics module (needed for FiniteElementBasis)')
+
+        if lx is not None and ly is not None:
+            mesh=fenics.RectangleMesh(fenics.Point(-0.5*lx,-0.5*ly),
+                                      fenics.Point(+0.5*lx,+0.5*ly),
+                                      int(np.ceil(N*lx)),int(np.ceil(N*ly)))
+        elif radius is not None:
+            mesh=fenics.SphereMesh(fenics.Point(0.0,0.0),radius,1.0/N)
+        else:
+            raise ValueError('invalid parameters in FiniteElementBasis')
+
+        self.fs  = fenics.FunctionSpace(mesh,fe_type,fe_order)
+        self.f   = fenics.Function(self.fs)
+        super().__init__( self.fs.dim() )
+
+        # FIXME
+        self.bfs = []
+        for n in range(self.fs.dim()):
+            bf=fenics.Function(self.fs)
+            bf.vector()[n]=1.0
+            self.bfs.append(bf)
+
+    def __call__(self, p=[0.0,0.0]):
+        return np.array( [bf(p[0],p[1]) for bf in self.bfs] )
+
+    def set_coefficients(self, beta_vector):
+        self.f.vector().set_local(beta_vector)
+
+    def eval_expansion(self, p=[0.0,0.0]):
+        return 1.0 + self.f(p[0],p[1])

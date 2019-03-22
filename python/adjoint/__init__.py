@@ -84,7 +84,8 @@ from .ObjectiveFunction import (adjoint_options, xHat, yHat, zHat, origin,
                                 abs2, unit_vector, rel_diff, FluxLine,
                                 DFTCell, ObjectiveFunction, AdjointSolver)
 
-from .Basis import (parameterized_dielectric, PlaneWaveBasis, FourierLegendreBasis)
+from .Basis import (ParameterizedDielectric, PlaneWaveBasis,
+                    FourierLegendreBasis, FiniteElementBasis)
 
-from .Visualization import (set_plot_default, plot_basis, plot_field_components,
+from .Visualization import (set_plot_default, plot_basis, AFEClient,
                             visualize_sim, AdjointVisualizer)

@@ -5,7 +5,7 @@ import meep as mp
 
 from meep.adjoint import (OptimizationProblem, DFTCell, adjoint_options,
                           xHat, yHat, zHat, origin, FluxLine,
-                          parameterized_dielectric, fourier_legendre_basis)
+                          ParameterizedDielectric, FourierLegendreBasis)
 
 ##################################################
 ##################################################
@@ -83,8 +83,8 @@ class HoleCloak(OptimizationProblem):
         #----------------------------------------
         # basis set
         #----------------------------------------
-        basis = fourier_legendre_basis(outer_radius=args.r_cloak, inner_radius=args.r_disc,
-                                       nr_max=args.nr_max, kphi_max=args.kphi_max)
+        basis = FourierLegendreBasis(outer_radius=args.r_cloak, inner_radius=args.r_disc,
+                                     nr_max=args.nr_max, kphi_max=args.kphi_max)
 
         #----------------------------------------
         #- source location
@@ -95,7 +95,7 @@ class HoleCloak(OptimizationProblem):
         #----------------------------------------
         #- objective function
         #----------------------------------------
-        fstr='Abs(P1_east)^2+0.0*(P1_west + M1_east + M1_west + S_west + S_east)'
+        fstr='Abs(P1_east)**2+0.0*(P1_west + M1_east + M1_west + S_west + S_east)'
 
         #----------------------------------------
         #- internal storage for variables needed later
@@ -121,9 +121,9 @@ class HoleCloak(OptimizationProblem):
         wvg=mp.Block(center=origin, material=mp.Medium(epsilon=args.eps_wvg),
                      size=mp.Vector3(self.cell_size.x,args.w_wvg))
         cloak=mp.Cylinder(center=self.design_center, radius=args.r_cloak,
-                          epsilon_func=parameterized_dielectric(self.design_center,
-                                                                self.basis,
-                                                                beta_vector))
+                          epsilon_func=ParameterizedDielectric(self.design_center,
+                                                               self.basis,
+                                                               beta_vector))
         disc=mp.Cylinder(center=self.design_center, radius=args.r_disc,
                          material=(mp.metal if args.eps_disc==0 else
                                    mp.Medium(epsilon=args.eps_disc)))

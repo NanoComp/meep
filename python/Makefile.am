@@ -105,7 +105,7 @@ if WITH_MPB
   EXTRA_DIST += solver.py mpb_data.py
   MPB_LA = _mpb.la
   pympbdir = $(pkgpythondir)/mpb
-  pympb_DATA = mpb.py solver.py mpb_data.py
+  pympb_PYTHON = mpb.py solver.py mpb_data.py
   pympb_LTLIBRARIES = _mpb.la
   _mpb_la_SOURCES = mpb-python.cxx
   _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
@@ -146,7 +146,6 @@ if WITH_MPB
 MPB_SWIG_SRC = mpb.i
 mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
 	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
-
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
 endif # WITH_MPB
@@ -179,12 +178,6 @@ endif # MAINTAINER_MODE
 
 ######################################################################
 # specification of python source files to be byte-compiled at installation
-# time. Note that files in `pkgpython_PYTHON` are both byte-compiled and
-# installed in the 'meep' subdirectory of the python site-packages 
-# installation. The `nodist` version does the byte-compiling but omits the
-# installation, so we can install the files to a custom destination.
-# note: previously the pympb source files were excluded from this; was
-# that intentional?
 ######################################################################
 HL_IFACE =                  \
     $(srcdir)/geom.py       \
@@ -194,14 +187,12 @@ HL_IFACE =                  \
 
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
-adjointdir   = $(pkgpythondir)/adjoint
-adjoint_DATA = $(srcdir)/adjoint/__init__.py		\
-               $(srcdir)/adjoint/Basis.py  		\
-               $(srcdir)/adjoint/ObjectiveFunction.py	\
-               $(srcdir)/adjoint/OptimizationProblem.py	\
-               $(srcdir)/adjoint/Visualization.py
-
-nodist_python_PYTHON = $(adjoint_DATA) $(pympb_DATA)
+adjointdir = $(pkgpythondir)/adjoint
+adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py			\
+                  $(srcdir)/adjoint/Basis.py  			\
+                  $(srcdir)/adjoint/ObjectiveFunction.py	\
+                  $(srcdir)/adjoint/OptimizationProblem.py	\
+                  $(srcdir)/adjoint/Visualization.py
 
 ######################################################################
 # finally, specification of what gets installed in the meep python

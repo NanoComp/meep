@@ -16,10 +16,9 @@ from . import Basis
 from .ObjectiveFunction import (adjoint_options, xHat, yHat, zHat, origin,
                                 EHTransverse, Exyz, Hxyz, EHxyz, GridInfo,
                                 abs2, unit_vector, rel_diff, FluxLine,
-                                DFTCell, ObjectiveFunction, AdjointSolver,
-                                global_dft_cell_names)
+                                DFTCell, ObjectiveFunction, AdjointSolver)
 
-from .Visualization import visualize_sim, AdjointVisualizer, set_plot_default
+from .Visualization import (visualize_sim, AdjointVisualizer, set_plot_default)
 
 ######################################################################
 # invoke python's 'abstract base class' formalism in a version-agnostic way
@@ -57,19 +56,19 @@ class OptimizationProblem(ABC):
     ######################################################################
     def __init__(self):
 
-        # define command-line arguments
+        # define and parse command-line arguments
         parser = self.init_args()       # general args
         self.add_args(parser)           # problem-specific arguments
         self.args = args = parser.parse_args()
 
-        # parse arguments and do problem-specific initialization first...
+        # call subclass for problem-specific initialization first...
         fstr, objective_regions, extra_regions, design_region, self.basis \
             = self.init_problem(self.args)
 
         # ...and now do some general initialization
         fcen, df, nfreq         = args.fcen, args.df, args.nfreq
-        #self.grid  = FDGrid(size=self.cell_size, res=self.args.res)
-        global_dft_cell_names   = []
+
+        DFTCell.reset_cell_names()
         self.objective_cells    = [ DFTCell(region=v, fcen=fcen, df=df, nfreq=nfreq) for v in objective_regions ]
         self.extra_cells        = [ DFTCell(region=v, fcen=fcen, df=df, nfreq=nfreq) for v in extra_regions ] if args.full_dfts else []
         self.design_cell        = DFTCell(region=design_region, fcen=fcen, df=df, nfreq=nfreq, name='design_fields')
@@ -84,6 +83,7 @@ class OptimizationProblem(ABC):
 
         self.filebase           = args.filebase if args.filebase else self.__class__.__name__
 
+        # miscellaneous general options affecting the solver
         adjoint_options['dft_reltol']   = args.dft_reltol
         adjoint_options['dft_timeout']  = args.dft_timeout
         adjoint_options['dft_interval'] = args.dft_interval
@@ -92,8 +92,12 @@ class OptimizationProblem(ABC):
                                           else adjoint_options['verbosity']
         adjoint_options['logfile']      = args.logfile
 
-        self.vis =      None if not args.visualize  \
-                   else AdjointVisualizer(label_source_regions=args.label_source_regions)
+        # miscellaneous general options affecting visualization
+        self.vis = None
+
+        if args.label_source_regions:
+            set_plot_default('fontsize',def_plot_options['fontsize'], 'src')
+
         adjoint_options['animate_components'] = args.animate_component
         adjoint_options['animate_interval']   = args.animate_interval
 
@@ -154,6 +158,7 @@ class OptimizationProblem(ABC):
         parser.add_argument('--visualize',    dest='visualize', action='store_true', help='produce visualization graphics')
         parser.add_argument('--label_source_regions', dest='label_source_regions', action='store_true', help='label source regions in visualization plots')
         parser.add_argument('--logfile',        type=str,   default=None,    help='log file name')
+        parser.add_argument('--pickle_data',  dest='pickle_data', action='store_true', help='save state to binary data file')
         parser.add_argument('--animate_component', action='append', help='plot time-domain field component')
         parser.add_argument('--animate_interval', type=float, default=1.0, help='meep time between animation frames')
 
@@ -190,10 +195,28 @@ class OptimizationProblem(ABC):
         # (a) the 0th basis function is the constant 1
         # (b) all other basis functions (b_1, ... b_{D-1}) take values in [-1:1]
         # (c) coefficients (\beta_1, ..., \beta_{D-1}) are nonnegative.
-        eps_min=beta_vector[0] - np.sum(beta_vector[1:])
-        if eps_min<1.0:
-            beta_vector[0] += 1.0-eps_min
+        #eps_min=beta_vector[0] - np.sum(beta_vector[1:])
+        #if eps_min<1.0:
+        #    beta_vector[0] += 1.0-eps_min
         return beta_vector
+
+    ######################################################################
+    # terminate script without exiting the (i)python console or notebook
+    ######################################################################
+    def terminate(self, msg):
+        raise Exception(msg)
+
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    def plot_geometry(self):
+        sim = self.create_sim(self.beta_vector)
+        sim.init_sim()
+        [cell.register(sim) for cell in self.dft_cells]
+        vis = AdjointVisualizer(cases=['Geometry'])
+        vis.update(sim,'Geometry')
+        self.sim,self.vis = sim,vis # save copies for debugging; not strictly necessary
+        self.terminate("Finished visualization")
 
     ######################################################################
     # the 'run' class method of OptimizationProblem, which is where control
@@ -210,23 +233,23 @@ class OptimizationProblem(ABC):
         args=self.args
         if args.optimize:
             self.optimize()
-            return 0
 
         #--------------------------------------------------------------
         # if no computation was requested, just plot the geometry
         #--------------------------------------------------------------
         if not(args.eval_gradient or args.eval_objective or args.fd_order>0):
-            sim = self.create_sim(self.beta_vector)
-            sim.init_sim()
-            [cell.register(sim) for cell in self.dft_cells]
-            vis = self.vis if self.vis else AdjointVisualizer()
-            vis.update(sim,'Geometry')
-            return 0
+            self.plot_geometry()
 
         #--------------------------------------------------------------
         #--------------------------------------------------------------
         #--------------------------------------------------------------
-        fq,gradf=self.eval_fq(self.beta_vector, need_gradient=args.eval_gradient, vis=self.vis)
+        vis = None
+        if args.visualize:
+            cases=['Geometry','Forward'] + (['Adjoint'] if args.eval_gradient else [])
+            vis=AdjointVisualizer(cases=cases)
+            self.vis = vis # save copy for debugging; not strictly necessary
+
+        fq,gradf=self.eval_fq(self.beta_vector, need_gradient=args.eval_gradient, vis=vis)
 
         fqnames=['f'] + self.obj_func.qnames
         self.output([],[],actions=['begin'])
@@ -260,12 +283,12 @@ class OptimizationProblem(ABC):
 
         self.output([],[],actions=['end'])
 
-        #f = open('store.pckl', 'wb')
-        # pickle.dump(obj, f)
-        #f.close()
-        #f = open('store.pckl', 'rb')
-        #obj = pickle.load(f)
-        #f.close()
+        if args.pickle_data:
+            f = open(self.filebase + '.pickle', 'wb')
+            pickle.dump(self,f)
+            f.close()
+
+        self.terminate("Completed single-point calculation")
 
     ######################################################################
     ######################################################################
@@ -329,8 +352,10 @@ class OptimizationProblem(ABC):
     ######################################################################
     ######################################################################
     def optimize(self):
+        args=self.args
         print("Running optimization...")
-        sys.exit(0)
+        vis = AdjointVisualizer() if args.visualize else None # cases=ALL_CASES
+        self.terminate("Finished optimization")
 
     ######################################################################
     # compute the objective function, plus possibly its gradient (via
@@ -339,7 +364,7 @@ class OptimizationProblem(ABC):
     def eval_objective(self, beta_vector, need_gradient=False, vis=None):
         sim = self.create_sim(beta_vector)
         solver = AdjointSolver(self.obj_func, self.dft_cells, self.basis, sim, vis=vis)
-        self.sim=sim # save a copy for debugging; not strictly necessary
+        self.sim, self.solver=sim,solver # save copies for debugging; not strictly necessary
         return solver.solve(need_gradient=need_gradient)
 
     ##################################################
