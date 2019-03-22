@@ -4,23 +4,26 @@
 # simple standardized ways
 ###################################################
 import warnings
-import numpy as np
-import sympy
-from collections import namedtuple
 import time
 import datetime
+from collections import namedtuple
+import numpy as np
+import sympy
+import re
 from multiprocessing import Process, Pipe
-from matplotlib import ticker
 
 import matplotlib
 matplotlib.use('qt5agg')
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 from mpl_toolkits.mplot3d import axes3d
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import PolyCollection, LineCollection
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import meep as mp
+
+from meep.adjoint import ObjectiveFunction
 
 ########################################################
 # the next few routines are some of my older general-purpose
@@ -45,15 +48,13 @@ def dft_cell_type(cell):
         return 'flux' if isinstance(cell, mp.simulation.DftFlux) else 'fields'
 
 def dft_cell_name(nc):
-    try:
-        name=meep.adjoint.DFTCell.get_cell_names()[nc]
-        if name.endswith('_flux'):
-            name=name[0:-5]
-        if name.endswith('_fields'):
-            name=name[0:-7]
-        return name.replace('_','\_')
-    except NameError:
-        return 'flux' + str(nc)
+    name=ObjectiveFunction.DFTCell.get_cell_names()[nc]
+    if name.endswith('_flux'):
+        name=name[0:-5]
+    if name.endswith('_fields'):
+        name=name[0:-7]
+    return name.replace('_','\_')
+
 
 def is_flux_cell(cell):
     return dft_cell_type(cell)=='flux'
@@ -146,7 +147,7 @@ def set_meep_rcParams():
     plt.rc('text', usetex=True)
     matplotlib.rcParams['axes.labelsize']='medium'
     matplotlib.rcParams['axes.titlesize']='medium'
-    matplotlib.rcParams['axes.titlepad']=20
+    #matplotlib.rcParams['axes.titlepad']=20
 
 ########################################################
 # general-purpose default option values, customized for
@@ -165,7 +166,7 @@ def_plot_options={ 'line_color'           : [1.0,0.0,1.0],
                    'fill_color'           : 'none',
                    'alpha'                : 1.0,
                    'cmap'                 : matplotlib.cm.plasma,
-                   'fontsize'             : 20,
+                   'fontsize'             : 25,
                    'colorbar_shrink'      : 0.60,
                    'colorbar_pad'         : 0.04,
                    'colorbar_cannibalize' : True,
@@ -212,7 +213,8 @@ def_flux_options={ **def_plot_options,
 # options for dft_field cell visualization (default: green dashed border, not filled)
 #--------------------------------------------------
 def_field_options={ **def_plot_options,
-                    'line_width': 0.0,   'alpha': 0.5,  'plot_method': 'contourf',
+                    'line_width': 0.0,  'alpha': 0.5,
+                    'plot_method': 'contourf',
                     'zrel_min':0.4, 'zrel_max':0.6
                   }
 
@@ -239,6 +241,15 @@ def get_text_size(fig, label, fontsize):
   t = plt.text(0.5, 0.5, label, fontsize=fontsize)
   bb = t.get_window_extent(renderer=r)
   return bb.width, bb.height
+
+###################################################
+# routine to produce proper colorbars even with subplots
+# gleeped from https://joseph-long.com/writing/colorbars/
+###################################################
+def happy_cb(img, axes):
+    divider = make_axes_locatable(axes)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    return axes.figure.colorbar(img, cax=cax)
 
 ###################################################
 # visualize epsilon distribution. eps_min, eps_max
@@ -302,7 +313,8 @@ def plot_eps(sim, eps_min=None, eps_max=None, options=None, plot3D=False, fig=No
     ax.set_ylabel(r'$y$', fontsize=fontsize, labelpad=fontsize, rotation=0)
     ax.tick_params(axis='both', labelsize=0.75*fontsize)
     cb=cb if cb else fig.colorbar(img)
-    cb.set_label(r'$\epsilon$',fontsize=1.5*fontsize,rotation=0,labelpad=0.5*fontsize)
+    #  cb.set_label(r'$\epsilon$',fontsize=1.5*fontsize,rotation=0,labelpad=0.5*fontsize)
+    cb.ax.set_xlabel(r'$\epsilon$',fontsize=1.5*fontsize,rotation=0,labelpad=0.5*fontsize)
     cb.ax.tick_params(labelsize=0.75*fontsize)
     cb.locator = ticker.MaxNLocator(nbins=5)
     cb.update_ticks()
@@ -537,10 +549,26 @@ def field_func_array(fexpr,x,y,z,w,cEH,EH):
         return abs2(EH[0]) + abs2(EH[1]) + abs2(EH[2])
 
 ##################################################
+##################################################
+##################################################
+def texify(expr):
+    expr=re.sub(r'([eEhH])([xyz])',r'\1_\2',expr)
+    expr=re.sub(r'e_','E_',expr)
+    expr=re.sub(r'H_','H_',expr)
+    expr=re.sub(r'abs\((.*)\)',r'|\1|',expr)
+    expr=re.sub(r'abs2\((.*)\)',r'|\1|^2',expr)
+
+    loglike=['Re','Im']
+    for s in loglike:
+        expr=re.sub(s,'\textrm{'+s+'}',expr)
+    return r'$'+expr+'$'
+
+##################################################
 # this routine intended to be called by
 # visualize_dft_fields, not directly by user
 ##################################################
-def plot_dft_fields(sim, field_cells=[], field_funcs=None, ff_arrays=None, options=None, nf=0):
+def plot_dft_fields(sim, field_cells=[], field_funcs=None,
+                         ff_arrays=None, options=None, nf=0):
 
     options       = options if options else def_field_options
     cmap          = options['cmap']
@@ -561,8 +589,8 @@ def plot_dft_fields(sim, field_cells=[], field_funcs=None, ff_arrays=None, optio
             plt.suptitle('DFT cell {}'.format(ncell+1))
 
         if field_funcs==None:
-            ops=['Re', 'Im', 'Abs']
-            field_funcs=['{}({})'.format(op,mp.component_name(c)) for c in cEH for op in ops]
+            ops=['Re', 'Im', 'abs']
+            field_funcs=[texify(op+'('+component_name(c)+')') for c in cEH for op in ops]
             rows,cols=len(cEH),len(ops)
         else:
             rows,cols=1,len(field_funcs)
@@ -590,10 +618,13 @@ def plot_dft_fields(sim, field_cells=[], field_funcs=None, ff_arrays=None, optio
                                          edgecolors=edgecolors, linewidth=linewidth, alpha=alpha)
                 else:
                     img = ax.contourf(X,Y,np.transpose(data),num_contours, cmap=cmap,alpha=alpha)
-                cb=plt.colorbar(img,shrink=options['colorbar_shrink'], pad=options['colorbar_pad'])
+                #cb=plt.colorbar(img,shrink=options['colorbar_shrink'], pad=options['colorbar_pad'])
+                cb=happy_cb(img,ax)
+                #cb.ax.set_xlabel(ff,fontsize=1.5*fontsize,rotation=0,labelpad=0.5*fontsize)
                 cb.locator = ticker.MaxNLocator(nbins=5)
                 cb.update_ticks()
 
+    plt.tight_layout()
     plt.show(False)
     plt.draw()
     return 0
@@ -654,7 +685,8 @@ def visualize_dft_fields(sim, superpose=True, field_cells=[], field_funcs=None,
                 cb=plt.colorbar(img, cax=cax)
             else:
                 cb=plt.colorbar(img, shrink=shrink, pad=pad, panchor=(0.0,0.5))
-            cb.set_label(ff,fontsize=1.0*fontsize,rotation=0,labelpad=0.5*fontsize)
+            #cb.set_label(ff,fontsize=1.0*fontsize,rotation=0,labelpad=0.5*fontsize)
+            cb.ax.set_xlabel(texify(ff),fontsize=1.5*fontsize,rotation=0,labelpad=0.5*fontsize)
             cb.ax.tick_params(labelsize=0.75*fontsize)
             cb.locator = ticker.MaxNLocator(nbins=5)
             cb.update_ticks()
@@ -1056,13 +1088,17 @@ class AdjointVisualizer(object):
             title=case
 
         if case=='Adjoint':
+            ffs=[r'Re$\left(\frac{\partial f}{\partial\epsilon}\right)$',
+                 r'Im$\left(\frac{\partial f}{\partial\epsilon}\right)$',
+                 r'$\left|\frac{\partial f}{\partial\epsilon}\right|$']
+            plt.suptitle(title)
             visualize_dft_fields(sim,superpose=False,field_cells=[sim.dft_objects[-1]],
-                                 field_funcs=['Re(dfdEps)','Im(dfdEps)','Abs(dfdEps)'],
+                                 field_funcs=ffs,
                                  ff_arrays=[np.real(dfdEps),np.imag(dfdEps),np.abs(dfdEps)])
         else:
             visualize_sim(sim,plot3D=plot3D,fig=fig,eps_options=self.eps_options,src_options=self.src_options,
                           plot_dft_data=False if case=='Geometry' else True if case =='Forward' else 'flux')
+            plt.gcf().gca().set_title(title)
 
-        plt.gcf().gca().set_title(title)
         plt.draw()
         plot_pause()

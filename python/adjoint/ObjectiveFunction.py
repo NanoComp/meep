@@ -13,8 +13,6 @@ import matplotlib.cm
 import meep as mp
 import meep.adjoint
 
-#from Visualization import (AFEClient, def_field_options)
-
 ######################################################################
 # various global options affecting the adjoint solver, user-tweakable
 # via command-line arguments or set_adjoint_option()

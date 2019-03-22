@@ -285,7 +285,8 @@ class OptimizationProblem(ABC):
 
         if args.pickle_data:
             f = open(self.filebase + '.pickle', 'wb')
-            pickle.dump(self,f)
+            #pickle.dump(self,f)
+            pickle.dump(self.solver.dfdEps,f)
             f.close()
 
         self.terminate("Completed single-point calculation")

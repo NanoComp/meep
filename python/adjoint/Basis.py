@@ -90,7 +90,7 @@ class Basis(ABC):
         return ['b{}'.format(d) for d in range(self.dim)]
 
     @property
-    def texnames(self):
+    def tex_names(self):
         return [r'$b_{}$'.format(d) for d in range(self.dim)]
 
     #########################################################j
@@ -269,10 +269,14 @@ class FiniteElementBasis(Basis):
             self.bfs.append(bf)
 
     def __call__(self, p=[0.0,0.0]):
+        if self.fs.mesh().bounding_box_tree().compute_collisions(fenics.Point(p[0],p[1])) == []:
+            return 0.0
         return np.array( [bf(p[0],p[1]) for bf in self.bfs] )
 
     def set_coefficients(self, beta_vector):
         self.f.vector().set_local(beta_vector)
 
     def eval_expansion(self, p=[0.0,0.0]):
+        if self.fs.mesh().bounding_box_tree().compute_collisions(fenics.Point(p[0],p[1])) == []:
+            return 0.0
         return 1.0 + self.f(p[0],p[1])
