@@ -86,7 +86,7 @@ class HoleyWaveguide(OptimizationProblem):
         #----------------------------------------
         #- objective function
         #----------------------------------------
-        fstr='P1_east+0.0*(P2_east+P1_west+P2_west+M1_east+M2_east+M1_west+M2_west+S_east+S_west)'
+        fstr='Abs(P1_east)**2+0.0*(P2_east+P1_west+P2_west+M1_east+M2_east+M1_west+M2_west+S_east+S_west)'
 
         #----------------------------------------
         #- internal storage for variables needed later
