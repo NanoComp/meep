@@ -11,7 +11,7 @@ to facilitate automated design optimization via derivative-based numerical optim
 
 The `meep.adjoint` documentation is divided into a number of subsections:
  
-+ This **overview** page reviews some basic facts about adjoints and optimizers,
++ This **Overview** page reviews some basic facts about adjoints and optimizers,
   outlines the steps needed to prepare a <span class=SC>meep</span>
   geometry for optimization, and sketches the mechanics of
   the `meep.adjoint` design process.
@@ -24,7 +24,7 @@ The `meep.adjoint` documentation is divided into a number of subsections:
   write the python script that will drive your optimization
   session.
 
-+ The [**Example gallery**](ExampleGallery.md) presents a number
++ The [**Example Gallery**](ExampleGallery.md) presents a number
   of worked examples that illustrate how `meep.adjoint` tackles
   practical problems in various settings.
 
@@ -151,6 +151,13 @@ optimization becomes entirely feasible.
 
 Throughout this tutorial we will refer to a running collection of simple optimization
 problems to illustrate the mechanics of optimization in <span class=SC>meep</span>.
+
+| ![images/
+![](https://example.com/qqq.img){: style="height:150px;width:150px"}
+
+
+
+| ![blue_pc_icon](https://cloud.githubusercontent.com/assets/10035308/22727034/7d475af2-ed8b-11e6-87bf-0872a2cd006f.png)|
 
 ## Common elements of optimization geometries: Objective regions, objective functions, design regions, basis sets
 
