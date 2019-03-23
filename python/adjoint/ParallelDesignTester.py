@@ -1,3 +1,39 @@
+######################################################################
+# ParallelDesignTester is a simple facility for running large numbers
+# of single-design-point calculations on a meep.adjoint optimization
+# problem, using a multi-process server pool to allow multiple jobs
+# to be run simultaneously.
+#
+# ** Usage as a command-line script:
+#
+# % python ParallelDesignTester.py [ --nproc XX ]  --name MyProb.py --casefile CaseFile
+#
+#     where:
+#
+#       -- MyProb.py is a python script describing a meep.adjoint
+#          optimization problem, which implements a class MyProb
+#          that inherits from meep.adjoint.OptimizationProblem
+#
+#       -- CaseFile is a text file in which each line specifies
+#          a separate set of command-line arguments for MyProb.py,
+#          describing an objective-function evaluation at a single
+#          point in design space
+#
+#       -- The optional --nproc argument specifies the number of
+#          server processes created, i.e. the number of simultaneous
+#          jobs that are run. The default value is half the number
+#          of CPU cores available on the machine.
+#
+# ** Usage from other scripts or a console/notebook interface:
+#
+# from meep.adjoint import ParallelDesignTester
+#
+# ParallelDesignTester('MyProb',command_lines).launch(nproc=nproc)
+#
+#  (where command_lines=['command_line_1','command_line_2',...])
+#
+#
+######################################################################
 import os
 from os import environ as env
 import argparse

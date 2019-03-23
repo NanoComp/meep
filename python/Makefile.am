@@ -192,6 +192,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py			\
                   $(srcdir)/adjoint/Basis.py  			\
                   $(srcdir)/adjoint/ObjectiveFunction.py	\
                   $(srcdir)/adjoint/OptimizationProblem.py	\
+                  $(srcdir)/adjoint/ParallelDesignTester.py	\
                   $(srcdir)/adjoint/Visualization.py
 
 ######################################################################
