@@ -121,6 +121,10 @@ No. Unlike quantum mechanics, complex fields in classical electromagnetics are n
 
 Note: specifying a complex `amplitude` for the `Source` object does not automatically yield complex fields. Unless the parameter `force_complex_fields=True` is specified, only the real part of the source is used. The complex amplitude is just a phase shift of the real sinusoidal source.
 
+### How do I model incoherent emission from spontaneously recombining excitons?
+
+Incoherent emission can be modeled using a [Monte Carlo method](https://en.wikipedia.org/wiki/Monte_Carlo_method) by taking an average of multiple separate runs involving a collection of point dipole sources with random phase set via the `amplitude` property of the [`Source`](https://meep.readthedocs.io/en/latest/Python_User_Interface/#source). For an example, see [Applied Physics Letters, 106, 041111, 2015](https://aip.scitation.org/doi/abs/10.1063/1.4907253) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi15_oled.pdf)) and the associated [Python script](http://www.simpetus.com/projects.html#meep_oled).
+
 Usage: Sources
 --------------
 
