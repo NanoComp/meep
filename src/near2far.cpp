@@ -497,12 +497,13 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
 
     if (Nperiods > 1) {
       for (int i = 0; i < 2; ++i) {
+        double user_width = user_volume.num_direction(fd[i]) / a;
         if (has_direction(v.dim, fd[i]) &&
             boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic &&
-            float(w->v.in_direction(fd[i])) >= 0.5*float(v.in_direction(fd[i]))) {
+            float(w->v.in_direction(fd[i])) >= float(user_width)) {
           periodic_d[i] = fd[i];
           periodic_n[i] = Nperiods;
-          period[i] = v.in_direction(fd[i]);
+          period[i] = user_width;
           periodic_k[i] = 2*pi*real(k[fd[i]]) * period[i];
         }
       }
