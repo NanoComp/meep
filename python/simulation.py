@@ -1768,7 +1768,7 @@ class Simulation(object):
 
     def get_array_metadata(self, vol=None, center=None, size=None, dft=None):
         if dft:
-            vol = dft_cell.where
+            vol = dft.where
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
