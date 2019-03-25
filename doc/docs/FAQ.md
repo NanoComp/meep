@@ -121,6 +121,10 @@ No. Unlike quantum mechanics, complex fields in classical electromagnetics are n
 
 Note: specifying a complex `amplitude` for the `Source` object does not automatically yield complex fields. Unless the parameter `force_complex_fields=True` is specified, only the real part of the source is used. The complex amplitude is just a phase shift of the real sinusoidal source.
 
+### How do I model incoherent spontaneous/thermal emission
+
+Semiclassically, spontaneous or thermal emission can be modeled simply as random dipole current sources.  One direct way to express this in FDTD is to perform a [Monte Carlo method](https://en.wikipedia.org/wiki/Monte_Carlo_method) by taking an ensemble average of multiple  runs involving a collection of random dipole sources. For example, using a custom source function to input white-noise sources, with the appropriate noise spectrum included via postprocessing (assuming linear materials; see e.g. our papers on modeling thermal radiation in the [far field](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) or [near field](http://doi.org/10.1103/PhysRevLett.107.114302)). (There is also a "noisy Lorentzian" material that can be used to model thermal fluctuations even more directly as noise in the materials themselves.) As another example, incoherent emission from [excitons](https://en.wikipedia.org/wiki/Exciton) can be modeled with point dipole sources of random phase (set via the `amplitude` property of the [`Source`](Python_User_Interface.md#source)) as described in [Applied Physics Letters, 106, 041111, 2015](https://aip.scitation.org/doi/abs/10.1063/1.4907253) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi15_oled.pdf)) and the associated [simulation script](http://www.simpetus.com/projects.html#meep_oled).   There are also [alternative methods to model spontaneous emission](http://doi.org/10.1103/PhysRevB.92.134202) that obtain the averaged power flux directly without the cost of multiple Monte-Carlo simulations, at the expense of greater complexity.
+
 Usage: Sources
 --------------
 
