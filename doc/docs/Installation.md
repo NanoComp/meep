@@ -136,3 +136,7 @@ You are done, and can now run Meep (Scheme interface) just by typing `meep`. You
 
 To build the latest version of Meep from source on macOS Sierra, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
+Installation on Windows
+----------------------------
+
+Native Windows installation is currently unsupported. The recommended procedure is to install Ubuntu using the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10). This gives you access to a bash terminal running on Ubuntu from within Windows. From there you can install the Conda packages as described above. The drawback is that you can't see plots from matplotlib (though saving them to disk and opening them from Windows works fine). The easiest way around this is to add the `jupyter` package to the `conda create ...` command. This will allow you to run a [Jupyter notebook](https://jupyter.readthedocs.io/en/latest/) in the browser, and from there you can visualize plots interactively.
