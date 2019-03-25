@@ -1255,12 +1255,6 @@ class Simulation(object):
 
         for k in k_points:
             k_index += 1
-
-            if k_index == 1:
-                self.change_k_point(k)
-                self.init_sim()
-                output_epsilon(self)
-
             harminv = self.run_k_point(t, k)
             freqs = [complex(m.freq, m.decay) for m in harminv.modes]
 
