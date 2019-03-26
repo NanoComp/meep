@@ -383,9 +383,9 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
       medium_struct *mm;
       if (is_medium(geometry.items[i].material, &mm)) {
         check_offdiag(mm);
-        printf("%*sdielectric constant epsilon diagonal "
-               "= (%g,%g,%g)\n",
-               5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
+        master_printf("%*sdielectric constant epsilon diagonal "
+                      "= (%g,%g,%g)\n",
+                      5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       }
     }
   }
@@ -394,7 +394,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
   if (verbose && meep::am_master()) {
-    printf("Geometric-object bounding-box tree:\n");
+    master_printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 
     int tree_depth, tree_nobjects;
