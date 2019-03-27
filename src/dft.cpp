@@ -681,7 +681,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
                                          int num_freq, h5file *file, double *buffer, int reim,
                                          cdouble *field_array, void *mode1_data, void *mode2_data,
-                                         component c_conjugate) {
+                                         component c_conjugate, bool retain_interp_weights) {
   /*****************************************************************/
   /* compute the size of the chunk we own and its strides etc.     */
   /*****************************************************************/
@@ -727,13 +727,6 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
   }
 
   /***************************************************************/
-  /* experimential provision to look at the effect of retaining  */
-  /* the interpolation weight in the array output or HDF5 file   */
-  /***************************************************************/
-  char *s = getenv("MEEP_DFT_INTERP_WEIGHTS");
-  bool retain_dV_and_interp_weights = (s && s[0] == '1');
-
-  /***************************************************************/
   /* loop over all grid points in our piece of the volume        */
   /***************************************************************/
   vec rshift(shift * (0.5 * fc->gv.inva));
@@ -755,7 +748,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
                    loop_i2 * file_stride[1]) +
                   loop_i3 * file_stride[2]);
 
-      if (retain_dV_and_interp_weights) dft_val *= w;
+      if (retain_interp_weights) dft_val *= w / (dV0 + dV1 * loop_i2);
 
       cdouble val = (mode1_data ? mode1val : dft_val);
       buffer[idx2] = reim ? imag(val) : real(val);
@@ -772,7 +765,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
       int idx2 = 0;
       for (int i = rank - 1, stride = 1; i >= 0; stride *= array_count[i--])
         idx2 += stride * (iloc.in_direction(ds[i]) / 2);
-      field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
+      field_array[idx2] = (retain_interp_weights ? w / (dV0 + dV1 * loop_i2) : 1.0) * dft_val;
     } else {
       if (unconjugated_inner_product == false) mode1val = conj(mode1val);
       if (mode2_data)
@@ -832,7 +825,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
                                       component c, const char *HDF5FileName, cdouble **pfield_array,
                                       int *array_rank, int *array_dims, void *mode1_data,
                                       void *mode2_data, component c_conjugate,
-                                      bool *first_component) {
+                                      bool *first_component, bool retain_interp_weights) {
   /***************************************************************/
   /* get statistics on the volume slice **************************/
   /***************************************************************/
@@ -914,7 +907,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
         if (chunk->c == c)
           overlap +=
               chunk->process_dft_component(rank, ds, min_corner, max_corner, num_freq, file, buffer,
-                                           reim, field_array, mode1_data, mode2_data, c_conjugate);
+                                           reim, field_array, mode1_data, mode2_data, c_conjugate, retain_interp_weights);
 
     if (HDF5FileName) {
       file->done_writing_chunks();

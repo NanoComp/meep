@@ -943,7 +943,7 @@ public:
                                              ivec max_corner, int num_freq, h5file *file,
                                              double *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
-                                             void *mode2_data, component c_conjugate);
+                                             void *mode2_data, component c_conjugate, bool retain_interp_weights);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -1696,7 +1696,7 @@ public:
                                              std::complex<double> **field_array = 0, int *rank = 0,
                                              int *dims = 0, void *mode1_data = 0,
                                              void *mode2_data = 0, component c_conjugate = Ex,
-                                             bool *first_component = 0);
+                                             bool *first_component = 0, bool retain_interp_weights=true);
 
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists, volume dft_volume,
