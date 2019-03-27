@@ -24,6 +24,8 @@ try:
 except NameError:
     basestring = str
 
+# Allow C++ master_printf to print to Python's stdout
+mp.cvar.master_printf_callback = mp.py_master_printf_wrap
 
 EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom'])
 FluxData = namedtuple('FluxData', ['E', 'H'])
