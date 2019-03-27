@@ -731,7 +731,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
      a copy of these with the weights for non-empty dimensions set to 1. */
   vec s0i(s0), s1i(s1), e0i(e0), e1i(e1);
   LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
-    if (empty_dim[d]) {
+    if (!empty_dim[d]) {
       s0i.set_direction(d, 1.0);
       s1i.set_direction(d, 1.0);
       e0i.set_direction(d, 1.0);
