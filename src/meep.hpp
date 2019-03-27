@@ -998,6 +998,7 @@ public:
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
+  bool empty_dim[5]; // which directions correspond to empty dimensions in original volume
   std::complex<double> scale; // scale factor * phase from shift and symmetry
   ivec shift;
   symmetry S;
