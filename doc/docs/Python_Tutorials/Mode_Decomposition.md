@@ -149,7 +149,7 @@ The mode-decomposition feature can also be applied to planewaves in homogeneous 
 
 A pulsed planewave with E<sub>z</sub> polarization spanning wavelengths of 0.4 to 0.6 μm is normally incident on the grating from the glass substrate. The eigenmode monitor is placed in the air region. We will use mode decomposition to compute the transmittance &mdash; the ratio of the power in the $+x$ direction of the diffracted mode relative to that of the incident planewave &mdash; for the first ten diffraction orders. Two simulations are required: (1) an *empty* cell of homogeneous glass to obtain the incident power of the source, and (2) the grating structure to obtain the diffraction orders. At the end of the simulation, the wavelength, angle, and transmittance for each diffraction order are computed.
 
-The simulation script is in [examples/binary_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating.py).
+The simulation script is in [examples/binary_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating.py). The notebook is [examples/binary_grating.ipynb](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating.ipynb)
 
 <center>
 ![](../images/grating.png)
@@ -292,7 +292,7 @@ The following script is adapted from the previous binary-grating example involvi
 
 Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
-The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py).
+The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py). The notebook is [examples/binary_grating_oblique.ipynb](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.ipynb)
 
 ```py
 import meep as mp
@@ -484,7 +484,7 @@ Phase Map of a Subwavelength Binary Grating
 
 We can also use the complex mode coefficients to compute the phase (or impedance) of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in a metasurface lens. When the period of the unit cell is subwavelength, the zeroth-diffraction order is the only propagating wave. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth-diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
 
-The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py).
+The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py). The notebook is [examples/binary_grating_phasemap.ipynb](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.ipynb).
 
 ```py
 import meep as mp

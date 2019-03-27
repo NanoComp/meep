@@ -1367,11 +1367,13 @@ Note: in order for the far-field results to be accurate, the [far region must be
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
-**`add_near2far(fcen, df, nfreq, Near2FarRegions...)`**
+**`add_near2far(fcen, df, nfreq, Near2FarRegions..., nperiods=1)`**
 —
 Add a bunch of `Near2FarRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally-spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a `near2far` object, which you can pass to the functions below to get the far fields.
 
 Each `Near2FarRegion` is identical to `FluxRegion` except for the name: in 3d, these give a set of planes (**important:** all these "near surfaces" must lie in a single *homogeneous* material with *isotropic* ε and μ &mdash; and they should *not* lie in the PML regions) surrounding the source(s) of outgoing radiation that you want to capture and convert to a far field. Ideally, these should form a closed surface, but in practice it is sufficient for the `Near2FarRegion`s to capture all of the radiation in the direction of the far-field points. **Important:** as for flux computations, each `Near2FarRegion` should be assigned a `weight` of &#177;1 indicating the direction of the outward normal relative to the +coordinate direction. So, for example, if you have six regions defining the six faces of a cube, i.e. the faces in the +x, -x, +y, -y, +z, and -z directions, then they should have weights +1, -1, +1, -1, +1, and -1 respectively. Note that, neglecting discretization errors, all near-field surfaces that enclose the same outgoing fields are equivalent and will yield the same far fields with a discretization-induced difference that vanishes with increasing resolution etc.
+
+If the `Near2FarRegion` spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, and `nperiods` is *larger* than one (the default), then `2*nperiods+1` copies of the Green's functions are summed (default is no summation). For far-away surfaces, `nperiods` may need to be sufficiently large for accurate results.
 
 After the simulation run is complete, you can compute the far fields. This is usually for a pulsed source so that the fields have decayed away and the Fourier transforms have finished accumulating.
 
@@ -1631,7 +1633,7 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 + `component`: a field component (e.g., `mp.Ez`)
 
-+ `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj,` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
++ `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
 
 #### Array Metadata
 
