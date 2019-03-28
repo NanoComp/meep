@@ -130,13 +130,10 @@ complex<double> fields::get_field(component c, const vec &loc, bool parallel) co
     default:
       ivec ilocs[8];
       double w[8];
-      complex<double> val[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+      complex<double> res = 0.0;
       gv.interpolate(c, loc, ilocs, w);
       for (int argh = 0; argh < 8 && w[argh]; argh++)
-        val[argh] = w[argh] * get_field(c, ilocs[argh], false);
-      complex<double> res = 0.0;
-      for (int i = 0; i < 8; i++)
-        res += val[i];
+        res += w[argh] * get_field(c, ilocs[argh], false);
       return parallel ? sum_to_all(res) : res;
   }
 }
@@ -186,14 +183,10 @@ double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc) con
 
 double fields::get_chi1inv(component c, direction d, const vec &loc, bool parallel) const {
   ivec ilocs[8];
-  double w[8];
-  double val[8] = {0,0,0,0,0,0,0,0};
+  double w[8], res = 0.0;
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
-    val[argh] = w[argh] * get_chi1inv(c, d, ilocs[argh], false);
-  double res = 0.0;
-  for (int i = 0; i < 8; i++)
-    res += val[i];
+    res += w[argh] * get_chi1inv(c, d, ilocs[argh], false);
   return parallel ? sum_to_all(res) : res;
 }
 
@@ -242,14 +235,10 @@ double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc) 
 
 double structure::get_chi1inv(component c, direction d, const vec &loc, bool parallel) const {
   ivec ilocs[8];
-  double w[8];
-  double val[8] = {0,0,0,0,0,0,0,0};
+  double w[8], res = 0.0;
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh]; argh++)
-    val[argh] = w[argh] * get_chi1inv(c, d, ilocs[argh], false);
-  double res = 0.0;
-  for (int i = 0; i < 8; i++)
-    res += val[i];
+    res += w[argh] * get_chi1inv(c, d, ilocs[argh], false);
   return parallel ? sum_to_all(res) : res;
 }
 
