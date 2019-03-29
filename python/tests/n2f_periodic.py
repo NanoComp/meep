@@ -57,7 +57,7 @@ class TestNear2FarPeriodicBoundaries(unittest.TestCase):
             n2f_Ez = sim.get_farfields(n2f_obj, res[j], center=dft_pt, size=mp.Vector3(y=sy))
             dft_Ez = sim.get_dft_array(dft_obj, mp.Ez, 0)
 
-            norm[j] = LA.norm(np.absolute(n2f_Ez['Ez'][0])-np.absolute(dft_Ez[1:-1]))
+            norm[j] = LA.norm(n2f_Ez['Ez']-dft_Ez[1:-1])
             print("norm:, {}, {:.5f}".format(res[j],norm[j]))
             sim.reset_meep()        
 
