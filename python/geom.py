@@ -22,6 +22,10 @@ def check_nonnegative(prop, val):
     else:
         raise ValueError("{} cannot be negative. Got {}".format(prop, val))
 
+def init_do_averaging(mat_func):
+    if not hasattr(mat_func, 'do_averaging'):
+        mat_func.do_averaging = False
+
 
 class Vector3(object):
 
@@ -109,7 +113,7 @@ class Vector3(object):
         return Vector3(x, y, z)
 
     def norm(self):
-        return math.sqrt(abs(self.dot(self)))
+        return math.sqrt(abs(self.cdot(self).real))
 
     def unit(self):
         return self.scale(1 / self.norm())
@@ -303,8 +307,10 @@ class GeometricObject(object):
 
     def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
         if type(material) is not Medium and callable(material):
+            init_do_averaging(material)
             material.eps = False
         elif epsilon_func:
+            init_do_averaging(epsilon_func)
             epsilon_func.eps = True
             material = epsilon_func
 

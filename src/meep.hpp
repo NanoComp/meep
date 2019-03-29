@@ -943,7 +943,7 @@ public:
                                              ivec max_corner, int num_freq, h5file *file,
                                              double *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
-                                             void *mode2_data, component c_conjugate);
+                                             void *mode2_data, component c_conjugate, bool retain_interp_weights);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -998,6 +998,7 @@ public:
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
+  bool empty_dim[5]; // which directions correspond to empty dimensions in original volume
   std::complex<double> scale; // scale factor * phase from shift and symmetry
   ivec shift;
   symmetry S;
@@ -1117,7 +1118,8 @@ public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
   dft_near2far(dft_chunk *F, double fmin, double fmax, int Nf, double eps, double mu,
-               const volume &where_);
+               const volume &where_, const direction periodic_d_[2],
+               const int periodic_n_[2], const double periodic_k_[2], const double period_[2]);
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
@@ -1157,6 +1159,9 @@ public:
   dft_chunk *F;
   double eps, mu;
   volume where;
+  direction periodic_d[2];
+  int periodic_n[2];
+  double periodic_k[2], period[2];
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1692,7 +1697,7 @@ public:
                                              std::complex<double> **field_array = 0, int *rank = 0,
                                              int *dims = 0, void *mode1_data = 0,
                                              void *mode2_data = 0, component c_conjugate = Ex,
-                                             bool *first_component = 0);
+                                             bool *first_component = 0, bool retain_interp_weights=true);
 
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists, volume dft_volume,
@@ -1729,7 +1734,7 @@ public:
 
   // near2far.cpp
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                int Nfreq);
+                                int Nfreq, int Nperiods=1);
   // monitor.cpp
   double get_chi1inv(component, direction, const vec &loc) const;
   double get_inveps(component c, direction d, const vec &loc) const {
