@@ -10,7 +10,7 @@ Since the frequency-domain solver uses an [iterative method](https://en.wikipedi
 
 We compute the fundamental mode at five different solver tolerances chosen on a logarithmic scale. We will then plot the L2 norm of the error in the fields as a function of the tolerance.
 
-The simulation script is in [examples/solve-cw.py](https://github.com/NanoComp/meep/blob/master/python/examples/solve-cw.py).
+The simulation script is in [examples/solve-cw.py](https://github.com/NanoComp/meep/blob/master/python/examples/solve-cw.py). The notebook is [examples/solve-cw.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/solve-cw.ipynb).
 
 ```py
 import meep as mp

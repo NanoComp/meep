@@ -209,7 +209,7 @@ Instead of doing an animation, another interesting possibility is to make an ima
 vals = []
 
 def get_slice(sim):
-    vals.append(sim.get_array(center=mp.Vector3(0,-3.5), mp.Vector3(16,0), component=mp.Ez))
+    vals.append(sim.get_array(center=mp.Vector3(0,-3.5), size=mp.Vector3(16,0), component=mp.Ez))
 
 sim.run(mp.at_beginning(mp.output_epsilon),
         mp.at_every(0.6, get_slice),
