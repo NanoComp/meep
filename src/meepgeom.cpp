@@ -918,7 +918,7 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
   material_gc(material);
   if (chi1p1.m01 != 0 || chi1p1.m02 != 0 || chi1p1.m12 != 0 || chi1p1.m00 != chi1p1.m11 ||
-      chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22 || meep::abs(gradient) == 0) {
+      chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22 || meep::abs(gradient) < 1e-8) {
     int rownum = meep::component_direction(c) % 3;
     if (rownum == 0) {
       chi1inv_row[0] = chi1p1_inv.m00;
