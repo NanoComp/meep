@@ -171,7 +171,7 @@ double fields::get_chi1inv(component c, direction d, const ivec &origloc, bool p
                      (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
         return parallel ? sum_to_all(val) : val;
       }
-  return 0.0;
+  return d == component_direction(c) ? 1.0 : 0; // default to vacuum outside computational cell
 }
 
 double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc) const {
