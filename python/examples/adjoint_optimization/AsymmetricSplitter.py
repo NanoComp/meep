@@ -5,12 +5,12 @@ import meep as mp
 
 from meep.adjoint import (OptimizationProblem, DFTCell, adjoint_options,
                           xHat, yHat, zHat, origin, FluxLine,
-                          ParameterizedDielectric, FourierLegendreBasis)
+                          ParameterizedDielectric, FiniteElementBasis)
 
 ##################################################
 ##################################################
 ##################################################
-class HoleyWaveguide(OptimizationProblem):
+class Splitter12(OptimizationProblem):
 
     ##################################################
     ##################################################
@@ -19,11 +19,16 @@ class HoleyWaveguide(OptimizationProblem):
 
         # add new problem-specific arguments
         parser.add_argument('--dair',        type=float, default=-1.0, help='')
-        parser.add_argument('--w_wvg',       type=float, default=3.0,  help='')
-        parser.add_argument('--eps_wvg',     type=float, default=6.0,  help='')
-        parser.add_argument('--r_disc',      type=float, default=0.5,  help='')
-        parser.add_argument('--nr_max',      type=int,   default=0,    help='')
-        parser.add_argument('--kphi_max',    type=int,   default=0,    help='')
+        parser.add_argument('--w_in',        type=float, default=1.0,  help='width of input waveguide')
+        parser.add_argument('--w_out1',      type=float, default=0.5,  help='width of output waveguide 1')
+        parser.add_argument('--w_out2',      type=float, default=0.5,  help='width of output waveguide 2')
+        parser.add_argument('--l_stub',      type=float, default=3.0,  help='length of waveguide input/output stub')
+        parser.add_argument('--l_design',    type=float, default=2.0,  help='length of design region')
+        parser.add_argument('--h_design',    type=float, default=6.0,  help='height of design region')
+        parser.add_argument('--eps_in',      type=float, default=6.0,  help='input waveguide permittivity')
+        parser.add_argument('--eps_out1',    type=float, default=2.0,  help='output waveguide 1 permittivity')
+        parser.add_argument('--eps_out2',    type=float, default=12.0, help='output waveguide 2 permittivity')
+        parser.add_argument('--nfe',         type=int,   default=2,    help='number of finite elements per unit length')
 
         # set problem-specific defaults for existing (general) arguments
         parser.set_defaults(fcen=0.5)
@@ -40,53 +45,56 @@ class HoleyWaveguide(OptimizationProblem):
         #----------------------------------------
         lcen       = 1.0/args.fcen
         dpml       = 0.5*lcen if args.dpml==-1.0 else args.dpml
-        dair       = 0.5*args.w_wvg if args.dair==-1.0 else args.dair
-        L          = 3.0*lcen
-        Lmin       = 6.0*dpml + 2.0*args.r_disc
-        L          = max(L,Lmin)
-        sx         = dpml+L+dpml
-        sy         = dpml+dair+args.w_wvg+dair+dpml
-        cell_size  = mp.Vector3(sx,sy)
+        dair       = 0.5*args.w_in if args.dair==-1.0 else args.dair
+        sx         = dpml + args.l_stub + args.l_design + args.l_stub + dpml
+        sy         = dpml + dair + args.h_design + dair + dpml
+        cell_size  = mp.Vector3(sx, sy, 0.0)
 
         #----------------------------------------
         #- design region
         #----------------------------------------
         design_center = origin
-        design_size   = mp.Vector3(2.0*args.r_disc, 2.0*args.r_disc)
+        design_size   = mp.Vector3(args.l_design, args.h_design, 0.0)
         design_region = mp.Volume(center=design_center, size=design_size)
 
         #----------------------------------------
         #- objective regions
         #----------------------------------------
-        x0_east       =  args.r_disc + dpml
-        x0_west       = -args.r_disc - dpml
-        y0            = 0.0
-        flux_length   = 2.0*args.w_wvg
-        east          = FluxLine(x0_east,y0,flux_length,mp.X,'east')
-        west          = FluxLine(x0_west,y0,flux_length,mp.X,'west')
+        x_in          =  -0.5*(args.l_design + args.l_stub)
+        x_out         =  +0.5*(args.l_design + args.l_stub)
+        y_out1        =  +0.25*args.h_design
+        y_out2        =  -0.25*args.h_design
 
-        objective_regions  = [east, west]
+        flux_in       =  FluxLine(x_in,     0.0, 2.0*args.w_in,   mp.X, 'in')
+        flux_out1     =  FluxLine(x_out, y_out1, 2.0*args.w_out1, mp.X, 'out1')
+        flux_out2     =  FluxLine(x_out, y_out2, 2.0*args.w_out2, mp.X, 'out2')
+
+        objective_regions  = [flux_in, flux_out1, flux_out2]
 
         #----------------------------------------
-        #- optional extra regions for visualization
+        #- optional extra regions for visualization if the --full-dfts options is present.
         #----------------------------------------
         extra_regions      = [mp.Volume(center=origin, size=cell_size)] if args.full_dfts else []
 
         #----------------------------------------
-        # basis set
+        # forward source region
         #----------------------------------------
-        basis = FourierLegendreBasis(radius=args.r_disc, nr_max=args.nr_max, kphi_max=args.kphi_max)
+        source_center    =  (x_in - 0.25*args.l_stub)*xHat
+        source_size      =  2.0*args.w_in*yHat
 
         #----------------------------------------
-        #- source location
+        # basis set
         #----------------------------------------
-        source_center    = (x0_west - dpml)*xHat
-        source_size      = flux_length*yHat
+        basis = FiniteElementBasis(args.l_design, args.h_design, args.nfe)
 
         #----------------------------------------
         #- objective function
         #----------------------------------------
-        fstr='Abs(P1_east)**2+0.0*(P2_east+P1_west+P2_west+M1_east+M2_east+M1_west+M2_west+S_east+S_west)'
+        fstr = (   'Abs(P1_out1)**2'
+                 + '+0.0*(P1_out1 + M1_out1)'
+                 + '+0.0*(P1_out2 + M1_out2)'
+                 + '+0.0*(P1_in   + M1_in + S_out1 + S_out2 + S_in)'
+               )
 
         #----------------------------------------
         #- internal storage for variables needed later
@@ -95,7 +103,8 @@ class HoleyWaveguide(OptimizationProblem):
         self.dpml            = dpml
         self.cell_size       = cell_size
         self.basis           = basis
-        self.design_center   = design_center
+        self.design_center   = origin
+        self.design_size     = design_size
         self.source_center   = source_center
         self.source_size     = source_size
 
@@ -109,14 +118,28 @@ class HoleyWaveguide(OptimizationProblem):
         args=self.args
         sx=self.cell_size.x
 
-        wvg=mp.Block(center=origin, material=mp.Medium(epsilon=args.eps_wvg),
-                     size=mp.Vector3(self.cell_size.x,args.w_wvg))
-        disc=mp.Cylinder(center=self.design_center, radius=args.r_disc,
-                         epsilon_func=ParameterizedDielectric(self.design_center,
-                                                              self.basis,
-                                                              beta_vector))
+        x_in   = -0.5*(args.l_design + args.l_stub)
+        x_out  = +0.5*(args.l_design + args.l_stub)
+        y_out1 = +0.25*args.h_design
+        y_out2 = -0.25*args.h_design
 
-        geometry=[wvg] if vacuum else [wvg, disc]
+        wvg_in = mp.Block( center=mp.Vector3(x_in,0.0),
+                           size=mp.Vector3(args.l_stub,args.w_in),
+                           material=mp.Medium(epsilon=args.eps_in))
+        wvg_out1 = mp.Block( center=mp.Vector3(x_out,y_out1),
+                             size=mp.Vector3(args.l_stub,args.w_out1),
+                             material=mp.Medium(epsilon=args.eps_out1))
+        wvg_out2 = mp.Block( center=mp.Vector3(x_out,y_out2),
+                             size=mp.Vector3(args.l_stub,args.w_out2),
+                             material=mp.Medium(epsilon=args.eps_out2))
+        design   = mp.Block( center=origin,
+                             size=mp.Vector3(args.l_design,args.h_design),
+                             epsilon_func=ParameterizedDielectric(self.design_center,
+                                                                  self.basis,
+                                                                  beta_vector)
+                           )
+
+        geometry=[wvg_in, wvg_out1, wvg_out2, design]
 
         envelope = mp.GaussianSource(args.fcen,fwidth=args.df)
         amp=1.0
@@ -146,4 +169,4 @@ class HoleyWaveguide(OptimizationProblem):
 ######################################################################
 if __name__ == '__main__':
     opt_prob=globals()[__file__.split('/')[-1].split('.')[0]]()
-
+    opt_prob.run()

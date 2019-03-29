@@ -4,11 +4,9 @@
 # simple standardized ways
 ###################################################
 import warnings
-import time
-import datetime
+from datetime import datetime as dt2
 from collections import namedtuple
 import numpy as np
-import sympy
 import re
 from multiprocessing import Process, Pipe
 
@@ -19,11 +17,12 @@ from matplotlib import ticker
 from mpl_toolkits.mplot3d import axes3d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import PolyCollection, LineCollection
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import matplotlib.cm
 
 import meep as mp
 
-from meep.adjoint import ObjectiveFunction
+from .Objective import get_dft_cell_names
+#from . get_dft_cell_names
 
 ########################################################
 # the next few routines are some of my older general-purpose
@@ -33,13 +32,16 @@ from meep.adjoint import ObjectiveFunction
 # visualization module just so it can be independent of
 # the adjoint innards.
 ########################################################
+xHat=mp.Vector3(1.0,0.0,0.0)
+yHat=mp.Vector3(0.0,1.0,0.0)
+zHat=mp.Vector3(0.0,0.0,1.0)
+origin=mp.Vector3()
 EHTransverse=[ [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
                [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
                [mp.Ex, mp.Ey, mp.Hx, mp.Hy] ]
 Exyz=[mp.Ex, mp.Ey, mp.Ez]
 Hxyz=[mp.Hx, mp.Hy, mp.Hz]
 EHxyz=Exyz + Hxyz
-origin=mp.Vector3()
 
 def abs2(z):
     return np.real(np.conj(z)*z)
@@ -48,7 +50,11 @@ def dft_cell_type(cell):
         return 'flux' if isinstance(cell, mp.simulation.DftFlux) else 'fields'
 
 def dft_cell_name(nc):
-    name=ObjectiveFunction.DFTCell.get_cell_names()[nc]
+#     name=DFTCell.get_cell_names()[nc]
+    dft_cell_names=get_dft_cell_names()
+    if len(dft_cell_names) <= nc:
+        return 'flux{}'.format(nc)
+    name=get_dft_cell_names()[nc]
     if name.endswith('_flux'):
         name=name[0:-5]
     if name.endswith('_fields'):
@@ -67,7 +73,7 @@ def add_dft_cell(sim, region, fcen, df=0, nfreq=1):
 
 
 def flux_line(x0, y0, length, dir):
-    size=length*(xhat if dir is mp.Y else yhat)
+    size=length*(xHat if dir is mp.Y else yHat)
     return mp.FluxRegion(center=mp.Vector3(x0,y0), size=size, direction=dir)
 
 
@@ -115,23 +121,6 @@ def unpack_dft_cell(sim,cell,nf=0):
 def unpack_dft_fields(sim,cell,nf=0):
     _,_,_,_,_,EH=unpack_dft_cell(sim,cell,nf=nf)
     return EH
-
-###################################################
-###################################################
-###################################################
-def eigenfield_tag(ncell, mode, freq):
-    return "C{}.M{}.F{:.6f}".format(ncell,mode,freq)
-
-def lookup_eigenfields(ncell, mode, freq, eigencache):
-    tag=eigenfield_tag(ncell, mode, freq)
-    if eigencache and tag in eigencache:
-        return eigencache[tag]
-    raise ValueError("eigenfields for tag {} not found in cache".format(tag))
-
-def get_eigenfields(sim, dft_cells, ncell, mode, nf=0, eigencache=None):
-
-    # look for data in cache
-    cell=dft_cells[ncell]
 
 ########################################################
 # this routine configures some global matplotlib settings
@@ -224,7 +213,7 @@ def_dft_options={ **def_plot_options }
 def set_plot_default(option, value, type=None):
     which=       def_eps_options    if type=='eps'      \
             else def_src_options    if type=='src'      \
-            else def_pml_optionss   if type=='pml'      \
+            else def_pml_options    if type=='pml'      \
             else def_flux_options   if type=='flux'     \
             else def_field_options  if type=='fields'   \
             else def_plot_options
@@ -354,7 +343,7 @@ def plot_volume(sim, vol=None, center=None, size=None,
                                    )
                    )
     else:
-        if options['fill_color'] is not 'none': # first copy: faces, no edges
+        if options['fill_color'] != 'none': # first copy: faces, no edges
             polygon = np.array([v0+dx+dy, v0-dx+dy, v0-dx-dy, v0+dx-dy])
             pc=PolyCollection( [polygon], linewidths=0.0)
             pc.set_color(options['fill_color'])
@@ -404,7 +393,7 @@ def plot_data_curves(sim,center=None,size=None,superpose=True,
         return
 
     options=options if options else def_flux_options
-    lw=options['line_width']
+    #lw=options['line_width']
     lc=options['line_color']
     zrel_min=options['zrel_min']
     zrel_max=options['zrel_max']
@@ -471,8 +460,8 @@ def visualize_source_distribution(sim, superpose=True, options=None):
                 plt.ion()
                 plt.figure()
                 plt.title('Source regions')
-            fig.subplot(len(sim.sources),1,ns+1)
-            fig.title('Currents in source region {}'.format(ns))
+            plt.fig().subplot(len(sim.sources),1,ns+1)
+            plt.fig().title('Currents in source region {}'.format(ns))
 #        plot_data_curves(sim,superpose,[J2,M2],labels=['||J||','||M||'],
 #                         styles=['bo-','rs-'],center=sc,size=ssu
         plot_data_curves(sim,center=sc,size=ss, superpose=superpose,
@@ -590,7 +579,7 @@ def plot_dft_fields(sim, field_cells=[], field_funcs=None,
 
         if field_funcs==None:
             ops=['Re', 'Im', 'abs']
-            field_funcs=[texify(op+'('+component_name(c)+')') for c in cEH for op in ops]
+            field_funcs=[texify(op+'('+mp.component_name(c)+')') for c in cEH for op in ops]
             rows,cols=len(cEH),len(ops)
         else:
             rows,cols=1,len(field_funcs)
@@ -749,16 +738,11 @@ def visualize_sim(sim, fig=None, plot3D=None,
                             else 'src' + ( '\_'+str(ns) if len(sim.sources)>1 else ''))
                    )
     if src_options['zrel_min']!=src_options['zrel_max']:
-        visualize_source_distribution(sim, standalone=not plot3D, options=src_options)
+        visualize_source_distribution(sim, superpose=plot3D, options=src_options)
 
     ###################################################
     ## plot PML regions
     ###################################################
-    def_options=def_pml_options
-    if pml_options is None:
-        pml_options = { **def_pml_options,
-                        'fill_color' : (0.25 if plot3D else 0.75)*np.ones(3)
-                      }
     if sim.boundary_layers and hasattr(sim.boundary_layers[0],'thickness'):
         dpml    = sim.boundary_layers[0].thickness
         sx, sy  = sim.cell_size.x, sim.cell_size.y
@@ -767,8 +751,8 @@ def visualize_sim(sim, fig=None, plot3D=None,
         centers = [ y0, -1*y0, x0, -1*x0 ]   # north, south, east, west
         sizes   = [ ns,    ns, ew,    ew ]
         for c,s in zip(centers,sizes):
-            plot_volume(sim, center=c, size=s,
-                        options=pml_options, plot3D=plot3D)
+            plot_volume(sim, center=c, size=s, plot3D=plot3D,
+                        options=pml_options if pml_options else def_pml_options)
 
     ######################################################################
     # plot DFT cell regions, with labels for flux cells.
@@ -844,9 +828,9 @@ def plot_basis(opt_prob):
 ######################################################################
 LogFile='/tmp/PFCServer.log'
 def message(msg):
-    dt=datetime.datetime.now().strftime("%T ")
+    tm=dt2.now().strftime("%T ")
     with open(LogFile,'a') as f:
-        f.write("{} {}\n".format(dt,msg))
+        f.write("{} {}\n".format(tm,msg))
     #os.system('zenity --info --text "{} {}" &'.format(dt,msg))
 
 PFCRequest = namedtuple('PFCRequest', 't flist')
@@ -1004,31 +988,36 @@ class AFEClient(object):
 # series of plot windows. It relies on the 'screeninfo' module
 # available from pypl.
 #####################################################################
-##################################################
-##################################################
-##################################################
 def set_figure_geometry(index):
+
+    window, n = plt.get_current_fig_manager().window, index+1
+######################################################################
+    xmax, ymax, dx, dy=5120, 1440, 840, 670
+    window.setGeometry(xmax-n*dx,ymax-dy,dx,dy)
+    return
+######################################################################
+
     try:
         # attempt to fetch size of monitor
         from screeninfo import get_monitors
-        w0, h0=get_monitors()[0].width, get_monitors()[0].height
+        xmax, ymax=get_monitors()[0].width, get_monitors()[0].height
     except:
         warnings.warn('could not find screeninfo module; run % pip install screeninfo')
         return      # failed to fetch current monitor size
 
     # attempt to fetch size of current window
-    window, n = plt.get_current_fig_manager().window, index+1
     if callable(getattr(window,'winfo_width',None)):    # Tkagg
-        w,h=window.winfo_width(),window.winfo_height()
-        window.wm_geometry('+{}+{}'.format(w0-n*w,h0-h))
+        dx,dy=window.winfo_width(),window.winfo_height()
+        window.wm_geometry('+{}+{}'.format(xmax-n*dx,ymax-dy))
     elif callable(getattr(window,'width',None)):        # qt{4,5}agg
-        w,h=window.width(), window.height()
-        window.setGeometry(w0-n*w,h0-h,w,h)
+        dx,dy=window.width(), window.height()
+        window.setGeometry(xmax-n*dx,ymax-dy,dx,dy)
     elif getattr(window,'Size',None):                   # works for wxagg
-        w,h=window.Size
-        window.Move(w0-n*w, h0-h)
+        dx,dy=window.Size
+        window.Move(xmax-n*dx, ymax-dy)
     else:
         warnings.warn('failed to auto-position matplotlib windows: unknown backend')
+
 
 ######################################################################
 # AdjointVisualizer is an entity that knows how to create and update
@@ -1088,17 +1077,27 @@ class AdjointVisualizer(object):
             title=case
 
         if case=='Adjoint':
-            ffs=[r'Re$\left(\frac{\partial f}{\partial\epsilon}\right)$',
-                 r'Im$\left(\frac{\partial f}{\partial\epsilon}\right)$',
-                 r'$\left|\frac{\partial f}{\partial\epsilon}\right|$']
-            plt.suptitle(title)
+
+            ff_ria= [ r'Re $\left(\frac{\partial f}{\partial\epsilon}\right)$',
+                      r'Im $\left(\frac{\partial f}{\partial\epsilon}\right)$',
+                      r'  $\left|\frac{\partial f}{\partial\epsilon}\right|$']
+            fa_ria= [  np.real(dfdEps), np.imag(dfdEps), np,abs(dfdEps) ]
+
+            plot_ria = False;  # -->True to plot real, imag, abs components
+            if plot_ria:
+               plt.suptitle(title)
+               ffs, fas = ff_ria, fa_ria
+            else:
+               ffs, fas = [ff_ria[0] + ',' + title], [fa_ria[0]]
             visualize_dft_fields(sim,superpose=False,field_cells=[sim.dft_objects[-1]],
-                                 field_funcs=ffs,
-                                 ff_arrays=[np.real(dfdEps),np.imag(dfdEps),np.abs(dfdEps)])
+                                 field_funcs = ffs, ff_arrays=fas)
         else:
             visualize_sim(sim,plot3D=plot3D,fig=fig,eps_options=self.eps_options,src_options=self.src_options,
                           plot_dft_data=False if case=='Geometry' else True if case =='Forward' else 'flux')
             plt.gcf().gca().set_title(title)
+
+        if case=='Geometry':
+            plt.tight_layout()
 
         plt.draw()
         plot_pause()

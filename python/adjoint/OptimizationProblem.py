@@ -1,24 +1,16 @@
-import sys
 import os
+import sys
 import argparse
 import pickle
-import datetime
+from datetime import datetime as dt2
+from collections import namedtuple
 
 import numpy as np
 
-import matplotlib.pyplot as plt
+from .Objective import (adjoint_options, unit_vector, log,
+                        DFTCell, ObjectiveFunction, AdjointSolver)
 
-import meep as mp
-from . import ObjectiveFunction
-from . import Visualization
-from . import Basis
-
-from .ObjectiveFunction import (adjoint_options, xHat, yHat, zHat, origin,
-                                EHTransverse, Exyz, Hxyz, EHxyz, GridInfo,
-                                abs2, unit_vector, rel_diff, FluxLine,
-                                DFTCell, ObjectiveFunction, AdjointSolver)
-
-from .Visualization import (visualize_sim, AdjointVisualizer, set_plot_default)
+from .Visualization import (AdjointVisualizer, set_plot_default, def_plot_options)
 
 ######################################################################
 # invoke python's 'abstract base class' formalism in a version-agnostic way
@@ -54,35 +46,39 @@ class OptimizationProblem(ABC):
     ######################################################################
     def __init__(self, cmdline=None):
 
+
         # define and parse command-line arguments
         parser = self.init_args()       # general args
         self.add_args(parser)           # problem-specific arguments
-        argv=sys.argv[1:] if cmdline is None else cmdline.split(' ')
+
+        # set options from cmdline parameter (if present) or sys.argv
+        argv =        [ a for a in cmdline.split(' ') if a ] if cmdline \
+                 else sys.argv[1:] if len(sys.argv)>1 else []
+        self.cmdline = ' '.join(argv)
         self.args = args = parser.parse_args(argv)
 
         # call subclass for problem-specific initialization first...
         fstr, objective_regions, extra_regions, design_region, self.basis \
             = self.init_problem(self.args)
 
-        # ...and now do some general initialization
+        # and now do some general initialization of basic data fields:
+        #    DFT cells
         fcen, df, nfreq         = args.fcen, args.df, args.nfreq
-
         DFTCell.reset_cell_names()
         self.objective_cells    = [ DFTCell(region=v, fcen=fcen, df=df, nfreq=nfreq) for v in objective_regions ]
         self.extra_cells        = [ DFTCell(region=v, fcen=fcen, df=df, nfreq=nfreq) for v in extra_regions ] if args.full_dfts else []
         self.design_cell        = DFTCell(region=design_region, fcen=fcen, df=df, nfreq=nfreq, name='design_fields')
         self.dft_cells          = self.objective_cells + self.extra_cells + [self.design_cell]
 
+        # objective function
         self.obj_func           = ObjectiveFunction(fstr=fstr)
+        self.fqnames            = ['f'] + self.obj_func.qnames
 
-        self.dimension          = len(self.basis()) # dimension of optimization problem = number of design variables
+        # design variables
+        self.dim                = self.basis.dim
         self.beta_vector        = self.init_beta_vector()
 
-        self.sim                = None
-
-        self.filebase           = args.filebase if args.filebase else self.__class__.__name__
-
-        # miscellaneous general options affecting the solver
+        # options affecting meep calculations
         adjoint_options['dft_reltol']   = args.dft_reltol
         adjoint_options['dft_timeout']  = args.dft_timeout
         adjoint_options['dft_interval'] = args.dft_interval
@@ -90,9 +86,12 @@ class OptimizationProblem(ABC):
                                           else 'concise' if args.concise    \
                                           else adjoint_options['verbosity']
         adjoint_options['logfile']      = args.logfile
+        self.filebase                   = args.filebase if args.filebase else self.__class__.__name__
+
+        # options controlling the optimizer
+        adjoint_options['logfile']      = args.logfile
 
         # miscellaneous general options affecting visualization
-        self.vis = None
 
         if args.label_source_regions:
             set_plot_default('fontsize',def_plot_options['fontsize'], 'src')
@@ -100,27 +99,43 @@ class OptimizationProblem(ABC):
         adjoint_options['animate_components'] = args.animate_component
         adjoint_options['animate_interval']   = args.animate_interval
 
+        # other data structures that are initialized on a just-in-time basis
+        self.solver = self.sim = self.vis = self.dfdEps = None
+
     ######################################################################
     # constructor helper method that initializes the command-line parser
     #  with general-purpose (problem-independent) arguments
     ######################################################################
     def init_args(self):
+
         parser = argparse.ArgumentParser()
 
         #--------------------------------------------------
-        # parameters affecting geometry and sources
+        # parameters affecting meep computations
         #--------------------------------------------------
-        parser.add_argument('--res',         type=float, default=20,      help='resolution')
-        parser.add_argument('--dpml',        type=float, default=-1.0,    help='PML thickness (-1 --> autodetermined)')
-        parser.add_argument('--fcen',        type=float, default=0.5,     help='center frequency')
-        parser.add_argument('--df',          type=float, default=0.25,    help='frequency width')
-        parser.add_argument('--source_mode', type=int,   default=1,       help='mode index of eigenmode source')
+        parser.add_argument('--res',          type=float, default=20,      help='resolution')
+        parser.add_argument('--dpml',         type=float, default=-1.0,    help='PML thickness (-1 --> autodetermined)')
+        parser.add_argument('--fcen',         type=float, default=0.5,     help='center frequency')
+        parser.add_argument('--df',           type=float, default=0.25,    help='frequency width')
+        parser.add_argument('--source_mode',  type=int,   default=1,       help='mode index of eigenmode source')
+        parser.add_argument('--dft_reltol',   type=float, default=adjoint_options['dft_reltol'],   help='convergence threshold for end of timestepping')
+        parser.add_argument('--dft_timeout',  type=float, default=adjoint_options['dft_timeout'],  help='max runtime in units of last_source_time')
+        parser.add_argument('--dft_interval', type=float, default=adjoint_options['dft_interval'], help='meep time DFT convergence checks in units of last_source_time')
+
+        #--------------------------------------------------
+        # flags affecting outputs from meep computations
+        #--------------------------------------------------
+        parser.add_argument('--nfreq',          type=int,              default=1,           help='number of output frequencies')
+        parser.add_argument('--full_dfts',      dest='full_dfts',      action='store_true', help='compute DFT fields over full volume')
+        parser.add_argument('--complex_fields', dest='complex_fields', action='store_true', help='force complex fields')
+        parser.add_argument('--filebase',       type=str,              default=self.__class__.__name__, help='base name of output files')
 
         #--------------------------------------------------
         # initial values for basis-function coefficients
         #--------------------------------------------------
-        parser.add_argument('--betafile',  type=str,   default='',       help='file of expansion coefficients')
-        parser.add_argument('--beta', nargs=2, default=[], action='append',  help='set value of expansion coefficient')
+        parser.add_argument('--betafile',  type=str,   default='',    help='file of expansion coefficients')
+        parser.add_argument('--beta',       nargs=2,   default=[],    action='append',  help='set value of expansion coefficient')
+        parser.add_argument('--eps_design', type=str,  default=None,  help='functional expression for initial design permittivity')
 
         #--------------------------------------------------
         # options describing the calculation to be done
@@ -136,22 +151,22 @@ class OptimizationProblem(ABC):
         parser.add_argument('--fd_rel_delta',  type=float, default=1.0e-2,   help='relative finite-difference delta')
 
         # run the full iterative optimization
-        parser.add_argument('--optimize',       dest='optimize',       help='perform automated design optimization')
+        parser.add_argument('--optimize',       dest='optimize', action='store_true', help='perform automated design optimization')
 
         #--------------------------------------------------
-        # flags affecting the simulation run
+        #- options affecting optimization ---------------
         #--------------------------------------------------
-        parser.add_argument('--nfreq',          type=int,              default=1,           help='number of output frequencies')
-        parser.add_argument('--full_dfts',      dest='full_dfts',      action='store_true', help='compute DFT fields over full volume')
-        parser.add_argument('--complex_fields', dest='complex_fields', action='store_true', help='force complex fields')
-        parser.add_argument('--filebase',       type=str,              default=self.__class__.__name__, help='base name of output files')
+        parser.add_argument('--alpha',          type=float,     default=1.0, help='gradient descent relaxation parameter')
+        parser.add_argument('--min_alpha',      default=1.0e-3, help='minimum value of alpha')
+        parser.add_argument('--max_alpha',      default=10.0,   help='maximum value of alpha')
+        parser.add_argument('--boldness',       default=1.25,   help='sometimes you just gotta live a little')
+        parser.add_argument('--timidity',       default=0.75,   help='can\'t be too careful in this dangerous world')
+        parser.add_argument('--max_iters',      type=int, default=100, help='max number of optimization iterations')
+        parser.add_argument('--overlap_dfdEps', dest='overlap_dfdEps', action='store_true')
 
         #--------------------------------------------------
         # flags configuring adjoint-solver options
         #--------------------------------------------------l
-        parser.add_argument('--dft_reltol',   type=float, default=adjoint_options['dft_reltol'],   help='convergence threshold for end of timestepping')
-        parser.add_argument('--dft_timeout',  type=float, default=adjoint_options['dft_timeout'],  help='max runtime in units of last_source_time')
-        parser.add_argument('--dft_interval', type=float, default=adjoint_options['dft_interval'], help='meep time DFT convergence checks in units of last_source_time')
         parser.add_argument('--verbose',      dest='verbose',   action='store_true', help='produce more output')
         parser.add_argument('--concise',      dest='concise',   action='store_true', help='produce less output')
         parser.add_argument('--visualize',    dest='visualize', action='store_true', help='produce visualization graphics')
@@ -169,13 +184,14 @@ class OptimizationProblem(ABC):
     ######################################################################
     def init_beta_vector(self):
 
-        # default: beta_0 (constant term) = 1, all other coefficients=0
-        beta_vector=unit_vector(0,self.dimension)
+        beta_vector=np.zeros(self.dim)
 
+        #######################################################################
         # if a --betafile was specified, try to parse it in the form
         #    beta_0 \n beta_1 \n ... (if single column)
         # or
         #    i1	 beta_i1 \n i2 beta_i2 \n  (if two columns)
+        #######################################################################
         if self.args.betafile:
             fb = np.loadtxt(self.args.betafile)   # 'file beta'
             if np.ndim(fb)==1:
@@ -186,17 +202,23 @@ class OptimizationProblem(ABC):
                 raise ValueError("{}: invalid file format".format(self.args.betafile))
             for i,v in zip(indices,vals): beta_vector[i]=v
 
+        #######################################################################
         # parse arguments of the form --beta index value
+        #######################################################################
         for ivpair in self.args.beta:     # loop over (index,value) pairs
             beta_vector[int(ivpair[0])]=ivpair[1]
 
-        # this step ensures that epsilon(x) never falls below 1.0, assuming
-        # (a) the 0th basis function is the constant 1
-        # (b) all other basis functions (b_1, ... b_{D-1}) take values in [-1:1]
-        # (c) coefficients (\beta_1, ..., \beta_{D-1}) are nonnegative.
-        #eps_min=beta_vector[0] - np.sum(beta_vector[1:])
-        #if eps_min<1.0:
-        #    beta_vector[0] += 1.0-eps_min
+        #######################################################################
+        # if a functional form for --eps_design was specified, project that
+        # function onto the basis and use this as the initial design point
+        #######################################################################
+        if np.count_nonzero(beta_vector)==0:
+            eps_design=self.args.eps_design if self.args.eps_design else 1.0
+            sim = self.create_sim(beta_vector)
+            sim.init_sim()
+            xyzw=sim.get_dft_array_metadata(center=self.dft_cells[-1].center, size=self.dft_cells[-1].size)
+            beta_vector=self.basis.expand(eps_design,xyzw,cache=True,subtract_one=True)
+
         return beta_vector
 
     ######################################################################
@@ -215,29 +237,115 @@ class OptimizationProblem(ABC):
         vis = AdjointVisualizer(cases=['Geometry'])
         vis.update(sim,'Geometry')
         self.sim,self.vis = sim,vis # save copies for debugging; not strictly necessary
-        self.terminate("Finished visualization")
+        return
+
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    def update_design_variables(self, beta_vector):
+        if self.solver==None:
+            self.solver=AdjointSolver(self.obj_func, self.dft_cells, self.basis)
+        self.solver.sim=self.create_sim(beta_vector)
 
     ######################################################################
     # compute the objective function, plus possibly its gradient (via
     # adjoints), at a single point in design space
     ######################################################################
     def eval_objective(self, beta_vector, need_gradient=False, vis=None):
-        sim = self.create_sim(beta_vector)
-        solver = AdjointSolver(self.obj_func, self.dft_cells, self.basis, sim, vis=vis)
-        self.sim, self.solver = sim, solver # save copies for debugging; not strictly necessary
-        retval=solver.solve(need_gradient=need_gradient)
-        if need_gradient and self.args.pickle_data:
-            with open(self.filebase + '.pickle','wb') as f:
-                pickle.dump(self.solver.dfdEps,f)
-        return retval
+        self.update_design_variables(beta_vector)
+        self.solver.vis=vis
+        return self.solver.solve(need_gradient=need_gradient)
 
-    ##################################################
-    ##################################################
-    ##################################################
-    def eval_fq(self, beta_vector, need_gradient=False, vis=None):
-        f,gradf = self.eval_objective(beta_vector, need_gradient=need_gradient, vis=vis)
-        fq = np.array( [f] + list(self.obj_func.qvals) )
-        return fq, gradf
+    ######################################################################
+    # an OptState stores the current state of an optimization problem.
+    ######################################################################
+    OptState = namedtuple('OptState', 'n alpha beta fq gradf dfdEps')
+
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    def log_state(self, state, substate=None):
+
+        ts=dt2.now().strftime('%T')
+        with open(self.iterfile,'a') as f:
+            if substate:
+                f.write('{}:  Subiter {}.{}: '.format(ts,state.n,substate.n))
+                f.write('f={}, alpha={}\n'.format(substate.fq[0],substate.alpha))
+                return
+
+            dfdEps_avg=np.sum(self.dft_cells[-1].xyzw[3] * state.dfdEps)
+            f.write('\n\n{}: Iter {}: f={}, alpha={} dfdeAve={}\n'
+                    .format(ts,state.n,state.fq[0],state.alpha,dfdEps_avg))
+            [f.write('#{} {} = {}\n'.format(state.n,nn,qq)) for nn,qq in zip(self.fqnames[1:], state.fq[1:]) ]
+            [f.write('#{} b{} = {}\n'.format(state.n,n,b)) for n,b in enumerate(state.beta)]
+            f.write('\n\n')
+            self.annals.append(state)
+
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    def line_search(self,state):
+
+        self.log_state(state)
+        cease_file = '/tmp/terminate.{}'.format(os.getpid())
+
+        bs, xyzw, ovrlp = self.basis, self.dft_cells[-1].xyzw, self.args.overlap_dfdEps
+        dbeta = bs.overlap(state.dfdEps, xyzw) if ovrlp else bs.expand(state.dfdEps, xyzw)
+
+        alpha, iter, subiter = state.alpha, state.n, 0
+        while alpha>self.args.min_alpha:
+
+            beta = state.beta + alpha*np.real(dbeta)
+            for n in range(len(beta)):
+                beta[n] = max(0.0, beta[n])
+            self.update_design_variables(beta)
+            fq   = self.solver.forward_solve()
+
+            substate = self.OptState(subiter,alpha,beta,fq,0,0)
+            self.log_state(state,substate)
+
+            if fq[0] > state.fq[0]:    # found a new optimum, declare victory and a new iteration
+                gradf = self.solver.adjoint_solve()
+                alpha = min(alpha*self.args.boldness,self.args.max_alpha)
+                return self.OptState(iter+1, alpha, beta, fq, gradf, self.solver.dfdEps)
+
+            if os.path.isfile(cease_file):  # premature termination requested by user
+                os.remove(cease_file)
+                return None
+
+            alpha*=self.args.timidity
+
+        return None   # unable to improve objective by proceeding any distance in given direction
+
+    ######################################################################
+    ######################################################################
+    ######################################################################
+    def optimize(self):
+
+        ss = int( dt2.now().strftime("%s") ) - 1553607629
+        self.iterfile = '{}.{}.iters'.format(self.filebase,ss)
+        with open(self.iterfile,'w') as f:
+            f.write('#{} ran'.format(self.__class__.__name__))
+            f.write(dt2.now().strftime(' %D::%T\n'))
+            f.write('# with args {}\n\n'.format(self.cmdline))
+        self.annals=[]
+
+        ######################################################################
+        # initialize AdjointSolver and get objective function value and gradient
+        # at the initial design point
+        ######################################################################
+        alpha        = self.args.alpha
+        beta         = self.beta_vector
+        self.update_design_variables(beta)
+        fq,gradf     = self.solver.solve(need_gradient=True)
+        dfdEps       = self.solver.dfdEps
+
+        state        = self.OptState(1,alpha,beta,fq,gradf,dfdEps)
+
+        while state and state.n<self.args.max_iters:
+            state = self.line_search(state)
+
+        return self.annals
 
     ######################################################################
     # the 'run' class method of OptimizationProblem, which is where control
@@ -254,12 +362,14 @@ class OptimizationProblem(ABC):
         args=self.args
         if args.optimize:
             self.optimize()
+            return
 
         #--------------------------------------------------------------
         # if no computation was requested, just plot the geometry
         #--------------------------------------------------------------
         if not(args.eval_gradient or args.eval_objective or args.fd_order>0):
             self.plot_geometry()
+            return
 
         #--------------------------------------------------------------
         #--------------------------------------------------------------
@@ -268,15 +378,13 @@ class OptimizationProblem(ABC):
         if args.visualize:
             cases=['Geometry','Forward'] + (['Adjoint'] if args.eval_gradient else [])
             vis=AdjointVisualizer(cases=cases)
-            self.vis = vis # save copy for debugging; not strictly necessary
 
-        fq,gradf=self.eval_fq(self.beta_vector, need_gradient=args.eval_gradient, vis=vis)
+        fq,gradf=self.eval_objective(self.beta_vector, need_gradient=args.eval_gradient, vis=vis)
 
-        fqnames=['f'] + self.obj_func.qnames
-        self.output([],[],actions=['begin'])
+        self.output([],[],actions=['begin'],msg='{} {}'.format(self.filebase,self.cmdline))
         self.output(['res','fcen','df','source_mode'], [args.res,args.fcen,args.df,args.source_mode])
         [self.output(['beta'+str(n)],[beta]) for (n,beta) in enumerate(self.beta_vector)]
-        [self.output([fqn], [fqv]) for (fqn,fqv) in zip(fqnames,fq)]
+        [self.output([fqn], [fqv]) for (fqn,fqv) in zip(self.fqnames,fq)]
         if args.eval_gradient:
             [self.output( ['df/db'+str(n)], [g]) for n,g in enumerate(gradf)]
 
@@ -288,16 +396,16 @@ class OptimizationProblem(ABC):
         indices = [] if args.fd_order==0 else [int(index) for index in args.fd_index]
         for index in indices:
             dbeta    = args.fd_rel_delta*(1.0 if self.beta_vector[index]==0 else np.abs(self.beta_vector[index]))
-            beta_hat = unit_vector(index,self.dimension)
-            fqp, _ = self.eval_fq(self.beta_vector + dbeta*beta_hat)
+            beta_hat = unit_vector(index,self.dim)
+            fqp, _ = self.eval_objective(self.beta_vector + dbeta*beta_hat)
             d1fq   = (fqp - fq) / dbeta
             if args.fd_order==2 and self.beta_vector[index]!=0.0:
-                fqm, _ = self.eval_fq(self.beta_vector - dbeta*beta_hat)
+                fqm, _ = self.eval_objective(self.beta_vector - dbeta*beta_hat)
                 d2fq   = (fqp - fqm) / (2.0*dbeta)
             elif args.fd_order==2 and self.beta_vector[index]==0.0:
-                fqpp, _ = self.eval_fq(self.beta_vector + 2*dbeta*beta_hat)
+                fqpp, _ = self.eval_objective(self.beta_vector + 2*dbeta*beta_hat)
                 d2fq   = (4*fqp - fqpp - 3.0*fq) / (2.0*dbeta)
-            for i,fqn in enumerate(fqnames):
+            for i,fqn in enumerate(self.fqnames):
                 nlist = ['d{}/db{}__O{}__'.format(fqn,index,ord+1) for ord in range(args.fd_order)]
                 vlist = [ d1fq[i] ] + ([d2fq[i]] if args.fd_order==2 else[])
                 [self.output(nlist, vlist)]
@@ -306,31 +414,37 @@ class OptimizationProblem(ABC):
 
         if args.pickle_data:
             f = open(self.filebase + '.pickle', 'wb')
-            #pickle.dump(self,f)
             pickle.dump(self.solver.dfdEps,f)
             f.close()
 
-        self.terminate("Completed single-point calculation")
+        return
 
     ######################################################################
+    # 'lcdoi' = legend, console, digest, output, iterations
     ######################################################################
-    ######################################################################
-    def output(self, names, values, actions=[]):
+    def output(self, names, values, actions=[], msg=None, files='lcdoi'):
 
         if 'begin' in actions:
             self.nout = 1 # running index of output quantity
-            self.legend  = open(self.filebase + '.legend','w')
-            self.digest  = open(self.filebase + '.digest','a')
-            self.outfile = open(self.filebase + '.out','a')
-            dt=datetime.datetime.now().strftime('%D::%T ')
-            for f in [sys.stdout,self.digest]:
-                f.write('\n\n** {} ran {} \n'.format(dt,self.__class__.__name__))
-                f.write('** with args {}'.format(' '.join(sys.argv[1:])))
-                f.write('\n**')
+            self.legend  = open(self.filebase + '.legend','w') if 'l' in files else None
+            self.digest  = open(self.filebase + '.digest','a') if 'd' in files else None
+            self.outfile = open(self.filebase + '.out','a')    if 'o' in files else None
+            self.iterlog = open(self.filebase + '.iters','a')  if 'i' in files else None
+
+        msgfiles  = [sys.stdout]  if 'c' in files else []
+        msgfiles += [self.digest] if 'd' in files else []
+        if msg is not None:
+            tm=dt2.now().strftime('%D::%T ')
+            for f in msgfiles:
+                f.write('\n\n** {} {}\n**'.format(tm,msg))
 
         #--------------------------------------------------------------
         #- inline utility functions for real/complex numerical output
         #--------------------------------------------------------------
+        def fw(f,s=None):
+            if f is not None:
+                f.write(s) if s is not None else f.close()
+
         def myangle(z):
             theta=np.angle(z,deg=True)
             return theta if theta>=0.0 else theta+360.0
@@ -353,28 +467,19 @@ class OptimizationProblem(ABC):
             namestrs += (' ,' if namestrs else '') + name
             valstrs  += (' ,' if valstrs  else '') + pretty_print(val)
             if np.iscomplex(val):
-                valstrs += '(' + pretty_print(val,polar=True) + ') '
+                valstrs += '(' + pretty_print(val,polar=True) + ' '
 
-            self.outfile.write(pretty_print(val, for_file=True))
+            fw(self.outfile,pretty_print(val, for_file=True))
 
             idxstr=str(self.nout) + (','+str(self.nout+1) if np.iscomplex(val) else '')
-            self.legend.write('{}: {}\n'.format(idxstr,name))
-            self.nout += (2 if np.iscomplex(val) else 1)
+            fw(self.legend,'{}: {}\n'.format(idxstr,name))
+            self.nout += (2 if np.iscomplex(val) else 1) if self.legend else 0
 
-        for f in [sys.stdout,self.digest]:
+        for f in msgfiles:
             f.write('{:30s}:  {}\n'.format(namestrs,valstrs))
 
         if 'end' in actions:
-            self.outfile.write('\n')
-            self.outfile.close()
-            self.digest.close()
-            self.legend.close()
-
-    ######################################################################
-    ######################################################################
-    ######################################################################
-    def optimize(self):
-        args=self.args
-        print("Running optimization...")
-        vis = AdjointVisualizer() if args.visualize else None # cases=ALL_CASES
-        self.terminate("Finished optimization")
+            fw(self.outfile,'\n')
+            fw(self.outfile)
+            fw(self.digest)
+            fw(self.legend)

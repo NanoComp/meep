@@ -40,6 +40,8 @@ import argparse
 import multiprocessing
 from multiprocessing import cpu_count as ncpus
 from datetime import datetime as dt
+import importlib
+from importlib import util
 from importlib import import_module as imp_mod
 
 ######################################################################
@@ -53,12 +55,13 @@ class ParallelDesignTester(object):
     def __call__(self, n):
         getattr(imp_mod(self.name),self.name)(self.cmdlines[n]).run()
 
-    def launch(self, nproc):
+    def launch(self, nproc=None):
 
         # create and cd to working directory, then launch servers and run jobs
         wdir = '{}_{}'.format(self.name,dt.now().strftime("%m%d.%H%M%S"))
         os.mkdir(wdir)
         os.chdir(wdir)
+        nproc=nproc if nproc else max(ncpus()//2,1)
         multiprocessing.Pool(nproc).map(self,range(len(self.cmdlines)))
 
 ######################################################################
@@ -72,7 +75,7 @@ if __name__ == '__main__':
     args=parser.parse_args()
 
     if args.name is None or not importlib.util.find_spec(args.name):
-        raise ValueError("missing or invalid class/module --name " + args.name if args.name else '')
+       raise ValueError("missing or invalid class/module --name " + args.name if args.name else '')
     if args.casefile is None or not os.path.isfile(args.casefile):
         raise ValueError("missing or invalid list of command-line strings --casefile " + args.casefile if args.casefile else '')
     with open(args.casefile) as f:

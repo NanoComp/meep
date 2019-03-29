@@ -14,7 +14,7 @@
 #                             depending on one or more input variables, which we
 #                             call "objective quantities."
 #
-#    ObjectiveFunction.py:    lower-level routines for carrying out MEEP timestepping
+#    Objective.py             lower-level routines for carrying out MEEP timestepping
 #                             calculations to compute objective quantities and their
 #                             adjoint derivatives.
 #
@@ -38,10 +38,11 @@
 
 from .OptimizationProblem import OptimizationProblem
 
-from .ObjectiveFunction import (adjoint_options, xHat, yHat, zHat, origin,
-                                EHTransverse, Exyz, Hxyz, EHxyz, GridInfo,
-                                abs2, unit_vector, rel_diff, FluxLine,
-                                DFTCell, ObjectiveFunction, AdjointSolver)
+from .Objective import (adjoint_options, xHat, yHat, zHat, origin,
+                        EHTransverse, Exyz, Hxyz, EHxyz, GridInfo,
+                        abs2, unit_vector, rel_diff, FluxLine,
+                        DFTCell, ObjectiveFunction, AdjointSolver,
+                        get_dft_cell_names)
 
 from .ParallelDesignTester import ParallelDesignTester
 
