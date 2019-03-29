@@ -8,95 +8,141 @@ use_directory_urls: True
 docs_dir: 'doc/docs'
 site_dir: 'doc/site'
 
-theme:
-   name: readthedocs
+#theme: 'material'
+theme: 'material-components'
+#    custom-dir: 'mkdocs-material-components'
+
+#site_favicon: 'doc/images/Meep-logo.png'
+#
+#markdown_extensions:
+#  - admonition
+#  - toc
+#  - footnotes                # allow e.g. [^1] to define linked footnotes
+#  - smarty                   # proper rendering of quotes and en/em-dashes
+#  - wikilinks
+#  - toc:
+#        title: Table of Contents
+#  - attr_list
+#  - fenced_code
+#  - mdx_math:
+#      enable_dollar_delimiter: True
+#  - extra                    # allow markdown inside raw HTML blocks
+#  - pymdownx.details         # collapsible text snippets with icon+title
+#  - pymdownx.highlight
+#  - pymdownx.inlinehilite:   # syntax highlighting for inline code
+#      css_class: 'manni'
+#  - pymdownx.snippets:       # --<8-- directive for .md file inclusion
+#      base_path: 'doc/docs'
+#  - pymdownx.superfences
+
 
 markdown_extensions:
-    - wikilinks
-    - toc:
-        title: Table of Contents
-    - attr_list
-    - fenced_code
-    - mdx_math:
-        enable_dollar_delimiter: True
-    - footnotes                # allow e.g. [^1] to define linked footnotes
-    - smarty                   # proper rendering of quotes and en/em-dashes
-    - extra                    # allow markdown inside raw HTML blocks
-    - pymdownx.details         # collapsible text snippets with icon+title
-    - pymdownx.highlight
-    - pymdownx.inlinehilite:   # syntax highlighting for inline code
-        css_class: 'manni'
-    - pymdownx.snippets:       # --<8-- directive for .md file inclusion
-        base_path: 'doc/docs'
+  - pymdownx.extra # replacement for markdown.extensions.extra see https://facelessuser.github.io/pymdown-extensions/extensions/extra/
+#  - pymdownx.github # untility to add a bunch of others
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.abbr
+  - markdown.extensions.attr_list
+#  - pymdownx.betterem(smart_enable=all)
+  - pymdownx.emoji:
+     emoji_index: !!python/name:pymdownx.emoji.gemoji
+  - pymdownx.magiclink
+  - pymdownx.superfences
+  - pymdownx.tilde
+  - markdown.extensions.sane_lists
+  - markdown.extensions.admonition
+  - markdown.extensions.meta
+  - markdown.extensions.toc:
+      permalink: True
+  - markdown_include.include:
+      base_path: 'docs'
+  - pymdownx.arithmatex
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite:
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.critic
+  - pymdownx.snippets
+  - pymdownx.superfences
+    
 
 extra_javascript:
- - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
+    - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
 
 extra_css:
  - 'meep_documentation.css'
 
-nav:
-- 'Manual': 'index.md'
-- 'Introduction': 'Introduction.md'
-- 'Download': 'Download.md'
-- 'FAQ': 'FAQ.md'
-- 'Installation': 'Installation.md'
-- 'Build From Source': 'Build_From_Source.md'
-- 'Acknowledgements': 'Acknowledgements.md'
-- 'License and Copyright': 'License_and_Copyright.md'
-- 'Features':
-    - 'Materials': 'Materials.md'
-    - 'Exploiting Symmetry': 'Exploiting_Symmetry.md'
-    - 'Cylindrical Coordinates': 'Cylindrical_Coordinates.md'
-    - 'Perfectly Matched Layers': 'Perfectly_Matched_Layer.md'
-    - 'Parallel Meep': 'Parallel_Meep.md'
-    - 'Synchronizing the Magnetic and Electric Fields': 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
-    - 'Mode Decomposition': 'Mode_Decomposition.md'
-    - 'Field Functions': 'Field_Functions.md'
-    - 'The Run Function is Not a Loop': 'The_Run_Function_Is_Not_A_Loop.md'
-    - 'Yee Lattice': 'Yee_Lattice.md'
-    - 'Units and Nonlinearity': 'Units_and_Nonlinearity.md'
-- 'Python Interface':
-    - 'User Interface': 'Python_User_Interface.md'
-    - 'Developer Information': 'Python_Developer_Information.md'
-    - 'Tutorial/Basics': 'Python_Tutorials/Basics.md'
-    - 'Tutorial/Ring Resonator in Cylindrical Coordinates': 'Python_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md'
-    - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
-    - 'Tutorial/Material Dispersion': 'Python_Tutorials/Material_Dispersion.md'
-    - 'Tutorial/Third Harmonic Generation': 'Python_Tutorials/Third_Harmonic_Generation.md'
-    - 'Tutorial/Near-to-Far Field Spectra': 'Python_Tutorials/Near_to_Far_Field_Spectra.md'
-    - 'Tutorial/Local Density of States': 'Python_Tutorials/Local_Density_of_States.md'
-    - 'Tutorial/Optical Forces': 'Python_Tutorials/Optical_Forces.md'
-    - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'
-    - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
-    - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
-    - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
-    - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
+#extra:
+# logo: 'doc/images/Meep-logo.png'
 
+pages:
+- 'Adjoint Module': 'index.md'
 - 'Adjoint Module for Automated Design Optimization':
     - 'Overview':               'AdjointSolver/Overview.md'
     - 'Reference Manual':       'AdjointSolver/ReferenceManual.md'
     - 'Example Gallery':        'AdjointSolver/ExampleGallery.md'
     - 'Visualization':          'AdjointSolver/Visualization.md'
     - 'Implementation Notes':   'AdjointSolver/AdjointImplementationNotes.md'
-
-- 'Scheme Interface':
-    - 'User Interface': 'Scheme_User_Interface.md'
-    - 'Tutorial/Basics': 'Scheme_Tutorials/Basics.md'
-    - 'Tutorial/Ring Resonator in Cylindrical Coordinates': 'Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md'
-    - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Scheme_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
-    - 'Tutorial/Material Dispersion': 'Scheme_Tutorials/Material_Dispersion.md'
-    - 'Tutorial/Third Harmonic Generation': 'Scheme_Tutorials/Third_Harmonic_Generation.md'
-    - 'Tutorial/Near-to-Far Field Spectra': 'Scheme_Tutorials/Near_to_Far_Field_Spectra.md'
-    - 'Tutorial/Local Density of States': 'Scheme_Tutorials/Local_Density_of_States.md'
-    - 'Tutorial/Optical Forces': 'Scheme_Tutorials/Optical_Forces.md'
-    - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
-    - 'Tutorial/Frequency-Domain Solver': 'Scheme_Tutorials/Frequency_Domain_Solver.md'
-    - 'Tutorial/Eigenmode Source': 'Scheme_Tutorials/Eigenmode_Source.md'
-    - 'Tutorial/Mode Decomposition': 'Scheme_Tutorials/Mode_Decomposition.md'
-    - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
-    - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
-- 'C++ Interface':
-    - 'Developer Information': 'C++_Developer_Information.md'
-    - 'Chunks and Symmetry': 'Chunks_and_Symmetry.md'
-    - 'Tutorial/Basics': 'C++_Tutorial.md'
+#
+#pages:
+#- 'Manual': 'index.md'
+#- 'Introduction': 'Introduction.md'
+#- 'Download': 'Download.md'
+#- 'FAQ': 'FAQ.md'
+#- 'Installation': 'Installation.md'
+#- 'Build From Source': 'Build_From_Source.md'
+#- 'Acknowledgements': 'Acknowledgements.md'
+#- 'License and Copyright': 'License_and_Copyright.md'
+#- 'Features':
+#    - 'Materials': 'Materials.md'
+#    - 'Exploiting Symmetry': 'Exploiting_Symmetry.md'
+#    - 'Cylindrical Coordinates': 'Cylindrical_Coordinates.md'
+#    - 'Perfectly Matched Layers': 'Perfectly_Matched_Layer.md'
+#    - 'Parallel Meep': 'Parallel_Meep.md'
+#    - 'Synchronizing the Magnetic and Electric Fields': 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
+#    - 'Mode Decomposition': 'Mode_Decomposition.md'
+#    - 'Field Functions': 'Field_Functions.md'
+#    - 'The Run Function is Not a Loop': 'The_Run_Function_Is_Not_A_Loop.md'
+#    - 'Yee Lattice': 'Yee_Lattice.md'
+#    - 'Units and Nonlinearity': 'Units_and_Nonlinearity.md'
+#- 'Python Interface':
+#    - 'User Interface': 'Python_User_Interface.md'
+#    - 'Developer Information': 'Python_Developer_Information.md'
+#    - 'Tutorial/Basics': 'Python_Tutorials/Basics.md'
+#    - 'Tutorial/Ring Resonator in Cylindrical Coordinates': 'Python_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md'
+#    - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
+#    - 'Tutorial/Material Dispersion': 'Python_Tutorials/Material_Dispersion.md'
+#    - 'Tutorial/Third Harmonic Generation': 'Python_Tutorials/Third_Harmonic_Generation.md'
+#    - 'Tutorial/Near-to-Far Field Spectra': 'Python_Tutorials/Near_to_Far_Field_Spectra.md'
+#    - 'Tutorial/Local Density of States': 'Python_Tutorials/Local_Density_of_States.md'
+#    - 'Tutorial/Optical Forces': 'Python_Tutorials/Optical_Forces.md'
+#    - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'
+#    - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
+#    - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
+#    - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
+#    - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
+#
+#- 'Scheme Interface':
+#    - 'User Interface': 'Scheme_User_Interface.md'
+#    - 'Tutorial/Basics': 'Scheme_Tutorials/Basics.md'
+#    - 'Tutorial/Ring Resonator in Cylindrical Coordinates': 'Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md'
+#    - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Scheme_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
+#    - 'Tutorial/Material Dispersion': 'Scheme_Tutorials/Material_Dispersion.md'
+#    - 'Tutorial/Third Harmonic Generation': 'Scheme_Tutorials/Third_Harmonic_Generation.md'
+#    - 'Tutorial/Near-to-Far Field Spectra': 'Scheme_Tutorials/Near_to_Far_Field_Spectra.md'
+#    - 'Tutorial/Local Density of States': 'Scheme_Tutorials/Local_Density_of_States.md'
+#    - 'Tutorial/Optical Forces': 'Scheme_Tutorials/Optical_Forces.md'
+#    - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
+#    - 'Tutorial/Frequency-Domain Solver': 'Scheme_Tutorials/Frequency_Domain_Solver.md'
+#    - 'Tutorial/Eigenmode Source': 'Scheme_Tutorials/Eigenmode_Source.md'
+#    - 'Tutorial/Mode Decomposition': 'Scheme_Tutorials/Mode_Decomposition.md'
+#    - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
+#    - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
+#- 'C++ Interface':
+#    - 'Developer Information': 'C++_Developer_Information.md'
+#    - 'Chunks and Symmetry': 'Chunks_and_Symmetry.md'
+#    - 'Tutorial/Basics': 'C++_Tutorial.md'

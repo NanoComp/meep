@@ -1,4 +1,4 @@
---8<-- "AdjointSolver/AdjointDocumentationStyleHeader.md"
+--8<-- "doc/docs/AdjointSolver/AdjointDocumentationStyleHeader.md"
 
 # Adjoint-based optimization in <span class="SC">meep</span>: Implementation Notes
  
@@ -420,3 +420,5 @@ $$ \alpha_m^\pm = C_1 \pm C_2 $$
  C_2 &=
    \frac{1}{\mathcal{N}}\int_{\mc S\sup{obj}} \Big(h^*_z E_y - h^*_y E_z\Big)d\mathbf{x}\\
 \end{align*}
+
+--8<-- "doc/docs/AdjointSolver/AdjointLinks.md"

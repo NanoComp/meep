@@ -4,16 +4,11 @@
    font-variant-numeric: oldstyle-nums;
 }
 
-.note {
- margin: auto;
- display: flex;
- align-items: center;
- justify-content: center;
- flex-direction: column;
- width: 75%;
- text-align: center;
- background-color: rgba(33, 33, 33, .3);
- align-items: center;
+.SCL{
+   font-variant: small-caps;
+   font-size: 140%;
+   font-weight: bold;
+   font-variant-numeric: oldstyle-nums;
 }
 
 /***************************************************/
@@ -329,3 +324,49 @@
 /**************************************************/
 /**************************************************/
 /**************************************************/
+
+/***************************************************/
+/*  stuff that may or may not be needed for superfences (i can't tell)*/
+/***************************************************/
+.superfences-tabs {
+  display: flex;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+.superfences-tabs .highlight {
+  background: #ddd;
+}
+
+.superfences-tabs .superfences-content {
+  display: none;
+  order: 99;
+  width: 100%;
+}
+
+.superfences-tabs label {
+  width: auto;
+  margin: 0 0.5em;
+  padding: 0.25em;
+  font-size: 120%;
+  cursor: pointer;
+}
+
+.superfences-tabs input {
+  position: absolute;
+  opacity: 0;
+}
+
+.superfences-tabs input:nth-child(n+1) {
+  color: #333333;
+}
+
+.superfences-tabs input:nth-child(n+1):checked + label {
+    color: #FF5252;
+}
+
+.superfences-tabs input:nth-child(n+1):checked + label + .superfences-content {
+    display: block;
+}
+
+.tocfloat { background-color: #9f9f9f; }
