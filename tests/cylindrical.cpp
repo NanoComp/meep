@@ -152,6 +152,10 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
   return 1;
 }
 
+static bool issmall(std::complex<double> x) {
+  return abs(x) < 1e-16;
+}
+
 int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
   double a = 10.0;
   double ttot = 3.0;
@@ -169,27 +173,27 @@ int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
       f.step();
     monitor_point p;
     f.get_point(&p, veccyl(0.0, 0.5));
-    if (p.get_component(Ez) != 0.0 && (m & 1)) {
+    if (!issmall(p.get_component(Ez)) && (m & 1)) {
       master_printf("Got non-zero Ez with m == %d\n", m);
       return 0;
     }
-    if (p.get_component(Hz) != 0.0 && (m & 1)) {
+    if (!issmall(p.get_component(Hz)) && (m & 1)) {
       master_printf("Got non-zero Hz with m == %d\n", m);
       return 0;
     }
-    if (p.get_component(Er) != 0.0 && !(m & 1)) {
+    if (!issmall(p.get_component(Er)) && !(m & 1)) {
       master_printf("Got non-zero Er with m == %d\n", m);
       return 0;
     }
-    if (p.get_component(Ep) != 0.0 && !(m & 1)) {
+    if (!issmall(p.get_component(Ep)) && !(m & 1)) {
       master_printf("Got non-zero Ep with m == %d\n", m);
       return 0;
     }
-    if (p.get_component(Hr) != 0.0 && !(m & 1)) {
+    if (!issmall(p.get_component(Hr)) && !(m & 1)) {
       master_printf("Got non-zero Hr with m == %d\n", m);
       return 0;
     }
-    if (p.get_component(Hp) != 0.0 && !(m & 1)) {
+    if (!issmall(p.get_component(Hp)) && !(m & 1)) {
       master_printf("Got non-zero Hp of %g %g with m == %d\n", real(p.get_component(Hp)),
                     imag(p.get_component(Hp)), m);
       return 0;
