@@ -10,7 +10,7 @@ Since the frequency-domain solver uses an [iterative method](https://en.wikipedi
 
 We compute the fundamental mode at five different solver tolerances chosen on a logarithmic scale. We will then plot the L2 norm of the error in the fields as a function of the tolerance.
 
-The simulation script is in [examples/solve-cw.py](https://github.com/NanoComp/meep/blob/master/python/examples/solve-cw.py).
+The simulation script is in [examples/solve-cw.py](https://github.com/NanoComp/meep/blob/master/python/examples/solve-cw.py). The notebook is [examples/solve-cw.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/solve-cw.ipynb).
 
 ```py
 import meep as mp
@@ -51,7 +51,7 @@ ez_dat = np.zeros((122,122,num_tols), dtype=np.complex_)
 for i in range(num_tols):
     sim.init_sim()
     sim.solve_cw(tols[i], 10000, 10)
-    ez_dat[:,:,i] = sim.get_array(vol, component=mp.Ez)
+    ez_dat[:,:,i] = sim.get_array(vol=vol, component=mp.Ez)
 
 err_dat = np.zeros(num_tols-1)
 for i in range(num_tols-1):
@@ -63,7 +63,7 @@ plt.xlabel("frequency-domain solver tolerance");
 plt.ylabel("L2 norm of error in fields");
 plt.show()
 
-eps_data = sim.get_array(vol, component=mp.Dielectric)
+eps_data = sim.get_array(vol=vol, component=mp.Dielectric)
 ez_data = np.absolute(ez_dat[:,:,num_tols-1])
 
 plt.figure()
@@ -104,7 +104,7 @@ dfts = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, where=vol)
 
 sim.run(until_after_sources=100)
 
-eps_data = sim.get_array(vol, component=mp.Dielectric)
+eps_data = sim.get_array(vol=vol, component=mp.Dielectric)
 ez_data = np.absolute(sim.get_dft_array(dfts, mp.Ez, 0))
 
 plt.figure()

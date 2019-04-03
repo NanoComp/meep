@@ -76,6 +76,7 @@ static MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
 
 bool quiet = false; // defined in meep.h
+void (*master_printf_callback)(const char *s) = NULL;
 
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
@@ -570,8 +571,15 @@ void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   if (am_really_master()) {
-    vprintf(fmt, ap);
-    fflush(stdout);
+    if (master_printf_callback) {
+      char *s;
+      vasprintf(&s, fmt, ap);
+      master_printf_callback(s);
+      free(s);
+    } else {
+      vprintf(fmt, ap);
+      fflush(stdout);
+    }
   }
   va_end(ap);
 }

@@ -34,6 +34,7 @@ pages:
 - 'License and Copyright': 'License_and_Copyright.md'
 - 'Features':
     - 'Materials': 'Materials.md'
+    - 'Subpixel Smoothing': 'Subpixel_Smoothing.md'
     - 'Exploiting Symmetry': 'Exploiting_Symmetry.md'
     - 'Cylindrical Coordinates': 'Cylindrical_Coordinates.md'
     - 'Perfectly Matched Layers': 'Perfectly_Matched_Layer.md'

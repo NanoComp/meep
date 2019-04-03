@@ -52,14 +52,14 @@
 (set! symmetries symm)
 
 (define mon-pt (vector3 (+ (* -0.5 sx) dpml-x (* 0.7 Lw)) 0 0))
-(define flux1 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
+(define flux (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
 
 (run-sources+ (stop-when-fields-decayed 50 Ez mon-pt 1e-9))
 
-(save-flux "flux" flux1)
-(define res1 (get-eigenmode-coefficients flux1 (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define incident-coeffs (array-ref (list-ref res1 0) 0 0 0))
-(define incident-flux (list-ref (get-fluxes flux1) 0))
+(save-flux "flux" flux)
+(define res (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define incident-coeffs (array-ref (list-ref res 0) 0 0 0))
+(define incident-flux (list-ref (get-fluxes flux) 0))
 
 (reset-meep)
 
@@ -88,13 +88,13 @@
 
 (set! symmetries symm)
 
-(define flux2 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
-(load-minus-flux "flux" flux2)
+(set! flux (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
+(load-minus-flux "flux" flux)
 
 (run-sources+ (stop-when-fields-decayed 50 Ez mon-pt 1e-9))
 
-(define res2 (get-eigenmode-coefficients flux2 (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define taper-coeffs (array-ref (list-ref res2 0) 0 0 1))
-(define taper-flux (list-ref (get-fluxes flux2) 0))
+(set! res (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define taper-coeffs (array-ref (list-ref res 0) 0 0 1))
+(define taper-flux (list-ref (get-fluxes flux) 0))
 
 (print "refl:, " Lt ", " (/ (sqr (magnitude taper-coeffs)) (sqr (magnitude incident-coeffs))) ", " (/ (- taper-flux) incident-flux) "\n")

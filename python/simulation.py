@@ -15,7 +15,7 @@ from collections import Sequence
 import numpy as np
 
 import meep as mp
-from meep.geom import Vector3
+from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
 
 
@@ -24,6 +24,8 @@ try:
 except NameError:
     basestring = str
 
+# Allow C++ master_printf to print to Python's stdout
+mp.cvar.master_printf_callback = mp.py_master_printf_wrap
 
 EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom'])
 FluxData = namedtuple('FluxData', ['E', 'H'])
@@ -321,7 +323,8 @@ class DftNear2Far(DftObj):
     def __init__(self, func, args):
         super(DftNear2Far, self).__init__(func, args)
         self.nfreqs = args[2]
-        self.regions = args[3]
+        self.nperiods = args[3]
+        self.regions = args[4]
         self.num_components = 4
 
     @property
@@ -945,9 +948,11 @@ class Simulation(object):
         absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
         if self.material_function:
+            init_do_averaging(self.material_function)
             self.material_function.eps = False
             self.default_material = self.material_function
         elif self.epsilon_func:
+            init_do_averaging(self.epsilon_func)
             self.epsilon_func.eps = True
             self.default_material = self.epsilon_func
         elif self.epsilon_input_file:
@@ -1253,11 +1258,6 @@ class Simulation(object):
 
         for k in k_points:
             k_index += 1
-
-            if k_index == 1:
-                self.init_sim()
-                output_epsilon(self)
-
             harminv = self.run_k_point(t, k)
             freqs = [complex(m.freq, m.decay) for m in harminv.modes]
 
@@ -1371,15 +1371,16 @@ class Simulation(object):
         mp._get_dft_data(dft_chunk, arr)
         return arr
 
-    def add_near2far(self, fcen, df, nfreq, *near2fars):
-        n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, near2fars])
+    def add_near2far(self, fcen, df, nfreq, *near2fars, **kwargs):
+        nperiods = kwargs.get('nperiods', 1)
+        n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, nperiods, near2fars])
         self.dft_objects.append(n2f)
         return n2f
 
-    def _add_near2far(self, fcen, df, nfreq, near2fars):
+    def _add_near2far(self, fcen, df, nfreq, nperiods, near2fars):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars, nperiods)
 
     def add_energy(self, fcen, df, nfreq, *energys):
         en = DftEnergy(self._add_energy, [fcen, df, nfreq, energys])
@@ -1634,7 +1635,7 @@ class Simulation(object):
         self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
-    def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
+    def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist, *args):
         vol_list = None
 
         for s in stufflist:
@@ -1647,7 +1648,7 @@ class Simulation(object):
                         is_cylindrical=self.is_cylindrical).swigobj
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
-        stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq, *args)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -1766,7 +1767,7 @@ class Simulation(object):
 
     def get_array_metadata(self, vol=None, center=None, size=None, dft=None):
         if dft:
-            vol = dft_cell.where
+            vol = dft.where
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:

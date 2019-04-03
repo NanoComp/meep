@@ -39,6 +39,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   double dt_factor;
   bool include_dV_and_interp_weights;
   bool sqrt_dV_and_interp_weights;
+  bool empty_dim[5];
   dft_chunk *dft_chunks;
 };
 
@@ -93,6 +94,8 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   dft = new complex<realnum>[N * Nomega];
   for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
+  for (int i = 0; i < 5; ++i)
+    empty_dim[i] = data->empty_dim[i];
 
   next_in_chunk = fc->dft_chunks;
   fc->dft_chunks = this;
@@ -170,6 +173,10 @@ dft_chunk *fields::add_dft(component c, const volume &where, double freq_min, do
   data.dt_factor = dt / sqrt(2.0 * pi);
   data.include_dV_and_interp_weights = include_dV_and_interp_weights;
   data.sqrt_dV_and_interp_weights = sqrt_dV_and_interp_weights;
+  data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] = data.empty_dim[4] = false;
+  LOOP_OVER_DIRECTIONS(where.dim, d) {
+    data.empty_dim[d] = where.in_direction(d) == 0;
+  }
   data.dft_chunks = chunk_next;
   loop_in_chunks(add_dft_chunkloop, (void *)&data, where, use_centered_grid ? Centered : c);
 
@@ -681,7 +688,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
                                          int num_freq, h5file *file, double *buffer, int reim,
                                          cdouble *field_array, void *mode1_data, void *mode2_data,
-                                         component c_conjugate) {
+                                         component c_conjugate, bool retain_interp_weights) {
   /*****************************************************************/
   /* compute the size of the chunk we own and its strides etc.     */
   /*****************************************************************/
@@ -717,21 +724,20 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
   }
 
   /*****************************************************************/
-  /*****************************************************************/
-  /*****************************************************************/
-  static bool unconjugated_inner_product, Initialize = true;
-  if (Initialize) {
-    Initialize = false;
-    char *s = getenv("MEEP_UNCONJUGATED_INNER_PRODUCT");
-    unconjugated_inner_product = (s && s[0] == '1');
+  /* For collapsing empty dimensions, we want to retain interpolation
+     weights for empty dimensions, but not interpolation weights for
+     integration of edge pixels (for retain_interp_weights == true).
+     All of the weights are stored in (s0, s1, e0, e1), so we make
+     a copy of these with the weights for non-empty dimensions set to 1. */
+  vec s0i(s0), s1i(s1), e0i(e0), e1i(e1);
+  LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
+    if (!empty_dim[d]) {
+      s0i.set_direction(d, 1.0);
+      s1i.set_direction(d, 1.0);
+      e0i.set_direction(d, 1.0);
+      e1i.set_direction(d, 1.0);
+    }
   }
-
-  /***************************************************************/
-  /* experimential provision to look at the effect of retaining  */
-  /* the interpolation weight in the array output or HDF5 file   */
-  /***************************************************************/
-  char *s = getenv("MEEP_DFT_INTERP_WEIGHTS");
-  bool retain_dV_and_interp_weights = (s && s[0] == '1');
 
   /***************************************************************/
   /* loop over all grid points in our piece of the volume        */
@@ -742,9 +748,12 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
-    double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+    double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2), interp_w = 1.0;
     cdouble dft_val = dft[Nomega * (chunk_idx++) + num_freq] / stored_weight;
     if (include_dV_and_interp_weights) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+    if (retain_interp_weights)
+      interp_w = IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0);
 
     cdouble mode1val = 0.0, mode2val = 0.0;
     if (mode1_data) mode1val = eigenmode_amplitude(mode1_data, loc, S.transform(c_conjugate, sn));
@@ -755,7 +764,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
                    loop_i2 * file_stride[1]) +
                   loop_i3 * file_stride[2]);
 
-      if (retain_dV_and_interp_weights) dft_val *= w;
+      dft_val *= interp_w;
 
       cdouble val = (mode1_data ? mode1val : dft_val);
       buffer[idx2] = reim ? imag(val) : real(val);
@@ -772,9 +781,9 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
       int idx2 = 0;
       for (int i = rank - 1, stride = 1; i >= 0; stride *= array_count[i--])
         idx2 += stride * (iloc.in_direction(ds[i]) / 2);
-      field_array[idx2] = (retain_dV_and_interp_weights ? w : 1.0) * dft_val;
+      field_array[idx2] = interp_w * dft_val;
     } else {
-      if (unconjugated_inner_product == false) mode1val = conj(mode1val);
+      mode1val = conj(mode1val); // conjugated inner product
       if (mode2_data)
         integral += w * mode1val * mode2val;
       else
@@ -832,7 +841,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
                                       component c, const char *HDF5FileName, cdouble **pfield_array,
                                       int *array_rank, int *array_dims, void *mode1_data,
                                       void *mode2_data, component c_conjugate,
-                                      bool *first_component) {
+                                      bool *first_component, bool retain_interp_weights) {
   /***************************************************************/
   /* get statistics on the volume slice **************************/
   /***************************************************************/
@@ -914,7 +923,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
         if (chunk->c == c)
           overlap +=
               chunk->process_dft_component(rank, ds, min_corner, max_corner, num_freq, file, buffer,
-                                           reim, field_array, mode1_data, mode2_data, c_conjugate);
+                                           reim, field_array, mode1_data, mode2_data, c_conjugate, retain_interp_weights);
 
     if (HDF5FileName) {
       file->done_writing_chunks();

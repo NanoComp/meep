@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
   data.rOuter = R2;
 
   meep_geom::material_type my_material =
-      meep_geom::make_user_material(my_material_func, (void *)&data);
+      meep_geom::make_user_material(my_material_func, (void *)&data, false);
 
   geometric_object_list g = {0, 0};
   vector3 center = {0, 0, 0};

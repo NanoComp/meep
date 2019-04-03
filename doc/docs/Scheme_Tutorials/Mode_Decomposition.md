@@ -74,14 +74,14 @@ The simulation script is in [examples/mode-decomposition.ctl](https://github.com
 (set! symmetries symm)
 
 (define mon-pt (vector3 (+ (* -0.5 sx) dpml-x (* 0.7 Lw)) 0 0))
-(define flux1 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
+(define flux (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
 
 (run-sources+ (stop-when-fields-decayed 50 Ez mon-pt 1e-9))
 
-(save-flux "flux" flux1)
-(define res1 (get-eigenmode-coefficients flux1 (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define incident-coeffs (array-ref (list-ref res1 0) 0 0 0))
-(define incident-flux (list-ref (get-fluxes flux1) 0))
+(save-flux "flux" flux)
+(define res (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define incident-coeffs (array-ref (list-ref res 0) 0 0 0))
+(define incident-flux (list-ref (get-fluxes flux) 0))
 
 (reset-meep)
 
@@ -110,14 +110,14 @@ The simulation script is in [examples/mode-decomposition.ctl](https://github.com
 
 (set! symmetries symm)
 
-(define flux2 (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
-(load-minus-flux "flux" flux2)
+(define flux (add-flux fcen 0 1 (make flux-region (center mon-pt) (size 0 (- sy (* 2 dpml-y)) 0))))
+(load-minus-flux "flux" flux)
 
 (run-sources+ (stop-when-fields-decayed 50 Ez mon-pt 1e-9))
 
-(define res2 (get-eigenmode-coefficients flux2 (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define taper-coeffs (array-ref (list-ref res2 0) 0 0 1))
-(define taper-flux (list-ref (get-fluxes flux2) 0))
+(set! res (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define taper-coeffs (array-ref (list-ref res 0) 0 0 1))
+(define taper-flux (list-ref (get-fluxes flux) 0))
 
 (print "refl:, " Lt ", " (/ (sqr (magnitude taper-coeffs)) (sqr (magnitude incident-coeffs))) ", " (/ (- taper-flux) incident-flux) "\n")
 ```
@@ -303,9 +303,223 @@ The diffraction orders/modes are a finite set of propagating planewaves. The wav
 
 In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is 4/(mπ)<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π. The phase difference/contrast is (2π/λ)(n-1)s where λ is the wavelength, n is the refractive index of the grating, and s is the propagation distance in the grating (`gh` in the script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above.
 
-To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
+To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1 (2.9°), 3 (8.6°), 5 (14.5°), and 7 (20.5°). The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
-### Phase Map of Subwavelength Binary Gratings
+### Reflectance and Transmittance Spectra for Planewave at Oblique Incidence
+
+As an additional demonstration of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle and wavelength must necessarily sum to unity. Also, the total reflectance and transmittance must be equivalent to values computed using the Poynting flux. This demonstration is somewhat similar to the [single-mode waveguide example](#reflectance-of-a-waveguide-taper).
+
+The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two separate lines prefixed by `mode-coeff:` and `poynting-flux:`.
+
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw-amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop-when-fields-decayed` termination criteria is replaced with a fixed run time `run-sources+ 100`, etc. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
+
+The simulation script is in [examples/binary_grating_oblique.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/binary_grating_oblique.ctl).
+
+```scm
+(set-param! resolution 50)  ; pixels/μm
+
+(define-param dpml 1.0)     ; PML thickness
+(define-param dsub 3.0)     ; substrate thickness
+(define-param dpad 3.0)     ; padding between grating and PML
+(define-param gp 10.0)      ; grating period
+(define-param gh 0.5)       ; grating height
+(define-param gdc 0.5)      ; grating duty cycle
+
+(define sx (+ dpml dsub gh dpad dpml))
+(define sy gp)
+
+(define cell (make lattice (size sx sy no-size)))
+(set! geometry-lattice cell)
+
+(define boundary-layers (list (make pml (thickness dpml) (direction X))))
+(set! pml-layers boundary-layers)
+
+(define-param wvl-cen 0.5)  ; center wavelength
+(define fcen (/ wvl-cen))   ; center frequency
+(define df (* 0.05 fcen))   ; frequency width
+
+(define ng 1.5)
+(define glass (make medium (index ng)))
+(set! default-material glass)
+
+(define-param use-cw-solver? false)       ; CW solver or time stepping?
+(define-param cw-solver-tol 1e-6)         ; CW solver tolerance
+(define-param cw-solver-max-iters 2000)   ; CW solver max iterations
+(define-param cw-solver-L 10)             ; CW solver L
+
+; rotation angle of incident planewave; counter clockwise (CCW) about Z axis, 0 degrees along +X axis
+(define-param theta-in 10.7)
+(set! theta-in (deg->rad theta-in))
+
+; k (in source medium) with correct length (plane of incidence: XY)
+(define k (rotate-vector3 (vector3 0 0 1) theta-in (vector3 (* fcen ng) 0 0)))
+
+(define symm '())
+(define eig-parity ODD-Z)
+(if (= theta-in 0)
+    (begin
+      (set! k (vector3 0 0 0))
+      (set! symm (list (make mirror-sym (direction Y))))
+      (set! eig-parity (+ eig-parity EVEN-Y))))
+
+(set! k-point k)
+
+(set! symmetries symm)
+
+(define (pw-amp k x0)
+  (lambda (x)
+    (exp (* 0+1i 2 pi (vector3-dot k (vector3- x x0))))))
+
+(define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.3 dsub)) 0 0))
+(define pw-src (list (make source
+                       (if use-cw-solver?
+                           (src (make continuous-src (frequency fcen) (fwidth df)))
+                           (src (make gaussian-src (frequency fcen) (fwidth df))))
+                       (component Ez)
+                       (center src-pt)
+                       (size 0 sy 0)
+                       (amp-func (pw-amp k src-pt)))))
+
+(set! sources pw-src)
+
+(define refl-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub)) 0 0))
+(define refl-flux (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
+
+(if use-cw-solver?
+    (begin
+      (init-fields)
+      (meep-fields-solve-cw fields cw-solver-tol cw-solver-maxiters cw-solver-L))
+    (run-sources+ 100))
+
+(save-flux "flux" refl-flux)
+(define input-flux (get-fluxes refl-flux))
+(define freqs (get-flux-freqs refl-flux))
+
+(reset-meep)
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! sources pw-src)
+
+(set! k-point k)
+
+(set! symmetries symm)
+
+(set! default-material air)
+
+(set! geometry (list (make block
+                       (material glass)
+                       (size (+ dpml dsub) infinity infinity)
+                       (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub))) 0 0))
+                     (make block
+                       (material glass)
+                       (size gh (* gdc gp) infinity)
+                       (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) 0 0))))
+
+(set! refl-flux (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
+(load-minus-flux "flux" refl-flux)
+
+(define tran-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
+(define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+
+(if use-cw-solver?
+    (begin
+      (init-fields)
+      (meep-fields-solve-cw fields cw-solver-tol cw-solver-maxiters cw-solver-L))
+    (run-sources+ 200))
+
+; number of reflected orders
+(define nm-r (- (floor (* (- (* fcen ng) (vector3-y k)) gp)) (ceiling (* (- (- (* fcen ng)) (vector3-y k)) gp))))
+(if (= theta-in 0) (set! nm-r (* 0.5 nm-r)))
+
+(define res (get-eigenmode-coefficients refl-flux (arith-sequence 1 1 nm-r) #:eig-parity eig-parity))
+(define r-coeffs (list-ref res 0))
+(define kdom (list-ref res 3))
+
+(define Rsum 0)
+(define r-angle 0)
+(map (lambda (nm)
+       (let ((r-kdom (list-ref kdom nm))
+             (Rmode (/ (sqr (magnitude (array-ref r-coeffs nm 0 1))) (list-ref input-flux 0))))
+         (set! r-angle (* (if (positive? (vector3-y r-kdom)) +1 -1) (acos (/ (vector3-x r-kdom) (* ng fcen)))))
+         (print "refl:, " nm ", " (rad->deg r-angle) ", " Rmode "\n")
+         (set! Rsum (+ Rsum Rmode))))
+     (arith-sequence 0 1 (- nm-r 1)))
+
+; number of transmitted orders
+(define nm-t (- (floor (* (- fcen (vector3-y k)) gp)) (ceiling (* (- (- fcen) (vector3-y k)) gp))))
+(if (= theta-in 0) (set! nm-t (* 0.5 nm-t)))
+
+(set! res (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nm-t) #:eig-parity eig-parity))
+(define t-coeffs (list-ref res 0))
+(set! kdom (list-ref res 3))
+
+(define Tsum 0)
+(define t-angle 0)
+(map (lambda (nm)
+       (let ((t-kdom (list-ref kdom nm))
+             (Tmode (/ (sqr (magnitude (array-ref t-coeffs nm 0 0))) (list-ref input-flux 0))))
+         (set! t-angle (* (if (positive? (vector3-y t-kdom)) +1 -1) (acos (/ (vector3-x t-kdom) fcen))))
+         (print "tran:, " nm ", " (rad->deg t-angle) ", " Tmode "\n")
+         (set! Tsum (+ Tsum Tmode))))
+     (arith-sequence 0 1 (- nm-t 1)))
+
+(print "mode-coeff:, " Rsum ", " Tsum ", " (+ Rsum Tsum) "\n")
+
+(define r-flux (get-fluxes refl-flux))
+(define t-flux (get-fluxes tran-flux))
+
+(define Rflux (/ (- (list-ref r-flux 0)) (list-ref input-flux 0)))
+(define Tflux (/ (list-ref t-flux 0) (list-ref input-flux 0)))
+
+(print "poynting-flux:, "  Rflux ", " Tflux ", " (+ Rflux Tflux) "\n")
+```
+
+Since this is a single-wavelength calculation, the [frequency-domain solver](../Scheme_User_Interface.md#frequency-domain-solver) can be used instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `gaussian-src` with `continuous-src` and (2) `run-sources+` with `solve-cw`. Choosing which approach to use is determined by the `use-cw-solver?` boolean variable. In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation. The results from both approaches are nearly identical. Time stepping is therefore the default.
+
+The following are several lines of output for eight of the reflected and transmitted orders. The first numerical column is the mode number, the second is the mode angle (in degrees), and the third is the fraction of the input power that is concentrated in the mode. Note that the thirteenth transmitted order at 19.18° contains nearly 38% of the input power.
+
+```
+...
+refl:, 7, 6.834390306759177, 6.646699980461214e-5
+refl:, 8, -8.491733572126286, 5.6932380402278446e-5
+refl:, 9, 8.762167961399326, 1.574826136447098e-4
+refl:, 10, -10.428015375771137, 1.2703982628727411e-5
+refl:, 11, 10.700000001269709, 0.04414670765876341
+refl:, 12, -12.376421394445115, 5.968970605590464e-5
+refl:, 13, 12.650301971909244, 4.153476164523912e-4
+refl:, 14, -14.339483455998984, 1.9840412629779723e-5
+...
+```
+
+```
+...
+tran:, 12, -18.753667459322305, 9.553822309008259e-4
+tran:, 13, 19.177752198909452, 0.38260778171916043
+tran:, 14, -21.80816069361731, 0.0019851617272472295
+tran:, 15, 22.240795352546787, 0.0010720512535881022
+tran:, 16, -24.929329893447417, 9.840901627875952e-4
+tran:, 17, 25.372399103290473, 0.04148386622718453
+tran:, 18, -28.13171390642741, 0.001373410746156767
+tran:, 19, 28.587475380921063, 0.0011387843637119684
+...
+```
+
+The mode number is equivalent to the band index from the MPB calculation. The ordering of the modes is according to *decreasing* values of k<sub>x</sub>. The first mode has the largest k<sub>x</sub> and thus angle closest to 0°. As a corollary, the first mode has the smallest |k<sub>y</sub>+2πm/Λ|. For a non-zero k<sub>y</sub> (as in the case of an obliquely incident source), this expression will not necessarily be zero. The first seven reflected modes have m values of -3, -4, -2, -5, -1, -6, and 0. These m values are not monotonic. This is because k<sub>x</sub> is a nonlinear function of m as shown earlier. The ordering of the transmitted modes is different since these modes are in vacuum and not glass (recall that the medium's refractive index is also a part of this nonlinear function). In the first example involving a normally incident source with k<sub>y</sub>=0, the ordering of the modes is monotonic: m = 0, &#177;1, &#177;2, ...
+
+The two main lines of the output are:
+
+```
+mode-coeff:, 0.061033606092644827, 0.9376401684473735, 0.9986737745400184
+poynting-flux:, 0.061102475360487296, 0.938344211286383, 0.9994466866468703
+```
+
+The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
+
+Phase Map of a Subwavelength Binary Grating
+-------------------------------------------
 
 We can also use the complex mode coefficients to compute the phase (or impedance) of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in a metasurface lens. When the period of the unit cell is subwavelength, the zeroth-diffraction order is the only propagating wave. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth-diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
 
@@ -465,219 +679,6 @@ The figure below shows the transmittance spectra (left) and phase map (right). T
 ![](../images/grating_phasemap.png)
 </center>
 
-### Reflectance and Transmittance Spectra for Planewave at Oblique Incidence
-
-As an additional demonstration of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle and wavelength must necessarily sum to unity. Also, the total reflectance and transmittance must be equivalent to values computed using the Poynting flux. This demonstration is somewhat similar to the [single-mode waveguide example](#reflectance-of-a-waveguide-taper).
-
-The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two separate lines prefixed by `mode-coeff:` and `poynting-flux:`.
-
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw-amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop-when-fields-decayed` termination criteria is replaced with a fixed run time `run-sources+ 100`, etc. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
-
-The simulation script is in [examples/binary_grating_oblique.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/binary_grating_oblique.ctl).
-
-```scm
-(set-param! resolution 50)  ; pixels/μm
-
-(define-param dpml 1.0)     ; PML thickness
-(define-param dsub 3.0)     ; substrate thickness
-(define-param dpad 3.0)     ; padding between grating and PML
-(define-param gp 10.0)      ; grating period
-(define-param gh 0.5)       ; grating height
-(define-param gdc 0.5)      ; grating duty cycle
-
-(define sx (+ dpml dsub gh dpad dpml))
-(define sy gp)
-
-(define cell (make lattice (size sx sy no-size)))
-(set! geometry-lattice cell)
-
-(define boundary-layers (list (make pml (thickness dpml) (direction X))))
-(set! pml-layers boundary-layers)
-
-(define-param wvl-cen 0.5)  ; center wavelength
-(define fcen (/ wvl-cen))   ; center frequency
-(define df (* 0.05 fcen))   ; frequency width
-
-(define ng 1.5)
-(define glass (make medium (index ng)))
-(set! default-material glass)
-
-(define-param use-cw-solver? false)       ; CW solver or time stepping?
-(define-param cw-solver-tol 1e-6)         ; CW solver tolerance
-(define-param cw-solver-max-iters 2000)   ; CW solver max iterations
-(define-param cw-solver-L 10)             ; CW solver L
-
-; rotation angle of incident planewave; counter clockwise (CCW) about Z axis, 0 degrees along +X axis
-(define-param theta-in 10.7)
-(set! theta-in (deg->rad theta-in))
-
-; k (in source medium) with correct length (plane of incidence: XY)
-(define k (rotate-vector3 (vector3 0 0 1) theta-in (vector3 (* fcen ng) 0 0)))
-
-(define symm '())
-(define eig-parity ODD-Z)
-(if (= theta-in 0)
-    (begin
-      (set! k (vector3 0 0 0))
-      (set! symm (list (make mirror-sym (direction Y))))
-      (set! eig-parity (+ eig-parity EVEN-Y))))
-
-(set! k-point k)
-
-(set! symmetries symm)
-
-(define (pw-amp k x0)
-  (lambda (x)
-    (exp (* 0+1i 2 pi (vector3-dot k (vector3- x x0))))))
-
-(define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.3 dsub)) 0 0))
-(define pw-src (list (make source
-                       (if use-cw-solver?
-                           (src (make continuous-src (frequency fcen) (fwidth df)))
-                           (src (make gaussian-src (frequency fcen) (fwidth df))))
-                       (component Ez)
-                       (center src-pt)
-                       (size 0 sy 0)
-                       (amp-func (pw-amp k src-pt)))))
-
-(set! sources pw-src)
-
-(define refl-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub)) 0 0))
-(define refl-flux1 (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
-
-(if use-cw-solver?
-    (begin
-      (init-fields)
-      (meep-fields-solve-cw fields cw-solver-tol cw-solver-maxiters cw-solver-L))
-    (run-sources+ 100))
-
-(save-flux "flux" refl-flux1)
-(define input-flux (get-fluxes refl-flux1))
-(define freqs (get-flux-freqs refl-flux1))
-
-(reset-meep)
-
-(set! geometry-lattice cell)
-
-(set! pml-layers boundary-layers)
-
-(set! sources pw-src)
-
-(set! k-point k)
-
-(set! symmetries symm)
-
-(set! default-material air)
-
-(set! geometry (list (make block
-                       (material glass)
-                       (size (+ dpml dsub) infinity infinity)
-                       (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub))) 0 0))
-                     (make block
-                       (material glass)
-                       (size gh (* gdc gp) infinity)
-                       (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) 0 0))))
-
-(define refl-flux2 (add-flux fcen 0 1 (make flux-region (center refl-pt) (size 0 sy 0))))
-(load-minus-flux "flux" refl-flux2)
-
-(define tran-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
-(define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
-
-(if use-cw-solver?
-    (begin
-      (init-fields)
-      (meep-fields-solve-cw fields cw-solver-tol cw-solver-maxiters cw-solver-L))
-    (run-sources+ 200))
-
-; number of reflected orders
-(define nm-r (- (floor (* (- (* fcen ng) (vector3-y k)) gp)) (ceiling (* (- (- (* fcen ng)) (vector3-y k)) gp))))
-(if (= theta-in 0) (set! nm-r (* 0.5 nm-r)))
-
-(define res1 (get-eigenmode-coefficients refl-flux2 (arith-sequence 1 1 nm-r) #:eig-parity eig-parity))
-(define r-coeffs (list-ref res1 0))
-(define kdom1 (list-ref res1 3))
-
-(define Rsum 0)
-(define r-angle 0)
-(map (lambda (nm)
-       (let ((r-kdom (list-ref kdom1 nm))
-             (Rmode (/ (sqr (magnitude (array-ref r-coeffs nm 0 1))) (list-ref input-flux 0))))
-         (set! r-angle (* (if (positive? (vector3-y r-kdom)) +1 -1) (acos (/ (vector3-x r-kdom) (* ng fcen)))))
-         (print "refl:, " nm ", " (rad->deg r-angle) ", " Rmode "\n")
-         (set! Rsum (+ Rsum Rmode))))
-     (arith-sequence 0 1 (- nm-r 1)))
-
-; number of transmitted orders
-(define nm-t (- (floor (* (- fcen (vector3-y k)) gp)) (ceiling (* (- (- fcen) (vector3-y k)) gp))))
-(if (= theta-in 0) (set! nm-t (* 0.5 nm-t)))
-
-(define res2 (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nm-t) #:eig-parity eig-parity))
-(define t-coeffs (list-ref res2 0))
-(define kdom2 (list-ref res2 3))
-
-(define Tsum 0)
-(define t-angle 0)
-(map (lambda (nm)
-       (let ((t-kdom (list-ref kdom2 nm))
-             (Tmode (/ (sqr (magnitude (array-ref t-coeffs nm 0 0))) (list-ref input-flux 0))))
-         (set! t-angle (* (if (positive? (vector3-y t-kdom)) +1 -1) (acos (/ (vector3-x t-kdom) fcen))))
-         (print "tran:, " nm ", " (rad->deg t-angle) ", " Tmode "\n")
-         (set! Tsum (+ Tsum Tmode))))
-     (arith-sequence 0 1 (- nm-t 1)))
-
-(print "mode-coeff:, " Rsum ", " Tsum ", " (+ Rsum Tsum) "\n")
-
-(define r-flux (get-fluxes refl-flux2))
-(define t-flux (get-fluxes tran-flux))
-
-(define Rflux (/ (- (list-ref r-flux 0)) (list-ref input-flux 0)))
-(define Tflux (/ (list-ref t-flux 0) (list-ref input-flux 0)))
-
-(print "poynting-flux:, "  Rflux ", " Tflux ", " (+ Rflux Tflux) "\n")
-```
-
-Since this is a single-wavelength calculation, the [frequency-domain solver](../Scheme_User_Interface.md#frequency-domain-solver) can be used instead of time stepping for a possible performance enhancement. The only changes necessary to the original script are to replace two objects: (1) `gaussian-src` with `continuous-src` and (2) `run-sources+` with `solve-cw`. Choosing which approach to use is determined by the `use-cw-solver?` boolean variable. In this example, mainly because of the oblique source, the frequency-domain solver converges slowly and is less efficient than the time-stepping simulation. The results from both approaches are nearly identical. Time stepping is therefore the default.
-
-The following are several lines of output for eight of the reflected and transmitted orders. The first numerical column is the mode number, the second is the mode angle (in degrees), and the third is the fraction of the input power that is concentrated in the mode. Note that the thirteenth transmitted order at 19.18° contains nearly 38% of the input power.
-
-```
-...
-refl:, 7, 6.834390306759177, 6.646699980461214e-5
-refl:, 8, -8.491733572126286, 5.6932380402278446e-5
-refl:, 9, 8.762167961399326, 1.574826136447098e-4
-refl:, 10, -10.428015375771137, 1.2703982628727411e-5
-refl:, 11, 10.700000001269709, 0.04414670765876341
-refl:, 12, -12.376421394445115, 5.968970605590464e-5
-refl:, 13, 12.650301971909244, 4.153476164523912e-4
-refl:, 14, -14.339483455998984, 1.9840412629779723e-5
-...
-```
-
-```
-...
-tran:, 12, -18.753667459322305, 9.553822309008259e-4
-tran:, 13, 19.177752198909452, 0.38260778171916043
-tran:, 14, -21.80816069361731, 0.0019851617272472295
-tran:, 15, 22.240795352546787, 0.0010720512535881022
-tran:, 16, -24.929329893447417, 9.840901627875952e-4
-tran:, 17, 25.372399103290473, 0.04148386622718453
-tran:, 18, -28.13171390642741, 0.001373410746156767
-tran:, 19, 28.587475380921063, 0.0011387843637119684
-...
-```
-
-The mode number is equivalent to the band index from the MPB calculation. The ordering of the modes is according to *decreasing* values of k<sub>x</sub>. The first mode has the largest k<sub>x</sub> and thus angle closest to 0°. As a corollary, the first mode has the smallest |k<sub>y</sub>+2πm/Λ|. For a non-zero k<sub>y</sub> (as in the case of an obliquely incident source), this expression will not necessarily be zero. The first seven reflected modes have m values of -3, -4, -2, -5, -1, -6, and 0. These m values are not monotonic. This is because k<sub>x</sub> is a nonlinear function of m as shown earlier. The ordering of the transmitted modes is different since these modes are in vacuum and not glass (recall that the medium's refractive index is also a part of this nonlinear function). In the first example involving a normally incident source with k<sub>y</sub>=0, the ordering of the modes is monotonic: m = 0, &#177;1, &#177;2, ...
-
-The two main lines of the output are:
-
-```
-mode-coeff:, 0.061033606092644827, 0.9376401684473735, 0.9986737745400184
-poynting-flux:, 0.061102475360487296, 0.938344211286383, 0.9994466866468703
-```
-
-The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
-
 Diffraction Spectra of Liquid-Crystal Polarization Gratings
 -----------------------------------------------------------
 
@@ -747,11 +748,11 @@ The simulation script is in [examples/polarization_grating.ctl](https://github.c
 (set! default-material (make medium (index n0)))
 
 (define tran-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad)) 0 0))
-(define tran-flux1 (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+(define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
 
 (run-sources+ 100)
 
-(define input-flux (get-fluxes tran-flux1))
+(define input-flux (get-fluxes tran-flux))
 
 (reset-meep)
 
@@ -802,12 +803,12 @@ The simulation script is in [examples/polarization_grating.ctl](https://github.c
                   (size (* 2 d) infinity infinity)
                   (material (make material-function (material-func lc-mat))))))
 
-(define tran-flux2 (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
+(define tran-flux (add-flux fcen 0 1 (make flux-region (center tran-pt) (size 0 sy 0))))
 
 (run-sources+ 300)
 
-(define res1 (get-eigenmode-coefficients tran-flux2 (arith-sequence 1 1 nmode) #:eig-parity (+ ODD-Z EVEN-Y)))
-(define res2 (get-eigenmode-coefficients tran-flux2 (arith-sequence 1 1 nmode) #:eig-parity (+ EVEN-Z ODD-Y)))
+(define res1 (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nmode) #:eig-parity (+ ODD-Z EVEN-Y)))
+(define res2 (get-eigenmode-coefficients tran-flux (arith-sequence 1 1 nmode) #:eig-parity (+ EVEN-Z ODD-Y)))
 
 (define t-coeffs1 (list-ref res1 0))
 (define t-coeffs2 (list-ref res2 0))

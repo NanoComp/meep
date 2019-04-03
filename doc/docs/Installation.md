@@ -31,7 +31,7 @@ export PATH=<desired_prefix>/bin:$PATH
 Next, we create a Conda environment for PyMeep to isolate it from other Python libraries that may be installed.
 
 ```bash
-conda create -n mp -c chogan -c conda-forge pymeep
+conda create -n mp -c conda-forge pymeep
 ```
 
 This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command.
@@ -44,14 +44,21 @@ conda activate mp
 
 Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
 
-Warning: The `pymeep` package is built to work with OpenBLAS, which means numpy should also use OpenBLAS. Since the default numpy is built with MKL, installing other packages into the environment may cause conda to switch to an MKL-based numpy. This can cause segmentation faults when calling MPB. To work around this, you can make sure the `no-mkl` conda package is installed, make sure you're getting packages from the `conda-forge` channel (they use OpenBLAS for everything), or as a last resort, run `import meep` before importing any other library that is linked to MKL. When installing additional packages into the `meep` environment, you should always try to install using the `-c conda-forge` flag. `conda` can ocassionally be too eager in updating packages to new versions which can leave the environment unstable. If running `conda install -c conda-forge <some-package>` attempts to replace `conda-forge` packages with equivalent versions from the `defaults` channel, you can force it to only use channels you specify (i.e., arguemnts to the `-c` flag) with the `--override-channels` flag.
-
-Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`.
+**Note:** There is currently an issue with openblas 0.3.5 that causes segmentation faults on newer Skylake X-series cpus. If import meep results in an "illegal instruction" error, downgrade openblas to version `0.3.4` as follows:
 
 ```bash
-conda create -n pmp -c chogan -c conda-forge pymeep-parallel
+conda install -c conda-forge openblas=0.3.4
+```
+
+Warning: The `pymeep` package is built to work with OpenBLAS, which means numpy should also use OpenBLAS. Since the default numpy is built with MKL, installing other packages into the environment may cause conda to switch to an MKL-based numpy. This can cause segmentation faults when calling MPB. To work around this, you can make sure the `no-mkl` conda package is installed, make sure you're getting packages from the `conda-forge` channel (they use OpenBLAS for everything), or as a last resort, run `import meep` before importing any other library that is linked to MKL. When installing additional packages into the `meep` environment, you should always try to install using the `-c conda-forge` flag. `conda` can ocassionally be too eager in updating packages to new versions which can leave the environment unstable. If running `conda install -c conda-forge <some-package>` attempts to replace `conda-forge` packages with equivalent versions from the `defaults` channel, you can force it to only use channels you specify (i.e., arguemnts to the `-c` flag) with the `--override-channels` flag.
+
+Installing parallel PyMeep follows the same pattern, but the package "build string" must be specified to bring in the MPI variant:
+
+```bash
+conda create -n pmp -c conda-forge pymeep=*=mpi_mpich_*
 conda activate pmp
 ```
+The first `*` requests the latest version of Pymeep, and the `mpi_mpich_*` says to get a version that includes "mpi_mpich" in the build string (the packages are currently built with the MPICH implementation of MPI).
 
 The environment includes `mpi4py`, so you can run an MPI job with 4 processes like this:
 
@@ -129,3 +136,7 @@ You are done, and can now run Meep (Scheme interface) just by typing `meep`. You
 
 To build the latest version of Meep from source on macOS Sierra, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
+Installation on Windows
+----------------------------
+
+Native Windows installation is currently unsupported. The recommended procedure is to install Ubuntu using the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10). This gives you access to a bash terminal running on Ubuntu from within Windows. From there you can install the Conda packages as described above. The drawback is that you can't see plots from matplotlib (though saving them to disk and opening them from Windows works fine). The easiest way around this is to add the `jupyter` package to the `conda create ...` command. This will allow you to run a [Jupyter notebook](https://jupyter.readthedocs.io/en/latest/) in the browser, and from there you can visualize plots interactively.

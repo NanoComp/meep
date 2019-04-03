@@ -78,14 +78,14 @@ for Lt in Lts:
                         symmetries=symmetries)
 
     mon_pt = mp.Vector3(-0.5*sx+dpml_x+0.7*Lw)
-    flux1 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
+    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res1 = sim.get_eigenmode_coefficients(flux1,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    incident_coeffs = res1.alpha
-    incident_flux = mp.get_fluxes(flux1)
-    incident_flux_data = sim.get_flux_data(flux1)
+    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    incident_coeffs = res.alpha
+    incident_flux = mp.get_fluxes(flux)
+    incident_flux_data = sim.get_flux_data(flux)
 
     sim.reset_meep()
 
@@ -106,14 +106,14 @@ for Lt in Lts:
                         sources=sources,
                         symmetries=symmetries)
 
-    flux2 = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
-    sim.load_minus_flux_data(flux2,incident_flux_data)
+    flux = sim.add_flux(fcen,0,1,mp.FluxRegion(center=mon_pt,size=mp.Vector3(y=sy-2*dpml_y)))
+    sim.load_minus_flux_data(flux,incident_flux_data)
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,mon_pt,1e-9))
 
-    res2 = sim.get_eigenmode_coefficients(flux2,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
-    taper_coeffs = res2.alpha
-    taper_flux = mp.get_fluxes(flux2)
+    res = sim.get_eigenmode_coefficients(flux,[1],eig_parity=mp.ODD_Z+mp.EVEN_Y)
+    taper_coeffs = res.alpha
+    taper_flux = mp.get_fluxes(flux)
 
     R_coeffs.append(abs(taper_coeffs[0,0,1])**2/abs(incident_coeffs[0,0,0])**2)
     R_flux.append(-taper_flux[0]/incident_flux[0])
@@ -149,7 +149,7 @@ The mode-decomposition feature can also be applied to planewaves in homogeneous 
 
 A pulsed planewave with E<sub>z</sub> polarization spanning wavelengths of 0.4 to 0.6 μm is normally incident on the grating from the glass substrate. The eigenmode monitor is placed in the air region. We will use mode decomposition to compute the transmittance &mdash; the ratio of the power in the $+x$ direction of the diffracted mode relative to that of the incident planewave &mdash; for the first ten diffraction orders. Two simulations are required: (1) an *empty* cell of homogeneous glass to obtain the incident power of the source, and (2) the grating structure to obtain the diffraction orders. At the end of the simulation, the wavelength, angle, and transmittance for each diffraction order are computed.
 
-The simulation script is in [examples/binary_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating.py).
+The simulation script is in [examples/binary_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating.py). The notebook is [examples/binary_grating.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/binary_grating.ipynb)
 
 <center>
 ![](../images/grating.png)
@@ -282,143 +282,7 @@ The diffraction orders/modes are a finite set of propagating planewaves. The wav
 
 In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is 4/(mπ)<sup>2</sup> when the phase difference between the propagating distance in the glass relative to the same distance in air is π. The phase difference/contrast is (2π/λ)(n-1)s where λ is the wavelength, n is the refractive index of the grating, and s is the propagation distance in the grating (`gh` in the script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above.
 
-To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1, 3, 5, and 7. The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
-
-### Phase Map of Subwavelength Binary Gratings
-
-We can also use the complex mode coefficients to compute the phase (or impedance) of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in a metasurface lens. When the period of the unit cell is subwavelength, the zeroth-diffraction order is the only propagating wave. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth-diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
-
-The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py).
-
-```py
-import meep as mp
-import numpy as np
-import matplotlib.pyplot as plt
-import numpy.matlib
-import argparse
-
-resolution = 60         # pixels/μm
-
-dpml = 1.0              # PML thickness
-dsub = 3.0              # substrate thickness
-dpad = 3.0              # padding between grating and PML
-
-wvl_min = 0.4           # min wavelength
-wvl_max = 0.6           # max wavelength
-fmin = 1/wvl_max        # min frequency
-fmax = 1/wvl_min        # max frequency
-fcen = 0.5*(fmin+fmax)  # center frequency
-df = fmax-fmin          # frequency width
-nfreq = 21              # number of frequency bins
-
-k_point = mp.Vector3(0,0,0)
-
-glass = mp.Medium(index=1.5)
-
-def grating(gp,gh,gdc,oddz):
-  sx = dpml+dsub+gh+dpad+dpml
-  sy = gp
-
-  cell_size = mp.Vector3(sx,sy,0)
-  pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
-
-  src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
-  sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez if oddz else mp.Hz, center=src_pt, size=mp.Vector3(0,sy,0))]
-
-  symmetries=[mp.Mirror(mp.Y, phase=+1 if oddz else -1)]
-  
-  sim = mp.Simulation(resolution=resolution,
-                      cell_size=cell_size,
-                      boundary_layers=pml_layers,
-                      k_point=k_point,
-                      default_material=glass,
-                      sources=sources,
-                      symmetries=symmetries)
-
-  mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
-  flux_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
-
-  sim.run(until_after_sources=100)
-
-  input_flux = mp.get_fluxes(flux_mon)
-
-  sim.reset_meep()
-
-  geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
-              mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
-
-  sim = mp.Simulation(resolution=resolution,
-                      cell_size=cell_size,
-                      boundary_layers=pml_layers,
-                      geometry=geometry,
-                      k_point=k_point,
-                      sources=sources,
-                      symmetries=symmetries)
-
-  mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
-
-  sim.run(until_after_sources=300)
-
-  freqs = mp.get_eigenmode_freqs(mode_mon)
-  res = sim.get_eigenmode_coefficients(mode_mon, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y if oddz else mp.EVEN_Z+mp.ODD_Y)
-  coeffs = res.alpha
-
-  mode_wvl = [1/freqs[nf] for nf in range(nfreq)]
-  mode_tran = [abs(coeffs[0,nf,0])**2/input_flux[nf] for nf in range(nfreq)]
-  mode_phase = [np.angle(coeffs[0,nf,0]) for nf in range(nfreq)]
-
-  return mode_wvl, mode_tran, mode_phase
-
-if __name__ == '__main__':
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-gp', type=float, default=0.35, help='grating periodicity (default: 0.35 μm)')
-  parser.add_argument('-gh', type=float, default=0.6, help='grating height (default: 0.6 μm)')
-  parser.add_argument('-oddz', action='store_true', default=False, help='oddz? (default: False)')
-  args = parser.parse_args()
-  
-  gdc = np.arange(0.1,1.0,0.1)
-  mode_tran = np.empty((gdc.size,nfreq))
-  mode_phase = np.empty((gdc.size,nfreq))
-  for n in range(gdc.size):
-    mode_wvl, mode_tran[n,:], mode_phase[n,:] = grating(args.gp,args.gh,gdc[n],args.oddz)
-
-  plt.figure(dpi=150)
-
-  plt.subplot(1,2,1)
-  plt.pcolormesh(mode_wvl, gdc, mode_tran, cmap='hot_r', shading='gouraud', vmin=0, vmax=mode_tran.max())
-  plt.axis([wvl_min, wvl_max, gdc[0], gdc[-1]])
-  plt.xlabel("wavelength (μm)")
-  plt.xticks([t for t in np.arange(wvl_min,wvl_max+0.1,0.1)])
-  plt.ylabel("grating duty cycle")
-  plt.yticks([t for t in np.arange(gdc[0],gdc[-1]+0.1,0.1)])
-  plt.title("transmittance")
-  cbar = plt.colorbar()
-  cbar.set_ticks([t for t in np.arange(0,1.2,0.2)])
-  cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,1.2,0.2)])
-
-  plt.subplot(1,2,2)
-  plt.pcolormesh(mode_wvl, gdc, mode_phase, cmap='RdBu', shading='gouraud', vmin=mode_phase.min(), vmax=mode_phase.max())
-  plt.axis([wvl_min, wvl_max, gdc[0], gdc[-1]])
-  plt.xlabel("wavelength (μm)")
-  plt.xticks([t for t in np.arange(wvl_min,wvl_max+0.1,0.1)])
-  plt.ylabel("grating duty cycle")
-  plt.yticks([t for t in np.arange(gdc[0],gdc[-1]+0.1,0.1)])
-  plt.title("phase (radians)")
-  cbar = plt.colorbar()
-  cbar.set_ticks([t for t in range(-3,4)])
-  cbar.set_ticklabels(["{:.1f}".format(t) for t in range(-3,4)])
-
-  plt.tight_layout()
-  plt.show()
-```
-
-The phase of the zeroth-diffraction order is simply the angle of its complex mode coefficient. Note that it is generally only the relative phase (the phase difference) between different structures that is useful. The overall mode coefficient α is multiplied by a complex number given by the source amplitude, as well as an arbitrary (but deterministic) phase choice by the mode solver MPB — but as long as you keep the current source fixed as you vary the parameters of the structure, the relative phases are meaningful.
-
-The script is run from the shell terminal using: `python binary_grating_phasemap.py -gp 0.35 -gh 0.6 -oddz`. The figure below shows the transmittance spectra (left) and phase map (right). The transmittance is nearly unity over most of the parameter space mainly because of the subwavlength dimensions of the grating. The phase variation spans the full range of -π to +π at each wavelength but varies weakly with the duty cycle due to the relatively low index of the glass grating. Higher-index materials such as [titanium dioxide](https://en.wikipedia.org/wiki/Titanium_dioxide#Thin_films) (TiO<sub>2</sub>) generally provide more control over the phase.
-
-<center>
-![](../images/grating_phasemap.png)
-</center>
+To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1 (2.9°), 3 (8.6°), 5 (14.5°), and 7 (20.5°). The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
 ### Reflectance and Transmittance Spectra for Planewave at Oblique Incidence
 
@@ -428,7 +292,7 @@ The following script is adapted from the previous binary-grating example involvi
 
 Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
-The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py).
+The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py). The notebook is [examples/binary_grating_oblique.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.ipynb)
 
 ```py
 import meep as mp
@@ -614,6 +478,143 @@ poynting-flux:, 0.061063, 0.938384, 0.999447
 ```
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
+
+Phase Map of a Subwavelength Binary Grating
+-------------------------------------------
+
+We can also use the complex mode coefficients to compute the phase (or impedance) of the diffraction orders. This can be used to generate a phase map of the binary grating as a function of its geometric parameters. Phase maps are important for the design of subwavelength phase shifters such as those used in a metasurface lens. When the period of the unit cell is subwavelength, the zeroth-diffraction order is the only propagating wave. In this demonstration, which is adapted from the previous example, we compute the transmittance spectra and phase map of the zeroth-diffraction order (at 0°) for an E<sub>z</sub>-polarized planewave pulse spanning wavelengths of 0.4 to 0.6 μm which is normally incident on a binary grating with a periodicity of 0.35 μm and height of 0.6 μm. The duty cycle of the grating is varied from 0.1 to 0.9 in separate runs.
+
+The simulation script is in [examples/binary_grating_phasemap.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.py). The notebook is [examples/binary_grating_phasemap.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/binary_grating_phasemap.ipynb).
+
+```py
+import meep as mp
+import numpy as np
+import matplotlib.pyplot as plt
+import numpy.matlib
+import argparse
+
+resolution = 60         # pixels/μm
+
+dpml = 1.0              # PML thickness
+dsub = 3.0              # substrate thickness
+dpad = 3.0              # padding between grating and PML
+
+wvl_min = 0.4           # min wavelength
+wvl_max = 0.6           # max wavelength
+fmin = 1/wvl_max        # min frequency
+fmax = 1/wvl_min        # max frequency
+fcen = 0.5*(fmin+fmax)  # center frequency
+df = fmax-fmin          # frequency width
+nfreq = 21              # number of frequency bins
+
+k_point = mp.Vector3(0,0,0)
+
+glass = mp.Medium(index=1.5)
+
+def grating(gp,gh,gdc,oddz):
+  sx = dpml+dsub+gh+dpad+dpml
+  sy = gp
+
+  cell_size = mp.Vector3(sx,sy,0)
+  pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
+
+  src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
+  sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez if oddz else mp.Hz, center=src_pt, size=mp.Vector3(0,sy,0))]
+
+  symmetries=[mp.Mirror(mp.Y, phase=+1 if oddz else -1)]
+
+  sim = mp.Simulation(resolution=resolution,
+                      cell_size=cell_size,
+                      boundary_layers=pml_layers,
+                      k_point=k_point,
+                      default_material=glass,
+                      sources=sources,
+                      symmetries=symmetries)
+
+  mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+  flux_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
+
+  sim.run(until_after_sources=100)
+
+  input_flux = mp.get_fluxes(flux_mon)
+
+  sim.reset_meep()
+
+  geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+              mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
+
+  sim = mp.Simulation(resolution=resolution,
+                      cell_size=cell_size,
+                      boundary_layers=pml_layers,
+                      geometry=geometry,
+                      k_point=k_point,
+                      sources=sources,
+                      symmetries=symmetries)
+
+  mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
+
+  sim.run(until_after_sources=300)
+
+  freqs = mp.get_eigenmode_freqs(mode_mon)
+  res = sim.get_eigenmode_coefficients(mode_mon, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y if oddz else mp.EVEN_Z+mp.ODD_Y)
+  coeffs = res.alpha
+
+  mode_wvl = [1/freqs[nf] for nf in range(nfreq)]
+  mode_tran = [abs(coeffs[0,nf,0])**2/input_flux[nf] for nf in range(nfreq)]
+  mode_phase = [np.angle(coeffs[0,nf,0]) for nf in range(nfreq)]
+
+  return mode_wvl, mode_tran, mode_phase
+
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-gp', type=float, default=0.35, help='grating periodicity (default: 0.35 μm)')
+  parser.add_argument('-gh', type=float, default=0.6, help='grating height (default: 0.6 μm)')
+  parser.add_argument('-oddz', action='store_true', default=False, help='oddz? (default: False)')
+  args = parser.parse_args()
+
+  gdc = np.arange(0.1,1.0,0.1)
+  mode_tran = np.empty((gdc.size,nfreq))
+  mode_phase = np.empty((gdc.size,nfreq))
+  for n in range(gdc.size):
+    mode_wvl, mode_tran[n,:], mode_phase[n,:] = grating(args.gp,args.gh,gdc[n],args.oddz)
+
+  plt.figure(dpi=150)
+
+  plt.subplot(1,2,1)
+  plt.pcolormesh(mode_wvl, gdc, mode_tran, cmap='hot_r', shading='gouraud', vmin=0, vmax=mode_tran.max())
+  plt.axis([wvl_min, wvl_max, gdc[0], gdc[-1]])
+  plt.xlabel("wavelength (μm)")
+  plt.xticks([t for t in np.arange(wvl_min,wvl_max+0.1,0.1)])
+  plt.ylabel("grating duty cycle")
+  plt.yticks([t for t in np.arange(gdc[0],gdc[-1]+0.1,0.1)])
+  plt.title("transmittance")
+  cbar = plt.colorbar()
+  cbar.set_ticks([t for t in np.arange(0,1.2,0.2)])
+  cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,1.2,0.2)])
+
+  plt.subplot(1,2,2)
+  plt.pcolormesh(mode_wvl, gdc, mode_phase, cmap='RdBu', shading='gouraud', vmin=mode_phase.min(), vmax=mode_phase.max())
+  plt.axis([wvl_min, wvl_max, gdc[0], gdc[-1]])
+  plt.xlabel("wavelength (μm)")
+  plt.xticks([t for t in np.arange(wvl_min,wvl_max+0.1,0.1)])
+  plt.ylabel("grating duty cycle")
+  plt.yticks([t for t in np.arange(gdc[0],gdc[-1]+0.1,0.1)])
+  plt.title("phase (radians)")
+  cbar = plt.colorbar()
+  cbar.set_ticks([t for t in range(-3,4)])
+  cbar.set_ticklabels(["{:.1f}".format(t) for t in range(-3,4)])
+
+  plt.tight_layout()
+  plt.show()
+```
+
+The phase of the zeroth-diffraction order is simply the angle of its complex mode coefficient. Note that it is generally only the relative phase (the phase difference) between different structures that is useful. The overall mode coefficient α is multiplied by a complex number given by the source amplitude, as well as an arbitrary (but deterministic) phase choice by the mode solver MPB — but as long as you keep the current source fixed as you vary the parameters of the structure, the relative phases are meaningful.
+
+The script is run from the shell terminal using: `python binary_grating_phasemap.py -gp 0.35 -gh 0.6 -oddz`. The figure below shows the transmittance spectra (left) and phase map (right). The transmittance is nearly unity over most of the parameter space mainly because of the subwavlength dimensions of the grating. The phase variation spans the full range of -π to +π at each wavelength but varies weakly with the duty cycle due to the relatively low index of the glass grating. Higher-index materials such as [titanium dioxide](https://en.wikipedia.org/wiki/Titanium_dioxide#Thin_films) (TiO<sub>2</sub>) generally provide more control over the phase.
+
+<center>
+![](../images/grating_phasemap.png)
+</center>
 
 Diffraction Spectra of Liquid-Crystal Polarization Gratings
 -----------------------------------------------------------
