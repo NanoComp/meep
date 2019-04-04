@@ -347,6 +347,8 @@ The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-tim
 
 To improve [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)), the parallelization can be made to take the DTFT computation into account by specifying `split_chunks_evenly=False`. This option divides the grid into [chunks](Chunks_and_Symmetry.md) with nearly-equal *cost* rather than *size* such that the region in which the DTFT fields are computed is optimally partitioned among the processors.
 
+[Synchronization](Synchronizing_the_Magnetic_and_Electric_Fields.md) of the fields (i.e., for `add_flux`, `add_energy`, `add_near2far`, etc.), which is both expensive and unnecessary, is *not* performed or required for second-order accuracy when accumulating the Fourier transforms. In the [Fourier summation](Introduction.md#transmittancereflectance-spectra), you multiply the field by exp(iωt) and add the product (multiplied by Δt) to the Fourier amplitude. The value of "t" is simply different for the E and H fields because they are staggered in time by half a timestep.
+
 Note: a simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
 
 ### Does Meep support shared-memory parallelism?
@@ -419,4 +421,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Not currently but work is underway to add support for this feature with expected release in early 2019 (issue [#600](https://github.com/NanoComp/meep/pull/600)).
+Almost. There is currently a [pull request](https://github.com/NanoComp/meep/pull/795) for this feature which will be merged soon.
