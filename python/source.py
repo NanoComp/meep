@@ -66,8 +66,8 @@ class GaussianSource(SourceTime):
                                             self.start_time + 2 * self.width * self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
 
-    def fourier_transform(self, omega):
-        return self.swigobj.fourier_transform(omega)
+    def fourier_transform(self, freq):
+        return self.swigobj.fourier_transform(freq)
 
 class CustomSource(SourceTime):
 

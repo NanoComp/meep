@@ -518,7 +518,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 /* should have length 1.                                       */
 /***************************************************************/
 void fields::get_array_metadata(const volume &where, double *xtics, double *ytics, double *ztics,
-                                double *weights, bool collapse_empty_dimensions) {
+                                double *weights, bool collapse_empty_dimensions)
+{
   // mimic what is done in `loop_in_chunks` to initialize a loop
   // over grid points in `where`
   component cgrid = Centered;

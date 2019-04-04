@@ -1,43 +1,6 @@
-HPPFILES=                                    \
- $(top_srcdir)/src/meep.hpp                  \
- $(top_srcdir)/src/meep_internals.hpp        \
- $(top_srcdir)/src/bicgstab.hpp              \
- $(top_srcdir)/src/meep/vec.hpp              \
- $(top_srcdir)/src/meep/mympi.hpp            \
- $(top_srcdir)/src/meepgeom.hpp              \
- $(top_srcdir)/src/material_data.hpp
-
-BUILT_SOURCES = meep-python.cxx __init__.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp materials.py examples tests
-
-CLEANFILES = $(BUILT_SOURCES) meep.py .coverage
-
-if WITH_MPB
-  PYMPBINCLUDE=-I$(top_srcdir)/libpympb
-  LIBPYMPB=$(top_builddir)/libpympb/libpympb.la
-  BUILT_SOURCES += mpb-python.cxx mpb.py
-  EXTRA_DIST += solver.py mpb_data.py
-endif
-
-LIBMEEP = $(top_builddir)/src/libmeep.la
-
-AM_CPPFLAGS = -I$(top_srcdir)/src                   \
-              $(PYMPBINCLUDE)                       \
-              -I$(top_builddir) # for config.h
-
-_meep_la_SOURCES = meep-python.cxx
-_meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
-_meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-_meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
-
-if WITH_MPB
-_mpb_la_SOURCES = mpb-python.cxx
-_mpb_la_LIBADD = $(PYTHON_LIBS) $(LIBPYMPB)
-_mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-_mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
-MPB_LA = _mpb.la
-endif # WITH_MPB
-
+##################################################
+# description of unit tests
+##################################################
 TEST_DIR = tests
 
 # material_dispersion.py test must be excluded from test suite for MPI build
@@ -112,29 +75,69 @@ endif
 TEST_EXTENSIONS = .py
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
-if WITH_PYTHON
-  pkgpython_PYTHON = geom.py __init__.py source.py simulation.py materials.py
-  pkgpyexec_LTLIBRARIES = _meep.la
-if WITH_MPB
-  pympbdir = $(pkgpythondir)/mpb
-  pympb_DATA = mpb.py solver.py mpb_data.py
-  pympb_LTLIBRARIES = _mpb.la
-endif # WITH_MPB
-endif # WITH_PYTHON
+######################################################################
+# instructions for building the _meep binary library that implements
+# the low-level interface between python codes and the libmeep C++ library
+######################################################################
+BUILT_SOURCES = meep-python.cxx __init__.py
+EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp materials.py examples tests
+CLEANFILES = $(BUILT_SOURCES) meep.py .coverage
 
+AM_CPPFLAGS = -I$(top_srcdir)/src               \
+              -I$(top_srcdir)/libpympb		\
+              -I$(top_builddir) # for config.h
+
+LIBMEEP = $(top_builddir)/src/libmeep.la
+
+_meep_la_SOURCES = meep-python.cxx
+_meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
+_meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
+_meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+
+pkgpyexec_LTLIBRARIES = _meep.la
+
+######################################################################
+# instructions for building the _mpb binary library that implements
+# the low-level interface between python codes and the libmpb C++ library
+######################################################################
 if WITH_MPB
+  BUILT_SOURCES += mpb-python.cxx mpb.py
+  EXTRA_DIST += solver.py mpb_data.py
+  MPB_LA = _mpb.la
+  pympbdir = $(pkgpythondir)/mpb
+  pympb_PYTHON = mpb.py solver.py mpb_data.py
+  pympb_LTLIBRARIES = _mpb.la
+  _mpb_la_SOURCES = mpb-python.cxx
+  _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
+  _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
+  _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+
 install-data-hook:
 	mv $(DESTDIR)$(pkgpythondir)/mpb/mpb.py $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
 
 uninstall-hook:
 	rm -f $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
+
 endif
 
+##################################################
+# instructions for running SWIG to generate the
+# source files for the previous step
+##################################################
 if MAINTAINER_MODE
 
 SWIG ?= swig
 SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
 MEEP_SWIG_SRC = meep.i numpy.i vec.i
+
+HPPFILES=                                    \
+ $(top_srcdir)/src/meep.hpp                  \
+ $(top_srcdir)/src/meep_internals.hpp        \
+ $(top_srcdir)/src/bicgstab.hpp              \
+ $(top_srcdir)/src/meep/vec.hpp              \
+ $(top_srcdir)/src/meep/mympi.hpp            \
+ $(top_srcdir)/src/meepgeom.hpp              \
+ $(top_srcdir)/src/material_data.hpp
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
@@ -143,7 +146,6 @@ if WITH_MPB
 MPB_SWIG_SRC = mpb.i
 mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
 	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
-
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
 endif # WITH_MPB
@@ -166,23 +168,40 @@ endif
 
 INIT_PY = __init__.py
 MPB_PY_PATH = $(builddir)/mpb.py
-else
+
+else # not maintainer mode
 
 INIT_PY = $(srcdir)/__init__.py
 MPB_PY_PATH = $(srcdir)/mpb.py
 
 endif # MAINTAINER_MODE
 
+######################################################################
+# specification of python source files to be byte-compiled at installation
+######################################################################
 HL_IFACE =                  \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
     $(srcdir)/materials.py
 
-PY_PKG_FILES =      \
-    $(INIT_PY)      \
-    $(HL_IFACE)     \
-    .libs/_meep.so
+pkgpython_PYTHON = __init__.py $(HL_IFACE)
+
+adjointdir = $(pkgpythondir)/adjoint
+adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py			\
+                  $(srcdir)/adjoint/Basis.py  			\
+                  $(srcdir)/adjoint/Objective.py        	\
+                  $(srcdir)/adjoint/OptimizationProblem.py	\
+                  $(srcdir)/adjoint/ParallelDesignTester.py	\
+                  $(srcdir)/adjoint/Visualization.py
+
+######################################################################
+# finally, specification of what gets installed in the meep python
+# module directory of the python site-packages installation
+# Q: Why is this not redundant since e.g. the HL_IFACE files should
+#    already be installed by virtue of being in pkgpython_PYTHON
+######################################################################
+PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
 
 meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
 	mkdir -p meep
