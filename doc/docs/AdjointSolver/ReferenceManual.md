@@ -83,7 +83,7 @@ bars to unfold the description of each item.)
 
         The routine should return a 5-tuple
 
-       ```py 
+       ```py
            fstr, objective_regions, extra_regions, design_region, basis
        ```
 

@@ -73,7 +73,7 @@ default options can be customized.
     that intermittently updates a plot of time-domain fields in real time as your
     meep timestepping run progresses.
 >
-    ```py 
+    ```py
        from meep.adjoint import AFEClient
 
        step_funcs=[ AFEClient(sim, ['Ez'], interval=2) ]

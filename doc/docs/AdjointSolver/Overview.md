@@ -383,7 +383,7 @@ process you'll follow to optimize a geometry in `meep.adjoint.`
 ??? summary "`init_problem`: One-time initialization"
     Inputs an `args` structure describing command-line options
     and returns a 5-tuple
-    ```py 
+    ```py
        fstr, objective_regions, extra_regions, design_region, basis
     ```
     defining your objective function, the objective regions on which 
