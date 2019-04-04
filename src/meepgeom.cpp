@@ -918,20 +918,20 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
   material_gc(material);
   if (chi1p1.m01 != 0 || chi1p1.m02 != 0 || chi1p1.m12 != 0 || chi1p1.m00 != chi1p1.m11 ||
-      chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22 || meep::abs(gradient) == 0) {
+      chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22 || meep::abs(gradient) < 1e-8) {
     int rownum = meep::component_direction(c) % 3;
     if (rownum == 0) {
-      chi1inv_row[0] = chi1p1.m00;
-      chi1inv_row[1] = chi1p1.m01;
-      chi1inv_row[2] = chi1p1.m02;
+      chi1inv_row[0] = chi1p1_inv.m00;
+      chi1inv_row[1] = chi1p1_inv.m01;
+      chi1inv_row[2] = chi1p1_inv.m02;
     } else if (rownum == 1) {
-      chi1inv_row[0] = chi1p1.m01;
-      chi1inv_row[1] = chi1p1.m11;
-      chi1inv_row[2] = chi1p1.m12;
+      chi1inv_row[0] = chi1p1_inv.m01;
+      chi1inv_row[1] = chi1p1_inv.m11;
+      chi1inv_row[2] = chi1p1_inv.m12;
     } else {
-      chi1inv_row[0] = chi1p1.m02;
-      chi1inv_row[1] = chi1p1.m12;
-      chi1inv_row[2] = chi1p1.m22;
+      chi1inv_row[0] = chi1p1_inv.m02;
+      chi1inv_row[1] = chi1p1_inv.m12;
+      chi1inv_row[2] = chi1p1_inv.m22;
     }
     return;
   }
