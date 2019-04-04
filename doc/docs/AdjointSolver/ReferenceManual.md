@@ -83,7 +83,7 @@ bars to unfold the description of each item.)
 
         The routine should return a 5-tuple
 
-       ```py3 
+       ```py 
            fstr, objective_regions, extra_regions, design_region, basis
        ```
 
@@ -179,7 +179,7 @@ your own subclass to define an arbitrary basis, or use one of the
 built-in basis sets provided by `meep.adjoint.` A good default
 choice is `FiniteElementBasis`: 
 
-```py3
+```py
    basis = FiniteElementBasis(lx=4, ly=4, density=4)
 ```
 
@@ -214,66 +214,66 @@ base class and are available in all `mp.adjoint` sessions.
 
 | Option                            | Description                                                   |
 | --------------------------------- | --------------                                                |
-| `#!py3 --res`                     | resolution
-| `#!py3 --dpml`                    | PML thickness (-1 --> autodetermined)
-| `#!py3 --fcen`                    | center frequency
-| `#!py3 --df`                      | frequency width
-| `#!py3 --source_mode`             | mode index of eigenmode source
-| `#!py3 --dft_reltol`              | convergence threshold for end of timestepping
-| `#!py3 --dft_timeout`             | max runtime in units of last_source_time
-| `#!py3 --dft_interval`            | meep time DFT convergence checks in units of last_source_time
+| `--res`                     | resolution
+| `--dpml`                    | PML thickness (-1 --> autodetermined)
+| `--fcen`                    | center frequency
+| `--df`                      | frequency width
+| `--source_mode`             | mode index of eigenmode source
+| `--dft_reltol`              | convergence threshold for end of timestepping
+| `--dft_timeout`             | max runtime in units of last_source_time
+| `--dft_interval`            | meep time DFT convergence checks in units of last_source_time
 
 ### Options affecting outputs from Meep computations
 
 | Option                            | Description                                                    |
 | --------------------------------- | --------------                                                 |
-| `#!py3 --nfreq`                   | number of output frequencies
-| `#!py3 --full_dfts`               | compute DFT fields over full volume
-| `#!py3 --complex_fields`          | force complex fields
-| `#!py3 --filebase`                | base name of output files
+| `--nfreq`                   | number of output frequencies
+| `--full_dfts`               | compute DFT fields over full volume
+| `--complex_fields`          | force complex fields
+| `--filebase`                | base name of output files
 
 ### Options specifying initial values for basis-function coefficients
 
 | Option                            | Description                                                   |
 | --------------------------------- | --------------                                                |
-| `#!py3 --betafile`                | file of expansion coefficients
-| `#!py3 --beta`                    | set value of expansion coefficient
-| `#!py3 --eps_design`              | functional expression for initial design permittivity
+| `--betafile`                | file of expansion coefficients
+| `--beta`                    | set value of expansion coefficient
+| `--eps_design`              | functional expression for initial design permittivity
 
 ### Options describing the calculation to be done
 
 | Option                            | Description                                                   |
 | --------------------------------- | --------------                                                |
-| `#!py3 --eval_objective`          | evaluate objective function value
-| `#!py3 --eval_gradient`           | evaluate objective function value and gradient
-| `#!py3 --gradient_qname`          | name of objective quantity to differentiate via adjoint method
-| `#!py3 --fd_order`                | finite-difference order (0,1,2)
-| `#!py3 --fd_index`                | index of differentiation variable
-| `#!py3 --fd_rel_delta`            | relative finite-difference delta
-| `#!py3 --optimize`                | perform automated design optimization
+| `--eval_objective`          | evaluate objective function value
+| `--eval_gradient`           | evaluate objective function value and gradient
+| `--gradient_qname`          | name of objective quantity to differentiate via adjoint method
+| `--fd_order`                | finite-difference order (0,1,2)
+| `--fd_index`                | index of differentiation variable
+| `--fd_rel_delta`            | relative finite-difference delta
+| `--optimize`                | perform automated design optimization
 
 ### Options affecting optimization
 
 | Option                            | Description                                                   |
 | --------------------------------- | --------------                                                |
-| `#!py3 --alpha`                   | gradient descent relaxation parameter
-| `#!py3 --min_alpha`               | minimum value of alpha
-| `#!py3 --max_alpha`               | maximum value of alpha
-| `#!py3 --boldness`                | sometimes you just gotta live a little
-| `#!py3 --timidity`                | can\'t be too careful in this dangerous world
-| `#!py3 --max_iters`               | max number of optimization iterations
+| `--alpha`                   | gradient descent relaxation parameter
+| `--min_alpha`               | minimum value of alpha
+| `--max_alpha`               | maximum value of alpha
+| `--boldness`                | sometimes you just gotta live a little
+| `--timidity`                | can\'t be too careful in this dangerous world
+| `--max_iters`               | max number of optimization iterations
 
 ### Options configurating adjoint-solver options
 
 | Option                            | Description                                                   |
 | --------------------------------- | --------------                                                |
-| `#!py3 --verbose`                 | produce more output
-| `#!py3 --concise`                 | produce less output
-| `#!py3 --visualize`               | produce visualization graphics
-| `#!py3 --label_source_regions`    | label source regions in visualization plots
-| `#!py3 --logfile`                 | log file name
-| `#!py3 --pickle_data`             | save state to binary data file
-| `#!py3 --animate_component`       | plot time-domain field component
-| `#!py3 --animate_interval`        | meep time between animation frames
+| `--verbose`                 | produce more output
+| `--concise`                 | produce less output
+| `--visualize`               | produce visualization graphics
+| `--label_source_regions`    | label source regions in visualization plots
+| `--logfile`                 | log file name
+| `--pickle_data`             | save state to binary data file
+| `--animate_component`       | plot time-domain field component
+| `--animate_interval`        | meep time between animation frames
 
 --8<-- "doc/docs/AdjointSolver/AdjointLinks.md"

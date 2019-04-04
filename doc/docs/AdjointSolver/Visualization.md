@@ -43,7 +43,7 @@ default options can be customized.
 >
   1. **Visualizing geometries before timestepping.** Call `visualize_sim` to view your simulation prior to timestepping:
 >
-  ```py3
+  ```py
      from meep.adjoint import visualize_sim
 
      sim=mp.simulation(...)    
@@ -60,7 +60,7 @@ default options can be customized.
      the function automatically looks inside the `simulation` to determine what
      frequency-domain fields are available to plot.
 >
-  ```py3
+  ```py
      sim.run(until=200)
      visualize_sim(sim)
   ```
@@ -73,7 +73,7 @@ default options can be customized.
     that intermittently updates a plot of time-domain fields in real time as your
     meep timestepping run progresses.
 >
-    ```py3 
+    ```py 
        from meep.adjoint import AFEClient
 
        step_funcs=[ AFEClient(sim, ['Ez'], interval=2) ]
@@ -296,10 +296,10 @@ other parameters required.*
 These objectives are satisfied by the `visualize_sim` routine in `meep.adjoint.Visualization`,
 whose calling convention is precision-engineered to be as painless as possible: after
 creating a Meep `simulation`
-through a call like `#!py3 sim=mp.simulation(geometry=...)`,
+through a call like `sim=mp.simulation(geometry=...)`,
 you can simply say
 
-```py3
+```py
   visualize_sim(sim)
 ```
 

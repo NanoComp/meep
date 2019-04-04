@@ -165,7 +165,7 @@ should be passed (as a single string separated by spaces)
 to the optional `cmdline` parameter of the `HoleyWaveguide`
 constructor, while `run()` takes no arguments:
 
-```py3
+```py
 import numpy as np
 
 # generate command lines
@@ -195,7 +195,7 @@ the `entirety` of the rejiggering required to parallelize
 your batch is to replace the  `for cmdline in cmdlines` loop 
 above with the single line
 
-```py3
+```py
 
 ParallelDesignTester('HoleyWaveguide',cmdlines).launch()
 

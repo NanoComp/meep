@@ -1,11 +1,11 @@
 --8<-- "doc/docs/AdjointSolver/AdjointDocumentationStyleHeader.md"
 
 ---
-# `#!py3 meep.adjoint:` Adjoint sensitivity analysis for automated design optimization
+# Adjoint sensitivity analysis for automated design optimization
 ---
 
 This section of the Meep documentation
-covers `#!py3 meep.adjoint,` a submodule of the Meep python module
+covers `meep.adjoint`, a submodule of the Meep python module
 that implements an [*adjoint-based sensitivity solver*](https://en.wikipedia.org/wiki/Adjoint_state_method)
 to facilitate automated design optimization via derivative-based numerical optimizers.
 
@@ -85,9 +85,9 @@ to tabulate the frequency-domain Poynting flux entering and departing
 the cloak region,
 [timestep][RunStepFunctions] until
 the DFTs converge, then use post-processing routines like
-[`#!py3 get_fluxes(')`][GetFluxes]
+[`get_fluxes()`][GetFluxes]
 or perhaps
-[`#!py3 get_eigenmode_coefficients()`][EigenCoefficients]
+[`get_eigenmode_coefficients()`][EigenCoefficients]
 to get the quantities needed to evaluate the performance of the device.
 Thus, for the cost of one full Meep timestepping
 run we obtain the value of our objective function at one point
@@ -383,7 +383,7 @@ process you'll follow to optimize a geometry in `meep.adjoint.`
 ??? summary "`init_problem`: One-time initialization"
     Inputs an `args` structure describing command-line options
     and returns a 5-tuple
-    ```py3 
+    ```py 
        fstr, objective_regions, extra_regions, design_region, basis
     ```
     defining your objective function, the objective regions on which 
@@ -407,7 +407,7 @@ process you'll follow to optimize a geometry in `meep.adjoint.`
 or equivalently from a python script or console by 
 calling its `run()` method:
 
-```py3
+```py
   from HoleyWaveguide import HoleyWaveguide
 
   HW=HoleyWaveguide(cmdline='--beta 0 2.3 --eval_gradient')
@@ -425,7 +425,7 @@ subdirectory of your Meep installation.)
 
 
 ??? example "`HoleyWaveguide.py`"
-    ```py3
+    ```py
     
     import sys
     import argparse
@@ -583,7 +583,7 @@ subdirectory of your Meep installation.)
 
 
 ??? example "`HoleCloak.py`"
-    ```py3
+    ```py
     
     import sys
     import argparse
@@ -750,7 +750,7 @@ subdirectory of your Meep installation.)
     
 ??? example "`CrossRouter.py`"
 
-    ```py3
+    ```py
     
     import numpy as np
     import meep as mp
@@ -923,7 +923,7 @@ subdirectory of your Meep installation.)
     ```
     
 ??? example "`AsymmetricSplitter.py`"
-   ```py3
+   ```py
    import sys
    import argparse
    import numpy as np
