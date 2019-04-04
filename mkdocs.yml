@@ -78,6 +78,12 @@ pages:
     - 'Tutorial/Mode Decomposition': 'Scheme_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
     - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
+- 'Adjoint Module for Automated Design Optimization':
+   - 'Overview':               'AdjointSolver/Overview.md'
+   - 'Reference Manual':       'AdjointSolver/ReferenceManual.md'
+   - 'Example Gallery':        'AdjointSolver/ExampleGallery.md'
+   - 'Visualization':          'AdjointSolver/Visualization.md'
+   - 'Implementation Notes':   'AdjointSolver/AdjointImplementationNotes.md'
 - 'C++ Interface':
     - 'Developer Information': 'C++_Developer_Information.md'
     - 'Chunks and Symmetry': 'Chunks_and_Symmetry.md'
