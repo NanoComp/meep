@@ -74,15 +74,15 @@ for rad in np.arange(1.800,2.001,0.005):
     sim.reset_meep()
 ```
 
-A plot of the resonant frequency versus the ring radius is shown below for subpixel smoothing (red) and no smoothing (blue). Included for reference is the "exact" result (black) computed using *no smoothing* at a resolution of 60 pixels/μm. The no smoothing result shows a stairstepped discontinuous eigenfrequency. The subpixel-smoothing result varies continuously with the ring radius similar to the exact result which is at a resolution six times larger. Finally, the inset shows the scalar H<sub>z</sub> field profile of the resonant mode for a structure with inner radius of 1.9 μm.
+A plot of the resonant frequency versus the ring radius is shown below for subpixel smoothing (red) and no smoothing (blue). Included for reference is the high-resolution result (black) computed using *no smoothing* at a resolution of 60 pixels/μm. The no-smoothing result shows "staircasing" effects which are artifacts of the discretization. The subpixel-smoothing result varies continuously with the ring radius similar to the high-resolution result which is at a resolution six times larger. The inset shows the scalar H<sub>z</sub> field profile of the resonant mode for a structure with inner radius of 1.9 μm.
 
-The chosen resonant mode has a [quality (Q) factor](https://en.wikipedia.org/wiki/Q_factor) of ~10<sup>7</sup> at a frequency of 0.25 and radius of 2.0 μm. This means that roughly 6x10<sup>6</sup> optical periods are required to accurately resolve the field decay due to the Fourier uncertainty relation. Instead, [`Harminv`](Python_User_Interface.md#harminv) can resolve the Q using just ~1000 periods. This is nearly a four orders of magnitude reduction in the run time.
+This particular resonant mode has a [quality (Q) factor](https://en.wikipedia.org/wiki/Q_factor) of ~10<sup>7</sup> at a frequency of 0.25 and radius of 2.0 μm. This means that roughly 4x10<sup>7</sup> optical periods are required to accurately resolve the field decay due to the Fourier uncertainty relation. Instead, [`Harminv`](Python_User_Interface.md#harminv) can resolve the Q using just ~1000 periods. This is nearly a four orders of magnitude reduction in the run time.
 
 <center>
 ![](images/ring_vary_radius.png)
 </center>
 
-To compare the convergence rate of the discretization error, the following plot shows the error of the resonant mode (relative to the "exact" result at a resolution of 300 pixels/μm) as a function of the grid resolution for a ring geometry with a fixed radius of 1.1 μm. The no smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel smoothing results have roughly second-order convergence.
+To compare the convergence rate of the discretization error, the following plot shows the error in the resonant mode frequency (relative to the high-resolution result at a resolution of 300 pixels/μm) as a function of the grid resolution for a ring geometry with a fixed radius of 2.0 μm. The no smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel smoothing results have roughly second-order convergence.
 
 <center>
 ![](images/ring_subpixel_smoothing_rate.png)
