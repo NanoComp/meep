@@ -2,7 +2,7 @@
 
 ---
 # `meep.adjoint.Visualization`:
-# Easy, standardized <span class=SC>pymeep</span> visualization routines
+# Easy, standardized Meep visualization routines
 # that *just work*
 --- 
 
@@ -10,16 +10,16 @@
 
 
 The `meep.adjoint` python module implementing
-<span class=SC>meep</span> adjoint solver includes
+Meep adjoint solver includes
 an extensive set of tools for graphical visualization
-of <span class=SC>meep</span> sessions via
-[<span class=SC>matplotlib</span>][MatPlotLib].
+of Meep sessions via
+[`matplotlib`][MatPlotLib].
 Although these tools are packaged with and used by
 `meep.adjoint`, they are independent of the adjoint solver
 and can be used for convenient visualization of *any* python-driven
-<span class=SC>meep</span> session---indeed, it is a specific
+Meep session---indeed, it is a specific
 goal of the module that the visualization routines can
-be invoked, with no arguments, on any <span class=SC>meep</span> geometry
+be invoked, with no arguments, on any Meep geometry
 and will do something reasonable and useful in every case.
 
 These and other objectives of the initiative are described in the
@@ -29,7 +29,7 @@ default options can be customized.
 
 > :bookmark: **tl;dr documentation for `meep.adjoint.visualize`**
 >
-  0. **Motivation:** Plotting is *much* too hard in <span class=SC>meep</span>, especially
+  0. **Motivation:** Plotting is *much* too hard in Meep, especially
      at the lower end where you just want something quick and easy
      to let you sanity-check your geometry.
      This module attempts to
@@ -93,7 +93,7 @@ __________________________________________________
 
 
 
-> :bookmark:{.summary} **<span class=SC>table of contents</span>**
+> :bookmark:{.summary} **`table of contents`**
 >
 > 1. **Motivation and Philsophy**
 > 
@@ -104,7 +104,7 @@ __________________________________________________
 > 2. **Easy visualization of simulation geometries before timestepping: `visualize_sim`**
 >
 > 3. **Easy real-time animation of time-domain fields during 
->      <span class=SC>meep</span> computations:`AFEClient` and `AFEServer`**
+>      Meep computations:`AFEClient` and `AFEServer`**
 >
 > 4. **Easy visualization of frequency-domain fields---in isolation or
 >      superposed atop your material geometry**
@@ -125,7 +125,7 @@ __________________________________________________
 
 ??? note "**The error-checking power of visual sanity checks for text-defined geometries**"
 
-    The fact that every aspect of a <span class=SC>meep</span>
+    The fact that every aspect of a Meep
     calculation---from the [material geometry][GeometricObject],
     to the [absorbing boundaries][PML],
     to the placement and orientation
@@ -141,7 +141,7 @@ __________________________________________________
     non-graphically, it's *also* quite useful---arguably even
     *essential*---to review a graphical representation
     of the geometry you input as interpreted by
-    <span class=SC>meep</span>, both to confirm that your input
+    Meep, both to confirm that your input
     was processed as you expected and to catch the sorts of
     inadvertent errors---a flux monitor in the wrong place,
     a source pointing the wrong direction---that are
@@ -151,7 +151,7 @@ __________________________________________________
     In addition to the usefulness of visual sanity checks
     on your input geometry, it can be helpful to look at
     graphical visualizations of the electric and magnetic 
-    fields computed by <span class=SC>meep</span>---both
+    fields computed by Meep---both
     the time-domain and the frequency-domain fields---and
     in particular to review how the field distributions 
     evolve in space in the presence of your material geometry.
@@ -176,12 +176,12 @@ __________________________________________________
 
     So we're agreed that visualization---of both inputs (geometries)
     and outputs (fields)---is a good thing. But isn't this a 
-    solved problem? After all, <span class=SC>meep</span> offers
+    solved problem? After all, Meep offers
     plenty of routines for retrieving as much raw data on
     geometries and fields as any user could want---and, once one
     has the raw data, it's just a matter of choosing from among the 
     infinitude of available tools for plotting and visualization.
-    Indeed, already within the <span class=SC>meep</span> documentation
+    Indeed, already within the Meep documentation
     itself one can find many different types of visualization generated 
     by many different types of tool. What more is left to say?
 
@@ -191,7 +191,7 @@ __________________________________________________
     Despite the arguably non-issue status of the situation, I would argue
     that the current situation is suboptimal in at least two ways.
 
-    + **(a)** The absence of a single, canonical solution means that, as a <span class=SC>meep</span> user,
+    + **(a)** The absence of a single, canonical solution means that, as a Meep user,
     every time you feel the urge to visualize something you have to spend some time and effort
     figuring out how you are going to do it---and then going through the hassle of setting that up.
     In my experience, this was especially true when it came to making movies of the evolution
@@ -202,7 +202,7 @@ __________________________________________________
     + **(b)** On a different note, the absence of generally-accepted visualization protocols
     means that everybody's visualizations look different. This is not necessarily tragic, and
     we wouldn't want to enforce sterile conformity, but it might be nice if there were *some*
-    notion of "canonical <span class=SC>meep</span> visualization format" to serve as a common
+    notion of "canonical Meep visualization format" to serve as a common
     language.
 
 
@@ -231,9 +231,9 @@ __________________________________________________
           Also, after all, the ability to observe essentially time-domain phenomena is one of the
           key reasons to use an FDTD tool in the first place; many frequency-domain problems
           can be solved much more efficiently by frequency-domain solvers than by something like
-          <span class=SC>meep</sc>, but they don't produce nice movies showing e.g.
+          Meep, but they don't produce nice movies showing e.g.
           reflection and diffraction of wave packets from interfaces. So it seems particularly
-          appropriate for a time-domain-solver like <span class=SC>meep</span> to offer
+          appropriate for a time-domain-solver like Meep to offer
           built-in functionality for animating time-domain field evolutions.
           
       - *Frequency-domain fields after timestepping.* A static image showing the amplitudes of frequency-domain fields
@@ -247,7 +247,7 @@ __________________________________________________
      Of course, the goals outlined above---routines that are *easy to use* and *just work*---suggest
      an implementation strategy in which the tools make all the artistic decisions for you; the easiest
      calling convention to remember is the one with no parameters. However, one of the nice things
-     about the [<span class=SC>matplotlib</span>][MatPlotLib] backend is how very *extremely*
+     about the [`matplotlib`][MatPlotLib] backend is how very *extremely*
      customizable it is, and it shouldn't be hard to pass at least some of those options
      on to users of `meep.adjoint.Visualization.` 
      In view of these considerations, the goal of the routines is to offer
@@ -285,7 +285,7 @@ __________________________________________________
   
 As described above, the first visualization task we consider
 is that of double-checking the various geometric inputs
-supplied to <span class=SC>pymeep</span> when creating a 
+supplied to Meep when creating a 
 [`simulation`](TheSimulationClass):
 the computational cell and material geometry, the absorbing boundaries, the exciting sources, 
 and any DFT cells for which we requested tabulation of frequency-domain fields. Also described
@@ -295,7 +295,7 @@ other parameters required.*
 
 These objectives are satisfied by the `visualize_sim` routine in `meep.adjoint.Visualization`,
 whose calling convention is precision-engineered to be as painless as possible: after
-creating a <span class=SC>pymeep</sc> `simulation`
+creating a Meep `simulation`
 through a call like `#!py3 sim=mp.simulation(geometry=...)`,
 you can simply say
 

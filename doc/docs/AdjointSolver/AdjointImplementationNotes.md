@@ -41,7 +41,7 @@ centered at a third point $\vb{x}\sup{des}$.
 ### Permittivity derivative by finite-differencing
 
 An obvious brute-force way to get at this is simply
-to do two <span class=SC>meep</span> calculations, with $\epsilon\sup{des}$
+to do two Meep calculations, with $\epsilon\sup{des}$
 augmented by a small finite amount $\Delta\epsilon$ on the
 second run, then compute the difference between the frequency-domain
 electric fields at $\vb{x}\sup{obj}$ and divide
@@ -134,7 +134,7 @@ $$ \pard{\wt{\vb{H}}(\vb x\sup{obj})}{\epsilon\sup{des}}
    \tag{1b}
 $$
 
-### Digression: Configuring time-domain sources for desired frequency-domain fields in <span class=SC>meep</span>
+### Digression: Configuring time-domain sources for desired frequency-domain fields in Meep
 
 In frequency-domain electromagnetism we usually consider 
 a time-harmonic source distribution of the form
@@ -161,12 +161,12 @@ $$ \wt{\vb J}(\vb x)
    \wt{\vb E}(\vb x)
 $$
 
-On the other hand, when using <span class=SC>meep</span> to compute
+On the other hand, when using Meep to compute
 the fields produced by a given spatial source distribution,
 we typically construct a time-domain source of the form
 $$\vb{J}\sup{meep}(t,\vb{x})=G(t)\wt{\vb{J}}(\vb x)$$
 where $G(t)$ is a Gaussian temporal envelope.
-More specifically, for <span class=SC>meep</span>'s `GaussianSrc` with
+More specifically, for Meep's `GaussianSrc` with
 center frequency $\omega_0=2\pi f_0$,
 frequency width $\Delta \omega =2\pi \Delta f$, and
 peak time $t_0$, we have
@@ -178,7 +178,7 @@ $$
    \frac{1}{\Delta f}
    e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}.
 $$
-The <span class=SC>meep</span> version of the above
+The Meep version of the above
 input/output diagram looks like
 $$ G(t)\wt{\vb J}(\vb x)
    \quad \Longrightarrow \quad
@@ -191,7 +191,7 @@ $$ G(t)\wt{\vb J}(\vb x)
 $$
 
 The upshot is that the frequency-domain fields obtained from a
-<span class=SC>meep</span> run with a Gaussian source
+Meep run with a Gaussian source
 come out multiplied by a factor of $\wt{G}(\omega)$ that should
 be divided out to yield the desired frequency-domain quantities.
 
@@ -263,7 +263,7 @@ by an electric current.
 Computationally, inner products like
 $\VMV{\vb f}{\bmc G\sup{EE}}{\vb g}$ 
 for arbitrary functions $\vb{f}(\vb x), \vb{g}(\vb x)$
-may be evaluated in <span class=SC>meep</span>
+may be evaluated in Meep
 as follows:
 
 1. Create an electric current source with
@@ -312,7 +312,7 @@ $\bmc{G}\sup{EM}=-\bmc{G}\sup{ME}.$
 
 Note that equations (3a) and (3b), notwithstanding their nearly
 identical appearance, describe two rather different
-<span class=SC>meep</span> calculations: In the former case
+Meep calculations: In the former case
 we place an electric source at $\vb x\sup{obj}$ and timestep to
 compute the resulting magnetic field, while in the latter
 case we place a magnetic source and timestep
@@ -331,7 +331,7 @@ which we will call the *objective region* $\mc{V}\sup{obj}$.
 ### **E**-field energy in region
 
 As one example, the electric field energy in the objective
-region is defined by an integral over that region, which <span class=SC>meep</span>
+region is defined by an integral over that region, which Meep
 approximate by a weighted sum over grid points:
 $$ \mc{E}=
    \frac{1}{2}\int_{\mc{V}\sup{obj}} \epsilon |\wt{\vb E}|^2 \,d\mc{V}

@@ -1,10 +1,10 @@
 --8<-- "doc/docs/AdjointSolver/AdjointDocumentationStyleHeader.md"
 
 ---
-# Design optimization with the <span class=SC>meep</span> adjoint solver: Gallery of worked examples
+# Design optimization with the Meep adjoint solver: Gallery of worked examples
 ---
 
-> :bookmark:{.summary .quirklist} **<span class=SC>table of contents</span>**
+> :bookmark:{.summary .quirklist} **`table of contents`**
 >
 >
 > - [**Full automated optimization of a cross-router device**](#full-automated-optimization-of-a-cross-router-device)

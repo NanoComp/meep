@@ -1,7 +1,7 @@
 --8<-- "doc/docs/AdjointSolver/AdjointDocumentationStyleHeader.md"
 
 ---
-# Design optimization with the <span class=SC>meep</span> adjoint solver: A reference manual
+# Design optimization with the Meep adjoint solver: A reference manual
 ---
 
 As described in the [Overview](Overview.md), the first step in
@@ -17,7 +17,7 @@ a single point in the space of possible input), or full-blown
 evolves the design variables toward the values that optimize
 your objective. 
 
-> :bookmark:{.summary} **<span class=SC>table of contents</span>**
+> :bookmark:{.summary} **`table of contents`**
 >
 > 1. **Defining your problem**: Writing a python script for `mp.adjoint`
 > 
@@ -50,7 +50,7 @@ that drives your `mp.adjoint` session implements a subclass
 of the `OptimizationProblem` base class defined by `mp.adjoint.`
 This is a high-level abstraction of the design-automation 
 process; the base class knows how to do various general things
-involving <span class=SC>meep</span> geometries and objective
+involving Meep geometries and objective
 functions, but is lacking crucial information from you, 
 without which it can't do anything on its own.
 That is to say, `OptimizationProblem` is an
@@ -73,7 +73,7 @@ bars to unfold the description of each item.)
     It has two purposes: **(a)** to give you a chance to complete any one-time initialization
     tasks you need to do, and **(b)** to communication to the base class the
     [CommonElementsOfOptimizationGeometries](Overview.md#common-elements-of-optimization-geometries-objective-regions-objective-functions-design-regions-basis-sets)
-    needed to turn a generic <span class=SC>meep</span> simulation into an optimization problem.
+    needed to turn a generic Meep simulation into an optimization problem.
 
     - **Calling convention:** `def init_problem(self,args)`
 
@@ -210,7 +210,7 @@ run various calculations specified by command-line options.
 The following command-line options are defined by the `OptimizationProblem`
 base class and are available in all `mp.adjoint` sessions.
 
-### Options affecting <span class=SC>meep</span> timestepping
+### Options affecting Meep timestepping
 
 | Option                            | Description                                                   |
 | --------------------------------- | --------------                                                |
@@ -223,7 +223,7 @@ base class and are available in all `mp.adjoint` sessions.
 | `#!py3 --dft_timeout`             | max runtime in units of last_source_time
 | `#!py3 --dft_interval`            | meep time DFT convergence checks in units of last_source_time
 
-### Options affecting outputs from <span class=SC>meep</span> computations
+### Options affecting outputs from Meep computations
 
 | Option                            | Description                                                    |
 | --------------------------------- | --------------                                                 |

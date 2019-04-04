@@ -4,17 +4,17 @@
 # `#!py3 meep.adjoint:` Adjoint sensitivity analysis for automated design optimization
 ---
 
-This section of the <span class=SC>meep</span> documentation
-covers `#!py3 meep.adjoint,` a submodule of the <span class=SC>meep</span> python module
+This section of the Meep documentation
+covers `#!py3 meep.adjoint,` a submodule of the Meep python module
 that implements an [*adjoint-based sensitivity solver*](https://en.wikipedia.org/wiki/Adjoint_state_method)
 to facilitate automated design optimization via derivative-based numerical optimizers.
 
-> :bookmark:{.tocfloat .summary} **<span class=SC>table of contents</span>**
+> :bookmark:{.tocfloat .summary} **`table of contents`**
 >
 > The `meep.adjoint` documentation is divided into a number of subsections:
 > 
 > + This **Overview** page reviews some basic facts about adjoints and optimizers,
->   outlines the steps needed to prepare a <span class=SC>meep</span>
+>   outlines the steps needed to prepare a Meep
 >   geometry for optimization, and sketches the mechanics of
 >   the `meep.adjoint` design process.
 >   (This page is designed to be a gentle introduction for the
@@ -41,7 +41,7 @@ to facilitate automated design optimization via derivative-based numerical optim
 >   the [**Visualization**](Visualization.md) package bundled
 >  with the `meep.adjoint` module offers several general-purpose
 >   utilities for convenient visualization of various aspects
->  of <span class=SC>meep</span> calculations, which are
+>  of Meep calculations, which are
 >  useful in *any* meep calculation whether adjoint-related
 >  or not.
 
@@ -54,7 +54,7 @@ an input coupler, an antenna, etc.---to optimize the performance of the system
 as defined by some problem-specific metric. For our purposes,
 a "design" will consist of a specification of the spatially-varying
 scalar permittivity $\epsilon(\mathbf x)$ in some subregion
-of a <span class=SC>meep</span> geometry, and the performance metric
+of a Meep geometry, and the performance metric
 will be a physical quantity computed from frequency-domain
 fields---a [power flux][GetFluxes],
 an [energy density][DFTEnergy],
@@ -75,9 +75,9 @@ the presence of defect from external detection.
 
 Now, given a candidate design
 $\epsilon\sup{trial}(\mathbf{x})$, it's easy enough to see
-how we can use <span class=SC>meep</span> to evaluate
+how we can use Meep to evaluate
 its performance---just create a
-<span class=SC>meep</span> geometry with $\epsilon\sup{trial}$ as a
+Meep geometry with $\epsilon\sup{trial}$ as a
 [spatially-varying permittivity function][EpsFunc],
 in the design region,
 add [DFT cells][FluxSpectra]
@@ -89,7 +89,7 @@ the DFTs converge, then use post-processing routines like
 or perhaps
 [`#!py3 get_eigenmode_coefficients()`][EigenCoefficients]
 to get the quantities needed to evaluate the performance of the device.
-Thus, for the cost of one full <span class=SC>meep</span> timestepping
+Thus, for the cost of one full Meep timestepping
 run we obtain the value of our objective function at one point
 in the parameter space of possible inputs. 
 
@@ -125,7 +125,7 @@ linearity and reciprocity of Maxwell's equations---to rearrange the
 calculation of derivatives in a way that yields an *enormous* speedup
 over the brute-force finite-difference approach. More specifically,
 after we have computed the objective-function value by doing
-the full <span class=SC>meep</span> timestepping run mentioned
+the full Meep timestepping run mentioned
 above---the "forward" run in adjoint-method parlance---we can magically
 compute its derivatives with respect to *all* design variables by doing
 just *one* additional timestepping run with a funny-looking choice
@@ -179,7 +179,7 @@ Incident power from an
 travels leftward through the waveguide, but is partially 
 reflected by the hole, resulting in less than 100% power
 the waveguide output (as may be 
-characterized in <span class=SC>meep</span>
+characterized in Meep
 by observing power flux and/or
 eigenmode expansion coefficients at the two 
 flux monitors, labeled `east` and `west`).
@@ -274,7 +274,7 @@ $$ f\sub{obj} \equiv \Big( P\sub{3,north} - 2M\sub{2,east}\Big)^2$$
 
 The point is that the definition of an optimization problem
 involves not only a set of physical quantities  (power fluxes, eigenmode coefficients,
-etc.) that we compute from <span class=SC>meep</span> calculations,
+etc.) that we compute from Meep calculations,
 but also a rule (the objective function $f$) for crunching those 
 numbers in some specific way to define a single scalar figure of merit. 
 
@@ -282,7 +282,7 @@ In  `mp.adjoint` we use the collective term *objective quantities*
 for the power fluxes, eigenmode coefficients, and other physical quantities
 needed to compute the objective function.
 Similarly, the special geometric subregions of 
-<span class=SC>meep</span> geometries with
+Meep geometries with
 which objective quantities are associated---the
 cross-sectional flux planes of `DFTFlux` cells or 
 field-energy boxes of `DFTField` cells----are known as *objective regions.*
@@ -320,7 +320,7 @@ central coupler region:
 
 The examples above, distinct though they all are, illustrate
 the common defining features that are present in every
-<span class=SC>meep</span> optimization problem:
+Meep optimization problem:
 
 + **Objective regions:** One or more [regions over which to tabulate frequency-domain fields (DFT cells)][DFTObj]
   for use in computing power fluxes, mode-expansion coefficients, and other frequency-domain
@@ -364,12 +364,12 @@ the common defining features that are present in every
     numerical values for the $N$-vector of coefficients 
     $\boldsymbol{\beta}=\{\beta_n\},n=1,\cdots,N.$
 
-    For adjoint optimization in <span class=SC>meep</span>, the
+    For adjoint optimization in Meep, the
     basis set is chosen by the user, either from among a predefined collection of
     common basis sets, or as an arbitrary user-defined basis set specified by
     subclassing an abstract base class in `mp.adjoint.`
     
-## Mechanics of <span class=SC>meep</span> design optimization
+## Mechanics of Meep design optimization
 
 With all that by way of background, here's a quick rundown of the 
 process you'll follow to optimize a geometry in `meep.adjoint.`
@@ -421,7 +421,7 @@ values, to [full-blown iterative design optimization][CrossRouterExample].
 
 Here, in their entirety, are the python scripts implementing the 4 examples
 described above. (These may also be found in the `python/examples/adjoint_optimization`
-subdirectory of your <span class=SC>meep</span> installation.)
+subdirectory of your Meep installation.)
 
 
 ??? example "`HoleyWaveguide.py`"
