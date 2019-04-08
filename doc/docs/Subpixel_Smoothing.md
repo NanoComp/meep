@@ -91,7 +91,7 @@ To compare the convergence rate of the discretization error, the following plot 
 Enabling Averaging for Material Function
 ----------------------------------------
 
-Subpixel smoothing is automatically applied to `GeometricObject`s as `eps_averaging` is `True` by default. For a `material_function`, because it tends to have poor performance, it is therefore not used. To enable smoothing for a `material_function` requires setting its `do_averaging` property to `True` as demonstrated in the following example.
+Subpixel smoothing is automatically applied to `GeometricObject`s as `eps_averaging` is `True` by default. For a `material_function`, because it tends to have poor performance, subpixel averaging is disabled by default. Meep has an (currently experimental) feature to enable smoothing for a `material_function` by setting its `do_averaging` property to `True` as demonstrated in the following example.
 
 ```py
 
