@@ -983,7 +983,7 @@ cdouble *collapse_empty_dimensions(cdouble *array, int *rank, int dims[3], direc
   for (int nd = 0; nd < full_rank; ++nd) {
     if (dims[nd] == 0) continue;
     if (dft_volume.in_direction(dirs[nd]) == 0.0)
-      reduced_stride[nd - 1] = 0; // degenerate dimension, to be collapsed
+      reduced_stride[nd] = 0; // degenerate dimension, to be collapsed
     else
       reduced_dims[reduced_rank++] = dims[nd];
   }
