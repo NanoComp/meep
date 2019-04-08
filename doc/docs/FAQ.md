@@ -315,7 +315,7 @@ Subpixel averaging affects pixels that contain **at most one** object interface.
 
 ### Can subpixel averaging be applied to a user-defined material function?
 
-No. Subpixel averaging is only performed for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the effective permittivity, can be computed analytically. Computing these quantities using adaptive numerical integration is too slow. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
+Yes but its performance tends to be slow. Subpixel averaging is performed by default (`eps_averaging=True`) for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the [effective permittivity](Subpixel_Smoothing.md#smoothed-permittivity-tensor-via-perturbation-theory), can be computed analytically. This procedure typically takes a few seconds for a 3d cell. Computing these quantities using adaptive numerical integration can be *very* slow (minutes, hours) and also less accurate than the analytic approach. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
 
 Usage: Performance
 ----------------------------
@@ -421,4 +421,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Almost. There is currently a [pull request](https://github.com/NanoComp/meep/pull/795) for this feature which will be merged soon.
+Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization.

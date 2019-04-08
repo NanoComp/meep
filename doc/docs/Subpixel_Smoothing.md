@@ -4,7 +4,7 @@
 
 Meep uses a second-order accurate finite-difference scheme for discretizing [Maxwell's equations](Introduction.md#maxwells-equations). This means that the results from Meep converge to the "exact" result from the non-discretized system quadratically with the resolution Δx. However, this second-order error O(Δx<sup>2</sup>) is generally spoiled to first-order error O(Δx) if the discretization involves a *discontinuous* material boundary (similar to [Gibbs phenomenon](https://en.wikipedia.org/wiki/Gibbs_phenomenon) in signal processing). Moreover, directly discretizing a discontinuity in ε or μ leads to "stairstepped" interfaces that can only be varied in discrete jumps of one pixel. Meep solves both of these problems by smoothing ε and μ: before discretizing, discontinuities are smoothed into continuous transitions over a distance of one pixel Δx, using a second-order accurate averaging procedure which is summarized [below](#smoothed-permittivity-tensor-via-perturbation-theory). This feature enables the discretized solution to converge as quickly as possible to the exact solution as the `resolution` increases.
 
-The subpixel smoothing has four limitations: (1) it only applies to frequency-independent, lossless dielectrics (i.e., silicon at λ=1.55 μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials), (2) it only applies to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.); user-defined `material_function` and `epsilon_input_file` are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function), (3) objects with sharp corners or edges are associated with field singularities which introduce an error intermediate between first- and second-order, and (4) the fields directly *on* the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as resonant frequencies, and for overall integrals of fields and energies to which the interface contributes only O(Δx) of the integration domain.
+The subpixel smoothing has four limitations: (1) it only applies to frequency-independent, lossless dielectrics (i.e., silicon at λ=1.55 μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials), (2) it can be efficiently applied to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.) but *not* to a user-defined `material_function` (for an explanation, see this [FAQ](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function)) which must be [manually enabled](#enabling-averaging-for-material-function), (3) objects with sharp corners or edges are associated with field singularities which introduce an unavoidable error intermediate between first- and second-order, and (4) the fields directly *on* the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as resonant frequencies, and for overall integrals of fields and energies to which the interface contributes only O(Δx) of the integration domain.
 
 [TOC]
 
@@ -88,3 +88,33 @@ To compare the convergence rate of the discretization error, the following plot 
 ![](images/ring_subpixel_smoothing_rate.png)
 </center>
 
+Enabling Averaging for Material Function
+----------------------------------------
+
+Subpixel smoothing is automatically applied to `GeometricObject`s as `eps_averaging` is `True` by default. For a `material_function`, because it tends to have poor performance, it is therefore not used. To enable smoothing for a `material_function` requires setting its `do_averaging` property to `True` as demonstrated in the following example.
+
+```py
+
+def ring_resonator(p):
+    rr = (p.x**2+p.y**2)**0.5
+    if (rr > rad) and (rr < rad+w):
+        return mp.Medium(index=n)
+    return mp.air
+
+ring_resonator.do_averaging = True
+
+geometry = [mp.Block(center=mp.Vector3(),
+                     size=mp.Vector3(sxy,sxy),
+                     material=ring_resonator)]
+
+sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
+                    geometry=geometry,
+                    subpixel_tol=1e-4,
+                    subpixel_maxeval=1000,
+                    sources=src,
+                    resolution=resolution,
+                    symmetries=symmetries,
+                    boundary_layers=[mp.PML(dpml)])
+```
+
+Since the adaptive numerical integration tends to be much slower than the analytic approach, the values for the parameters `subpixel_tol` and `subpixel_maxeval` can be lowered to speed up the quadrature at the expense of reduced accuracy.

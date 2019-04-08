@@ -6,7 +6,8 @@ We demonstrate Meep's [near-to-far field transformation](../Python_User_Interfac
 
 [TOC]
 
-### Radiation Pattern of an Antenna
+Radiation Pattern of an Antenna
+-------------------------------
 
 In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole source as the emitter in vacuum. The source is placed at the center of a 2d square cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways: along the (1) sides of a square box and (2) circumference of a circle, having a length/radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal polarizations of the input source.
 
@@ -131,7 +132,8 @@ plt.show()
 ![](../images/Source_radiation_pattern.png)
 </center>
 
-### Far-Field Intensity of a Cavity
+Far-Field Intensity of a Cavity
+-------------------------------
 
 For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb). The structure is shown at the bottom of the left image below.
 
