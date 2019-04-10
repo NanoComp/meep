@@ -654,9 +654,12 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   /* step 1: call MPB to compute the eigenmode                    */
   /*--------------------------------------------------------------*/
   double omega_src = real(src.frequency());
+
+  am_now_working_on(MPBTime);
   global_eigenmode_data =
       (eigenmode_data *)get_eigenmode(omega_src, d, where, eig_vol, band_num, kpoint,
                                       match_frequency, parity, resolution, eigensolver_tol);
+  finished_working();
 
   /* add_volume_source amp_fun coordinates are relative to where.center();
      this is not the default in get_eigenmode because where-relative coordinates
@@ -759,9 +762,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       double freq = freq_min + nf * dfreq;
       double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
+      am_now_working_on(MPBTime);
       void *mode_data =
           get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint, match_frequency, parity,
                         eig_resolution, eigensolver_tol, verbose, kdom, (void **)&mdata);
+      finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
         if (vgrp) vgrp[nb * num_freqs + nf] = 0;
