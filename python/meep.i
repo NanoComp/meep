@@ -400,7 +400,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
     int rank;
-    int dims[3];
+    size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
  
     if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
@@ -409,7 +409,7 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
     for (int i = 0; i < rank; ++i) {
-        arr_dims[i] = dims[i];
+        arr_dims[i] = dims[i];       // implicit size_t -> int cast, presumed safe for individual array dimensions
         length *= dims[i];
     }
 

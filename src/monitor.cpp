@@ -149,6 +149,7 @@ complex<double> fields::get_field(component c, const vec &loc) const {
   switch (c) {
     case Dielectric: return get_eps(loc);
     case Permeability: return get_mu(loc);
+    case NO_COMPONENT: return 1.0;
     default:
       ivec ilocs[8];
       double w[8];
@@ -191,7 +192,7 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
    largest box in which you can interpolate the fields without communication.
    It is *not* necessarily non-overlapping with other chunks. */
 volume fields_chunk::get_field_gv(component c) const {
-  if (c == Dielectric || c == Permeability) c = gv.eps_component();
+  if (component_index(c)==-1) c = gv.eps_component();
   return volume(gv.loc(c, 0), gv.loc(c, gv.ntot() - 1));
 }
 
@@ -203,6 +204,7 @@ complex<double> fields_chunk::get_field(component c, const vec &loc) const {
   switch (c) {
     case Permeability: abort("non-collective get_field(mu) unimplemented");
     case Dielectric: abort("non-collective get_field(eps) unimplemented");
+    case NO_COMPONENT: return 1.0;
     default: {
       gv.interpolate(c, loc, ilocs, w);
       complex<double> res = 0.0;

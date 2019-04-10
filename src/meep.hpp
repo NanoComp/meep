@@ -943,7 +943,7 @@ public:
                                              ivec max_corner, int num_freq, h5file *file,
                                              double *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
-                                             void *mode2_data, component c_conjugate, bool retain_interp_weights);
+                                             void *mode2_data, int ic_conjugate, bool retain_interp_weights, fields *parent);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -1278,7 +1278,8 @@ public:
   bool have_component(component c, bool is_complex = false) {
     switch (c) {
       case Dielectric:
-      case Permeability: return !is_complex;
+      case Permeability: 
+      case NO_COMPONENT: return !is_complex;
       default: return (f[c][0] && f[c][is_complex]);
     }
   }
@@ -1520,7 +1521,9 @@ public:
   // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
   int get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
-                                 bool collapse_empty_dimensions = false, void *data = 0);
+                                 bool collapse_empty_dimensions = false,
+                                 bool snap_empty_dimensions = false, vec *min_max_loc = NULL,
+                                 void *data = 0);
 
   int get_dft_array_dimensions(const volume &where, size_t dims[3], direction dirs[3]) {
     return get_array_slice_dimensions(where, dims, dirs, true);
@@ -1557,15 +1560,11 @@ public:
                            field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
                            component source_slice_component = Ex, bool get_source_slice = false);
 
-  // utility routine in loop_in_chunks.cpp to construct metadata for
-  // the arrays returned by get_array_slice and get_dft_array
-  void get_array_metadata(const volume &where, double *xtics, double *ytics, double *ztics,
-                          double *weights, bool collapse_empty_dimensions = false);
-
-  void get_dft_array_metadata(const volume &where, double *xtics, double *ytics, double *ztics,
-                              double *weights) {
-    return get_array_metadata(where, xtics, ytics, ztics, weights, true);
-  }
+  /* fetch and return coordinates and integration weights of grid points covered by an array slice, */
+  /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ]       */
+  std::vector<double> get_array_metadata(const volume &where,
+                                         bool collapse_empty_dimensions=true,
+                                         bool snap_empty_dimensions=false);
 
   // step.cpp methods:
   double last_step_output_wall_time;
@@ -1695,7 +1694,7 @@ public:
   std::complex<double> process_dft_component(dft_chunk **chunklists, int num_chunklists,
                                              int num_freq, component c, const char *HDF5FileName,
                                              std::complex<double> **field_array = 0, int *rank = 0,
-                                             int *dims = 0, void *mode1_data = 0,
+                                             size_t *dims = 0, void *mode1_data = 0,
                                              void *mode2_data = 0, component c_conjugate = Ex,
                                              bool *first_component = 0, bool retain_interp_weights=true);
 
@@ -1711,13 +1710,13 @@ public:
 
   // get array of DFT field values
   std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
-                                      int dims[3]);
+                                      size_t dims[3]);
   std::complex<double> *get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
-                                      int dims[3]);
+                                      size_t dims[3]);
   std::complex<double> *get_dft_array(dft_force force, component c, int num_freq, int *rank,
-                                      int dims[3]);
+                                      size_t dims[3]);
   std::complex<double> *get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
-                                      int dims[3]);
+                                      size_t dims[3]);
 
   // overlap integrals between eigenmode fields and DFT flux fields
   void get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int num_freq,
