@@ -840,33 +840,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // For some reason SWIG needs the namespaced version too
 %apply material_type { meep_geom::material_type };
 
-// Typemap suite for get_array_metadata
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* xtics {
-    $1 = (double *)array_data($input);
-}
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* ytics {
-    $1 = (double *)array_data($input);
-}
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* ztics {
-    $1 = (double *)array_data($input);
-}
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* weights {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* weights {
-    $1 = (double *)array_data($input);
-}
-
 // Typemap suite for array_slice
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") size_t dims[3] {
@@ -1429,6 +1402,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         dft_ldos,
         display_progress,
         during_sources,
+        GDSII_layers,
         GDSII_vol,
         get_center_and_size,
         get_eigenmode_freqs,

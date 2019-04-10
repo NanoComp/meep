@@ -206,6 +206,7 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer
                               double zmin = 0.0, double zmax = 0.0);
 meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin = 0.0,
                               double zmax = 0.0);
+std::vector<int> get_GDSII_layers(const char *GDSIIFile);
 
 }; // namespace meep_geom
 

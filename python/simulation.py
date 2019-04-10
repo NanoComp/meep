@@ -2763,6 +2763,8 @@ def get_center_and_size(v):
     size = v3rmax - v3rmin
     return center, size
 
+def GDSII_layers(fname):
+    return list(mp.get_GDSII_layers(fname))
 
 def GDSII_vol(fname, layer, zmin, zmax):
     meep_vol = mp.get_GDSII_volume(fname, layer, zmin, zmax)

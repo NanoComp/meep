@@ -1485,6 +1485,16 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii).
 
+**`mp.GDSII_layers(gdsii_filename)`**
+
+Returns a list of integer-valued layer indices for the layers present in
+the specified GDSII file.
+
+```python 
+mp.GDSII_layers('python/examples/coupler.gds')
+Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
+```
+
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
 —
 Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename`.
