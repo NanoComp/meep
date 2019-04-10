@@ -26,6 +26,8 @@ except NameError:
 
 # Allow C++ master_printf to print to Python's stdout
 mp.cvar.master_printf_callback = mp.py_master_printf_wrap
+# Allow ctlgeom output to print to Python's stdout
+mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
 
 EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom'])
 FluxData = namedtuple('FluxData', ['E', 'H'])

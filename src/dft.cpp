@@ -913,8 +913,9 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   }
   if (array_rank) {
     *array_rank = rank;
-    for (int d = 0; d < rank; d++)
-      array_dims[d] = dims[d];
+    for (int d = 0; d < rank; d++) {
+      if (array_dims) array_dims[d] = dims[d];
+    }
   }
   if (rank == 0) {
     if (pfield_array) *pfield_array = 0;
@@ -1000,7 +1001,6 @@ cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], volume where)
     dirs[nd++]=d;
   return collapse_array(array, rank, dims, dirs, where);
 }
-
 
 cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank, size_t dims[3]) {
   dft_chunk *chunklists[2];
