@@ -1760,7 +1760,7 @@ class Simulation(object):
         mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(dims, dtype=np.complex128)
-        self.fields.get_source_slice(v, component ,arr)
+        self.fields.get_source_slice(v, component, arr)
         return arr
 
     # if return_pw, the return value is (points, weights) where points is a

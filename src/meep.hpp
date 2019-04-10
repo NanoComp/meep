@@ -1557,8 +1557,7 @@ public:
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where, std::vector<component> components,
-                           field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
-                           component source_slice_component = Ex, bool get_source_slice = false);
+                           field_function fun, field_rfunction rfun, void *fun_data, void *vslice);
 
   /* fetch and return coordinates and integration weights of grid points covered by an array slice, */
   /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ]       */
