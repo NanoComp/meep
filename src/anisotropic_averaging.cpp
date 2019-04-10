@@ -46,10 +46,26 @@ vec material_function::normal_vector(field_type ft, const volume &v) {
   vec gradient(zero_vec(v.dim));
   vec p(v.center());
   double R = v.diameter();
-  for (int i = 0; i < num_sphere_quad[number_of_directions(v.dim) - 1]; ++i) {
+  int num_dirs = number_of_directions(v.dim);
+  int min_iters = 1 << num_dirs;
+  double chi1p1_prev = 0;
+  bool break_early = true;
+  for (int i = 0; i < num_sphere_quad[num_dirs - 1]; ++i) {
     double weight;
     vec pt = sphere_pt(p, R, i, weight);
-    gradient += (pt - p) * (weight * chi1p1(ft, pt));
+    double chi1p1_val = chi1p1(ft, pt);
+
+    if (i > 0 && i < min_iters) {
+      if (chi1p1_val != chi1p1_prev) {
+        break_early = false;
+      }
+      if (i == min_iters - 1 && break_early) {
+        // Don't average regions where epsilon is uniform
+        return zero_vec(v.dim);
+      }
+    }
+    chi1p1_prev = chi1p1_val;
+    gradient += (pt - p) * (weight * chi1p1_val);
   }
   return gradient;
 }

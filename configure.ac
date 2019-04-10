@@ -425,6 +425,9 @@ AC_SUBST(LIBCTL_CPPFLAGS)
 # check for -lctlgeom:
 AC_CHECK_LIB(ctlgeom, vector3_dot, [have_libctlgeom=yes; LIBS="-lctlgeom $LIBS"], [have_libctlgeom=no])
 AM_CONDITIONAL(WITH_LIBCTLGEOM, test x"$have_libctlgeom" = "xyes")
+# check for ctl_printf_callback
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctlgeom.h>]], [ctl_printf_callback = 0;])],
+  AC_DEFINE([HAVE_CTL_PRINTF_CALLBACK], [1], [If we have the ctl_printf_callback variable]))
 
 ##############################################################################
 # check for libGDSII
@@ -550,15 +553,15 @@ if test "x$with_scheme" = xyes; then
    AC_CONFIG_FILES([scheme/Makefile scheme/meep.scm])
 fi
 
-##############################################################################
+if test "x$with_python" = xyes; then
+   AC_CONFIG_FILES([libpympb/Makefile python/Makefile])
+fi
 
 AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
-	libpympb/Makefile
-	python/Makefile
 ])
 
 AC_OUTPUT

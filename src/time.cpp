@@ -51,13 +51,14 @@ static const char *ts2n(time_sink s) {
     case MpiTime: return "communicating";
     case FieldOutput: return "outputting fields";
     case FourierTransforming: return "Fourier transforming";
+    case MPBTime: return "MPB";
     case Other: break;
   }
   return "everything else";
 }
 
 static void pt(double ts[], time_sink s) {
-  if (ts[s]) master_printf("    %18s: %g s\n", ts2n(s), ts[s]);
+  if (ts[s]) master_printf("    %21s: %g s\n", ts2n(s), ts[s]);
 }
 
 void fields::print_times() {

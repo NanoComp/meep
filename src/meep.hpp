@@ -1368,6 +1368,7 @@ enum time_sink {
   MpiTime,
   FieldOutput,
   FourierTransforming,
+  MPBTime,
   Other
 };
 
@@ -1695,7 +1696,7 @@ public:
   std::complex<double> process_dft_component(dft_chunk **chunklists, int num_chunklists,
                                              int num_freq, component c, const char *HDF5FileName,
                                              std::complex<double> **field_array = 0, int *rank = 0,
-                                             int *dims = 0, void *mode1_data = 0,
+                                             int *dims = 0, direction *array_dirs=0, void *mode1_data = 0,
                                              void *mode2_data = 0, component c_conjugate = Ex,
                                              bool *first_component = 0, bool retain_interp_weights=true);
 

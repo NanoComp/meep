@@ -315,7 +315,7 @@ Subpixel averaging affects pixels that contain **at most one** object interface.
 
 ### Can subpixel averaging be applied to a user-defined material function?
 
-No. Subpixel averaging is only performed for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the effective permittivity, can be computed analytically. Computing these quantities using adaptive numerical integration is too slow. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
+Yes but its performance tends to be slow. Subpixel averaging is performed by default (`eps_averaging=True`) for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the [effective permittivity](Subpixel_Smoothing.md#smoothed-permittivity-tensor-via-perturbation-theory), can be computed analytically. This procedure typically takes a few seconds for a 3d cell. Computing these quantities using adaptive numerical integration can be *very* slow (minutes, hours) and also less accurate than the analytic approach. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
 
 Usage: Performance
 ----------------------------
@@ -346,6 +346,8 @@ Unless the computational parallelism outweighs the extra communications overhead
 The [discrete time Fourier transform](https://en.wikipedia.org/wiki/Discrete-time_Fourier_transform) (DTFT) of the fields, which is necessary for computing the [Poynting flux](Python_User_Interface.md#flux-spectra), [local density of states](Python_User_Interface.md#ldos-spectra) (LDOS), [near to far field transformation](Python_User_Interface.md#near-to-far-field-spectra), etc., is accumulated at every time step for every point in the [FluxRegion](Python_User_Interface.md#fluxregion). The DTFT computation is parallelized but only in the sense that each processor computes the DTFT fields at points in its own [chunk](Chunks_and_Symmetry.md) of the grid. If the division of the grid among processors into approximately equal-sized chunks (which is the default specified by `split_chunks_evenly=True`) allocates most of the points where the DTFT fields are computed to one processor, it is *not* going to parallelize.
 
 To improve [load-balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)), the parallelization can be made to take the DTFT computation into account by specifying `split_chunks_evenly=False`. This option divides the grid into [chunks](Chunks_and_Symmetry.md) with nearly-equal *cost* rather than *size* such that the region in which the DTFT fields are computed is optimally partitioned among the processors.
+
+[Synchronization](Synchronizing_the_Magnetic_and_Electric_Fields.md) of the fields (i.e., for `add_flux`, `add_energy`, `add_near2far`, etc.), which is both expensive and unnecessary, is *not* performed or required for second-order accuracy when accumulating the Fourier transforms. In the [Fourier summation](Introduction.md#transmittancereflectance-spectra), you multiply the field by exp(iωt) and add the product (multiplied by Δt) to the Fourier amplitude. The value of "t" is simply different for the E and H fields because they are staggered in time by half a timestep.
 
 Note: a simple approach to reduce the cost of the DTFT computation is to reduce the number of frequency points. If you need high frequency resolution in a certain bandwidth, consider adding a second flux region just for that bandwidth, with as many points as you need there, and use a smaller number of frequency points over a broad bandwidth.
 
@@ -419,4 +421,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Not currently but work is underway to add support for this feature with expected release in early 2019 (issue [#600](https://github.com/NanoComp/meep/pull/600)).
+Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization.
