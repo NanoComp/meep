@@ -241,6 +241,8 @@ If you set the `k_point` to any `meep.Vector3`, the structure will be periodic i
 
 A periodic structure does **not** imply periodic fields. The value of the `k_point` determines the *phase relation* between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction. This is known as a [Bloch wave](https://en.wikipedia.org/wiki/Bloch_wave).
 
+A non-zero `k_point` introduces a set of "ghost" pixels along *one* side of each direction of the cell. These additional pixels are used to store the complex Bloch phase multiplied by the field value from the opposite side of the cell boundary. As a result, the size of the cell increases by one pixel in each direction relative to the case of no `k_point`.
+
 Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), the boundary conditions are mostly irrelevant. For example, if there is a PML in front of a periodic boundary, the periodicity doesn't matter because the field will have decayed almost to zero by the time it "wraps around" to the other side of the cell.
 
 ### How do I compute the integral of the energy density over a given region?
