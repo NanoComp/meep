@@ -140,8 +140,8 @@ set(gca, 'xtick', [0 0.5 1.0]);
 ![](../images/Source_radiation_pattern.png)
 </center>
 
-Far-Field Intensity of a Cavity
--------------------------------
+Far-Field Profile of a Cavity
+-----------------------------
 
 For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/cavity-farfield.ctl). The structure is shown at the bottom of the left image below.
 

@@ -135,11 +135,11 @@ plt.show()
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
 
-This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design is based on a supercell of binary-grating unit cells. For a review of the design of a binary grating as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens involves two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping a fixed height (1.8 μm) and periodicity (0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an E<sub>z</sub>-polarized planewave at normal incidence.
+This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an E<sub>z</sub>-polarized planewave at normal incidence.
 
 The simulation script is in [examples/metasurface_lens.py](https://github.com/NanoComp/meep/blob/master/python/examples/metasurface_lens.py).
 
-There is a `grating` function which performs two main tasks: (1) for a unit cell, computes the phase (as well as the transmittance) which involves translating the range of [-π,π] from [Mode Decomposition](../Mode_Decomposition.md) to [-2π,0] in order to be consistent with the analytic formula for the local phase and (2) for a supercell, computes the far-field intensity profile around the focal length of the lens.
+The key to the script is the function `grating` with three geometric input arguments (periodicity, height, and list of duty cycles) which performs the two main tasks: (1) for a unit cell, it computes the phase (as well as the transmittance) and then translates this value from the range of [-π,π] of [Mode Decomposition](../Mode_Decomposition.md) to [-2π,0] in order to be consistent with the analytic formula for the local phase and (2) for a supercell, it computes the far-field intensity profile around the focal length of the lens.
 
 ```py
 import meep as mp
@@ -292,13 +292,13 @@ plt.tight_layout(pad=0.5)
 plt.show()
 ```
 
-The phasemap is shown below. The left figure shows the transmittance which is nearly unity for all values of the duty cycle. This is expected since the periodicity is subwavelength. The right figure shows the phase. There is a subregion in the middle of the plot in which the phase varies continuously from -2π to 0 corresponding to the duty-cycle range of roughly 0.16 to 0.65. This range is used to design the lens.
+The phasemap is shown below. The left figure shows the transmittance which is nearly unity for all values of the duty cycle. This is expected since the periodicity is subwavelength. The right figure shows the phase. There is a subregion in the middle of the plot spanning the duty-cycle range of roughly 0.16 to 0.65 in which the phase varies continuously over the full range of -2π to 0. This structural regime is used to design the supercell lens.
 
 <center>
 ![](../images/metasurface_lens_phasemap.png)
 </center>
 
-In the second part of the calculation, the far-field energy-density profile of three lens designs, comprised of `201`, `401`, and `801` unit cells, are computed using the quadratic formula for the local phase. This first involves fitting the unit-cell phase data to a finer duty-cycle grid in order to enhance the interpolation of the local phase of the supercell. This is important since as the number of unit cells in the lens increases, the local phase varies more gradually. However, if the phase variation becomes too gradual, the `resolution` may also need to be increased in order for [subpixel smoothing](../Subpixel_Smoothing.md) to accurately model the slight changes in the duty cycle.
+In the second part of the calculation, the far-field energy-density profile of three supercell lens designs, comprised of `201`, `401`, and `801` unit cells, are computed using the quadratic formula for the local phase. Initially, this involves fitting the unit-cell phase data to a finer duty-cycle grid in order to enhance the local-phase interpolation of the supercell. This is important since as the number of unit cells in the lens increases, the local phase varies more gradually from unit cell to unit cell. However, if the phase variation becomes too gradual (i.e., less than a tenth of the pixel dimensions), the `resolution` may also need to be increased in order for [subpixel smoothing](../Subpixel_Smoothing.md) to accurately resolve the slight variations in the duty cycle.
 
 ```py
 gdc_new = np.linspace(0.16,0.65,500)
@@ -336,21 +336,21 @@ plt.tight_layout()
 plt.show()
 ```
 
-The lens design for the structure involving `201` unit cells is shown below. Note that even though periodic boundaries are used in the supercell calculation (via the `k_point`), the choice of cell boundaries in the *y* or longitudinal direction is *not* important given the finite length of the lens; as an alternative, PMLs could also have been used. Although [`near2far`](../Python_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter in `add_near2far`), it is not necessary for this particular example.
+Shown below is the supercell lens design involving `201` unit cells. Note that even though periodic boundaries are used in the supercell calculation (via the `k_point`), the choice of cell boundaries in the *y* (or longitudinal) direction is *irrelevant* given the finite length of the lens. For example, PMLs could also have been used (at the expense of a larger cell). Although [`add_near2far`](../Python_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter), it is not necessary for this particular example.
 
 <center>
 ![](../images/metasurface_lens_epsilon.png)
 </center>
 
-The far-field energy-density profile is shown below. As the number of unit cells increases, the focal spot becomes sharper and sharper as expected.
+The far-field energy-density profile is shown below for the three lens designs. As the number of unit cells increases, the focal spot becomes sharper and sharper. This is expected since the longer the focal length, the more unit cells are required for the lens to demonstrate focusing. In this example, the largest lens contains `801` unit cells which corresponds to 0.24 mm or 1.2X the focal length.
 
 <center>
 ![](../images/metasurface_lens_farfield.png)
 </center>
 
 
-Far-Field Intensity of a Cavity
--------------------------------
+Far-Field Profile of a Cavity
+-----------------------------
 
 For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb). The structure is shown at the bottom of the left image below.
 
