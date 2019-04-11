@@ -21,7 +21,6 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
@@ -53,9 +52,7 @@ typedef struct {
   vec *min_max_loc;
 
   // if the component of the field array is NO_COMPONENT,
-  // the array is populated with the grid-point coordinates in
-  // direction xyz_dir, or with grid weights if xyz_dir==NO_DIRECTION.
-  direction xyz_dir;
+  // the array is populated with the grid weights
 
   // the function to output and related info (offsets for averaging, etc.)
   // note: either fun *or* rfun should be non-NULL (not both)
@@ -307,12 +304,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
     for (int i = 0; i < num_components; ++i) {
       // special case for fetching grid point coordinates and weights
       if (cS[i] == NO_COMPONENT) {
-          if (data->xyz_dir==NO_DIRECTION)
-           fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-          else if (has_direction(fc->gv.dim, data->xyz_dir))
-           fields[i] = loc.in_direction(data->xyz_dir);
-          else
-           fields[i] = 0.0;
+          fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
        }
       else if (cS[i] == Dielectric) {
         double tr = 0.0;
@@ -487,16 +479,6 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   data.fields = new cdouble[num_components];
   data.offsets = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
-
-  data.xyz_dir = NO_DIRECTION;
-  if (num_components==1 && components[0]==NO_COMPONENT)
-   { char *s=getenv("MEEP_ARRAY_XYZDIR");
-     if (s)
-      { int d = toupper(s[0]) - 'X';
-        if (0<=d && d<=2)
-         data.xyz_dir = (direction)d;
-      }
-   }
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
