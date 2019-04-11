@@ -845,7 +845,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
 /***************************************************************/
 cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
                                       component c, const char *HDF5FileName, cdouble **pfield_array,
-                                      int *array_rank, size_t *array_dims, void *mode1_data,
+                                      int *array_rank, size_t *array_dims, direction *array_dirs, void *mode1_data,
                                       void *mode2_data, component c_conjugate,
                                       bool *first_component, bool retain_interp_weights) {
 
@@ -903,6 +903,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
     *array_rank = rank;
     for (int d = 0; d < rank; d++) {
       if (array_dims) array_dims[d] = dims[d];
+      if (array_dirs) array_dirs[d] = ds[d];
     }
   }
   if (rank == 0) {
@@ -980,23 +981,14 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
 /***************************************************************/
 cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dirs[3], volume where);
 
-// prototype for non-class-method utility function in array_slice.cpp
-cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], volume where)
-{ direction dirs[3];
-  int nd=0;
-  LOOP_OVER_DIRECTIONS(where.dim,d)
-   if (where.in_direction(d)!=0.0)
-    dirs[nd++]=d;
-  return collapse_array(array, rank, dims, dirs, where);
-}
-
 cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank, size_t dims[3]) {
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
   cdouble *array;
-  process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims);
-  return collapse_array(array, rank, dims, flux.where);
+  direction dirs[3];
+  process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims, dirs);
+  return collapse_array(array, rank, dims, dirs, flux.where);
 }
 
 cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank, size_t dims[3]) {
@@ -1005,24 +997,27 @@ cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *
   chunklists[1] = force.offdiag2;
   chunklists[2] = force.diag;
   cdouble *array;
-  process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims);
-  return collapse_array(array, rank, dims, force.where);
+  direction dirs[3];
+  process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims, dirs);
+  return collapse_array(array, rank, dims, dirs, force.where);
 }
 
 cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank, size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
   cdouble *array;
-  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
-  return collapse_array(array, rank, dims, n2f.where);
+  direction dirs[3];
+  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
+  return collapse_array(array, rank, dims, dirs, n2f.where);
 }
 
 cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank, size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
   cdouble *array;
-  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims);
-  return collapse_array(array, rank, dims, fdft.where);
+  direction dirs[3];
+  process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
+  return collapse_array(array, rank, dims, dirs, fdft.where);
 }
 
 /***************************************************************/
@@ -1044,12 +1039,10 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
   // is needed to make sure everybody agrees on how many frequencies there are,
   // because some processes' field chunks may have no overlap with dft_volume,
   // in which case those processes will think NumFreqs==0.
-  direction dirs[3];
-  int rank=0;
+  bool have_empty_dims = false;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
    if (dft_volume.in_direction(d)!=0.0)
-    dirs[rank++]=d;
-  bool have_empty_dims = ( rank < number_of_directions(dft_volume.dim) );
+    have_empty_dims = true;
 
   h5file *file = 0;
   if (have_empty_dims && am_master()) {
@@ -1063,15 +1056,14 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
   for (int num_freq = 0; num_freq < NumFreqs; num_freq++)
     FOR_E_AND_H(c) {
       if (!have_empty_dims) {
-        process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0,
+        process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0, 0,
                               Ex, &first_component);
       } else {
         cdouble *array = 0;
-        int rank2;
+        int rank;
         size_t dims[3];
-        process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank2, dims);
-        if (rank2!=rank)
-         abort("%s:%i: internal error (%i,%i)", __FILE__, __LINE__,rank,rank2);
+        direction dirs[3];
+        process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims, dirs);
         if (rank > 0 && am_master()) {
           array = collapse_array(array, &rank, dims, dirs, dft_volume);
           if (rank == 0) abort("%s:%i: internal error", __FILE__, __LINE__);
@@ -1133,7 +1125,7 @@ void fields::output_mode_fields(void *mode_data, dft_flux flux, const char *HDF5
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  FOR_E_AND_H(c) { process_dft_component(chunklists, 2, 0, c, 0, 0, 0, 0, mode_data, 0, c); }
+  FOR_E_AND_H(c) { process_dft_component(chunklists, 2, 0, c, 0, 0, 0, 0, 0, mode_data, 0, c); }
 }
 
 /***************************************************************/
@@ -1179,13 +1171,13 @@ void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int 
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  cdouble ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, mode1_data,
+  cdouble ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, 0, mode1_data,
                                        mode2_data, cH[0]);
-  cdouble EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, mode1_data,
+  cdouble EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, 0, mode1_data,
                                        mode2_data, cH[1]);
-  cdouble HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, mode1_data,
+  cdouble HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, 0, mode1_data,
                                        mode2_data, cE[0]);
-  cdouble HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, mode1_data,
+  cdouble HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, 0, mode1_data,
                                        mode2_data, cE[1]);
   overlaps[0] = ExHy - EyHx;
   overlaps[1] = HyEx - HxEy;
