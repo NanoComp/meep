@@ -784,18 +784,6 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
       // (for a 2D array) n2 + n1*N2
       // (for a 3D array) n3 + n2*N3 + n1*N2*N3
       // where NI = number of points in Ith direction.
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-/*
-{
-IVEC_LOOP_LOC(fc->gv, myloc);
-FILE *LogFile=fopen("/tmp/dftloop.log","a");
-fprintf(LogFile,"%i %i %e %e %e %e \n",
-iloc.in_direction(X),iloc.in_direction(Y),
-myloc.in_direction(X),myloc.in_direction(Y),w,interp_w);
-fclose(LogFile);
-}
-*/
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
       int idx2 = 0;
       for (int i = rank - 1, stride = 1; i >= 0; stride *= array_count[i--])
         idx2 += stride * (iloc.in_direction(ds[i]) / 2);
