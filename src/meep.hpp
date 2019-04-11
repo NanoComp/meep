@@ -1369,6 +1369,7 @@ enum time_sink {
   MpiTime,
   FieldOutput,
   FourierTransforming,
+  MPBTime,
   Other
 };
 
