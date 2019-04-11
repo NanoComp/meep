@@ -395,8 +395,8 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
    { min_loc = min_max_loc + 0;
      max_loc = min_max_loc + 1;
      LOOP_OVER_DIRECTIONS(gv.dim,d)  {
-       min_loc->set_direction(d,+1.0e10);
-       max_loc->set_direction(d,-1.0e10);
+       min_loc->set_direction(d,+infinity);
+       max_loc->set_direction(d,-infinity);
      }
     }
 
