@@ -719,8 +719,8 @@ public:
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc) const;
-  double get_chi1inv(component, direction, const vec &loc) const;
+  double get_chi1inv(component, direction, const ivec &origloc, bool parallel=true) const;
+  double get_chi1inv(component, direction, const vec &loc, bool parallel=true) const;
   double get_inveps(component c, direction d, const ivec &origloc) const {
     return get_chi1inv(c, d, origloc);
   }
@@ -1287,10 +1287,6 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  // for non-collective interpolation:
-  volume get_field_gv(component) const;
-  std::complex<double> get_field(component, const vec &) const;
-
   double get_chi1inv(component, direction, const ivec &iloc) const;
 
   void backup_component(component c);
@@ -1737,7 +1733,7 @@ public:
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int Nperiods=1);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc) const;
+  double get_chi1inv(component, direction, const vec &loc, bool parallel=true) const;
   double get_inveps(component c, direction d, const vec &loc) const {
     return get_chi1inv(c, d, loc);
   }
@@ -1747,7 +1743,7 @@ public:
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
   std::complex<double> get_field(int c, const vec &loc) const;
-  std::complex<double> get_field(component c, const vec &loc) const;
+  std::complex<double> get_field(component c, const vec &loc, bool parallel=true) const;
   double get_field(derived_component c, const vec &loc) const;
 
   // energy_and_flux.cpp
@@ -1826,8 +1822,8 @@ private:
 
 public:
   // monitor.cpp
-  std::complex<double> get_field(component c, const ivec &iloc) const;
-  double get_chi1inv(component, direction, const ivec &iloc) const;
+  std::complex<double> get_field(component c, const ivec &iloc, bool parallel=true) const;
+  double get_chi1inv(component, direction, const ivec &iloc, bool parallel=true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
 };
