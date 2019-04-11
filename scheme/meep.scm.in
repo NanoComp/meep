@@ -520,7 +520,7 @@
   (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
-(define (fields-add-fluxish-stuff add-dft-stuff fields fcen df nfreq stufflist)
+(define (fields-add-fluxish-stuff add-dft-stuff fields fcen df nfreq stufflist . nperiods)
   (define vl '()) ; volume_list of flux regions
   (map (lambda (f)
 	 (let* ((v (volume (center (object-property-value f 'center))
@@ -540,7 +540,7 @@
        stufflist)
   (let ((stuff
 	 (add-dft-stuff fields vl
-			(- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
+			(- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq (if (not (null? nperiods)) (car nperiods)))))
     (delete-meep-volume-list vl)
     stuff))
 
@@ -729,13 +729,16 @@
   (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
-(define (fields-add-near2far fields fcen df nfreq . near2fars)
+(define (fields-add-near2far fields fcen df nfreq nperiods . near2fars)
   (fields-add-fluxish-stuff meep-fields-add-dft-near2far
-			    fields fcen df nfreq near2fars))
+			    fields fcen df nfreq near2fars nperiods))
 
-(define (add-near2far fcen df nfreq . near2fars)
+(define* (add-near2far fcen df nfreq #:key (nperiods 1) . near2fars)
   (if (null? fields) (init-fields))
-  (apply fields-add-near2far (append (list fields fcen df nfreq) near2fars)))
+  ;; Keyword arguments automatically get added to the "rest" list in guile,
+  ;; so we have to remove the nperiods key and value from near2fars
+  (apply fields-add-near2far (append (list fields fcen df nfreq nperiods)
+                                     (delq #:nperiods (delq nperiods near2fars)))))
 
 (define (scale-near2far-fields s f)
   (meep-dft-near2far-scale-dfts f s))

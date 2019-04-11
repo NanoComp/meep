@@ -25,6 +25,7 @@
 -   **GDSII** file import for planar geometries.
 -   **Materials library** containing predefined broadband, complex refractive indices.
 -   Field analyses including [Poynting flux](https://meep.readthedocs.io/en/latest/Python_Tutorials/Basics/#transmittance-spectrum-of-a-waveguide-bend), [mode decomposition](https://meep.readthedocs.io/en/latest/Python_Tutorials/Mode_Decomposition/) (for [S-parameters](https://meep.readthedocs.io/en/latest/Python_Tutorials/GDSII_Import/)), [energy density](https://meep.readthedocs.io/en/latest/Python_User_Interface/#energy-density-spectra), [near to far transformations](https://meep.readthedocs.io/en/latest/Python_Tutorials/Near_to_Far_Field_Spectra/), [frequency extraction](https://meep.readthedocs.io/en/latest/Python_Tutorials/Basics/#modes-of-a-ring-resonator), [local density of states](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/) (LDOS), [modal volume](https://meep.readthedocs.io/en/latest/Python_User_Interface/#field-computations), [Maxwell stress tensor](https://meep.readthedocs.io/en/latest/Python_Tutorials/Optical_Forces/), [arbitrary functions](https://meep.readthedocs.io/en/latest/Field_Functions/); completely programmable.
+-   [Adjoint solver](https://meep.readthedocs.io/en/latest/Python_Tutorials/AdjointSolver) for **sensitivity analysis** and **automated design optimization**.
 
 ## Citing Meep
 
@@ -36,5 +37,3 @@ We kindly request that you cite the following paper in any published work for wh
 ## Documentation
 
 See the [manual on readthedocs](https://meep.readthedocs.io/en/latest) for the latest documentation.
-
-

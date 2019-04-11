@@ -550,15 +550,15 @@ if test "x$with_scheme" = xyes; then
    AC_CONFIG_FILES([scheme/Makefile scheme/meep.scm])
 fi
 
-##############################################################################
+if test "x$with_python" = xyes; then
+   AC_CONFIG_FILES([libpympb/Makefile python/Makefile])
+fi
 
 AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
 	tests/Makefile
-	libpympb/Makefile
-	python/Makefile
 ])
 
 AC_OUTPUT
