@@ -36,7 +36,7 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 void Run(bool Pulse, double resolution, cdouble **field_array = 0, int *array_rank = 0,
-         int *array_dims = 0) {
+         size_t *array_dims = 0) {
   /***************************************************************/
   /* initialize geometry                                         */
   /***************************************************************/
@@ -103,7 +103,7 @@ void Run(bool Pulse, double resolution, cdouble **field_array = 0, int *array_ra
 /***************************************************************/
 /* return L2 norm of error normalized by average of L2 norms   */
 /***************************************************************/
-double compare_array_to_dataset(cdouble *field_array, int array_rank, int *array_dims,
+double compare_array_to_dataset(cdouble *field_array, int array_rank, size_t *array_dims,
                                 const char *file, const char *name) {
   int file_rank;
   size_t file_dims[3];
@@ -116,7 +116,7 @@ double compare_array_to_dataset(cdouble *field_array, int array_rank, int *array
   if (!rdata || !idata) return -1.0;
   if (file_rank != array_rank) return -1.0;
   for (int n = 0; n < file_rank; n++)
-    if (file_dims[n] != size_t(array_dims[n])) return -1.0;
+    if (file_dims[n] != array_dims[n]) return -1.0;
 
   double NormArray = 0.0, NormFile = 0.0, NormDelta = 0.0;
   for (size_t n = 0; n < file_dims[0] * file_dims[1]; n++) {
@@ -234,7 +234,8 @@ int main(int argc, char *argv[]) {
   }
 
   cdouble *field_array = 0;
-  int array_rank, array_dims[3];
+  int array_rank;
+  size_t array_dims[3];
   Run(true, resolution, &field_array, &array_rank, array_dims);
   Run(false, resolution);
 
