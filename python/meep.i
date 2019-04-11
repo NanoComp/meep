@@ -1429,6 +1429,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         dft_ldos,
         display_progress,
         during_sources,
+        GDSII_layers,
         GDSII_vol,
         get_center_and_size,
         get_eigenmode_freqs,
