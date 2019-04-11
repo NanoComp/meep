@@ -53,7 +53,7 @@ typedef struct {
   vec *min_max_loc;
 
   // if the component of the field array is NO_COMPONENT,
-  // the array is populated with the grid-point coordinates in 
+  // the array is populated with the grid-point coordinates in
   // direction xyz_dir, or with grid weights if xyz_dir==NO_DIRECTION.
   direction xyz_dir;
 
@@ -125,7 +125,7 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
 
-  if (data->min_max_loc) { 
+  if (data->min_max_loc) {
      vec rshift(shift * (0.5 * fc->gv.inva));
      LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
        IVEC_LOOP_LOC(fc->gv, loc);
@@ -375,7 +375,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* get_array_slice.                                            */
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
-                                       bool collapse_empty_dimensions, 
+                                       bool collapse_empty_dimensions,
                                        bool snap_empty_dimensions,
                                        vec *min_max_loc, void *caller_data) {
   am_now_working_on(FieldOutput);
@@ -399,7 +399,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
        max_loc->set_direction(d,-1.0e10);
      }
     }
-  
+
   bool use_symmetry = true;
   loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, Centered,
                  use_symmetry, snap_empty_dimensions);
@@ -407,7 +407,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   data->min_corner = -max_to_all(-data->min_corner); // i.e., min_to_all
   data->max_corner = max_to_all(data->max_corner);
   if (min_max_loc)
-   LOOP_OVER_DIRECTIONS(gv.dim,d) { 
+   LOOP_OVER_DIRECTIONS(gv.dim,d) {
        min_loc->set_direction(d, -1.0*max_to_all(-1.0*min_loc->in_direction(d)));
        max_loc->set_direction(d,      max_to_all(     max_loc->in_direction(d)));
     }
@@ -493,7 +493,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
    { char *s=getenv("MEEP_ARRAY_XYZDIR");
      if (s)
       { int d = toupper(s[0]) - 'X';
-        if (0<=d && d<=2) 
+        if (0<=d && d<=2)
          data.xyz_dir = (direction)d;
       }
    }
@@ -613,7 +613,7 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
 }
 
 /**********************************************************************/
-/* increment a multi-index <n_1, n_2, ..., n_r> in which n_i runs over*/ 
+/* increment a multi-index <n_1, n_2, ..., n_r> in which n_i runs over*/
 /* the range 0 <= n_i < nMax_i. return true if this is the increment  */
 /* that brings the multiindex to all zeros.                           */
 /**********************************************************************/
@@ -641,7 +641,7 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   direction reduced_dirs[3];
   for(int r=0; r<full_rank; r++) {
     if (where.in_direction(dirs[r]) == 0.0)
-      reduced_stride[r - 1] = 0; // degenerate dimension, to be collapsed
+      reduced_stride[r] = 0; // degenerate dimension, to be collapsed
     else
       { reduced_dirs[reduced_rank]   = dirs[r];
         reduced_dims[reduced_rank++] = dims[r];
