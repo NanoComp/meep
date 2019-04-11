@@ -154,51 +154,10 @@ complex<double> fields::get_field(component c, const ivec &origloc, bool paralle
 }
 
 complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
-<<<<<<< HEAD
-  complex<double> res = 0.0;
-  if (f[c][0] && f[c][1])
-    res = getcm(f[c], gv.index(c, iloc));
-  else if (f[c][0])
-    res = f[c][0][gv.index(c, iloc)];
-  return broadcast(n_proc(), res);
-}
-
-/* Bounding box for zero-communication get_field, below.  This is the
-   largest box in which you can interpolate the fields without communication.
-   It is *not* necessarily non-overlapping with other chunks. */
-volume fields_chunk::get_field_gv(component c) const {
-  if (component_index(c)==-1) c = gv.eps_component();
-  return volume(gv.loc(c, 0), gv.loc(c, gv.ntot() - 1));
-}
-
-/* Non-collective, zero-communication get_field... loc *must*
-   be in get_field_gv(c). */
-complex<double> fields_chunk::get_field(component c, const vec &loc) const {
-  ivec ilocs[8];
-  double w[8];
-  switch (c) {
-    case Permeability: abort("non-collective get_field(mu) unimplemented");
-    case Dielectric: abort("non-collective get_field(eps) unimplemented");
-    case NO_COMPONENT: return 1.0;
-    default: {
-      gv.interpolate(c, loc, ilocs, w);
-      complex<double> res = 0.0;
-      for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
-        if (!gv.contains(ilocs[i])) abort("invalid loc in chunk get_field, weight = %g", w[i]);
-        if (f[c][0] && f[c][1])
-          res += getcm(f[c], gv.index(c, ilocs[i])) * w[i];
-        else if (f[c][0])
-          res += f[c][0][gv.index(c, ilocs[i])] * w[i];
-      }
-      return res;
-    }
-  }
-=======
   if (is_mine())
     return f[c][0] ? (f[c][1] ? getcm(f[c], gv.index(c, iloc)) : f[c][0][gv.index(c, iloc)]) : 0.0;
   else
     return 0.0;
->>>>>>> master
 }
 
 double fields::get_chi1inv(component c, direction d, const ivec &origloc, bool parallel) const {
