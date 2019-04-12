@@ -599,7 +599,7 @@ class TestSimulation(unittest.TestCase):
     def test_source_slice(self):
         sim = self.init_simple_simulation()
         sim.run(until=5)
-        slice = sim.get_source_slice(mp.Ez)
+        slice = sim.get_source(mp.Ez)
         print(slice)
 
 if __name__ == '__main__':
