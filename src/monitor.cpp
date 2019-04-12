@@ -127,6 +127,7 @@ complex<double> fields::get_field(component c, const vec &loc, bool parallel) co
   switch (c) {
     case Dielectric: return get_eps(loc);
     case Permeability: return get_mu(loc);
+    case NO_COMPONENT: return 1.0;
     default:
       ivec ilocs[8];
       double w[8];

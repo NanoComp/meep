@@ -92,6 +92,7 @@ const char *component_name(component c) {
     case Bp: return "bp";
     case Dielectric: return "eps";
     case Permeability: return "mu";
+    case NO_COMPONENT: return "none";
   }
   return "Error in component_name";
 }

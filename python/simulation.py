@@ -1763,36 +1763,35 @@ class Simulation(object):
         self.fields.get_source_slice(v, component ,arr)
         return arr
 
-    def get_source_slice(self, component, vol=None, center=None, size=None):
-        warnings.warn('get_source_slice is deprecated. Please use get_source instead', DeprecationWarning)
-        return self.get_source(component, vol=vol, center=center, size=size)
-
-    def get_array_metadata(self, vol=None, center=None, size=None, dft=None):
-        if dft:
-            vol = dft.where
+    # if return_pw, the return value is (points, weights) where points is a
+    # mp.Vector3-valued array of the same dimensions as weights.
+    # otherwise return value is 4-tuple (xtics, ytics, ztics, weights).
+    def get_array_metadata(self, vol=None, center=None, size=None, dft_cell=None,
+                           collapse=False, snap=False, return_pw=False):
+        if dft_cell:
+            vol, collapse = dft_cell.where, True
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
             v = self._volume_from_kwargs(vol, center, size)
-        dims = np.zeros(3, dtype=np.uintp)
-        rank, dirs = mp._get_array_slice_dimensions(self.fields, v, dims, bool(dft))
-
-        nxyz = np.ones(3, dtype=np.intp)
-        for r in range(0,rank):
-            nxyz[dirs[r]]=dims[r]
-        nw=nxyz[0]*nxyz[1]*nxyz[2]
-        xtics=np.zeros(nxyz[0],dtype=np.float64)
-        ytics=np.zeros(nxyz[1],dtype=np.float64)
-        ztics=np.zeros(nxyz[2],dtype=np.float64)
-        weights=np.zeros(nw,dtype=np.float64)
-        self.fields.get_array_metadata(v, xtics, ytics, ztics, weights, bool(dft))
-        return (xtics,ytics,ztics,np.reshape(weights,dims[np.nonzero(dims)]))
+        xyzw_vector = self.fields.get_array_metadata(v, collapse, snap)
+        offset, tics = 0, []
+        for n in range(3):
+            N = int(xyzw_vector[offset])
+            tics.append( xyzw_vector[offset+1:offset+1+N] )
+            offset += 1+N
+        wshape=[len(t) for t in tics if len(t)>1]
+        weights=np.reshape(xyzw_vector[offset:],wshape)
+        if return_pw:
+            points=[ mp.Vector3(x,y,z) for x in tics[0] for y in tics[1] for z in tics[2] ]
+            return points,weights
+        return tics + [weights]
 
     def get_dft_array_metadata(self, dft_cell=None, vol=None, center=None, size=None):
         warnings.warn('get_dft_array_metadata is deprecated. Please use get_array_metadata instead',
                       DeprecationWarning)
         return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
-                                       center=center, size=size)
+                                       center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):

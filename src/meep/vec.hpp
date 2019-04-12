@@ -50,7 +50,8 @@ enum component {
   Bp,
   Bz,
   Dielectric,
-  Permeability
+  Permeability,
+  NO_COMPONENT
 };
 #define Centered Dielectric // better name for centered "dielectric" grid
 enum derived_component {
@@ -353,8 +354,9 @@ inline int component_index(component c) {
     case Hp:
     case Dp:
     case Bp: return 1;
-    case Dielectric: return -1;
-    case Permeability: return -1;
+    case Dielectric:
+    case Permeability:
+    case NO_COMPONENT: return -1;
   }
   return -2; // This code is never reached...
 }
@@ -383,8 +385,9 @@ inline direction component_direction(component c) {
     case Hp:
     case Dp:
     case Bp: return P;
-    case Dielectric: return NO_DIRECTION;
-    case Permeability: return NO_DIRECTION;
+    case Dielectric: 
+    case Permeability: 
+    case NO_COMPONENT: return NO_DIRECTION;
   }
   return X; // This code is never reached...
 }
@@ -417,10 +420,8 @@ inline component direction_component(component c, direction d) {
     start_point = Dx;
   else if (is_B(c))
     start_point = Bx;
-  else if (c == Dielectric && d == NO_DIRECTION)
-    return Dielectric;
-  else if (c == Permeability && d == NO_DIRECTION)
-    return Permeability;
+  else if (d == NO_DIRECTION && component_direction(c)==d)
+    return c;
   else
     abort("unknown field component %d", c);
   switch (d) {
