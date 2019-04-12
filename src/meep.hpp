@@ -1517,7 +1517,8 @@ public:
   // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
   int get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
-                                 bool collapse_empty_dimensions = false, void *data = 0);
+                                 bool collapse_empty_dimensions = false, 
+                                 vec *min_max_loc = NULL, void *data = 0);
 
   int get_dft_array_dimensions(const volume &where, size_t dims[3], direction dirs[3]) {
     return get_array_slice_dimensions(where, dims, dirs, true);
@@ -1551,8 +1552,7 @@ public:
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where, std::vector<component> components,
-                           field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
-                           component source_slice_component = Ex, bool get_source_slice = false);
+                           field_function fun, field_rfunction rfun, void *fun_data, void *vslice);
 
   // utility routine in loop_in_chunks.cpp to construct metadata for
   // the arrays returned by get_array_slice and get_dft_array
