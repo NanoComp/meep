@@ -539,8 +539,12 @@
 		  vl))))
        stufflist)
   (let ((stuff
-	 (add-dft-stuff fields vl
-			(- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq (if (not (null? nperiods)) (car nperiods)))))
+         (if (eq? add-dft-stuff meep-fields-add-dft-near2far)
+             (add-dft-stuff fields vl
+                            (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq
+                            (if (not (null? nperiods)) (car nperiods)))
+             (add-dft-stuff fields vl
+                            (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq))))
     (delete-meep-volume-list vl)
     stuff))
 
