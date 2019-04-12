@@ -46,6 +46,7 @@ TESTS =                                   \
     $(TEST_DIR)/force.py                  \
     $(TEST_DIR)/fragment_stats.py         \
     $(TEST_DIR)/geom.py                   \
+    $(TEST_DIR)/get_point.py              \
     $(TEST_DIR)/holey_wvg_bands.py        \
     $(TEST_DIR)/holey_wvg_cavity.py       \
     $(KDOM_TEST)                          \
