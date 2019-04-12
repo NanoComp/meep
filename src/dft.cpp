@@ -1067,7 +1067,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
         if (rank > 0 && am_master()) {
           array = collapse_array(array, &rank, dims, dirs, dft_volume);
           if (rank == 0) abort("%s:%i: internal error", __FILE__, __LINE__);
-          size_t array_size = dims[0] * (rank==1 ? dims[1] : 1);
+          size_t array_size = dims[0] * (rank>=2 ? dims[1] * (rank==3 ? dims[2] : 1) : 1);
           double *real_array = new double[array_size];
           if (!real_array) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, array_size);
           for (int reim = 0; reim < 2; reim++) {
