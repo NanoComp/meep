@@ -1757,7 +1757,7 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False)
+        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, True)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(dims, dtype=np.complex128)
         self.fields.get_source_slice(v, component ,arr)
