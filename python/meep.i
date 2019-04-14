@@ -1343,7 +1343,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    bool verbose);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions, , bool snap_empty_dimensions);
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions);
 
 %ignore eps_func;
 %ignore inveps_func;
