@@ -575,6 +575,7 @@ class Simulation(object):
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
         self.collect_stats = collect_stats
+        self.fragment_stats = None
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -1114,6 +1115,34 @@ class Simulation(object):
     def require_dimensions(self):
         if self.structure is None:
             mp.set_dimensions(self._infer_dimensions(self.k_point))
+
+    def get_estimated_memory_usage(self):
+        if self.fields is None:
+            self.collect_stats = True
+            self.init_sim()
+
+        if self.fragment_stats is None:
+            self.fragment_stats = self._compute_fragment_stats(self.structure.user_volume)
+
+        is_periodic = self.k_point and self.k_point != mp.Vector3(0, 0, 0)
+        E_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1)
+        M_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1)
+        D_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1)
+
+        Mu_realnums = 0
+        # TODO: What's the best way to get this info?
+        # if has_mu:
+        #     Mu_realnums = self.fragment_stats.num_pixels_in_box * 2 if is_periodic else 1
+
+        dft_realnums = self.fragment_stats.num_dft_pixels * 2
+        dispersive_realnums = self.fragment_stats.num_susceptibility_pixels
+
+        total_realnums = (E_realnums + M_realnums + D_realnums + Mu_realnums +
+                          dft_realnums + dispersive_realnums)
+
+        total_bytes = total_realnums * mp.get_realnum_size()
+
+        return total_bytes
 
     def meep_time(self):
         if self.fields is None:

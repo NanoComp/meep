@@ -1544,6 +1544,11 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 %}
 
 %inline %{
+
+size_t get_realnum_size() {
+  return sizeof(meep::realnum);
+}
+
 meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     std::vector<meep_geom::dft_data> dft_data_list_,
                                                     std::vector<meep::volume> pml_1d_vols_,
