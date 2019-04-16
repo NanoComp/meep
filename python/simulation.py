@@ -1124,10 +1124,10 @@ class Simulation(object):
         if self.fragment_stats is None:
             self.fragment_stats = self._compute_fragment_stats(self.structure.user_volume)
 
-        is_periodic = self.k_point and self.k_point != mp.Vector3(0, 0, 0)
-        E_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1)
-        M_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1)
-        D_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1)
+        is_complex = (self.k_point and self.k_point != mp.Vector3(0, 0, 0)) or self.force_complex_fields
+        E_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * self.dimensions
+        M_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * self.dimensions
+        D_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * self.dimensions
 
         Mu_realnums = 0
         # TODO: What's the best way to get this info?
