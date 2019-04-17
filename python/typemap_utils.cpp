@@ -407,9 +407,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
     PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
     bool do_averaging = false;
-    if (py_do_averaging) {
-      do_averaging = PyObject_IsTrue(py_do_averaging);
-    }
+    if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
     if (eps && eps == Py_True) {
       md = make_user_material(py_epsilon_func_wrap, po, do_averaging);
     } else {

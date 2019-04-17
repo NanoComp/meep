@@ -83,7 +83,7 @@ bool test_array_metadata(meep::fields &f, const volume &where, bool collapse_emp
   size_t nxyz[3], nw = 1;
   vector<double> tics[3], weights;
   for (int i = 0; i < 3; ++i) {
-    nxyz[i] = (size_t) xyzw[offset++];
+    nxyz[i] = (size_t)xyzw[offset++];
     nw *= nxyz[i];
     for (size_t j = 0; j < nxyz[i]; ++j)
       tics[i].push_back(xyzw[offset++]);

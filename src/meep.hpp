@@ -719,8 +719,8 @@ public:
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc, bool parallel=true) const;
-  double get_chi1inv(component, direction, const vec &loc, bool parallel=true) const;
+  double get_chi1inv(component, direction, const ivec &origloc, bool parallel = true) const;
+  double get_chi1inv(component, direction, const vec &loc, bool parallel = true) const;
   double get_inveps(component c, direction d, const ivec &origloc) const {
     return get_chi1inv(c, d, origloc);
   }
@@ -943,7 +943,8 @@ public:
                                              ivec max_corner, int num_freq, h5file *file,
                                              double *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
-                                             void *mode2_data, int ic_conjugate, bool retain_interp_weights, fields *parent);
+                                             void *mode2_data, int ic_conjugate,
+                                             bool retain_interp_weights, fields *parent);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -998,7 +999,7 @@ public:
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
-  bool empty_dim[5]; // which directions correspond to empty dimensions in original volume
+  bool empty_dim[5];          // which directions correspond to empty dimensions in original volume
   std::complex<double> scale; // scale factor * phase from shift and symmetry
   ivec shift;
   symmetry S;
@@ -1118,8 +1119,8 @@ public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
   dft_near2far(dft_chunk *F, double fmin, double fmax, int Nf, double eps, double mu,
-               const volume &where_, const direction periodic_d_[2],
-               const int periodic_n_[2], const double periodic_k_[2], const double period_[2]);
+               const volume &where_, const direction periodic_d_[2], const int periodic_n_[2],
+               const double periodic_k_[2], const double period_[2]);
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
@@ -1557,11 +1558,11 @@ public:
                            field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
                            component source_slice_component = Ex, bool get_source_slice = false);
 
-  /* fetch and return coordinates and integration weights of grid points covered by an array slice, */
-  /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ]       */
-  std::vector<double> get_array_metadata(const volume &where,
-                                         bool collapse_empty_dimensions=true,
-                                         bool snap_empty_dimensions=false);
+  /* fetch and return coordinates and integration weights of grid points covered by an array slice,
+   */
+  /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ] */
+  std::vector<double> get_array_metadata(const volume &where, bool collapse_empty_dimensions = true,
+                                         bool snap_empty_dimensions = false);
 
   // step.cpp methods:
   double last_step_output_wall_time;
@@ -1691,9 +1692,10 @@ public:
   std::complex<double> process_dft_component(dft_chunk **chunklists, int num_chunklists,
                                              int num_freq, component c, const char *HDF5FileName,
                                              std::complex<double> **field_array = 0, int *rank = 0,
-                                             size_t *dims = 0, direction *dirs=0, void *mode1_data = 0,
-                                             void *mode2_data = 0, component c_conjugate = Ex,
-                                             bool *first_component = 0, bool retain_interp_weights=true);
+                                             size_t *dims = 0, direction *dirs = 0,
+                                             void *mode1_data = 0, void *mode2_data = 0,
+                                             component c_conjugate = Ex, bool *first_component = 0,
+                                             bool retain_interp_weights = true);
 
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists, volume dft_volume,
@@ -1730,9 +1732,9 @@ public:
 
   // near2far.cpp
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                int Nfreq, int Nperiods=1);
+                                int Nfreq, int Nperiods = 1);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc, bool parallel=true) const;
+  double get_chi1inv(component, direction, const vec &loc, bool parallel = true) const;
   double get_inveps(component c, direction d, const vec &loc) const {
     return get_chi1inv(c, d, loc);
   }
@@ -1742,7 +1744,7 @@ public:
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
   std::complex<double> get_field(int c, const vec &loc) const;
-  std::complex<double> get_field(component c, const vec &loc, bool parallel=true) const;
+  std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc) const;
 
   // energy_and_flux.cpp
@@ -1821,8 +1823,8 @@ private:
 
 public:
   // monitor.cpp
-  std::complex<double> get_field(component c, const ivec &iloc, bool parallel=true) const;
-  double get_chi1inv(component, direction, const ivec &iloc, bool parallel=true) const;
+  std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
+  double get_chi1inv(component, direction, const ivec &iloc, bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
 };

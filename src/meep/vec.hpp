@@ -385,8 +385,8 @@ inline direction component_direction(component c) {
     case Hp:
     case Dp:
     case Bp: return P;
-    case Dielectric: 
-    case Permeability: 
+    case Dielectric:
+    case Permeability:
     case NO_COMPONENT: return NO_DIRECTION;
   }
   return X; // This code is never reached...
@@ -420,7 +420,7 @@ inline component direction_component(component c, direction d) {
     start_point = Dx;
   else if (is_B(c))
     start_point = Bx;
-  else if (d == NO_DIRECTION && component_direction(c)==d)
+  else if (d == NO_DIRECTION && component_direction(c) == d)
     return c;
   else
     abort("unknown field component %d", c);

@@ -686,12 +686,12 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
                                    double tol, int maxeval) {
   symmetric_matrix meps_inv;
   bool fallback;
-  eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);;
+  eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);
+  ;
 
   if (fallback) {
     fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
-  }
-  else {
+  } else {
     switch (component_direction(c)) {
       case meep::X:
       case meep::R:
