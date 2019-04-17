@@ -591,8 +591,8 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];
-  bool collapse=false;
-  int rank=get_array_slice_dimensions(where, dims, dirs, collapse, min_max_loc);
+  bool collapse=false, snap=false;
+  int rank=get_array_slice_dimensions(where, dims, dirs, collapse, snap, min_max_loc);
   size_t slice_size = dims[0] * (rank>=2 ? dims[1] : 1) * (rank==3 ? dims[2] : 1);
 
   source_slice_data data;
