@@ -205,10 +205,6 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, dou
   return get_GDSII_volume(GDSIIFile, 0, Layer, zmin, zmax);
 }
 
-std::vector<int> get_GDSII_layers(const char *GDSIIFile) {
- return libGDSII::GetLayers(GDSIIFile);
-}
-
 /***************************************************************/
 /* stubs for compilation without libGDSII **********************/
 /***************************************************************/
@@ -293,12 +289,18 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, dou
   GDSIIError("get_GDSII_volume");
   return meep::volume(meep::vec());
 }
-std::vector<int> get_GDSII_layers(const char *GDSIIFile)
-{ GDSIIError("get_GDSII_layers");
-  std::vector<int> layers;
-  return layers;
-}
 
 #endif // HAVE_LIBGDSII
+
+std::vector<int> get_GDSII_layers(const char *GDSIIFile)
+{
+#if defined(HAVE_LIBGDSII) && defined(HAVE_GDSII_GETLAYERS)
+  return libGDSII::GetLayers(GDSIIFile);
+#else
+  GDSIIError("get_GDSII_layers");
+  std::vector<int> layers;
+  return layers;
+#endif
+}
 
 } // namespace meep_geom
