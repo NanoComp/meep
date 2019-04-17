@@ -152,9 +152,7 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
   return 1;
 }
 
-static bool issmall(std::complex<double> x) {
-  return abs(x) < 1e-16;
-}
+static bool issmall(std::complex<double> x) { return abs(x) < 1e-16; }
 
 int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
   double a = 10.0;

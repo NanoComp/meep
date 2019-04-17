@@ -173,10 +173,9 @@ dft_chunk *fields::add_dft(component c, const volume &where, double freq_min, do
   data.dt_factor = dt / sqrt(2.0 * pi);
   data.include_dV_and_interp_weights = include_dV_and_interp_weights;
   data.sqrt_dV_and_interp_weights = sqrt_dV_and_interp_weights;
-  data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] = data.empty_dim[4] = false;
-  LOOP_OVER_DIRECTIONS(where.dim, d) {
-    data.empty_dim[d] = where.in_direction(d) == 0;
-  }
+  data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] =
+      data.empty_dim[4] = false;
+  LOOP_OVER_DIRECTIONS(where.dim, d) { data.empty_dim[d] = where.in_direction(d) == 0; }
   data.dft_chunks = chunk_next;
   loop_in_chunks(add_dft_chunkloop, (void *)&data, where, use_centered_grid ? Centered : c);
 
@@ -688,8 +687,8 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
                                          int num_freq, h5file *file, double *buffer, int reim,
                                          cdouble *field_array, void *mode1_data, void *mode2_data,
-                                         int ic_conjugate, bool retain_interp_weights, fields *parent)
-{
+                                         int ic_conjugate, bool retain_interp_weights,
+                                         fields *parent) {
 
   /*****************************************************************/
   /* compute the size of the chunk we own and its strides etc.     */
@@ -747,18 +746,19 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
   vec rshift(shift * (0.5 * fc->gv.inva));
   int chunk_idx = 0;
   cdouble integral = 0.0;
-  component c_conjugate = (component)(ic_conjugate>=0 ? ic_conjugate : -ic_conjugate);
+  component c_conjugate = (component)(ic_conjugate >= 0 ? ic_conjugate : -ic_conjugate);
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
     double interp_w = retain_interp_weights ? IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) : 1.0;
-
-    cdouble dft_val = (   c_conjugate==NO_COMPONENT ? w
-                        : c_conjugate==Dielectric   ? parent->get_eps(loc)
-                        : c_conjugate==Permeability ? parent->get_mu(loc)
-                        : dft[Nomega * (chunk_idx++) + num_freq] / stored_weight
-                      );
+    cdouble dft_val = (c_conjugate == NO_COMPONENT
+                           ? w
+                           : c_conjugate == Dielectric
+                                 ? parent->get_eps(loc)
+                                 : c_conjugate == Permeability
+                                       ? parent->get_mu(loc)
+                                       : dft[Nomega * (chunk_idx++) + num_freq] / stored_weight);
     if (include_dV_and_interp_weights) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
     cdouble mode1val = 0.0, mode2val = 0.0;
@@ -845,19 +845,19 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
 /***************************************************************/
 cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
                                       component c, const char *HDF5FileName, cdouble **pfield_array,
-                                      int *array_rank, size_t *array_dims, direction *array_dirs, void *mode1_data,
-                                      void *mode2_data, component c_conjugate,
+                                      int *array_rank, size_t *array_dims, direction *array_dirs,
+                                      void *mode1_data, void *mode2_data, component c_conjugate,
                                       bool *first_component, bool retain_interp_weights) {
 
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
-  int ic_conjugate = (int) c_conjugate;
-  if (component_index(c)==-1)
-   { ic_conjugate = -((int)c);
-     num_chunklists=1;
-     c=chunklists[0]->c;
-   }
+  int ic_conjugate = (int)c_conjugate;
+  if (component_index(c) == -1) {
+    ic_conjugate = -((int)c);
+    num_chunklists = 1;
+    c = chunklists[0]->c;
+  }
 
   /***************************************************************/
   /* get statistics on the volume slice **************************/
@@ -940,9 +940,9 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
     for (int ncl = 0; ncl < num_chunklists; ncl++)
       for (dft_chunk *chunk = chunklists[ncl]; chunk; chunk = chunk->next_in_dft)
         if (chunk->c == c)
-          overlap +=
-              chunk->process_dft_component(rank, ds, min_corner, max_corner, num_freq, file, buffer,
-                                           reim, field_array, mode1_data, mode2_data, ic_conjugate, retain_interp_weights, this);
+          overlap += chunk->process_dft_component(rank, ds, min_corner, max_corner, num_freq, file,
+                                                  buffer, reim, field_array, mode1_data, mode2_data,
+                                                  ic_conjugate, retain_interp_weights, this);
 
     if (HDF5FileName) {
       file->done_writing_chunks();
@@ -981,7 +981,8 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
 /***************************************************************/
 cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dirs[3], volume where);
 
-cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank, size_t dims[3]) {
+cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
+                               size_t dims[3]) {
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
@@ -991,7 +992,8 @@ cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *ra
   return collapse_array(array, rank, dims, dirs, flux.where);
 }
 
-cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank, size_t dims[3]) {
+cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank,
+                               size_t dims[3]) {
   dft_chunk *chunklists[3];
   chunklists[0] = force.offdiag1;
   chunklists[1] = force.offdiag2;
@@ -1002,7 +1004,8 @@ cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *
   return collapse_array(array, rank, dims, dirs, force.where);
 }
 
-cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank, size_t dims[3]) {
+cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
+                               size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
   cdouble *array;
@@ -1011,7 +1014,8 @@ cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int 
   return collapse_array(array, rank, dims, dirs, n2f.where);
 }
 
-cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank, size_t dims[3]) {
+cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
+                               size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
   cdouble *array;
@@ -1041,8 +1045,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
   // in which case those processes will think NumFreqs==0.
   bool have_empty_dims = false;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
-   if (dft_volume.in_direction(d)!=0.0)
-    have_empty_dims = true;
+  if (dft_volume.in_direction(d) != 0.0) have_empty_dims = true;
 
   h5file *file = 0;
   if (have_empty_dims && am_master()) {
@@ -1056,18 +1059,19 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
   for (int num_freq = 0; num_freq < NumFreqs; num_freq++)
     FOR_E_AND_H(c) {
       if (!have_empty_dims) {
-        process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0, 0,
-                              Ex, &first_component);
+        process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0,
+                              0, Ex, &first_component);
       } else {
         cdouble *array = 0;
         int rank;
         size_t dims[3];
         direction dirs[3];
-        process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims, dirs);
+        process_dft_component(chunklists, num_chunklists, num_freq, c, 0, &array, &rank, dims,
+                              dirs);
         if (rank > 0 && am_master()) {
           array = collapse_array(array, &rank, dims, dirs, dft_volume);
           if (rank == 0) abort("%s:%i: internal error", __FILE__, __LINE__);
-          size_t array_size = dims[0] * (rank==1 ? dims[1] : 1);
+          size_t array_size = dims[0] * (rank >= 2 ? dims[1] * (rank == 3 ? dims[2] : 1) : 1);
           double *real_array = new double[array_size];
           if (!real_array) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, array_size);
           for (int reim = 0; reim < 2; reim++) {

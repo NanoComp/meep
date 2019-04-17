@@ -56,9 +56,7 @@ vec material_function::normal_vector(field_type ft, const volume &v) {
     double chi1p1_val = chi1p1(ft, pt);
 
     if (i > 0 && i < min_iters) {
-      if (chi1p1_val != chi1p1_prev) {
-        break_early = false;
-      }
+      if (chi1p1_val != chi1p1_prev) { break_early = false; }
       if (i == min_iters - 1 && break_early) {
         // Don't average regions where epsilon is uniform
         return zero_vec(v.dim);

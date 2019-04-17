@@ -9,7 +9,7 @@ GitHub Source Repository
 
 The source repository is available via [GitHub](https://github.com/NanoComp/meep).
 
-The current stable release is **version 1.8** which can be obtained from:
+The current stable release can be obtained from:
 
 -   <https://github.com/NanoComp/meep/releases>
 

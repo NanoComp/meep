@@ -31,7 +31,8 @@ namespace meep {
 
 dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, double eps_, double mu_,
                            const volume &where_, const direction periodic_d_[2],
-                           const int periodic_n_[2], const double periodic_k_[2], const double period_[2])
+                           const int periodic_n_[2], const double periodic_k_[2],
+                           const double period_[2])
     : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
@@ -258,12 +259,12 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
         vec xs(x0);
         for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
           if (periodic_d[0] != NO_DIRECTION)
-            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0*period[0]);
-          double phase0 = i0*periodic_k[0];
+            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
+          double phase0 = i0 * periodic_k[0];
           for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
             if (periodic_d[1] != NO_DIRECTION)
-              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1*period[1]);
-            double phase = phase0 + i1*periodic_k[1];
+              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
+            double phase = phase0 + i1 * periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
             green(EH6, x, freq, eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j)
@@ -498,13 +499,13 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
     if (Nperiods > 1) {
       for (int i = 0; i < 2; ++i) {
         double user_width = user_volume.num_direction(fd[i]) / a;
-        if (has_direction(v.dim, fd[i]) &&
-            boundaries[High][fd[i]] == Periodic && boundaries[Low][fd[i]] == Periodic &&
+        if (has_direction(v.dim, fd[i]) && boundaries[High][fd[i]] == Periodic &&
+            boundaries[Low][fd[i]] == Periodic &&
             float(w->v.in_direction(fd[i])) >= float(user_width)) {
           periodic_d[i] = fd[i];
           periodic_n[i] = Nperiods;
           period[i] = user_width;
-          periodic_k[i] = 2*pi*real(k[fd[i]]) * period[i];
+          periodic_k[i] = 2 * pi * real(k[fd[i]]) * period[i];
         }
       }
     }
@@ -524,8 +525,8 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
     }
   }
 
-  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere,
-                      periodic_d, periodic_n, periodic_k, period);
+  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere, periodic_d, periodic_n,
+                      periodic_k, period);
 }
 
 } // namespace meep

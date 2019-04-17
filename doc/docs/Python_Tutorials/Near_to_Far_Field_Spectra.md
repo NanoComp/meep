@@ -114,7 +114,7 @@ far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_box,far_flux_circle))
 ```
 
-By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). The flux of the near fields for the J$_z$ source is `2.456196` and that for the far fields is `2.458030` (box) and `2.457249` (circle). The ratio of near- to far-field (circle) flux is `0.999571`. Similarly, for the J$_x$ source, the values are `1.227786` (near-field), `1.227651` (far-field box), and `1.227260` (far-field circle). The ratio of near- to far-field (circle) flux is `1.000429`. The slight differences in the flux values are due to discretization effects and will decrease as the resolution is increased.
+By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). The flux of the near fields for the J$_z$ source is 2.456196 and that for the far fields is 2.458030 (box) and 2.457249 (circle). The ratio of near- to far-field (circle) flux is 0.999571. Similarly, for the J$_x$ source, the values are 1.227786 (near-field), 1.227651 (far-field box), and 1.227260 (far-field circle). The ratio of near- to far-field (circle) flux is 1.000429. The slight differences in the flux values are due to discretization effects and will decrease as the resolution is increased.
 
 Finally, we plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src_cmpt` of E$_x$, E$_y$, and E$_z$. As expected, the J$_x$ and J$_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while J$_z$ has a monopole pattern.
 
@@ -135,7 +135,7 @@ plt.show()
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
 
-This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an E<sub>z</sub>-polarized planewave at normal incidence.
+This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an E<sub>z</sub>-polarized planewave at normal incidence.
 
 The simulation script is in [examples/metasurface_lens.py](https://github.com/NanoComp/meep/blob/master/python/examples/metasurface_lens.py).
 
@@ -256,7 +256,7 @@ def grating(gp,gh,gdc_list):
     return abs(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(focal_length), size=mp.Vector3(spot_length))['Ez'])**2
 ```
 
-In the first of two parts of the calculation, a phasemap of the binary-grating unit cell is generated based on varying the duty cycle from `0.1` to `0.9`.
+In the first of two parts of the calculation, a phasemap of the binary-grating unit cell is generated based on varying the duty cycle from 0.1 to 0.9.
 
 ```py
 gp = 0.3                       # grating periodicity
@@ -298,7 +298,7 @@ The phasemap is shown below. The left figure shows the transmittance which is ne
 ![](../images/metasurface_lens_phasemap.png)
 </center>
 
-In the second part of the calculation, the far-field energy-density profile of three supercell lens designs, comprised of `201`, `401`, and `801` unit cells, are computed using the quadratic formula for the local phase. Initially, this involves fitting the unit-cell phase data to a finer duty-cycle grid in order to enhance the local-phase interpolation of the supercell. This is important since as the number of unit cells in the lens increases, the local phase varies more gradually from unit cell to unit cell. However, if the phase variation becomes too gradual (i.e., less than a tenth of the pixel dimensions), the `resolution` may also need to be increased in order for [subpixel smoothing](../Subpixel_Smoothing.md) to accurately resolve the slight variations in the duty cycle.
+In the second part of the calculation, the far-field energy-density profile of three supercell lens designs, comprised of 201, 401, and 801 unit cells, are computed using the quadratic formula for the local phase. Initially, this involves fitting the unit-cell phase data to a finer duty-cycle grid in order to enhance the local-phase interpolation of the supercell. This is important since as the number of unit cells in the lens increases, the local phase via the duty cycle varies more gradually from unit cell to unit cell. However, if the duty cycle becomes too gradual (i.e., less than a tenth of the pixel dimensions), the `resolution` may also need to be increased in order to improve the accuracy of [subpixel smoothing](../Subpixel_Smoothing.md).
 
 ```py
 gdc_new = np.linspace(0.16,0.65,500)
@@ -325,24 +325,24 @@ for k in range(len(num_cells)):
 
 x = np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,ff_res*spot_length)
 plt.figure(dpi=200)
-plt.semilogy(x,ff_nc[:,0],'bo-',label='num_cells = {}'.format(2*num_cells[0]+1))
+plt.semilogy(x,abs(ff_nc[:,0])**2,'bo-',label='num_cells = {}'.format(2*num_cells[0]+1))
 plt.semilogy(x,abs(ff_nc[:,1])**2,'ro-',label='num_cells = {}'.format(2*num_cells[1]+1))
 plt.semilogy(x,abs(ff_nc[:,2])**2,'go-',label='num_cells = {}'.format(2*num_cells[2]+1))
 plt.xlabel('x coordinate (μm)')
 plt.ylabel(r'energy density of far-field electric fields, |E$_z$|$^2$')
-plt.title('focusing properties of binary-grating metalens\n' + 'periodicity = {} μm, height = {} μm'.format(gp,gh))
+plt.title('focusing properties of a binary-grating metasurface lens')
 plt.legend(loc='upper right')
 plt.tight_layout()
 plt.show()
 ```
 
-Shown below is the supercell lens design involving `201` unit cells. Note that even though periodic boundaries are used in the supercell calculation (via the `k_point`), the choice of cell boundaries in the *y* (or longitudinal) direction is *irrelevant* given the finite length of the lens. For example, PMLs could also have been used (at the expense of a larger cell). Although [`add_near2far`](../Python_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter), it is not necessary for this particular example.
+Shown below is the supercell lens design involving 201 unit cells. Note that even though periodic boundaries are used in the supercell calculation (via the `k_point`), the choice of cell boundaries in the *y* (or longitudinal) direction is *irrelevant* given the finite length of the lens. For example, PMLs could also have been used (at the expense of a larger cell). Although [`add_near2far`](../Python_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter), it is not necessary for this particular example.
 
 <center>
 ![](../images/metasurface_lens_epsilon.png)
 </center>
 
-The far-field energy-density profile is shown below for the three lens designs. As the number of unit cells increases, the focal spot becomes sharper and sharper. This is expected since the longer the focal length, the more unit cells are required for the lens to demonstrate focusing. In this example, the largest lens contains `801` unit cells which corresponds to 0.24 mm or 1.2X the focal length.
+The far-field energy-density profile is shown below for the three lens designs. As the number of unit cells increases, the focal spot becomes sharper and sharper. This is expected since the longer the focal length, the bigger the lens required to demonstrate focusing (which means more unit cells). In this example, the largest lens design contains 801 unit cells which corresponds to 0.24 mm or 1.2X the focal length.
 
 <center>
 ![](../images/metasurface_lens_farfield.png)

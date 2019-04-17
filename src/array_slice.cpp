@@ -123,14 +123,14 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
   data->num_chunks++;
 
   if (data->min_max_loc) {
-     vec rshift(shift * (0.5 * fc->gv.inva));
-     LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-       IVEC_LOOP_LOC(fc->gv, loc);
-       loc = S.transform(loc, sn) + rshift;
-       data->min_max_loc[0] = min(loc, data->min_max_loc[0]);
-       data->min_max_loc[1] = max(loc, data->min_max_loc[1]);
-      }
-   }
+    vec rshift(shift * (0.5 * fc->gv.inva));
+    LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+      IVEC_LOOP_LOC(fc->gv, loc);
+      loc = S.transform(loc, sn) + rshift;
+      data->min_max_loc[0] = min(loc, data->min_max_loc[0]);
+      data->min_max_loc[1] = max(loc, data->min_max_loc[1]);
+    }
+  }
 }
 
 /*****************************************************************/
@@ -165,7 +165,15 @@ void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data) {
         cdouble amp = s->A[npt];
         ptrdiff_t chunk_index = s->index[npt];
         ivec iloc = fc->gv.iloc(Dielectric, chunk_index);
-        if (iloc < slice_imin || iloc > slice_imax) continue; // source point outside slice
+        bool skip = false;
+        LOOP_OVER_DIRECTIONS(iloc.dim, d) {
+          if (iloc.in_direction(d) < slice_imin.in_direction(d) ||
+              iloc.in_direction(d) > slice_imax.in_direction(d)) {
+            skip = true;
+            break;
+          }
+        }
+        if (skip) continue; // source point outside slice
         ivec slice_offset = iloc - slice_imin;
         ptrdiff_t slice_index = 0;
         if (has_direction(dim, Z)) slice_index += slice_offset.in_direction(Z) / 2;
@@ -304,9 +312,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
     for (int i = 0; i < num_components; ++i) {
       // special case for fetching grid point coordinates and weights
       if (cS[i] == NO_COMPONENT) {
-          fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-       }
-      else if (cS[i] == Dielectric) {
+        fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+      } else if (cS[i] == Dielectric) {
         double tr = 0.0;
         for (int k = 0; k < data->ninveps; ++k) {
           const realnum *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
@@ -367,8 +374,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* get_array_slice.                                            */
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
-                                       bool collapse_empty_dimensions,
-                                       bool snap_empty_dimensions,
+                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                        vec *min_max_loc, void *caller_data) {
   am_now_working_on(FieldOutput);
 
@@ -383,6 +389,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
 
   data->min_max_loc = min_max_loc;
   vec *min_loc = 0, *max_loc = 0;
+<<<<<<< HEAD
   if (min_max_loc)
    { min_loc = min_max_loc + 0;
      max_loc = min_max_loc + 1;
@@ -402,6 +409,25 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
    LOOP_OVER_DIRECTIONS(gv.dim,d) {
        min_loc->set_direction(d, -1.0*max_to_all(-1.0*min_loc->in_direction(d)));
        max_loc->set_direction(d,      max_to_all(     max_loc->in_direction(d)));
+=======
+  if (min_max_loc) {
+    min_loc = min_max_loc + 0;
+    max_loc = min_max_loc + 1;
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      min_loc->set_direction(d, +infinity);
+      max_loc->set_direction(d, -infinity);
+    }
+  }
+
+  bool use_symmetry = true;
+  loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, Centered, use_symmetry,
+                 snap_empty_dimensions);
+
+  data->min_corner = -max_to_all(-data->min_corner); // i.e., min_to_all
+  data->max_corner = max_to_all(data->max_corner);
+  if (min_max_loc) LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      min_loc->set_direction(d, -1.0 * max_to_all(-1.0 * min_loc->in_direction(d)));
+      max_loc->set_direction(d, max_to_all(max_loc->in_direction(d)));
     }
   data->num_chunks = sum_to_all(data->num_chunks);
   if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner))
@@ -609,7 +635,8 @@ bool increment(size_t *n, size_t *nMax, int rank) {
 }
 
 // data_size = 1,2 for real,complex-valued array
-double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[3], volume where, int data_size=1) {
+double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[3], volume where,
+                       int data_size = 1) {
 
   /*--------------------------------------------------------------*/
   /*- detect empty dimensions and compute rank and strides for    */
@@ -621,13 +648,13 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   int reduced_rank = 0;
   size_t reduced_dims[3], reduced_stride[3] = {1, 1, 1};
   direction reduced_dirs[3];
-  for(int r=0; r<full_rank; r++) {
+  for (int r = 0; r < full_rank; r++) {
     if (where.in_direction(dirs[r]) == 0.0)
       reduced_stride[r] = 0; // degenerate dimension, to be collapsed
-    else
-      { reduced_dirs[reduced_rank]   = dirs[r];
-        reduced_dims[reduced_rank++] = dims[r];
-      }
+    else {
+      reduced_dirs[reduced_rank] = dirs[r];
+      reduced_dims[reduced_rank++] = dims[r];
+    }
   }
   if (reduced_rank == full_rank) return array; // nothing to collapse
 
@@ -650,9 +677,9 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   /*--------------------------------------------------------------*/
   /*- allocate reduced array and compress full array into it     -*/
   /*--------------------------------------------------------------*/
-  size_t reduced_grid_size  = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
+  size_t reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
   size_t reduced_array_size = data_size * reduced_grid_size;
-  double *reduced_array     = new double[ reduced_array_size ];
+  double *reduced_array = new double[reduced_array_size];
   if (!reduced_array) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
   memset(reduced_array, 0, reduced_array_size * sizeof(double));
 
@@ -660,32 +687,33 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   do {
     size_t index = n[0] * stride[0] + n[1] * stride[1] + n[2] * stride[2];
     size_t rindex = n[0] * reduced_stride[0] + n[1] * reduced_stride[1] + n[2] * reduced_stride[2];
-    for(int i=0; i<data_size; i++)
-     reduced_array[ data_size*rindex + i ] += array[ data_size*index + i ];
+    for (int i = 0; i < data_size; i++)
+      reduced_array[data_size * rindex + i] += array[data_size * index + i];
   } while (!increment(n, dims, full_rank));
 
   *rank = reduced_rank;
-  for(int r=0; r<reduced_rank; r++)
-   { dims[r] = reduced_dims[r];
-     dirs[r] = reduced_dirs[r];
-   }
+  for (int r = 0; r < reduced_rank; r++) {
+    dims[r] = reduced_dims[r];
+    dirs[r] = reduced_dirs[r];
+  }
   delete[] array;
   return reduced_array;
 }
 
-cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dirs[3], volume where)
-{ return (cdouble *)collapse_array((double *)array, rank, dims, dirs, where, 2); }
+cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dirs[3],
+                        volume where) {
+  return (cdouble *)collapse_array((double *)array, rank, dims, dirs, where, 2);
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-std::vector<double> fields::get_array_metadata(const volume &where,
-                                               bool collapse_empty_dimensions,
+std::vector<double> fields::get_array_metadata(const volume &where, bool collapse_empty_dimensions,
                                                bool snap_empty_dimensions) {
 
   /* get extremal corners of subgrid and array of weights, collapsed if necessary */
   size_t dims[3];
   direction dirs[3];
+<<<<<<< HEAD
   vec min_max_loc[2];   // extremal points in subgrid
   int rank = get_array_slice_dimensions(where, dims, dirs, false /*collapse_empty_dimensions*/,
                                         snap_empty_dimensions, min_max_loc);
@@ -714,17 +742,44 @@ std::vector<double> fields::get_array_metadata(const volume &where,
         xyzmax[nd] = min_max_loc[1].in_direction(d);
       }
    }
+=======
+  vec min_max_loc[2]; // extremal points in subgrid
+  int rank = get_array_slice_dimensions(where, dims, dirs, false /*collapse_empty_dimensions*/,
+                                        snap_empty_dimensions, min_max_loc);
+  int full_rank = rank;
+  direction full_dirs[3];
+  for (int fr = 0; fr < rank; fr++)
+    full_dirs[fr] = dirs[fr];
+
+  double *weights = get_array_slice(where, NO_COMPONENT);
+  if (collapse_empty_dimensions) weights = collapse_array(weights, &rank, dims, dirs, where);
+
+  /* get length and endpoints of x,y,z tics arrays */
+  size_t nxyz[3] = {1, 1, 1};
+  double xyzmin[3] = {0.0, 0.0, 0.0}, xyzmax[3] = {0.0, 0.0, 0.0};
+  for (int fr = 0, rr = 0; fr < full_rank; fr++) {
+    direction d = full_dirs[fr];
+    int nd = d - X;
+    if (where.in_direction(d) == 0.0 && collapse_empty_dimensions) {
+      xyzmin[nd] = xyzmax[nd] = where.in_direction_min(d);
+      nxyz[nd] = 1;
+    } else {
+      nxyz[nd] = dims[rr++];
+      xyzmin[nd] = min_max_loc[0].in_direction(d);
+      xyzmax[nd] = min_max_loc[1].in_direction(d);
+    }
+  }
 
   /* pack all data into a single vector with each tics array preceded by its */
   /* length: [ NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ]        */
   std::vector<double> xyzw;
-  for(int nd=0; nd<3; nd++)
-   { xyzw.push_back( (double)nxyz[nd] );
-     for(size_t n=0; n<nxyz[nd]; n++)
-      xyzw.push_back( xyzmin[nd] + n*gv.inva );
-   }
-  for(unsigned nw=0; nw<(nxyz[0]*nxyz[1]*nxyz[2]); nw++)
-   xyzw.push_back(weights[nw]);
+  for (int nd = 0; nd < 3; nd++) {
+    xyzw.push_back((double)nxyz[nd]);
+    for (size_t n = 0; n < nxyz[nd]; n++)
+      xyzw.push_back(xyzmin[nd] + n * gv.inva);
+  }
+  for (unsigned nw = 0; nw < (nxyz[0] * nxyz[1] * nxyz[2]); nw++)
+    xyzw.push_back(weights[nw]);
 
   return xyzw;
 

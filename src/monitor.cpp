@@ -147,7 +147,7 @@ complex<double> fields::get_field(component c, const ivec &origloc, bool paralle
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         complex<double> val = S.phase_shift(c, sn) * kphase *
-               chunks[i]->get_field(S.transform(c, sn), S.transform(iloc, sn));
+                              chunks[i]->get_field(S.transform(c, sn), S.transform(iloc, sn));
         return parallel ? sum_to_all(val) : val;
       }
   return 0.0;
@@ -178,7 +178,7 @@ double fields::get_chi1inv(component c, direction d, const ivec &origloc, bool p
 double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc) const {
   if (is_mine())
     return s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
-                           : (d == component_direction(c) ? 1.0 : 0);
+                            : (d == component_direction(c) ? 1.0 : 0);
   return 0.0;
 }
 
@@ -222,7 +222,7 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, boo
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
         double val = chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn)) *
-               (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
+                     (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
         return parallel ? sum_to_all(val) : val;
       }
   return 0.0;
@@ -230,7 +230,8 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, boo
 
 double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc) const {
   if (is_mine())
-    return chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)] : (d == component_direction(c) ? 1.0 : 0);
+    return chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)]
+                         : (d == component_direction(c) ? 1.0 : 0);
   return 0.0;
 }
 
