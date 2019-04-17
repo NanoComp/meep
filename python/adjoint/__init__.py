@@ -39,7 +39,7 @@
 from .OptimizationProblem import OptimizationProblem
 
 from .Objective import (adjoint_options, xHat, yHat, zHat, origin,
-                        EHTransverse, Exyz, Hxyz, EHxyz, GridInfo,
+                        EHTransverse, Exyz, Hxyz, EHxyz, Grid, xyzw2grid,
                         abs2, unit_vector, rel_diff, FluxLine,
                         DFTCell, ObjectiveFunction, AdjointSolver,
                         get_dft_cell_names)
@@ -47,7 +47,8 @@ from .Objective import (adjoint_options, xHat, yHat, zHat, origin,
 from .ParallelDesignTester import ParallelDesignTester
 
 from .Basis import (ParameterizedDielectric, PlaneWaveBasis,
-                    FourierLegendreBasis, FiniteElementBasis)
+                    FourierLegendreBasis, FiniteElementBasis,
+                    SimpleFiniteElementBasis)
 
 from .Visualization import (set_plot_default, plot_basis, AFEClient,
                             visualize_sim, AdjointVisualizer)

@@ -216,8 +216,8 @@ class OptimizationProblem(ABC):
             eps_design=self.args.eps_design if self.args.eps_design else 1.0
             sim = self.create_sim(beta_vector)
             sim.init_sim()
-            xyzw=sim.get_dft_array_metadata(center=self.dft_cells[-1].center, size=self.dft_cells[-1].size)
-            beta_vector=self.basis.expand(eps_design,xyzw,cache=True,subtract_one=True)
+            grid=xyzw2grid(sim.get_dft_array_metadata(center=self.dft_cells[-1].center, size=self.dft_cells[-1].size))
+            beta_vector=self.basis.project(eps_design,grid,subtract_one=True,cache=True)
 
         return beta_vector
 
@@ -273,7 +273,7 @@ class OptimizationProblem(ABC):
                 f.write('f={}, alpha={}\n'.format(substate.fq[0],substate.alpha))
                 return
 
-            dfdEps_avg=np.sum(self.dft_cells[-1].xyzw[3] * state.dfdEps)
+            dfdEps_avg=np.sum(self.dft_cells[-1].grid.weights * state.dfdEps)
             f.write('\n\n{}: Iter {}: f={}, alpha={} dfdeAve={}\n'
                     .format(ts,state.n,state.fq[0],state.alpha,dfdEps_avg))
             [f.write('#{} {} = {}\n'.format(state.n,nn,qq)) for nn,qq in zip(self.fqnames[1:], state.fq[1:]) ]
@@ -289,8 +289,8 @@ class OptimizationProblem(ABC):
         self.log_state(state)
         cease_file = '/tmp/terminate.{}'.format(os.getpid())
 
-        bs, xyzw, ovrlp = self.basis, self.dft_cells[-1].xyzw, self.args.overlap_dfdEps
-        dbeta = bs.overlap(state.dfdEps, xyzw) if ovrlp else bs.expand(state.dfdEps, xyzw)
+        bs, grid, ovrlp = self.basis, self.dft_cells[-1].grid, self.args.overlap_dfdEps
+        dbeta = bs.overlap(state.dfdEps, grid) if ovrlp else bs.project(state.dfdEps, grid)
 
         alpha, iter, subiter = state.alpha, state.n, 0
         while alpha>self.args.min_alpha:

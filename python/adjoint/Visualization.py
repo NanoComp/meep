@@ -779,50 +779,52 @@ def visualize_sim(sim, fig=None, plot3D=None,
     plt.draw()
     return fig
 
-######################################################################
-# useful options:
-#
-# matplotlib.rcParams['axes.titlesize']='medium'
-# plt.rc('font',size=20)
-######################################################################
+# ######################################################################
+# # useful options:
+# #
+# # matplotlib.rcParams['axes.titlesize']='medium'
+# # plt.rc('font',size=20)
+# ######################################################################
 def plot_basis(opt_prob):
-
-    x0=opt_prob.dft_cells[-1].center
-    xyzw=opt_prob.dft_cells[-1].xyzw
-    x,y,z,w = xyzw[0],xyzw[1],xyzw[2],xyzw[3]
-    xyz=[mp.Vector3(xx,yy,zz) for xx in x for yy in y for zz in z]
-    bmatrix=np.zeros(np.shape(w))
-
-    rows,cols=opt_prob.basis.shape
-    fig, axes = plt.subplots(rows,cols)
-    plt.tight_layout()
-    extent=(min(x), max(x), min(y), max(y))
-
-    usetex=matplotlib.rcParams['text.usetex']
-
-    if usetex:
-        titles=['$b_{' + str(n) + '}: ' + bn[1:] for n,bn in enumerate(opt_prob.basis.tex_names)]
-    else:
-        titles=['b{}: {}'.format(n,bn) for n,bn in enumerate(opt_prob.basis.names)]
+    print("plot_basis temporarily not implemented")
 
 
-    for d in range(len(titles)):
-        fig.sca(axes.flat[d])
-        axes.flat[d].set_title(titles[d])
-        axes.flat[d].set_aspect('equal')
-        print('titles[d]={}'.format(titles[d]))
-        it=np.nditer(w,flags=['f_index','multi_index'])
-        while not it.finished:
-            n, nn = it.index, it.multi_index
-            bmatrix[nn] = opt_prob.basis(xyz[n]-x0)[d]
-            it.iternext()
-        img=plt.imshow(np.transpose(bmatrix),extent=extent,cmap=matplotlib.cm.Blues)
-        fig.colorbar(img)
-
-    plt.show(False)
-    plt.draw()
-
-
+#     x0=opt_prob.dft_cells[-1].center
+#     xyzw=opt_prob.dft_cells[-1].xyzw
+#     x,y,z,w = xyzw[0],xyzw[1],xyzw[2],xyzw[3]
+#     xyz=[mp.Vector3(xx,yy,zz) for xx in x for yy in y for zz in z]
+#     bmatrix=np.zeros(np.shape(w))
+#
+#     rows,cols=opt_prob.basis.shape
+#     fig, axes = plt.subplots(rows,cols)
+#     plt.tight_layout()
+#     extent=(min(x), max(x), min(y), max(y))
+#
+#     usetex=matplotlib.rcParams['text.usetex']
+#
+#     if usetex:
+#         titles=['$b_{' + str(n) + '}: ' + bn[1:] for n,bn in enumerate(opt_prob.basis.tex_names)]
+#     else:
+#         titles=['b{}: {}'.format(n,bn) for n,bn in enumerate(opt_prob.basis.names)]
+#
+#
+#     for d in range(len(titles)):
+#         fig.sca(axes.flat[d])
+#         axes.flat[d].set_title(titles[d])
+#         axes.flat[d].set_aspect('equal')
+#         print('titles[d]={}'.format(titles[d]))
+#         it=np.nditer(w,flags=['f_index','multi_index'])
+#         while not it.finished:
+#             n, nn = it.index, it.multi_index
+#             bmatrix[nn] = opt_prob.basis(xyz[n]-x0)[d]
+#             it.iternext()
+#         img=plt.imshow(np.transpose(bmatrix),extent=extent,cmap=matplotlib.cm.Blues)
+#         fig.colorbar(img)
+#
+#     plt.show(False)
+#     plt.draw()
+#
+#
 ######################################################################
 ######################################################################
 ######################################################################

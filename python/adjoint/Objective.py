@@ -1,4 +1,3 @@
-#####################################################
 # ObjectiveFunction.py --- routines for evaluating
 # objective quantities and objective functions for
 # adjoint-based optimization in meep
@@ -41,9 +40,19 @@ Exyz=[mp.Ex, mp.Ey, mp.Ez]
 Hxyz=[mp.Hx, mp.Hy, mp.Hz]
 EHxyz=Exyz+Hxyz
 
-# GridInfo stores the extents and resolution of the full Yee grid in a MEEP
-# simulation; this is the minimal information needed to compute array metadata.
-GridInfo = namedtuple('GridInfo', ['size', 'res'])
+##################################################
+# 'Grid' is an convenience extension of 'array metadata'
+##################################################
+Grid = namedtuple('Grid', ['xtics', 'ytics', 'ztics', 'points', 'weights', 'shape'])
+
+def xyzw2grid(xyzw):
+    return Grid( xyzw[0],
+                 xyzw[1],
+                 xyzw[2],
+                [mp.Vector3(x,y,z) for x in xyzw[0] for y in xyzw[1] for z in xyzw[2]],
+                 xyzw[3].flatten(),
+                 xyzw[3].shape
+               )
 
 ##################################################
 # miscellaneous utilities
@@ -57,7 +66,6 @@ def abs2(z):
 
 def unit_vector(n,N):
     return np.array([1.0 if i==n else 0.0 for i in range(N)])
-
 
 # error relative to magnitude, returns value in range [0,2]
 def rel_diff(a,b):
@@ -96,7 +104,7 @@ def FluxLine(x0,y0,length,dir,name=None):
 #
 # In a nutshell, the core constituents of a DFT cell are the three metadata
 # fields that define the set of frequency-domain field amplitudes tabulated
-# by the cell: a grid subvolume (including the associated 'xyzw' metadata),
+# by the cell: a grid subvolume (including the associated metadata),
 # a set of field components, and a set of frequencies. These fields are passed
 # to the DFTCell constructor and do not change over the lifetime of the DFTCell,
 # which will generally encompass the lifetimes of several mp.simulation()
@@ -224,15 +232,15 @@ class DFTCell(object):
                  self.name = '{}_{}'.format(self.celltype, len(self.get_cell_names()))
         self.add_cell_name(self.name)
 
-        # FIXME At present the 'xyzw' metadata cannot be computed until a mp.simulation / meep::fields
-        #       object has been created, but in fact the metadata only depend on the GridInfo
-        #       (resolution and extents of the computational lattice) and are independent
-        #       of the specific material geometry and source configuration of any particular
-        #       'fields' instance or simulation. In keeping with the spirit of 'DFTCell' it should
-        #       be possible to compute the metadata once and for all right here before any mp.simulation()
-        #       or meep::fields is created, but that will require some code refactoring. For the time being
-        #       we punt on this until later, after a fields object has been created.
-        self.xyzw = self.slice_dims = None
+        # Although the subgrid covered by the cell is independent of any
+        # mp.simulation, at present we can't compute subgrid metadata
+        # without first instantiating a mp.Simulation, so we have to
+        # wait to initialize the 'grid' field of DFTCell. TODO make the
+        # grid metadata calculation independent of any mp.Simulation or meep::fields
+        # object; it only depends on the resolution and extent of the Yee grid
+        # and thus logically belongs in `vec.cpp` or another code module that
+        # exists independently of fields, structures, etc,
+        self.grid = None
 
     ######################################################################
     # 'register' the cell with a MEEP timestepping simulation to request
@@ -243,10 +251,9 @@ class DFTCell(object):
         self.dft_obj =      sim.add_flux(self.fcen,self.df,self.nfreq,self.region) if self.celltype=='flux'   \
                        else sim.add_dft_fields(self.components, self.freqs[0], self.freqs[-1], self.nfreq, where=self.region)
 
-        # take the opportunity to fill in the metadata if not done yet; #FIXME to be removed as discussed above
-        if self.xyzw is None:
-            self.xyzw  = sim.get_dft_array_metadata(center=self.center, size=self.size)
-            self.slice_dims = np.shape(self.xyzw[3])
+        # take the opportunity to fill in grid metadata if not done yet; #FIXME to be removed as discussed above
+        if self.grid is None:
+            self.grid = xyzw2grid(sim.get_dft_array_metadata(center=self.center, size=self.size))
 
 
     ######################################################################
@@ -329,13 +336,10 @@ class DFTCell(object):
         k_initial=mp.Vector3()
         eigenmode=self.sim.get_eigenmode(freq, dir, vol, mode, k_initial)
 
-        def get_eigenslice(eigenmode, xyzw, c):
-            slice=[eigenmode.amplitude(mp.Vector3(x,y,z), c)            \
-                    for x in xyzw[0] for y in xyzw[1] for z in xyzw[2]
-                  ]
-            return np.reshape(slice,self.slice_dims)
+        def get_eigenslice(eigenmode, grid, c):
+            return np.reshape( [eigenmode.amplitude(p,c) for p in grid.points], grid.shape )
 
-        eh_slices=[get_eigenslice(eigenmode,self.xyzw,c) for c in self.components]
+        eh_slices=[get_eigenslice(eigenmode,self.grid,c) for c in self.components]
 
         # store in cache before returning
         if self.eigencache is not None:
@@ -350,7 +354,7 @@ class DFTCell(object):
     ##################################################
     def eval_quantity(self, qcode, mode, nf=0):
 
-        w  = self.xyzw[3]
+        w  = self.grid.weights
         EH = self.get_EH_slices(nf)
         if qcode.islower():
              self.subtract_incident_fields(EH,nf)
@@ -527,7 +531,7 @@ class AdjointSolver(object):
         EH_adjoint=cell.get_EH_slices(nf) # no label->current simulation
         self.dfdEps=np.sum( [EH_forward[nc]*EH_adjoint[nc]
                                for nc,c in enumerate(cell.components) if c in Exyz], 0 )
-        return self.basis.overlap(self.dfdEps,cell.xyzw)
+        return self.basis.overlap(self.dfdEps,cell.grid)
 
     #########################################################
     #########################################################
@@ -616,9 +620,7 @@ class AdjointSolver(object):
             EH =      cell.get_EH_slices(nf=nf, label='forward')  if mode==0 \
                  else cell.get_eigenfield_slices(mode=mode, nf=0)
 
-            components  = cell.components
-            x, y, z, w  = cell.xyzw[0], cell.xyzw[1], cell.xyzw[2], cell.xyzw[3]
-            shape       = [np.shape(q)[0] for q in [x,y,z]]
+            shape = [ len(tics) for tics in [self.grid.x, self.grid.y, self.grid.z] ]
 
             if code in 'PM':
                 sign = 1.0 if code=='P' else -1.0
@@ -627,9 +629,8 @@ class AdjointSolver(object):
                                              cell.center, cell.size,
                                              amplitude=signs[nc]*factor*qw,
                                              amp_data=np.reshape(np.conj(EH[nc]),shape)
-                                            ) for nc in range(len(components))
+                                            ) for nc in range(len(cell.components))
                                   ]
-
         self.sim.force_complex_fields=True
 
     ########################################################
