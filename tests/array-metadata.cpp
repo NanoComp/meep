@@ -76,16 +76,21 @@ bool test_array_metadata(meep::fields &f, const volume &where, bool collapse_emp
   size_t dims[3];
   direction dirs[3];
   int rank = f.get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
-  size_t nxyz[3] = {1, 1, 1};
-  for (int r = 0; r < rank; r++)
-    nxyz[dirs[r] - X] = dims[r];
-  size_t nw = nxyz[0] * nxyz[1] * nxyz[2];
-  vector<double> xgrid(nxyz[0], 0.0);
-  vector<double> ygrid(nxyz[1], 0.0);
-  vector<double> zgrid(nxyz[2], 0.0);
-  vector<double> weights(nw, 0.0);
-  f.get_array_metadata(where, xgrid.data(), ygrid.data(), zgrid.data(), weights.data(),
-                       collapse_empty_dimensions);
+  std::vector<double> xyzw = f.get_array_metadata(where, collapse_empty_dimensions);
+
+  // convert to a more convenient format
+  int offset = 0;
+  size_t nxyz[3], nw = 1;
+  vector<double> tics[3], weights;
+  for (int i = 0; i < 3; ++i) {
+    nxyz[i] = (size_t) xyzw[offset++];
+    nw *= nxyz[i];
+    for (size_t j = 0; j < nxyz[i]; ++j)
+      tics[i].push_back(xyzw[offset++]);
+  }
+  for (size_t j = 0; j < nw; ++j)
+    weights.push_back(xyzw[offset++]);
+
   size_t stride[3];
   stride[2] = 1;
   stride[1] = nxyz[2];
@@ -162,17 +167,17 @@ bool test_array_metadata(meep::fields &f, const volume &where, bool collapse_emp
     int nx = 0, ny = 0, nz = 0, index = 0;
     if (has_direction(gv.dim, X)) {
       nx = two_n.in_direction(X) / 2;
-      xyzw_meta[0] = xgrid[nx];
+      xyzw_meta[0] = tics[0][nx];
       index += nx * stride[0];
     }
     if (has_direction(gv.dim, Y)) {
       ny = two_n.in_direction(Y) / 2;
-      xyzw_meta[1] = ygrid[ny];
+      xyzw_meta[1] = tics[1][ny];
       index += ny * stride[1];
     }
     if (has_direction(gv.dim, Z)) {
       nz = two_n.in_direction(Z) / 2;
-      xyzw_meta[2] = zgrid[nz];
+      xyzw_meta[2] = tics[2][nz];
       index += nz * stride[2];
     }
     xyzw_meta[3] = weights[index];

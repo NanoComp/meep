@@ -408,7 +408,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
     int rank;
-    int dims[3];
+    size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
  
     if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
@@ -417,7 +417,7 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
     for (int i = 0; i < rank; ++i) {
-        arr_dims[i] = dims[i];
+        arr_dims[i] = dims[i];       // implicit size_t -> int cast, presumed safe for individual array dimensions
         length *= dims[i];
     }
 
@@ -496,9 +496,9 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 }
 
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions) {
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions) {
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
-    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
+    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions);
 
     PyObject *py_dirs = PyList_New(3);
     for (Py_ssize_t i = 0; i < 3; ++i) {
@@ -1343,7 +1343,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    bool verbose);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions);
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions);
 
 %ignore eps_func;
 %ignore inveps_func;
