@@ -69,7 +69,7 @@
   ],
   "developmentStatus": "active",
   "downloadUrl": "https://github.com/stevengj/NanoComp/releases",
-  "version":"1.8",
+  "version":"1.9",
   "dateCreated":"2003-02-12",
   "datePublished":"2006-04-01",
   "programmingLanguage": ["C++", "Python", "Scheme"]

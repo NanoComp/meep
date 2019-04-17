@@ -1,5 +1,29 @@
 # Meep Release Notes
 
+## Meep 1.9.0
+
+4/17/19
+
+  * Adjoint solver to compute sensitivity of solution to material perturbations (#795).
+  
+  * Experimental `do_averaging` feature for user-defined material functions (#771, #791).
+  
+  * Periodic boundaries support in `near2far` via `nperiods` option (#769, #789).
+  
+  * Capture more output in Python notebooks (#785, #807).
+  
+  * `dft-energy` feature (#744, #747).
+  
+  * Eigenmode sources are normalized to unit power (#728).
+  
+  * Fix interpolation of DFT slice output (#787).
+  
+  * Bug fix in `run-k-points` (#779).
+  
+  * Eigenmode sources for negative angles (#752).
+  
+  * Various other minor bugfixes, build fixes, documentation improvements, tutorials, etcetera.
+
 ## Meep 1.8.0
 
 2/13/19
