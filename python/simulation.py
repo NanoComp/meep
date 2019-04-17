@@ -1132,7 +1132,7 @@ class Simulation(object):
         Mu_realnums = 0
         # TODO: What's the best way to get this info?
         # if has_mu:
-        #     Mu_realnums = self.fragment_stats.num_pixels_in_box * 2 if is_periodic else 1
+        #     Mu_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_periodic else 1) * self.dimensions
 
         dft_realnums = self.fragment_stats.num_dft_pixels * 2
         dispersive_realnums = self.fragment_stats.num_susceptibility_pixels
