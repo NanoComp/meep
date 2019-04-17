@@ -1,5 +1,60 @@
 # Meep Release Notes
 
+## Meep 1.9.0
+
+4/17/19
+
+  * Time calls to get_eigenmode (#808)
+  * Don't do averaging where epsilon is uniform (#791)
+  * Redirect libctlgeom's output to Python's stdout (#807)
+  * note that do_averaging is experimental
+  * update adjoint solver docs (#804)
+  * test for near2far with periodic boundaries (#788)
+  * Adjoint solver (#795)
+  * minor updates to docs (#799)
+  * Fix bug in fallback_chi1inv_row (#794)
+  * Jupyter notebooks for near-to-far, frequency-domain solver, and eigenmode-source tutorials (#793)
+  * Add nperiods optional argument to add-near2far (#789)
+  * include interpolation weights in DFT slice output (#787)
+  * Jupyter notebooks for basics and binary-grating tutorial examples (#786)
+  * Fixed run-k-points bug by adding change-k-point. (#779)
+  * Send master_printf output to Python's stdout (#785)
+  * WIP: periodic green's functions (#769)
+  * FAQ on modeling incoherent emission from excitons (#783)
+  * Add section on Windows installation (#781)
+  * Fix variable name in get_array_metadata (#780)
+  * conda-forge now hosts official releases (#777)
+  * fix NaN in eigenmode source for negative direction (fixes #752)
+  * Add option to use fallback integration for user material functions (#771)
+  * fix broken links to images in Subpixel Smoothing feature page (#776)
+  * subpixel-smoothing feature page for docs (#775)
+  * Correct norm for complex vectors (#774)
+  * fix Si3N4_NIR in Python materials library (#768)
+  * documentation for Python dft_energy and 1 FAQs (#761)
+  * documentation for Scheme dft_energy and 2 FAQs (#756)
+  * Add dft_energy Python support (#747)
+  * Streamline array slice interface (#746)
+  * run clang-format (#754)
+  * eigenmode source tutorial example for oblique planewaves in homogeneous media (#751)
+  * add missing volume member to dft_energy class and Scheme example for computing group velocity (#753)
+  * Don't bother splitting cell into fragments when collecting statistics (#748)
+  * improve eig_power description in docs (#749)
+  * Normalize eigenmode source to unit power (#728)
+  * liquid crystal polarization grating tutorial for Scheme (#742)
+  * dft_energy routines and Scheme SWIG wrappers (#744)
+  * binary grating tutorial for Scheme (#735)
+  * add 3 FAQs and update docs (#726)
+  * Update build script in docs (#725)
+  * Add -lctlgeom to LIBS (#734)
+  * Fix edit on Github url (#743)
+  * Exclude some configure steps when using --without-scheme (#730)
+  * Fix bug in solve-cw.py (#724)
+  * mode decomposition tutorial for Scheme (#715)
+  * group FAQs into categories and other fixes to docs (#716)
+  * Add docs for Scheme get-eigenmode-coefficients (#712)
+  * Explain that --override-channels may be necessary when using conda (#713)
+  * Don't pollute global namespace with std (#714)
+
 ## Meep 1.8.0
 
 2/13/19
