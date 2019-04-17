@@ -12,6 +12,8 @@
   
   * Capture more output in Python notebooks (#785, #807).
   
+  * `dft-energy` feature (#744, #747).
+  
   * Eigenmode sources are normalized to unit power (#728).
   
   * Fix interpolation of DFT slice output (#787).
@@ -21,8 +23,6 @@
   * Eigenmode sources for negative angles (#752).
   
   * Various other minor bugfixes, build fixes, documentation improvements, tutorials, etcetera.
-  
-  * `dft-energy` feature (#744, #747).
 
 ## Meep 1.8.0
 
