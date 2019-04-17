@@ -297,7 +297,7 @@ std::vector<int> get_GDSII_layers(const char *GDSIIFile)
 #if defined(HAVE_LIBGDSII) && defined(HAVE_GDSII_GETLAYERS)
   return libGDSII::GetLayers(GDSIIFile);
 #else
-  GDSIIError("get_GDSII_layers");
+  GDSIIError("get_GDSII_layers (needs libGDSII version 0.21 or later)");
   std::vector<int> layers;
   return layers;
 #endif
