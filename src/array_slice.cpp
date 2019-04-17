@@ -165,7 +165,15 @@ void fill_chunk_source_slice(fields_chunk *fc, array_slice_data *data) {
         cdouble amp = s->A[npt];
         ptrdiff_t chunk_index = s->index[npt];
         ivec iloc = fc->gv.iloc(Dielectric, chunk_index);
-        if (iloc < slice_imin || iloc > slice_imax) continue; // source point outside slice
+        bool skip = false;
+        LOOP_OVER_DIRECTIONS(iloc.dim, d) {
+          if(iloc.in_direction(d) < slice_imin.in_direction(d) ||
+             iloc.in_direction(d) > slice_imax.in_direction(d)) {
+            skip = true;
+            break;
+          }
+        }
+        if (skip) continue;  // source point outside slice
         ivec slice_offset = iloc - slice_imin;
         ptrdiff_t slice_index = 0;
         if (has_direction(dim, Z)) slice_index += slice_offset.in_direction(Z) / 2;
