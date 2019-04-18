@@ -502,6 +502,10 @@ One normally does not create objects of type `GeometricObject` directly, however
 
 In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
+#### Geometry Utilites
+
+See the (MPB documentation)[https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities] for utility functions to help manipulate geometric objects.
+
 ### Sphere
 
 A sphere. Properties:
