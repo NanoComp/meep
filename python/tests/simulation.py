@@ -602,5 +602,29 @@ class TestSimulation(unittest.TestCase):
         slice = sim.get_source_slice(mp.Ez)
         print(slice)
 
+    def test_has_mu(self):
+
+        def _check(med, expected, default=mp.Medium()):
+            geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(1, 1), material=med)]
+            sim = mp.Simulation(cell_size=mp.Vector3(5, 5), resolution=10, geometry=geometry,
+                                default_material=default)
+
+            result = sim.has_mu()
+            if expected:
+                self.assertTrue(result)
+            else:
+                self.assertFalse(result)
+
+            print("Estimated memory usage: {}".format(sim.get_estimated_memory_usage()))
+
+        def mat_func(p):
+            return mp.Medium()
+
+        _check(mp.Medium(mu_diag=mp.Vector3(2, 1, 1)), True)
+        _check(mp.Medium(mu_offdiag=mp.Vector3(0.1, 0.2, 0.3)), True)
+        _check(mp.Medium(), True, mp.Medium(mu_diag=mp.Vector3(1, 1, 1.1)))
+        _check(mp.Medium(), False)
+        _check(mat_func, False)
+
 if __name__ == '__main__':
     unittest.main()
