@@ -37,6 +37,9 @@ class Vector3(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.z == other.z
 
+    def __ne__(self, other):
+        return not self == other
+
     def __add__(self, other):
         x = self.x + other.x
         y = self.y + other.y
