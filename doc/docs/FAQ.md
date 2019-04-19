@@ -403,6 +403,10 @@ Visualization in 3d can be done with [Mayavi](http://docs.enthought.com/mayavi/m
 
 To output the data to an HDF5 file, you can use the [`in_volume`](Python_User_Interface.md#modifying-hdf5-output) or `in_point` routines as part of your [run function](../Python_User_Interface/#run-functions). For example, to restrict the output to a line, you could use: `meep.in_volume(meep.Volume(center=meep.Vector3(0,0,0), size=meep.Vector3(10,0,0)), meep.output_dpwr)` which outputs ε|E|<sup>2</sup> along a line of length 10 in the x direction centered at (0,0,0). You can even wrap this statement in `to_appended("line.h5", ...)` to output the intensity along the line as a function of time to a 2d HDF5 dataset. This would enable you to plot intensity vs. time and space as a 2d color image.
 
+### How do I compute the absorber power in a local subregion of the cell?
+
+To compute the absorber power anywhere in the cell, you can use [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem): place a *closed* surface of [`dft`](Python_User_Interface.md#flux-spectra) flux monitors surrounding the subregion and specify the `weight` parameter of each [`FluxRegion`](Python_User_Interface.md#fluxregion) accordingly (i.e., ±1) in order to capture all incoming power. For a 2d example, see [Tutorials/Radiation Pattern of an Antenna](Python_Tutorials/Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna). There is also a 3d example for calculating the [light-extraction efficiency of an organic light-emitting diode (OLED)](http://www.simpetus.com/projects.html#meep_oled).
+
 ### What happens if I specify an output volume that extends beyond a cell with periodic boundaries?
 
 Any [output](Python_User_Interface.md#output-functions) or [computation](Python_User_Interface.md#field-computations) function that requires a `Volume`, such as `in_volume` or the [field integration routines](Field_Functions.md), etcetera, doesn't restrict the output volume to lie within, or even to intersect, the cell. As long as `ensure_periodicity=True` (the default), Meep will extend the data according to the periodic boundary conditions as needed.
