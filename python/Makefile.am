@@ -34,6 +34,7 @@ TESTS =                                   \
     $(TEST_DIR)/3rd_harm_1d.py            \
     $(TEST_DIR)/absorber_1d.py            \
     $(TEST_DIR)/antenna_radiation.py      \
+    $(TEST_DIR)/array_metadata.py         \
     $(TEST_DIR)/bend_flux.py              \
     $(BINARY_GRATING_TEST)                \
     $(TEST_DIR)/cavity_arrayslice.py      \
