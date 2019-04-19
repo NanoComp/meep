@@ -432,8 +432,16 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctlgeom.h>]], [ctl_printf_callbac
 ##############################################################################
 # check for libGDSII
 AC_CHECK_HEADER(libGDSII.h, [have_gdsii=maybe], [have_gdsii=no])
-if test $have_gdsii = maybe; then
+if test "x$have_gdsii" = xmaybe; then
   AC_CHECK_LIB(GDSII, libGDSIIExists)
+  if test "x$ac_cv_lib_GDSII_libGDSIIExists" = xyes; then
+    AC_MSG_CHECKING([for libGDSII::GetLayers])
+    have_gdsii_getlayers=no
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <libGDSII.h>]], [libGDSII::GetLayers("foo")])],
+      [have_gdsii_getlayers=yes
+       AC_DEFINE([HAVE_GDSII_GETLAYERS], [1], [If we have libGDSII::GetLayers])])
+    AC_MSG_RESULT($have_gdsii_getlayers)
+  fi
 fi
 
 ##############################################################################
