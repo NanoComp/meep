@@ -44,12 +44,16 @@ class TestArrayMetadata(unittest.TestCase):
         sim.init_sim()
         sim.solve_cw(1e-6, 1000, 10)
 
-        def electric_energy(r, ex, ey, ez, eps):
-            return np.real(eps * (np.conj(ex)*ex + np.conj(ey)*ey + np.conj(ez)*ez))
+        def electric_energy(r, ez, eps):
+            return np.real(eps * np.conj(ez)*ez)
 
-        electric_energy_total = sim.integrate_field_function([mp.Ex,mp.Ey,mp.Ez,mp.Dielectric],electric_energy,nonpml_vol)
-        electric_energy_max = sim.max_abs_field_function([mp.Ex,mp.Ey,mp.Ez,mp.Dielectric],electric_energy,nonpml_vol)
-        cw_modal_volume = electric_energy_total / electric_energy_max
+        def vec_func(r):
+            return r.x**2 + 2*r.y**2
+
+        electric_energy_total = sim.integrate_field_function([mp.Ez,mp.Dielectric],electric_energy,nonpml_vol)
+        electric_energy_max = sim.max_abs_field_function([mp.Ez,mp.Dielectric],electric_energy,nonpml_vol)
+        vec_func_total = sim.integrate_field_function([],vec_func,nonpml_vol)
+        cw_modal_volume = (electric_energy_total / electric_energy_max) * vec_func_total
 
         sim.reset_meep()
 
@@ -68,13 +72,15 @@ class TestArrayMetadata(unittest.TestCase):
         dft_obj = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, where=nonpml_vol)
         sim.run(until_after_sources=100)
 
-        (Ex,Ey,Ez) = [sim.get_dft_array(dft_obj, c, 0) for c in [mp.Ex, mp.Ey, mp.Ez]]
+        Ez = sim.get_dft_array(dft_obj, mp.Ez, 0)
         (X,Y,Z,W) = sim.get_array_metadata(dft_cell=dft_obj)
         Eps = sim.get_array(vol=nonpml_vol,component=mp.Dielectric)
-        EpsE2 = np.real(Eps*(np.conj(Ex)*Ex + np.conj(Ey)*Ey + np.conj(Ez)*Ez))
-        pulse_modal_volume = np.sum(W*EpsE2)/np.max(EpsE2)
+        EpsE2 = np.real(Eps*np.conj(Ez)*Ez)
+        xm, ym = np.meshgrid(X,Y)
+        vec_func_sum = np.sum(W*(xm**2 + 2*ym**2))
+        pulse_modal_volume = np.sum(W*EpsE2)/np.max(EpsE2) * vec_func_sum
 
-        self.assertAlmostEqual(cw_modal_volume, pulse_modal_volume, places=1)
+        self.assertAlmostEqual(cw_modal_volume/pulse_modal_volume, 1.00, places=2)
 
 if __name__ == '__main__':
     unittest.main()
