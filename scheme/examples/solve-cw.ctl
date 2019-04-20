@@ -23,9 +23,16 @@
 (set! sources (list
                (make source
                  (src (make continuous-src (frequency fcen) (fwidth df)))
-                 (component Ez) (center (+ r 0.1) 0))))
+                 (component Ez)
+                 (center (+ r 0.1) 0))
+               (make source
+                 (src (make continuous-src (frequency fcen) (fwidth df)))
+                 (component Ez)
+                 (center (- (+ r 0.1)) 0)
+                 (amplitude -1))))
 
-(set! symmetries (list (make mirror-sym (direction Y))))
+(set! symmetries (list (make mirror-sym (direction X) (phase -1))
+                       (make mirror-sym (direction Y) (phase +1))))
 
 (set! force-complex-fields? true)
 
@@ -33,12 +40,12 @@
 (define-param solve-cw-maxiters 10000)
 (define-param solve-cw-L 10)
 
-(define (ez-mag r ez) (magnitude ez))
+(define (ez-real r ez) (real-part ez))
 
 (init-fields)
 (meep-fields-solve-cw fields solve-cw-tol solve-cw-maxiters solve-cw-L)
 (in-volume (volume (center 0 0) (size (- sxy (* 2 dpml)) (- sxy (* 2 dpml))))
 	   (output-epsilon)
-	   (output-real-field-function "ez-mag" (list Ez) ez-mag))
+	   (output-real-field-function "ez-real" (list Ez) ez-real))
 
 (exit)

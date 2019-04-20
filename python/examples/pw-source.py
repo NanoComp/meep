@@ -55,7 +55,8 @@ sim = mp.Simulation(
     cell_size=cell,
     sources=sources,
     boundary_layers=pml_layers,
-    resolution=resolution
+    resolution=resolution,
+    default_material=mp.Medium(index=n),
 )
 
 t = 400  # run time

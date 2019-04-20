@@ -310,7 +310,7 @@ Using Octave/Matlab, in the first of two parts of the calculation, a phasemap of
 gdc = linspace(0.1,0.9,30);
 
 for n = 1:length(gdc)
-  system(sprintf("meep gdc=%0.2f metalens_phasemap.ctl |tee -a phasemap.out",gdc(n)));
+  system(sprintf("meep gdc=%0.2f metasurface_lens_phasemap.ctl |tee -a phasemap.out",gdc(n)));
 endfor
 system("grep mode: phasemap.out |cut -d, -f2- > phasemap.dat");
 
@@ -373,8 +373,8 @@ for m = 1:length(num_cells)
     gdc_str = strcat(gdc_str,sprintf(" %0.2f",gdc_new(idx(1))));
   endfor
   gdc_str = strcat(gdc_str,")\"");
-  system(sprintf("meep gp=%0.2f gh=%0.2f gdc-list=%s metalens_farfield.ctl",gp,gh,gdc_str));
-  eval(sprintf("load metalens_farfield-numcells-%d.h5",2*k+1));
+  system(sprintf("meep gp=%0.2f gh=%0.2f gdc-list=%s metasurface_lens_farfield.ctl",gp,gh,gdc_str));
+  eval(sprintf("load metasurface_lens_farfield-numcells-%d.h5",2*k+1));
   ff_nc = [ ff_nc abs(ez_r+1j*ez_i).^2.' ];
 endfor
 

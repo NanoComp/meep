@@ -317,7 +317,7 @@ Subpixel averaging affects pixels that contain **at most one** object interface.
 
 ### Can subpixel averaging be applied to a user-defined material function?
 
-Yes but its performance tends to be slow. Subpixel averaging is performed by default (`eps_averaging=True`) for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the [effective permittivity](Subpixel_Smoothing.md#smoothed-permittivity-tensor-via-perturbation-theory), can be computed analytically. This procedure typically takes a few seconds for a 3d cell. Computing these quantities using adaptive numerical integration can be *very* slow (minutes, hours) and also less accurate than the analytic approach. As a result, simulations involving a discontinuous `material_function` may require higher spatial resolution for accurate results.
+Yes but its performance tends to be slow. Subpixel averaging is performed by default (`eps_averaging=True`) for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the [effective permittivity](Subpixel_Smoothing.md#smoothed-permittivity-tensor-via-perturbation-theory), can be computed analytically. This procedure typically takes a few seconds for a 3d cell. Computing these quantities for a user-defined material function using adaptive numerical integration can be *very* slow (minutes, hours) and also less accurate than the analytic approach. As a result, simulations involving a discontinuous `material_function` may require turning off subpixel averaging (the default) and increasing the `resolution` for accurate results. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
 
 Usage: Performance
 ----------------------------
@@ -397,9 +397,15 @@ No. Meep does not support non-orthogonal grids with spatially varying resolution
 
 ### How do I access the structure, fields, or sources in a subregion/slice of the cell?
 
-You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source_slice`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) or `get_dft_array_metadata` to obtain information for the geometric slice. Visualization in 3d can be done with [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
+You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source_slice`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) to obtain information for the geometric slice.
+
+Visualization in 3d can be done with [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
 
 To output the data to an HDF5 file, you can use the [`in_volume`](Python_User_Interface.md#modifying-hdf5-output) or `in_point` routines as part of your [run function](../Python_User_Interface/#run-functions). For example, to restrict the output to a line, you could use: `meep.in_volume(meep.Volume(center=meep.Vector3(0,0,0), size=meep.Vector3(10,0,0)), meep.output_dpwr)` which outputs ε|E|<sup>2</sup> along a line of length 10 in the x direction centered at (0,0,0). You can even wrap this statement in `to_appended("line.h5", ...)` to output the intensity along the line as a function of time to a 2d HDF5 dataset. This would enable you to plot intensity vs. time and space as a 2d color image.
+
+### How do I compute the absorbed power in a local subregion of the cell?
+
+To compute the absorbed power anywhere in the cell, you can use [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem): place a *closed* surface of [`dft`](Python_User_Interface.md#flux-spectra) flux monitors surrounding the subregion and specify the `weight` parameter of each [`FluxRegion`](Python_User_Interface.md#fluxregion) accordingly (i.e., ±1) in order to capture all incoming power. For a 2d example, see [Tutorials/Radiation Pattern of an Antenna](Python_Tutorials/Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna). There is also a 3d example for calculating the [light-extraction efficiency of an organic light-emitting diode (OLED)](http://www.simpetus.com/projects.html#meep_oled).
 
 ### What happens if I specify an output volume that extends beyond a cell with periodic boundaries?
 
