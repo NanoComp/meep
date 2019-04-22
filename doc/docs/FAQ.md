@@ -249,6 +249,10 @@ Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), 
 
 For the instantaneous fields, you can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to compute the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. When computing the total field energy, you will need to first [synchronize the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md). To compute the integral of the energy density for a *single* field component e.g. ε|E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Dielectric, meep.Ez], def f(eps,ez): return 0.5*eps*abs(ez)**2, where=meep.Volume(...))`.
 
+### When computing the transmittance, why is it not necessary to first subtract the incident fields?
+
+Subtracting the Fourier-transformed incident fields is only necessary when computing the backward flux as in the case of reflectance. (Note: the backward direction is defined relative to the incident fields.) This is because the reflectance monitor is typically positioned between the source and the scatterer and therefore measures both the incident *and* scattered fields which must be separated. If you subtract the incident fields from the transmittance monitor, the results will be incorrect because the transmittance does *not* contain the incident fields; it only contains the scattered fields.
+
 Usage: Materials
 ----------------
 

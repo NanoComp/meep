@@ -8,7 +8,7 @@ Usage of the frequency-domain solver involves only two changes to the [original 
 
 Since the frequency-domain solver uses an [iterative method](https://en.wikipedia.org/wiki/Iterative_method), there are a couple of things we can do to improve its convergence: (1) use a non-zero smoothing width for the CW source (default is 0) to reduce the high-frequency oscillations produced by its abrupt turn on (which have slow group velocities and are absorbed poorly by [PML](../Perfectly_Matched_Layer.md)), and (2) increase the $L$ parameter of the [BiCGSTAB-L](https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method) iterative solver from the default of 2 to 10.
 
-We will compute the fundamental mode at five different tolerance values chosen on a logarithmic scale. We will then plot the L2 norm of the error in the fields as a function of the tolerance.
+We will compute the fundamental mode at five different tolerance values chosen on a logarithmic scale: 1e-8, 1e-9, 1e-10, 1e-11, 1e-12. We will then plot the L2 norm of the error in the fields (relative to the results at a tolerance of 1e-12) as a function of the tolerance.
 
 The simulation script is in [examples/solve-cw.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/solve-cw.ctl).
 
@@ -64,7 +64,7 @@ The simulation script is in [examples/solve-cw.ctl](https://github.com/NanoComp/
 (exit)
 ```
 
-The results are shown in the figure below. The field profile is generated using [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md): `h5topng -o ring_field_profile.png -vZc bluered -C solve-cw-eps-000000.00.h5 solve-cw-ez-real-000000.00.h5`. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The inset shows the real part of the scalar E<sub>z</sub> field, computed using a tolerance of 10<sup>-12</sup>, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and the faint presence of the point source.
+The results are shown in the figure below. The field profile is generated using [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md): `h5topng -o ring_field_profile.png -vZc bluered -C solve-cw-eps-000000.00.h5 solve-cw-ez-real-000000.00.h5`. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The error is converging to an asymptotic limit of 1e-12 which is set by the lowest tolerance. The inset shows the real part of the scalar E<sub>z</sub> field, computed using a tolerance of 1e-12, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and the faint presence of the point source.
 
 <center>
 ![](../images/CWsolver-scheme.png)
