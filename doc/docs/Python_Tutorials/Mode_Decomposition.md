@@ -722,7 +722,7 @@ def pol_grating(d,ph,gp,nmode):
     return input_flux[0], angles, res1.alpha[:,0,0], res2.alpha[:,0,0];
 ```
 
-The two types of gratings are simulated over a range of grating thicknesses from 0.1 to 3.4 μm corresponding to phase delays (Δnd/λ) of approximately 0 to 1.
+The properties of the two gratings are computed over a range of thicknesses from 0.1 to 3.4 μm corresponding to phase delays (Δnd/λ) of approximately 0 to 1.
 
 ```py
 ph_uniaxial = 0               # chiral layer twist angle for uniaxial grating
@@ -757,7 +757,7 @@ for k in range(len(dd)):
     ang_twisted[k] = angles[1]
 ```
 
-The output from the simulation for are plotted using the script below. The diffraction spectra for the two gratings are shown in the accompanying figure.
+The diffraction spectra is plotted using the script below and shown in the accompanying figure.
 
 ```py
 cos_angles = [math.cos(math.radians(t)) for t in ang_uniaxial]
