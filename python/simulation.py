@@ -575,6 +575,7 @@ class Simulation(object):
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
         self.collect_stats = collect_stats
+        self.fragment_stats = None
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -1114,6 +1115,52 @@ class Simulation(object):
     def require_dimensions(self):
         if self.structure is None:
             mp.set_dimensions(self._infer_dimensions(self.k_point))
+
+    def has_mu(self):
+
+        def _has_mu(medium):
+            if not isinstance(medium, mp.Medium):
+                return False
+            return medium.mu_diag != mp.Vector3(1, 1, 1) or medium.mu_offdiag != mp.Vector3(0j, 0j, 0j)
+
+        for go in self.geometry:
+            if _has_mu(go.material):
+                return True
+
+        for mat in self.extra_materials:
+            if _has_mu(mat):
+                return True
+
+        return _has_mu(self.default_material)
+
+    def get_estimated_memory_usage(self):
+        if self.fields is None:
+            self.collect_stats = True
+            self.init_sim()
+
+        if self.fragment_stats is None:
+            self.fragment_stats = self._compute_fragment_stats(self.structure.user_volume)
+
+        is_complex = (self.k_point and self.k_point != mp.Vector3(0, 0, 0)) or self.force_complex_fields
+        realnums_per_grid_point = 1 if self.dimensions == 1 else 3
+        E_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * realnums_per_grid_point
+        H_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * realnums_per_grid_point
+        D_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * realnums_per_grid_point
+        chi1inv_realnums = self.fragment_stats.num_pixels_in_box * 9
+
+        Mu_realnums = 0
+        if self.has_mu():
+            Mu_realnums = chi1inv_realnums + H_realnums
+
+        dft_realnums = self.fragment_stats.num_dft_pixels * 2
+        dispersive_realnums = self.fragment_stats.num_susceptibility_pixels * 6 * (2 if is_complex else 1)
+
+        total_realnums = (E_realnums + H_realnums + D_realnums + Mu_realnums +
+                          dft_realnums + dispersive_realnums)
+
+        total_bytes = total_realnums * mp.get_realnum_size()
+
+        return total_bytes
 
     def meep_time(self):
         if self.fields is None:
