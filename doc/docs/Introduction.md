@@ -141,6 +141,8 @@ It gets more complicated if one wants to compute the reflectance spectrum as wel
 
 $$P_r(\omega) = \mathrm{Re}\,\hat{\mathbf{n}}\cdot\int \left[ \mathbf{E}_\omega(\mathbf{x}) - \mathbf{E}_\omega^{(0)}(\mathbf{x}) \right]^* \times \left[ \mathbf{H}_\omega(\mathbf{x}) - \mathbf{H}_\omega^{(0)}(\mathbf{x}) \right] \, d^2\mathbf{x}$$ Again, you can do this easily in practice by running the simulation twice, once without and once with the scatterer, and telling Meep to subtract the Fourier transforms in the reflected plane before computing the flux. And again, after computing the reflected power you will normalize by the incident power to get the reflectance spectrum.
 
+(Note that you should *not* to subtract the incident fields when computing the *transmitted* fields, because on the "output side" of a scattering problem there are only outgoing fields, whereas on the "input side" there are both incoming (incident) and outgoing (reflected) fields and you must separate the two before computing the Poynting flux.)
+
 Meep is designed to make these kinds of calculations easy, as long as you have some idea of what is going on. For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend).
 
 ### Resonant Modes
