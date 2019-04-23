@@ -90,7 +90,7 @@ else:
     print("FAILED solve_cw test: error in the fields is NOT decreasing with increasing resolution")
 ```
 
-The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The error is converging to an asymptotic limit of 1e-12 which is set by the lowest tolerance.
+The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The error is converging to an asymptotic limit of `1e-12` which is set by the lowest tolerance.
 
 <center>
 ![](../images/CWsolver-python.png)
@@ -130,4 +130,4 @@ plt.axis('off')
 plt.show()
 ```
 
-The left inset of the figure above shows the real part of the scalar E<sub>z</sub> field, computed using the frequency-domain solver with a tolerance of 1e-12, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. There is a phase difference in the field profiles which are otherwise qualitatively similar.
+The left inset of the figure above shows the real part of the scalar E<sub>z</sub> field, computed using the frequency-domain solver with a tolerance of `1e-12`, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. There is a phase difference in the field profiles which are otherwise qualitatively similar.
