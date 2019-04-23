@@ -4,9 +4,9 @@
 
 The material structure in Maxwell's equations is determined by the relative permittivity ε(**r**) and permeability μ(**r**).
 
-However, ε is not only a function of position. In general, it also depends on frequency (material dispersion) and on the electric field **E** itself (nonlinearity). It may also depend on the orientation of the field (anisotropy). Material dispersion, in turn, is generally associated with absorption loss in the material, or possibly gain. All of these effects can be simulated in Meep, with certain restrictions.
+However, ε is not only a function of position. In general, it also depends on frequency (material dispersion) and on the electric field **E** itself (nonlinearity). It may also depend on the orientation of the field (anisotropy). Material dispersion, in turn, is generally associated with absorption loss in the material, or possibly gain. All of these effects can be simulated in Meep, with certain restrictions. Similarly for the relative permeability μ(**r**), for which dispersion, nonlinearity, and anisotropy are all supported as well.
 
-Similarly for the relative permeability μ(**r**), for which dispersion, nonlinearity, and anisotropy are all supported as well.
+There are various material types that are not supported: [non-reciprocal](https://en.wikipedia.org/wiki/Magneto-optic_effect) (gyrotropic), [bi-anisotropic](https://en.wikipedia.org/wiki/Bi-isotropic_material) (chiral), non-local (in which an electric field at one point creates a polarization somewhere else, e.g. metals at small scales where you take ballistic charge transport into account), and anisotropic nonlinearities.
 
 In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified in the simulation is described in [Python User Interface](Python_User_Interface.md). 
 

@@ -1639,6 +1639,8 @@ with the following input parameters:
 
 For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return complex arrays.
 
+**Note on array-slice dimensions:** The wrapper routines `get_epsilon`, `get_Xfield_z`, etc. use as default `size=meep.Simulation.fields.total_volume()` which for simulations involving Bloch-periodic boundaries (via `k_point`) will result in arrays that have slightly *different* dimensions than e.g. `get_array(center=meep.Vector3(), size=cell_size, component=meep.Dielectric`, etc. (i.e., the slice spans the entire cell volume `cell_size`). Neither of these approaches is "wrong", they are just slightly different methods of fetching the boundaries. The key point is that if you pass the same value for the `size` parameter, or use the default, the slicing routines always give you the same-size array for all components. You should *not* try to predict the exact size of these arrays; rather, you should simply rely on Meep's output.
+
 **`get_dft_array(dft_obj, component, num_freq)`**
 —
 Returns the Fourier-transformed fields as a NumPy array.
