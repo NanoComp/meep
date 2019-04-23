@@ -1146,12 +1146,12 @@ class Simulation(object):
         E_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * realnums_per_grid_point
         H_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * realnums_per_grid_point
         D_realnums = self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) * realnums_per_grid_point
+        chi1inv_realnums = self.fragment_stats.num_pixels_in_box * 9
 
         Mu_realnums = 0
         if self.has_mu():
-            Mu_realnums = 9 * self.fragment_stats.num_pixels_in_box * (2 if is_complex else 1) + H_realnums
+            Mu_realnums = chi1inv_realnums + H_realnums
 
-        chi1inv_realnums = self.fragment_stats.num_pixels_in_box * 9
         dft_realnums = self.fragment_stats.num_dft_pixels * 2
         dispersive_realnums = self.fragment_stats.num_susceptibility_pixels * 6 * (2 if is_complex else 1)
 
