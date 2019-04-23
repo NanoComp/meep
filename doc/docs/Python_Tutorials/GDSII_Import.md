@@ -32,7 +32,7 @@ Note that rather than being specified as part of the GDSII file, the volume regi
 ## Simulation Script
 ---
 
-The simulation script is in [examples/coupler.py](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.py).
+The simulation script is in [examples/coupler.py](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.py). The notebook is [examples/coupler.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/coupler.ipynb).
 
 ```python
 import meep as mp

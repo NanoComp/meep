@@ -127,7 +127,7 @@ Perhaps the most common task to which FDTD is applied is that of computing the t
 
 For example, suppose we want the transmitted power through some structure. For fields at a given frequency ω, this is the integral of the Poynting vector (in the normal $\hat{\mathbf{n}}$ direction) over a plane on the far side of the structure:
 
-$$P(\omega) = \mathrm{Re}\, \hat{\mathbf{n}}\cdot \int \mathbf{E}_\omega(\mathbf{x})^* \times \mathbf{H}_\omega(\mathbf{x}) \, d^2\mathbf{x}$$ Now, if we input a short pulse, it is tempting to compute the integral $P(t)$ of the Poynting vector at each time, and then Fourier-transform this to find $P(\omega)$. That is **incorrect**, however, because what we want is the flux of the Fourier-transformed fields **E** and **H**, which is not the same as the transform of the flux. The flux is not a linear function of the fields.
+$$P(\omega) = \mathrm{Re}\, \hat{\mathbf{n}}\cdot \int \mathbf{E}_\omega(\mathbf{x})^* \times \mathbf{H}_\omega(\mathbf{x}) \, d^2\mathbf{x}$$ Now, if we input a short pulse, it is tempting to compute the integral $P(t)$ of the Poynting vector at each time, and then Fourier-transform this to find $P(\omega)$. That is **incorrect**, however, because what we want is the flux of the Fourier-transformed fields **E** and **H**, which is not the same as the transform of the time-domain flux. The flux is not a linear function of the fields.
 
 Instead, what one does is to accumulate the Fourier transforms $\mathbf{E}_ω(\mathbf{x})$ and $\mathbf{H}_ω(\mathbf{x})$ for every point in the flux plane via summation over the discrete time steps $n$:
 

@@ -629,14 +629,15 @@ A schematic of the grating geometry is shown below. The grating is a 2d slab in 
 
 In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of λ=0.54 μm. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. As usual, this requires a separate normalization run to compute the power of the input planewave.
 
-The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x* axis. For φ=0°, the nematic director is oriented along the *z* axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
-
 The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py).
+
+The main part of the script is the function `pol_grating` which computes the mode coefficients for a grating with thickness `d`, twisted-nematic rotation angle `ph`, and periodicity `gp`. The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x*-axis. For φ=0°, the nematic director is oriented along the *z*-axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
 
 ```py
 import meep as mp
+import numpy as np
 import math
-import argparse
+import matplotlib.pyplot as plt
 
 resolution = 50        # pixels/μm
 
@@ -719,65 +720,57 @@ def pol_grating(d,ph,gp,nmode):
     angles = [math.degrees(math.acos(kdom.x/fcen)) for kdom in res1.kdom]
 
     return input_flux[0], angles, res1.alpha[:,0,0], res2.alpha[:,0,0];
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-dd', type=float, default=1.7, help='chiral layer thickness (default: 1.7 μm)')
-    parser.add_argument('-ph', type=float, default=70, help='chiral layer twist angle (default: 70°)')
-    parser.add_argument('-gp', type=float, default=6.5, help='grating period (default: 6.5 μm)')
-    parser.add_argument('-nmode', type=int, default=5, help='number of mode coefficients to compute (default: 5)')
-    args = parser.parse_args()
-    
-    input_flux, angles, coeffs1, coeffs2 = pol_grating(args.dd,math.radians(args.ph),args.gp,args.nmode)
-
-    tran = (abs(coeffs1)**2+abs(coeffs2)**2)/input_flux
-    for m in range(args.nmode):
-        print("tran:, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))
 ```
 
-The Bash script below runs the grating simulations over a range of grating thicknesses from 0.1 to 3.4 μm corresponding to phase delays (Δnd/λ) of approximately 0 to 1. The entire output is saved to a file and the transmittance data is extracted from the output and placed in a separate file.
-
-```sh
-for d in `seq 0.1 0.1 3.4`; do
-    echo "circular polarization grating with d=${d}";
-    dd=$(printf "%0.2f" $(echo "scale=2;0.5*${d}" |bc));
-    python polarization_grating.py -dd ${dd} -ph 0 |tee -a circ_pol_grating.out;
-
-    echo "bilayer twisted nematic polarization grating with d=${d}";
-    python polarization_grating.py -dd ${d} -ph 70 |tee -a bilayer_pol_grating.out;
-done
-
-grep tran: circ_pol_grating.out |cut -d, -f2- > circ_pol_grating.dat
-grep tran: bilayer_pol_grating.out |cut -d, -f2- > bilayer_pol_grating.dat
-```
-
-The output from the simulation for the homogeneous uniaxial grating is plotted using the script below. The diffraction spectra for the two gratings are shown in the accompanying figures.
+The properties of the two gratings are computed over a range of thicknesses from 0.1 to 3.4 μm corresponding to phase delays (Δnd/λ) of approximately 0 to 1.
 
 ```py
-import numpy as np
-import math
-import matplotlib.pyplot as plt
+ph_uniaxial = 0               # chiral layer twist angle for uniaxial grating
+ph_twisted = 70               # chiral layer twist angle for bilayer grating
+gp = 6.5                      # grating period
+nmode = 5                     # number of mode coefficients to compute
+dd = np.arange(0.1,3.5,0.1)   # chiral layer thickness
 
-d = np.genfromtxt("circ_pol_grating.dat",delimiter=",")
-m0 = d[0::5,2]
-m1 = d[1::5,2]
-angles = d[1::5,1]
+m0_uniaxial = np.zeros(dd.size)
+m1_uniaxial = np.zeros(dd.size)
+ang_uniaxial = np.zeros(dd.size)
 
-cos_angles = [math.cos(math.radians(t)) for t in angles]
-tran = m0+2*m1
-eff_m0 = m0/tran
-eff_m1 = (2*m1/tran)/cos_angles
+m0_twisted = np.zeros(dd.size)
+m1_twisted = np.zeros(dd.size)
+ang_twisted = np.zeros(dd.size)
 
-dd = np.arange(0.1,3.5,0.1)
-delta_n = 0.159
-wvl = 0.54
+for k in range(len(dd)):
+    input_flux, angles, coeffs1, coeffs2 = pol_grating(0.5*dd[k],math.radians(ph_uniaxial),gp,nmode)
+    tran = (abs(coeffs1)**2+abs(coeffs2)**2)/input_flux
+    for m in range(nmode):
+        print("tran (uniaxial):, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))
+    m0_uniaxial[k] = tran[0]
+    m1_uniaxial[k] = tran[1]
+    ang_uniaxial[k] = angles[1]
+
+    input_flux, angles, coeffs1, coeffs2 = pol_grating(dd[k],math.radians(ph_twisted),gp,nmode)
+    tran = (abs(coeffs1)**2+abs(coeffs2)**2)/input_flux
+    for m in range(nmode):
+        print("tran (twisted):, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))
+    m0_twisted[k] = tran[0]
+    m1_twisted[k] = tran[1]
+    ang_twisted[k] = angles[1]
+```
+
+The diffraction spectra is plotted using the script below and shown in the accompanying figure.
+
+```py
+cos_angles = [math.cos(math.radians(t)) for t in ang_uniaxial]
+tran = m0_uniaxial+2*m1_uniaxial
+eff_m0 = m0_uniaxial/tran
+eff_m1 = (2*m1_uniaxial/tran)/cos_angles
+
 phase = delta_n*dd/wvl
-
 eff_m0_analytic = [math.cos(math.pi*p)**2 for p in phase]
 eff_m1_analytic = [math.sin(math.pi*p)**2 for p in phase]
 
-plt.figure()
+plt.figure(dpi=150)
+plt.subplot(1,2,1)
 plt.plot(phase,eff_m0,'bo-',clip_on=False,label='0th order (meep)')
 plt.plot(phase,eff_m0_analytic,'b--',clip_on=False,label='0th order (analytic)')
 plt.plot(phase,eff_m1,'ro-',clip_on=False,label='±1 orders (meep)')
@@ -788,6 +781,22 @@ plt.xlabel("phase delay Δnd/λ")
 plt.ylabel("diffraction efficiency @ λ = 0.54 μm")
 plt.legend(loc='center')
 plt.title("homogeneous uniaxial grating")
+
+cos_angles = [math.cos(math.radians(t)) for t in ang_twisted]
+tran = m0_twisted+2*m1_twisted
+eff_m0 = m0_twisted/tran
+eff_m1 = (2*m1_twisted/tran)/cos_angles
+
+plt.subplot(1,2,2)
+plt.plot(phase,eff_m0,'bo-',clip_on=False,label='0th order (meep)')
+plt.plot(phase,eff_m1,'ro-',clip_on=False,label='±1 orders (meep)')
+plt.axis([0, 1.0, 0, 1])
+plt.xticks([t for t in np.arange(0,1.2,0.2)])
+plt.xlabel("phase delay Δnd/λ")
+plt.ylabel("diffraction efficiency @ λ = 0.54 μm")
+plt.legend(loc='center')
+plt.title("bilayer twisted-nematic grating")
+
 plt.show()
 ```
 

@@ -4,8 +4,9 @@
 # note: reference uses z as the propagation direction and y as the out-of-plane direction; this script uses x and z, respectively
 
 import meep as mp
+import numpy as np
 import math
-import argparse
+import matplotlib.pyplot as plt
 
 resolution = 50        # pixels/μm
 
@@ -90,16 +91,74 @@ def pol_grating(d,ph,gp,nmode):
     return input_flux[0], angles, res1.alpha[:,0,0], res2.alpha[:,0,0];
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-dd', type=float, default=1.7, help='chiral layer thickness (default: 1.7 μm)')
-    parser.add_argument('-ph', type=float, default=70, help='chiral layer twist angle (default: 70°)')
-    parser.add_argument('-gp', type=float, default=6.5, help='grating period (default: 6.5 μm)')
-    parser.add_argument('-nmode', type=int, default=5, help='number of mode coefficients to compute (default: 5)')
-    args = parser.parse_args()
-    
-    input_flux, angles, coeffs1, coeffs2 = pol_grating(args.dd,math.radians(args.ph),args.gp,args.nmode)
 
+ph_uniaxial = 0               # chiral layer twist angle for uniaxial grating
+ph_twisted = 70               # chiral layer twist angle for bilayer grating
+gp = 6.5                      # grating period
+nmode = 5                     # number of mode coefficients to compute
+dd = np.arange(0.1,3.5,0.1)   # chiral layer thickness
+
+m0_uniaxial = np.zeros(dd.size)
+m1_uniaxial = np.zeros(dd.size)
+ang_uniaxial = np.zeros(dd.size)
+
+m0_twisted = np.zeros(dd.size)
+m1_twisted = np.zeros(dd.size)
+ang_twisted = np.zeros(dd.size)
+
+for k in range(len(dd)):
+    input_flux, angles, coeffs1, coeffs2 = pol_grating(0.5*dd[k],math.radians(ph_uniaxial),gp,nmode)
     tran = (abs(coeffs1)**2+abs(coeffs2)**2)/input_flux
-    for m in range(args.nmode):
-        print("tran:, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))
+    for m in range(nmode):
+        print("tran (uniaxial):, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))
+    m0_uniaxial[k] = tran[0]
+    m1_uniaxial[k] = tran[1]
+    ang_uniaxial[k] = angles[1]
+
+    input_flux, angles, coeffs1, coeffs2 = pol_grating(dd[k],math.radians(ph_twisted),gp,nmode)
+    tran = (abs(coeffs1)**2+abs(coeffs2)**2)/input_flux
+    for m in range(nmode):
+        print("tran (twisted):, {}, {:.2f}, {:.5f}".format(m,angles[m],tran[m]))
+    m0_twisted[k] = tran[0]
+    m1_twisted[k] = tran[1]
+    ang_twisted[k] = angles[1]
+
+
+cos_angles = [math.cos(math.radians(t)) for t in ang_uniaxial]
+tran = m0_uniaxial+2*m1_uniaxial
+eff_m0 = m0_uniaxial/tran
+eff_m1 = (2*m1_uniaxial/tran)/cos_angles
+
+phase = delta_n*dd/wvl
+eff_m0_analytic = [math.cos(math.pi*p)**2 for p in phase]
+eff_m1_analytic = [math.sin(math.pi*p)**2 for p in phase]
+
+plt.figure(dpi=150)
+plt.subplot(1,2,1)
+plt.plot(phase,eff_m0,'bo-',clip_on=False,label='0th order (meep)')
+plt.plot(phase,eff_m0_analytic,'b--',clip_on=False,label='0th order (analytic)')
+plt.plot(phase,eff_m1,'ro-',clip_on=False,label='±1 orders (meep)')
+plt.plot(phase,eff_m1_analytic,'r--',clip_on=False,label='±1 orders (analytic)')
+plt.axis([0, 1.0, 0, 1])
+plt.xticks([t for t in np.arange(0,1.2,0.2)])
+plt.xlabel("phase delay Δnd/λ")
+plt.ylabel("diffraction efficiency @ λ = 0.54 μm")
+plt.legend(loc='center')
+plt.title("homogeneous uniaxial grating")
+
+cos_angles = [math.cos(math.radians(t)) for t in ang_twisted]
+tran = m0_twisted+2*m1_twisted
+eff_m0 = m0_twisted/tran
+eff_m1 = (2*m1_twisted/tran)/cos_angles
+
+plt.subplot(1,2,2)
+plt.plot(phase,eff_m0,'bo-',clip_on=False,label='0th order (meep)')
+plt.plot(phase,eff_m1,'ro-',clip_on=False,label='±1 orders (meep)')
+plt.axis([0, 1.0, 0, 1])
+plt.xticks([t for t in np.arange(0,1.2,0.2)])
+plt.xlabel("phase delay Δnd/λ")
+plt.ylabel("diffraction efficiency @ λ = 0.54 μm")
+plt.legend(loc='center')
+plt.title("bilayer twisted-nematic grating")
+
+plt.show()
