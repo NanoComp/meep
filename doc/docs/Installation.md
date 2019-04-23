@@ -84,7 +84,7 @@ parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
 666
 ```
 
-**Note:** Rather than try to periodically update PyMeep within an existing environment via e.g. `conda update pymeep`, it is recommended to create a new environment from scratch each time. This is because updating environments is not a reliable procedure for obtaining the latest packages.
+**Note:** To update, `pymeep`, you can do `conda update -c conda-forge pymeep`.  If you run into problems (e.g. some other update has interfered with your environment), you can instead create a new environment from scratch each time.
 
 ### Nightly Builds
 
