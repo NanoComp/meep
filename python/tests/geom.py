@@ -164,6 +164,20 @@ class TestSphere(unittest.TestCase):
         shifted = s.shift(gm.Vector3(-10, -10))
         self.assertEqual(shifted.center, gm.Vector3())
 
+        s = gm.Sphere(center=zeros(), radius=2.0)
+        s += mp.Vector3(5, 5)
+        self.assertEqual(s.center, mp.Vector3(5, 5))
+
+        s = gm.Sphere(center=zeros(), radius=2.0)
+        new_sphere = s + mp.Vector3(5, 5)
+        self.assertEqual(new_sphere.center, mp.Vector3(5, 5))
+        self.assertEqual(s.center, zeros())
+
+        s = gm.Sphere(center=zeros(), radius=2.0)
+        new_sphere = mp.Vector3(5, 5) + s
+        self.assertEqual(new_sphere.center, mp.Vector3(5, 5))
+        self.assertEqual(s.center, zeros())
+
     def test_info(self):
         # Sanity test to ensure that display_geometric_object_info is callable
         s = gm.Sphere(2)

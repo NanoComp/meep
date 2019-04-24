@@ -41,6 +41,9 @@ class Vector3(object):
         return not self == other
 
     def __add__(self, other):
+        if isinstance(other, GeometricObject):
+            return NotImplemented
+
         x = self.x + other.x
         y = self.y + other.y
         z = self.z + other.z
@@ -324,7 +327,14 @@ class GeometricObject(object):
         return mp.is_point_in_object(point, self)
 
     def __add__(self, vec):
+        return self.shift(vec)
+
+    def __radd__(self, vec):
+        return self.shift(vec)
+
+    def __iadd__(self, vec):
         self.center += vec
+        return self
 
     def shift(self, vec):
         c = deepcopy(self)
