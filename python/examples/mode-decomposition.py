@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import meep as mp
-import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 resolution = 61   # pixels/μm
