@@ -345,11 +345,17 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
   if (!EH) return; /* nothing to output */
 
-  /* collapse trailing singleton dimensions */
-  while (rank > 0 && dims[rank - 1] == 1)
-    --rank;
+  /* collapse singleton dimensions */
+  size_t collapsed_dims[4] = {};
+  int collapsed_rank = 0;
+  for (int i = 0; i < rank; ++i) {
+    if (dims[i] > 1) {
+      collapsed_dims[collapsed_rank++] = dims[i];
+    }
+  }
+
   /* frequencies are the last dimension */
-  if (Nfreq > 1) dims[rank++] = Nfreq;
+  if (Nfreq > 1) collapsed_dims[collapsed_rank++] = Nfreq;
 
   /* output to a file with one dataset per component & real/imag part */
   if (am_master()) {
@@ -363,7 +369,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
     for (int k = 0; k < 6; ++k)
       for (int reim = 0; reim < 2; ++reim) {
         snprintf(dataname, 128, "%s.%c", component_name(c[k]), "ri"[reim]);
-        ff.write(dataname, rank, dims, EH + (k * 2 + reim) * N * Nfreq);
+        ff.write(dataname, collapsed_rank, collapsed_dims, EH + (k * 2 + reim) * N * Nfreq);
       }
   }
 
