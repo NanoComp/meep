@@ -13,7 +13,7 @@
 
 (define k (vector3-scale fcen (rotate-vector3 (vector3 0 0 1) tilt-angle (vector3 0 1 0))))
 
-(define-param sigma 1.5) ; beam width
+(define-param beam-sigma 1.5) ; beam width
 
 (define (gaussian-beam sigma k x0)
   (lambda (x)
@@ -26,7 +26,7 @@
                       (component Ez)
                       (center src-pt)
                       (size 20 0 0)
-                      (amp-func (gaussian-beam sigma k src-pt)))))
+                      (amp-func (gaussian-beam beam-sigma k src-pt)))))
 
 (run-until 50 (in-volume (volume (center 0 0 0) (size 20 8 0))
                          (at-end output-efield-z)))
