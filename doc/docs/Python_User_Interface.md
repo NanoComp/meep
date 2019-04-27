@@ -1744,13 +1744,9 @@ The results are stored in the list `Harminv.modes`, which is a list of tuples ho
 
 **`freq`**
 —
-The complex frequency ω (in the usual Meep 2πc units).
+The real part of frequency ω (in the usual Meep 2πc units).
 
-**`freq.real`**
-—
-The real part of the frequency ω.
-
-**`freq.decay`**
+**`decay`**
 —
 The imaginary part of the frequency ω.
 
