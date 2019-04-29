@@ -343,7 +343,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
     }
   }
   rank = collapsed_rank;
-  std::memcpy(dims, collapsed_dims, ndims * sizeof(int));
+  std::memcpy(dims, collapsed_dims, ndims * sizeof(size_t));
 
   delete[] EH_;
   delete[] EH1;
