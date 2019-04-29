@@ -477,7 +477,6 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   array_slice_data data;
   int rank = get_array_slice_dimensions(where, dims, dirs, collapse, snap, 0, &data);
   size_t slice_size = data.slice_size;
-  if (rank == 0 || slice_size == 0) return 0; // no data to write
 
   bool complex_data = (rfun == 0);
   cdouble *zslice;
