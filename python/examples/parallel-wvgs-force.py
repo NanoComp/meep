@@ -1,23 +1,26 @@
-# -*- coding: utf-8 -*-
-
 import meep as mp
-import argparse
+import numpy as np
+import matplotlib.pyplot as plt
 
-def main(args):
-    resolution = 30   # pixels/μm
+resolution = 30   # pixels/μm
     
-    Si = mp.Medium(index=3.45)
+Si = mp.Medium(index=3.45)
 
-    dpml = 1.0
-    pml_layers = [mp.PML(dpml)]
+dpml = 1.0
+pml_layers = [mp.PML(dpml)]
     
-    sx = 5
-    sy = 3
-    cell = mp.Vector3(sx+2*dpml,sy+2*dpml,0)
+sx = 5
+sy = 3
+cell = mp.Vector3(sx+2*dpml,sy+2*dpml,0)
 
-    a = 1.0     # waveguide width
-    s = args.s  # waveguide separation distance
+a = 1.0     # waveguide width
 
+k_point = mp.Vector3(z=0.5)
+
+fcen = 0.22
+df = 0.06
+
+def parallel_waveguide(s,xodd):
     geometry = [mp.Block(center=mp.Vector3(-0.5*(s+a)),
                          size=mp.Vector3(a,a,mp.inf),
                          material=Si),
@@ -25,14 +28,9 @@ def main(args):
                          size=mp.Vector3(a,a,mp.inf),
                          material=Si)]
 
-    xodd = args.xodd
     symmetries = [mp.Mirror(mp.X, phase=-1.0 if xodd else 1.0),
                   mp.Mirror(mp.Y, phase=-1.0)]
 
-    k_point = mp.Vector3(z=0.5)
-
-    fcen = 0.22
-    df = 0.06
     sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
                          component=mp.Ey,
                          center=mp.Vector3(-0.5*(s+a)),
@@ -85,12 +83,29 @@ def main(args):
 
     sim.run(until_after_sources=5000)
 
-    sim.display_fluxes(wvg_flux)
-    sim.display_forces(wvg_force)
+    flux = mp.get_fluxes(wvg_flux)[0]
+    force = mp.get_forces(wvg_force)[0]
+    
+    sim.reset_meep()
+    return flux, force
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-xodd', default=False, action='store_true', help='odd mirror symmetry in X direction? (default: False)')
-    parser.add_argument('-s', type=float, default=1.0, help='waveguide separation distance (default: 1.0 μm)')
-    args = parser.parse_args()
-    main(args)
+
+s = np.arange(0.05,1.05,0.05)
+fluxes_odd = np.zeros(s.size)
+forces_odd = np.zeros(s.size)
+
+fluxes_even = np.zeros(s.size)
+forces_even = np.zeros(s.size)
+
+for k in range(len(s)):
+    fluxes_odd[k], forces_odd[k] = parallel_waveguide(s[k],True)
+    fluxes_even[k], forces_even[k] = parallel_waveguide(s[k],False)
+
+plt.figure(dpi=150)
+plt.plot(s,-forces_odd/fluxes_odd,'rs',label='anti symmetric')
+plt.plot(s,-forces_even/fluxes_even,'bo',label='symmetric')
+plt.grid(True)
+plt.xlabel('waveguide separation s/a')    
+plt.ylabel('optical force (F/L)(ac/P)')
+plt.legend(loc='upper right')
+plt.show()
