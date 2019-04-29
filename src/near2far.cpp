@@ -22,7 +22,6 @@
 
 #include <meep.hpp>
 #include <assert.h>
-#include <cstring>
 #include "config.h"
 #include <math.h>
 
@@ -334,16 +333,11 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
   sum_to_all(EH_, EH, 6 * 2 * N * Nfreq);
 
   /* collapse singleton dimensions */
-  const int ndims = 4;
-  size_t collapsed_dims[ndims] = {};
-  int collapsed_rank = 0;
+  int ireduced = 0;
   for (int i = 0; i < rank; ++i) {
-    if (dims[i] > 1) {
-      collapsed_dims[collapsed_rank++] = dims[i];
-    }
+    if (dims[i] > 1) dims[ireduced++] = dims[i];
   }
-  rank = collapsed_rank;
-  std::memcpy(dims, collapsed_dims, ndims * sizeof(size_t));
+  rank = ireduced;
 
   delete[] EH_;
   delete[] EH1;
