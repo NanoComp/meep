@@ -44,7 +44,7 @@ def parallel_waveguide(s,yodd):
 
     return f,vg
 
-ss = np.arange(0.1,1.2,0.2)
+ss = np.arange(0.05,1.05,0.05)
 
 f_odd = np.zeros(len(ss))
 vg_odd = np.zeros(len(ss))
