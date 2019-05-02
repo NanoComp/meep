@@ -321,13 +321,10 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 
     if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
-    // collapse trailing singleton dimensions
-    while (rank > 0 && dims[rank - 1] == 1) {
-        --rank;
-    }
     // frequencies are the last dimension
     if (n2f->Nfreq > 1) dims[rank++] = n2f->Nfreq;
 
+    // Additional rank to store all 12 E/H x/y/z r/i arrays.
     rank++;
     npy_intp *arr_dims = new npy_intp[rank];
     arr_dims[0] = 12;

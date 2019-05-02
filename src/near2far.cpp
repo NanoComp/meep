@@ -331,6 +331,14 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
     }
   }
   sum_to_all(EH_, EH, 6 * 2 * N * Nfreq);
+
+  /* collapse singleton dimensions */
+  int ireduced = 0;
+  for (int i = 0; i < rank; ++i) {
+    if (dims[i] > 1) dims[ireduced++] = dims[i];
+  }
+  rank = ireduced;
+
   delete[] EH_;
   delete[] EH1;
   return EH;
@@ -345,9 +353,6 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
   if (!EH) return; /* nothing to output */
 
-  /* collapse trailing singleton dimensions */
-  while (rank > 0 && dims[rank - 1] == 1)
-    --rank;
   /* frequencies are the last dimension */
   if (Nfreq > 1) dims[rank++] = Nfreq;
 
