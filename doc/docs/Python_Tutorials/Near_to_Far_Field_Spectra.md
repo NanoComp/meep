@@ -348,22 +348,25 @@ The far-field energy-density profile is shown below for the three lens designs. 
 ![](../images/metasurface_lens_farfield.png)
 </center>
 
-Diffraction Spectrum of a Binary Grating
-----------------------------------------
+Diffraction Spectrum of a Finite Binary Grating
+-----------------------------------------------
 
-In this example, we compute the diffraction spectrum of a binary phase [grating](https://en.wikipedia.org/wiki/Diffraction_grating). (In general, diffraction spectra can be computed much more efficiently using [mode decomposition](../Mode_Decomposition.md); for a demonstration, see [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) which also describes the grating geometry and simulation parameters.) The focus of this tutorial is mainly to demonstrate `add_near2far`'s support for periodic boundaries.
+In this example, we compute the diffraction spectrum of a binary phase [grating](https://en.wikipedia.org/wiki/Diffraction_grating) with finite length. To compute the diffraction spectrum of the infinite periodic structure requires [mode decomposition](../Mode_Decomposition.md); for a demonstration, see [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) which also describes the grating geometry used in this example (i.e., periodicity of 10 μm, height of 0.5 μm, duty cycle of 0.5, and index 1.5 in air). Note that an infinite periodic structure actually has *no* spatial separation of the diffracted orders; they are all present at every far-field point. The focus of this tutorial is mainly to demonstrate `add_near2far`'s support for periodic boundaries.
 
-The simulation script is in [examples/binary_grating_n2f.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_n2f.py). The notebook is [examples/binary_grating_n2f.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/binary_grating_n2f.ipynb)
+The simulation script is in [examples/binary_grating_n2f.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_n2f.py). The notebook is [examples/binary_grating_n2f.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/binary_grating_n2f.ipynb).
 
-The simulation involves computing the scattered near fields of the binary grating for an E<sub>z</sub>-polarized, pulsed planewave source at normal incidence. The far fields are then computed for 500 points along a vertical line positioned 100 m away with length corresponding to a 20° cone. Following standard procedure, two separate runs are performed: (1) an empty cell to obtain the fields from just the incident planewave and (2) a binary-grating unit cell to obtain the scattered fields. The diffraction spectra is computed as the ratio of the energy density of the far fields from the two runs.
+The simulation involves computing the scattered near fields of a finite grating for an E<sub>z</sub>-polarized, pulsed planewave source at normal incidence. The far fields are then computed for 500 points along a line parallel to the grating axis positioned 100 m away in the upper half plane of the symmetric finite structure with length corresponding to a 20° cone. The diffraction spectra is computed as the ratio of the energy density of the far fields from two separate runs: (1) an empty cell to obtain the fields from just the incident planewave and (2) a binary-grating unit cell to obtain the scattered fields. The far-field distance is chosen to be 100 m or 10<sup>7</sup> grating periods away.
+
+Modeling a finite grating requires specifying the `nperiods` parameter of `add_near2far` which sums `2*nperiods+1` Bloch-periodic copies of the near fields. However, because of the way in which the edges of the structure are handled, this approach is only an *approximation* for a finite periodic surface. We will verify that the error from this approximation is O(1/`nperiods`) by comparing its result with that of a true finite periodic structure involving multiple periods in a supercell arrangement terminated with a flat surface extending into PML. (There are infinitely many ways to terminate a finite periodic structure, of course, and different choices will have slightly different errors compared to the periodic approximation.)
 
 ```py
 import meep as mp
 import math
 import numpy as np
+from numpy import linalg as LA
 import matplotlib.pyplot as plt
 
-resolution = 40        # pixels/μm
+resolution = 25        # pixels/μm
 
 dpml = 1.0             # PML thickness
 dsub = 3.0             # substrate thickness
@@ -372,10 +375,21 @@ gp = 10.0              # grating period
 gh = 0.5               # grating height
 gdc = 0.5              # grating duty cycle
 
+nperiods = 10          # number of unit cells in finite periodic grating
+
+ff_distance = 1e8      # far-field distance from near-field monitor
+ff_angle = 20          # far-field cone angle
+ff_npts = 500          # number of far-field points
+
+ff_length = ff_distance*math.tan(math.radians(ff_angle))
+ff_res = ff_npts/ff_length
+
 sx = dpml+dsub+gh+dpad+dpml
 cell_size = mp.Vector3(sx)
 
 pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
+
+symmetries = [mp.Mirror(mp.Y)]
 
 wvl_min = 0.4           # min wavelength
 wvl_max = 0.6           # max wavelength
@@ -404,20 +418,14 @@ n2f_obj = sim.add_near2far(fcen, df, nfreq, mp.Near2FarRegion(center=n2f_pt))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, n2f_pt, 1e-9))
 
-ff_distance = 1e8    # far-field distance from near fields
-ff_angle = 20        # far-field cone angle
-ff_npts = 500        # number of far-field points
-
-ff_length = ff_distance*math.tan(math.radians(ff_angle))
-ff_res = ff_npts/ff_length
-
-ff_source = np.absolute(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(ff_distance,0.5*ff_length), size=mp.Vector3(y=ff_length))['Ez'][0])**2
+ff_source = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(ff_distance,0.5*ff_length), size=mp.Vector3(y=ff_length))
 
 sim.reset_meep()
 
+### unit cell with periodic boundaries
+
 sy = gp
 cell_size = mp.Vector3(sx,sy)
-symmetries = [mp.Mirror(mp.Y)]
 
 sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(y=sy))]
 
@@ -425,6 +433,7 @@ geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), c
             mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh))]
 
 sim = mp.Simulation(resolution=resolution,
+                    split_chunks_evenly=True,
                     cell_size=cell_size,
                     boundary_layers=pml_layers,
                     geometry=geometry,
@@ -432,46 +441,84 @@ sim = mp.Simulation(resolution=resolution,
                     sources=sources,
                     symmetries=symmetries)
 
-nperiods = 10
 n2f_obj = sim.add_near2far(fcen, df, nfreq, mp.Near2FarRegion(center=n2f_pt, size=mp.Vector3(y=sy)), nperiods=nperiods)
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, n2f_pt, 1e-9))
 
-ff_grating = np.absolute(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(ff_distance,0.5*ff_length), size=mp.Vector3(y=ff_length))['Ez'][0])**2
+ff_unitcell = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(ff_distance,0.5*ff_length), size=mp.Vector3(y=ff_length))
 
+sim.reset_meep()
+
+### finite periodic grating with flat surface termination extending into PML
+
+num_cells = 2*nperiods+1
+sy = dpml+num_cells*gp+dpml
+cell_size = mp.Vector3(sx,sy)
+
+pml_layers = [mp.PML(thickness=dpml)]
+
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(y=sy-2*dpml))]
+
+geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub)))]
+
+for j in range(num_cells):
+    geometry.append(mp.Block(material=glass,
+                             size=mp.Vector3(gh,gdc*gp,mp.inf),
+                             center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,-0.5*sy+dpml+(j+0.5)*gp)))
+
+sim = mp.Simulation(resolution=resolution,
+                    split_chunks_evenly=True,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    k_point=k_point,
+                    sources=sources,
+                    symmetries=symmetries)
+
+n2f_obj = sim.add_near2far(fcen, df, nfreq, mp.Near2FarRegion(center=n2f_pt, size=mp.Vector3(y=sy-2*dpml)))
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, n2f_pt, 1e-9))
+
+ff_supercell = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(ff_distance,0.5*ff_length), size=mp.Vector3(y=ff_length))
+
+norm_err = LA.norm(ff_unitcell['Ez']-ff_supercell['Ez'])/nperiods
+print("error:, {}, {}".format(nperiods,norm_err))
+```
+
+A plot of (a) the diffraction/far-field spectra and (b) its cross section at a fixed wavelength of 0.5 μm, is generated using the commands below and shown in the accompanying figure for two cases: (1) `nperiods = 1` (no tiling; default) and (2) `nperiods = 10` (21 copies). Note that because the evenly-spaced points on the line used to compute the far fields are mapped to angles in the plot, the angular data is *not* evenly spaced. A similar non-uniformity occurs when transforming the far-field data from the frequency to wavelength domain.
+
+```py
 freqs = mp.get_near2far_freqs(n2f_obj)
-tran = ff_grating/ff_source
 wvl = np.divide(1,freqs)
 ff_lengths = np.linspace(0,ff_length,ff_npts)
 angles = [math.degrees(math.atan(f)) for f in ff_lengths/ff_distance]
-```
 
-Since the scattering run involves a unit cell of the periodic grating structure, the calculation of the far fields requires specifying the `nperiods` parameter of `add_near2far` in order to sum `2*nperiods+1` Bloch-periodic copies of the near fields. In this example, the diffraction spectra is computed for two cases: (1) `nperiods = 1` (no tiling; default) and (2) `nperiods = 10` (21 copies). A plot of (a) the diffraction spectra and (b) its cross section at a fixed wavelength of 0.5 μm, is generated using the commands below and shown in the accompanying figure. Note that because the evenly-spaced points on the line used to compute the far fields are mapped to angles in the plot, the angular data will *not* be evenly spaced. A similar non-uniformity occurs when transforming the far-field data from frequency to wavelength dependence.
+wvl_slice = 0.5
+idx_slice = np.where(np.asarray(freqs) == 1/wvl_slice)[0][0]
 
-```py
+rel_enh = np.absolute(ff_unitcell['Ez'][0])**2/np.absolute(ff_source['Ez'][0])**2
+
 plt.figure(dpi=150)
 
 plt.subplot(1,2,1)
-plt.pcolormesh(wvl,angles,tran,cmap='Blues',shading='flat')
-plt.axis([wvl_min, wvl_max, 0, ff_angle])
+plt.pcolormesh(wvl,angles,rel_enh,cmap='Blues',shading='flat')
+plt.axis([wvl_min,wvl_max,0,ff_angle])
 plt.xlabel("wavelength (μm)")
 plt.ylabel("angle (degrees)")
 plt.grid(linewidth=0.5,linestyle='--')
 plt.xticks([t for t in np.arange(wvl_min,wvl_max+0.1,0.1)])
 plt.yticks([t for t in range(0,ff_angle+1,10)])
-plt.title("diffraction spectra")
+plt.title("far-field spectra")
 
-wvl_slice = 0.5
-idx_slice = np.where(np.asarray(freqs) == 1/wvl_slice)[0][0]
 plt.subplot(1,2,2)
-plt.plot(angles,tran[:,idx_slice],'bo-')
+plt.plot(angles,rel_enh[:,idx_slice],'bo-')
 plt.xlim(0,ff_angle)
 plt.ylim(0)
 plt.xticks([t for t in range(0,ff_angle+1,10)])
 plt.xlabel("angle (degrees)")
-plt.ylabel("far-field enhancement (relative to vacuum)")
+plt.ylabel("relative enhancement")
 plt.grid(axis='x',linewidth=0.5,linestyle='--')
-plt.title("spectra @  λ = {:.1} μm".format(wvl_slice))
+plt.title("f.-f. spectra @  λ = {:.1} μm".format(wvl_slice))
 
 plt.tight_layout(pad=0.5)
 plt.show()
@@ -481,27 +528,9 @@ plt.show()
 ![](../images/grating_diffraction_spectra_n2f.png)
 </center>
 
-For the case of `nperiods = 1`, third diffraction orders appear as broad peaks with finite angular width (a fourth peak appears in the top left of the left inset but is not easily noticeable). When `nperiods = 10`, the diffraction orders are sharp, narrow-band peaks. Further increasing `nperiods` will reduce the peaks' finite width at the expense of a larger calculation. Three diffraction orders are labeled in the right inset of the bottom figure (m=1, 3, and 5) corresponding to angles 2.9°, 8.6°, and 14.5° (which can be computed analytically as described in [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating)).
+For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with broad angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which provide validation since they can be computed analytically as described in [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating).
 
-Finally, we verify that the relative peak heights &mdash; between the first and third, and third and fifth &mdash; of the diffraction orders agrees with the analytic diffraction efficiency: 4/(mπ)<sup>2</sup>. This involves determining the peak height for each diffraction order using its known angular position:
-
-```py
-kx = lambda m,freq: math.sqrt(freq**2 - (m/gp)**2)
-theta_out = lambda m,freq: math.acos(kx(m,freq)/freq)
-
-tol = 0.02
-modes = [1,3,5]
-idx_modes = np.zeros(len(modes))
-for j in range(len(modes)):
-    idx_modes[j] = np.nonzero(np.logical_and(np.asarray(angles) > math.degrees(theta_out(modes[j],1/wvl_slice))-tol,
-                                             np.asarray(angles) < math.degrees(theta_out(modes[j],1/wvl_slice))+tol))[0][0]
-
-print("peak-ratios:, {}, {}".format(tran[int(idx_modes[0]),idx_slice]/tran[int(idx_modes[1]),idx_slice],
-                                    tran[int(idx_modes[1]),idx_slice]/tran[int(idx_modes[2]),idx_slice]))
-```
-
-The simulated results, 8.750879648602615 and 2.825409394217622, agree with the analytic values 9.0 and 2.8.
-
+Finally, we verify that the error in `add_near2far` &mdash; defined as the L<sub>2</sub>-norm of the difference of the two far-field datasets from the unit-cell and super-cell calculations normalized by `nperiods` &mdash; is O(1/`nperiods`) by comparing results for three values of `nperiods` of 5, 10, and 20. The error values, which are displayed in the output in the line prefixed by `error:`, are `0.0001195599054639075`, `5.981324591508146e-05` and `2.989829913961854e-05`. The pairwise ratios of the errors for these three finite structures is nearly 2 as expected (i.e., doubling `nperiods` results in a halving of the error).
 
 Far-Field Profile of a Cavity
 -----------------------------
