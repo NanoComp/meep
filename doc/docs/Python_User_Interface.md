@@ -1573,9 +1573,9 @@ Output the dielectric function (relative permittivity) ε. Note that this only o
 —
 Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
 
-**`output_dft(dft_fields, fname, where=None, center=None, size=None)`**
+**`Simulation.output_dft(dft_fields, fname, where=None, center=None, size=None)`**
 —
-Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `Volume` `where` defaults to the entire cell. The volume can also be specified via the `center` and `size` arguments.
+Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix). The `Volume` `where` defaults to the entire cell. The volume can also be specified via the `center` and `size` arguments. Method of the `Simulation` class.
 
 **`output_poynting()`**
 —
