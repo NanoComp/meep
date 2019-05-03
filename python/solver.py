@@ -481,7 +481,7 @@ class ModeSolver(object):
 
     def load_eigenvectors(self, filename):
         with h5py.File(filename, 'r') as f:
-            ev = f['rawdata'].value
+            ev = f['rawdata'][()]
             self.set_eigenvectors(ev, 1)
             self.mode_solver.curfield_reset()
 

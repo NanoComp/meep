@@ -44,12 +44,10 @@ class TestDFTFields(unittest.TestCase):
 
         # volumes with zero thickness in x and y directions to test collapsing
         # of empty dimensions in DFT array and HDF5 output routines
-        thin_x_volume = mp.volume( mp.vec(0.35*self.sxy, -0.4*self.sxy),
-                                   mp.vec(0.35*self.sxy, +0.4*self.sxy));
-        thin_x_flux = sim.fields.add_dft_fields([mp.Ez], thin_x_volume, self.fcen, self.fcen, 1)
-        thin_y_volume = mp.volume( mp.vec(-0.5*self.sxy, 0.25*self.sxy),
-                                   mp.vec(+0.5*self.sxy, 0.25*self.sxy));
-        thin_y_flux = sim.fields.add_dft_flux(mp.Y, thin_y_volume, self.fcen, self.fcen, 1)
+        thin_x_volume = mp.Volume(center=mp.Vector3(0.35*self.sxy), size=mp.Vector3(y=0.8*self.sxy))
+        thin_x_flux = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1, where=thin_x_volume)
+        thin_y_volume = mp.Volume(center=mp.Vector3(y=0.25*self.sxy), size=mp.Vector3(x=self.sxy))
+        thin_y_flux = sim.add_flux(self.fcen, self.fcen, 1, mp.FluxRegion(volume=thin_y_volume))
 
         sim.run(until_after_sources=100)
 
@@ -63,10 +61,10 @@ class TestDFTFields(unittest.TestCase):
         sim.output_dft(thin_y_flux, 'thin-y-flux')
 
         with h5py.File('thin-x-flux.h5', 'r') as thin_x:
-            thin_x_h5 = mp.complexarray(thin_x['ez_0.r'].value, thin_x['ez_0.i'].value)
+            thin_x_h5 = mp.complexarray(thin_x['ez_0.r'][()], thin_x['ez_0.i'][()])
 
         with h5py.File('thin-y-flux.h5', 'r') as thin_y:
-            thin_y_h5 = mp.complexarray(thin_y['ez_0.r'].value, thin_y['ez_0.i'].value)
+            thin_y_h5 = mp.complexarray(thin_y['ez_0.r'][()], thin_y['ez_0.i'][()])
 
         np.testing.assert_allclose(thin_x_array, thin_x_h5)
         np.testing.assert_allclose(thin_y_array, thin_y_h5)
@@ -79,8 +77,8 @@ class TestDFTFields(unittest.TestCase):
         sim.output_dft(dft_flux, 'dft-flux')
 
         with h5py.File('dft-fields.h5', 'r') as fields, h5py.File('dft-flux.h5', 'r') as flux:
-            exp_fields = mp.complexarray(fields['ez_0.r'].value, fields['ez_0.i'].value)
-            exp_flux = mp.complexarray(flux['ez_0.r'].value, flux['ez_0.i'].value)
+            exp_fields = mp.complexarray(fields['ez_0.r'][()], fields['ez_0.i'][()])
+            exp_flux = mp.complexarray(flux['ez_0.r'][()], flux['ez_0.i'][()])
 
         np.testing.assert_allclose(exp_fields, fields_arr)
         np.testing.assert_allclose(exp_flux, flux_arr)
