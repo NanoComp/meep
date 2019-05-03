@@ -42,6 +42,8 @@ typedef float realnum;
 typedef double realnum;
 #endif
 
+#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+
 extern bool quiet; // if true, suppress all non-error messages from Meep
 
 const double pi = 3.141592653589793238462643383276;
