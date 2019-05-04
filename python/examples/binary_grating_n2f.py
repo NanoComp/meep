@@ -132,7 +132,7 @@ angles = [math.degrees(math.atan(f)) for f in ff_lengths/ff_distance]
 wvl_slice = 0.5
 idx_slice = np.where(np.asarray(freqs) == 1/wvl_slice)[0][0]
 
-rel_enh = np.absolute(ff_unitcell['Ez'][0])**2/np.absolute(ff_source['Ez'][0])**2
+rel_enh = np.absolute(ff_unitcell['Ez'])**2/np.absolute(ff_source['Ez'])**2
 
 plt.figure(dpi=150)
 
