@@ -399,6 +399,195 @@ The far-field energy-density profile is shown below for the three lens designs. 
 ![](../images/metasurface_lens_farfield.png)
 </center>
 
+Diffraction Spectrum of a Finite Binary Grating
+-----------------------------------------------
+
+In this example, we compute the diffraction spectrum of a binary phase [grating](https://en.wikipedia.org/wiki/Diffraction_grating) with finite length. To compute the diffraction spectrum of the infinite periodic structure requires [mode decomposition](../Mode_Decomposition.md); for a demonstration, see [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) which also describes the grating geometry used in this example (i.e., periodicity of 10 μm, height of 0.5 μm, duty cycle of 0.5, and index 1.5 in air). Note that an infinite periodic structure actually has *no* spatial separation of the diffracted orders; they are all present at every far-field point. The focus of this tutorial is to demonstrate `add-near2far`'s support for periodic boundaries.
+
+The simulation script is in [examples/binary_grating_n2f.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/binary_grating_n2f.ctl).
+
+The simulation involves computing the scattered near fields of a finite-length grating for an E<sub>z</sub>-polarized, pulsed planewave source spanning wavelengths of 0.4-0.6 μm at normal incidence. The far fields are then computed for 500 points along a line parallel to the grating axis positioned 100 m away (i.e., &#8811; 2D<sup>2</sup>/λ, the [Fraunhofer distance](https://en.wikipedia.org/wiki/Fraunhofer_distance); D=NΛ where N is the number of unit cells and Λ is the grating periodicity, λ is the source wavelength) in the upper half plane of the symmetric finite structure with length corresponding to a 20° cone. The diffraction spectra is computed in post processing as the ratio of the energy density of the far fields from two separate runs: (1) an empty cell to obtain the fields from just the incident planewave and (2) a binary-grating unit cell to obtain the scattered fields.
+
+Modeling a finite grating requires specifying the `nperiods` parameter of `add-near2far` which sums `2*nperiods+1` Bloch-periodic copies of the near fields. However, because of the way in which the edges of the structure are handled, this approach is only an approximation for a finite periodic surface. We will verify that the error from this approximation is O(1/`nperiods`) by comparing its result with that of a true finite periodic structure involving multiple periods in a supercell arrangement terminated with a flat surface extending into PML. (There are infinitely many ways to terminate a finite periodic structure, of course, and different choices will have slightly different errors compared to the periodic approximation.)
+
+```scm
+(set-param! resolution 25)                   ; pixels/μm
+
+(define-param dpml 1.0)                      ; PML thickness
+(define-param dsub 3.0)                      ; substrate thickness
+(define-param dpad 3.0)                      ; padding between grating and pml
+(define-param gp 10.0)                       ; grating period
+(define-param gh 0.5)                        ; grating height
+(define-param gdc 0.5)                       ; grating duty cycle
+
+(define-param nperiods 10)                   ; number of unit cells in finite periodic grating
+
+(define-param ff-distance 1e8)               ; far-field distance from near-field monitor
+(define-param ff-angle 20)                   ; far-field cone angle
+(define-param ff-npts 500)                   ; number of far-field points
+
+(define ff-length (* ff-distance (tan (deg->rad ff-angle))))
+(define ff-res (/ ff-npts ff-length))
+
+(define sx (+ dpml dsub gh dpad dpml))
+
+(define-param wvl-min 0.4)                   ; min wavelength
+(define-param wvl-max 0.6)                   ; max wavelength
+(define fmin (/ wvl-max))                    ; min frequency
+(define fmax (/ wvl-min))                    ; max frequency
+(define fcen (* 0.5 (+ fmin fmax)))          ; center frequency
+(define df (- fmax fmin))                    ; frequency width
+
+(define glass (make medium (index 1.5)))
+
+(set! geometry-lattice (make lattice (size sx no-size no-size)))
+
+(set! pml-layers (list (make pml (thickness dpml) (direction X))))
+
+(set! k-point (vector3 0))
+
+(set! default-material glass)
+
+(define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub))))
+(set! sources (list (make source
+          (src (make gaussian-src (frequency fcen) (fwidth df)))
+          (component Ez) (center src-pt))))
+
+(define-param nfreq 21)
+(define n2f-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dpad))))
+(define n2f-obj (add-near2far fcen df nfreq (make near2far-region (center n2f-pt))))
+
+(run-sources+ (stop-when-fields-decayed 50 Ez n2f-pt 1e-9))
+
+(output-farfields n2f-obj "source" (volume (center ff-distance (* 0.5 ff-length)) (size 0 ff-length)) ff-res)
+
+(reset-meep)
+
+;;; unit cell with periodic boundaries
+
+(define sy gp)
+(set! geometry-lattice (make lattice (size sx sy no-size)))
+
+(set! pml-layers (list (make pml (thickness dpml) (direction X))))
+
+(set! sources (list (make source
+          (src (make gaussian-src (frequency fcen) (fwidth df)))
+          (component Ez) (center src-pt) (size 0 sy))))
+
+(set! default-material air)
+
+(set! geometry (list
+                (make block (material glass) (size (+ dpml dsub) infinity infinity) (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub)))))
+                (make block (material glass) (size gh (* gdc gp) infinity) (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh))))))
+
+(set! k-point (vector3 0))
+
+(set! symmetries (list (make mirror-sym (direction Y))))
+
+(set! n2f-obj (add-near2far fcen df nfreq (make near2far-region (center n2f-pt) (size 0 sy)) #:nperiods nperiods))
+
+(run-sources+ (stop-when-fields-decayed 50 Ez n2f-pt 1e-9))
+
+(output-farfields n2f-obj "unit-cell" (volume (center ff-distance (* 0.5 ff-length)) (size 0 ff-length)) ff-res)
+
+(reset-meep)
+
+;;; finite periodic grating with flat surface termination extending into PML
+
+(define num-cells (+ (* 2 nperiods) 1))
+(set! sy (+ dpml (* num-cells gp) dpml))
+(set! geometry-lattice (make lattice (size sx sy no-size)))
+
+(set! pml-layers (list (make pml (thickness dpml))))
+
+(set! sources (list (make source
+          (src (make gaussian-src (frequency fcen) (fwidth df)))
+          (component Ez) (center src-pt) (size 0 (- sy (* 2 dpml))))))
+
+(set! geometry (list (make block (material glass) (size (+ dpml dsub) infinity infinity) (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub)))))))
+
+(set! geometry (append geometry
+                       (map (lambda (n)
+                              (make block (material glass) (size gh (* gdc gp) infinity)
+                                    (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) (+ (* -0.5 sy) dpml (* (+ n 0.5) gp)) 0)))
+                            (arith-sequence 0 1 num-cells))))
+
+(set! k-point (vector3 0))
+
+(set! symmetries (list (make mirror-sym (direction Y))))
+
+(set! n2f-obj (add-near2far fcen df nfreq (make near2far-region (center n2f-pt) (size 0 (- sy (* 2 dpml))))))
+
+(run-sources+ (stop-when-fields-decayed 50 Ez n2f-pt 1e-9)
+              (at-beginning output-epsilon))
+
+(output-farfields n2f-obj "super-cell" (volume (center ff-distance (* 0.5 ff-length)) (size 0 ff-length)) ff-res)
+```
+
+A plot of (a) the diffraction/far-field spectra and (b) its cross section at a fixed wavelength of 0.5 μm, is generated using the Octave/Matlab commands below and shown in the accompanying figure for two cases: (1) `nperiods = 1` (no tiling; default) and (2) `nperiods = 10` (21 copies). Note that because the evenly-spaced points on the line used to compute the far fields are mapped to angles in the plot, the angular data is *not* evenly spaced. A similar non-uniformity occurs when transforming the far-field data from the frequency to wavelength domain.
+
+```matlab
+load "binary-grating-n2f-source.h5";
+source = ez_r + j*ez_i;
+load "binary-grating-n2f-unit-cell.h5";
+unitcell = ez_r + j*ez_i;
+load "binary-grating-n2f-super-cell.h5";
+supercell = ez_r + j*ez_i;
+nperiods = 10;
+error = norm(supercell - unitcell, "fro")/nperiods;
+disp(sprintf("error: %0.15f",error));
+
+wvl_min = 0.4;
+wvl_max = 0.6;
+fmin = 1/wvl_max;
+fmax = 1/wvl_min;
+nfreq = 21;
+freqs = linspace(fmin,fmax,nfreq);
+wvl = 1./freqs;
+
+ff_distance = 1e8;
+ff_angle = 20;
+ff_npts = 500;
+ff_length = ff_distance*tand(ff_angle);
+ff_lengths = linspace(0,ff_length,ff_npts);
+angles = atand(ff_lengths/ff_distance);
+
+rel_enh = abs(unitcell).^2 ./ abs(source).^2;
+
+h1 = subplot(1,2,1);
+pcolor(wvl,angles,rel_enh.');
+shading flat;
+c = colormap("ocean");
+colormap(h1,flipud(c));
+axis([wvl_min wvl_max 0 ff_angle]);
+xlabel("wavelength (um)");
+ylabel("angle (degrees)");
+title("far-field spectra");
+set(gca, 'xtick', [wvl_min:0.1:wvl_max]);
+set(gca, 'ytick', [0:10:ff_angle]);
+
+wvl_slice = 0.5;
+idx_slice = find(freqs == 1/wvl_slice);
+
+h2 = subplot(1,2,2);
+plot(angles,rel_enh(idx_slice,:),'bo-');
+xlim([0 ff_angle]);
+xlabel("angles (degrees)");
+ylabel("relative enhancement");
+set(gca, 'xtick', [0:10:ff_angle]);
+set(gca, "xgrid", "on");
+set(gca, 'gridlinestyle', '--');
+eval(sprintf("title(\"f.-f. spectra @ %0.1f um\")",wvl_slice));
+```
+
+<center>
+![](../images/grating_diffraction_spectra_n2f.png)
+</center>
+
+For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with finite angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which, along with the diffraction efficiency, can be computed analytically using scalar theory as described in [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). As an additional validation of the simulation results, the ratio of any two diffraction peaks p<sub>i</sub></sub>/p<sub>j</sub> (i,j = 1,3,5,...) is consistent with that of the diffraction efficiencies: j<sup>2</sup>/i<sup>2</sup>.
+
+Finally, we verify that the error in `add-near2far` &mdash; defined as the L<sub>2</sub>-norm of the difference of the two far-field datasets from the unit-cell and super-cell calculations normalized by `nperiods` &mdash; is O(1/`nperiods`) by comparing results for three values of `nperiods`: 5, 10, and 20. The error values, which are displayed in the output in the line prefixed by `error:`, are: `0.0001195599054639075`, `5.981324591508146e-05`, and `2.989829913961854e-05`. The pairwise ratios of these errors is nearly 2 as expected (i.e., doubling `nperiods` results in a halving of the error).
+
 Far-Field Profile of a Cavity
 -----------------------------
 
