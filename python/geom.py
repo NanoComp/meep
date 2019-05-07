@@ -211,6 +211,7 @@ class Medium(object):
         self.H_chi2_diag = H_chi2_diag
         self.H_chi3_diag = H_chi3_diag
         self.D_conductivity_diag = D_conductivity_diag
+        self.D_conductivity_offdiag = Vector3()
         self.B_conductivity_diag = B_conductivity_diag
         self.valid_freq_range = valid_freq_range
 
@@ -234,27 +235,33 @@ class Medium(object):
 
         for s in self.H_susceptibilities:
             s.transform(m)
-    def get_eps(self,freq):
+
+    def epsilon(self,freq):
 
         # Clean the input
-        freq = np.squeeze([freq])
+        if not isinstance(freq, list):
+            raise ValueError('Frequencies must be supplied as a list')
 
-        # Compensate for scalar inputs
-        if len(freq.shape) == 0:
-            freq = np.array([freq])
+        # Initialize with instantaneous dielectric tensor
+        eps = [Matrix(mp.Vector3(self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y),
+                     mp.Vector3(self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z),
+                     mp.Vector3(self.epsilon_offdiag.y, self.epsilon_offdiag.z, self.epsilon_diag.z)) for i in range(len(freq))]
 
-        # Initialize with instantaneous dielectric tensor, use numpy arrays for
-        # convenience and speed.
-        eps = np.array([self.epsilon_diag.x,self.epsilon_diag.y,self.epsilon_diag.z],dtype='complex128')
-
-        # Iterate through and sum up susceptibilities
-        for k in range(len(self.E_susceptibilities)):
-            eps = eps + self.E_susceptibilities[k].eval_susceptibility(freq)
-
-        # Account for conductivity term
-        eps = (1 + 1j*np.array(
-            [self.D_conductivity_diag.x,self.D_conductivity_diag.y,self.D_conductivity_diag.z])/freq.reshape(-1,1)) * eps
-        return [Vector3(eps[row,0],eps[row,1],eps[row,2]) for row in range(freq.shape[0])]
+        # Iterate through frequencies
+        for i_freq in range(len(freq)):
+            # Iterate through susceptibilities
+            for i_sus in range(len(self.E_susceptibilities)):
+                eps[i_freq] = eps[i_freq] + self.E_susceptibilities[i_sus].eval_susceptibility(freq[i_freq])
+            # Account for conductivity term
+            D_conductivity = Matrix(mp.Vector3(self.D_conductivity_diag.x, self.D_conductivity_offdiag.x, self.D_conductivity_offdiag.y),
+                       mp.Vector3(self.D_conductivity_offdiag.x, self.D_conductivity_diag.y, self.D_conductivity_offdiag.z),
+                       mp.Vector3(self.D_conductivity_offdiag.y, self.D_conductivity_offdiag.z, self.D_conductivity_diag.z))
+            ones_matrix = Matrix(mp.Vector3(1, 1, 1),
+                       mp.Vector3(1, 1, 1),
+                       mp.Vector3(1, 1, 1))
+            eps[i_freq] = (ones_matrix + 1j/freq[i_freq] * D_conductivity) * eps[i_freq]
+        
+        return eps
 
 
 class Susceptibility(object):
@@ -281,14 +288,11 @@ class LorentzianSusceptibility(Susceptibility):
     
     def eval_susceptibility(self,freq):
 
-        # Use numpy arrays for element-wise multiplication later
-        sigma = np.array([self.sigma_diag.x,self.sigma_diag.y,self.sigma_diag.z])
-        eps = np.zeros((freq.shape[0],3),dtype='complex128')
+        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
+                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
+                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
 
-        # Iterate through dimensions
-        for k in range(3):
-            eps[:,k] = (sigma[k]*self.frequency*self.frequency) / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq)
-        return eps
+        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
 
 
 class DrudeSusceptibility(Susceptibility):
@@ -300,14 +304,11 @@ class DrudeSusceptibility(Susceptibility):
     
     def eval_susceptibility(self,freq):
 
-        # Use numpy arrays for element-wise multiplication later
-        sigma = np.array([self.sigma_diag.x,self.sigma_diag.y,self.sigma_diag.z])
-        eps = np.zeros((freq.shape[0],3),dtype='complex128')
+        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
+                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
+                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
 
-        # Iterate through dimensions
-        for k in range(3):
-            eps[:,k] = (-sigma[k]*self.frequency*self.frequency) / (freq*(freq + 1j*self.gamma))
-        return eps
+        return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
 
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
