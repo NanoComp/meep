@@ -323,7 +323,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
       x.set_direction(dirs[1], where.in_direction_min(dirs[1]) + i1 * dx[1]);
       for (size_t i2 = 0; i2 < dims[2]; ++i2) {
         x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2 * dx[2]);
-        if (!quiet && wall_time() > start + MIN_OUTPUT_TIME) {
+        if (!quiet && wall_time() > start + MEEP_MIN_OUTPUT_TIME) {
           size_t this_point = (dims[1]*dims[2]*i0) + (dims[2]*i1) + i2 + 1;
           master_printf("get_farfields_array working on point %zu of %zu (%d%% done)\n",
                         this_point, total_points, (int)((double)this_point/total_points*100));

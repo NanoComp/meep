@@ -42,7 +42,7 @@ typedef float realnum;
 typedef double realnum;
 #endif
 
-#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+#define MEEP_MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
 extern bool quiet; // if true, suppress all non-error messages from Meep
 
