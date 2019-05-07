@@ -5,6 +5,7 @@ import math
 import numbers
 import os
 import re
+import signal
 import subprocess
 import sys
 import warnings
@@ -1227,7 +1228,7 @@ class Simulation(object):
 
         return dname
 
-    def _run_until(self, cond, step_funcs):
+    def _run_until(self, cond, step_funcs, stop_on_interrupt=False):
         self.interactive = False
         if self.fields is None:
             self.init_sim()
@@ -1244,7 +1245,15 @@ class Simulation(object):
             step_funcs = list(step_funcs)
             step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
 
-        while not cond(self):
+        def _default_interrupt_func():
+            return False
+
+        if stop_on_interrupt:
+            interrupt_func = _stop_on_interrupt()
+        else:
+            interrupt_func = _default_interrupt_func
+
+        while not cond(self) and not interrupt_func():
             for func in step_funcs:
                 _eval_step_func(self, func, 'step')
             self.fields.step()
@@ -1262,7 +1271,7 @@ class Simulation(object):
         print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
 
-    def _run_sources_until(self, cond, step_funcs):
+    def _run_sources_until(self, cond, step_funcs, stop_on_interrupt=False):
         if self.fields is None:
             self.init_sim()
 
@@ -1275,7 +1284,7 @@ class Simulation(object):
                 return cond(sim) and sim.round_time() >= ts
             new_cond = f
 
-        self._run_until(new_cond, step_funcs)
+        self._run_until(new_cond, step_funcs, stop_on_interrupt)
 
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
@@ -1962,6 +1971,7 @@ class Simulation(object):
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
+        stop_on_interrupt = kwargs.pop('stop_on_interrupt', False)
 
         if self.fields is None:
             self.init_sim()
@@ -1973,9 +1983,9 @@ class Simulation(object):
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources is not None:
-            self._run_sources_until(until_after_sources, step_funcs)
+            self._run_sources_until(until_after_sources, step_funcs, stop_on_interrupt=stop_on_interrupt)
         elif until is not None:
-            self._run_until(until, step_funcs)
+            self._run_until(until, step_funcs, stop_on_interrupt=stop_on_interrupt)
         else:
             raise ValueError("Invalid run configuration")
 
@@ -2422,6 +2432,31 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
+    return _stop
+
+
+def stop_after_walltime(t):
+    start = mp.wall_time()
+    def _stop_after_walltime(sim):
+        if mp.wall_time() - start > t:
+            return True
+        return False
+    return _stop_after_walltime
+
+
+def _stop_on_interrupt():
+    shutting_down = [False]
+
+    def _signal_handler(sig, frame):
+        print("WARNING: System requested termination. Time stepping aborted.")
+        shutting_down[0] = True
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    def _stop():
+        return shutting_down[0]
+
     return _stop
 
 
