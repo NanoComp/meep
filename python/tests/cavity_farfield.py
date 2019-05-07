@@ -64,12 +64,12 @@ class TestCavityFarfield(unittest.TestCase):
 
         with h5py.File(ref_file, 'r') as f:
             # Get reference data into memory
-            ref_ex = mp.complexarray(f['ex.r'].value, f['ex.i'].value)
-            ref_ey = mp.complexarray(f['ey.r'].value, f['ey.i'].value)
-            ref_ez = mp.complexarray(f['ez.r'].value, f['ez.i'].value)
-            ref_hx = mp.complexarray(f['hx.r'].value, f['hx.i'].value)
-            ref_hy = mp.complexarray(f['hy.r'].value, f['hy.i'].value)
-            ref_hz = mp.complexarray(f['hz.r'].value, f['hz.i'].value)
+            ref_ex = mp.complexarray(f['ex.r'][()], f['ex.i'][()])
+            ref_ey = mp.complexarray(f['ey.r'][()], f['ey.i'][()])
+            ref_ez = mp.complexarray(f['ez.r'][()], f['ez.i'][()])
+            ref_hx = mp.complexarray(f['hx.r'][()], f['hx.i'][()])
+            ref_hy = mp.complexarray(f['hy.r'][()], f['hy.i'][()])
+            ref_hz = mp.complexarray(f['hz.r'][()], f['hz.i'][()])
 
             np.testing.assert_allclose(ref_ex, result['Ex'])
             np.testing.assert_allclose(ref_ey, result['Ey'])

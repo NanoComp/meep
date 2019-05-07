@@ -242,7 +242,7 @@ class TestSimulation(unittest.TestCase):
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
 
         with h5py.File(eps_input_path, 'r') as f:
-            sim.default_material = f['eps'].value
+            sim.default_material = f['eps'][()]
 
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
@@ -403,18 +403,18 @@ class TestSimulation(unittest.TestCase):
         fname_fmt = "test_get_array_output-{}-000020.00.h5"
 
         with h5py.File(fname_fmt.format('eps'), 'r') as f:
-            eps = f['eps'].value
+            eps = f['eps'][()]
 
         with h5py.File(fname_fmt.format('ez'), 'r') as f:
-            efield_z = f['ez'].value
+            efield_z = f['ez'][()]
 
         with h5py.File(fname_fmt.format('energy'), 'r') as f:
-            energy = f['energy'].value
+            energy = f['energy'][()]
 
         with h5py.File(fname_fmt.format('e'), 'r') as f:
-            ex = f['ex'].value
-            ey = f['ey'].value
-            ez = f['ez'].value
+            ex = f['ex'][()]
+            ey = f['ey'][()]
+            ez = f['ez'][()]
             efield = np.stack([ex, ey, ez], axis=-1)
 
         np.testing.assert_allclose(eps, eps_arr)

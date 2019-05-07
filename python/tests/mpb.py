@@ -222,9 +222,9 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, 'r') as ref:
             # Reshape the reference data into a component-wise 1d array like
             # [x1,y1,z1,x2,y2,z2,etc.]
-            ref_x = mp.complexarray(ref["x.r{}".format(suffix)].value, ref["x.i{}".format(suffix)].value)
-            ref_y = mp.complexarray(ref["y.r{}".format(suffix)].value, ref["y.i{}".format(suffix)].value)
-            ref_z = mp.complexarray(ref["z.r{}".format(suffix)].value, ref["z.i{}".format(suffix)].value)
+            ref_x = mp.complexarray(ref["x.r{}".format(suffix)][()], ref["x.i{}".format(suffix)][()])
+            ref_y = mp.complexarray(ref["y.r{}".format(suffix)][()], ref["y.i{}".format(suffix)][()])
+            ref_z = mp.complexarray(ref["z.r{}".format(suffix)][()], ref["z.i{}".format(suffix)][()])
 
             ref_arr = np.zeros(np.prod(field.shape), dtype=np.complex128)
             ref_arr[0::3] = ref_x.ravel()
@@ -238,9 +238,9 @@ class TestModeSolver(unittest.TestCase):
             with h5py.File(res_path, 'r') as res:
                 for k in ref.keys():
                     if k == 'description':
-                        self.assertEqual(ref[k].value, res[k].value)
+                        self.assertEqual(ref[k][()], res[k][()])
                     else:
-                        compare_arrays(self, ref[k].value, res[k].value, tol=tol)
+                        compare_arrays(self, ref[k][()], res[k][()], tol=tol)
 
     def test_update_band_range_data(self):
         brd = []
@@ -734,7 +734,7 @@ class TestModeSolver(unittest.TestCase):
         ref_fn = 'converted-diamond-dpwr.k06.b05.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
         with h5py.File(ref_path, 'r') as f:
-            expected = f['data-new'].value
+            expected = f['data-new'][()]
 
         compare_arrays(self, expected, converted_dpwr[-1])
 
@@ -985,8 +985,8 @@ class TestModeSolver(unittest.TestCase):
 
         # Test MPBData
         with h5py.File(ref_path, 'r') as f:
-            efield_re = f['z.r'].value
-            efield_im = f['z.i'].value
+            efield_re = f['z.r'][()]
+            efield_im = f['z.i'][()]
             efield = np.vectorize(complex)(efield_re, efield_im)
 
         # rectangularize
@@ -998,8 +998,8 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
 
         with h5py.File(ref_path, 'r') as f:
-            expected_re = f['z.r-new'].value
-            expected_im = f['z.i-new'].value
+            expected_re = f['z.r-new'][()]
+            expected_im = f['z.i-new'][()]
             expected = np.vectorize(complex)(expected_re, expected_im)
             compare_arrays(self, expected, new_efield)
 
@@ -1034,7 +1034,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
 
         with h5py.File(ref_path, 'r') as f:
-            ref = f['data-new'].value
+            ref = f['data-new'][()]
             compare_arrays(self, ref, new_eps, tol=1e-3)
 
     def test_subpixel_averaging(self):
@@ -1109,7 +1109,7 @@ class TestModeSolver(unittest.TestCase):
 
         mu = ms.get_mu()
         with h5py.File(data_path, 'r') as f:
-            data = f['data'].value
+            data = f['data'][()]
             compare_arrays(self, data, mu)
 
     def test_output_tot_pwr(self):
@@ -1126,7 +1126,7 @@ class TestModeSolver(unittest.TestCase):
         # Test get_tot_pwr
         arr = ms.get_tot_pwr(8)
         with h5py.File(ref_path, 'r') as f:
-            expected = f['data'].value
+            expected = f['data'][()]
 
         compare_arrays(self, expected, arr)
 
@@ -1136,7 +1136,7 @@ class TestModeSolver(unittest.TestCase):
 
         def compare_eigenvectors(ref_fn, start, cols):
             with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
-                expected = f['rawdata'].value
+                expected = f['rawdata'][()]
                 # Reshape the last dimension of 2 reals into one complex
                 expected = np.vectorize(complex)(expected[..., 0], expected[..., 1])
                 ev = ms.get_eigenvectors(start, cols)
