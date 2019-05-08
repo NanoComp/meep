@@ -626,5 +626,6 @@ class TestSimulation(unittest.TestCase):
         _check(mp.Medium(), False)
         _check(mat_func, False)
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -1228,32 +1228,30 @@ class Simulation(object):
 
         return dname
 
-    def _run_until(self, cond, step_funcs, stop_on_interrupt=False):
+    def _run_until(self, cond, step_funcs):
         self.interactive = False
         if self.fields is None:
             self.init_sim()
 
-        if isinstance(cond, numbers.Number):
-            stop_time = cond
-            t0 = self.round_time()
+        if not isinstance(cond, list):
+            cond = [cond]
 
-            def stop_cond(sim):
-                return sim.round_time() >= t0 + stop_time
+        for i in range(len(cond)):
+            if isinstance(cond[i], numbers.Number):
+                stop_time = cond[i]
+                t0 = self.round_time()
 
-            cond = stop_cond
+                def stop_cond(sim):
+                    return sim.round_time() >= t0 + stop_time
 
-            step_funcs = list(step_funcs)
-            step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
+                cond[i] = stop_cond
 
-        def _default_interrupt_func():
-            return False
+                step_funcs = list(step_funcs)
+                step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
+            else:
+                assert callable(cond[i]), "Stopping condition {} is not an integer or a function".format(cond[i])
 
-        if stop_on_interrupt:
-            interrupt_func = _stop_on_interrupt()
-        else:
-            interrupt_func = _default_interrupt_func
-
-        while not cond(self) and not interrupt_func():
+        while not any([x(self) for x in cond]):
             for func in step_funcs:
                 _eval_step_func(self, func, 'step')
             self.fields.step()
@@ -1271,20 +1269,24 @@ class Simulation(object):
         print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
 
-    def _run_sources_until(self, cond, step_funcs, stop_on_interrupt=False):
+    def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
             self.init_sim()
 
+        if not isinstance(cond, list):
+            cond = [cond]
+
         ts = self.fields.last_source_time()
+        new_conds = []
+        for i in range(len(cond)):
+            if isinstance(cond[i], numbers.Number):
+                new_conds.append((ts - self.round_time()) + cond[i])
+            else:
+                def f(sim):
+                    return cond[i](sim) and sim.round_time() >= ts
+                new_conds.append(f)
 
-        if isinstance(cond, numbers.Number):
-            new_cond = (ts - self.round_time()) + cond
-        else:
-            def f(sim):
-                return cond(sim) and sim.round_time() >= ts
-            new_cond = f
-
-        self._run_until(new_cond, step_funcs, stop_on_interrupt)
+        self._run_until(new_conds, step_funcs)
 
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
@@ -1971,7 +1973,6 @@ class Simulation(object):
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
-        stop_on_interrupt = kwargs.pop('stop_on_interrupt', False)
 
         if self.fields is None:
             self.init_sim()
@@ -1983,9 +1984,9 @@ class Simulation(object):
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources is not None:
-            self._run_sources_until(until_after_sources, step_funcs, stop_on_interrupt=stop_on_interrupt)
+            self._run_sources_until(until_after_sources, step_funcs)
         elif until is not None:
-            self._run_until(until, step_funcs, stop_on_interrupt=stop_on_interrupt)
+            self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
 
@@ -2444,7 +2445,7 @@ def stop_after_walltime(t):
     return _stop_after_walltime
 
 
-def _stop_on_interrupt():
+def stop_on_interrupt():
     shutting_down = [False]
 
     def _signal_handler(sig, frame):
@@ -2454,7 +2455,7 @@ def _stop_on_interrupt():
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
-    def _stop():
+    def _stop(sim):
         return shutting_down[0]
 
     return _stop

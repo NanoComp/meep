@@ -1490,6 +1490,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         scale_force_fields,
         scale_near2far_fields,
         stop_after_walltime,
+        stop_on_interrupt,
         stop_when_fields_decayed,
         synchronized_magnetic,
         to_appended,

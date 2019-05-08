@@ -1528,9 +1528,9 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 
 ### Run Functions
 
-**`run(step_functions..., until=condition/time, stop_on_interrupt=False)`**
+**`run(step_functions..., until=condition/time)`**
 —
-Run the simulation until a certain time or condition, calling the given step functions (if any) at each timestep. The keyword argument `until` is *either* a number, in which case it is an additional time (in Meep units) to run for, *or* it is a function (of no arguments) which returns `True` when the simulation should stop. If `stop_on_interrupt` is set to `True`, instead of terminating when receiving a SIGINT or SIGTERM signal from the system, the simulation will abort time stepping and continue executing any code that follows the `run` function (e.g., outputting fields).
+Run the simulation until a certain time or condition, calling the given step functions (if any) at each timestep. The keyword argument `until` is *either* a number, in which case it is an additional time (in Meep units) to run for, *or* it is a function (of no arguments) which returns `True` when the simulation should stop. `until` can also be a list of stopping conditions which may include a number and additional functions.
 
 **`run(step_functions..., until_after_sources=condition/time, stop_on_interrupt=False)`**
 —
@@ -1547,6 +1547,10 @@ Note that, if you make `decay_by` very small, you may need to increase the `cuto
 **`stop_after_walltime(t)`**
 —
 Return a `condition` function, suitable for passing to `until`. Stops the simulation after `t` seconds of wall time have passed.
+
+**`stop_on_interrupt()`**
+—
+Return a `condition` function, suitable for passing to `until`. Instead of terminating when receiving a SIGINT or SIGTERM signal from the system, the simulation will abort time stepping and continue executing any code that follows the `run` function (e.g., outputting fields).
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is:
 
