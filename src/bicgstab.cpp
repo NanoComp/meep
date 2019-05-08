@@ -104,7 +104,7 @@ static void xpay(size_t n, realnum *x, double a, const realnum *y) {
     x[m] += a * y[m];
 }
 
-#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+#define MEEP_MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
 typedef realnum *prealnum; // grr, ISO C++ forbids new (double*)[...]
 
@@ -158,7 +158,7 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
   double resid;
   while ((resid = norm2(n, r[0])) > tol * bnrm) {
     ++iter;
-    if (!quiet && wall_time() > last_output_wall_time + MIN_OUTPUT_TIME) {
+    if (!quiet && wall_time() > last_output_wall_time + MEEP_MIN_OUTPUT_TIME) {
       master_printf("residual[%d] = %g\n", iter, resid / bnrm);
       last_output_wall_time = wall_time();
     }

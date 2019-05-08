@@ -77,8 +77,6 @@ const int num_bandpts = 32;
 
 symmetry r_to_minus_r_symmetry(int m);
 
-#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
-
 // functions in step_generic.cpp:
 
 void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2, ptrdiff_t s1,
