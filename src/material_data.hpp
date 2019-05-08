@@ -59,6 +59,7 @@ struct transition {
 typedef struct susceptibility_struct {
   vector3 sigma_offdiag;
   vector3 sigma_diag;
+  vector3 bias;
   double frequency;
   double gamma;
   double noise_amp;

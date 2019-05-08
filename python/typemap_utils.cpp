@@ -469,6 +469,20 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
       res = PyObject_Call(py_lorentz_class, args, NULL);
       Py_DECREF(py_lorentz_class);
     }
+  } else if (s->bias.x || s->bias.y || s->bias.z) {
+    if (s->drude) {
+      PyObject *py_gyrotropic_drude_class = PyObject_GetAttrString(geom_mod, "GyrotropicDrudeSusceptibility");
+      res = PyObject_Call(py_gyrotropic_drude_class, args, NULL);
+      Py_DECREF(py_gyrotropic_drude_class);
+    } else {
+      PyObject *py_gyrotropic_lorentz_class =
+	PyObject_GetAttrString(geom_mod, "GyrotropicLorentzianSusceptibility");
+      res = PyObject_Call(py_gyrotropic_lorentz_class, args, NULL);
+      Py_DECREF(py_gyrotropic_lorentz_class);
+    }
+    PyObject *py_bias = vec2py(vector3_to_vec(s->bias));
+    PyObject_SetAttrString(res, "bias", py_bias);
+    Py_DECREF(py_bias);
   } else {
     if (s->drude) {
       PyObject *py_noisy_drude_class = PyObject_GetAttrString(geom_mod, "NoisyDrudeSusceptibility");

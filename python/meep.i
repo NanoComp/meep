@@ -1371,6 +1371,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Ellipsoid,
         FreqRange,
         GeometricObject,
+        GyrotropicDrudeSusceptibility,
+        GyrotropicLorentzianSusceptibility,
         Lattice,
         LorentzianSusceptibility,
         Matrix,
