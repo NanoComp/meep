@@ -92,6 +92,7 @@ typedef struct {
   size_t ntot;
   realnum *P[NUM_FIELD_COMPONENTS][2];
   realnum *P_prev[NUM_FIELD_COMPONENTS][2];
+  realnum *P_tmp[NUM_FIELD_COMPONENTS][2]; // extra slot used for gyrotropic medium updating
   realnum data[1];
 } lorentzian_data;
 
@@ -100,8 +101,9 @@ typedef struct {
 void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
                                                    const grid_volume &gv) const {
   int num = 0;
+  int nslots = have_gyrotropy ? 3 : 2;
   FOR_COMPONENTS(c) DOCMP2 {
-    if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
+    if (needs_P(c, cmp, W)) num += nslots * gv.ntot();
   }
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *)malloc(sz);
@@ -119,12 +121,18 @@ void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONEN
   size_t ntot = d->ntot = gv.ntot();
   realnum *P = d->data;
   realnum *P_prev = d->data + ntot;
+  realnum *P_tmp = have_gyrotropy ? P_prev + ntot : NULL;
+  int nslots = have_gyrotropy ? 3 : 2;
+
   FOR_COMPONENTS(c) DOCMP2 {
     if (needs_P(c, cmp, W)) {
       d->P[c][cmp] = P;
       d->P_prev[c][cmp] = P_prev;
-      P += 2 * ntot;
-      P_prev += 2 * ntot;
+      d->P_tmp[c][cmp] = P_tmp;
+
+      P += nslots * ntot;
+      P_prev += nslots * ntot;
+      if (have_gyrotropy) P_tmp += nslots * ntot;
     }
   }
 }
@@ -137,12 +145,17 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   size_t ntot = d->ntot;
   realnum *P = dnew->data;
   realnum *P_prev = dnew->data + ntot;
+  realnum *P_tmp = have_gyrotropy ? P_prev + ntot : NULL;
+  int nslots = have_gyrotropy ? 3 : 2;
+
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       dnew->P[c][cmp] = P;
       dnew->P_prev[c][cmp] = P_prev;
-      P += 2 * ntot;
-      P_prev += 2 * ntot;
+      dnew->P_tmp[c][cmp] = P_tmp;
+      P += nslots * ntot;
+      P_prev += nslots * ntot;
+      if (have_gyrotropy) P_tmp += nslots * ntot;
     }
   }
   return (void *)dnew;
@@ -321,4 +334,152 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
+
+
+gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
+						     bool no_omega_0_denominator)
+  : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), bias(bias) {
+  have_gyrotropy = true;
+
+  // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
+  memset(gyro_tensor, 0, 9 * sizeof(double));
+  gyro_tensor[X][Y] = bias.z(); gyro_tensor[Y][X] = -bias.z();
+  gyro_tensor[Y][Z] = bias.x(); gyro_tensor[Z][Y] = -bias.x();
+  gyro_tensor[Z][X] = bias.y(); gyro_tensor[X][Z] = -bias.y();
+}
+
+void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+					 realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+					 const grid_volume &gv, void *P_internal_data) const {
+  lorentzian_data *d = (lorentzian_data *)P_internal_data;
+  const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
+  const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
+  const double gamma1 = (1 - g2pi * dt / 2);
+  const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
+  (void)W_prev; // unused;
+
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (d->P[c][cmp]) {
+      const direction d0 = component_direction(c);
+      const realnum *w = W[c][cmp], *s = sigma[c][d0];
+      if (w && s) {
+	if (d0 != X && d0 != Y && d0 != Z)
+	  abort("Cylindrical coordinates are not supported for gyrotropic media");
+
+        const realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
+	realnum *rhs = d->P_tmp[c][cmp];
+
+        const ptrdiff_t is = gv.stride(d0) * (is_magnetic(c) ? -1 : +1);
+
+        direction d1 = cycle_direction(gv.dim, d0, 1);
+        component c1 = direction_component(c, d1);
+        ptrdiff_t is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
+        const realnum *w1 = W[c1][cmp];
+        const realnum *s1 = w1 ? sigma[c][d1] : NULL;
+
+        direction d2 = cycle_direction(gv.dim, d0, 2);
+        component c2 = direction_component(c, d2);
+        ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
+        const realnum *w2 = W[c2][cmp];
+        const realnum *s2 = w2 ? sigma[c][d2] : NULL;
+
+	// Off-diagonal polarization components
+        const realnum *pp1 = d->P_prev[c1][cmp];
+        const realnum *pp2 = d->P_prev[c2][cmp];
+	const realnum g1 = pi * dt * gyro_tensor[d0][d1];
+	const realnum g2 = pi * dt * gyro_tensor[d0][d2];
+
+        if (s2 && !s1) { // make s1 the non-NULL one if possible
+          SWAP(direction, d1, d2);
+          SWAP(component, c1, c2);
+          SWAP(ptrdiff_t, is1, is2);
+          SWAP(const realnum *, w1, w2);
+          SWAP(const realnum *, s1, s2);
+        }
+        if (s1 && s2) { // 3x3 anisotropic
+          LOOP_OVER_VOL_OWNED(gv, c, i) {
+            if (s[i] != 0) {
+              rhs[i] = (2 - omega0dtsqr_denom) * p[i]
+		+ omega0dtsqr * (s[i] * w[i]
+				 + OFFDIAG(s1, w1, is1, is)
+				 + OFFDIAG(s2, w2, is2, is))
+		- gamma1 * pp[i];
+	      if (pp1) rhs[i] -= g1 * pp1[i];
+	      if (pp2) rhs[i] -= g2 * pp2[i];
+            }
+          }
+        } else if (s1) { // 2x2 anisotropic
+          LOOP_OVER_VOL_OWNED(gv, c, i) {
+            if (s[i] != 0) {
+              rhs[i] = (2 - omega0dtsqr_denom) * p[i]
+		+ omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is))
+		- gamma1 * pp[i];
+	      if (pp1) rhs[i] -= g1 * pp1[i];
+	      if (pp2) rhs[i] -= g2 * pp2[i];
+            }
+          }
+        } else { // isotropic
+          LOOP_OVER_VOL_OWNED(gv, c, i) {
+            rhs[i] = (2 - omega0dtsqr_denom) * p[i]
+	      + omega0dtsqr * (s[i] * w[i]) - gamma1 * pp[i];
+	    if (pp1) rhs[i] -= g1 * pp1[i];
+	    if (pp2) rhs[i] -= g2 * pp2[i];
+          }
+        }
+      }
+    }
+  }
+
+  // Perform 3x3 matrix inversion, exploiting skew symmetry
+  const double g2 = (1 + g2pi * dt / 2);
+  const double gx = pi * dt * gyro_tensor[Y][Z];
+  const double gy = pi * dt * gyro_tensor[Z][X];
+  const double gz = pi * dt * gyro_tensor[X][Y];
+  const double invdet = 1.0 / g2 / (g2*g2 + gx*gx + gy*gy + gz*gz);
+  double inv[3][3];
+
+  inv[X][X] = invdet * (g2*g2 + gx*gx);
+  inv[Y][Y] = invdet * (g2*g2 + gy*gy);
+  inv[Z][Z] = invdet * (g2*g2 + gz*gz);
+
+  inv[X][Y] = invdet * (gx*gy + g2*gz);
+  inv[Y][X] = invdet * (gy*gx - g2*gz);
+  inv[Z][X] = invdet * (gz*gx + g2*gy);
+  inv[X][Z] = invdet * (gx*gz - g2*gy);
+  inv[Y][Z] = invdet * (gy*gz + g2*gx);
+  inv[Z][Y] = invdet * (gz*gy - g2*gx);
+
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (d->P[c][cmp]) {
+      const direction d0 = component_direction(c);
+      if (W[c][cmp] && sigma[c][d0]) {
+        realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp], *rhs = d->P_tmp[c][cmp];
+        const direction d1  = cycle_direction(gv.dim, d0, 1);
+        const direction d2  = cycle_direction(gv.dim, d0, 2);
+        const component c1 = direction_component(c, d1);
+        const component c2 = direction_component(c, d2);
+        const realnum *rhs1 = W[c1][cmp] ? d->P_tmp[c1][cmp] : NULL;
+	const realnum *rhs2 = W[c2][cmp] ? d->P_tmp[c2][cmp] : NULL;
+
+	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	  pp[i] = p[i];
+	  p[i]  = inv[d0][d0] * rhs[i];
+	  if (rhs1) p[i] += inv[d0][d1] * rhs1[i];
+	  if (rhs2) p[i] += inv[d0][d2] * rhs2[i];
+	}
+      }
+    }
+  }
+}
+
+void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
+  size_t num_params = 8;
+  size_t params_dims[1] = {num_params};
+  double params_data[] = {
+      7, (double)get_id(), bias.x(), bias.y(), bias.z(),
+      omega_0, gamma, (double)no_omega_0_denominator};
+  h5f->write_chunk(1, start, params_dims, params_data);
+  *start += num_params;
+}
+
 } // namespace meep
