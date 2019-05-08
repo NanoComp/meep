@@ -1474,8 +1474,12 @@ class Simulation(object):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
     def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
+        if self.fields is None:
+            self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
+        self.fields.am_now_working_on(mp.GetFarfieldsTime)
         result = mp._get_farfields_array(near2far.swigobj, vol, resolution)
+        self.fields.finished_working()
         res_ex = complexarray(result[0], result[1])
         res_ey = complexarray(result[2], result[3])
         res_ez = complexarray(result[4], result[5])
@@ -1492,8 +1496,12 @@ class Simulation(object):
         }
 
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
+        if self.fields is None:
+            self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
+        self.fields.am_now_working_on(mp.GetFarfieldsTime)
         near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
+        self.fields.finished_working()
 
     def load_near2far(self, fname, n2f):
         if self.fields is None:

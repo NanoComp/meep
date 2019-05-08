@@ -1369,6 +1369,7 @@ enum time_sink {
   FieldOutput,
   FourierTransforming,
   MPBTime,
+  GetFarfieldsTime,
   Other
 };
 
@@ -1799,9 +1800,6 @@ private:
   double times_spent[Other + 1];
   // fields.cpp
   void figure_out_step_plan();
-  // time.cpp
-  void am_now_working_on(time_sink);
-  void finished_working();
   // boundaries.cpp
   bool chunk_connections_valid;
   void find_metals();
@@ -1828,6 +1826,9 @@ public:
   double get_chi1inv(component, direction, const ivec &iloc, bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
+  // time.cpp
+  void am_now_working_on(time_sink);
+  void finished_working();
 };
 
 class flux_vol {
