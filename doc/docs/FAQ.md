@@ -413,7 +413,7 @@ Any [output](Python_User_Interface.md#output-functions) or [computation](Python_
 
 ### Is it possible to specify the boundary conditions independently?
 
-Yes. You can use the [`set_boundary`](Python_User_Interface.md#field-computations) routine to specify different boundary conditions (`Metallic`, `Magnetic`, `Periodic`, or `None`) on different sides of the cell (`High` for positive or `Low` for negative directions). The default boundary condition is perfect electric conductor (i.e., `Metallic` or zero electric field). Note that PML is *not* a boundary condition. It is an artificial absorbing material placed adjacent to the boundaries. The boundary condition is essentially irrelevant to the operation of the PML.
+Yes. You can use the [`set_boundary`](Python_User_Interface.md#field-computations) routine to specify different boundary conditions (`Metallic`, `Magnetic`) on different sides of the cell (`High` for positive or `Low` for negative directions). The default boundary condition is perfect electric conductor (i.e., `Metallic` or zero electric field), unless you specified a `k_point` in which case the default is Bloch-periodic. Note that PML is *not* a boundary condition. It is an artificial absorbing material placed adjacent to the boundaries. The boundary condition is essentially irrelevant to the operation of the PML.
 
 ### Can Meep model electrostatic effects?
 
