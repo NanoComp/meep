@@ -59,6 +59,12 @@ if test "x$with_mpi" = "xyes"; then
   fi
 fi
 
+AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
+if test x"$enable_openmp" = "xyes"; then
+   AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
+   AX_OPENMP([], [AC_MSG_ERROR([don't know how to enable OpenMP])])
+fi
+
 ##############################################################################
 # Compiler flags
 

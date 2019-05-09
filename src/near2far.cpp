@@ -250,7 +250,9 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+#  pragma omp parallel for
+#endif
     for (int i = 0; i < Nfreq; ++i) {
       double freq = freq_min + i * dfreq;
       size_t idx_dft = 0;
