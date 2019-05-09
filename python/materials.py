@@ -258,12 +258,17 @@ Ag_f4 = 0.840
 Ag_frq4 = 9.083*eV_um_scale      # 0.137 um
 Ag_gam4 = 0.916*eV_um_scale
 Ag_sig4 = Ag_f4*Ag_plasma_frq**2/Ag_frq4**2
+Ag_f5 = 5.646
+Ag_frq5 = 20.29*eV_um_scale      
+Ag_gam5 = 2.419*eV_um_scale
+Ag_sig5 = Ag_f5*Ag_plasma_frq**2/Ag_frq5**2
 
 Ag_susc = [mp.DrudeSusceptibility(frequency=Ag_frq0, gamma=Ag_gam0, sigma=Ag_sig0),
            mp.LorentzianSusceptibility(frequency=Ag_frq1, gamma=Ag_gam1, sigma=Ag_sig1),
            mp.LorentzianSusceptibility(frequency=Ag_frq2, gamma=Ag_gam2, sigma=Ag_sig2),
            mp.LorentzianSusceptibility(frequency=Ag_frq3, gamma=Ag_gam3, sigma=Ag_sig3),
-           mp.LorentzianSusceptibility(frequency=Ag_frq4, gamma=Ag_gam4, sigma=Ag_sig4)]
+           mp.LorentzianSusceptibility(frequency=Ag_frq4, gamma=Ag_gam4, sigma=Ag_sig4),
+           mp.LorentzianSusceptibility(frequency=Ag_frq5, gamma=Ag_gam5, sigma=Ag_sig5)]
 
 Ag = mp.Medium(epsilon=1.0, E_susceptibilities=Ag_susc, valid_freq_range=metal_range)
 
@@ -291,12 +296,17 @@ Au_f4 = 0.601
 Au_frq4 = 4.304*eV_um_scale      # 0.288 um
 Au_gam4 = 2.494*eV_um_scale
 Au_sig4 = Au_f4*Au_plasma_frq**2/Au_frq4**2
+Au_f5 = 4.384
+Au_frq5 = 13.32*eV_um_scale
+Au_gam5 = 2.214*eV_um_scale
+Au_sig5 = Au_f5*Au_plasma_frq**2/Au_frq5**2
 
 Au_susc = [mp.DrudeSusceptibility(frequency=Au_frq0, gamma=Au_gam0, sigma=Au_sig0),
            mp.LorentzianSusceptibility(frequency=Au_frq1, gamma=Au_gam1, sigma=Au_sig1),
            mp.LorentzianSusceptibility(frequency=Au_frq2, gamma=Au_gam2, sigma=Au_sig2),
            mp.LorentzianSusceptibility(frequency=Au_frq3, gamma=Au_gam3, sigma=Au_sig3),
-           mp.LorentzianSusceptibility(frequency=Au_frq4, gamma=Au_gam4, sigma=Au_sig4)]
+           mp.LorentzianSusceptibility(frequency=Au_frq4, gamma=Au_gam4, sigma=Au_sig4),
+           mp.LorentzianSusceptibility(frequency=Au_frq5, gamma=Au_gam5, sigma=Au_sig5)]
 
 Au = mp.Medium(epsilon=1.0, E_susceptibilities=Au_susc, valid_freq_range=metal_range)
 
