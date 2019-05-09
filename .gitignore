@@ -13,6 +13,7 @@
 *.native
 *.pyc
 _build
+.vscode
 
 # autotools stuff
 Makefile
@@ -56,6 +57,7 @@ scheme/meep_renames.i
 scheme/meep_swig_bug_workaround.i
 scheme/meep_wrap.cxx
 scheme/meep_wrap.cxx.orig
+scheme/meep_wrap.cxx.bak
 meep-pkgconfig
 meep.pc
 build/
@@ -63,10 +65,10 @@ src/sphere-quad.h
 src/sphere_quad
 src/step_generic_stride1.cpp
 python/meep/
-python/meep-python.cpp
+python/meep-python.cxx
 python/meep.py
 python/__init__.py
-python/mpb-python.cpp
+python/mpb-python.cxx
 python/mpb.py
 
 # test programs
@@ -75,6 +77,7 @@ tests/absorber-1d-ll
 tests/aniso_disp
 tests/aniso_disp.log
 tests/aniso_disp.trs
+tests/array-metadata
 tests/array-slice-ll
 tests/bench
 tests/bench.log
