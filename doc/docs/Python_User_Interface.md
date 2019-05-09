@@ -1530,11 +1530,11 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 
 **`run(step_functions..., until=condition/time)`**
 —
-Run the simulation until a certain time or condition, calling the given step functions (if any) at each timestep. The keyword argument `until` is *either* a number, in which case it is an additional time (in Meep units) to run for, *or* it is a function (of no arguments) which returns `True` when the simulation should stop.
+Run the simulation until a certain time or condition, calling the given step functions (if any) at each timestep. The keyword argument `until` is *either* a number, in which case it is an additional time (in Meep units) to run for, *or* it is a function (of no arguments) which returns `True` when the simulation should stop. `until` can also be a list of stopping conditions which may include a number and additional functions.
 
 **`run(step_functions..., until_after_sources=condition/time)`**
 —
-Run the simulation until all sources have turned off, calling the given step functions (if any) at each timestep. The keyword argument `until_after_sources` is either a number, in which case it is an *additional* time (in Meep units) to run for after the sources are off, *or* it is a function (of no arguments). In the latter case, the simulation runs until the sources are off *and* `condition` returns `True`.
+Run the simulation until all sources have turned off, calling the given step functions (if any) at each timestep. The keyword argument `until_after_sources` is either a number, in which case it is an *additional* time (in Meep units) to run for after the sources are off, *or* it is a function (of no arguments). In the latter case, the simulation runs until the sources are off *and* `condition` returns `True`. Like `until` above, `until_after_sources` can take a list of stopping conditions.
 
 In particular, a useful value for `until_after_sources` or `until` is often `stop_when_field_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend):
 
@@ -1543,6 +1543,14 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 Return a `condition` function, suitable for passing to `until`/`until_after_sources`, that examines the component `c` (e.g. `Ex`, etc.) at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared* has decayed by at least `decay_by` from its maximum previous value. In particular, it keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value over that time period &mdash; in this way, it won't be fooled just because the field happens to go through 0 at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff` property of your source(s), to decrease the amplitude of the small high-frequency components that are excited when the source turns off. High frequencies near the [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+
+**`stop_after_walltime(t)`**
+—
+Return a `condition` function, suitable for passing to `until`. Stops the simulation after `t` seconds of wall time have passed.
+
+**`stop_on_interrupt()`**
+—
+Return a `condition` function, suitable for passing to `until`. Instead of terminating when receiving a SIGINT or SIGTERM signal from the system, the simulation will abort time stepping and continue executing any code that follows the `run` function (e.g., outputting fields).
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is:
 

@@ -5,6 +5,7 @@ import math
 import numbers
 import os
 import re
+import signal
 import subprocess
 import sys
 import warnings
@@ -1232,19 +1233,25 @@ class Simulation(object):
         if self.fields is None:
             self.init_sim()
 
-        if isinstance(cond, numbers.Number):
-            stop_time = cond
-            t0 = self.round_time()
+        if not isinstance(cond, list):
+            cond = [cond]
 
-            def stop_cond(sim):
-                return sim.round_time() >= t0 + stop_time
+        for i in range(len(cond)):
+            if isinstance(cond[i], numbers.Number):
+                stop_time = cond[i]
+                t0 = self.round_time()
 
-            cond = stop_cond
+                def stop_cond(sim):
+                    return sim.round_time() >= t0 + stop_time
 
-            step_funcs = list(step_funcs)
-            step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
+                cond[i] = stop_cond
 
-        while not cond(self):
+                step_funcs = list(step_funcs)
+                step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
+            else:
+                assert callable(cond[i]), "Stopping condition {} is not an integer or a function".format(cond[i])
+
+        while not any([x(self) for x in cond]):
             for func in step_funcs:
                 _eval_step_func(self, func, 'step')
             self.fields.step()
@@ -1266,16 +1273,20 @@ class Simulation(object):
         if self.fields is None:
             self.init_sim()
 
+        if not isinstance(cond, list):
+            cond = [cond]
+
         ts = self.fields.last_source_time()
+        new_conds = []
+        for i in range(len(cond)):
+            if isinstance(cond[i], numbers.Number):
+                new_conds.append((ts - self.round_time()) + cond[i])
+            else:
+                def f(sim):
+                    return cond[i](sim) and sim.round_time() >= ts
+                new_conds.append(f)
 
-        if isinstance(cond, numbers.Number):
-            new_cond = (ts - self.round_time()) + cond
-        else:
-            def f(sim):
-                return cond(sim) and sim.round_time() >= ts
-            new_cond = f
-
-        self._run_until(new_cond, step_funcs)
+        self._run_until(new_conds, step_funcs)
 
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
@@ -2430,6 +2441,31 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
+    return _stop
+
+
+def stop_after_walltime(t):
+    start = mp.wall_time()
+    def _stop_after_walltime(sim):
+        if mp.wall_time() - start > t:
+            return True
+        return False
+    return _stop_after_walltime
+
+
+def stop_on_interrupt():
+    shutting_down = [False]
+
+    def _signal_handler(sig, frame):
+        print("WARNING: System requested termination. Time stepping aborted.")
+        shutting_down[0] = True
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    def _stop(sim):
+        return shutting_down[0]
+
     return _stop
 
 
