@@ -20,6 +20,7 @@ AC_ENABLE_SHARED
 ##############################################################################
 
 # Check for mpiCC immediately after getting C++ compiler...
+AC_PROG_CC
 AC_PROG_CXX
 AC_LANG([C++])
 
@@ -569,6 +570,7 @@ AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
+	src/support/Makefile
 	tests/Makefile
 ])
 

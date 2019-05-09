@@ -36,10 +36,10 @@ namespace meep {
 
 #define J BesselJ
 double J(int m, double kr) {
-#if defined(HAVE_LIBGSL)
-  return gsl_sf_bessel_Jn(m, kr);
-#elif defined(HAVE_JN)
+#if defined(HAVE_JN)
   return jn(m, kr); // POSIX/BSD jn function
+#elif defined(HAVE_LIBGSL)
+  return gsl_sf_bessel_Jn(m, kr);
 #else
   abort("not compiled with GSL, required for Bessel functions");
   return 0;
