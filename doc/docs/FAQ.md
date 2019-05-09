@@ -237,7 +237,7 @@ When computing the reflectance/transmittance for linear materials, you should ge
 
 ### How does `k_point` define the phase relation between adjacent unit cells?
 
-If you set the `k_point` to any `meep.Vector3`, the structure will be periodic in **all** directions. (There is a lower-level `field::set_boundary` function that allows you to set individual boundary conditions independently, however.)
+If you set the `k_point` to any `meep.Vector3`, the structure will be periodic in **all** directions. There is a [`set_boundary`](Python_User_Interface.md#field-computations) routine that allows you to set individual boundary conditions independently, however.
 
 A periodic structure does **not** imply periodic fields. The value of the `k_point` determines the *phase relation* between the fields and sources in adjacent periodic unit cells. In general, if you have period (`Lx`,`Ly`) and you are looking at the (`n`,`m`) unit cell it has a phase of exp(2πi * (`kx` * `Lx` * `n` + `ky` * `Ly` * `m`)). For example, if you set the `k_point` to `meep.Vector3(0,0,0)`, that means the fields/sources are periodic: the phase is unity from one cell to the next. If you set the `k_point` to `meep.Vector3(1,0,0)` it means that there is a phase difference of exp(2πi * `Lx`) between adjacent cells in the *x* direction. This is known as a [Bloch wave](https://en.wikipedia.org/wiki/Bloch_wave).
 
@@ -410,6 +410,10 @@ To compute the absorbed power anywhere in the cell, you can use [Poynting's theo
 ### What happens if I specify an output volume that extends beyond a cell with periodic boundaries?
 
 Any [output](Python_User_Interface.md#output-functions) or [computation](Python_User_Interface.md#field-computations) function that requires a `Volume`, such as `in_volume` or the [field integration routines](Field_Functions.md), etcetera, doesn't restrict the output volume to lie within, or even to intersect, the cell. As long as `ensure_periodicity=True` (the default), Meep will extend the data according to the periodic boundary conditions as needed.
+
+### Is it possible to specify the boundary conditions independently?
+
+Yes. You can use the [`set_boundary`](Python_User_Interface.md#field-computations) routine to specify different boundary conditions (`Metallic`, `Magnetic`) on different sides of the cell (`High` for positive or `Low` for negative directions). The default boundary condition is perfect electric conductor (i.e., `Metallic` or zero electric field), unless you specified a `k_point` in which case the default is Bloch-periodic. Note that PML is *not* a boundary condition. It is an artificial absorbing material placed adjacent to the boundaries. The boundary condition is essentially irrelevant to the operation of the PML.
 
 ### Can Meep model electrostatic effects?
 
