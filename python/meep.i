@@ -202,6 +202,12 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
 
 void py_master_printf_wrap(const char *s) {
     PySys_WriteStdout("%s", s);
+    static PyObject *py_stdout = NULL;
+    if (py_stdout == NULL) {
+      py_stdout = PySys_GetObject("stdout");
+    }
+    PyObject *result = PyObject_CallMethod(py_stdout, "flush", NULL);
+    Py_XDECREF(result);
 }
 
 void set_ctl_printf_callback(void (*callback)(const char *s)) {

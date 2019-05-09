@@ -334,6 +334,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
           last_point = this_point;
         }
         farfield_lowlevel(EH1, x);
+        if (!quiet) all_wait();  // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
         for (int i = 0; i < Nfreq; ++i)
           for (int k = 0; k < 6; ++k) {
