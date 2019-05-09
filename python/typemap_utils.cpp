@@ -330,6 +330,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
   s->frequency = 0;
   s->gamma = 0;
   s->noise_amp = 0;
+  s->bias.x = s->bias.y = s->bias.z = 0;
   s->transitions.resize(0);
   s->initial_populations.resize(0);
 
@@ -343,6 +344,10 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 
   if (PyObject_HasAttrString(po, "noise_amp")) {
     if (!get_attr_dbl(po, &s->noise_amp, "noise_amp")) { return 0; }
+  }
+
+  if (PyObject_HasAttrString(po, "bias")) {
+    if (!get_attr_v3(po, &s->bias, "bias")) return 0;
   }
 
   if (PyObject_HasAttrString(po, "transitions")) {
