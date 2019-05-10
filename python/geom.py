@@ -481,8 +481,8 @@ class Matrix(object):
         self.c3 = c3
         if c1 == c2 == c3 == Vector3():
             self.c1 = Vector3(diag.x,offdiag.x,offdiag.y)
-            self.c2 = Vector3(offdiag.x,diag.y,offdiag.z)
-            self.c3 = Vector3(offdiag.y,offdiag.z,diag.z)
+            self.c2 = Vector3(np.conj(offdiag.x),diag.y,offdiag.z)
+            self.c3 = Vector3(np.conj(offdiag.y),np.conj(offdiag.z),diag.z)
 
     def __getitem__(self, i):
         return self.row(i)
