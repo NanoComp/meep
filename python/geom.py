@@ -252,22 +252,18 @@ class Medium(object):
         else:
             freqs = np.squeeze(freq)
 
-        numFreqs = freqs.size
+        freqs = freqs[:,np.newaxis,np.newaxis]
 
         # Initialize with instantaneous dielectric tensor
-        epsmu = np.tile(np.array(Matrix(mp.Vector3(diag.x, offdiag.x, offdiag.y),
-                     mp.Vector3(offdiag.x, diag.y, offdiag.z),
-                     mp.Vector3(offdiag.y, offdiag.z, diag.z))),(numFreqs,1,1))
+        epsmu = np.expand_dims(Matrix(diag=diag,offdiag=offdiag),axis=0)
 
         # Iterate through susceptibilities
         for i_sus in range(len(susceptibilities)):
             epsmu = epsmu + susceptibilities[i_sus].eval_susceptibility(freqs)
         
         # Account for conductivity term
-        conductivity = np.tile(np.array(Matrix(mp.Vector3(conductivity_diag.x, conductivity_offdiag.x, conductivity_offdiag.y),
-                    mp.Vector3(conductivity_offdiag.x, conductivity_diag.y, conductivity_offdiag.z),
-                    mp.Vector3(conductivity_offdiag.y, conductivity_offdiag.z, conductivity_diag.z))),(numFreqs,1,1))
-        epsmu = (1 + 1j/np.tile(freqs,(3,3,1)).T * conductivity) * epsmu
+        conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
+        epsmu = (1 + 1j/freqs * conductivity) * epsmu
 
         # Convert list matrix to 3D numpy array size [freqs,3,3]
         return np.array(epsmu)
@@ -280,9 +276,7 @@ class Susceptibility(object):
         self.sigma_offdiag = sigma_offdiag
 
     def transform(self, m):
-        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
-                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
-                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
+        sigma = Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag)
         new_sigma = (m * sigma * m.transpose()) / abs(m.determinant())
         self.sigma_diag = mp.Vector3(new_sigma.c1.x, new_sigma.c2.y, new_sigma.c3.z)
         self.sigma_offdiag = mp.Vector3(new_sigma.c2.x, new_sigma.c3.x, new_sigma.c3.y)
@@ -296,12 +290,8 @@ class LorentzianSusceptibility(Susceptibility):
         self.gamma = gamma
     
     def eval_susceptibility(self,freq):
-
-        sigma = np.tile(np.array(Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
-                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
-                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))),(freq.size,1,1))
-
-        return np.tile(self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq),(3,3,1)).T * sigma
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
 
 
 class DrudeSusceptibility(Susceptibility):
@@ -312,12 +302,8 @@ class DrudeSusceptibility(Susceptibility):
         self.gamma = gamma
     
     def eval_susceptibility(self,freq):
-
-        sigma = np.tile(np.array(Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
-                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
-                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))),(freq.size,1,1))
-
-        return np.tile(-self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)),(3,3,1)).T * sigma
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+        return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
 
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
@@ -489,10 +475,14 @@ class Prism(GeometricObject):
 
 class Matrix(object):
 
-    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
+    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3(), diag=Vector3(), offdiag=Vector3()):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
+        if c1 == c2 == c3 == Vector3():
+            self.c1 = Vector3(diag.x,offdiag.x,offdiag.y)
+            self.c2 = Vector3(offdiag.x,diag.y,offdiag.z)
+            self.c3 = Vector3(offdiag.y,offdiag.z,diag.z)
 
     def __getitem__(self, i):
         return self.row(i)
