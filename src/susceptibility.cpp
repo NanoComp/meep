@@ -338,7 +338,7 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
 
 gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
 						     bool no_omega_0_denominator)
-  : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), bias(bias) {
+  : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator) {
   have_gyrotropy = true;
 
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
@@ -431,23 +431,22 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   }
 
   // Perform 3x3 matrix inversion, exploiting skew symmetry
-  const double g2 = (1 + g2pi * dt / 2);
+  const double gd = (1 + g2pi * dt / 2);
   const double gx = pi * dt * gyro_tensor[Y][Z];
   const double gy = pi * dt * gyro_tensor[Z][X];
   const double gz = pi * dt * gyro_tensor[X][Y];
-  const double invdet = 1.0 / g2 / (g2*g2 + gx*gx + gy*gy + gz*gz);
+  const double invdet = 1.0 / gd / (gd*gd + gx*gx + gy*gy + gz*gz);
   double inv[3][3];
 
-  inv[X][X] = invdet * (g2*g2 + gx*gx);
-  inv[Y][Y] = invdet * (g2*g2 + gy*gy);
-  inv[Z][Z] = invdet * (g2*g2 + gz*gz);
-
-  inv[X][Y] = invdet * (gx*gy + g2*gz);
-  inv[Y][X] = invdet * (gy*gx - g2*gz);
-  inv[Z][X] = invdet * (gz*gx + g2*gy);
-  inv[X][Z] = invdet * (gx*gz - g2*gy);
-  inv[Y][Z] = invdet * (gy*gz + g2*gx);
-  inv[Z][Y] = invdet * (gz*gy - g2*gx);
+  inv[X][X] = invdet * (gd*gd + gx*gx);
+  inv[Y][Y] = invdet * (gd*gd + gy*gy);
+  inv[Z][Z] = invdet * (gd*gd + gz*gz);
+  inv[X][Y] = invdet * (gx*gy + gd*gz);
+  inv[Y][X] = invdet * (gy*gx - gd*gz);
+  inv[Z][X] = invdet * (gz*gx + gd*gy);
+  inv[X][Z] = invdet * (gx*gz - gd*gy);
+  inv[Y][Z] = invdet * (gy*gz + gd*gx);
+  inv[Z][Y] = invdet * (gz*gy - gd*gx);
 
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
@@ -475,8 +474,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 8;
   size_t params_dims[1] = {num_params};
+  double bias[] = { gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y] };
   double params_data[] = {
-      7, (double)get_id(), bias.x(), bias.y(), bias.z(),
+      7, (double)get_id(), bias[X], bias[Y], bias[Z],
       omega_0, gamma, (double)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;

@@ -289,7 +289,6 @@ public:
   virtual int get_num_params() { return 7; }
 
 protected:
-  vec bias;
   double gyro_tensor[3][3];
 };
 
