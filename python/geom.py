@@ -266,7 +266,7 @@ class Medium(object):
         epsmu = (1 + 1j/freqs * conductivity) * epsmu
 
         # Convert list matrix to 3D numpy array size [freqs,3,3]
-        return np.array(epsmu)
+        return np.squeeze(epsmu)
 
 
 class Susceptibility(object):
