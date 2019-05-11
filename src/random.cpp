@@ -18,11 +18,7 @@
 #include "meep.hpp"
 #include "config.h"
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_randist.h>
-#else
-#include <stdlib.h>
-#endif
+#include "support/meep_mt.h"
 #include <time.h>
 
 using namespace std;
@@ -30,16 +26,9 @@ using namespace std;
 namespace meep {
 
 static bool rand_inited = false;
-#ifdef HAVE_LIBGSL
-static gsl_rng *rng = NULL;
-#endif
 
 static void init_rand(void) {
   if (!rand_inited) {
-#ifdef HAVE_LIBGSL
-    if (rng) gsl_rng_free(rng);
-    rng = gsl_rng_alloc(gsl_rng_mt19937);
-#endif
     rand_inited = true; // no infinite loop since rand_inited == true
     set_random_seed(time(NULL) * (1 + my_global_rank()));
   }
@@ -47,43 +36,27 @@ static void init_rand(void) {
 
 void set_random_seed(unsigned long seed) {
   init_rand();
-  seed = ((unsigned long)broadcast(0, (int)seed)) + my_rank();
-#ifdef HAVE_LIBGSL
-  gsl_rng_set(rng, seed);
-#else
-  srand(seed);
-#endif
+  meep_mt_init_genrand(seed);
 }
 
 int random_int(int a, int b) {
   init_rand();
-#ifdef HAVE_LIBGSL
-  return ((int)gsl_rng_uniform_int(rng, b - a + 1)) + a;
-#else
-  return a + rand() % (b - a + 1);
-#endif
+  return a + meep_mt_genrand_int32() % (b - a + 1);
 }
 
 double uniform_random(double a, double b) {
   init_rand();
-#ifdef HAVE_LIBGSL
-  return a + gsl_rng_uniform(rng) * (b - a);
-#else
-  return a + rand() * (b - a) / RAND_MAX;
-#endif
+  return a + meep_mt_genrand_res53() * (b - a);
 }
 
 double gaussian_random(double mean, double stddev) {
   init_rand();
-#ifdef HAVE_LIBGSL
-  return mean + gsl_ran_gaussian(rng, stddev);
-#else
   // Box-Muller algorithm to generate Gaussian from uniform
   // see Knuth vol II algorithm P, sec. 3.4.1
   double v1, v2, s;
   do {
-    v1 = uniform_random(-1, 1);
-    v2 = uniform_random(-1, 1);
+    v1 = 2*meep_mt_genrand_res53() - 1;
+    v2 = 2*meep_mt_genrand_res53() - 1;
     s = v1 * v1 + v2 * v2;
   } while (s >= 1.0);
   if (s == 0) {
@@ -91,7 +64,6 @@ double gaussian_random(double mean, double stddev) {
   } else {
     return mean + v1 * sqrt(-2 * log(s) / s) * stddev;
   }
-#endif
 }
 
 } // namespace meep

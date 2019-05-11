@@ -157,9 +157,13 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
     abort("unrecognized source type");
 }
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_sf_bessel.h>
 // hankel function J + iY
+#if defined(HAVE_JN)
+static std::complex<double> hankel(int n, double x) {
+  return std::complex<double>(jn(n, x), yn(n, x));
+}
+#elif defined(HAVE_LIBGSL)
+#include <gsl/gsl_sf_bessel.h>
 static std::complex<double> hankel(int n, double x) {
   return std::complex<double>(gsl_sf_bessel_Jn(n, x), gsl_sf_bessel_Yn(n, x));
 }
