@@ -26,7 +26,7 @@ For our first example, let's examine the field pattern excited by a localized [C
 
 ### A Straight Waveguide
 
-The simulation script is in [examples/straight-waveguide.py](https://github.com/NanoComp/meep/blob/master/python/examples/straight-waveguide.py). The notebook is [examples/straight-waveguide.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/straight-waveguide.ipynb)
+The simulation script is in [examples/straight-waveguide.py](https://github.com/NanoComp/meep/blob/master/python/examples/straight-waveguide.py). The notebook is [examples/straight-waveguide.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/straight-waveguide.ipynb).
 
 The first thing to do always is to load the Meep library:
 
@@ -260,7 +260,7 @@ We have computed the field patterns for light propagating around a waveguide ben
 
 The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
-The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py). The notebook is [examples/bend-flux.ipynb](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.ipynb)
+The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py). The notebook is [examples/bend-flux.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/bend-flux.ipynb).
 
 ```py
 import meep as mp
@@ -435,7 +435,7 @@ Creating an oblique planewave source typically requires specifying two parameter
 
 In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
-The simulation script is [examples/refl-angular.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular.py). The notebook is [examples/refl-angular.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/refl-angular.ipynb)
+The simulation script is [examples/refl-angular.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular.py). The notebook is [examples/refl-angular.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/refl-angular.ipynb).
 
 ```py
 import meep as mp

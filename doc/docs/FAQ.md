@@ -397,7 +397,7 @@ No. Meep does not support non-orthogonal grids with spatially varying resolution
 
 ### How do I access the structure, fields, or sources in a subregion/slice of the cell?
 
-You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source_slice`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) to obtain information for the geometric slice.
+You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) to obtain information for the geometric slice.
 
 Visualization in 3d can be done with [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
 

@@ -152,7 +152,7 @@ Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z
 
 **`side` constants**
 —
-Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
+Specify particular boundary in the positive `High` (e.g., +`X`) or negative `Low` (e.g., -`X`) direction.
 
 **`component` constants**
 —
