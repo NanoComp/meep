@@ -2181,7 +2181,7 @@ class Simulation(object):
                 widths.append(width)
                 heights.append(height)
         # 2 sides are the same
-        elif boundaryside == mp.ALL:
+        elif boundary.side == mp.ALL:
              for side in [mp.Low, mp.High]:
                 corner, width, height = _get_boundary_vertices(boundary.thickness,boundary.direction,side)
                 corners.append(corner)
