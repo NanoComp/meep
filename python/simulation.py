@@ -2143,6 +2143,177 @@ class Simulation(object):
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
 
+    def get_boundary_metadata(self,boundary):
+        import itertools
+        corners = []
+        widths = []
+        heights = []
+        def _get_boundary_vertices(thickness,direction,side):
+            # Left
+            if direction == mp.X and side == mp.Low: 
+                corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2]) 
+                width = thickness
+                height = self.cell_size.y
+            # Right
+            elif direction == mp.X and side == mp.High: 
+                corner = np.array([self.geometry_center.x + self.cell_size.x/2 - thickness,self.geometry_center.y - self.cell_size.y/2])
+                width = thickness
+                height = self.cell_size.y
+            # Top
+            elif direction == mp.Y and side == mp.Low: 
+                corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
+                width = self.cell_size.x
+                height = thickness
+            # Bottom
+            elif direction == mp.Y and side == mp.High: 
+                corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2])
+                width = self.cell_size.x
+                height = thickness
+            else:
+                corner = []
+            return corner, width, height
+        
+        # All 4 side are the same
+        if boundary.direction == mp.ALL and boundary.side == mp.ALL:
+            for permutation in itertools.product([mp.X,mp.Y], [mp.Low, mp.High]):
+                corner, width, height = _get_boundary_vertices(boundary.thickness,*permutation)
+                corners.append(corner)
+                widths.append(width)
+                heights.append(height)
+        # 2 sides are the same
+        elif boundaryside == mp.ALL:
+             for side in [mp.Low, mp.High]:
+                corner, width, height = _get_boundary_vertices(boundary.thickness,boundary.direction,side)
+                corners.append(corner)
+                widths.append(width)
+                heights.append(height)
+        # only one side
+        else:
+            corners, widths, heights = _get_boundary_vertices(thickness, direction, side)
+        
+        return corners, widths, heights
+
+    def get_src_metadata(self,source):
+        size = source.size
+        center = source.center
+
+        # Point source
+        if size.x == size.y == size.z == 0:
+            return np.array([[center.x,center.y]])
+        
+        # Line source
+        else:
+            # Vertical line
+            if size.x == 0:
+                return np.array([
+                    [center.x,center.y-size.y/2],
+                    [center.x,center.y+size.y/2]
+                ])
+            # Horizontal line
+            elif size.y == 0:
+                return np.array([
+                    [center.x-size.x/2,center.y],
+                    [center.x+size.x/2,center.y]
+                ])
+            else:
+                return []
+            
+    def get_monitor_metadata(self,monitor,z_slice=0):
+        size = monitor.regions[0].size
+        center = monitor.regions[0].center
+
+        # Vertical line
+        if size.x == 0:
+            return np.array([
+                [center.x,center.y-size.y/2],
+                [center.x,center.y+size.y/2]
+            ])
+        # Horizontal line
+        elif size.y == 0:
+            return np.array([
+                [center.x-size.x/2,center.y],
+                [center.x+size.x/2,center.y]
+            ])
+        else:
+            return []
+
+    def visualize_domain(self,figsize=None,fields=None,labels=True):
+        if not self._is_initialized:
+            self.init_sim()
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
+            return
+        
+        f = plt.figure()
+
+        # Get domain measurements
+        grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
+        extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[1]),np.max(grid[1])]
+
+        # Plot geometry
+        eps_data = np.rot90(self.get_array(center=self.geometry_center, size=self.cell_size, component=mp.Dielectric))
+        plt.imshow(eps_data, interpolation='spline36', cmap='binary', extent=extent)
+
+        # Plot boundaries
+        for boundary in self.boundary_layers:
+            corners, widths, heights = self.get_boundary_metadata(boundary)
+            for bdry in range(len(widths)):
+                plt.gca().add_patch(patches.Rectangle(corners[bdry],widths[bdry],heights[bdry],edgecolor='g',facecolor='none', hatch='/'))
+                
+        # Plot sources
+        for src in self.sources:
+            src_loc = self.get_src_metadata(src)
+            if src_loc.shape[0] == 1:
+                plt.scatter(src_loc[:,0],src_loc[:,1],color='r')
+            else:
+                plt.plot(src_loc[:,0],src_loc[:,1],color='r')
+            
+        # Plot monitors
+        for mon in self.dft_objects:
+            mon_loc = self.get_monitor_metadata(mon)
+            plt.plot(mon_loc[:,0],mon_loc[:,1],color='b')
+
+        # Plot fields
+        if fields is not None:
+            plt.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
+
+        return f  
+
+    def animate_fields(self,fields,filename_prefix=None,fps=20):
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+            from matplotlib import animation
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
+            return
+
+        num_frames = len(fields)
+
+        # Normalize fields
+        fields = np.array(fields) / np.max(fields,axis=(0,1,2))
+
+        grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
+        extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[1]),np.max(grid[1])]
+        f = self.visualize_domain()
+        fieldsPlot = plt.imshow(np.rot90(fields[0]), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
+        def animate(i):
+            fieldsPlot.set_data(np.rot90(fields[i]))
+            return fieldsPlot #return everything that must be updated
+
+        anim = animation.FuncAnimation(f, animate,
+                                    frames=num_frames, interval=int(1/fps * 1000))
+
+        if filename_prefix is not None:
+            print("Saving video to disk...")
+            anim.save('{}.mp4'.format(filename_prefix), fps=fps, extra_args=['-vcodec', 'libx264'])
+            print("Video saved.")
+
+        return anim
+
     def visualize_chunks(self):
         if self.structure is None:
             self.init_sim()
