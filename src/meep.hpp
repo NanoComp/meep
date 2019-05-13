@@ -89,6 +89,9 @@ public:
   int get_id() const { return id; }
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
+  // Returns the 1st order nonlinear susceptibility (generic)
+  virtual std::complex<double> chi1(double freq, double sigma=1);
+
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -228,6 +231,9 @@ public:
       : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
+
+  // Returns the 1st order nonlinear susceptibility
+  virtual std::complex<double> chi1(double freq, double sigma=1);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
@@ -555,9 +561,9 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &iloc) const;
-  double get_inveps(component c, direction d, const ivec &iloc) const {
-    return get_chi1inv(c, d, iloc);
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
+  double get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {
+    return get_chi1inv(c, d, iloc, omega);
   }
   double max_eps() const;
 
@@ -721,15 +727,15 @@ public:
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc, bool parallel = true) const;
-  double get_chi1inv(component, direction, const vec &loc, bool parallel = true) const;
-  double get_inveps(component c, direction d, const ivec &origloc) const {
-    return get_chi1inv(c, d, origloc);
+  double get_chi1inv(component, direction, const ivec &origloc, double omega = 0, bool parallel = true) const;
+  double get_chi1inv(component, direction, const vec &loc, double omega = 0, bool parallel = true) const;
+  double get_inveps(component c, direction d, const ivec &origloc, double omega = 0) const {
+    return get_chi1inv(c, d, origloc, omega);
   }
-  double get_inveps(component c, direction d, const vec &loc) const {
-    return get_chi1inv(c, d, loc);
+  double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
+    return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc) const;
+  double get_eps(const vec &loc, double omega = 0) const;
   double get_mu(const vec &loc) const;
   double max_eps() const;
 
@@ -1291,7 +1297,7 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  double get_chi1inv(component, direction, const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
 
   void backup_component(component c);
   void average_with_backup(component c);
@@ -1736,9 +1742,9 @@ public:
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int Nperiods = 1);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc, bool parallel = true) const;
-  double get_inveps(component c, direction d, const vec &loc) const {
-    return get_chi1inv(c, d, loc);
+  double get_chi1inv(component, direction, const vec &loc, double omega = 0, bool parallel = true) const;
+  double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
+    return get_chi1inv(c, d, loc, omega);
   }
   double get_eps(const vec &loc) const;
   double get_mu(const vec &loc) const;

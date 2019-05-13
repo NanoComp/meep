@@ -160,7 +160,7 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
     return 0.0;
 }
 
-double fields::get_chi1inv(component c, direction d, const ivec &origloc, bool parallel) const {
+double fields::get_chi1inv(component c, direction d, const ivec &origloc, double omega, bool parallel) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
   locate_point_in_user_volume(&iloc, &aaack);
@@ -169,7 +169,7 @@ double fields::get_chi1inv(component c, direction d, const ivec &origloc, bool p
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
         double val = chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn)) *
-                     (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
+                     (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1,omega);
         return parallel ? sum_to_all(val) : val;
       }
   return d == component_direction(c) ? 1.0 : 0; // default to vacuum outside computational cell
