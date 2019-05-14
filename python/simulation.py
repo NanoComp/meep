@@ -2014,133 +2014,133 @@ class Simulation(object):
 
     def get_hfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Hr, cmplx=True)
-            p = self.get_array(mp.Hp, cmplx=True)
+            r = self.get_array(mp.Hr, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Hp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Hx, cmplx=True)
-            y = self.get_array(mp.Hy, cmplx=True)
-            z = self.get_array(mp.Hz, cmplx=True)
+            x = self.get_array(mp.Hx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Hy, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Hz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_hfield_x(self):
-        return self.get_array(mp.Hx, cmplx=True)
+        return self.get_array(mp.Hx, cmplx=not self.fields.is_real)
 
     def get_hfield_y(self):
-        return self.get_array(mp.Hy, cmplx=True)
+        return self.get_array(mp.Hy, cmplx=not self.fields.is_real)
 
     def get_hfield_z(self):
-        return self.get_array(mp.Hz, cmplx=True)
+        return self.get_array(mp.Hz, cmplx=not self.fields.is_real)
 
     def get_hfield_r(self):
-        return self.get_array(mp.Hr, cmplx=True)
+        return self.get_array(mp.Hr, cmplx=not self.fields.is_real)
 
     def get_hfield_p(self):
-        return self.get_array(mp.Hp, cmplx=True)
+        return self.get_array(mp.Hp, cmplx=not self.fields.is_real)
 
     def get_bfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Br, cmplx=True)
-            p = self.get_array(mp.Bp, cmplx=True)
+            r = self.get_array(mp.Br, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Bp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Bx, cmplx=True)
-            y = self.get_array(mp.By, cmplx=True)
-            z = self.get_array(mp.Bz, cmplx=True)
+            x = self.get_array(mp.Bx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.By, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Bz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_bfield_x(self):
-        return self.get_array(mp.Bx, cmplx=True)
+        return self.get_array(mp.Bx, cmplx=not self.fields.is_real)
 
     def get_bfield_y(self):
-        return self.get_array(mp.By, cmplx=True)
+        return self.get_array(mp.By, cmplx=not self.fields.is_real)
 
     def get_bfield_z(self):
-        return self.get_array(mp.Bz, cmplx=True)
+        return self.get_array(mp.Bz, cmplx=not self.fields.is_real)
 
     def get_bfield_r(self):
-        return self.get_array(mp.Br, cmplx=True)
+        return self.get_array(mp.Br, cmplx=not self.fields.is_real)
 
     def get_bfield_p(self):
-        return self.get_array(mp.Bp, cmplx=True)
+        return self.get_array(mp.Bp, cmplx=not self.fields.is_real)
 
     def get_efield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Er, cmplx=True)
-            p = self.get_array(mp.Ep, cmplx=True)
+            r = self.get_array(mp.Er, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Ep, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Ex, cmplx=True)
-            y = self.get_array(mp.Ey, cmplx=True)
-            z = self.get_array(mp.Ez, cmplx=True)
+            x = self.get_array(mp.Ex, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Ey, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Ez, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_efield_x(self):
-        return self.get_array(mp.Ex, cmplx=True)
+        return self.get_array(mp.Ex, cmplx=not self.fields.is_real)
 
     def get_efield_y(self):
-        return self.get_array(mp.Ey, cmplx=True)
+        return self.get_array(mp.Ey, cmplx=not self.fields.is_real)
 
     def get_efield_z(self):
-        return self.get_array(mp.Ez, cmplx=True)
+        return self.get_array(mp.Ez, cmplx=not self.fields.is_real)
 
     def get_efield_r(self):
-        return self.get_array(mp.Er, cmplx=True)
+        return self.get_array(mp.Er, cmplx=not self.fields.is_real)
 
     def get_efield_p(self):
-        return self.get_array(mp.Ep, cmplx=True)
+        return self.get_array(mp.Ep, cmplx=not self.fields.is_real)
 
     def get_dfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Dr, cmplx=True)
-            p = self.get_array(mp.Dp, cmplx=True)
+            r = self.get_array(mp.Dr, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Dp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Dx, cmplx=True)
-            y = self.get_array(mp.Dy, cmplx=True)
-            z = self.get_array(mp.Dz, cmplx=True)
+            x = self.get_array(mp.Dx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Dy, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Dz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_dfield_x(self):
-        return self.get_array(mp.Dx, cmplx=True)
+        return self.get_array(mp.Dx, cmplx=not self.fields.is_real)
 
     def get_dfield_y(self):
-        return self.get_array(mp.Dy, cmplx=True)
+        return self.get_array(mp.Dy, cmplx=not self.fields.is_real)
 
     def get_dfield_z(self):
-        return self.get_array(mp.Dz, cmplx=True)
+        return self.get_array(mp.Dz, cmplx=not self.fields.is_real)
 
     def get_dfield_r(self):
-        return self.get_array(mp.Dr, cmplx=True)
+        return self.get_array(mp.Dr, cmplx=not self.fields.is_real)
 
     def get_dfield_p(self):
-        return self.get_array(mp.Dp, cmplx=True)
+        return self.get_array(mp.Dp, cmplx=not self.fields.is_real)
 
     def get_sfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Sr, cmplx=True)
-            p = self.get_array(mp.Sp, cmplx=True)
+            r = self.get_array(mp.Sr, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Sp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Sx, cmplx=True)
-            y = self.get_array(mp.Sy, cmplx=True)
-            z = self.get_array(mp.Sz, cmplx=True)
+            x = self.get_array(mp.Sx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Sy, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Sz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_sfield_x(self):
-        return self.get_array(mp.Sx, cmplx=True)
+        return self.get_array(mp.Sx, cmplx=not self.fields.is_real)
 
     def get_sfield_y(self):
-        return self.get_array(mp.Sy, cmplx=True)
+        return self.get_array(mp.Sy, cmplx=not self.fields.is_real)
 
     def get_sfield_z(self):
-        return self.get_array(mp.Sz, cmplx=True)
+        return self.get_array(mp.Sz, cmplx=not self.fields.is_real)
 
     def get_sfield_r(self):
-        return self.get_array(mp.Sr, cmplx=True)
+        return self.get_array(mp.Sr, cmplx=not self.fields.is_real)
 
     def get_sfield_p(self):
-        return self.get_array(mp.Sp, cmplx=True)
+        return self.get_array(mp.Sp, cmplx=not self.fields.is_real)
 
     def visualize_chunks(self):
         if self.structure is None:
