@@ -1399,6 +1399,10 @@ Like `output_farfields` but returns a dictionary of numpy arrays instead of writ
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
+(Multi-frequency `get_farfields` and `output_farfields` can be accelerated by
+[compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
+`OMP_NUM_THREADS` environment variable to specify multiple threads.)
+
 For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Python_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_near2far(filename, near2far)`**
@@ -1494,7 +1498,7 @@ This feature is only available if Meep is built with [libGDSII](Build_From_Sourc
 Returns a list of integer-valued layer indices for the layers present in
 the specified GDSII file.
 
-```python 
+```python
 mp.GDSII_layers('python/examples/coupler.gds')
 Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 ```

@@ -94,6 +94,12 @@ for flg in $CXXFLAGS; do
 done
 AC_SUBST(ARCHFLAG)
 
+AC_ARG_WITH(openmp, [AC_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, with_openmp=no)
+if test x"$with_openmp" = "xyes"; then
+   AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
+   AX_OPENMP([CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"], [AC_MSG_ERROR([don't know how to enable OpenMP])])
+fi
+
 ##############################################################################
 # More checks
 

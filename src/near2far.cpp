@@ -254,12 +254,15 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-    size_t idx_dft = 0;
-    LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
-      IVEC_LOOP_LOC(f->fc->gv, x0);
-      x0 = f->S.transform(x0, f->sn) + rshift;
-      for (int i = 0; i < Nfreq; ++i) {
-        double freq = freq_min + i * dfreq;
+#ifdef HAVE_OPENMP
+#  pragma omp parallel for
+#endif
+    for (int i = 0; i < Nfreq; ++i) {
+      double freq = freq_min + i * dfreq;
+      size_t idx_dft = 0;
+      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+        IVEC_LOOP_LOC(f->fc->gv, x0);
+        x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
         for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
           if (periodic_d[0] != NO_DIRECTION)
@@ -275,8 +278,8 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
               EH[i * 6 + j] += EH6[j] * cphase;
           }
         }
+        idx_dft++;
       }
-      idx_dft++;
     }
   }
 }
