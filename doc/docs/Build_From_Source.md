@@ -246,8 +246,7 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 
 **`--with-openmp`**
 —
-This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process).  Currently, only multi-frequency `near2far` calculations are sped up this way, but in the future we [hope to add](https://github.com/NanoComp/meep/issues/228) additional OpenMP parallelism.   (When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to
-the number of threads you want OpenMP to use.)
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process).  Currently, only multi-frequency `near2far` calculations are sped up this way, but in the future we [hope to add](https://github.com/NanoComp/meep/issues/228) additional OpenMP parallelism.   (When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.)
 
 
 ### Building From Source
