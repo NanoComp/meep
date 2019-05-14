@@ -53,6 +53,7 @@ TESTS =                                   \
     $(KDOM_TEST)                          \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
+    $(TEST_DIR)/medium_evaluations.py     \
     $(MPBPYTEST)                          \
     $(MODE_COEFFS_TEST)                   \
     $(MODE_DECOMPOSITION_TEST)            \
