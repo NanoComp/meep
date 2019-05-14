@@ -2875,3 +2875,7 @@ def complexarray(re, im):
     z = im * 1j
     z += re
     return z
+
+
+def quiet(quietval=True):
+    mp.cvar.quiet = quietval

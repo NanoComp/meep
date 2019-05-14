@@ -1491,6 +1491,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         output_sfield_r,
         output_sfield_p,
         py_v3_to_vec,
+        quiet,
         scale_energy_fields,
         scale_flux_fields,
         scale_force_fields,
