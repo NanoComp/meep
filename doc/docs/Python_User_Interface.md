@@ -938,7 +938,7 @@ Miscellaneous Functions
 
 **`meep.quiet(quietval=True)`**
 —
-Pass `True` (the default) to silence all Meep output. Output can be enabled again by passing `False`. This sets a global variable so the value will persist across runs within the same script.
+Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
 
 ### Output File Names
 
