@@ -330,7 +330,7 @@ cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
 sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
-    CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+    LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
 
