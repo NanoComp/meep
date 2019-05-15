@@ -153,9 +153,9 @@ class Vector3(object):
 class Medium(object):
 
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(0j, 0j, 0j),
+                 epsilon_offdiag=Vector3(),
                  mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(0j, 0j, 0j),
+                 mu_offdiag=Vector3(),
                  E_susceptibilities=[],
                  H_susceptibilities=[],
                  E_chi2_diag=Vector3(),
@@ -247,12 +247,17 @@ class Medium(object):
     
     def _get_epsmu(self, diag, offdiag, susceptibilities, conductivity_diag, conductivity_offdiag, freq):
         # Clean the input
-        if type(freq) is not np.ndarray:
-            freqs = np.array(freq)
+        if np.isscalar(freq):
+            freqs = np.array(freq)[np.newaxis, np.newaxis, np.newaxis]
         else:
             freqs = np.squeeze(freq)
-
-        freqs = freqs[:,np.newaxis,np.newaxis]
+            freqs = freqs[:, np.newaxis, np.newaxis]
+        
+        # Check for values outside of allowed ranges
+        if np.min(np.squeeze(freqs)) < self.valid_freq_range.min:
+            raise ValueError('User specified frequency {} is below the Medium\'s limit, {}.'.format(np.min(np.squeeze(freqs)),self.valid_freq_range.min))
+        if np.max(np.squeeze(freqs)) > self.valid_freq_range.max:
+            raise ValueError('User specified frequency {} is above the Medium\'s limit, {}.'.format(np.max(np.squeeze(freqs)),self.valid_freq_range.max))
 
         # Initialize with instantaneous dielectric tensor
         epsmu = np.expand_dims(Matrix(diag=diag,offdiag=offdiag),axis=0)
@@ -260,10 +265,11 @@ class Medium(object):
         # Iterate through susceptibilities
         for i_sus in range(len(susceptibilities)):
             epsmu = epsmu + susceptibilities[i_sus].eval_susceptibility(freqs)
-        
-        # Account for conductivity term
+
+        # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
         conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
-        epsmu = (1 + 1j/freqs * conductivity) * epsmu
+        if np.count_nonzero(conductivity) > 0:
+            epsmu = (1 + 1j/freqs * conductivity) * epsmu
 
         # Convert list matrix to 3D numpy array size [freqs,3,3]
         return np.squeeze(epsmu)
@@ -291,7 +297,10 @@ class LorentzianSusceptibility(Susceptibility):
     
     def eval_susceptibility(self,freq):
         sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
-        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
+        if self.gamma == 0:
+            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq) * sigma
+        else:
+            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
 
 
 class DrudeSusceptibility(Susceptibility):
@@ -303,7 +312,10 @@ class DrudeSusceptibility(Susceptibility):
     
     def eval_susceptibility(self,freq):
         sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
-        return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
+        if self.gamma == 0:
+            return -self.frequency*self.frequency / (freq*(freq)) * sigma
+        else:
+            return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
 
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
