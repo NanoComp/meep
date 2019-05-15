@@ -300,13 +300,13 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 —
 Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](FAQ.md#why-does-my-simulation-diverge-if-0).
 
-**`epsilon(freq` [ scalar, list, or `numpy` array, ]`)`**
+**`epsilon(f)`**
 —
-Calculates the medium's permittivity tensor as a 3x3 `numpy` array at the specified frequency, `freq`. Either a scalar, list, or `numpy` array of frequencies may be supplied. In the case `N` frequency points, a `numpy` array size Nx3x3 is returned.
+Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
-**`mu(freq` [ scalar, list, or `numpy` array, ]`)`**
+**`mu(f)`**
 —
-Calculates the medium's permeability tensor as a 3x3 `numpy` array at the specified frequency, `freq`. Either a scalar, list, or `numpy` array of frequencies may be supplied. In the case `N` frequency points, a `numpy` array size Nx3x3 is returned.
+Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
 **material functions**
 

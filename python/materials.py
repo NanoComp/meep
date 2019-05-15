@@ -259,7 +259,7 @@ Ag_frq4 = 9.083*eV_um_scale      # 0.137 um
 Ag_gam4 = 0.916*eV_um_scale
 Ag_sig4 = Ag_f4*Ag_plasma_frq**2/Ag_frq4**2
 Ag_f5 = 5.646
-Ag_frq5 = 20.29*eV_um_scale      
+Ag_frq5 = 20.29*eV_um_scale      # 0.061 um
 Ag_gam5 = 2.419*eV_um_scale
 Ag_sig5 = Ag_f5*Ag_plasma_frq**2/Ag_frq5**2
 
@@ -299,7 +299,7 @@ Au_frq4 = 4.304*eV_um_scale      # 0.288 um
 Au_gam4 = 2.494*eV_um_scale
 Au_sig4 = Au_f4*Au_plasma_frq**2/Au_frq4**2
 Au_f5 = 4.384
-Au_frq5 = 13.32*eV_um_scale
+Au_frq5 = 13.32*eV_um_scale      # 0.093 um
 Au_gam5 = 2.214*eV_um_scale
 Au_sig5 = Au_f5*Au_plasma_frq**2/Au_frq5**2
 

@@ -334,8 +334,7 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
-    LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+sh autogen.sh --enable-shared --with-mpi PYTHON=python3 LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
 
