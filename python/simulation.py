@@ -2142,81 +2142,175 @@ class Simulation(object):
 
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
+    
+    def plot_eps(self,ax,x,y,z):
+        # Get domain measurements
+        grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
 
-    def get_boundary_metadata(self,boundary):
-        import itertools
-        corners = []
-        widths = []
-        heights = []
-        def _get_boundary_vertices(thickness,direction,side):
-            # Left
-            if direction == mp.X and side == mp.Low: 
-                corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2]) 
-                width = thickness
-                height = self.cell_size.y
-            # Right
-            elif direction == mp.X and side == mp.High: 
-                corner = np.array([self.geometry_center.x + self.cell_size.x/2 - thickness,self.geometry_center.y - self.cell_size.y/2])
-                width = thickness
-                height = self.cell_size.y
-            # Top
-            elif direction == mp.Y and side == mp.Low: 
-                corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
-                width = self.cell_size.x
-                height = thickness
-            # Bottom
-            elif direction == mp.Y and side == mp.High: 
-                corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2])
-                width = self.cell_size.x
-                height = thickness
+        if x is not None:
+            # Plot y on x axis, z on y axis (YZ plane)
+            center = Vector3(x,self.geometry_center.y,self.geometry_center.z)
+            cell_size = Vector3(0,self.cell_size.y,self.cell_size.z)
+            extent = [np.min(grid[1]),np.max(grid[1]),np.min(grid[2]),np.max(grid[2])]
+            xlabel = 'Y'
+            ylabel = 'Z'
+        elif y is not None:
+            # Plot x on x axis, z on y axis (XZ plane)
+            center = Vector3(self.geometry_center.x,y,self.geometry_center.z)
+            cell_size = Vector3(self.cell_size.x,y,self.cell_size.z)
+            extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[2]),np.max(grid[2])]
+            xlabel = 'X'
+            ylabel = 'Z'
+        elif z is not None:
+            # Plot x on x axis, y on y axis (XY plane)
+            center = Vector3(self.geometry_center.x,self.geometry_center.y,z)
+            cell_size = Vector3(self.cell_size.x,self.cell_size.y,z)
+            extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[1]),np.max(grid[1])]
+            xlabel = 'X'
+            ylabel = 'Y'
+
+        eps_data = np.rot90(self.get_array(center=center, size=cell_size, component=mp.Dielectric))
+        ax.imshow(eps_data, interpolation='spline36', cmap='binary', extent=extent)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+        return ax
+
+    def plot_boundary(self,ax,x,y,z):
+        
+        def get_boundary_metadata(self,boundary):
+            import itertools
+            corners = []
+            widths = []
+            heights = []
+            def _get_boundary_vertices(thickness,direction,side):
+                # Left
+                if direction == mp.X and side == mp.Low and x is None:
+                    if z is None: 
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.z - self.cell_size.z/2]) 
+                        width = thickness
+                        height = self.cell_size.z
+                    elif y is None:
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2]) 
+                        width = thickness
+                        height = self.cell_size.y
+                # Right
+                elif direction == mp.X and side == mp.High and x is None: 
+                    if y is None:
+                        corner = np.array([self.geometry_center.x + self.cell_size.x/2 - thickness,self.geometry_center.y - self.cell_size.y/2])
+                        width = thickness
+                        height = self.cell_size.y
+                    elif z is None:
+                        corner = np.array([self.geometry_center.x + self.cell_size.x/2 - thickness,self.geometry_center.z - self.cell_size.z/2])
+                        width = thickness
+                        height = self.cell_size.z
+                # Top
+                elif direction == mp.Y and side == mp.Low and y is None:
+                    if z is None: 
+                        # Will be on right side
+                        corner = np.array([self.geometry_center.y + self.cell_size.y/2 - thickness,self.geometry_center.z - self.cell_size.z/2])
+                        width = thickness
+                        height = self.cell_size.z
+                    elif x is None:
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
+                        width = self.cell_size.x
+                        height = thickness
+                # Bottom
+                elif direction == mp.Y and side == mp.High and y is None: 
+                    if z is None:
+                        # Will be on the left side
+                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.z - self.cell_size.z/2])
+                        width = thickness
+                        height = self.cell_size.z
+                    elif x is None:
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2])
+                        width = self.cell_size.x
+                        height = thicknes
+                # Below
+                elif direction == mp.Z and side == mp.Low and z is None:
+                    if x is None:
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.x - self.cell_size.y/2])
+                        width = self.cell_size.x
+                        height = thickness
+                    if y is None:
+                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.z - self.cell_size.y/2])
+                        width = self.cell_size.y
+                        height = thickness
+                # Above
+                elif direction == mp.Z and side == mp.High and z is None:
+                    if x is None:
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
+                        width = self.cell_size.x
+                        height = thickness
+                    if y is None:
+                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.z + self.cell_size.z/2 - thickness])
+                        width = self.cell_size.y
+                        height = thickness
+                else:
+                    corner = []
+                return corner, width, height
+            
+            # All 4 side are the same
+            if boundary.direction == mp.ALL and boundary.side == mp.ALL:
+                for permutation in itertools.product([mp.X,mp.Y], [mp.Low, mp.High]):
+                    corner, width, height = _get_boundary_vertices(boundary.thickness,*permutation)
+                    corners.append(corner)
+                    widths.append(width)
+                    heights.append(height)
+            # 2 sides are the same
+            elif boundary.side == mp.ALL:
+                for side in [mp.Low, mp.High]:
+                    corner, width, height = _get_boundary_vertices(boundary.thickness,boundary.direction,side)
+                    corners.append(corner)
+                    widths.append(width)
+                    heights.append(height)
+            # only one side
             else:
-                corner = []
-            return corner, width, height
+                corners, widths, heights = _get_boundary_vertices(thickness, direction, side)
+            
+            return corners, widths, heights
         
-        # All 4 side are the same
-        if boundary.direction == mp.ALL and boundary.side == mp.ALL:
-            for permutation in itertools.product([mp.X,mp.Y], [mp.Low, mp.High]):
-                corner, width, height = _get_boundary_vertices(boundary.thickness,*permutation)
-                corners.append(corner)
-                widths.append(width)
-                heights.append(height)
-        # 2 sides are the same
-        elif boundary.side == mp.ALL:
-             for side in [mp.Low, mp.High]:
-                corner, width, height = _get_boundary_vertices(boundary.thickness,boundary.direction,side)
-                corners.append(corner)
-                widths.append(width)
-                heights.append(height)
-        # only one side
-        else:
-            corners, widths, heights = _get_boundary_vertices(thickness, direction, side)
-        
-        return corners, widths, heights
+        for boundary in self.boundary_layers:
+            corners, widths, heights = self.get_boundary_metadata(boundary)
+            for bdry in range(len(widths)):
+                ax.add_patch(patches.Rectangle(corners[bdry],widths[bdry],heights[bdry],edgecolor='g',facecolor='none', hatch='/'))
+        return ax
+    
+    def plot_sources(self,ax,x,y,z):
+        def get_src_metadata(self,source):
+            size = source.size
+            center = source.center
 
-    def get_src_metadata(self,source):
-        size = source.size
-        center = source.center
-
-        # Point source
-        if size.x == size.y == size.z == 0:
-            return np.array([[center.x,center.y]])
-        
-        # Line source
-        else:
-            # Vertical line
-            if size.x == 0:
-                return np.array([
-                    [center.x,center.y-size.y/2],
-                    [center.x,center.y+size.y/2]
-                ])
-            # Horizontal line
-            elif size.y == 0:
-                return np.array([
-                    [center.x-size.x/2,center.y],
-                    [center.x+size.x/2,center.y]
-                ])
+            # Point source
+            if size.x == size.y == size.z == 0:
+                return np.array([[center.x,center.y]])
+            
+            # Line source
             else:
-                return []
+                # Vertical line
+                if size.x == 0:
+                    return np.array([
+                        [center.x,center.y-size.y/2],
+                        [center.x,center.y+size.y/2]
+                    ])
+                # Horizontal line
+                elif size.y == 0:
+                    return np.array([
+                        [center.x-size.x/2,center.y],
+                        [center.x+size.x/2,center.y]
+                    ])
+                else:
+                    return [] 
+        
+        for src in self.sources:
+            src_loc = self.get_src_metadata(src)
+            if src_loc.shape[0] == 1:
+                ax.scatter(src_loc[:,0],src_loc[:,1],color='r')
+            else:
+                ax.plot(src_loc[:,0],src_loc[:,1],color='r')
+        return ax
+    
+
             
     def get_monitor_metadata(self,monitor,z_slice=0):
         size = monitor.regions[0].size
@@ -2237,9 +2331,11 @@ class Simulation(object):
         else:
             return []
 
-    def visualize_domain(self,figsize=None,fields=None,labels=True):
+    def visualize_domain(self,x=None,y=None,z=0,threeD=False,ax=None,fields=None,labels=True):
         if not self._is_initialized:
             self.init_sim()
+        
+        # Import libraries
         try:
             import matplotlib.pyplot as plt
             import matplotlib.patches as patches
@@ -2247,40 +2343,28 @@ class Simulation(object):
             warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
             return
         
-        f = plt.figure()
-
-        # Get domain measurements
-        grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
-        extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[1]),np.max(grid[1])]
+        if ax is None:
+            ax = plt.gca()
 
         # Plot geometry
-        eps_data = np.rot90(self.get_array(center=self.geometry_center, size=self.cell_size, component=mp.Dielectric))
-        plt.imshow(eps_data, interpolation='spline36', cmap='binary', extent=extent)
+        ax = self.plot_eps(ax,x,y,z,labels)
 
         # Plot boundaries
-        for boundary in self.boundary_layers:
-            corners, widths, heights = self.get_boundary_metadata(boundary)
-            for bdry in range(len(widths)):
-                plt.gca().add_patch(patches.Rectangle(corners[bdry],widths[bdry],heights[bdry],edgecolor='g',facecolor='none', hatch='/'))
+        ax = self.plot_boundaries(ax,x,y,z)
                 
         # Plot sources
-        for src in self.sources:
-            src_loc = self.get_src_metadata(src)
-            if src_loc.shape[0] == 1:
-                plt.scatter(src_loc[:,0],src_loc[:,1],color='r')
-            else:
-                plt.plot(src_loc[:,0],src_loc[:,1],color='r')
+        ax = self.plot_sources(ax,x,y,z)
             
         # Plot monitors
         for mon in self.dft_objects:
             mon_loc = self.get_monitor_metadata(mon)
-            plt.plot(mon_loc[:,0],mon_loc[:,1],color='b')
+            ax.plot(mon_loc[:,0],mon_loc[:,1],color='b')
 
         # Plot fields
         if fields is not None:
-            plt.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
+            ax.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
 
-        return f  
+        return ax
 
     def animate_fields(self,fields,filename_prefix=None,fps=20):
         try:
