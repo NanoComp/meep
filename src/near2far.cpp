@@ -244,7 +244,6 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
   if (x.dim != D3 && x.dim != D2) abort("only 2d or 3d far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
-  std::complex<double> EH6[6];
   for (int i = 0; i < 6 * Nfreq; ++i)
     EH[i] = 0.0;
 
@@ -258,6 +257,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 #  pragma omp parallel for
 #endif
     for (int i = 0; i < Nfreq; ++i) {
+      std::complex<double> EH6[6];
       double freq = freq_min + i * dfreq;
       size_t idx_dft = 0;
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
