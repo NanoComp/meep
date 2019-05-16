@@ -212,11 +212,11 @@ Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z
 
 **`side` constants**
 —
-Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
+Specify particular boundary in the positive `High` (e.g., +`X`) or negative `Low` (e.g., -`X`) direction.
 
 **`boundary_condition` constants**
 —
-`Periodic`, `Magnetic`, `Metallic`, or `None`.
+`Metallic` (i.e., zero electric field) or `Magnetic` (i.e., zero magnetic field).
 
 **`component` constants**
 —
@@ -299,6 +299,14 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 **`transform(M` [ `Matrix` class ]`)`**
 —
 Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](FAQ.md#why-does-my-simulation-diverge-if-0).
+
+**`epsilon(freq` [ scalar, list, or `numpy` array, ]`)`**
+—
+Calculates the medium's permittivity tensor as a 3x3 `numpy` array at the specified frequency, `freq`. Either a scalar, list, or `numpy` array of frequencies may be supplied. In the case `N` frequency points, a `numpy` array size Nx3x3 is returned.
+
+**`mu(freq` [ scalar, list, or `numpy` array, ]`)`**
+—
+Calculates the medium's permeability tensor as a 3x3 `numpy` array at the specified frequency, `freq`. Either a scalar, list, or `numpy` array of frequencies may be supplied. In the case `N` frequency points, a `numpy` array size Nx3x3 is returned.
 
 **material functions**
 
@@ -1399,6 +1407,10 @@ Like `output_farfields` but returns a dictionary of numpy arrays instead of writ
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
+(Multi-frequency `get_farfields` and `output_farfields` can be accelerated by
+[compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
+`OMP_NUM_THREADS` environment variable to specify multiple threads.)
+
 For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Python_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_near2far(filename, near2far)`**
@@ -1494,7 +1506,7 @@ This feature is only available if Meep is built with [libGDSII](Build_From_Sourc
 Returns a list of integer-valued layer indices for the layers present in
 the specified GDSII file.
 
-```python 
+```python
 mp.GDSII_layers('python/examples/coupler.gds')
 Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 ```
@@ -1554,9 +1566,9 @@ Return a `condition` function, suitable for passing to `until`. Instead of termi
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is:
 
-**`run_k_points(T, k_points)`**
+**`run_k_points(t, k_points)`**
 —
-Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources. Returns a list of lists of frequencies (one list of frequencies for each *k*). Also prints out a comma-delimited list of frequencies, prefixed by `freqs:`, and their imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
+Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $t$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources. Returns a list of lists of frequencies (one list of frequencies for each *k*). Also prints out a comma-delimited list of frequencies, prefixed by `freqs:`, and their imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
 
 **`run_k_point(t, k_point)`**
 —

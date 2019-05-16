@@ -153,9 +153,9 @@ class Vector3(object):
 class Medium(object):
 
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(0j, 0j, 0j),
+                 epsilon_offdiag=Vector3(),
                  mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(0j, 0j, 0j),
+                 mu_offdiag=Vector3(),
                  E_susceptibilities=[],
                  H_susceptibilities=[],
                  E_chi2_diag=Vector3(),
@@ -163,7 +163,9 @@ class Medium(object):
                  H_chi2_diag=Vector3(),
                  H_chi3_diag=Vector3(),
                  D_conductivity_diag=Vector3(),
+                 D_conductivity_offdiag=Vector3(),
                  B_conductivity_diag=Vector3(),
+                 B_conductivity_offdiag=Vector3(),
                  epsilon=None,
                  index=None,
                  mu=None,
@@ -211,7 +213,9 @@ class Medium(object):
         self.H_chi2_diag = H_chi2_diag
         self.H_chi3_diag = H_chi3_diag
         self.D_conductivity_diag = D_conductivity_diag
+        self.D_conductivity_offdiag = D_conductivity_offdiag
         self.B_conductivity_diag = B_conductivity_diag
+        self.B_conductivity_offdiag = D_conductivity_offdiag
         self.valid_freq_range = valid_freq_range
 
     def transform(self, m):
@@ -235,6 +239,41 @@ class Medium(object):
         for s in self.H_susceptibilities:
             s.transform(m)
 
+    def epsilon(self,freq):
+        return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
+    
+    def mu(self,freq):
+        return self._get_epsmu(self.mu_diag, self.mu_offdiag, self.H_susceptibilities, self.B_conductivity_diag, self.B_conductivity_offdiag, freq)
+    
+    def _get_epsmu(self, diag, offdiag, susceptibilities, conductivity_diag, conductivity_offdiag, freq):
+        # Clean the input
+        if np.isscalar(freq):
+            freqs = np.array(freq)[np.newaxis, np.newaxis, np.newaxis]
+        else:
+            freqs = np.squeeze(freq)
+            freqs = freqs[:, np.newaxis, np.newaxis]
+        
+        # Check for values outside of allowed ranges
+        if np.min(np.squeeze(freqs)) < self.valid_freq_range.min:
+            raise ValueError('User specified frequency {} is below the Medium\'s limit, {}.'.format(np.min(np.squeeze(freqs)),self.valid_freq_range.min))
+        if np.max(np.squeeze(freqs)) > self.valid_freq_range.max:
+            raise ValueError('User specified frequency {} is above the Medium\'s limit, {}.'.format(np.max(np.squeeze(freqs)),self.valid_freq_range.max))
+
+        # Initialize with instantaneous dielectric tensor
+        epsmu = np.expand_dims(Matrix(diag=diag,offdiag=offdiag),axis=0)
+
+        # Iterate through susceptibilities
+        for i_sus in range(len(susceptibilities)):
+            epsmu = epsmu + susceptibilities[i_sus].eval_susceptibility(freqs)
+
+        # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
+        conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
+        if np.count_nonzero(conductivity) > 0:
+            epsmu = (1 + 1j/freqs * conductivity) * epsmu
+
+        # Convert list matrix to 3D numpy array size [freqs,3,3]
+        return np.squeeze(epsmu)
+
 
 class Susceptibility(object):
 
@@ -243,9 +282,7 @@ class Susceptibility(object):
         self.sigma_offdiag = sigma_offdiag
 
     def transform(self, m):
-        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
-                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
-                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
+        sigma = Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag)
         new_sigma = (m * sigma * m.transpose()) / abs(m.determinant())
         self.sigma_diag = mp.Vector3(new_sigma.c1.x, new_sigma.c2.y, new_sigma.c3.z)
         self.sigma_offdiag = mp.Vector3(new_sigma.c2.x, new_sigma.c3.x, new_sigma.c3.y)
@@ -257,6 +294,13 @@ class LorentzianSusceptibility(Susceptibility):
         super(LorentzianSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
+    
+    def eval_susceptibility(self,freq):
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+        if self.gamma == 0:
+            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq) * sigma
+        else:
+            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
 
 
 class DrudeSusceptibility(Susceptibility):
@@ -265,6 +309,13 @@ class DrudeSusceptibility(Susceptibility):
         super(DrudeSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
+    
+    def eval_susceptibility(self,freq):
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+        if self.gamma == 0:
+            return -self.frequency*self.frequency / (freq*(freq)) * sigma
+        else:
+            return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
 
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
@@ -436,10 +487,14 @@ class Prism(GeometricObject):
 
 class Matrix(object):
 
-    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
+    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3(), diag=Vector3(), offdiag=Vector3()):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
+        if c1 == c2 == c3 == Vector3():
+            self.c1 = Vector3(diag.x,offdiag.x,offdiag.y)
+            self.c2 = Vector3(np.conj(offdiag.x),diag.y,offdiag.z)
+            self.c3 = Vector3(np.conj(offdiag.y),np.conj(offdiag.z),diag.z)
 
     def __getitem__(self, i):
         return self.row(i)

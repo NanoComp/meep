@@ -244,7 +244,6 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
   if (x.dim != D3 && x.dim != D2) abort("only 2d or 3d far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
-  std::complex<double> EH6[6];
   for (int i = 0; i < 6 * Nfreq; ++i)
     EH[i] = 0.0;
 
@@ -254,12 +253,16 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-    size_t idx_dft = 0;
-    LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
-      IVEC_LOOP_LOC(f->fc->gv, x0);
-      x0 = f->S.transform(x0, f->sn) + rshift;
-      for (int i = 0; i < Nfreq; ++i) {
-        double freq = freq_min + i * dfreq;
+#ifdef HAVE_OPENMP
+#  pragma omp parallel for
+#endif
+    for (int i = 0; i < Nfreq; ++i) {
+      std::complex<double> EH6[6];
+      double freq = freq_min + i * dfreq;
+      size_t idx_dft = 0;
+      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+        IVEC_LOOP_LOC(f->fc->gv, x0);
+        x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
         for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
           if (periodic_d[0] != NO_DIRECTION)
@@ -275,8 +278,8 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
               EH[i * 6 + j] += EH6[j] * cphase;
           }
         }
+        idx_dft++;
       }
-      idx_dft++;
     }
   }
 }
@@ -319,6 +322,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
 
   double start = wall_time();
   size_t total_points = dims[0] * dims[1] * dims[2];
+  size_t last_point = 0;
 
   vec x(where.dim);
   for (size_t i0 = 0; i0 < dims[0]; ++i0) {
@@ -327,13 +331,17 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
       x.set_direction(dirs[1], where.in_direction_min(dirs[1]) + i1 * dx[1]);
       for (size_t i2 = 0; i2 < dims[2]; ++i2) {
         x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2 * dx[2]);
-        if (!quiet && wall_time() > start + MEEP_MIN_OUTPUT_TIME) {
+        double t;
+        if (!quiet && (t = wall_time()) > start + MEEP_MIN_OUTPUT_TIME) {
           size_t this_point = (dims[1]*dims[2]*i0) + (dims[2]*i1) + i2 + 1;
-          master_printf("get_farfields_array working on point %zu of %zu (%d%% done)\n",
-                        this_point, total_points, (int)((double)this_point/total_points*100));
-          start = wall_time();
+          master_printf("get_farfields_array working on point %zu of %zu (%d%% done), %g s/point\n",
+                        this_point, total_points, (int)((double)this_point/total_points*100),
+                        (t - start) / (std::max(1, (int)(this_point - last_point))));
+          start = t;
+          last_point = this_point;
         }
         farfield_lowlevel(EH1, x);
+        if (!quiet) all_wait();  // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
         for (int i = 0; i < Nfreq; ++i)
           for (int k = 0; k < 6; ++k) {

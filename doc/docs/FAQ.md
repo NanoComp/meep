@@ -176,14 +176,22 @@ Note: even if you have a continuous wave (CW) source at a frequency ω, the time
 
 The field from a point source is singular &mdash; it blows up as you approach the source. At any finite resolution, this singularity is truncated to a finite value by the discretization but the peak field at the source location increases as you increase the resolution.
 
+### Is a narrow-bandwidth Gaussian pulse considered the same as a continuous-wave (CW) source?
+
+No. A narrow-bandwidth Gaussian is still a Gaussian: it goes to zero at both the beginning and end of its time profile unlike a continuous-wave (CW) source which oscillates indefinitely (but has a [finite turn-on](#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response)). Assuming you have linear materials, you should get the same results if you use a narrow- or broad-band pulse and look at a single frequency component of the Fourier transform via e.g. [`dft_fields`](Python_User_Interface.md#field-computations). The latter has the advantage that it requires a shorter simulation for the fields to die away due to the [Fourier Uncertainty Principle](https://en.wikipedia.org/wiki/Fourier_transform#Uncertainty_principle).
+
 Usage: Fields
 -------------
 
 ### Why are the fields blowing up in my simulation?
 
-Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the `resolution` and/or reduce the `Courant` factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), or (5) a material with a *wavelength-independent* refractive index between 0 and 1 (fix: reduce the `Courant` factor; alternatively, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
+Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the `resolution` and/or reduce the `Courant` factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), (5) a material with a *wavelength-independent* refractive index between 0 and 1 (fix: reduce the `Courant` factor; alternatively, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
 
 Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling).
+
+### How do I compute the steady-state fields?
+
+The "steady-state" response is defined as the exp(-iωt) response field (ω=2πf is the angular frequency) from an exp(-iωt) source after all transients have died away. There are three different approaches for computing the steady-state fields: (1) use a continuous-wave (CW) source via [`ContinuousSource`](Python_User_Interface.md#continuoussource) with [smooth turn-on](#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response) and run for a long time (i.e., &#8811; 1/f), (2) use the [frequency-domain solver](#what-is-meeps-frequency-domain-solver-and-how-does-it-work), or (3) use a broad-bandwidth pulse (which has [short time duration](#is-a-narrow-bandwidth-gaussian-pulse-the-same-as-a-continuous-wave-cw-source)) via [`GaussianSource`](Python_User_Interface.md#gaussiansource) and compute the Fourier-transform of the fields via [`add_dft_fields`](Python_User_Interface.md#field-computations). Often, (2) and (3) require fewer timesteps to converge than (1). Note that Meep uses real fields by default and if you want complex amplitudes, you must set `force_complex_fields=True`.
 
 ### How do I compute S-parameters?
 
@@ -220,6 +228,10 @@ For eigenmodes obtained using [mode decomposition](Python_User_Interface.md#mode
 ### How do I compute the time average of the harmonic fields?
 
 For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or [Poynting flux](https://en.wikipedia.org/wiki/Poynting_vector#Time-averaged_Poynting_vector) Re[E*xH]/2 is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
+
+### Why are the fields not being absorbed by the PML?
+
+The decay coefficient of the fields within any PML contains a cos(θ) factor where θ is the incidence angle (θ=0° is normal incidence). The decay therefore becomes *slower* as glancing incidence (θ=90°) is approached. (Glancing-angle waves are often produced by e.g. [diffraction gratings](Python_Tutorials/Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating).) This is true in the continuum limit and can be demonstrated by verifying that the reflections from the PML do *not* change with resolution. Otherwise, if the reflection decreases with increasing resolution then it may be due to transition reflections (i.e., the impedance mismatch at the PML interface) which can also be reduced by making the PML thicker instead of increasing the resolution. Transition reflections also increase as glancing incidence is approached, because at glancing incidence the phase-velocity mismatch between incident and reflected waves goes to zero as described in [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).  Glancing-angle fields commonly arise in simulations where one direction is periodic and the other is terminated by a PML, in which case you can have spurious solutions that travel parallel to the PML interface; a workaround is to use a thicker non-PML absorber.
 
 ### How do I compute the modes of a non-orthogonal (i.e., triangular) lattice?
 
@@ -397,7 +409,7 @@ No. Meep does not support non-orthogonal grids with spatially varying resolution
 
 ### How do I access the structure, fields, or sources in a subregion/slice of the cell?
 
-You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source_slice`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) to obtain information for the geometric slice.
+You can use the routines [`get_array`](Python_User_Interface.md#array-slices), `get_dft_array`, or [`get_source`](Python_User_Interface.md#source-slices) to obtain the fields/sources and [`get_array_metadata`](Python_User_Interface.md#array-metadata) to obtain information for the geometric slice.
 
 Visualization in 3d can be done with [Mayavi](http://docs.enthought.com/mayavi/mayavi/index.html). For an example, see [Tutorial/Basics](Python_Tutorials/Basics.md#visualizing-3d-structures).
 

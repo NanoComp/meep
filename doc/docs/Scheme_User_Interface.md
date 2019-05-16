@@ -152,7 +152,7 @@ Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z
 
 **`side` constants**
 —
-Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
+Specify particular boundary in the positive `High` (e.g., +`X`) or negative `Low` (e.g., -`X`) direction.
 
 **`component` constants**
 —
@@ -1166,6 +1166,10 @@ Given a `near2far` object, returns a list of the frequencies that it is computin
 Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted.
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
+
+(Multi-frequency `output-farfields` can be accelerated by
+[compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
+`OMP_NUM_THREADS` environment variable to specify multiple threads.)
 
 For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Scheme_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 

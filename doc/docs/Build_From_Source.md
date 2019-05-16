@@ -244,6 +244,11 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 —
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
+**`--with-openmp`**
+—
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process).  Currently, only multi-frequency `near2far` calculations are sped up this way, but in the future we [hope to add](https://github.com/NanoComp/meep/issues/228) additional OpenMP parallelism.   (When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.)
+
+
 ### Building From Source
 
 The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
@@ -330,7 +335,7 @@ cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
 sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
-    CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+    LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
 
