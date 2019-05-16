@@ -5,7 +5,6 @@ import math
 import numbers
 import os
 import re
-import signal
 import subprocess
 import sys
 import warnings
@@ -1248,8 +1247,6 @@ class Simulation(object):
 
                 step_funcs = list(step_funcs)
                 step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
-            else:
-                assert callable(cond[i]), "Stopping condition {} is not an integer or a function".format(cond[i])
 
         while not any([x(self) for x in cond]):
             for func in step_funcs:
@@ -1485,12 +1482,8 @@ class Simulation(object):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
     def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
-        if self.fields is None:
-            self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
-        self.fields.am_now_working_on(mp.GetFarfieldsTime)
         result = mp._get_farfields_array(near2far.swigobj, vol, resolution)
-        self.fields.finished_working()
         res_ex = complexarray(result[0], result[1])
         res_ey = complexarray(result[2], result[3])
         res_ez = complexarray(result[4], result[5])
@@ -1507,12 +1500,8 @@ class Simulation(object):
         }
 
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
-        if self.fields is None:
-            self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
-        self.fields.am_now_working_on(mp.GetFarfieldsTime)
         near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
-        self.fields.finished_working()
 
     def load_near2far(self, fname, n2f):
         if self.fields is None:
@@ -2142,8 +2131,8 @@ class Simulation(object):
 
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
-    
-    def plot_eps(self,ax,x,y,z):
+
+    def plot_eps(self,ax,x,y,z,labels):
         # Get domain measurements
         grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
 
@@ -2176,9 +2165,14 @@ class Simulation(object):
 
         return ax
 
-    def plot_boundary(self,ax,x,y,z):
-        
-        def get_boundary_metadata(self,boundary):
+    def plot_boundaries(self,ax,x,y,z):
+        # Import libraries
+        try:
+            import matplotlib.patches as patches
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
+            return
+        def get_boundary_metadata(boundary):
             import itertools
             corners = []
             widths = []
@@ -2225,7 +2219,7 @@ class Simulation(object):
                     elif x is None:
                         corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2])
                         width = self.cell_size.x
-                        height = thicknes
+                        height = thickness
                 # Below
                 elif direction == mp.Z and side == mp.Low and z is None:
                     if x is None:
@@ -2271,65 +2265,104 @@ class Simulation(object):
             return corners, widths, heights
         
         for boundary in self.boundary_layers:
-            corners, widths, heights = self.get_boundary_metadata(boundary)
+            corners, widths, heights = get_boundary_metadata(boundary)
             for bdry in range(len(widths)):
                 ax.add_patch(patches.Rectangle(corners[bdry],widths[bdry],heights[bdry],edgecolor='g',facecolor='none', hatch='/'))
         return ax
     
-    def plot_sources(self,ax,x,y,z):
-        def get_src_metadata(self,source):
-            size = source.size
-            center = source.center
+    def plot_volume(self,ax,volume,x,y,z,color='r'):
+        # Import libraries
+        try:
+            import matplotlib.patches as patches
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
+            return
 
-            # Point source
-            if size.x == size.y == size.z == 0:
-                return np.array([[center.x,center.y]])
-            
-            # Line source
-            else:
-                # Vertical line
-                if size.x == 0:
-                    return np.array([
-                        [center.x,center.y-size.y/2],
-                        [center.x,center.y+size.y/2]
-                    ])
-                # Horizontal line
-                elif size.y == 0:
-                    return np.array([
-                        [center.x-size.x/2,center.y],
-                        [center.x+size.x/2,center.y]
-                    ])
-                else:
-                    return [] 
+        # Pull parameters
+        size = volume.size
+        center = volume.center
+
+        # Point volume
+        if size.x == size.y == size.z == 0:
+            if x == center.x:
+                return ax.scatter(center.x,center.z, color=color)
+            elif y == center.y:
+                return ax.scatter(center.y,center.z, color=color)
+            elif z == center.z:
+                return ax.scatter(center.x,center.y, color=color)
         
-        for src in self.sources:
-            src_loc = self.get_src_metadata(src)
-            if src_loc.shape[0] == 1:
-                ax.scatter(src_loc[:,0],src_loc[:,1],color='r')
+        # Line volume
+        elif (size.x == size.y == 0) or (size.x == size.z == 0) or (size.z == size.y == 0):
+            xmax = center.x+size.x/2
+            xmin = center.x-size.x/2
+            ymax = center.y+size.y/2
+            ymin = center.y-size.y/2
+            zmax = center.z+size.z/2
+            zmin = center.z-size.z/2
+            # Vertical lines
+            if (size.x == 0) and (z > zmin) and (z < zmax):
+                loc = np.array([
+                    [center.x,center.y-size.y/2],
+                    [center.x,center.y+size.y/2]])
+                return ax.plot(loc[:,0],loc[:,1],color=color)
+            elif (size.x == 0) and (y > ymin) and (y < ymax):
+                loc = np.array([
+                    [center.x,center.z-size.z/2],
+                    [center.x,center.z+size.z/2]])
+                return ax.plot(loc[:,0],loc[:,1],color=color)
+            elif (size.y == 0) and (x > xmin) and (x < xmax):
+                loc = np.array([
+                    [center.y,center.z-size.z/2],
+                    [center.y,center.z+size.z/2]])
+                return ax.plot(loc[:,0],loc[:,1],color=color)
+            # Horizontal lines
+            elif (size.y == 0) and (z > zmin) and (z < zmax):
+                loc = np.array([
+                    [center.x-size.x/2,center.y],
+                    [center.x+size.x/2,center.y]])
+                return ax.plot(loc[:,0],loc[:,1],color=color)
+            elif (size.z == 0) and (y > ymin) and (y < ymax):
+                loc = np.array([
+                    [center.x-size.x/2,center.z],
+                    [center.x+size.x/2,center.z]])
+                return ax.plot(loc[:,0],loc[:,1],color=color)
+            elif (size.z == 0) and (x > xmin) and (x < xmax):
+                loc = np.array([
+                    [center.y-size.y/2,center.z],
+                    [center.y+size.y/2,center.z]])
+                return ax.plot(loc[:,0],loc[:,1],color=color)
             else:
-                ax.plot(src_loc[:,0],src_loc[:,1],color='r')
-        return ax
+                return ax
+        
+        # Rectangular planar volume
+        elif (size.z == 0) or (size.y == 0) or (size.x == 0):
+            if size.z == 0 and (z > zmin) and (z < zmax):
+                return ax.add_patch(patches.Rectangle([
+                    center.x-size.x/2,center.y-size.y/2],
+                    size.x,size.y,edgecolor=color,facecolor='none'))
+            if size.y == 0 and (y > ymin) and (y < ymax):
+                return ax.add_patch(patches.Rectangle([
+                    center.x-size.x/2,center.z-size.z/2],
+                    size.x,size.z,edgecolor=color,facecolor='none'))
+            if size.x == 0 and (x > xmin) and (x < xmax):
+                return ax.add_patch(patches.Rectangle([
+                    center.y-size.y/2,center.z-size.z/2],
+                    size.y,size.z,edgecolor=color,facecolor='none'))
+            else:
+                return ax
+        else:
+            return
+
+    def plot_sources(self,ax,x,y,z):
+        for src in self.sources:
+            ax = self.plot_volume(ax,src,x,y,z,'r')
+            return ax
     
 
-            
-    def get_monitor_metadata(self,monitor,z_slice=0):
-        size = monitor.regions[0].size
-        center = monitor.regions[0].center
-
-        # Vertical line
-        if size.x == 0:
-            return np.array([
-                [center.x,center.y-size.y/2],
-                [center.x,center.y+size.y/2]
-            ])
-        # Horizontal line
-        elif size.y == 0:
-            return np.array([
-                [center.x-size.x/2,center.y],
-                [center.x+size.x/2,center.y]
-            ])
-        else:
-            return []
+    def plot_monitors(self,ax,x,y,z):        
+        for mon in self.dft_objects:
+            ax = self.plot_volume(mon,src,x,y,z,'r')
+        return ax
 
     def visualize_domain(self,x=None,y=None,z=0,threeD=False,ax=None,fields=None,labels=True):
         if not self._is_initialized:
@@ -2348,7 +2381,7 @@ class Simulation(object):
 
         # Plot geometry
         ax = self.plot_eps(ax,x,y,z,labels)
-
+        quit()
         # Plot boundaries
         ax = self.plot_boundaries(ax,x,y,z)
                 
@@ -2356,9 +2389,7 @@ class Simulation(object):
         ax = self.plot_sources(ax,x,y,z)
             
         # Plot monitors
-        for mon in self.dft_objects:
-            mon_loc = self.get_monitor_metadata(mon)
-            ax.plot(mon_loc[:,0],mon_loc[:,1],color='b')
+
 
         # Plot fields
         if fields is not None:
@@ -2696,31 +2727,6 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
-    return _stop
-
-
-def stop_after_walltime(t):
-    start = mp.wall_time()
-    def _stop_after_walltime(sim):
-        if mp.wall_time() - start > t:
-            return True
-        return False
-    return _stop_after_walltime
-
-
-def stop_on_interrupt():
-    shutting_down = [False]
-
-    def _signal_handler(sig, frame):
-        print("WARNING: System requested termination. Time stepping aborted.")
-        shutting_down[0] = True
-
-    signal.signal(signal.SIGINT, _signal_handler)
-    signal.signal(signal.SIGTERM, _signal_handler)
-
-    def _stop(sim):
-        return shutting_down[0]
-
     return _stop
 
 
