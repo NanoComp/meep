@@ -5,6 +5,7 @@ import math
 import numbers
 import os
 import re
+import signal
 import subprocess
 import sys
 import warnings
@@ -1247,11 +1248,14 @@ class Simulation(object):
 
                 step_funcs = list(step_funcs)
                 step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
+            else:
+                assert callable(cond[i]), "Stopping condition {} is not an integer or a function".format(cond[i])
 
         while not any([x(self) for x in cond]):
             for func in step_funcs:
                 _eval_step_func(self, func, 'step')
             self.fields.step()
+            sys.stdout.flush()
 
         # Translating the recursive scheme version of run-until into an iterative version
         # (because python isn't tail-call-optimized) means we need one extra iteration to
@@ -1481,8 +1485,12 @@ class Simulation(object):
         return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
     def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
+        if self.fields is None:
+            self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
+        self.fields.am_now_working_on(mp.GetFarfieldsTime)
         result = mp._get_farfields_array(near2far.swigobj, vol, resolution)
+        self.fields.finished_working()
         res_ex = complexarray(result[0], result[1])
         res_ey = complexarray(result[2], result[3])
         res_ez = complexarray(result[4], result[5])
@@ -1499,8 +1507,12 @@ class Simulation(object):
         }
 
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
+        if self.fields is None:
+            self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
+        self.fields.am_now_working_on(mp.GetFarfieldsTime)
         near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
+        self.fields.finished_working()
 
     def load_near2far(self, fname, n2f):
         if self.fields is None:
@@ -2130,7 +2142,7 @@ class Simulation(object):
 
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
-
+    
     def plot_eps(self,ax,x,y,z,labels):
         # Get domain measurements
         grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
@@ -2380,7 +2392,7 @@ class Simulation(object):
 
         # Plot geometry
         ax = self.plot_eps(ax,x,y,z,labels)
-        quit()
+        
         # Plot boundaries
         ax = self.plot_boundaries(ax,x,y,z)
                 
@@ -2726,6 +2738,31 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
+    return _stop
+
+
+def stop_after_walltime(t):
+    start = mp.wall_time()
+    def _stop_after_walltime(sim):
+        if mp.wall_time() - start > t:
+            return True
+        return False
+    return _stop_after_walltime
+
+
+def stop_on_interrupt():
+    shutting_down = [False]
+
+    def _signal_handler(sig, frame):
+        print("WARNING: System requested termination. Time stepping aborted.")
+        shutting_down[0] = True
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    def _stop(sim):
+        return shutting_down[0]
+
     return _stop
 
 
