@@ -17,30 +17,51 @@ import numpy as np
 class TestMediumEvaluations(unittest.TestCase):
 
     def test_medium_evaluations(self):
-        from meep.materials import Si, Au, LiNbO3
+        from meep.materials import Si, Ag, LiNbO3, fused_quartz
+
+        # Check that scalars work
+        w0 = LiNbO3.valid_freq_range.min
+        eps = LiNbO3.epsilon(w0)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0])), 2.0508, places=4)
+
+        # Check numpy arrays
+        try:
+            w0 = Si.valid_freq_range.min
+            w1 = Si.valid_freq_range.max
+            eps = Si.epsilon(np.linspace(w0,w1,100))
+        except ExceptionType:
+            self.fail("myFunc() raised ExceptionType unexpectedly!")
+
+        # Check that regions outside of domain don't work
+        self.assertRaises(ValueError,LiNbO3.epsilon,-1.0)
+        self.assertRaises(ValueError,LiNbO3.epsilon,10000.0)
+
+        # Check complex vs non complex numbers
+        self.assertTrue(np.iscomplex(Ag.epsilon(1.0)[0,0]))
+        self.assertFalse(np.iscomplex(fused_quartz.epsilon(1.0)[0,0]))
 
         # Check Silicon
-        w0 = 1/1.357
-        w1 = 1/11.04
+        w0 = Si.valid_freq_range.min
+        w1 = Si.valid_freq_range.max
         eps = Si.epsilon([w0,w1])
-        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0,0])), 3.4975134228247, places=6)
-        self.assertAlmostEqual(np.real(np.sqrt(eps[1,0,0])), 3.4175012372164, places=6)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0,0])), 3.4175, places=4)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[1,0,0])), 3.4971, places=4)
 
-        # Check Gold
-        w0 = 1/0.24797
-        w1 = 1/6.1992
-        eps = Au.epsilon([w0,w1])
-        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0,0])), 1.0941, places=4)
-        self.assertAlmostEqual(np.real(np.sqrt(eps[1,0,0])), 5.0974, places=4)
+        # Check Silver
+        w0 = Ag.valid_freq_range.min
+        w1 = Ag.valid_freq_range.max
+        eps = Ag.epsilon([w0,w1])
+        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0,0])), 17.485, places=2)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[1,0,0])), 0.44265, places=4)
 
         # Check Lithium Niobate
-        w0 = 1/0.4
-        w1 = 1/5.0
+        w0 = LiNbO3.valid_freq_range.min
+        w1 = LiNbO3.valid_freq_range.max
         eps = LiNbO3.epsilon([w0,w1])
-        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0,0])), 2.4392710888511, places=6)
-        self.assertAlmostEqual(np.real(np.sqrt(eps[1,0,0])), 2.0508048794821, places=6)
-        self.assertAlmostEqual(np.real(np.sqrt(eps[0,2,2])), 2.332119801394, places=6)
-        self.assertAlmostEqual(np.real(np.sqrt(eps[1,2,2])), 2.0025312699385, places=6)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[0,0,0])), 2.0508, places=4)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[1,0,0])), 2.4393, places=4)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[0,2,2])), 2.0025, places=4)
+        self.assertAlmostEqual(np.real(np.sqrt(eps[1,2,2])), 2.3321, places=4)
 
 if __name__ == '__main__':
     unittest.main()

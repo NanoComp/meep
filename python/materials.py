@@ -233,7 +233,7 @@ Si3N4_NIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_NIR_susc, valid_freq
 # elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
 # wavelength range: 0.2 - 12.4 um
 
-metal_range = mp.FreqRange(min=um_scale/12.4, max=um_scale/0.2)
+metal_range = mp.FreqRange(min=um_scale/12.398, max=um_scale/.24797)
 
 # silver (Ag)
 
@@ -275,6 +275,8 @@ Ag = mp.Medium(epsilon=1.0, E_susceptibilities=Ag_susc, valid_freq_range=metal_r
 #------------------------------------------------------------------
 # gold (Au)
 
+metal_range = mp.FreqRange(min=um_scale/6.1992, max=um_scale/.24797)
+
 Au_plasma_frq = 9.03*eV_um_scale
 Au_f0 = 0.760
 Au_frq0 = 1e-10
@@ -312,6 +314,8 @@ Au = mp.Medium(epsilon=1.0, E_susceptibilities=Au_susc, valid_freq_range=metal_r
 
 #------------------------------------------------------------------
 # copper (Cu)
+
+metal_range = mp.FreqRange(min=um_scale/12.398, max=um_scale/.20664)
 
 Cu_plasma_frq = 10.83*eV_um_scale
 Cu_f0 = 0.575
