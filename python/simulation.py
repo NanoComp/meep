@@ -2145,8 +2145,6 @@ class Simulation(object):
     
     def plot_eps(self,ax,x,y,z,labels):
         # Get domain measurements
-        print(self.geometry_center)
-        print(self.cell_size)
         grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
 
         if x is not None:
@@ -2246,24 +2244,25 @@ class Simulation(object):
                 # Above
                 elif direction == mp.Z and side == mp.High and z is None:
                     if x is None:
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
+                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.z + self.cell_size.z/2 - thickness])
                         width = self.cell_size.x
                         height = thickness
                     if y is None:
-                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.z + self.cell_size.z/2 - thickness])
+                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
                         width = self.cell_size.y
                         height = thickness
                 else:
-                    corner = []
+                    return None, None, None
                 return corner, width, height
             
             # All 4 side are the same
             if boundary.direction == mp.ALL and boundary.side == mp.ALL:
-                for permutation in itertools.product([mp.X,mp.Y], [mp.Low, mp.High]):
+                for permutation in itertools.product([mp.X,mp.Y,mp.Z], [mp.Low, mp.High]):
                     corner, width, height = _get_boundary_vertices(boundary.thickness,*permutation)
-                    corners.append(corner)
-                    widths.append(width)
-                    heights.append(height)
+                    if corner is not None:
+                        corners.append(corner)
+                        widths.append(width)
+                        heights.append(height)
             # 2 sides are the same
             elif boundary.side == mp.ALL:
                 for side in [mp.Low, mp.High]:
