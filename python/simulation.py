@@ -2145,6 +2145,8 @@ class Simulation(object):
     
     def plot_eps(self,ax,x,y,z,labels):
         # Get domain measurements
+        print(self.geometry_center)
+        print(self.cell_size)
         grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
 
         if x is not None:
