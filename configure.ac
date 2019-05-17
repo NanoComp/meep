@@ -228,6 +228,10 @@ if test "x$with_mpi" = "xyes"; then
    # always use 2 processes for 'make check'
    RUNCODE="$MPIRUN -np 2"
 fi
+if test x"$with_openmp" = "xyes"; then
+   # use 2 openmp threads
+   RUNCODE="env OMP_NUM_THREADS=2 $RUNCODE"
+fi
 AC_SUBST(RUNCODE)
 AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" = "xyes")
 
