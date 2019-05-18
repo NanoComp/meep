@@ -158,6 +158,48 @@ class Volume(object):
         vec2 = py_v3_to_vec(self.dims, v2, is_cylindrical)
 
         self.swigobj = mp.volume(vec1, vec2)
+    
+    def get_vertices(self):
+        xmin = self.center.x - self.size.x/2
+        xmax = self.center.x + self.size.x/2
+        ymin = self.center.y - self.size.y/2
+        ymax = self.center.y + self.size.y/2
+        zmin = self.center.z - self.size.z/2
+        zmax = self.center.z + self.size.z/2
+
+        # Iterate over and remove duplicates for collapsed dimensions (i.e. min=max))
+        return [Vector3(x,y,z) for x in list(set([xmin,xmax])) for y in list(set([ymin,ymax])) for z in list(set([zmin,zmax]))]
+        
+
+    def get_edges(self):
+        vertices = self.get_vertices()
+        edges = []
+
+        # Useful for importing weird geometries and the sizes are slightly off
+        def nearly_equal(a,b,sig_fig=10):
+            return a==b or (abs(a-b) < 10**(-sig_fig))
+        
+        for iter1 in range(len(vertices)):
+            for iter2 in range(iter1+1,len(vertices)):
+                if ((iter1 != iter2) and 
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.x) or 
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.y) or
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.z)):
+                    edges.append([vertices[iter1],vertices[iter2]])
+        return edges
+        
+    def pt_in_volume(self,pt):
+        xmin = self.center.x - self.size.x/2
+        xmax = self.center.x + self.size.x/2
+        ymin = self.center.y - self.size.y/2
+        ymax = self.center.y + self.size.y/2
+        zmin = self.center.z - self.size.z/2
+        zmax = self.center.z + self.size.z/2
+
+        if (pt.x >= xmin and pt.x <= xmax and pt.y >= ymin and pt.y <= ymax and pt.z >= zmin and pt.z <= zmax):
+            return True
+        else:
+            return False
 
 
 class FluxRegion(object):
@@ -2143,29 +2185,183 @@ class Simulation(object):
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
     
+    def intersect_plane_line(self,plane_0,plane_n,line_0,line_1):
+        # Find the intersection point of a plane and line:
+        # http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
+        # plane_0 ........ [Vector3] origin of plane
+        # plane_n ........ [Vector3] normal vector of plane
+        # line_0 ......... [Vector3] first point of line
+        # line_1 ......... [Vector3] second point of line
+        
+        # Plane coefficients
+        D = -plane_0.dot(plane_n)
+        A = plane_n.x
+        B = plane_n.y
+        C = plane_n.z
+
+        # Line coefficients
+        v = line_1 - line_0
+        a = v.x
+        b = v.y
+        c = v.z
+        x1 = line_0.x
+        y1 = line_0.y
+        z1 = line_0.z
+
+        den = A*a + B*b + C*c
+
+        # parallel case
+        if den == 0:
+            return None
+
+        pt = Vector3()
+        pt.x = x1 - a*(A*x1 + B*y1 + C*z1 + D) / den
+        pt.y = y1 - b*(A*x1 + B*y1 + C*z1 + D) / den
+        pt.z = z1 - c*(A*x1 + B*y1 + C*z1 + D) / den
+        return pt
+
+    def intersect_volume_plane(self,volume,plane):
+        # returns the vertices that correspond to the polygon, 
+        # line, or single point of the intersection of a volume
+        # object and a plane
+        # volume ......... [Volume] volume object
+        # plane .......... [Volume] volume object of the plane
+
+        # Get normal vector of plane
+        if plane.size.x == 0:
+            plane_n = Vector3(x=1)
+        elif plane.size.y == 0:
+            plane_n = Vector3(y=1)
+        elif plane.size.z == 0: 
+            plane_n = Vector3(z=1)
+        else:
+            raise ValueError("plane volume must have a nonzero dimension")
+
+        # Get origin of plane
+        plane_0 = plane.center
+
+        intersection_vertices = []
+        edges = volume.get_edges()
+        for ce in edges:
+            pt = self.intersect_plane_line(plane_0,plane_n,ce[0],ce[1])
+            if (pt is not None) and volume.pt_in_volume(pt):
+                intersection_vertices.append(pt)
+        return intersection_vertices
+    
+    def plot_volume(self,ax,volume,x,y,z,color='r'):
+        # Import libraries
+        try:
+            import matplotlib.patches as patches
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
+            return
+
+        # Pull parameters
+        size = volume.size
+        center = volume.center
+
+        xmax = center.x+size.x/2
+        xmin = center.x-size.x/2
+        ymax = center.y+size.y/2
+        ymin = center.y-size.y/2
+        zmax = center.z+size.z/2
+        zmin = center.z-size.z/2
+
+        # Get intersecting plane
+        if x is not None:
+            plane = Volume(center=Vector3(x=x),size=Vector3(0,1,1))
+        elif y is not None:
+            plane = Volume(center=Vector3(y=y),size=Vector3(1,0,1))
+        elif z is not None:
+            plane = Volume(center=Vector3(z=z),size=Vector3(1,1,0))
+
+        # Intersect plane with volume
+        intersection = self.intersect_volume_plane(volume,plane)
+
+        # Sort the points in a counter clockwise manner to ensure convex polygon is formed
+        def sort_points(xy):
+            xy = np.squeeze(xy)
+            theta = np.arctan2(xy[:,1],xy[:,0])
+            return xy[np.argsort(theta,axis=0)]
+
+        # Point volume
+        if len(intersection) == 1:
+            if x == center.x:
+                ax.scatter(center.x,center.z, color=color)
+                return ax
+            elif y == center.y:
+                ax.scatter(center.y,center.z, color=color)
+                return ax
+            elif z == center.z:
+                ax.scatter(center.x,center.y, color=color)
+                return ax
+            else:
+                return ax
+        
+        # Line volume
+        elif len(intersection) == 2:
+            # Plot YZ
+            if x is not None:
+                ax.plot([a.y for a in intersection],[a.z for a in intersection], color=color)
+                return ax
+            #Plot XZ
+            elif y is not None:
+                ax.plot([a.x for a in intersection],[a.z for a in intersection], color=color)
+                return ax
+            # Plot XY
+            elif z is not None:
+                ax.plot([a.x for a in intersection],[a.y for a in intersection], color=color)
+                return ax
+            else:
+                return ax
+        
+        # Planar volume
+        elif len(intersection) > 2:
+            # Plot YZ
+            if x is not None:
+                ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), edgecolor=color, facecolor='none', hatch='/'))
+                return ax
+            #Plot XZ
+            elif y is not None:
+                ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), edgecolor=color, facecolor='none', hatch='/'))
+                return ax
+            # Plot XY
+            elif z is not None:
+                ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), edgecolor=color, facecolor='none', hatch='/'))
+                return ax
+            else:
+                return ax
+        else:
+            return ax
+    
     def plot_eps(self,ax,x,y,z,labels):
         # Get domain measurements
-        grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
+        xmin = self.geometry_center.x - self.cell_size.x/2
+        xmax = self.geometry_center.x + self.cell_size.x/2
+        ymin = self.geometry_center.y - self.cell_size.y/2
+        ymax = self.geometry_center.y + self.cell_size.y/2
+        zmin = self.geometry_center.z - self.cell_size.z/2
+        zmax = self.geometry_center.z + self.cell_size.z/2
 
         if x is not None:
             # Plot y on x axis, z on y axis (YZ plane)
             center = Vector3(x,self.geometry_center.y,self.geometry_center.z)
             cell_size = Vector3(0,self.cell_size.y,self.cell_size.z)
-            extent = [np.min(grid[1]),np.max(grid[1]),np.min(grid[2]),np.max(grid[2])]
+            extent = [ymin,ymax,zmin,zmax]
             xlabel = 'Y'
             ylabel = 'Z'
         elif y is not None:
             # Plot x on x axis, z on y axis (XZ plane)
             center = Vector3(self.geometry_center.x,y,self.geometry_center.z)
-            cell_size = Vector3(self.cell_size.x,y,self.cell_size.z)
-            extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[2]),np.max(grid[2])]
+            cell_size = Vector3(self.cell_size.x,0,self.cell_size.z)
+            extent = [xmin,xmax,zmin,zmax]
             xlabel = 'X'
             ylabel = 'Z'
         elif z is not None:
             # Plot x on x axis, y on y axis (XY plane)
             center = Vector3(self.geometry_center.x,self.geometry_center.y,z)
-            cell_size = Vector3(self.cell_size.x,self.cell_size.y,z)
-            extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[1]),np.max(grid[1])]
+            cell_size = Vector3(self.cell_size.x,self.cell_size.y)
+            extent = [xmin,xmax,ymin,ymax]
             xlabel = 'X'
             ylabel = 'Y'
 
@@ -2183,200 +2379,74 @@ class Simulation(object):
         except ImportError:
             warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
             return
-        def get_boundary_metadata(boundary):
-            import itertools
-            corners = []
-            widths = []
-            heights = []
-            def _get_boundary_vertices(thickness,direction,side):
-                # Left
-                if direction == mp.X and side == mp.Low and x is None:
-                    if z is None: 
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.z - self.cell_size.z/2]) 
-                        width = thickness
-                        height = self.cell_size.z
-                    elif y is None:
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2]) 
-                        width = thickness
-                        height = self.cell_size.y
-                # Right
-                elif direction == mp.X and side == mp.High and x is None: 
-                    if y is None:
-                        corner = np.array([self.geometry_center.x + self.cell_size.x/2 - thickness,self.geometry_center.y - self.cell_size.y/2])
-                        width = thickness
-                        height = self.cell_size.y
-                    elif z is None:
-                        corner = np.array([self.geometry_center.x + self.cell_size.x/2 - thickness,self.geometry_center.z - self.cell_size.z/2])
-                        width = thickness
-                        height = self.cell_size.z
-                # Top
-                elif direction == mp.Y and side == mp.Low and y is None:
-                    if z is None: 
-                        # Will be on right side
-                        corner = np.array([self.geometry_center.y + self.cell_size.y/2 - thickness,self.geometry_center.z - self.cell_size.z/2])
-                        width = thickness
-                        height = self.cell_size.z
-                    elif x is None:
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
-                        width = self.cell_size.x
-                        height = thickness
-                # Bottom
-                elif direction == mp.Y and side == mp.High and y is None: 
-                    if z is None:
-                        # Will be on the left side
-                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.z - self.cell_size.z/2])
-                        width = thickness
-                        height = self.cell_size.z
-                    elif x is None:
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.y - self.cell_size.y/2])
-                        width = self.cell_size.x
-                        height = thickness
-                # Below
-                elif direction == mp.Z and side == mp.Low and z is None:
-                    if x is None:
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.x - self.cell_size.y/2])
-                        width = self.cell_size.x
-                        height = thickness
-                    if y is None:
-                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.z - self.cell_size.y/2])
-                        width = self.cell_size.y
-                        height = thickness
-                # Above
-                elif direction == mp.Z and side == mp.High and z is None:
-                    if x is None:
-                        corner = np.array([self.geometry_center.x - self.cell_size.x/2,self.geometry_center.z + self.cell_size.z/2 - thickness])
-                        width = self.cell_size.x
-                        height = thickness
-                    if y is None:
-                        corner = np.array([self.geometry_center.y - self.cell_size.y/2,self.geometry_center.y + self.cell_size.y/2 - thickness])
-                        width = self.cell_size.y
-                        height = thickness
-                else:
-                    return None, None, None
-                return corner, width, height
-            
+        
+        def get_boundary_volumes(thickness,direction,side):
+            thickness = boundary.thickness
+
+            xmin = self.geometry_center.x - self.cell_size.x/2
+            xmax = self.geometry_center.x + self.cell_size.x/2
+            ymin = self.geometry_center.y - self.cell_size.y/2
+            ymax = self.geometry_center.y + self.cell_size.y/2
+            zmin = self.geometry_center.z - self.cell_size.z/2
+            zmax = self.geometry_center.z + self.cell_size.z/2
+
+            cell_x = self.cell_size.x
+            cell_y = self.cell_size.y
+            cell_z = self.cell_size.z
+
+            if direction == mp.X and side == mp.Low:
+                return Volume(center=Vector3(xmin+thickness/2,self.geometry_center.y,self.geometry_center.z),
+                size=Vector3(thickness,cell_y,cell_z))
+            elif direction == mp.X and side == mp.High:
+                return Volume(center=Vector3(xmax-thickness/2,self.geometry_center.y,self.geometry_center.z),
+                size=Vector3(thickness,cell_y,cell_z))
+            elif direction == mp.Y and side == mp.Low:
+                return Volume(center=Vector3(self.geometry_center.x,ymin+thickness/2,self.geometry_center.z),
+                size=Vector3(cell_x,thickness,cell_z))
+            elif direction == mp.Y and side == mp.High:
+                return Volume(center=Vector3(self.geometry_center.x,ymax-thickness/2,self.geometry_center.z),
+                size=Vector3(cell_x,thickness,cell_z))
+            elif direction == mp.Z and side == mp.Low:
+                return Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,zmin+thickness/2),
+                size=Vector3(cell_x,cell_y,thickness))
+            elif direction == mp.Z and side == mp.High:
+                return Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,zmax-thickness/2),
+                size=Vector3(cell_x,cell_y,thickness))
+            else:
+                raise ValueError("Invalid boundary type")
+        
+        import itertools
+        for boundary in self.boundary_layers:
             # All 4 side are the same
             if boundary.direction == mp.ALL and boundary.side == mp.ALL:
                 for permutation in itertools.product([mp.X,mp.Y,mp.Z], [mp.Low, mp.High]):
-                    corner, width, height = _get_boundary_vertices(boundary.thickness,*permutation)
-                    if corner is not None:
-                        corners.append(corner)
-                        widths.append(width)
-                        heights.append(height)
+                    vol = get_boundary_volumes(boundary.thickness,*permutation)
+                    ax = self.plot_volume(ax,vol,x,y,z,color='g')
             # 2 sides are the same
             elif boundary.side == mp.ALL:
                 for side in [mp.Low, mp.High]:
-                    corner, width, height = _get_boundary_vertices(boundary.thickness,boundary.direction,side)
-                    corners.append(corner)
-                    widths.append(width)
-                    heights.append(height)
+                    vol = get_boundary_volumes(boundary.thickness,*permutation)
+                    ax = self.plot_volume(ax,vol,x,y,z,color='g')
             # only one side
             else:
-                corners, widths, heights = _get_boundary_vertices(thickness, direction, side)
-            
-            return corners, widths, heights
-        
-        for boundary in self.boundary_layers:
-            corners, widths, heights = get_boundary_metadata(boundary)
-            for bdry in range(len(widths)):
-                ax.add_patch(patches.Rectangle(corners[bdry],widths[bdry],heights[bdry],edgecolor='g',facecolor='none', hatch='/'))
+                vol = get_boundary_volumes(boundary.thickness,boundary.direction,boundary.side)
+                ax = self.plot_volume(ax,vol,x,y,z,color='g')
         return ax
-    
-    def plot_volume(self,ax,volume,x,y,z,color='r'):
-        # Import libraries
-        try:
-            import matplotlib.patches as patches
-        except ImportError:
-            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
-            return
-
-        # Pull parameters
-        size = volume.size
-        center = volume.center
-
-        # Point volume
-        if size.x == size.y == size.z == 0:
-            if x == center.x:
-                return ax.scatter(center.x,center.z, color=color)
-            elif y == center.y:
-                return ax.scatter(center.y,center.z, color=color)
-            elif z == center.z:
-                return ax.scatter(center.x,center.y, color=color)
-        
-        # Line volume
-        elif (size.x == size.y == 0) or (size.x == size.z == 0) or (size.z == size.y == 0):
-            xmax = center.x+size.x/2
-            xmin = center.x-size.x/2
-            ymax = center.y+size.y/2
-            ymin = center.y-size.y/2
-            zmax = center.z+size.z/2
-            zmin = center.z-size.z/2
-            # Vertical lines
-            if (size.x == 0) and (z > zmin) and (z < zmax):
-                loc = np.array([
-                    [center.x,center.y-size.y/2],
-                    [center.x,center.y+size.y/2]])
-                return ax.plot(loc[:,0],loc[:,1],color=color)
-            elif (size.x == 0) and (y > ymin) and (y < ymax):
-                loc = np.array([
-                    [center.x,center.z-size.z/2],
-                    [center.x,center.z+size.z/2]])
-                return ax.plot(loc[:,0],loc[:,1],color=color)
-            elif (size.y == 0) and (x > xmin) and (x < xmax):
-                loc = np.array([
-                    [center.y,center.z-size.z/2],
-                    [center.y,center.z+size.z/2]])
-                return ax.plot(loc[:,0],loc[:,1],color=color)
-            # Horizontal lines
-            elif (size.y == 0) and (z > zmin) and (z < zmax):
-                loc = np.array([
-                    [center.x-size.x/2,center.y],
-                    [center.x+size.x/2,center.y]])
-                return ax.plot(loc[:,0],loc[:,1],color=color)
-            elif (size.z == 0) and (y > ymin) and (y < ymax):
-                loc = np.array([
-                    [center.x-size.x/2,center.z],
-                    [center.x+size.x/2,center.z]])
-                return ax.plot(loc[:,0],loc[:,1],color=color)
-            elif (size.z == 0) and (x > xmin) and (x < xmax):
-                loc = np.array([
-                    [center.y-size.y/2,center.z],
-                    [center.y+size.y/2,center.z]])
-                return ax.plot(loc[:,0],loc[:,1],color=color)
-            else:
-                return ax
-        
-        # Rectangular planar volume
-        elif (size.z == 0) or (size.y == 0) or (size.x == 0):
-            if size.z == 0 and (z > zmin) and (z < zmax):
-                return ax.add_patch(patches.Rectangle([
-                    center.x-size.x/2,center.y-size.y/2],
-                    size.x,size.y,edgecolor=color,facecolor='none'))
-            if size.y == 0 and (y > ymin) and (y < ymax):
-                return ax.add_patch(patches.Rectangle([
-                    center.x-size.x/2,center.z-size.z/2],
-                    size.x,size.z,edgecolor=color,facecolor='none'))
-            if size.x == 0 and (x > xmin) and (x < xmax):
-                return ax.add_patch(patches.Rectangle([
-                    center.y-size.y/2,center.z-size.z/2],
-                    size.y,size.z,edgecolor=color,facecolor='none'))
-            else:
-                return ax
-        else:
-            return
 
     def plot_sources(self,ax,x,y,z):
         for src in self.sources:
-            ax = self.plot_volume(ax,src,x,y,z,'r')
+            vol = Volume(center=src.center,size=src.size)
+            ax = self.plot_volume(ax,vol,x,y,z,'r')
             return ax
     
-
     def plot_monitors(self,ax,x,y,z):        
         for mon in self.dft_objects:
-            ax = self.plot_volume(mon,src,x,y,z,'r')
+            for reg in mon.regions:
+                vol = Volume(center=reg.center,size=reg.size)
+                ax = self.plot_volume(ax,vol,x,y,z,'b')
         return ax
 
-    def visualize_domain(self,x=None,y=None,z=0,threeD=False,ax=None,fields=None,labels=True):
+    def visualize_domain(self,ax=None,x=None,y=None,z=0,threeD=False,fields=None,labels=True):
         if not self._is_initialized:
             self.init_sim()
         
@@ -2387,7 +2457,7 @@ class Simulation(object):
         except ImportError:
             warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
             return
-        
+
         if ax is None:
             ax = plt.gca()
 
@@ -2401,14 +2471,73 @@ class Simulation(object):
         ax = self.plot_sources(ax,x,y,z)
             
         # Plot monitors
-
+        ax = self.plot_monitors(ax,x,y,z)
 
         # Plot fields
         if fields is not None:
             ax.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
 
         return ax
+    def visualize_slices(self):
+        # Import libraries
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+            from matplotlib.widgets import Slider, Button, RadioButtons
+            import matplotlib.gridspec as gridspec
+        except ImportError:
+            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
+            return
+        gs = gridspec.GridSpec(4, 3,height_ratios=[1,1,1,15])
 
+        xmin = self.geometry_center.x - self.cell_size.x/2
+        xmax = self.geometry_center.x + self.cell_size.x/2
+        ymin = self.geometry_center.y - self.cell_size.y/2
+        ymax = self.geometry_center.y + self.cell_size.y/2
+        zmin = self.geometry_center.z - self.cell_size.z/2
+        zmax = self.geometry_center.z + self.cell_size.z/2
+
+        f = plt.figure()
+
+        b1 = plt.subplot(gs[0:3])
+        b2 = plt.subplot(gs[3:6])
+        b3 = plt.subplot(gs[6:9])
+        ax1 = plt.subplot(gs[9])
+        ax2 = plt.subplot(gs[10])
+        ax3 = plt.subplot(gs[11])
+
+        xSlider = Slider(b1, 'x', xmin, xmax, valinit=0, valstep=1/self.resolution)
+        ySlider = Slider(b2, 'y', ymin, ymax, valinit=0, valstep=1/self.resolution)
+        zSlider = Slider(b3, 'z', zmin, zmax, valinit=0, valstep=1/self.resolution)
+
+        def update(val):
+            ax1.clear()
+            ax2.clear()
+            ax3.clear()
+            x = xSlider.val
+            y = ySlider.val
+            z = zSlider.val
+            self.visualize_domain(ax=ax1,x=None,y=None,z=z)
+            self.visualize_domain(ax=ax2,x=x,y=None,z=None)
+            self.visualize_domain(ax=ax3,x=None,y=y,z=None)
+            plt.tight_layout()
+
+        xSlider.on_changed(update)
+        ySlider.on_changed(update)
+        zSlider.on_changed(update)
+
+        ax1.clear()
+        ax2.clear()
+        ax3.clear()
+
+        # ititialize
+        self.visualize_domain(ax=ax1,x=None,y=None,z=0)
+        self.visualize_domain(ax=ax2,x=0,y=None,z=None)
+        self.visualize_domain(ax=ax3,x=None,y=0,z=None)
+        plt.tight_layout()
+
+        return f
+        
     def animate_fields(self,fields,filename_prefix=None,fps=20):
         try:
             import matplotlib.pyplot as plt
