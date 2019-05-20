@@ -1405,7 +1405,6 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     )
     from .simulation import (
         Absorber,
-        Animate2D,
         Ldos,
         EnergyRegion,
         FluxRegion,
@@ -1514,6 +1513,10 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Source,
         SourceTime,
         check_positive,
+    )
+    from .animation import (
+        Visualization,
+        Animate2D
     )
 
     if with_mpi():

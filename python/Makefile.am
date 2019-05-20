@@ -184,6 +184,7 @@ endif # MAINTAINER_MODE
 # specification of python source files to be byte-compiled at installation
 ######################################################################
 HL_IFACE =                  \
+    $(srcdir)/animation.py       \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
