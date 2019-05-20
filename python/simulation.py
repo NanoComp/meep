@@ -14,6 +14,7 @@ from collections import OrderedDict
 from collections import Sequence
 
 import numpy as np
+import matplotlib
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
@@ -2192,6 +2193,8 @@ class Simulation(object):
         # plane_n ........ [Vector3] normal vector of plane
         # line_0 ......... [Vector3] first point of line
         # line_1 ......... [Vector3] second point of line
+        # If the line segment is parallel with the plane, then the first
+        # and last points (line_0 and line_1) are returned in a list.
         
         # Plane coefficients
         D = -plane_0.dot(plane_n)
@@ -2212,7 +2215,7 @@ class Simulation(object):
 
         # parallel case
         if den == 0:
-            return None
+            return [line_0,line_1]
 
         pt = Vector3()
         pt.x = x1 - a*(A*x1 + B*y1 + C*z1 + D) / den
@@ -2242,10 +2245,18 @@ class Simulation(object):
 
         intersection_vertices = []
         edges = volume.get_edges()
-        for ce in edges:
+        for ce in edges:          
             pt = self.intersect_plane_line(plane_0,plane_n,ce[0],ce[1])
-            if (pt is not None) and volume.pt_in_volume(pt):
-                intersection_vertices.append(pt)
+            if isinstance(pt,(list,)):
+                for pt_iter in pt:
+                    if (pt_iter is not None) and volume.pt_in_volume(pt_iter):
+                        intersection_vertices.append(pt_iter)  
+            else:
+                if (pt is not None) and volume.pt_in_volume(pt):
+                    intersection_vertices.append(pt)
+        # For point sources, check if point lies on plane
+        if (volume.size.x == volume.center.y == volume.center.z == 0) and plane.pt_in_volume(volume.size):
+            intersection_vertices.append(volume.size)
         return intersection_vertices
     
     def plot_volume(self,ax,volume,x,y,z,color='r'):
@@ -2269,11 +2280,11 @@ class Simulation(object):
 
         # Get intersecting plane
         if x is not None:
-            plane = Volume(center=Vector3(x=x),size=Vector3(0,1,1))
+            plane = Volume(center=Vector3(x,self.geometry_center.y,self.geometry_center.z),size=Vector3(0,self.cell_size.y,self.cell_size.z))
         elif y is not None:
-            plane = Volume(center=Vector3(y=y),size=Vector3(1,0,1))
+            plane = Volume(center=Vector3(self.geometry_center.x,y,self.geometry_center.z),size=Vector3(self.cell_size.x,0,self.cell_size.z))
         elif z is not None:
-            plane = Volume(center=Vector3(z=z),size=Vector3(1,1,0))
+            plane = Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,z),size=Vector3(self.cell_size.x,self.cell_size.y,0))
 
         # Intersect plane with volume
         intersection = self.intersect_volume_plane(volume,plane)
@@ -2365,12 +2376,52 @@ class Simulation(object):
             xlabel = 'X'
             ylabel = 'Y'
 
-        eps_data = np.rot90(self.get_array(center=center, size=cell_size, component=mp.Dielectric))
+        eps_data = np.rot90(np.real(self.get_array(center=center, size=cell_size, component=mp.Dielectric)))
         ax.imshow(eps_data, interpolation='spline36', cmap='binary', extent=extent)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
         return ax
+
+    def plot_fields(self,ax,x,y,z,fields):
+        if fields is not None:
+            # user specifies a field component
+            if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
+                # Get domain measurements
+                xmin = self.geometry_center.x - self.cell_size.x/2
+                xmax = self.geometry_center.x + self.cell_size.x/2
+                ymin = self.geometry_center.y - self.cell_size.y/2
+                ymax = self.geometry_center.y + self.cell_size.y/2
+                zmin = self.geometry_center.z - self.cell_size.z/2
+                zmax = self.geometry_center.z + self.cell_size.z/2
+
+                if x is not None:
+                    # Plot y on x axis, z on y axis (YZ plane)
+                    center = Vector3(x,self.geometry_center.y,self.geometry_center.z)
+                    cell_size = Vector3(0,self.cell_size.y,self.cell_size.z)
+                    extent = [ymin,ymax,zmin,zmax]
+                    xlabel = 'Y'
+                    ylabel = 'Z'
+                elif y is not None:
+                    # Plot x on x axis, z on y axis (XZ plane)
+                    center = Vector3(self.geometry_center.x,y,self.geometry_center.z)
+                    cell_size = Vector3(self.cell_size.x,0,self.cell_size.z)
+                    extent = [xmin,xmax,zmin,zmax]
+                    xlabel = 'X'
+                    ylabel = 'Z'
+                elif z is not None:
+                    # Plot x on x axis, y on y axis (XY plane)
+                    center = Vector3(self.geometry_center.x,self.geometry_center.y,z)
+                    cell_size = Vector3(self.cell_size.x,self.cell_size.y)
+                    extent = [xmin,xmax,ymin,ymax]
+                    xlabel = 'X'
+                    ylabel = 'Y'
+                fields = self.get_array(center=center, size=cell_size, component=fields)
+            # Plot whether user specifies a field component, or supplies an array
+            ax.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
+            return ax
+        else:
+            return ax
 
     def plot_boundaries(self,ax,x,y,z):
         # Import libraries
@@ -2419,7 +2470,15 @@ class Simulation(object):
         for boundary in self.boundary_layers:
             # All 4 side are the same
             if boundary.direction == mp.ALL and boundary.side == mp.ALL:
-                for permutation in itertools.product([mp.X,mp.Y,mp.Z], [mp.Low, mp.High]):
+                if self.dimensions == 1:
+                    dims = [mp.X]
+                elif self.dimensions == 2:
+                    dims = [mp.X,mp.Y]
+                elif self.dimensions == 3:
+                    dims = [mp.X,mp.Y,mp.Z]
+                else:
+                    raise ValueError("Invalid simulation dimensions")
+                for permutation in itertools.product(dims, [mp.Low, mp.High]):
                     vol = get_boundary_volumes(boundary.thickness,*permutation)
                     ax = self.plot_volume(ax,vol,x,y,z,color='g')
             # 2 sides are the same
@@ -2437,7 +2496,7 @@ class Simulation(object):
         for src in self.sources:
             vol = Volume(center=src.center,size=src.size)
             ax = self.plot_volume(ax,vol,x,y,z,'r')
-            return ax
+        return ax
     
     def plot_monitors(self,ax,x,y,z):        
         for mon in self.dft_objects:
@@ -2446,24 +2505,16 @@ class Simulation(object):
                 ax = self.plot_volume(ax,vol,x,y,z,'b')
         return ax
 
-    def visualize_domain(self,ax=None,x=None,y=None,z=0,threeD=False,fields=None,labels=True):
+    def plot2D(self,ax=None,x=None,y=None,z=0,fields=None,labels=True):
         if not self._is_initialized:
             self.init_sim()
-        
-        # Import libraries
-        try:
-            import matplotlib.pyplot as plt
-            import matplotlib.patches as patches
-        except ImportError:
-            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
-            return
 
         if ax is None:
             ax = plt.gca()
-
+        
         # Plot geometry
         ax = self.plot_eps(ax,x,y,z,labels)
-        
+         
         # Plot boundaries
         ax = self.plot_boundaries(ax,x,y,z)
                 
@@ -2474,101 +2525,9 @@ class Simulation(object):
         ax = self.plot_monitors(ax,x,y,z)
 
         # Plot fields
-        if fields is not None:
-            ax.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
+        ax = self.plot_fields(ax,x,y,z,fields)
 
         return ax
-    def visualize_slices(self):
-        # Import libraries
-        try:
-            import matplotlib.pyplot as plt
-            import matplotlib.patches as patches
-            from matplotlib.widgets import Slider, Button, RadioButtons
-            import matplotlib.gridspec as gridspec
-        except ImportError:
-            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
-            return
-        gs = gridspec.GridSpec(4, 3,height_ratios=[1,1,1,15])
-
-        xmin = self.geometry_center.x - self.cell_size.x/2
-        xmax = self.geometry_center.x + self.cell_size.x/2
-        ymin = self.geometry_center.y - self.cell_size.y/2
-        ymax = self.geometry_center.y + self.cell_size.y/2
-        zmin = self.geometry_center.z - self.cell_size.z/2
-        zmax = self.geometry_center.z + self.cell_size.z/2
-
-        f = plt.figure()
-
-        b1 = plt.subplot(gs[0:3])
-        b2 = plt.subplot(gs[3:6])
-        b3 = plt.subplot(gs[6:9])
-        ax1 = plt.subplot(gs[9])
-        ax2 = plt.subplot(gs[10])
-        ax3 = plt.subplot(gs[11])
-
-        xSlider = Slider(b1, 'x', xmin, xmax, valinit=0, valstep=1/self.resolution)
-        ySlider = Slider(b2, 'y', ymin, ymax, valinit=0, valstep=1/self.resolution)
-        zSlider = Slider(b3, 'z', zmin, zmax, valinit=0, valstep=1/self.resolution)
-
-        def update(val):
-            ax1.clear()
-            ax2.clear()
-            ax3.clear()
-            x = xSlider.val
-            y = ySlider.val
-            z = zSlider.val
-            self.visualize_domain(ax=ax1,x=None,y=None,z=z)
-            self.visualize_domain(ax=ax2,x=x,y=None,z=None)
-            self.visualize_domain(ax=ax3,x=None,y=y,z=None)
-            plt.tight_layout()
-
-        xSlider.on_changed(update)
-        ySlider.on_changed(update)
-        zSlider.on_changed(update)
-
-        ax1.clear()
-        ax2.clear()
-        ax3.clear()
-
-        # ititialize
-        self.visualize_domain(ax=ax1,x=None,y=None,z=0)
-        self.visualize_domain(ax=ax2,x=0,y=None,z=None)
-        self.visualize_domain(ax=ax3,x=None,y=0,z=None)
-        plt.tight_layout()
-
-        return f
-        
-    def animate_fields(self,fields,filename_prefix=None,fps=20):
-        try:
-            import matplotlib.pyplot as plt
-            import matplotlib.patches as patches
-            from matplotlib import animation
-        except ImportError:
-            warnings.warn("matplotlib is required for visualize_domain", ImportWarning)
-            return
-
-        num_frames = len(fields)
-
-        # Normalize fields
-        fields = np.array(fields) / np.max(fields,axis=(0,1,2))
-
-        grid = self.get_array_metadata(center=self.geometry_center, size=self.cell_size)
-        extent = [np.min(grid[0]),np.max(grid[0]),np.min(grid[1]),np.max(grid[1])]
-        f = self.visualize_domain()
-        fieldsPlot = plt.imshow(np.rot90(fields[0]), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
-        def animate(i):
-            fieldsPlot.set_data(np.rot90(fields[i]))
-            return fieldsPlot #return everything that must be updated
-
-        anim = animation.FuncAnimation(f, animate,
-                                    frames=num_frames, interval=int(1/fps * 1000))
-
-        if filename_prefix is not None:
-            print("Saving video to disk...")
-            anim.save('{}.mp4'.format(filename_prefix), fps=fps, extra_args=['-vcodec', 'libx264'])
-            print("Video saved.")
-
-        return anim
 
     def visualize_chunks(self):
         if self.structure is None:
@@ -3303,3 +3262,48 @@ def complexarray(re, im):
     z = im * 1j
     z += re
     return z
+
+class Animate2D(object):
+    def __init__(self,sim,f,fields,x=None,y=None,z=0,interval=None,update_plot=True):
+        self.f = f
+        self.fields = fields
+        self.x = x
+        self.y = y
+        self.z = z
+        self.interval = interval
+        self.update_plot = update_plot
+        # initialize figure
+        self.ax = sim.plot2D(ax=self.f.gca(),x=self.x,y=self.y,z=self.z,fields=mp.Ez)
+        self.next_plot_time=sim.round_time() + interval
+        self.cumulative_fields = []
+
+        self.__code__ = namedtuple('gna_hack',['co_argcount'])
+        self.__code__.co_argcount=2
+
+        import matplotlib.pyplot as plt
+        self.plt = plt
+    
+    def __call__(self,sim,todo):
+        if todo == 'step':
+            if sim.round_time()<self.next_plot_time:
+                return
+            self.next_plot_time = sim.round_time() + self.interval
+            self.ax.images[-1].remove()
+            self.ax = sim.plot_fields(ax=self.ax,x=self.x,y=self.y,z=self.z,fields=self.fields)
+            self.cumulative_fields.append(self.ax.images[-1].get_array())
+            if self.update_plot:
+                self.plt.pause(0.05)
+            return
+        elif todo == 'finish':
+            return
+    def animate_results(self,fps=20):
+        from matplotlib import animation
+        num_frames = len(self.cumulative_fields)
+
+        # Normalize fields
+        fields = np.array(self.cumulative_fields) / np.max(self.cumulative_fields,axis=(0,1,2))
+        def animate(i):
+            return self.ax.images[-1].set_data(fields[i])
+
+        anim = animation.FuncAnimation(self.f, animate,frames=num_frames, interval=int(1/fps * 1000), blit=False)
+        return anim
