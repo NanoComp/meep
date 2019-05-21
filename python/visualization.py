@@ -19,7 +19,6 @@ except ImportError:
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
-from meep import simulation
     
 
 # ------------------------------------------------------- #
@@ -37,7 +36,7 @@ def intersect_plane_line(plane_0,plane_n,line_0,line_1):
     # line_1 ......... [Vector3] second point of line
     # If the line segment is parallel with the plane, then the first
     # and last points (line_0 and line_1) are returned in a list.
-    
+
     # Plane coefficients
     D = -plane_0.dot(plane_n)
     A = plane_n.x
@@ -107,6 +106,8 @@ def intersect_volume_plane(volume,plane):
     return intersection_vertices
 
 def plot_volume(sim,ax,volume,x,y,z,color='r'):
+    from meep.simulation import Volume
+
     # Pull parameters
     size = volume.size
     center = volume.center
@@ -120,11 +121,11 @@ def plot_volume(sim,ax,volume,x,y,z,color='r'):
 
     # Get intersecting plane
     if x is not None:
-        plane = simulation.Volume(center=Vector3(x,sim.geometry_center.y,sim.geometry_center.z),size=Vector3(0,sim.cell_size.y,sim.cell_size.z))
+        plane = Volume(center=Vector3(x,sim.geometry_center.y,sim.geometry_center.z),size=Vector3(0,sim.cell_size.y,sim.cell_size.z))
     elif y is not None:
-        plane = simulation.Volume(center=Vector3(sim.geometry_center.x,y,sim.geometry_center.z),size=Vector3(sim.cell_size.x,0,sim.cell_size.z))
+        plane = Volume(center=Vector3(sim.geometry_center.x,y,sim.geometry_center.z),size=Vector3(sim.cell_size.x,0,sim.cell_size.z))
     elif z is not None:
-        plane = simulation.Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,z),size=Vector3(sim.cell_size.x,sim.cell_size.y,0))
+        plane = Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,z),size=Vector3(sim.cell_size.x,sim.cell_size.y,0))
 
     # Intersect plane with volume
     intersection = intersect_volume_plane(volume,plane)
@@ -266,6 +267,8 @@ def plot_fields(sim,ax,x,y,z,fields):
 def plot_boundaries(sim,ax,x,y,z):
     
     def get_boundary_volumes(thickness,direction,side):
+        from meep.simulation import Volume
+
         thickness = boundary.thickness
 
         xmin = sim.geometry_center.x - sim.cell_size.x/2
@@ -280,22 +283,22 @@ def plot_boundaries(sim,ax,x,y,z):
         cell_z = sim.cell_size.z
 
         if direction == mp.X and side == mp.Low:
-            return simulation.Volume(center=Vector3(xmin+thickness/2,sim.geometry_center.y,sim.geometry_center.z),
+            return Volume(center=Vector3(xmin+thickness/2,sim.geometry_center.y,sim.geometry_center.z),
             size=Vector3(thickness,cell_y,cell_z))
         elif direction == mp.X and side == mp.High:
-            return simulation.Volume(center=Vector3(xmax-thickness/2,sim.geometry_center.y,sim.geometry_center.z),
+            return Volume(center=Vector3(xmax-thickness/2,sim.geometry_center.y,sim.geometry_center.z),
             size=Vector3(thickness,cell_y,cell_z))
         elif direction == mp.Y and side == mp.Low:
-            return simulation.Volume(center=Vector3(sim.geometry_center.x,ymin+thickness/2,sim.geometry_center.z),
+            return Volume(center=Vector3(sim.geometry_center.x,ymin+thickness/2,sim.geometry_center.z),
             size=Vector3(cell_x,thickness,cell_z))
         elif direction == mp.Y and side == mp.High:
-            return simulation.Volume(center=Vector3(sim.geometry_center.x,ymax-thickness/2,sim.geometry_center.z),
+            return Volume(center=Vector3(sim.geometry_center.x,ymax-thickness/2,sim.geometry_center.z),
             size=Vector3(cell_x,thickness,cell_z))
         elif direction == mp.Z and side == mp.Low:
-            return simulation.Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,zmin+thickness/2),
+            return Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,zmin+thickness/2),
             size=Vector3(cell_x,cell_y,thickness))
         elif direction == mp.Z and side == mp.High:
-            return simulation.Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,zmax-thickness/2),
+            return Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,zmax-thickness/2),
             size=Vector3(cell_x,cell_y,thickness))
         else:
             raise ValueError("Invalid boundary type")
@@ -327,15 +330,17 @@ def plot_boundaries(sim,ax,x,y,z):
     return ax
 
 def plot_sources(sim,ax,x,y,z):
+    from meep.simulation import Volume
     for src in sim.sources:
-        vol = simulation.Volume(center=src.center,size=src.size)
+        vol = Volume(center=src.center,size=src.size)
         ax = plot_volume(sim,ax,vol,x,y,z,'r')
     return ax
 
-def plot_monitors(sim,ax,x,y,z):        
+def plot_monitors(sim,ax,x,y,z):
+    from meep.simulation import Volume        
     for mon in sim.dft_objects:
         for reg in mon.regions:
-            vol = simulation.Volume(center=reg.center,size=reg.size)
+            vol = Volume(center=reg.center,size=reg.size)
             ax = plot_volume(sim,ax,vol,x,y,z,'b')
     return ax
 

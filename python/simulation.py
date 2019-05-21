@@ -18,7 +18,7 @@ import numpy as np
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
-from meep import visualization as vis
+import meep.visualization as vis
 
 
 try:
