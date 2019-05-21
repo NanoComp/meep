@@ -1,5 +1,15 @@
+from collections import namedtuple
+from collections import OrderedDict
+from collections import Sequence
+
 import numpy as np
 import matplotlib
+from matplotlib import pyplot as plt
+
+import meep as mp
+from meep.geom import Vector3, init_do_averaging
+from meep.source import EigenModeSource, check_positive
+from meep import simulation
 
 # ------------------------------------------------------- #
 # Animation
@@ -7,7 +17,7 @@ import matplotlib
 # A "mixin" class that extends the Simulation class. It 
 # contains of the necesarry visualization routines.
 
-class Animation(object):
+class Visualization(object):
     def intersect_plane_line(self,plane_0,plane_n,line_0,line_1):
         # Find the intersection point of a plane and line:
         # http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
@@ -102,11 +112,11 @@ class Animation(object):
 
         # Get intersecting plane
         if x is not None:
-            plane = Volume(center=Vector3(x,self.geometry_center.y,self.geometry_center.z),size=Vector3(0,self.cell_size.y,self.cell_size.z))
+            plane = simulation.Volume(center=Vector3(x,self.geometry_center.y,self.geometry_center.z),size=Vector3(0,self.cell_size.y,self.cell_size.z))
         elif y is not None:
-            plane = Volume(center=Vector3(self.geometry_center.x,y,self.geometry_center.z),size=Vector3(self.cell_size.x,0,self.cell_size.z))
+            plane = simulation.Volume(center=Vector3(self.geometry_center.x,y,self.geometry_center.z),size=Vector3(self.cell_size.x,0,self.cell_size.z))
         elif z is not None:
-            plane = Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,z),size=Vector3(self.cell_size.x,self.cell_size.y,0))
+            plane = simulation.Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,z),size=Vector3(self.cell_size.x,self.cell_size.y,0))
 
         # Intersect plane with volume
         intersection = self.intersect_volume_plane(volume,plane)
@@ -268,22 +278,22 @@ class Animation(object):
             cell_z = self.cell_size.z
 
             if direction == mp.X and side == mp.Low:
-                return Volume(center=Vector3(xmin+thickness/2,self.geometry_center.y,self.geometry_center.z),
+                return simulation.Volume(center=Vector3(xmin+thickness/2,self.geometry_center.y,self.geometry_center.z),
                 size=Vector3(thickness,cell_y,cell_z))
             elif direction == mp.X and side == mp.High:
-                return Volume(center=Vector3(xmax-thickness/2,self.geometry_center.y,self.geometry_center.z),
+                return simulation.Volume(center=Vector3(xmax-thickness/2,self.geometry_center.y,self.geometry_center.z),
                 size=Vector3(thickness,cell_y,cell_z))
             elif direction == mp.Y and side == mp.Low:
-                return Volume(center=Vector3(self.geometry_center.x,ymin+thickness/2,self.geometry_center.z),
+                return simulation.Volume(center=Vector3(self.geometry_center.x,ymin+thickness/2,self.geometry_center.z),
                 size=Vector3(cell_x,thickness,cell_z))
             elif direction == mp.Y and side == mp.High:
-                return Volume(center=Vector3(self.geometry_center.x,ymax-thickness/2,self.geometry_center.z),
+                return simulation.Volume(center=Vector3(self.geometry_center.x,ymax-thickness/2,self.geometry_center.z),
                 size=Vector3(cell_x,thickness,cell_z))
             elif direction == mp.Z and side == mp.Low:
-                return Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,zmin+thickness/2),
+                return simulation.Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,zmin+thickness/2),
                 size=Vector3(cell_x,cell_y,thickness))
             elif direction == mp.Z and side == mp.High:
-                return Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,zmax-thickness/2),
+                return simulation.Volume(center=Vector3(self.geometry_center.x,self.geometry_center.y,zmax-thickness/2),
                 size=Vector3(cell_x,cell_y,thickness))
             else:
                 raise ValueError("Invalid boundary type")
@@ -316,14 +326,14 @@ class Animation(object):
 
     def plot_sources(self,ax,x,y,z):
         for src in self.sources:
-            vol = Volume(center=src.center,size=src.size)
+            vol = simulation.Volume(center=src.center,size=src.size)
             ax = self.plot_volume(ax,vol,x,y,z,'r')
         return ax
     
     def plot_monitors(self,ax,x,y,z):        
         for mon in self.dft_objects:
             for reg in mon.regions:
-                vol = Volume(center=reg.center,size=reg.size)
+                vol = simulation.Volume(center=reg.center,size=reg.size)
                 ax = self.plot_volume(ax,vol,x,y,z,'b')
         return ax
 
@@ -359,34 +369,36 @@ class Animation(object):
 # Can also be used to create running animations.
 
 class Animate2D(object):
-    def __init__(self,sim,f,fields,x=None,y=None,z=0,interval=None,update_plot=True):
+    def __init__(self,sim,fields=mp.Ez,f=None,x=None,y=None,z=0,interval=None,realtime=True):
+        if f is None:
+            f = plt.figure()
+        
         self.f = f
         self.fields = fields
         self.x = x
         self.y = y
         self.z = z
         self.interval = interval
-        self.update_plot = update_plot
+        self.realtime = realtime
+
         self.ax = sim.plot2D(ax=self.f.gca(),x=self.x,y=self.y,z=self.z,fields=mp.Ez)
         self.next_plot_time=sim.round_time() + interval
         self.cumulative_fields = []
 
         self.__code__ = namedtuple('gna_hack',['co_argcount'])
         self.__code__.co_argcount=2
-
-        import matplotlib.pyplot as plt
-        self.plt = plt
     
     def __call__(self,sim,todo):
         if todo == 'step':
             if sim.round_time()<self.next_plot_time:
                 return
+            
             self.next_plot_time = sim.round_time() + self.interval
             self.ax.images[-1].remove()
             self.ax = sim.plot_fields(ax=self.ax,x=self.x,y=self.y,z=self.z,fields=self.fields)
             self.cumulative_fields.append(self.ax.images[-1].get_array())
-            if self.update_plot:
-                self.plt.pause(0.05)
+            if self.realtime:
+                plt.pause(0.05)
             return
         elif todo == 'finish':
             return
@@ -401,3 +413,11 @@ class Animate2D(object):
 
         anim = animation.FuncAnimation(self.f, animate,frames=num_frames, interval=int(1/fps * 1000), blit=False)
         return anim
+
+    def reset(self):
+        self.cumulative_fields = []
+        self.ax = None
+        self.f = None
+
+    def set_figure(self,f):
+        self.f = f
