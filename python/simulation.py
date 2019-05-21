@@ -14,7 +14,6 @@ from collections import OrderedDict
 from collections import Sequence
 
 import numpy as np
-import matplotlib
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
@@ -2191,6 +2190,9 @@ class Simulation(object):
     
     def plot_fields(self,ax=None,x=None,y=None,z=0,fields=None):
         return vis.plot_fields(self,ax=ax,x=x,y=y,z=z,fields=fields)
+    
+    def plot3D(self):
+        return vis.plot3D(self)
 
     def visualize_chunks(self):
         if self.structure is None:

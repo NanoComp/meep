@@ -1,16 +1,26 @@
 from collections import namedtuple
 from collections import OrderedDict
 from collections import Sequence
+import warnings
 
 import numpy as np
-import matplotlib
-from matplotlib import pyplot as plt
-import matplotlib.patches as patches
+
+try:
+    import matplotlib
+    from matplotlib import pyplot as plt
+    import matplotlib.patches as patches
+except ImportError:
+    warnings.warn("matplotlib is required for 2D simulation", ImportWarning)
+try:
+    from mayavi import mlab
+except ImportError:
+    warnings.warn("mayavi is required for 3D simulation", ImportWarning)
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
 from meep import simulation
+    
 
 # ------------------------------------------------------- #
 # Visualization
@@ -352,6 +362,18 @@ def plot2D(sim,ax=None,x=None,y=None,z=0,fields=None,labels=True):
     ax = plot_fields(sim,ax,x,y,z,fields)
 
     return ax
+
+def plot3D(sim):    
+    if not sim._is_initialized:
+        sim.init_sim()
+        
+    if sim.dimensions < 3:
+        raise ValueError("Simulation must have 3 dimensions to visualize 3D")
+    
+    eps_data = sim.get_epsilon()
+    s = mlab.contour3d(eps_data, colormap="YlGnBu")
+    return s
+
 
 # ------------------------------------------------------- #
 # Animate2D
