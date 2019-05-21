@@ -47,7 +47,12 @@ def intersect_plane_line(plane_0,plane_n,line_0,line_1):
 
     # parallel case
     if den == 0:
-        return [line_0,line_1]
+        # coplanar
+        if (line_0-plane_0).dot(plane_n) == 0:
+            return [line_0,line_1]
+        # just parallel
+        else:
+            return None 
 
     pt = Vector3()
     pt.x = x1 - a*(A*x1 + B*y1 + C*z1 + D) / den

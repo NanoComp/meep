@@ -1299,7 +1299,6 @@ class Simulation(object):
             for func in step_funcs:
                 _eval_step_func(self, func, 'step')
             self.fields.step()
-            sys.stdout.flush()
 
         # Translating the recursive scheme version of run-until into an iterative version
         # (because python isn't tail-call-optimized) means we need one extra iteration to
