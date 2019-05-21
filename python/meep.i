@@ -1514,8 +1514,9 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         SourceTime,
         check_positive,
     )
-    from .animation import (
-        Visualization,
+    from .visualization import (
+        plot2D,
+        plot_fields,
         Animate2D
     )
 

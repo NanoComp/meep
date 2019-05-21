@@ -19,7 +19,7 @@ import matplotlib
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
-from meep.animation import Visualization
+from meep import visualization as vis
 
 
 try:
@@ -536,7 +536,7 @@ class Harminv(object):
         return _combine_step_funcs(at_end(_harm), f1(self.c, self.pt))
 
 
-class Simulation(Visualization):
+class Simulation(object):
 
     def __init__(self,
                  cell_size,
@@ -2186,6 +2186,12 @@ class Simulation(Visualization):
 
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
+
+    def plot2D(self,ax=None,x=None,y=None,z=0,fields=None,labels=True):
+        return vis.plot2D(self,ax,x,y,z,fields,labels)
+    
+    def plot_fields(self,ax=None,x=None,y=None,z=0,fields=None):
+        return vis.plot_fields(self,ax=ax,x=x,y=y,z=z,fields=fields)
 
     def visualize_chunks(self):
         if self.structure is None:
