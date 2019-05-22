@@ -167,6 +167,31 @@ $$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{\gamma_\perp \g
 
 For a two level gain medium, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. For more details on applying SALT to atomic media with an arbitrary number of levels, see [Optics Express, Vol. 23, pp. 6455-77, 2015](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-23-5-6455).
 
+Gyrotropic Media
+----------------
+
+(**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator). The following discussion concerns a medium with gyrotropic ε (i.e., a gyroelectric medium). Gyromagnetic media can be treated by the usual substitution of ε with μ, **E** with **H**, etc.
+
+In a gyroelectric medium, the equation of motion of the polarization vector $\mathbf{P}_n$ is very similar to the [Drude-Lorentz](Materials.md#material-dispersion) case, but contains an additional precession term:
+
+$$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} + \mathbf{b}_n \times \frac{d\mathbf{P}_n}{dt} + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
+
+(Optionally, the polarization may be of Drude form, in which case the final $\omega_n^2 \mathbf{P}_n$ term on the left-hand side is omitted; we will describe the Lorentz case.) The third term on the left-hand side breaks time-reversal symmetry and describes the gyrotropy of the medium, parameterized by the bias vector $\mathbf{b}_n$ (usually describing the effect of an applied static magnetic field). In the absence of damping ($\gamma = 0$) and coupling to the electric field ($\sigma_n = 0$), the equation of motion reduces to a precession around $\mathbf{b}_n$, with angular frequency equal to $|\mathbf{b}_n|$:
+
+$$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
+
+In the frequency domain, gyrotropy corresponds to the presence of imaginary off-diagonal components in the ε tensor (or the μ tensor for a gyromagnetic medium). Take the case $\mathbf{b} = b \hat{z}$.  When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
+
+$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \frac{\omega_n^2}{\omega_n^2 - \omega^2 + i\omega\gamma_n} \begin{bmatrix}\xi & -i\eta & 0 \\ i\eta & \xi & 0 \\ 0 & 0 & 1 \end{bmatrix} \, \sigma_n(\mathbf{x})$$
+
+where
+
+$$\xi = \frac{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 + \omega^2 b^2}\,, \quad \eta = \frac{\omega b (\omega_n^2 - \omega^2 - i\omega \gamma_n)}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 + \omega^2 b^2}$$
+
+It is common to operate in a limit where the gyrotropy is weak relative to the frequency detuning, but strong relative to the loss.  Let $\omega_n = \omega + \Delta\omega_n$, where $\gamma_n \ll b \ll \Delta \omega_n \ll \omega$.  Then the above susceptibility tensor simplifies to
+
+$$\chi_n \approx \frac{\omega}{2 \Delta\omega_n} \begin{bmatrix}1 & -i\eta & 0 \\ i\eta & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}\, \sigma_n(\mathbf{x}), \quad \eta = \frac{b}{2\Delta\omega_n}$$
+
 Materials Library
 -----------------
 
