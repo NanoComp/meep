@@ -180,6 +180,14 @@ The field from a point source is singular &mdash; it blows up as you approach th
 
 No. A narrow-bandwidth Gaussian is still a Gaussian: it goes to zero at both the beginning and end of its time profile unlike a continuous-wave (CW) source which oscillates indefinitely (but has a [finite turn-on](#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response)). Assuming you have linear materials, you should get the same results if you use a narrow- or broad-band pulse and look at a single frequency component of the Fourier transform via e.g. [`dft_fields`](Python_User_Interface.md#field-computations). The latter has the advantage that it requires a shorter simulation for the fields to die away due to the [Fourier Uncertainty Principle](https://en.wikipedia.org/wiki/Fourier_transform#Uncertainty_principle). Note also that an almost *zero*-bandwidth Gaussian will produce high-frequency spectral components due to its abrupt turn on and off which are poorly absorbed by PML.
 
+### How do I create a chirped pulse?
+
+You can use a [`CustomSource`](Python_User_Interface.md#customsource) to define an arbitrary time-profile for the `Source`. As an example, the following demonstrates a [linear-chirped pulse](https://www.rp-photonics.com/chirp.html) planewave with higher frequencies (smaller wavelengths) at the front (i.e., a down chirp); see [examples/chirped_pulse.py]((https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py)).
+
+<center>
+![](images/chirped_pulse.png)
+</center>
+
 Usage: Fields
 -------------
 

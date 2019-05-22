@@ -246,8 +246,7 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 
 **`--with-openmp`**
 —
-This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process).  Currently, only multi-frequency `near2far` calculations are sped up this way, but in the future we [hope to add](https://github.com/NanoComp/meep/issues/228) additional OpenMP parallelism.   (When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.)
-
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency `near2far` calculations are sped up this way, but in the future we [hope to add](https://github.com/NanoComp/meep/issues/228) additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
 
 ### Building From Source
 
@@ -334,7 +333,7 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-mpi PYTHON=python3 LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+sh autogen.sh --enable-shared --with-mpi --with-openmp PYTHON=python3 LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
 
@@ -495,7 +494,7 @@ sudo /usr/local/bin/python3 setup.py install
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-mpi PYTHON=python3 MPICC=/usr/local/bin/mpicc MPICXX=/usr/local/bin/mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+sh autogen.sh --enable-shared --with-mpi --with-openmp PYTHON=python3 MPICC=/usr/local/bin/mpicc MPICXX=/usr/local/bin/mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make -j
 sudo make install
 ```
