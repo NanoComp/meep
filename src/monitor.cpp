@@ -168,100 +168,152 @@ double fields::get_chi1inv(component c, direction d, const ivec &origloc, double
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
-        double val = chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn)) *
-                     (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1,omega);
+        double val = chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), omega) *
+                     (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
         return parallel ? sum_to_all(val) : val;
       }
   return d == component_direction(c) ? 1.0 : 0; // default to vacuum outside computational cell
 }
 
-double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc) const {
-  if (is_mine())
-    return s->chi1inv[c][d] ? s->chi1inv[c][d][gv.index(c, iloc)]
-                            : (d == component_direction(c) ? 1.0 : 0);
-  return 0.0;
+double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
+  double res = 0.0;
+  meep::master_printf("c  %d  d  %d  \n", c,d, (d == component_direction(c)));
+  if (is_mine()){
+    res = s->has_chi1inv(c,d) ? s->chi1inv[c][d][gv.index(c, iloc)]
+                           : (d == component_direction(c) ? 1.0 : 0);
+    if (res != 0){
+      // Get instaneous dielectric (epsilon)
+      std::complex<double> eps(1 / res,0);
+      // Loop through and add up susceptibility contributions
+      // locate correct susceptibility list
+      meep::master_printf("temp\n");
+      susceptibility *Esus = s->chiP[E_stuff];
+      while (Esus) {
+        double sigma = 0;
+        if (Esus->sigma[c][d]) sigma = Esus->sigma[c][d][gv.index(c, iloc)];
+        meep::master_printf("c  %d  d  %d    | sigma     %g\n", c,d,sigma);
+        eps += Esus->chi1(omega,sigma);
+        Esus = Esus->next;
+      }
+      // Account for conductivity term
+       if (s->conductivity[c][d]) {
+         double conductivityCur = s->conductivity[c][d][gv.index(c, iloc)];
+         eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
+       }
+      // Return chi1 inverse, take the real part since no support for loss in mpb yet
+      // TODO: Add support for metals
+      res = 1 / (std::sqrt(eps).real() *  std::sqrt(eps).real());
+    }
+  }
+  
+  return broadcast(n_proc(), res);
 }
 
-double fields::get_chi1inv(component c, direction d, const vec &loc, bool parallel) const {
+double fields::get_chi1inv(component c, direction d, const vec &loc, double omega, bool parallel) const {
   ivec ilocs[8];
   double w[8], res = 0.0;
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
-    res += w[argh] * get_chi1inv(c, d, ilocs[argh], false);
+    res += w[argh] * get_chi1inv(c, d, ilocs[argh], omega, false);
   return parallel ? sum_to_all(res) : res;
 }
 
-double fields::get_eps(const vec &loc) const {
+double fields::get_eps(const vec &loc, double omega) const {
   double tr = 0;
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
-      tr += get_chi1inv(c, component_direction(c), loc, false);
+      tr += get_chi1inv(c, component_direction(c), loc, omega, false);
       ++nc;
     }
   }
   return nc / sum_to_all(tr);
 }
 
-double fields::get_mu(const vec &loc) const {
+double fields::get_mu(const vec &loc, double omega) const {
   double tr = 0;
   int nc = 0;
   FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
-      tr += get_chi1inv(c, component_direction(c), loc, false);
+      tr += get_chi1inv(c, component_direction(c), loc, omega, false);
       ++nc;
     }
   }
   return nc / sum_to_all(tr);
 }
 
-double structure::get_chi1inv(component c, direction d, const ivec &origloc, bool parallel) const {
+double structure::get_chi1inv(component c, direction d, const ivec &origloc, double omega, bool parallel) const {
   ivec iloc = origloc;
   for (int sn = 0; sn < S.multiplicity(); sn++)
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
-        double val = chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn)) *
+        double val = chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), omega) *
                      (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
         return parallel ? sum_to_all(val) : val;
       }
   return 0.0;
 }
 
-double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc) const {
-  if (is_mine())
-    return chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)]
-                         : (d == component_direction(c) ? 1.0 : 0);
-  return 0.0;
+double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
+  double res = 0.0;
+  if (is_mine()){
+    res =
+        chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)] : (d == component_direction(c) ? 1.0 : 0);
+    
+    if (res != 0){
+      // Get instaneous dielectric (epsilon)
+      std::complex<double> eps(1 / res,0);
+      // Loop through and add up susceptibility contributions
+      // locate correct susceptibility list
+      susceptibility *Esus = chiP[E_stuff];
+      while (Esus) {
+        double sigma = 0;
+        if (Esus->sigma[c][d]) sigma = Esus->sigma[c][d][gv.index(c, iloc)];
+        eps += Esus->chi1(omega,sigma);
+        Esus = Esus->next;
+      }
+      // Account for conductivity term
+       if (conductivity[c][d]) {
+         double conductivityCur = conductivity[c][d][gv.index(c, iloc)];
+         eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
+       }
+      // Return chi1 inverse, take the real part since no support for loss in mpb yet
+      // TODO: Add support for metals
+      res = 1 / (std::sqrt(eps).real() *  std::sqrt(eps).real());
+    }
+  }
+
+  return broadcast(n_proc(), res);
 }
 
-double structure::get_chi1inv(component c, direction d, const vec &loc, bool parallel) const {
+double structure::get_chi1inv(component c, direction d, const vec &loc, double omega, bool parallel) const {
   ivec ilocs[8];
   double w[8], res = 0.0;
   gv.interpolate(c, loc, ilocs, w);
-  for (int argh = 0; argh < 8 && w[argh]; argh++)
-    res += w[argh] * get_chi1inv(c, d, ilocs[argh], false);
+  for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
+    res += w[argh] * get_chi1inv(c, d, ilocs[argh], omega, false);
   return parallel ? sum_to_all(res) : res;
 }
 
-double structure::get_eps(const vec &loc) const {
+double structure::get_eps(const vec &loc, double omega) const {
   double tr = 0;
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
-      tr += get_chi1inv(c, component_direction(c), loc, false);
+      tr += get_chi1inv(c, component_direction(c), loc, omega, false);
       ++nc;
     }
   }
   return nc / sum_to_all(tr);
 }
 
-double structure::get_mu(const vec &loc) const {
+double structure::get_mu(const vec &loc, double omega) const {
   double tr = 0;
   int nc = 0;
   FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
-      tr += get_chi1inv(c, component_direction(c), loc, false);
+      tr += get_chi1inv(c, component_direction(c), loc, omega, false);
       ++nc;
     }
   }

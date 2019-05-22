@@ -53,6 +53,11 @@ susceptibility *susceptibility::clone() const {
   return sus;
 }
 
+// generic base class definition.
+std::complex<double> susceptibility::chi1(double freq, double sigma) {
+  return std::complex<double>(0,0);
+}
+
 void susceptibility::delete_internal_data(void *data) const { free(data); }
 
 /* Return whether or not we need to allocate P[c][cmp].  (We don't need to
@@ -279,6 +284,16 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(int inotowned, compon
   (void)inotowned; // always = 0
   if (!d || !d->P[c][cmp]) return NULL;
   return d->P[c][cmp] + n;
+}
+
+std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) {
+  if (no_omega_0_denominator){
+    // Drude model
+    return sigma * omega_0*omega_0 / std::complex<double>(-freq*freq, -gamma*freq);
+  }else{
+    // Standard Lorentzian model
+    return sigma * omega_0*omega_0 / std::complex<double>(omega_0*omega_0 - freq*freq, -gamma*freq);
+  }
 }
 
 void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {

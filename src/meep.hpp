@@ -736,7 +736,7 @@ public:
     return get_chi1inv(c, d, loc, omega);
   }
   double get_eps(const vec &loc, double omega = 0) const;
-  double get_mu(const vec &loc) const;
+  double get_mu(const vec &loc, double omega = 0) const;
   double max_eps() const;
 
   friend class boundary_region;
@@ -1746,8 +1746,8 @@ public:
   double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
     return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc) const;
-  double get_mu(const vec &loc) const;
+  double get_eps(const vec &loc, double omega = 0) const;
+  double get_mu(const vec &loc, double omega = 0) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
@@ -1829,7 +1829,7 @@ private:
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
-  double get_chi1inv(component, direction, const ivec &iloc, bool parallel = true) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0, bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp

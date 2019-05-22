@@ -1190,9 +1190,9 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt):
+    def get_epsilon_point(self, pt, omega = 0):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        return self.fields.get_eps(v3)
+        return self.fields.get_eps(v3,omega)
 
     def get_filename_prefix(self):
         if isinstance(self.filename_prefix, str):
