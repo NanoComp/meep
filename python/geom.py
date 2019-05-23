@@ -177,7 +177,7 @@ class Medium(object):
                  E_chi3=None,
                  H_chi2=None,
                  H_chi3=None,
-                 valid_freq_range=None):
+                 valid_freq_range=FreqRange(min=-mp.inf, max=mp.inf)):
 
         if epsilon:
             epsilon_diag = Vector3(epsilon, epsilon, epsilon)

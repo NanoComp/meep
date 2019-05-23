@@ -176,37 +176,7 @@ double fields::get_chi1inv(component c, direction d, const ivec &origloc, double
 }
 
 double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
-  double res = 0.0;
-  meep::master_printf("c  %d  d  %d  \n", c,d, (d == component_direction(c)));
-  if (is_mine()){
-    res = s->has_chi1inv(c,d) ? s->chi1inv[c][d][gv.index(c, iloc)]
-                           : (d == component_direction(c) ? 1.0 : 0);
-    if (res != 0){
-      // Get instaneous dielectric (epsilon)
-      std::complex<double> eps(1 / res,0);
-      // Loop through and add up susceptibility contributions
-      // locate correct susceptibility list
-      meep::master_printf("temp\n");
-      susceptibility *Esus = s->chiP[E_stuff];
-      while (Esus) {
-        double sigma = 0;
-        if (Esus->sigma[c][d]) sigma = Esus->sigma[c][d][gv.index(c, iloc)];
-        meep::master_printf("c  %d  d  %d    | sigma     %g\n", c,d,sigma);
-        eps += Esus->chi1(omega,sigma);
-        Esus = Esus->next;
-      }
-      // Account for conductivity term
-       if (s->conductivity[c][d]) {
-         double conductivityCur = s->conductivity[c][d][gv.index(c, iloc)];
-         eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
-       }
-      // Return chi1 inverse, take the real part since no support for loss in mpb yet
-      // TODO: Add support for metals
-      res = 1 / (std::sqrt(eps).real() *  std::sqrt(eps).real());
-    }
-  }
-  
-  return broadcast(n_proc(), res);
+  return s->get_chi1inv(c, d, iloc, omega);
 }
 
 double fields::get_chi1inv(component c, direction d, const vec &loc, double omega, bool parallel) const {
@@ -280,7 +250,7 @@ double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, 
        }
       // Return chi1 inverse, take the real part since no support for loss in mpb yet
       // TODO: Add support for metals
-      res = 1 / (std::sqrt(eps).real() *  std::sqrt(eps).real());
+      res = 1 / (std::sqrt(eps).real() * std::sqrt(eps).real());
     }
   }
 
