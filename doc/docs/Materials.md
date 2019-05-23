@@ -182,11 +182,11 @@ $$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
 
 In the frequency domain, gyrotropy corresponds to the presence of imaginary off-diagonal components in the ε tensor (or the μ tensor for a gyromagnetic medium). Take the case $\mathbf{b} = b \hat{z}$.  When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
 
-$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \frac{\omega_n^2}{\omega_n^2 - \omega^2 + i\omega\gamma_n} \begin{bmatrix}\xi & -i\eta & 0 \\ i\eta & \xi & 0 \\ 0 & 0 & 1 \end{bmatrix} \, \sigma_n(\mathbf{x})$$
+$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \frac{\omega_n^2}{\omega_n^2 - \omega^2 - i\omega\gamma_n} \begin{bmatrix}\xi & -i\eta & 0 \\ i\eta & \xi & 0 \\ 0 & 0 & 1 \end{bmatrix} \, \sigma_n(\mathbf{x})$$
 
 where
 
-$$\xi = \frac{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 + \omega^2 b^2}\,, \quad \eta = \frac{\omega b (\omega_n^2 - \omega^2 - i\omega \gamma_n)}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 + \omega^2 b^2}$$
+$$\xi = \frac{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 - \omega^2 b^2}\,, \quad \eta = \frac{\omega b (\omega_n^2 - \omega^2 - i\omega \gamma_n)}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 - \omega^2 b^2}$$
 
 It is common to operate in a limit where the gyrotropy is weak relative to the frequency detuning, but strong relative to the loss.  Let $\omega_n = \omega + \Delta\omega_n$, where $\gamma_n \ll b \ll \Delta \omega_n \ll \omega$.  Then the above susceptibility tensor simplifies to
 
