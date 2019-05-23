@@ -701,7 +701,7 @@ How many `width`s the current decays for before we cut it off and set it to zero
 
 ### custom-src
 
-A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped-pulse.ctl`](https://github.com/NanoComp/meep/blob/master/scheme/examples/chirped-pulse.ctl).
 
 **`src-func` [`function`]**
 —
