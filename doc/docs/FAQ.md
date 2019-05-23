@@ -103,7 +103,7 @@ If you do a simulation of any kind in the time domain (not just FDTD), you prett
 
 See [Materials](Materials.md#material-dispersion) for how to include dispersive materials which can have negative ε and loss.
 
-If you have negative ε *and* negative μ *everywhere*, the case of a negative-index material, then the simulation is fine. However at the boundary between negative- and positive-index materials, you will encounter instabilities: because of the way Maxwell's equations are discretized in FDTD, the ε and μ are discretized on different spatial grids, so you will get a half-pixel or so of εμ &lt; 0 at the boundary between negative and positive indices, which will cause the simulation to diverge. But of course, any physical negative-index metamaterial also involves dispersion.
+If you have negative ε *and* negative μ *everywhere*, the case of a negative-index material, then the simulation is fine, but our PML implementation doesn't currently support this situation (unless you edit the [source code](https://github.com/NanoComp/meep/blob/e3e397c485326366b0b38162493fbb297027d503/src/structure.cpp#L651) to flip the sign), and in any case such simulations are trivially [equivalent](https://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) to positive-index simulations under coordinate inversion (x,y,z) ⟶ (–x,–y,–z). However at the boundary between negative- and positive-index materials, you will encounter instabilities: because of the way Maxwell's equations are discretized in FDTD, the ε and μ are discretized on different spatial grids, so you will get a half-pixel or so of εμ &lt; 0 at the boundary between negative and positive indices, which will cause the simulation to diverge. But of course, any physical negative-index metamaterial also involves dispersion.
 
 Note also that, as a consequence of the above analysis, ε must go to a positive value in the ω $\to\pm\infty$ limit to get non-diverging solutions of Maxwell's equations. So the ε$_\infty$ in your [dispersion model](Materials.md#material-dispersion) must be positive.
 
@@ -381,7 +381,7 @@ Note: a simple approach to reduce the cost of the DTFT computation is to reduce 
 
 ### Does Meep support shared-memory parallelism?
 
-Yes. Meep provides support for [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) via OpenMP on a single, shared-memory, multi-core machine to speed up *multifrequency* [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) calculations involving `get_farfields` or `output_farfields`. Also, Meep can run in parallel on a shared-memory machine using MPI.
+You can always run the MPI parallel Meep on a shared-memory machine, and some MPI implementations take special advantage of shared memory communications. Meep currently also provides limited support for [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) via OpenMP on a single, shared-memory, multi-core machine to speed up *multifrequency* [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) calculations involving `get_farfields` or `output_farfields`.
 
 Usage: Other
 ------------
@@ -396,7 +396,7 @@ At least 8 pixels per wavelength in the lossless dielectric material with the hi
 
 ### What is a good rule of thumb for the PML thickness?
 
-For homogeneous media, the PML thickness should typically be at least *half* the wavelength (because the incident wave is absorbed *twice* via a round-trip reflection at the cell edge). Note, however, that the boundary condition (e.g., metallic or periodic) is essentially irrelevant to the operation of the PML. For inhomogeneous media (e.g., gratings or other periodic structures, etc.) as well as backward-wave modes (i.e., surface-plasmon polaritons, etc), PML breaks down and should be replaced with a thicker non-PML [absorber](Python_User_Interface.md#absorber) as described in [Perfectly Matched Layers](Perfectly_Matched_Layer.md).
+We typically use a PML thickness around half the wavelength. (Note that the boundary conditio, metallic or periodic, is essentially irrelevant to the operation of the PML.) PML allows inhomogeneous materials like waveguides as long as the materials are only varying in the boundary-parallel directions; wave media that are inhomogeneous in the boundary-normal directions (e.g., gratings or other periodic structures, oblique waveguides, etc.) as well as unusual waveguides with backward-wave modes cause to PML break down, in which case one alternative is a thicker non-PML [absorber](Python_User_Interface.md#absorber) as described in [Perfectly Matched Layers](Perfectly_Matched_Layer.md).
 
 ### What is Meep's frequency-domain solver and how does it work?
 
