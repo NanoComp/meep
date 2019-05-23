@@ -392,6 +392,14 @@ The noise has root-mean square amplitude σ $\times$ `noise_amp`.
 
 This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to [compute far-field thermal radiation using Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
 
+### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
+
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). The parameters `sigma`, `frequency`, and `gamma` have the usual meanings, and there is an additional 3-vector `bias`:
+
+**`bias` [`Vector3`]**
+—
+The gyrotropy vector.  The direction of this vector determines the orientation of the gyrotropic response, and the magnitude equals the precession frequency $|\mathbf{b}_n|/2\pi$.
+
 ### Vector3
 
 Properties:
