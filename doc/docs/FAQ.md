@@ -182,7 +182,7 @@ No. A narrow-bandwidth Gaussian is still a Gaussian: it goes to zero at both the
 
 ### How do I create a chirped pulse?
 
-You can use a [`CustomSource`](Python_User_Interface.md#customsource) to define an arbitrary time-profile for the `Source`. As an example, the following demonstrates a [linear-chirped pulse](https://www.rp-photonics.com/chirp.html) planewave with higher frequencies (smaller wavelengths) at the front (i.e., a down chirp); see [examples/chirped_pulse.py]((https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py)).
+You can use a [`CustomSource`](Python_User_Interface.md#customsource) to define an arbitrary time-profile for the [`Source`](Python_User_Interface.md#source) object. As an example, the following snapshots of the out-of-plane electric field demonstrates a [linear-chirped pulse](https://www.rp-photonics.com/chirp.html) planewave propagating from the left to the right with higher frequencies (smaller wavelengths) at the front (i.e., a down chirp). For the simulation script, see [examples/chirped_pulse.py]((https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py)).
 
 <center>
 ![](images/chirped_pulse.png)
@@ -292,7 +292,7 @@ No. Currently, Meep only supports anisotropic, real-symmetric, permittivity tens
 
 ### When outputting the permittivity function to a file, I don't see any dispersive materials
 
-Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the frequency-independent `epsilon` value. The ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
+Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the frequency-independent `epsilon` value. Alternatively, the complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 

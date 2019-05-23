@@ -31,6 +31,6 @@ sim = mp.Simulation(cell_size=cell_size,
                     sources=sources,
                     symmetries=[mp.Mirror(mp.Y)])
 
-nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(sx,sy))
-sim.run(mp.in_volume(nonpml_vol, mp.at_every(2.7, mp.output_efield_z)),
+sim.run(mp.in_volume(mp.Volume(center=mp.Vector3(), size=mp.Vector3(sx,sy)),
+                     mp.at_every(2.7, mp.output_efield_z)),
         until=t0+50)

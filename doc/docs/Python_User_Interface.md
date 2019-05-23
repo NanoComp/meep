@@ -880,7 +880,7 @@ where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
 
 ### CustomSource
 
-A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off.
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
 
 **`src_func` [`function`]**
 —
