@@ -223,8 +223,7 @@ private:
 class lorentzian_susceptibility : public susceptibility {
 public:
   lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false)
-      : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator),
-	have_gyrotropy(false) {}
+      : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
 
@@ -250,7 +249,6 @@ public:
 protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
-  bool have_gyrotropy; // whether to assign an extra slot for gyrotropy calculations
 };
 
 /* like a Lorentzian susceptibility, but the polarization equation
@@ -274,11 +272,10 @@ protected:
   double noise_amp;
 };
 
-/* like a Lorentzian susceptibility, but with precession around a bias vector */
+/* gyrotropic susceptibility */
 class gyrotropic_susceptibility : public lorentzian_susceptibility {
 public:
-  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
-			    bool no_omega_0_denominator = true);
+  gyrotropic_susceptibility(const vec &bias, double alpha, double omega_0, double gamma);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -286,9 +283,10 @@ public:
 			const grid_volume &gv, void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
-  virtual int get_num_params() { return 7; }
+  virtual int get_num_params() { return 8; }
 
 protected:
+  double alpha;
   double gyro_tensor[3][3];
 };
 

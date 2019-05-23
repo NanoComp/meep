@@ -172,25 +172,23 @@ Gyrotropic Media
 
 (**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator). The following discussion concerns a medium with gyrotropic ε (i.e., a gyroelectric medium). Gyromagnetic media can be treated by the usual substitution of ε with μ, **E** with **H**, etc.
 
-In a gyroelectric medium, the equation of motion of the polarization vector $\mathbf{P}_n$ is very similar to the [Drude-Lorentz](Materials.md#material-dispersion) case, but contains an additional precession term:
+In a gyroelectric medium, the equation of motion of the polarization vector $\mathbf{P}_n$ is a variant of the [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation):
 
-$$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} + \mathbf{b}_n \times \frac{d\mathbf{P}_n}{dt} + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
+$$\frac{d\mathbf{P}_n}{dt} = \mathbf{b}_n \times \left( - \sigma_n \mathbf{E} + \omega_n \mathbf{P}_n + \alpha_n \frac{d\mathbf{P}_n}{dt} \right) - \gamma_n \mathbf{P}_n$$
 
-(Optionally, the polarization may be of Drude form, in which case the $\omega_n^2 \mathbf{P}_n$ term on the left-hand side is omitted.) The third term on the left-hand side breaks time-reversal symmetry and describes the gyrotropy of the medium; it is parameterized by the bias vector $\mathbf{b}_n$, usually describing the effect of an applied static magnetic field. In the $\gamma_n = \omega_n = 0$ limit, the equation of motion reduces to a precession around $\mathbf{b}_n$, with angular frequency equal to $|\mathbf{b}_n|$:
+Although this is completely different from the damped harmonic oscillator equation used for [Drude-Lorentz susceptibility](Materials.md#material-dispersion), the constants σ$_n$, ω$_n$, and γ$_n$ play rather analogous roles: σ$_n$ couples the polarization to the electric field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor. There is also a second damping factor α$_n$, and a "bias vector" **b**$_n$ which typically describes the direction of an applied static magnetic field. The bias vector is assumed to have unit length.
 
-$$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
+In the frequency domain, the ε tensor acquires off-diagonal components representing a gyrotropic response. Take the case $\mathbf{b}_n = \hat{\mathbf{z}}$, and assume that all fields have harmonic time-dependence $\exp(-i\omega t)$. The polarization equation then reduces to
 
-In the frequency domain, a gyroelectric medium has imaginary off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
+$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \frac{\sigma_n}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2} \begin{bmatrix} \omega_n - i \omega \alpha_n & -i(\omega + i \gamma) & 0 \\ i(\omega + i \gamma) & \omega_n - i \omega \alpha_n & 0 \\ 0 & 0 & 0\end{bmatrix}$$
 
-$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \omega_n^2 \begin{bmatrix}\xi_\perp & -i\eta & 0 \\ i\eta & \xi_\perp & 0 \\ 0 & 0 & \xi_\parallel \end{bmatrix} \, \sigma_n(\mathbf{x})$$
+Hence, the dielectric function is
+
+$$\epsilon = \begin{bmatrix} \epsilon_\perp & -i \eta & 0 \\ i\eta & \epsilon_\perp & 0 \\ 0 & 0 & \epsilon_\infty\end{bmatrix}$$
 
 where
 
-$$\xi_\perp = \frac{\Delta_n}{\Delta_n^2 - \omega^2 b^2}\,,\;\;\; \xi_\parallel = \frac{1}{\Delta_n}, \;\;\; \eta = \frac{\omega b}{\Delta_n^2 - \omega^2 b^2}, \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
-
-In many applications, the gyrotropy is weak relative to the frequency detuning but strong relative to the loss.  For this case, we can define $\omega_n = \omega + \Delta\omega_n$, and take $\gamma_n \ll b \ll \Delta \omega_n \ll \omega$. In this limit, the susceptibility tensor reduces to
-
-$$\chi_n \approx \frac{\omega}{2\Delta\omega_n} \begin{bmatrix}1 & -ib/2\Delta\omega_n & 0 \\ ib/2\Delta\omega_n & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \sigma_n(\mathbf{x})$$
+$$\epsilon_\perp = \epsilon_\infty + \frac{\sigma_n (\omega_n - i\omega\alpha_n)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}, \;\;\; \eta = \frac{\sigma_n (\omega + i\gamma_n)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}$$
 
 Materials Library
 -----------------

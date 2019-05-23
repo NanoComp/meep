@@ -60,6 +60,7 @@ typedef struct susceptibility_struct {
   vector3 sigma_offdiag;
   vector3 sigma_diag;
   vector3 bias;
+  double alpha;
   double frequency;
   double gamma;
   double noise_amp;
