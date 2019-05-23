@@ -936,6 +936,10 @@ Utility function that takes a `meep::volume` `vol` and returns the center and si
 Miscellaneous Functions
 -----------------------
 
+**`meep.quiet(quietval=True)`**
+—
+Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
+
 ### Output File Names
 
 The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is `None` (the default), however, then Meep constructs a default prefix based on the current Python filename with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
