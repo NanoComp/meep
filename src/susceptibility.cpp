@@ -356,7 +356,6 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
         const realnum *p = d->P[c][cmp];
 	realnum *pp = d->P_prev[c][cmp];
-        const ptrdiff_t is = gv.stride(d0) * (is_magnetic(c) ? -1 : +1);
 
         direction d1 = cycle_direction(gv.dim, d0, 1);
         direction d2 = cycle_direction(gv.dim, d0, 2);
@@ -367,7 +366,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
         const realnum *w1 = W[c1][cmp];
         const realnum *w2 = W[c2][cmp];
 
-	// Off-diagonal polarization components
+        const realnum *s1 = w1 ? sigma[c1][d1] : NULL;
+        const realnum *s2 = w2 ? sigma[c2][d2] : NULL;
+
         const realnum *p1 = d->P[c1][cmp];
         const realnum *p2 = d->P[c2][cmp];
 
@@ -381,8 +382,8 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	  pp[i] = ua * p[i];
 	  if (p1) pp[i] += vab1 * p1[i];
 	  if (p2) pp[i] += vab2 * p2[i];
-	  if (w1) pp[i] += ndt1 * s[i] * w1[i];
-	  if (w2) pp[i] += ndt2 * s[i] * w2[i];
+	  if (w1) pp[i] += ndt1 * s1[i] * w1[i];
+	  if (w2) pp[i] += ndt2 * s2[i] * w2[i];
 	}
       }
     }
