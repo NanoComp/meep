@@ -176,21 +176,21 @@ In a gyroelectric medium, the equation of motion of the polarization vector $\ma
 
 $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} + \mathbf{b}_n \times \frac{d\mathbf{P}_n}{dt} + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
 
-(Optionally, the polarization may be of Drude form, in which case the final $\omega_n^2 \mathbf{P}_n$ term on the left-hand side is omitted; we will describe the Lorentz case.) The third term on the left-hand side breaks time-reversal symmetry and describes the gyrotropy of the medium, parameterized by the bias vector $\mathbf{b}_n$ (usually describing the effect of an applied static magnetic field). In the absence of damping ($\gamma = 0$) and coupling to the electric field ($\sigma_n = 0$), the equation of motion reduces to a precession around $\mathbf{b}_n$, with angular frequency equal to $|\mathbf{b}_n|$:
+(Optionally, the polarization may be of Drude form, in which case the $\omega_n^2 \mathbf{P}_n$ term on the left-hand side is omitted.) The third term on the left-hand side breaks time-reversal symmetry and describes the gyrotropy of the medium; it is parameterized by the bias vector $\mathbf{b}_n$, usually describing the effect of an applied static magnetic field. In the $\gamma_n = \omega_n = 0$ limit, the equation of motion reduces to a precession around $\mathbf{b}_n$, with angular frequency equal to $|\mathbf{b}_n|$:
 
 $$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
 
-In the frequency domain, gyrotropy corresponds to the presence of imaginary off-diagonal components in the ε tensor (or the μ tensor for a gyromagnetic medium). Take the case $\mathbf{b} = b \hat{z}$.  When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
+In the frequency domain, a gyroelectric medium has imaginary off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
 
-$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \frac{\omega_n^2}{\omega_n^2 - \omega^2 - i\omega\gamma_n} \begin{bmatrix}\xi & -i\eta & 0 \\ i\eta & \xi & 0 \\ 0 & 0 & 1 \end{bmatrix} \, \sigma_n(\mathbf{x})$$
+$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \omega_n^2 \begin{bmatrix}\xi_\perp & -i\eta & 0 \\ i\eta & \xi_\perp & 0 \\ 0 & 0 & \xi_\parallel \end{bmatrix} \, \sigma_n(\mathbf{x})$$
 
 where
 
-$$\xi = \frac{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 - \omega^2 b^2}\,, \quad \eta = \frac{\omega b (\omega_n^2 - \omega^2 - i\omega \gamma_n)}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 - \omega^2 b^2}$$
+$$\xi_\perp = \frac{\Delta_n}{\Delta_n^2 - \omega^2 b^2}\,,\;\;\; \xi_\parallel = \frac{1}{\Delta_n}, \;\;\; \eta = \frac{\omega b}{\Delta_n^2 - \omega^2 b^2}, \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
 
-It is common to operate in a limit where the gyrotropy is weak relative to the frequency detuning, but strong relative to the loss.  Let $\omega_n = \omega + \Delta\omega_n$, where $\gamma_n \ll b \ll \Delta \omega_n \ll \omega$.  Then the above susceptibility tensor simplifies to
+In many applications, the gyrotropy is weak relative to the frequency detuning but strong relative to the loss.  For this case, we can define $\omega_n = \omega + \Delta\omega_n$, and take $\gamma_n \ll b \ll \Delta \omega_n \ll \omega$. In this limit, the susceptibility tensor reduces to
 
-$$\chi_n \approx \frac{\omega}{2 \Delta\omega_n} \begin{bmatrix}1 & -i\eta & 0 \\ i\eta & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}\, \sigma_n(\mathbf{x}), \quad \eta = \frac{b}{2\Delta\omega_n}$$
+$$\chi_n \approx \frac{\omega}{2\Delta\omega_n} \begin{bmatrix}1 & -ib/2\Delta\omega_n & 0 \\ ib/2\Delta\omega_n & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \sigma_n(\mathbf{x})$$
 
 Materials Library
 -----------------
