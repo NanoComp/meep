@@ -398,11 +398,11 @@ This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with 
 
 **`sigma` [`number`]**
 —
-The scale factor σ specifying the coupling to the driving field. In magnetic ferrites, this is equal to the Larmor precession frequency at magnetic saturation.
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
 
 **`frequency` [`number`]**
 —
-The frequency of gyrotropic precession (Larmor frequency), $f_n = \omega_n / 2\pi$.
+The frequency of gyrotropic precession, $f_n = \omega_n / 2\pi$. In magnetic ferrites, this is the Larmor precession frequency.
 
 **`gamma` [`number`]**
 —

@@ -349,7 +349,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
-      const realnum *w = W[c][cmp], *s = sigma[c][d0];
+      const realnum *w = W[c][cmp], *s = 2*pi*sigma[c][d0];
       if (w && s) {
 	if (d0 != X && d0 != Y && d0 != Z)
 	  abort("Cylindrical coordinates are not supported for gyrotropic media");
@@ -366,8 +366,8 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
         const realnum *w1 = W[c1][cmp];
         const realnum *w2 = W[c2][cmp];
 
-        const realnum *s1 = w1 ? sigma[c1][d1] : NULL;
-        const realnum *s2 = w2 ? sigma[c2][d2] : NULL;
+        const realnum *s1 = w1 ? 2*pi*sigma[c1][d1] : NULL;
+        const realnum *s2 = w2 ? 2*pi*sigma[c2][d2] : NULL;
 
         const realnum *p1 = d->P[c1][cmp];
         const realnum *p2 = d->P[c2][cmp];
