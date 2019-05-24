@@ -1381,7 +1381,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
       master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
-		    noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
+		    noisy ? "noisy " : gyrotropic ? "gyrotropic" : "",
 		    gyrotropic ? "" : ss->drude ? "drude" : "lorentzian",
 		    ss->frequency, ss->gamma);
       if (noisy) master_printf(", amp=%g ", ss->noise_amp);
