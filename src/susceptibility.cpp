@@ -337,12 +337,10 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 					 realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
 					 const grid_volume &gv, void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
-  const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
-  const double ua = 1 - 0.5 * g2pi * dt;
-  const double va = alpha - 0.5 * omega2pi * dt;
-  const double ub = 1 + 0.5 * g2pi * dt;
-  const double vb = alpha + 0.5 * omega2pi * dt;
-
+  const double ua = 1 - pi * gamma * dt;
+  const double ub = 1 + pi * gamma * dt;
+  const double va = alpha - pi * omega_0 * dt;
+  const double vb = alpha + pi * omega_0 * dt;
   (void)W_prev; // unused;
 
   FOR_COMPONENTS(c) DOCMP2 {
