@@ -339,6 +339,30 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 —
 The noise has root-mean square amplitude σ $\times$ `noise-amp`.
 
+### gyrotropic-susceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by the Landau-Lifshitz-Gilbert equation. Note that the parameters `sigma`, `frequency`, and `gamma` play different roles compared to the Lorentzian or Drude case.
+
+**`sigma` [`number`]**
+—
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+
+**`frequency` [`number`]**
+—
+The frequency of gyrotropic precession, $f_n = \omega_n / 2\pi$. In magnetic ferrites, this is the Larmor precession frequency.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
+
+**`alpha` [`number`]**
+—
+The loss rate $\alpha_n / 2\pi$ in the diagonal response.
+
+**`bias` [`vector3`]**
+—
+Gyrotropy vector describing the direction of the static biasing magnetic field. The magnitude is ignored.
+
 ### geometric-object
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:

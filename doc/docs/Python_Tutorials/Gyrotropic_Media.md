@@ -6,24 +6,38 @@ In this example, we will perform simulations with a gyrotropic medium. See [Mate
 
 [TOC]
 
-### Dispersion Relation for a Gyrotropic Medium
+## Electromagnetic wave propagation in a ferrite
 
-Here, we model a uniform gyrotroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. For TE modes, the electric field lies in the *x*-*y* plane and magnetic field pointing along *z*, with the wavevector $\mathbf{k}$ in the *x*-*y* plane.  The dispersion relation can be shown to be
+### Material properties
 
-$$\omega = v(\omega) |\mathbf{k}|, \quad v^2 = \mu^{-1} \left[\epsilon^{-1}\right]_{xx}$$
+Ferrites are ceramic materials exhibiting strong gyromagnetic resonances, commonly used in microwave engineering to construct isolators (one-way valves) and circulators. In the presence of a biasing magnetic field $\mathbf{H} = H_0 \hat{\mathbf{z}}$, the permeability tensor of a ferrite material has the form
 
-The ε tensor is given by
+$$\mu = \begin{bmatrix} \mu_\perp & -i \kappa & 0 \\ i\kappa & \mu_\perp & 0 \\ 0 & 0 & 1\end{bmatrix}$$
 
-$$\epsilon = \epsilon_\infty + \frac{\omega_n^2}{\omega_n^2 - \omega^2 - i\omega\gamma_n} \begin{bmatrix}\xi & -i\eta & 0 \\ i\eta & \xi & 0 \\ 0 & 0 & 1 \end{bmatrix} \, \sigma_n(\mathbf{x}),$$
+where
 
-with
+$$\mu_\perp = 1 + \frac{\omega_m (\omega_0 - i\omega\alpha)}{(\omega_0 - i \omega \alpha)^2 - (\omega + i \gamma)^2}, \;\;\; \kappa = \frac{\omega_m (\omega + i\gamma)}{(\omega_0 - i \omega \alpha)^2 - (\omega + i \gamma)^2}$$
 
-$$\xi = \frac{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 + \omega^2 b^2}\,, \quad \eta = \frac{\omega b (\omega_n^2 - \omega^2 - i\omega \gamma_n)}{(\omega_n^2 - \omega^2 - i\omega \gamma_n)^2 + \omega^2 b^2}$$
+This permeability can be derived from the [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation) describing a magnetic dipole in a magnetic field. The Larmor precession frequency is $\omega_0 = \gamma H_0$ where $\gamma$ is the gyromagnetic ratio of the electron. The Larmor precession frequency at saturation field is $\omega_m = \gamma M_s$ where $M_s$ is the saturation magnetization. This precisely matches the permeability tensor derived from [Meep's gyrotropy model](../Materials.md#gyrotropic-media), with the identification $\omega_0 \leftrightarrow \omega_n$ and $\omega_m \leftrightarrow \sigma_n$.
 
-We choose the material parameters $\epsilon_\infty = 1$, $f_n = 1.2$, $\gamma_n = 10^{-5}$, and $\sigma_n = 0.1$, with $|\mathbf{b}_n|$ ranging from zero to $10^{-2}$.
+In Meep units, we will take $\omega_0/2\pi = 1$ and $\omega_m/2\pi = 1.2$, with $\alpha/2\pi = \gamma/2\pi = 10^{-3}$ and $\epsilon = 15$. The diagonal and off-diagonal components of the permeability tensor are plotted below:
+
+<center>
+![](../images/Ferrite-mu.png)
+</center>
+
+### Dispersion relation
+
+Consider a uniform ferrite medium with bias field in the *z* direction. The gyrotropy acts upon the *x* and *y* components of the magnetic field, so we focus on TM plane waves that have wavevector $\mathbf{k}$ and magnetic fields in the *x*-*y* plane, and electric fields parallel to *z*. From Maxwell's equations, we derive the dispersion relation
+
+$$\omega^2 = \epsilon^{-1} \left[\mu^{-1}\right]_{\perp} |\mathbf{k}|^2$$
+
+where $[\mu^{-1}\right]_{\perp} = [\mu^{-1}\right]_{xx} = [\mu^{-1}\right]_{yy}$.
 
 
 
+
+### FIXME
 
 From the dispersion relation ω(k), we will compute the numerical ε(ω) via the formula:
 
@@ -53,9 +67,6 @@ $$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^
 
 The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 
-<center>
-![](../images/Material-dispersion-eps.png)
-</center>
 
 We can see that the f=1.1 resonance causes a large change in both the real and imaginary parts of ε around that frequency. In fact, there is a range of frequencies from 1.1 to 1.2161 where ε is *negative*. In this range, no propagating modes exist &mdash; it is actually a kind of electromagnetic band gap associated with polariton resonances in a material. For more information on the physics of such materials, see e.g. Chapter 14 of [Introduction to Solid State Physics](http://www.wiley.com/WileyCDA/WileyTitle/productCd-EHEP000803.html) by C. Kittel.
 

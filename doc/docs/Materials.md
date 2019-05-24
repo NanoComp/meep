@@ -176,7 +176,7 @@ In a gyroelectric medium, the equation of motion of the polarization vector $\ma
 
 $$\frac{d\mathbf{P}_n}{dt} = \mathbf{b}_n \times \left( - \sigma_n \mathbf{E} + \omega_n \mathbf{P}_n + \alpha_n \frac{d\mathbf{P}_n}{dt} \right) - \gamma_n \mathbf{P}_n$$
 
-Although this is completely different from the damped harmonic oscillator equation used for [Drude-Lorentz susceptibility](Materials.md#material-dispersion), the constants σ$_n$, ω$_n$, and γ$_n$ play rather analogous roles: σ$_n$ couples the polarization to the electric field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor. There is also a second damping factor α$_n$, and a "bias vector" **b**$_n$ which typically describes the direction of an applied static magnetic field. The bias vector is assumed to have unit length.
+Although this is completely different from the damped harmonic oscillator equation used for [Drude-Lorentz susceptibility](Materials.md#material-dispersion), the constants σ$_n$, ω$_n$, and γ$_n$ play analogous roles: σ$_n$ couples the polarization to the electric field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor. There is also a second damping factor α$_n$, and a "bias vector" **b**$_n$ which typically describes the direction of an applied static magnetic field. The bias vector is assumed to have unit length.
 
 In the frequency domain, the ε tensor acquires off-diagonal components representing a gyrotropic response. Take the case $\mathbf{b}_n = \hat{\mathbf{z}}$, and assume that all fields have harmonic time-dependence $\exp(-i\omega t)$. The polarization equation then reduces to
 
