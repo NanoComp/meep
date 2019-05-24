@@ -357,7 +357,7 @@ The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
 
 **`alpha` [`number`]**
 —
-The loss rate $\alpha_n / 2\pi$ in the diagonal response.
+The loss factor $\alpha_n$ in the diagonal response (note that there is no 2π factor).
 
 **`bias` [`vector3`]**
 —

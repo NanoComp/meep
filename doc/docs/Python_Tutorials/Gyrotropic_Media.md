@@ -20,7 +20,7 @@ $$\mu_\perp = 1 + \frac{\omega_m (\omega_0 - i\omega\alpha)}{(\omega_0 - i \omeg
 
 This permeability can be derived from the [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation) describing a magnetic dipole in a magnetic field. The Larmor precession frequency is $\omega_0 = \gamma H_0$ where $\gamma$ is the gyromagnetic ratio of the electron. The Larmor precession frequency at saturation field is $\omega_m = \gamma M_s$ where $M_s$ is the saturation magnetization. This precisely matches the permeability tensor derived from [Meep's gyrotropy model](../Materials.md#gyrotropic-media), with the identification $\omega_0 \leftrightarrow \omega_n$ and $\omega_m \leftrightarrow \sigma_n$.
 
-In Meep units, we will take $\omega_0/2\pi = 1$ and $\omega_m/2\pi = 1.2$, with $\alpha/2\pi = \gamma/2\pi = 10^{-3}$ and $\epsilon = 15$. The diagonal and off-diagonal components of the permeability tensor are plotted below:
+We will take $\omega_0/2\pi = 1$, $\omega_m/2\pi = 1.2$, $\alpha = \gamma/2\pi = 10^{-3}$, and $\epsilon = 15$. The diagonal and off-diagonal components of the permeability tensor are plotted below:
 
 <center>
 ![](../images/Ferrite-mu.png)
