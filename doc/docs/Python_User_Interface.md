@@ -394,11 +394,27 @@ This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with 
 
 ### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
 
-(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). The parameters `sigma`, `frequency`, and `gamma` have the usual meanings, and there is an additional 3-vector `bias`:
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by the Landau-Lifshitz-Gilbert equation. Note that the parameters `sigma`, `frequency`, and `gamma` play different roles compared to the Lorentzian or Drude case.
+
+**`sigma` [`number`]**
+—
+The scale factor σ specifying the coupling to the driving field. In magnetic ferrites, this is equal to the Larmor precession frequency at magnetic saturation.
+
+**`frequency` [`number`]**
+—
+The frequency of gyrotropic precession (Larmor frequency), $f_n = \omega_n / 2\pi$.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
+
+**`alpha` [`number`]**
+—
+The loss rate $\alpha_n / 2\pi$ in the diagonal response.
 
 **`bias` [`Vector3`]**
 —
-The gyrotropy vector.  The direction of this vector determines the orientation of the gyrotropic response, and the magnitude equals the precession frequency $|\mathbf{b}_n|/2\pi$.
+Gyrotropy vector describing the direction of the static biasing magnetic field. The magnitude is ignored.
 
 ### Vector3
 
