@@ -223,7 +223,8 @@ private:
 class lorentzian_susceptibility : public susceptibility {
 public:
   lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false)
-      : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
+    : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator),
+      have_gyrotropy(false) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
 
@@ -249,6 +250,7 @@ public:
 protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
+  bool have_gyrotropy; // whether to assign an extra slot for gyrotropy calculations
 };
 
 /* like a Lorentzian susceptibility, but the polarization equation

@@ -92,6 +92,7 @@ typedef struct {
   size_t ntot;
   realnum *P[NUM_FIELD_COMPONENTS][2];
   realnum *P_prev[NUM_FIELD_COMPONENTS][2];
+  realnum *P_tmp[NUM_FIELD_COMPONENTS][2]; // extra slot used for gyrotropic medium updating
   realnum data[1];
 } lorentzian_data;
 
@@ -100,8 +101,9 @@ typedef struct {
 void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
                                                    const grid_volume &gv) const {
   int num = 0;
+  int nslots = have_gyrotropy ? 3 : 2;
   FOR_COMPONENTS(c) DOCMP2 {
-    if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
+    if (needs_P(c, cmp, W)) num += nslots * gv.ntot();
   }
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *)malloc(sz);
@@ -119,12 +121,18 @@ void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONEN
   size_t ntot = d->ntot = gv.ntot();
   realnum *P = d->data;
   realnum *P_prev = d->data + ntot;
+  realnum *P_tmp = have_gyrotropy ? P_prev + ntot : NULL;
+  int nslots = have_gyrotropy ? 3 : 2;
+
   FOR_COMPONENTS(c) DOCMP2 {
     if (needs_P(c, cmp, W)) {
       d->P[c][cmp] = P;
       d->P_prev[c][cmp] = P_prev;
-      P += 2 * ntot;
-      P_prev += 2 * ntot;
+      d->P_tmp[c][cmp] = P_tmp;
+
+      P += nslots * ntot;
+      P_prev += nslots * ntot;
+      if (have_gyrotropy) P_tmp += nslots * ntot;
     }
   }
 }
@@ -137,12 +145,17 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   size_t ntot = d->ntot;
   realnum *P = dnew->data;
   realnum *P_prev = dnew->data + ntot;
+  realnum *P_tmp = have_gyrotropy ? P_prev + ntot : NULL;
+  int nslots = have_gyrotropy ? 3 : 2;
+
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       dnew->P[c][cmp] = P;
       dnew->P_prev[c][cmp] = P_prev;
-      P += 2 * ntot;
-      P_prev += 2 * ntot;
+      dnew->P_tmp[c][cmp] = P_tmp;
+      P += nslots * ntot;
+      P_prev += nslots * ntot;
+      if (have_gyrotropy) P_tmp += nslots * ntot;
     }
   }
   return (void *)dnew;
@@ -325,6 +338,7 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
 
 gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double alpha, double omega_0, double gamma)
   : lorentzian_susceptibility(omega_0, gamma, false), alpha(alpha) {
+  have_gyrotropy = true;
 
   const vec bn = bias / fmax(abs(bias), 1e-10); // avoid division by zero
   memset(gyro_tensor, 0, 9 * sizeof(double));
@@ -334,13 +348,11 @@ gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double alp
 }
 
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-					 realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
-					 const grid_volume &gv, void *P_internal_data) const {
+                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                         const grid_volume &gv, void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
-  const double ua = 1 - pi * gamma * dt;
-  const double ub = 1 + pi * gamma * dt;
-  const double va = alpha - pi * omega_0 * dt;
-  const double vb = alpha + pi * omega_0 * dt;
+  const realnum w4pit = 4*pi*dt*omega_0;
+  const realnum g4pit = 4*pi*dt*gamma;
   (void)W_prev; // unused;
 
   FOR_COMPONENTS(c) DOCMP2 {
@@ -348,79 +360,81 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       const direction d0 = component_direction(c);
       const realnum *w = W[c][cmp];
       if (w) {
-	if (d0 != X && d0 != Y && d0 != Z)
-	  abort("Cylindrical coordinates are not supported for gyrotropic media");
+        if (d0 != X && d0 != Y && d0 != Z)
+          abort("Cylindrical coordinates are not supported for gyrotropic media");
 
         const realnum *p = d->P[c][cmp];
-	realnum *pp = d->P_prev[c][cmp];
+        const realnum *pp = d->P_prev[c][cmp];
+        realnum *ptmp = d->P_tmp[c][cmp];
 
         direction d1 = cycle_direction(gv.dim, d0, 1);
         direction d2 = cycle_direction(gv.dim, d0, 2);
-
         component c1 = direction_component(c, d1);
         component c2 = direction_component(c, d2);
 
         const realnum *w1 = W[c1][cmp];
         const realnum *w2 = W[c2][cmp];
-
         const realnum *s1 = w1 ? sigma[c1][d1] : NULL;
         const realnum *s2 = w2 ? sigma[c2][d2] : NULL;
+        const realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
+        const realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
 
-        const realnum *p1 = d->P[c1][cmp];
-        const realnum *p2 = d->P[c2][cmp];
+        const realnum ab1 = alpha * gyro_tensor[d0][d1];
+        const realnum ab2 = alpha * gyro_tensor[d0][d2];
+        const realnum wb1 = w4pit * gyro_tensor[d0][d1];
+        const realnum wb2 = w4pit * gyro_tensor[d0][d2];
+        const realnum bt1 = 4*pi*dt * gyro_tensor[d0][d1];
+        const realnum bt2 = 4*pi*dt * gyro_tensor[d0][d2];
 
-	const realnum vab1 = va * gyro_tensor[d0][d1];
-	const realnum vab2 = va * gyro_tensor[d0][d2];
-
-	const realnum ndt1 = 2*pi*dt * gyro_tensor[d0][d1];
-	const realnum ndt2 = 2*pi*dt * gyro_tensor[d0][d2];
-
-	LOOP_OVER_VOL_OWNED(gv, c, i) {
-	  pp[i] = ua * p[i];
-	  if (p1) pp[i] += vab1 * p1[i];
-	  if (p2) pp[i] += vab2 * p2[i];
-	  if (w1) pp[i] += ndt1 * s1[i] * w1[i];
-	  if (w2) pp[i] += ndt2 * s2[i] * w2[i];
-	}
+        LOOP_OVER_VOL_OWNED(gv, c, i) {
+          ptmp[i] = pp[i] - g4pit * p[i];
+          if (pp1) ptmp[i] += ab1 * pp1[i];
+          if (pp2) ptmp[i] += ab2 * pp2[i];
+          if (p1)  ptmp[i] -= wb1 * p1[i];
+          if (p2)  ptmp[i] -= wb2 * p2[i];
+          if (s1)  ptmp[i] += bt1 * s1[i] * w1[i];
+          if (s2)  ptmp[i] += bt2 * s2[i] * w2[i];
+        }
       }
     }
   }
 
   // Perform 3x3 matrix inversion, exploiting skew symmetry
-  const double gx = vb * gyro_tensor[Y][Z];
-  const double gy = vb * gyro_tensor[Z][X];
-  const double gz = vb * gyro_tensor[X][Y];
-  const double invdet = 1.0 / ub / (ub*ub + gx*gx + gy*gy + gz*gz);
+  const double ax = alpha * gyro_tensor[Y][Z];
+  const double ay = alpha * gyro_tensor[Z][X];
+  const double az = alpha * gyro_tensor[X][Y];
+  const double invdet = 1.0 / (1 + ax*ax + ay*ay + az*az);
   double inv[3][3];
 
-  inv[X][X] = invdet * (ub*ub + gx*gx);
-  inv[Y][Y] = invdet * (ub*ub + gy*gy);
-  inv[Z][Z] = invdet * (ub*ub + gz*gz);
-  inv[X][Y] = invdet * (gx*gy - ub*gz);
-  inv[Y][X] = invdet * (gy*gx + ub*gz);
-  inv[Z][X] = invdet * (gz*gx - ub*gy);
-  inv[X][Z] = invdet * (gx*gz + ub*gy);
-  inv[Y][Z] = invdet * (gy*gz - ub*gx);
-  inv[Z][Y] = invdet * (gz*gy + ub*gx);
+  inv[X][X] = invdet * (1 + ax*ax);
+  inv[Y][Y] = invdet * (1 + ay*ay);
+  inv[Z][Z] = invdet * (1 + az*az);
+  inv[X][Y] = invdet * (ax*ay - az);
+  inv[Y][X] = invdet * (ay*ax + az);
+  inv[Z][X] = invdet * (az*ax - ay);
+  inv[X][Z] = invdet * (ax*az + ay);
+  inv[Y][Z] = invdet * (ay*az - ax);
+  inv[Z][Y] = invdet * (az*ay + ax);
 
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
       if (W[c][cmp] && sigma[c][d0]) {
-        realnum *p = d->P[c][cmp];
-	const realnum *pp = d->P_prev[c][cmp];
+        realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
+        const realnum *ptmp = d->P_tmp[c][cmp];
         const direction d1  = cycle_direction(gv.dim, d0, 1);
         const direction d2  = cycle_direction(gv.dim, d0, 2);
         const component c1 = direction_component(c, d1);
         const component c2 = direction_component(c, d2);
-        const realnum *pp1 = W[c1][cmp] ? d->P_prev[c1][cmp] : NULL;
-	const realnum *pp2 = W[c2][cmp] ? d->P_prev[c2][cmp] : NULL;
+        const realnum *ptmp1 = W[c1][cmp] ? d->P_tmp[c1][cmp] : NULL;
+        const realnum *ptmp2 = W[c2][cmp] ? d->P_tmp[c2][cmp] : NULL;
 
-	LOOP_OVER_VOL_OWNED(gv, c, i) {
-	  p[i] = inv[d0][d0] * pp[i];
-	  if (pp1) p[i] += inv[d0][d1] * pp1[i];
-	  if (pp2) p[i] += inv[d0][d2] * pp2[i];
-	}
+        LOOP_OVER_VOL_OWNED(gv, c, i) {
+          pp[i] = p[i];
+          p[i] = inv[d0][d0] * ptmp[i];
+          if (ptmp1) p[i] += inv[d0][d1] * ptmp1[i];
+          if (ptmp2) p[i] += inv[d0][d2] * ptmp2[i];
+        }
       }
     }
   }
