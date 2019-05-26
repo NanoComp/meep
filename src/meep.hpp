@@ -289,7 +289,8 @@ public:
 
 protected:
   double alpha;
-  double gyro_tensor[3][3];
+  double bvec[3];
+  int sgn[3][3];
 };
 
 class multilevel_susceptibility : public susceptibility {

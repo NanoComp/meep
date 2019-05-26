@@ -92,7 +92,7 @@ typedef struct {
   size_t ntot;
   realnum *P[NUM_FIELD_COMPONENTS][2];
   realnum *P_prev[NUM_FIELD_COMPONENTS][2];
-  realnum *P_tmp[NUM_FIELD_COMPONENTS][2]; // extra slot used for gyrotropic medium updating
+  realnum *P_tmp[NUM_FIELD_COMPONENTS][2]; // extra slot for gyrotropic medium updating
   realnum data[1];
 } lorentzian_data;
 
@@ -340,11 +340,12 @@ gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double alp
   : lorentzian_susceptibility(omega_0, gamma, false), alpha(alpha) {
   have_gyrotropy = true;
 
-  const vec bn = bias / fmax(abs(bias), 1e-10); // avoid division by zero
-  memset(gyro_tensor, 0, 9 * sizeof(double));
-  gyro_tensor[X][Y] = bn.z(); gyro_tensor[Y][X] = -bn.z();
-  gyro_tensor[Y][Z] = bn.x(); gyro_tensor[Z][Y] = -bn.x();
-  gyro_tensor[Z][X] = bn.y(); gyro_tensor[X][Z] = -bn.y();
+  const vec b = bias / fmax(abs(bias), 1e-10); // avoid division by zero
+  bvec[0] = b.x(); bvec[1] = b.y(); bvec[2] = b.z();
+
+  memset(sgn, 0, 9 * sizeof(int));
+  sgn[X][Y] = sgn[Y][Z] = sgn[Z][X] = 1;
+  sgn[X][Z] = sgn[Z][Y] = sgn[Y][X] = -1;
 }
 
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -352,7 +353,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                                          const grid_volume &gv, void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
   const realnum w4pit = 4*pi*dt*omega_0;
-  const realnum g4pit = 4*pi*dt*gamma;
+  const realnum g2pi  = 2*pi*gamma;
+  const realnum g2pisq = g2pi*g2pi;
+  const realnum pi4dt = 4*pi*dt;
   (void)W_prev; // unused;
 
   FOR_COMPONENTS(c) DOCMP2 {
@@ -361,79 +364,72 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       const realnum *w = W[c][cmp];
       if (w) {
         if (d0 != X && d0 != Y && d0 != Z)
-          abort("Cylindrical coordinates are not supported for gyrotropic media");
+          abort("Cylindrical coordinates not supported for gyrotropic media\n");
 
-        const realnum *p = d->P[c][cmp];
         const realnum *pp = d->P_prev[c][cmp];
         realnum *ptmp = d->P_tmp[c][cmp];
-
         direction d1 = cycle_direction(gv.dim, d0, 1);
         direction d2 = cycle_direction(gv.dim, d0, 2);
         component c1 = direction_component(c, d1);
         component c2 = direction_component(c, d2);
-
         const realnum *w1 = W[c1][cmp];
         const realnum *w2 = W[c2][cmp];
         const realnum *s1 = w1 ? sigma[c1][d1] : NULL;
         const realnum *s2 = w2 ? sigma[c2][d2] : NULL;
         const realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
         const realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
+        const realnum wb1 = w4pit * sgn[d0][d1] * bvec[c2];
+        const realnum wb2 = w4pit * sgn[d0][d2] * bvec[c1];
+	const int sgn1 = sgn[d0][d1];
+	const int sgn2 = sgn[d0][d2];
 
-        const realnum ab1 = alpha * gyro_tensor[d0][d1];
-        const realnum ab2 = alpha * gyro_tensor[d0][d2];
-        const realnum wb1 = w4pit * gyro_tensor[d0][d1];
-        const realnum wb2 = w4pit * gyro_tensor[d0][d2];
-        const realnum bt1 = 4*pi*dt * gyro_tensor[d0][d1];
-        const realnum bt2 = 4*pi*dt * gyro_tensor[d0][d2];
+	if (!pp1 || !pp2 || !p1 || !p2 || !s1 || !s2)
+	  abort("Gyrotropic media require 3D fields\n");
 
         LOOP_OVER_VOL_OWNED(gv, c, i) {
-          ptmp[i] = pp[i] - g4pit * p[i];
-          if (pp1) ptmp[i] += ab1 * pp1[i];
-          if (pp2) ptmp[i] += ab2 * pp2[i];
-          if (p1)  ptmp[i] -= wb1 * p1[i];
-          if (p2)  ptmp[i] -= wb2 * p2[i];
-          if (s1)  ptmp[i] += bt1 * s1[i] * w1[i];
-          if (s2)  ptmp[i] += bt2 * s2[i] * w2[i];
+          ptmp[i] = pp[i] - wb1 * p1[i] - wb2 * p2[i]
+	    - sgn1 * p1[i] * (pi4dt*s2[i]*w2[i] + g2pi * pp2[i])
+	    - sgn2 * p2[i] * (pi4dt*s1[i]*w1[i] + g2pi * pp1[i]);
         }
       }
     }
   }
 
-  // Perform 3x3 matrix inversion, exploiting skew symmetry
-  const double ax = alpha * gyro_tensor[Y][Z];
-  const double ay = alpha * gyro_tensor[Z][X];
-  const double az = alpha * gyro_tensor[X][Y];
-  const double invdet = 1.0 / (1 + ax*ax + ay*ay + az*az);
-  double inv[3][3];
+  FOR_COMPONENTS(c) DOCMP2 {   // Overwrite P_prev
+    if (d->P[c][cmp]) {
+      if (W[c][cmp] && sigma[c][component_direction(c)]) {
+        const realnum *p = d->P[c][cmp];
+	realnum *pp = d->P_prev[c][cmp];
+        LOOP_OVER_VOL_OWNED(gv, c, i) {
+          pp[i] = p[i];
+	}
+      }
+    }
+  }
 
-  inv[X][X] = invdet * (1 + ax*ax);
-  inv[Y][Y] = invdet * (1 + ay*ay);
-  inv[Z][Z] = invdet * (1 + az*az);
-  inv[X][Y] = invdet * (ax*ay - az);
-  inv[Y][X] = invdet * (ay*ax + az);
-  inv[Z][X] = invdet * (az*ax - ay);
-  inv[X][Z] = invdet * (ax*az + ay);
-  inv[Y][Z] = invdet * (ay*az - ax);
-  inv[Z][Y] = invdet * (az*ay + ax);
-
-  FOR_COMPONENTS(c) DOCMP2 {
+  FOR_COMPONENTS(c) DOCMP2 {  // Perform matrix inversion
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
       if (W[c][cmp] && sigma[c][d0]) {
-        realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
+        realnum *p = d->P[c][cmp];
+        const realnum *pp = d->P_prev[c][cmp];
         const realnum *ptmp = d->P_tmp[c][cmp];
         const direction d1  = cycle_direction(gv.dim, d0, 1);
         const direction d2  = cycle_direction(gv.dim, d0, 2);
         const component c1 = direction_component(c, d1);
         const component c2 = direction_component(c, d2);
-        const realnum *ptmp1 = W[c1][cmp] ? d->P_tmp[c1][cmp] : NULL;
-        const realnum *ptmp2 = W[c2][cmp] ? d->P_tmp[c2][cmp] : NULL;
+        const realnum *pp1 = d->P_prev[c1][cmp];
+        const realnum *pp2 = d->P_prev[c2][cmp];
+        const realnum *ptmp1 = d->P_tmp[c1][cmp];
+        const realnum *ptmp2 = d->P_tmp[c2][cmp];
+	const int sgn1 = sgn[d0][d1];
+	const int sgn2 = sgn[d0][d2];
 
         LOOP_OVER_VOL_OWNED(gv, c, i) {
-          pp[i] = p[i];
-          p[i] = inv[d0][d0] * ptmp[i];
-          if (ptmp1) p[i] += inv[d0][d1] * ptmp1[i];
-          if (ptmp2) p[i] += inv[d0][d2] * ptmp2[i];
+          p[i] = 1/(1 + g2pisq*(pp[i]*pp[i] + pp1[i]*pp1[i] + pp2[i]*pp2[i]))
+	    * ((1 + g2pisq * pp[i]*pp[i]) * ptmp[i]
+	       + (g2pisq*pp[i]*pp1[i] - g2pi*sgn1*pp2[i]) * ptmp1[i]
+	       + (g2pisq*pp[i]*pp2[i] - g2pi*sgn2*pp1[i]) * ptmp2[i]);
         }
       }
     }
@@ -443,9 +439,8 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 9;
   size_t params_dims[1] = {num_params};
-  double bias[] = { gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y] };
   double params_data[] = {
-      8, (double)get_id(), bias[X], bias[Y], bias[Z],
+      8, (double)get_id(), bvec[0], bvec[1], bvec[2],
       alpha, omega_0, gamma, (double)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
