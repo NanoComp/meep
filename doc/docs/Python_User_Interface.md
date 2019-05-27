@@ -342,7 +342,7 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
-Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` will appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
 
 ### DrudeSusceptibility
 
@@ -510,7 +510,7 @@ One normally does not create objects of type `GeometricObject` directly, however
 
 In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
-#### Geometry Utilites
+#### Geometry Utilities
 
 See the (MPB documentation)[https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities] for utility functions to help manipulate geometric objects.
 
@@ -1415,7 +1415,7 @@ Note that far fields have the same units and scaling as the *Fourier transforms*
 [compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
 `OMP_NUM_THREADS` environment variable to specify multiple threads.)
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Python_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_near2far(filename, near2far)`**
 —
@@ -1591,11 +1591,11 @@ Note that although the various field components are stored at different places i
 <a name="output_epsilon"></a>
 **`output_epsilon()`**
 —
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
+Output the dielectric function (relative permittivity) ε. Note that this only outputs the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`output_mu()`**
 —
-Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
+Output the relative permeability function μ. Note that this only outputs the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`Simulation.output_dft(dft_fields, fname, where=None, center=None, size=None)`**
 —

@@ -616,7 +616,7 @@ The simulation script is in [examples/binary_grating_phasemap.ctl](https://githu
      (arith-sequence 0 1 nfreq))
 ```
 
-The phase of the zeroth-diffraction order is simply the angle of its complex mode coefficient. Note that it is generally only the relative phase (the phase difference) between different structures that is useful. The overall mode coefficient α is multiplied by a complex number given by the source amplitude, as well as an arbitrary (but deterministic) phase choice by the mode solver MPB — but as long as you keep the current source fixed as you vary the parameters of the structure, the relative phases are meaningful.
+The phase of the zeroth-diffraction order is simply the angle of its complex mode coefficient. Note that it is generally only the relative phase (the phase difference) between different structures that is useful. The overall mode coefficient α is multiplied by a complex number given by the source amplitude, as well as an arbitrary (but deterministic) phase choice by the mode solver MPB (i.e., which maximizes the energy in the real part of the fields via [`fix-field-phase`](https://mpb.readthedocs.io/en/latest/Scheme_User_Interface/#loading-and-manipulating-the-current-field)) — but as long as you keep the current source fixed as you vary the parameters of the structure, the relative phases are meaningful.
 
 The script is run from the shell terminal using the following Bash commands:
 
@@ -678,6 +678,8 @@ The figure below shows the transmittance spectra (left) and phase map (right). T
 <center>
 ![](../images/grating_phasemap.png)
 </center>
+
+See [Tutorials/Near to Far Field Spectra/Focusing Properties of a Metasurface Lens](Near_to_Far_Field_Spectra.md#focusing-properties-of-a-metasurface-lens) for a related example.
 
 Diffraction Spectrum of Liquid-Crystal Polarization Gratings
 ------------------------------------------------------------
