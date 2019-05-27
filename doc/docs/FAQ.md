@@ -464,3 +464,7 @@ The second approach is based on a full nonlinear simulation of the Raman process
 ### Does Meep support adjoint-based optimization?
 
 Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization.
+
+### Why does the time-stepping rate fluctuate erratically for jobs running on a shared-memory system?
+
+Occasionally, running jobs will experience intermittent slowdown on shared-memory systems due to [cache contention](https://en.wikipedia.org/wiki/Resource_contention) with other background jobs or (to a lesser extent) [daemons](https://en.wikipedia.org/wiki/Daemon_(computing)). This is a common source of performance degradation for *all* jobs (serial and parallel) and is independent of Meep per se. The slowdown can be observed via increasing values of the time-stepping rate (units of "s/step") which is shown as part of the progress output. Unfortunately, there is *no* workaround: e.g., [processor affinity](https://en.wikipedia.org/wiki/Processor_affinity) to bind threads/processes to cores (i.e., `mpirun --bind-to core --cpu-set 0,1 python foo.py`, `numactl -C 2 -m 2 python foo.py`, etc.), [disabling hyperthreading](https://aws.amazon.com/blogs/compute/disabling-intel-hyper-threading-technology-on-amazon-linux/), etc., will not significantly improve performance.
