@@ -284,6 +284,9 @@ public:
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
 			const grid_volume &gv, void *P_internal_data) const;
 
+  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+                          void *P_internal_data) const;
+
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 7; }
 

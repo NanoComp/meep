@@ -399,10 +399,10 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     if (d->P[c][cmp]) {
       if (W[c][cmp] && sigma[c][component_direction(c)]) {
         const realnum *p = d->P[c][cmp];
-	realnum *pp = d->P_prev[c][cmp];
+        realnum *pp = d->P_prev[c][cmp];
         LOOP_OVER_VOL_OWNED(gv, c, i) {
           pp[i] = p[i];
-	}
+        }
       }
     }
   }
@@ -434,6 +434,26 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	       + (gp0*gp1 - sgn1*gp2) * ptmp1[i]
 	       + (gp0*gp2 - sgn2*gp1) * ptmp2[i]);
         }
+      }
+    }
+  }
+}
+
+void gyrotropic_susceptibility::subtract_P(field_type ft,
+                                           realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+                                           void *P_internal_data) const {
+  lorentzian_data *d = (lorentzian_data *)P_internal_data;
+  field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
+  size_t ntot = d->ntot;
+  FOR_FT_COMPONENTS(ft, ec) DOCMP2 {
+    if (d->P[ec][cmp]) {
+      component dc = field_type_component(ft2, ec);
+      if (f_minus_p[dc][cmp]) {
+	const realnum pb = psat * bvec[component_direction(ec)];
+        realnum *p = d->P[ec][cmp];
+        realnum *fmp = f_minus_p[dc][cmp];
+        for (size_t i = 0; i < ntot; ++i)
+          fmp[i] -= pb + p[i];
       }
     }
   }
