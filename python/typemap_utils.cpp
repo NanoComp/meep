@@ -331,7 +331,6 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
   s->gamma = 0;
   s->noise_amp = 0;
   s->bias.x = s->bias.y = s->bias.z = 0;
-  s->alpha = 0;
   s->transitions.resize(0);
   s->initial_populations.resize(0);
 
@@ -349,10 +348,6 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 
   if (PyObject_HasAttrString(po, "bias")) {
     if (!get_attr_v3(po, &s->bias, "bias")) return 0;
-  }
-
-  if (PyObject_HasAttrString(po, "alpha")) {
-    if (!get_attr_dbl(po, &s->alpha, "alpha")) { return 0; }
   }
 
   if (PyObject_HasAttrString(po, "transitions")) {
@@ -477,11 +472,6 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
     PyObject *py_bias = vec2py(vector3_to_vec(s->bias));
     PyObject_SetAttrString(res, "bias", py_bias);
     Py_DECREF(py_bias);
-
-    PyObject *py_alpha = PyFloat_FromDouble(s->alpha);
-    PyObject_SetAttrString(res, "alpha", py_alpha);
-    Py_DECREF(py_alpha);
-
   } else if (s->noise_amp == 0) {
     if (s->drude) {
       PyObject *py_drude_class = PyObject_GetAttrString(geom_mod, "DrudeSusceptibility");

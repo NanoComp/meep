@@ -277,7 +277,7 @@ protected:
 /* gyrotropic susceptibility */
 class gyrotropic_susceptibility : public lorentzian_susceptibility {
 public:
-  gyrotropic_susceptibility(const vec &bias, double alpha, double omega_0, double gamma);
+  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -285,12 +285,12 @@ public:
 			const grid_volume &gv, void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
-  virtual int get_num_params() { return 8; }
+  virtual int get_num_params() { return 7; }
 
 protected:
-  double alpha;
-  double bvec[3];
-  int sgn[3][3];
+  double psat;     // conserved magnitude of the polarization vector
+  double bvec[3];  // unit vector pointing along direction of gyrotropic bias
+  int sgn[3][3];   // antisymmetric tensor: sgn[X][Y] = 1, sgn[Z][Y] = -1, etc.
 };
 
 class multilevel_susceptibility : public susceptibility {

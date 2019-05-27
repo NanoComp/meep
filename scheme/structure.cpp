@@ -1297,10 +1297,9 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
           sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma);
 	} else if (d->which_subclass == lorentzian_susceptibility::GYROTROPIC_SUSCEPTIBILITY) {
           gyrotropic_susceptibility *gd = d->subclass.gyrotropic_susceptibility_data;
-          master_printf("gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), alpha=%g, frequency=%g, gamma=%g\n",
-			gd->bias.x, gd->bias.y, gd->bias.z, gd->alpha, d->frequency, d->gamma);
-          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), gd->alpha,
-                                                    d->frequency, d->gamma);
+          master_printf("gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
+			gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
+          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma);
         } else { // just a Lorentzian
           master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency,
                         d->gamma);

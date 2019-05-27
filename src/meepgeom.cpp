@@ -1376,7 +1376,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
                                                         ss->drude);
       } else if (gyrotropic) {
         sus = new meep::gyrotropic_susceptibility(meep::vec(ss->bias.x, ss->bias.y, ss->bias.z),
-						  ss->alpha, ss->frequency, ss->gamma);
+						  ss->frequency, ss->gamma);
       } else {
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
@@ -1385,9 +1385,8 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
 		    gyrotropic ? "" : ss->drude ? "drude" : "lorentzian",
 		    ss->frequency, ss->gamma);
       if (noisy) master_printf(", amp=%g ", ss->noise_amp);
-      if (gyrotropic) master_printf(", bias=(%g,%g,%g), alpha=%g ",
-				    ss->bias.x, ss->bias.y, ss->bias.z,
-				    ss->alpha);
+      if (gyrotropic) master_printf(", bias=(%g,%g,%g) ",
+				    ss->bias.x, ss->bias.y, ss->bias.z);
       master_printf("\n");
     }
 

@@ -58,8 +58,7 @@
 (define-class noisy-drude-susceptibility drude-susceptibility
   (define-property noise-amp no-default 'number))
 (define-class gyrotropic-susceptibility lorentzian-susceptibility
-  (define-property bias no-default 'vector3)
-  (define-property alpha no-default 'number))
+  (define-property bias no-default 'vector3))
 
 (define polarizability lorentzian-susceptibility) ; backwards compat
 (define omega frequency) ; backwards compat
