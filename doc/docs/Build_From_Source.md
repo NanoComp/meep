@@ -238,7 +238,7 @@ Install Meep without support for the HDF5 libraries (this means you won't be abl
 
 **`--enable-portable-binary`**
 —
-By default, Meep's `configure` script picks compiler flags to optimize Meep as much as possible for the machine you are compiling on. If you wish to run the *same compiled executable* on other machines, however, you need to tell it not to pick compiler flags that use features specific to your current processor. In this case you should pass `--enable-portable-binary` to `configure`. (This option is mainly useful for people creating binary packages for Debian, Fedora, etcetera.)
+By default, Meep's `configure` script picks compiler flags to optimize Meep as much as possible for the machine you are compiling on. If you wish to run the *same compiled executable* on other machines, however, you need to tell it not to pick compiler flags that use features specific to your current processor. In this case you should pass `--enable-portable-binary` to `configure`. (This option is mainly useful for building binary packages for Debian, Fedora, etcetera.)
 
 **`--with-gcc-arch=arch`, `--without-gcc-arch`**
 —
@@ -246,7 +246,7 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 
 **`--with-openmp`**
 —
-This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency `near2far` calculations are sped up this way, but in the future we [hope to add](https://github.com/NanoComp/meep/issues/228) additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
 
 ### Building From Source
 
