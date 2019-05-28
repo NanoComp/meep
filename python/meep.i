@@ -218,6 +218,14 @@ void set_ctl_printf_callback(void (*callback)(const char *s)) {
 #endif
 }
 
+void set_mpb_printf_callback(void (*callback)(const char *s)) {
+#if HAVE_MPB_PRINTF_CALLBACK
+  mpb_printf_callback = callback;
+#else
+  (void)callback;
+#endif
+}
+
 static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
 
     if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
@@ -564,6 +572,7 @@ namespace meep {
     void (*master_printf_callback)(const char *s);
 }
 void set_ctl_printf_callback(void (*callback)(const char *s));
+void set_mpb_printf_callback(void (*callback)(const char *s));
 
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
                      double spectral_density, double Q_thresh, double rel_err_thresh,
