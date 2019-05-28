@@ -282,7 +282,7 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
 
 class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
 
-    def __init__(self, bias=Vector3(0, 0, 1), **kwargs):
+    def __init__(self, bias=Vector3(), **kwargs):
         super(GyrotropicLorentzianSusceptibility, self).__init__(**kwargs)
         self.bias = bias
 

@@ -364,7 +364,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       const realnum *w = W[c][cmp], *s = sigma[c][d0];
 
       if (!w || !s || (d0 != X && d0 != Y && d0 != Z))
-	abort("Non-3D fields not supported for gyrotropic media\n");
+	abort("Gyrotropic media require 3D Cartesian fields\n");
 
       const realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
       realnum *rhs = d->P_tmp[c][cmp];
@@ -379,17 +379,13 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
       const realnum *w1 = W[c1][cmp], *s1 = w1 ? sigma[c][d1] : NULL;
       const realnum *w2 = W[c2][cmp], *s2 = w2 ? sigma[c][d2] : NULL;
-      const realnum *pp1 = d->P_prev[c1][cmp], g1 = pi * dt * gyro_tensor[d0][d1];
-      const realnum *pp2 = d->P_prev[c2][cmp], g2 = pi * dt * gyro_tensor[d0][d2];
-
-      const realnum *p1 = d->P[c1][cmp];
-      const realnum *p2 = d->P[c2][cmp];
-
-      realnum *rhs1 = d->P_tmp[c1][cmp];
-      realnum *rhs2 = d->P_tmp[c2][cmp];
+      const realnum *pp1 = d->P_prev[c1][cmp], g1 = pi*dt*gyro_tensor[d0][d1];
+      const realnum *pp2 = d->P_prev[c2][cmp], g2 = pi*dt*gyro_tensor[d0][d2];
+      const realnum *p1 = d->P[c1][cmp], *p2 = d->P[c2][cmp];
+      realnum *rhs1 = d->P_tmp[c1][cmp], *rhs2 = d->P_tmp[c2][cmp];
 
       if (!pp1 || !pp2)
-	abort("Non-3D fields not supported for gyrotropic media\n");
+	abort("Gyrotropic media require 3D Cartesian fields\n");
 
       if (s2 && !s1) { // make s1 the non-NULL one if possible
         SWAP(direction, d1, d2);
@@ -448,20 +444,15 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
       realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
-      const realnum *rhs = d->P_tmp[c][cmp];
+      const realnum *rhs0 = d->P_tmp[c][cmp];
       const direction d1  = cycle_direction(gv.dim, d0, 1);
       const direction d2  = cycle_direction(gv.dim, d0, 2);
-      const component c1 = direction_component(c, d1);
-      const component c2 = direction_component(c, d2);
-      const realnum *rhs1 = d->P_tmp[c1][cmp];
-      const realnum *rhs2 = d->P_tmp[c2][cmp];
-
-      if (!rhs || !rhs1 || !rhs2)
-	abort("Internal error in gyrotropy code\n");
+      const realnum *rhs1 = d->P_tmp[direction_component(c, d1)][cmp];
+      const realnum *rhs2 = d->P_tmp[direction_component(c, d2)][cmp];
 
       LOOP_OVER_VOL(gv, c, i) {
 	pp[i] = p[i];
-	p[i]  = inv[d0][d0] * rhs[i] + inv[d0][d1] * rhs1[i] + inv[d0][d2] * rhs2[i];
+	p[i]  = inv[d0][d0] * rhs0[i] + inv[d0][d1] * rhs1[i] + inv[d0][d2] * rhs2[i];
       }
     }
   }
