@@ -362,70 +362,66 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
       const realnum *w = W[c][cmp], *s = sigma[c][d0];
-      if (w && s) {
-	if (d0 != X && d0 != Y && d0 != Z)
-	  abort("Cylindrical coordinates are not supported for gyrotropic media");
 
-        const realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
-	realnum *rhs = d->P_tmp[c][cmp];
+      if (!w || !s || (d0 != X && d0 != Y && d0 != Z))
+	abort("Non-3D fields not supported for gyrotropic media\n");
 
-        const ptrdiff_t is = gv.stride(d0) * (is_magnetic(c) ? -1 : +1);
+      const realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
+      realnum *rhs = d->P_tmp[c][cmp];
+      const ptrdiff_t is = gv.stride(d0) * (is_magnetic(c) ? -1 : +1);
 
-        direction d1 = cycle_direction(gv.dim, d0, 1);
-        component c1 = direction_component(c, d1);
-        ptrdiff_t is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
-        const realnum *w1 = W[c1][cmp];
-        const realnum *s1 = w1 ? sigma[c][d1] : NULL;
+      direction d1 = cycle_direction(gv.dim, d0, 1);
+      direction d2 = cycle_direction(gv.dim, d0, 2);
+      component c1 = direction_component(c, d1);
+      component c2 = direction_component(c, d2);
+      ptrdiff_t is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
+      ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
 
-        direction d2 = cycle_direction(gv.dim, d0, 2);
-        component c2 = direction_component(c, d2);
-        ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
-        const realnum *w2 = W[c2][cmp];
-        const realnum *s2 = w2 ? sigma[c][d2] : NULL;
+      const realnum *w1 = W[c1][cmp], *s1 = w1 ? sigma[c][d1] : NULL;
+      const realnum *w2 = W[c2][cmp], *s2 = w2 ? sigma[c][d2] : NULL;
+      const realnum *pp1 = d->P_prev[c1][cmp], g1 = pi * dt * gyro_tensor[d0][d1];
+      const realnum *pp2 = d->P_prev[c2][cmp], g2 = pi * dt * gyro_tensor[d0][d2];
 
-	// Off-diagonal polarization components
-        const realnum *pp1 = d->P_prev[c1][cmp];
-        const realnum *pp2 = d->P_prev[c2][cmp];
-	const realnum g1 = pi * dt * gyro_tensor[d0][d1];
-	const realnum g2 = pi * dt * gyro_tensor[d0][d2];
+      const realnum *p1 = d->P[c1][cmp];
+      const realnum *p2 = d->P[c2][cmp];
 
-        if (s2 && !s1) { // make s1 the non-NULL one if possible
-          SWAP(direction, d1, d2);
-          SWAP(component, c1, c2);
-          SWAP(ptrdiff_t, is1, is2);
-          SWAP(const realnum *, w1, w2);
-          SWAP(const realnum *, s1, s2);
-        }
-        if (s1 && s2) { // 3x3 anisotropic
-          LOOP_OVER_VOL_OWNED(gv, c, i) {
-            if (s[i] != 0) {
-              rhs[i] = (2 - omega0dtsqr_denom) * p[i]
-		+ omega0dtsqr * (s[i] * w[i]
-				 + OFFDIAG(s1, w1, is1, is)
-				 + OFFDIAG(s2, w2, is2, is))
-		- gamma1 * pp[i];
-	      if (pp1) rhs[i] -= g1 * pp1[i];
-	      if (pp2) rhs[i] -= g2 * pp2[i];
-            }
-          }
-        } else if (s1) { // 2x2 anisotropic
-          LOOP_OVER_VOL_OWNED(gv, c, i) {
-            if (s[i] != 0) {
-              rhs[i] = (2 - omega0dtsqr_denom) * p[i]
-		+ omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is))
-		- gamma1 * pp[i];
-	      if (pp1) rhs[i] -= g1 * pp1[i];
-	      if (pp2) rhs[i] -= g2 * pp2[i];
-            }
-          }
-        } else { // isotropic
-          LOOP_OVER_VOL_OWNED(gv, c, i) {
-            rhs[i] = (2 - omega0dtsqr_denom) * p[i]
-	      + omega0dtsqr * (s[i] * w[i]) - gamma1 * pp[i];
-	    if (pp1) rhs[i] -= g1 * pp1[i];
-	    if (pp2) rhs[i] -= g2 * pp2[i];
-          }
-        }
+      realnum *rhs1 = d->P_tmp[c1][cmp];
+      realnum *rhs2 = d->P_tmp[c2][cmp];
+
+      if (!pp1 || !pp2)
+	abort("Non-3D fields not supported for gyrotropic media\n");
+
+      if (s2 && !s1) { // make s1 the non-NULL one if possible
+        SWAP(direction, d1, d2);
+        SWAP(component, c1, c2);
+        SWAP(ptrdiff_t, is1, is2);
+        SWAP(const realnum *, w1, w2);
+        SWAP(const realnum *, s1, s2);
+      }
+      if (s1 && s2) { // 3x3 anisotropic
+	LOOP_OVER_VOL(gv, c, i) {
+	  if (s[i] != 0) {
+	    rhs[i] = (2 - omega0dtsqr_denom) * p[i]
+	      + omega0dtsqr * (s[i] * w[i]
+			       + OFFDIAG(s1, w1, is1, is)
+			       + OFFDIAG(s2, w2, is2, is))
+	      - gamma1 * pp[i] - g1 * pp1[i] - g2 * pp2[i];
+	  }
+	}
+      } else if (s1) { // 2x2 anisotropic
+	LOOP_OVER_VOL(gv, c, i) {
+	  if (s[i] != 0) {
+	    rhs[i] = (2 - omega0dtsqr_denom) * p[i]
+	      + omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is))
+	      - gamma1 * pp[i] - g1 * pp1[i] - g2 * pp2[i];
+	  }
+	}
+      } else { // isotropic
+	LOOP_OVER_VOL(gv, c, i) {
+	  rhs[i] = (2 - omega0dtsqr_denom) * p[i]
+	    + omega0dtsqr * (s[i] * w[i]) - gamma1 * pp[i]
+	    - g1 * pp1[i] - g2 * pp2[i];
+	}
       }
     }
   }
@@ -451,21 +447,21 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
-      if (W[c][cmp] && sigma[c][d0]) {
-        realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp], *rhs = d->P_tmp[c][cmp];
-        const direction d1  = cycle_direction(gv.dim, d0, 1);
-        const direction d2  = cycle_direction(gv.dim, d0, 2);
-        const component c1 = direction_component(c, d1);
-        const component c2 = direction_component(c, d2);
-        const realnum *rhs1 = W[c1][cmp] ? d->P_tmp[c1][cmp] : NULL;
-	const realnum *rhs2 = W[c2][cmp] ? d->P_tmp[c2][cmp] : NULL;
+      realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
+      const realnum *rhs = d->P_tmp[c][cmp];
+      const direction d1  = cycle_direction(gv.dim, d0, 1);
+      const direction d2  = cycle_direction(gv.dim, d0, 2);
+      const component c1 = direction_component(c, d1);
+      const component c2 = direction_component(c, d2);
+      const realnum *rhs1 = d->P_tmp[c1][cmp];
+      const realnum *rhs2 = d->P_tmp[c2][cmp];
 
-	LOOP_OVER_VOL_OWNED(gv, c, i) {
-	  pp[i] = p[i];
-	  p[i]  = inv[d0][d0] * rhs[i];
-	  if (rhs1) p[i] += inv[d0][d1] * rhs1[i];
-	  if (rhs2) p[i] += inv[d0][d2] * rhs2[i];
-	}
+      if (!rhs || !rhs1 || !rhs2)
+	abort("Internal error in gyrotropy code\n");
+
+      LOOP_OVER_VOL(gv, c, i) {
+	pp[i] = p[i];
+	p[i]  = inv[d0][d0] * rhs[i] + inv[d0][d1] * rhs1[i] + inv[d0][d2] * rhs2[i];
       }
     }
   }
