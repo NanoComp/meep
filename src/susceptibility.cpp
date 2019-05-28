@@ -363,34 +363,33 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
       const realnum *w = W[c][cmp];
-      if (w) {
-        if (d0 != X && d0 != Y && d0 != Z)
-          abort("Cylindrical coordinates not supported for gyrotropic media\n");
 
-        const direction d1 = cycle_direction(gv.dim, d0, 1);
-        const direction d2 = cycle_direction(gv.dim, d0, 2);
-        const component c1 = direction_component(c, d1);
-        const component c2 = direction_component(c, d2);
+      if (!w || (d0 != X && d0 != Y && d0 != Z))
+	abort("Cylindrical coordinates not supported for gyrotropic media\n");
 
-        const realnum *pp = d->P_prev[c][cmp];
-        const realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
-        const realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
-        realnum *ptmp = d->P_tmp[c][cmp];
+      const direction d1 = cycle_direction(gv.dim, d0, 1);
+      const direction d2 = cycle_direction(gv.dim, d0, 2);
+      const component c1 = direction_component(c, d1);
+      const component c2 = direction_component(c, d2);
 
-        const realnum *w1 = W[c1][cmp], *s1 = w1 ? sigma[c1][d1] : NULL;
-        const realnum *w2 = W[c2][cmp], *s2 = w2 ? sigma[c2][d2] : NULL;
-        const realnum pb1 = psat  * bvec[d1], pb2 = psat  * bvec[d2];
-        const realnum wb1 = w4pit * bvec[d1], wb2 = w4pit * bvec[d2];
-	const int sgn1 = sgn[d0][d1], sgn2 = sgn[d0][d2];
+      const realnum *pp = d->P_prev[c][cmp];
+      const realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
+      const realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
+      realnum *ptmp = d->P_tmp[c][cmp];
 
-	if (!pp1 || !pp2 || !p1 || !p2 || !s1 || !s2)
-	  abort("Gyrotropic media require 3D fields\n");
+      const realnum *w1 = W[c1][cmp], *s1 = w1 ? sigma[c1][d1] : NULL;
+      const realnum *w2 = W[c2][cmp], *s2 = w2 ? sigma[c2][d2] : NULL;
+      const realnum pb1 = psat  * bvec[d1], pb2 = psat  * bvec[d2];
+      const realnum wb1 = w4pit * bvec[d1], wb2 = w4pit * bvec[d2];
+      const int sgn1 = sgn[d0][d1], sgn2 = sgn[d0][d2];
 
-        LOOP_OVER_VOL_OWNED(gv, c, i) {
-          ptmp[i] = pp[i]
-	    + sgn1 * ((g2pi * pp1[i] + dt4pi*s1[i]*w1[i]) * (pb2+p2[i]) + wb1*p2[i])
-	    + sgn2 * ((g2pi * pp2[i] + dt4pi*s2[i]*w2[i]) * (pb1+p1[i]) + wb2*p1[i]);
-	}
+      if (!pp1 || !pp2 || !p1 || !p2 || !s1 || !s2)
+	abort("Gyrotropic media require 3D fields\n");
+
+      LOOP_OVER_VOL(gv, c, i) {
+	ptmp[i] = pp[i]
+	  + sgn1 * ((g2pi * pp1[i] + dt4pi*s1[i]*w1[i]) * (pb2+p2[i]) + wb1*p2[i])
+	  + sgn2 * ((g2pi * pp2[i] + dt4pi*s2[i]*w2[i]) * (pb1+p1[i]) + wb2*p1[i]);
       }
     }
   }
@@ -400,7 +399,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       if (W[c][cmp] && sigma[c][component_direction(c)]) {
         const realnum *p = d->P[c][cmp];
         realnum *pp = d->P_prev[c][cmp];
-        LOOP_OVER_VOL_OWNED(gv, c, i) {
+        LOOP_OVER_VOL(gv, c, i) {
           pp[i] = p[i];
         }
       }
@@ -425,7 +424,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	const int sgn1 = sgn[d0][d1], sgn2 = sgn[d0][d2];
 	realnum gp0, gp1, gp2;
 
-	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	LOOP_OVER_VOL(gv, c, i) {
 	  gp0 = g2pi * (pb0 + pp[i]);
 	  gp1 = g2pi * (pb1 + pp1[i]);
 	  gp2 = g2pi * (pb2 + pp2[i]);
@@ -434,6 +433,40 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	       + (gp0*gp1 - sgn1*gp2) * ptmp1[i]
 	       + (gp0*gp2 - sgn2*gp1) * ptmp2[i]);
         }
+      }
+    }
+  }
+
+  // FIXME: hack to clamp the magnitude of the total polarization vector at psat.
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (d->P[c][cmp]) {
+      const direction d0 = component_direction(c);
+      const direction d1  = cycle_direction(gv.dim, d0, 1);
+      const direction d2  = cycle_direction(gv.dim, d0, 2);
+      const component c1 = direction_component(c, d1);
+      const component c2 = direction_component(c, d2);
+
+      const realnum *p = d->P[c][cmp];
+      const realnum *p1 = d->P_prev[c1][cmp], *p2 = d->P_prev[c2][cmp];
+      const realnum pb0 = psat * bvec[d0];
+      const realnum pb1 = psat * bvec[d1], pb2 = psat  * bvec[d2];
+      realnum *ptmp = d->P_tmp[c][cmp];
+      realnum ptot0, ptot1, ptot2;
+
+      LOOP_OVER_VOL(gv, c, i) {
+	ptot0 = pb0 + p[i];
+	ptot1 = pb1 + p1[i];
+	ptot2 = pb2 + p2[i];
+	ptmp[i] = ptot0*psat/sqrt(ptot0*ptot0+ptot1*ptot1+ptot2*ptot2) - pb0;
+      }
+    }
+  }
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (d->P[c][cmp]) {
+      realnum *p = d->P[c][cmp];
+      const realnum *ptmp = d->P_tmp[c][cmp];
+      LOOP_OVER_VOL(gv, c, i) {
+	p[i] = ptmp[i];
       }
     }
   }

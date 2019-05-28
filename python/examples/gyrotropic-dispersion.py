@@ -14,10 +14,10 @@ def meep_sim(gn, sn, epsn, tmax):
     ## For mu ~ 1 and epsn ~ 15, wavelength will be ~0.26.  Set dx and dt to ~0.01
     resolution = 100
 
-    cellsize = [0.01, 0.01, 7.0] # Don't set to zero size: need 3D fields
+    cellsize = [0.01, 0.01, 5.0] # Don't set to zero size: need 3D fields
     fsrc = 0.8
-    src_z = -1.75
-    pml_depth = 1.5
+    src_z = -1.8
+    pml_depth = 0.25
 
     import meep as mp
 
@@ -58,4 +58,3 @@ meep_sim(gn, sn, epsn, 200)
 plt.subplot(2,1,2)
 meep_sim(gn, sn, epsn, 500)
 plt.tight_layout()
-plt.show()
