@@ -187,6 +187,9 @@ if test $have_mpb = maybe; then
 fi
 
 AM_CONDITIONAL(WITH_MPB, test "x$have_mpb" = "xyes")
+# check for mpb_printf_callback
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <mpb.h>]], [mpb_printf_callback = 0;])],
+  AC_DEFINE([HAVE_MPB_PRINTF_CALLBACK], [1], [If we have the mpb_printf_callback variable]))
 
 ##############################################################################
 # GNU Scientific Library
