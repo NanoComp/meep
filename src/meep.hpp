@@ -287,6 +287,11 @@ public:
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 7; }
+  virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+    (void)c;
+    (void)W;
+    return true;
+  }
 
 protected:
   double gyro_tensor[3][3];
