@@ -749,21 +749,21 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %typemap(in) const meep::src_time & {
-    PyObject *swig_obj = NULL;
+    PyObject *swig_obj_1 = NULL;
     void *tmp_ptr = 0;
     int tmp_res = 0;
 
     if(PyObject_IsInstance($input, py_source_time_object())) {
-        swig_obj = PyObject_GetAttrString($input, "swigobj");
+        swig_obj_1 = PyObject_GetAttrString($input, "swigobj");
     } else if(PyObject_IsInstance($input, py_meep_src_time_object())) {
-        swig_obj = $input;
-        Py_XINCREF(swig_obj);
+        swig_obj_1 = $input;
+        Py_XINCREF(swig_obj_1);
     } else {
       meep::abort("Expected a meep.source.SourceTime or a meep.src_time\n");
     }
 
-    tmp_res = SWIG_ConvertPtr(swig_obj, &tmp_ptr, $1_descriptor, 0);
-    Py_XDECREF(swig_obj);
+    tmp_res = SWIG_ConvertPtr(swig_obj_1, &tmp_ptr, $1_descriptor, 0);
+    Py_XDECREF(swig_obj_1);
 
     if(!SWIG_IsOK(tmp_res)) {
         SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
