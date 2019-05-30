@@ -355,7 +355,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
   const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
   const double gamma1 = (1 - g2pi * dt / 2);
-  const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
+  const double diagfac = 2 - (no_omega_0_denominator ? 0 : omega0dtsqr);
   (void)W_prev; // unused;
 
   FOR_COMPONENTS(c) DOCMP2 {
@@ -364,60 +364,29 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       const realnum *w = W[c][cmp], *s = sigma[c][d0];
 
       if (!w || !s || (d0 != X && d0 != Y && d0 != Z))
-	abort("Gyrotropic media require 3D Cartesian fields\n");
+	abort("gyrotropic media require 3D Cartesian fields\n");
 
-      const realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
-      realnum *rhs = d->P_tmp[c][cmp];
-      const ptrdiff_t is = gv.stride(d0) * (is_magnetic(c) ? -1 : +1);
-
-      direction d1 = cycle_direction(gv.dim, d0, 1);
-      direction d2 = cycle_direction(gv.dim, d0, 2);
-      component c1 = direction_component(c, d1);
-      component c2 = direction_component(c, d2);
-      ptrdiff_t is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
-      ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
-
+      const direction d1 = cycle_direction(gv.dim, d0, 1);
+      const direction d2 = cycle_direction(gv.dim, d0, 2);
+      const component c1 = direction_component(c, d1);
+      const component c2 = direction_component(c, d2);
       const realnum *w1 = W[c1][cmp], *s1 = w1 ? sigma[c][d1] : NULL;
       const realnum *w2 = W[c2][cmp], *s2 = w2 ? sigma[c][d2] : NULL;
-      const realnum *pp1 = d->P_prev[c1][cmp], g1 = pi*dt*gyro_tensor[d0][d1];
-      const realnum *pp2 = d->P_prev[c2][cmp], g2 = pi*dt*gyro_tensor[d0][d2];
-      const realnum *p1 = d->P[c1][cmp], *p2 = d->P[c2][cmp];
-      realnum *rhs1 = d->P_tmp[c1][cmp], *rhs2 = d->P_tmp[c2][cmp];
+      const realnum *p0 = d->P[c][cmp],  *pp0 = d->P_prev[c][cmp];
+      const realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
+      const realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
+      realnum *rhs0 = d->P_tmp[c][cmp], *rhs1 = d->P_tmp[c1][cmp], *rhs2 = d->P_tmp[c2][cmp];
+      const realnum g01 = pi*dt*gyro_tensor[d0][d1], g10 = pi*dt*gyro_tensor[d1][d0];
+      const realnum g12 = pi*dt*gyro_tensor[d1][d2], g21 = pi*dt*gyro_tensor[d2][d1];
+      const realnum g20 = pi*dt*gyro_tensor[d2][d0], g02 = pi*dt*gyro_tensor[d0][d2];
 
-      if (!pp1 || !pp2)
-	abort("Gyrotropic media require 3D Cartesian fields\n");
+      if (!pp1 || !pp2) abort("gyrotropic media require 3D Cartesian fields\n");
+      if (s1 || s2) abort("gyrotropic media do not support tensor sigma\n");
 
-      if (s2 && !s1) { // make s1 the non-NULL one if possible
-        SWAP(direction, d1, d2);
-        SWAP(component, c1, c2);
-        SWAP(ptrdiff_t, is1, is2);
-        SWAP(const realnum *, w1, w2);
-        SWAP(const realnum *, s1, s2);
-      }
-      if (s1 && s2) { // 3x3 anisotropic
-	LOOP_OVER_VOL(gv, c, i) {
-	  if (s[i] != 0) {
-	    rhs[i] = (2 - omega0dtsqr_denom) * p[i]
-	      + omega0dtsqr * (s[i] * w[i]
-			       + OFFDIAG(s1, w1, is1, is)
-			       + OFFDIAG(s2, w2, is2, is))
-	      - gamma1 * pp[i] - g1 * pp1[i] - g2 * pp2[i];
-	  }
-	}
-      } else if (s1) { // 2x2 anisotropic
-	LOOP_OVER_VOL(gv, c, i) {
-	  if (s[i] != 0) {
-	    rhs[i] = (2 - omega0dtsqr_denom) * p[i]
-	      + omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is))
-	      - gamma1 * pp[i] - g1 * pp1[i] - g2 * pp2[i];
-	  }
-	}
-      } else { // isotropic
-	LOOP_OVER_VOL(gv, c, i) {
-	  rhs[i] = (2 - omega0dtsqr_denom) * p[i]
-	    + omega0dtsqr * (s[i] * w[i]) - gamma1 * pp[i]
-	    - g1 * pp1[i] - g2 * pp2[i];
-	}
+      LOOP_OVER_VOL_OWNED(gv, c, i) {
+	rhs0[i] = diagfac*p0[i] - g01*pp1[i] - g02*pp2[i] - gamma1*pp0[i] + omega0dtsqr*s[i]*w[i];
+	rhs1[i] = diagfac*p1[i] - g12*pp2[i] - g10*pp0[i] - gamma1*pp1[i];
+	rhs2[i] = diagfac*p2[i] - g21*pp1[i] - g20*pp0[i] - gamma1*pp2[i];
       }
     }
   }
@@ -428,31 +397,32 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   const double gy = pi * dt * gyro_tensor[Z][X];
   const double gz = pi * dt * gyro_tensor[X][Y];
   const double invdet = 1.0 / gd / (gd*gd + gx*gx + gy*gy + gz*gz);
-  double inv[3][3];
-
-  inv[X][X] = invdet * (gd*gd + gx*gx);
-  inv[Y][Y] = invdet * (gd*gd + gy*gy);
-  inv[Z][Z] = invdet * (gd*gd + gz*gz);
-  inv[X][Y] = invdet * (gx*gy + gd*gz);
-  inv[Y][X] = invdet * (gy*gx - gd*gz);
-  inv[Z][X] = invdet * (gz*gx + gd*gy);
-  inv[X][Z] = invdet * (gx*gz - gd*gy);
-  inv[Y][Z] = invdet * (gy*gz + gd*gx);
-  inv[Z][Y] = invdet * (gz*gy - gd*gx);
+  const double inv[3][3]
+    = {{ invdet*(gd*gd+gx*gx), invdet*(gx*gy+gd*gz), invdet*(gx*gz-gd*gy) },
+       { invdet*(gy*gx-gd*gz), invdet*(gd*gd+gy*gy), invdet*(gy*gz+gd*gx) },
+       { invdet*(gz*gx+gd*gy), invdet*(gz*gy-gd*gx), invdet*(gd*gd+gz*gz) }};
 
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       const direction d0 = component_direction(c);
-      realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
-      const realnum *rhs0 = d->P_tmp[c][cmp];
       const direction d1  = cycle_direction(gv.dim, d0, 1);
       const direction d2  = cycle_direction(gv.dim, d0, 2);
-      const realnum *rhs1 = d->P_tmp[direction_component(c, d1)][cmp];
-      const realnum *rhs2 = d->P_tmp[direction_component(c, d2)][cmp];
+      const component c1 = direction_component(c, d1);
+      const component c2 = direction_component(c, d2);
+      realnum *p0 = d->P[c][cmp],  *pp0 = d->P_prev[c][cmp];
+      realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
+      realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
+      const realnum *rhs0 = d->P_tmp[c][cmp];
+      const realnum *rhs1 = d->P_tmp[c1][cmp];
+      const realnum *rhs2 = d->P_tmp[c2][cmp];
 
-      LOOP_OVER_VOL(gv, c, i) {
-	pp[i] = p[i];
-	p[i]  = inv[d0][d0] * rhs0[i] + inv[d0][d1] * rhs1[i] + inv[d0][d2] * rhs2[i];
+      LOOP_OVER_VOL_OWNED(gv, c, i) {
+	pp0[i] = p0[i];
+	pp1[i] = p1[i];
+	pp2[i] = p2[i];
+	p0[i]  = inv[d0][d0] * rhs0[i] + inv[d0][d1] * rhs1[i] + inv[d0][d2] * rhs2[i];
+	p1[i]  = inv[d1][d1] * rhs1[i] + inv[d1][d2] * rhs2[i] + inv[d1][d0] * rhs0[i];
+	p2[i]  = inv[d2][d2] * rhs2[i] + inv[d2][d0] * rhs0[i] + inv[d2][d1] * rhs1[i];
       }
     }
   }
