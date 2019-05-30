@@ -281,6 +281,7 @@ public:
 			    bool no_omega_0_denominator = true);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
+  bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
 			const grid_volume &gv, void *P_internal_data) const;
