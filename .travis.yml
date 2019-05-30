@@ -17,6 +17,7 @@ addons:
     - libopenmpi-dev
     - mpi-default-bin
     - openmpi-bin
+    - ffmpeg
 
 ##################################################
 # environment variables applied to all build cases
@@ -64,7 +65,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py
+      - pip install numpy mpi4py scipy h5py matplotlib
   - python: "2.7"
     env:
       - MPICONF="--with-mpi"
@@ -79,7 +80,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py
+      - pip install numpy mpi4py scipy h5py matplotlib
   - python: "2.7"
     env:
       - MPICONF="--with-mpi"
@@ -95,7 +96,7 @@ matrix:
           - *common_deps
           - libhdf5-openmpi-dev
     install:
-      - pip install numpy mpi4py scipy
+      - pip install numpy mpi4py scipy matplotlib
       - pip install --no-binary=h5py h5py
   - python: "3.7"
     env:
@@ -110,7 +111,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py coverage coveralls
+      - pip install numpy mpi4py scipy h5py coverage coveralls matplotlib
   - python: "3.7"
     env:
       - MPICONF="--with-mpi"
@@ -125,7 +126,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py
+      - pip install numpy mpi4py scipy h5py matplotlib
   - python: "3.7"
     env:
       - MPICONF="--with-mpi"
@@ -141,7 +142,7 @@ matrix:
           - *common_deps
           - libhdf5-openmpi-dev
     install:
-      - pip install numpy mpi4py scipy
+      - pip install numpy mpi4py scipy matplotlib
       - pip install --no-binary=h5py h5py
 
 
