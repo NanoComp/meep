@@ -37,3 +37,6 @@ Using the previous bent waveguide example, this tutorial calculates the loss, tr
 
 4. __`ring.ipynb`__ -
 Computes the resonant mode frequencies of a 2D ring resonator using `harminv`.
+
+5. __`visualization.ipynb`__ -
+Demonstrates various visualization and animation features.

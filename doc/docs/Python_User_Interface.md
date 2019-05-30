@@ -1525,9 +1525,111 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 
 ### Data Visualization
 
+This module attempts to provide some simple visualization functions that should just work in most cases to provide some graphical intuition for what you're working with. The spirit of the module is to provide functions that can be called with _no customization options whatsoever_ and will do useful relevant things by default, but which can also be customized in cases where you _do_ want to take the time to spruce up the output.
+
+**`Simulation.plot2D(ax=None, output_plane=None fields=None, labels=False, eps_parameters=None,boundary_parameters=None, source_parameters=None,monitor_parameters=None, field_parameters=None)`**
+—
+Plots a 2D cross section of the simulation domain using `matplotlib`. The plot includes the simulation geometry, boundary layers, sources, and monitors. Can also superimpose fields on top of 2D slice. Requires [matplotlib](https://matplotlib.org).
+
+* `ax`: A `matplotlib` axis object. `plot2D()` will add plot objects, like lines, patches, and scatter plots, to this object. If no `ax` is supplied, then the routine will create a new figure and grab its axis.
+* `output_plane`: A `Volume` object that specifies the plane over which to plot. Must be a 2D volume and a subset of the entire simulation volume (i.e. it should not span outside the domain at all).
+* `fields`: The field component (`mp.Ex`, `mp.Ey`, `mp.Ez`, `mp.Hx`, `mp.Hy`, `mp.Hz`) to superimpose over the simulation geometry. Default is `None`, where no fields are superimposed.
+* `labels`: If `True`, then labels will appear over each of the simulation elements.
+* `eps_parameters`: A `dict` of optional plotting parameters that override the default plotting parameters for the geometry.
+   * `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
+   * `cmap='binary'`: the color map of the geometry
+   * `alpha=1.0`: transparency of geometry  
+* `boundary_parameters`:A `dict` of optional plotting parameters that override the default plotting parameters for the boundary layers. Available parameters include:
+   * `alpha=1.0`: transparency of boundary layers
+   * `facecolor='g'`: color of polygon face
+   * `edgecolor='g'`: color of outline stroke
+   * `linewidth=1`: line width of outline stroke
+   * `hatch='\'`: hatching pattern
+* `source_parameters`: A `dict` of optional plotting parameters that override the default plotting parameters for the sources.
+   * `color='r`: color of line and pt sources
+   * `alpha=1.0`: transparency of source
+   * `facecolor='none'`: color of polygon face for planar sources
+   * `edgecolor='r'`: color of outline stroke for planar sources
+   * `linewidth=1`: line width of outline stroke
+   * `hatch='\'`: hatching pattern
+   * `label_color='r'`: color of source labels
+   * `label_alpha=0.3`: transparency of source label box
+   * `offset=20`: distance from source center and label box
+* `monitor_parameters`: A `dict` of optional plotting parameters that override the default plotting parameters for the monitors.
+   * `color='g`: color of line and point monitors
+   * `alpha=1.0`: transparency of monitors
+   * `facecolor='none'`: color of polygon face for planar monitors
+   * `edgecolor='r'`: color of outline stroke for planar monitors
+   * `linewidth=1`: line width of outline stroke
+   * `hatch='\'`: hatching pattern
+   * `label_color='g'`: color of source labels
+   * `label_alpha=0.3`: transparency of monitor label box
+   * `offset=20`: distance from monitor center and label box
+* `field_parameters`: A `dict` of optional plotting parameters that override the default plotting parameters for the fields.
+   * `interpolation='spline36'`: interpolation function used to upsample field pixels
+   * `cmap='RdBu'`: color map for field pixels
+   * `alpha=0.6`: transparency of fields
+
+**`Simulation.plot3D()`**
+— Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in jupyter notebooks.
+
 **`Simulation.visualize_chunks()`**
 —
 Displays an interactive image of how the cell is divided into chunks. Each rectangular region is a chunk, and each color represents a different processor. Requires [matplotlib](https://matplotlib.org).
+
+#### Animate2D
+A class used to record the fields while the simulation is timestepping (as a result of a `run` function). The user first intializes the object by specifying the simulation object and the field component of interest. The object can then be passed to any arbitrary step function modifier. For example, one can record the `E_z` component every 1 MEEP time units for 25 units with:
+```python
+animate = mp.Animate2D(sim,mp.Ez)
+sim.run(mp.at_every(1,animate),until=25)
+```
+
+By default, the object saves each frame as a png image into memory (not disk). This is typically more memory efficient than storing the actual fields. If the user sets the `normalize` argument, then the object will save the actual field information as a `numpy` array to be normalized for post processing. The user can also choose to update the fields of a figure in realtime by setting the `realtime` flag. This does not work for IPython or Jupyter notebooks, however.
+
+Once the simulation is run, the user can output the animation as an interactive JSHTML object, an mp4, or a GIF.
+
+Multiple Animate2D objects can be initialized and passed to the run function to track different volume locations (using `mp.in_volume`) or field components.
+
+Properties:
+
+**`sim`**
+— simulation object.
+
+**`fields`**
+— field component to record at each time step.
+
+**`f=None`**
+— optional `matplotlib` figure object that the routine will update on each call. If not supplied, then a new one will be created upon initialization.
+
+**`realtime=True`**
+— whether or not to update a figure window in realtime as the simulation progresses. Disabled by default. Not compatible with IPython/Jupyter notebooks.
+
+**`normalize=False`**
+— records fields at each time step in memory in a numpy array and then normalizes the result for future post-processing.
+
+**`plot_modifiers=None`**
+— A list of functions that can modify the figure's `axis` object. Each function modifier accepts a single argument, an `axis` object, and must return that same axis object. The following modifier changes the `xlabel`:
+```python
+def mod1(ax):
+    ax.set_xlabel('Testing')
+    return ax
+
+plot_modifiers = [mod1]
+```
+
+**`**customization_args`**
+— customization keyword arguments pass to `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
+
+Methods:
+
+**`Animate2D.to_jshtml(fps)`**
+— Outputs an interactable JSHTML animation object that is embeddable in Jupyter notebooks. The object is packaged with controls to manipulate the video's playback. User must specify a frame rate `fps` in frames per second.
+
+**`Animate2D.to_mp4(fps,filename)`**
+— Generates and outputs an mp4 video file of the animation with the filename, `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p format. Requires `ffmpeg`.
+
+**`Animate2D.to_mp4(fps,filename)`**
+— Generates and outputs a GIF file of the animation with the filename, `filename` and the frame rate, `fps`. Requires `ffmpeg`.
 
 Run and Step Functions
 ----------------------

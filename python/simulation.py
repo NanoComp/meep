@@ -2185,11 +2185,11 @@ class Simulation(object):
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=True)
 
-    def plot2D(self,ax=None,output_plane=None,fields=None,labels=True):
-        return vis.plot2D(self,ax=ax,output_plane=output_plane,fields=fields,labels=labels)
+    def plot2D(self,**kwargs):
+        return vis.plot2D(self,**kwargs)
     
-    def plot_fields(self,ax=None,fields=None,output_plane=None):
-        return vis.plot_fields(self,ax=ax,fields=fields,output_plane=output_plane)
+    def plot_fields(self,**kwargs):
+        return vis.plot_fields(self,**kwargs)
     
     def plot3D(self):
         return vis.plot3D(self)

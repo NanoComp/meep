@@ -16,6 +16,92 @@ from meep.source import EigenModeSource, check_positive
 # Contains all necesarry visualation routines for use with
 # pymeep and pympb.
 
+# ------------------------------------------------------- #
+# Functions used to define the default plotting parameters
+# for the different plotting routines.
+
+default_source_parameters = {
+        'color':'r',
+        'edgecolor':'r',
+        'facecolor':'none',
+        'hatch':'/',
+        'linewidth':2
+    }
+
+default_monitor_parameters = {
+        'color':'b',
+        'edgecolor':'b',
+        'facecolor':'none',
+        'hatch':'/',
+        'linewidth':2
+    }
+
+default_field_parameters = {
+        'interpolation':'spline36',
+        'cmap':'RdBu',
+        'alpha':0.6
+        }
+
+default_eps_parameters = {
+        'interpolation':'spline36', 
+        'cmap':'binary',
+        'alpha':1.0
+    }
+
+default_boundary_parameters = {
+        'color':'g',
+        'edgecolor':'g',
+        'facecolor':'none',
+        'hatch':'/'
+    }
+
+default_volume_parameters = {
+        'alpha':1.0,
+        'color':'k',
+        'linestyle':'-',
+        'linewidth':1,
+        'marker':'.',
+        'edgecolor':'k',
+        'facecolor':'none',
+        'hatch':'/'
+    }
+
+default_label_parameters = {
+    'label_color':'r',
+    'offset':20,
+    'label_alpha':0.3
+}
+
+# ------------------------------------------------------- #
+# Routines to add legends to plot
+
+def place_label(ax,label_text,x,y,centerx,centery,label_parameters=None):
+
+    label_parameters = default_label_parameters if label_parameters is None else dict(default_label_parameters, **label_parameters)
+
+    offset = label_parameters['offset']
+    alpha = label_parameters['label_alpha']
+    color = label_parameters['label_color']
+
+    if x > centerx:
+        xtext = -offset
+    else:
+        xtext = offset
+    if y > centery:
+        ytext = -offset
+    else:
+        ytext = offset
+    
+    ax.annotate(label_text, xy=(x, y), xytext=(xtext,ytext), 
+            textcoords='offset points', ha='center', va='bottom',
+            bbox=dict(boxstyle='round,pad=0.2', fc=color, alpha=alpha),
+            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5', 
+                            color=color))
+    return ax
+
+# ------------------------------------------------------- #
+# Helper functions used to plot volumes on a 2D plane
+
 def intersect_plane_line(plane_0,plane_n,line_0,line_1):
     # Find the intersection point of a plane and line:
     # http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
@@ -94,10 +180,16 @@ def intersect_volume_plane(volume,plane):
         intersection_vertices.append(volume.size)
     return intersection_vertices
 
-def plot_volume(sim,ax,volume,output_plane=None,color='r'):
+# ------------------------------------------------------- #
+# actual plotting routines
+
+def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=None):
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
     from meep.simulation import Volume
+
+    # Set up the plotting parameters
+    plotting_parameters = default_volume_parameters if plotting_parameters is None else dict(default_volume_parameters, **plotting_parameters)
 
     # Get domain measurements
     if output_plane:
@@ -120,6 +212,15 @@ def plot_volume(sim,ax,volume,output_plane=None,color='r'):
     zmax = center.z+size.z/2
     zmin = center.z-size.z/2
 
+    # Add labels if requested
+    if label is not None:
+        if sim_size.x == 0:
+            ax = place_label(ax,label,center.y,center.z,sim_center.y,sim_center.z,label_parameters=plotting_parameters)
+        elif sim_size.y == 0:
+            ax = place_label(ax,label,center.x,center.z,sim_center.x,sim_center.z,label_parameters=plotting_parameters)
+        elif sim_size.z == 0:
+            ax = place_label(ax,label,center.x,center.y,sim_center.x,sim_center.y,label_parameters=plotting_parameters)
+
     # Intersect plane with volume
     intersection = intersect_volume_plane(volume,plane)
 
@@ -131,56 +232,62 @@ def plot_volume(sim,ax,volume,output_plane=None,color='r'):
 
     # Point volume
     if len(intersection) == 1:
+        point_args = {key:value for key, value in plotting_parameters.items() if key in ['color','marker','alpha','linewidth']}
         if sim_center.y == center.y:
-            ax.scatter(center.x,center.z, color=color)
+            ax.scatter(center.x,center.z, **point_args)
             return ax
         elif sim_center.x == center.x:
-            ax.scatter(center.y,center.z, color=color)
+            ax.scatter(center.y,center.z, **point_args)
             return ax
         elif sim_center.z == center.z:
-            ax.scatter(center.x,center.y, color=color)
+            ax.scatter(center.x,center.y, **point_args)
             return ax
         else:
             return ax
     
     # Line volume
     elif len(intersection) == 2:
+        line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
         # Plot YZ
         if sim_size.x == 0:
-            ax.plot([a.y for a in intersection],[a.z for a in intersection], color=color)
+            ax.plot([a.y for a in intersection],[a.z for a in intersection], **line_args)
             return ax
         #Plot XZ
         elif sim_size.y == 0:
-            ax.plot([a.x for a in intersection],[a.z for a in intersection], color=color)
+            ax.plot([a.x for a in intersection],[a.z for a in intersection], **line_args)
             return ax
         # Plot XY
         elif sim_size.z == 0:
-            ax.plot([a.x for a in intersection],[a.y for a in intersection], color=color)
+            ax.plot([a.x for a in intersection],[a.y for a in intersection], **line_args)
             return ax
         else:
             return ax
     
     # Planar volume
     elif len(intersection) > 2:
+        planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
         # Plot YZ
         if sim_size.x == 0:
-            ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), edgecolor=color, facecolor='none', hatch='/'))
+            ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
             return ax
         #Plot XZ
         elif sim_size.y == 0:
-            ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), edgecolor=color, facecolor='none', hatch='/'))
+            ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
             return ax
         # Plot XY
         elif sim_size.z == 0:
-            ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), edgecolor=color, facecolor='none', hatch='/'))
+            ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
             return ax
         else:
             return ax
     else:
         return ax
 
-def plot_eps(sim,ax,labels,output_plane=None):
-
+def plot_eps(sim,ax,output_plane=None,eps_parameters=None):
+    
+    # consolidate plotting parameters
+    eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
+    
     # Get domain measurements
     if output_plane:
         sim_center, sim_size = (output_plane.center, output_plane.size)
@@ -216,14 +323,17 @@ def plot_eps(sim,ax,labels,output_plane=None):
         ylabel = 'Y'
 
     eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric)))
-    ax.imshow(eps_data, interpolation='spline36', cmap='binary', extent=extent)
+    ax.imshow(eps_data, extent=extent, **eps_parameters)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
     return ax
 
-def plot_boundaries(sim,ax,output_plane=None):
-    
+def plot_boundaries(sim,ax,output_plane=None,boundary_parameters=None):
+
+    # consolidate plotting parameters
+    boundary_parameters = default_boundary_parameters if boundary_parameters is None else dict(default_boundary_parameters, **boundary_parameters)
+
     def get_boundary_volumes(thickness,direction,side):
         from meep.simulation import Volume
 
@@ -278,84 +388,103 @@ def plot_boundaries(sim,ax,output_plane=None):
                 raise ValueError("Invalid simulation dimensions")
             for permutation in itertools.product(dims, [mp.Low, mp.High]):
                 vol = get_boundary_volumes(boundary.thickness,*permutation)
-                ax = plot_volume(sim,ax,vol,output_plane,color='g')
+                ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
         # 2 sides are the same
         elif boundary.side == mp.ALL:
             for side in [mp.Low, mp.High]:
-                vol = get_boundary_volumes(boundary.thickness,*permutation)
-                ax = plot_volume(sim,ax,vol,output_plane,color='g')
+                vol = get_boundary_volumes(boundary.thickness,boundary.direction,side)
+                ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
         # only one side
         else:
             vol = get_boundary_volumes(boundary.thickness,boundary.direction,boundary.side)
-            ax = plot_volume(sim,ax,vol,output_plane,color='g')
+            ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
     return ax
 
-def plot_sources(sim,ax,output_plane=None):
+def plot_sources(sim,ax,output_plane=None,labels=False,source_parameters=None):
     from meep.simulation import Volume
+
+    # consolidate plotting parameters
+    source_parameters = default_source_parameters if source_parameters is None else dict(default_source_parameters, **source_parameters)
+
+    label = 'source' if labels else None
+
     for src in sim.sources:
         vol = Volume(center=src.center,size=src.size)
-        ax = plot_volume(sim,ax,vol,output_plane,'r')
+        ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=source_parameters,label=label)
     return ax
 
-def plot_monitors(sim,ax,output_plane=None):
-    from meep.simulation import Volume        
+def plot_monitors(sim,ax,output_plane=None,labels=False,monitor_parameters=None):
+    from meep.simulation import Volume
+
+     # consolidate plotting parameters
+    monitor_parameters = default_monitor_parameters if monitor_parameters is None else dict(default_monitor_parameters, **monitor_parameters)
+
+    label = 'monitor' if labels else None
+
     for mon in sim.dft_objects:
         for reg in mon.regions:
             vol = Volume(center=reg.center,size=reg.size)
-            ax = plot_volume(sim,ax,vol,output_plane,'b')
+            ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=monitor_parameters,label=label)
     return ax
 
-def plot_fields(sim,ax=None,fields=None,output_plane=None):
+def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None):
 
-    if fields:
-        # user specifies a field component
-        if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
-            # Get domain measurements
-            if output_plane:
-                sim_center, sim_size = (output_plane.center, output_plane.size)
-            elif sim.output_volume:
-                sim_center, sim_size = mp.get_center_and_size(sim.output_volume)
-            else:
-                sim_center, sim_size = (sim.geometry_center, sim.cell_size)
-            
-            xmin = sim_center.x - sim_size.x/2
-            xmax = sim_center.x + sim_size.x/2
-            ymin = sim_center.y - sim_size.y/2
-            ymax = sim_center.y + sim_size.y/2
-            zmin = sim_center.z - sim_size.z/2
-            zmax = sim_center.z + sim_size.z/2
-
-            center = Vector3(sim_center.x,sim_center.y,sim_center.z)
-            cell_size = Vector3(sim_size.x,sim_size.y,sim_size.z)
-
-            if sim_size.x == 0:
-                # Plot y on x axis, z on y axis (YZ plane)
-                extent = [ymin,ymax,zmin,zmax]
-                xlabel = 'Y'
-                ylabel = 'Z'
-            elif sim_size.y == 0:
-                # Plot x on x axis, z on y axis (XZ plane)
-                extent = [xmin,xmax,zmin,zmax]
-                xlabel = 'X'
-                ylabel = 'Z'
-            elif sim_size.z == 0:
-                # Plot x on x axis, y on y axis (XY plane)
-                extent = [xmin,xmax,ymin,ymax]
-                xlabel = 'X'
-                ylabel = 'Y'
-            fields = sim.get_array(center=center, size=cell_size, component=fields)
-        
-        # Either plot the field, or return the array
-        if ax:
-            ax.imshow(np.rot90(fields), interpolation='spline36', cmap='RdBu', alpha=0.6, extent=extent)
-            return ax
+    if fields is None:
+        return ax
+    
+    # user specifies a field component
+    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
+        # Get domain measurements
+        if output_plane:
+            sim_center, sim_size = (output_plane.center, output_plane.size)
+        elif sim.output_volume:
+            sim_center, sim_size = mp.get_center_and_size(sim.output_volume)
         else:
-            return np.rot90(fields)
+            sim_center, sim_size = (sim.geometry_center, sim.cell_size)
+        
+        xmin = sim_center.x - sim_size.x/2
+        xmax = sim_center.x + sim_size.x/2
+        ymin = sim_center.y - sim_size.y/2
+        ymax = sim_center.y + sim_size.y/2
+        zmin = sim_center.z - sim_size.z/2
+        zmax = sim_center.z + sim_size.z/2
+
+        center = Vector3(sim_center.x,sim_center.y,sim_center.z)
+        cell_size = Vector3(sim_size.x,sim_size.y,sim_size.z)
+
+        if sim_size.x == 0:
+            # Plot y on x axis, z on y axis (YZ plane)
+            extent = [ymin,ymax,zmin,zmax]
+            xlabel = 'Y'
+            ylabel = 'Z'
+        elif sim_size.y == 0:
+            # Plot x on x axis, z on y axis (XZ plane)
+            extent = [xmin,xmax,zmin,zmax]
+            xlabel = 'X'
+            ylabel = 'Z'
+        elif sim_size.z == 0:
+            # Plot x on x axis, y on y axis (XY plane)
+            extent = [xmin,xmax,ymin,ymax]
+            xlabel = 'X'
+            ylabel = 'Y'
+        fields = sim.get_array(center=center, size=cell_size, component=fields)
+    else:
+        raise ValueError('Please specify a valid field component (mp.Ex, mp.Ey, ...')
+    
+    # Either plot the field, or return the array
+    if ax:
+        field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
+        ax.imshow(np.rot90(fields), extent=extent, **field_parameters)
         return ax
     else:
-        return ax
+        return np.rot90(fields)
+    return ax
 
-def plot2D(sim,ax=None, output_plane=None, fields=None, labels=True):
+def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
+            eps_parameters=None,boundary_parameters=None,
+            source_parameters=None,monitor_parameters=None,
+            field_parameters=None):
+    
     if not mp.am_master():
         return
 
@@ -366,23 +495,23 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=True):
         from matplotlib import pyplot as plt
         ax = plt.gca()
 
-    if output_plane and output_plane.dims != 2:
+    if output_plane and (output_plane.size.x != 0) and (output_plane.size.y != 0) and (output_plane.size.z != 0):
         raise ValueError("output_plane must be a 2 dimensional volume (a plane)")
     
     # Plot geometry
-    ax = plot_eps(sim,ax,output_plane)
+    ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters)
     
     # Plot boundaries
-    ax = plot_boundaries(sim,ax,output_plane)
+    ax = plot_boundaries(sim,ax,output_plane=output_plane,boundary_parameters=boundary_parameters)
             
     # Plot sources
-    ax = plot_sources(sim,ax,output_plane)
+    ax = plot_sources(sim,ax,output_plane=output_plane,labels=labels,source_parameters=source_parameters)
         
     # Plot monitors
-    ax = plot_monitors(sim,ax,output_plane)
+    ax = plot_monitors(sim,ax,output_plane=output_plane,labels=labels,monitor_parameters=monitor_parameters)
 
     # Plot fields
-    ax = plot_fields(sim,ax,fields,output_plane)
+    ax = plot_fields(sim,ax,fields,output_plane=output_plane,field_parameters=field_parameters)
 
     return ax
 
@@ -473,9 +602,12 @@ def visualize_chunks(sim):
 #                       after simulation ends.
 # plot_modifiers ...... [list] additional functions to
 #                       modify plot
+# customization_args .. [dict] other customization args 
+#                       to pass to plot2D()
 
 class Animate2D(object):
-    def __init__(self,sim,fields,f=None,realtime=True,normalize=False,plot_modifiers=None):
+    def __init__(self,sim,fields,f=None,realtime=True,normalize=False,
+    plot_modifiers=None,**customization_args):
         self.fields = fields
 
         from matplotlib import pyplot as plt
@@ -484,11 +616,12 @@ class Animate2D(object):
         if f:
             self.f = f
         else:
-            f = plt.figure()
+            self.f = plt.figure()
 
         self.realtime = realtime
         self.normalize = normalize
         self.plot_modifiers = plot_modifiers
+        self.customization_args = customization_args
 
         self.ax = None
 
@@ -510,7 +643,12 @@ class Animate2D(object):
 
             # Initialize the plot
             if self.ax is None:
-                self.ax = sim.plot2D(ax=self.f.gca(),fields=self.fields)
+                self.ax = sim.plot2D(ax=self.f.gca(),fields=self.fields,**self.customization_args)
+                # Run the plot modifier functions
+                if self.plot_modifiers:
+                    for k in range(len(self.plot_modifiers)):
+                        self.ax = self.plot_modifiers[k](self.ax)
+                # Store the fields
                 self.w, self.h = self.f.get_size_inches()
                 fields = self.ax.images[-1].get_array()
             else:                
@@ -520,6 +658,7 @@ class Animate2D(object):
                 self.ax.images[-1].set_clim(vmin=0.8*np.min(fields), vmax=0.8*np.max(fields))
             
             if self.realtime:
+                # Redraw the current figure if requested
                 plt.pause(0.05)
 
             if self.normalize:
@@ -533,7 +672,7 @@ class Animate2D(object):
             return
         elif todo == 'finish':
             
-            # Normalize the frames if requested and export
+            # Normalize the frames, if requested, and export
             if self.normalize:
                 print("Normalizing field data...")
                 fields = np.array(self.cumulative_fields) / np.max(np.abs(self.cumulative_fields),axis=(0,1,2))
@@ -598,7 +737,7 @@ class Animate2D(object):
                                              fill_frames=fill_frames,
                                              interval=interval,
                                              **mode_dict)
-        return html_string
+        return JS_Animation(html_string)
 
     def to_gif(self,fps,filename):
         # Exports a gif of the recorded animation
@@ -666,3 +805,17 @@ class Animate2D(object):
 
     def set_figure(self,f):
         self.f = f
+
+# ------------------------------------------------------- #
+# JS_Animation
+# ------------------------------------------------------- #
+# A helper class used to make jshtml animations embed 
+# seamlessly within Jupyter notebooks.
+
+class JS_Animation():
+    def __init__(self,jshtml):
+        self.jshtml = jshtml
+    def _repr_html_(self):
+        return self.jshtml
+    def get_jshtml(self):
+        return self.jshtml
