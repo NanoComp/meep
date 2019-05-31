@@ -279,21 +279,21 @@ public:
 			    bool no_omega_0_denominator = true);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
-  void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
-			  const grid_volume &gv, void *data) const;
-  void *copy_internal_data(void *data) const;
+  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+				  const grid_volume &gv, void *data) const;
+  virtual void *copy_internal_data(void *data) const;
 
-  bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
 			const grid_volume &gv, void *P_internal_data) const;
-  void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
-		  void *P_internal_data) const;
+  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+			  void *P_internal_data) const;
 
-  int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
-  realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
-				  int n, void *P_internal_data) const;
+  virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+					  int n, void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 7; }
