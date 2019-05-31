@@ -226,3 +226,5 @@ clean-local:
 
 distclean-local:
 	rm -f *.h5
+  rm -f *.mp4
+  rm -f *.gif
