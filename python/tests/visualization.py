@@ -15,14 +15,14 @@ import numpy as np
 import matplotlib
 matplotlib.use('agg') # Set backend for consistency and to pull pixels quickly
 from matplotlib import pyplot as plt
-
-# Make sure we have mayavi installed
-import mayavi
+import io
 
 def hash_figure(fig):
-    fig.canvas.draw()
-    data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,)).flatten()
+    #fig.canvas.draw()
+    buf = io.BytesIO()
+    fig.savefig(buf, format='raw')
+    buf.seek(0)
+    data = np.frombuffer(buf.getvalue(), dtype=np.uint8)
     hash = np.sum((data > np.mean(data)) + data)
     return hash
 
@@ -78,21 +78,21 @@ class TestVisualization(unittest.TestCase):
         ax = f.gca()
         sim = setup_sim()
         ax = sim.plot2D(ax=ax)
-        self.assertAlmostEqual(hash_figure(f),10231693)
+        self.assertAlmostEqual(hash_figure(f),10231488)
 
         # Check plotting of fields after timestepping
         f = plt.figure()
         ax = f.gca()
         sim.run(until=200)
         ax = sim.plot2D(ax=ax,fields=mp.Ez)
-        self.assertAlmostEqual(hash_figure(f),79810954)
+        self.assertAlmostEqual(hash_figure(f),79786722)
 
         # Check output_plane feature
         f = plt.figure()
         ax = f.gca()
         vol = mp.Volume(center=mp.Vector3(),size=mp.Vector3(2,2))
         ax = sim.plot2D(ax=ax,fields=mp.Ez,output_plane=vol)
-        self.assertAlmostEqual(hash_figure(f),68944594)
+        self.assertAlmostEqual(hash_figure(f),68926258)
     
     def test_animation_output(self):
         # Check without normalization
