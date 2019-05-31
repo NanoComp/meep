@@ -400,12 +400,7 @@ void *gyrotropic_susceptibility::copy_internal_data(void *data) const {
 bool gyrotropic_susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
   if (!is_electric(c) && !is_magnetic(c)) return false;
   direction d0 = component_direction(c);
-  if ((d0 == X || d0 == Y || d0 == Z) && sigma[c][d0]) {
-    FOR_DIRECTIONS(d) {
-      if (W[direction_component(c, d)][cmp]) return true;
-    }
-  }
-  return false;
+  return (d0 == X || d0 == Y || d0 == Z) && sigma[c][d0] && W[c][cmp];
 }
 
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -450,18 +445,18 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       const ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
       realnum rhs0, rhs1, rhs2;
 
-      if (!pp1 || !pp2 || !w1 || !w2)
+      if (!pp1 || !pp2)
 	abort("gyrotropic media require 3D Cartesian fields\n");
 
       if (sigma[c][d1] || sigma[c][d2])
-	abort("gyrotropic media do not support tensor sigma\n");
+	abort("gyrotropic media do not support anisotropic sigma\n");
 
       LOOP_OVER_VOL_OWNED(gv, c, i) {
 	rhs0 = diagfac*p0[i] - gamma1*pp0[i] + omega0dtsqr*s[i]*w0[i]
 	  - pt*gyro_tensor[d0][d1]*pp1[i] - pt*gyro_tensor[d0][d2]*pp2[i];
-	rhs1 = diagfac*p1[i] - gamma1*pp1[i] + omega0dtsqr*s[i]*OFFDIAG(s,w1,is1,is)
+	rhs1 = diagfac*p1[i] - gamma1*pp1[i] + (w1 ? omega0dtsqr*s[i]*OFFDIAG(s,w1,is1,is) : 0)
 	  - pt*gyro_tensor[d1][d0]*pp0[i] - pt*gyro_tensor[d1][d2]*pp2[i];
-	rhs2 = diagfac*p2[i] - gamma1*pp2[i] + omega0dtsqr*s[i]*OFFDIAG(s,w2,is2,is)
+	rhs2 = diagfac*p2[i] - gamma1*pp2[i] + (w2 ? omega0dtsqr*s[i]*OFFDIAG(s,w2,is2,is) : 0)
 	  - pt*gyro_tensor[d2][d1]*pp1[i] - pt*gyro_tensor[d2][d0]*pp0[i];
 
 	pp0[i] = p0[i];	pp1[i] = p1[i];	pp2[i] = p2[i];

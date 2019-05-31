@@ -180,17 +180,13 @@ $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} + \mathbf{b}_
 
 $$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
 
-In the frequency domain, a gyroelectric medium has imaginary off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
+In the frequency domain, a gyroelectric medium has skew-symmetric off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
 
-$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \omega_n^2 \begin{bmatrix}\xi_\perp & -i\eta & 0 \\ i\eta & \xi_\perp & 0 \\ 0 & 0 & \xi_\parallel \end{bmatrix} \, \sigma_n(\mathbf{x})$$
+$$\mathbf{P}_n =  \begin{bmatrix}\chi_\perp & -i\eta & 0 \\ i\eta & \chi_\perp & 0 \\ 0 & 0 & \chi_\parallel \end{bmatrix} \mathbf{E}$$
 
 where
 
-$$\xi_\perp = \frac{\Delta_n}{\Delta_n^2 - \omega^2 b^2}\,,\;\;\; \xi_\parallel = \frac{1}{\Delta_n}, \;\;\; \eta = \frac{\omega b}{\Delta_n^2 - \omega^2 b^2}, \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
-
-In many applications, the gyrotropy is weak relative to the frequency detuning but strong relative to the loss.  For this case, we can define $\omega_n = \omega + \Delta\omega_n$, and take $\gamma_n \ll b \ll \Delta \omega_n \ll \omega$. In this limit, the susceptibility tensor reduces to
-
-$$\chi_n \approx \frac{\omega}{2\Delta\omega_n} \begin{bmatrix}1 & -ib/2\Delta\omega_n & 0 \\ ib/2\Delta\omega_n & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \sigma_n(\mathbf{x})$$
+$$\chi_\perp = \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}),\;\;\; \chi_\parallel = \frac{\omega_n^2}{\Delta_n}\,\sigma_n(\mathbf{x}), \;\;\; \eta = \frac{\omega_n^2 \omega b}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}), \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
 
 Materials Library
 -----------------
