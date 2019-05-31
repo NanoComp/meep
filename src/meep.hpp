@@ -291,6 +291,10 @@ public:
   void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
 		  void *P_internal_data) const;
 
+  int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
+  realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+				  int n, void *P_internal_data) const;
+
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 7; }
   virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
