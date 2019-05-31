@@ -18,13 +18,11 @@ from matplotlib import pyplot as plt
 import io
 
 def hash_figure(fig):
-    #fig.canvas.draw()
     buf = io.BytesIO()
     fig.savefig(buf, format='raw')
     buf.seek(0)
     data = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-    hash = np.sum((data > np.mean(data)) + data)
-    return hash
+    return np.sum((data > np.mean(data)) + data)
 
 def setup_sim(zDim=0):
     cell = mp.Vector3(16,8,zDim)
@@ -78,21 +76,24 @@ class TestVisualization(unittest.TestCase):
         ax = f.gca()
         sim = setup_sim()
         ax = sim.plot2D(ax=ax)
-        self.assertAlmostEqual(hash_figure(f),10231488)
+        if mp.am_master():
+            self.assertAlmostEqual(hash_figure(f),10231488)
 
         # Check plotting of fields after timestepping
         f = plt.figure()
         ax = f.gca()
         sim.run(until=200)
         ax = sim.plot2D(ax=ax,fields=mp.Ez)
-        self.assertAlmostEqual(hash_figure(f),79786722)
+        if mp.am_master():
+            self.assertAlmostEqual(hash_figure(f),79786722)
 
         # Check output_plane feature
         f = plt.figure()
         ax = f.gca()
         vol = mp.Volume(center=mp.Vector3(),size=mp.Vector3(2,2))
         ax = sim.plot2D(ax=ax,fields=mp.Ez,output_plane=vol)
-        self.assertAlmostEqual(hash_figure(f),68926258)
+        if mp.am_master():
+            self.assertAlmostEqual(hash_figure(f),68926258)
     
     def test_animation_output(self):
         # Check without normalization
