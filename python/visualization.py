@@ -184,6 +184,9 @@ def intersect_volume_plane(volume,plane):
 # actual plotting routines
 
 def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=None):
+    if not sim._is_initialized:
+        sim.init_sim()
+
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
     from meep.simulation import Volume
@@ -213,7 +216,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
     zmin = center.z-size.z/2
 
     # Add labels if requested
-    if label is not None:
+    if label is not None and mp.am_master():
         if sim_size.x == 0:
             ax = place_label(ax,label,center.y,center.z,sim_center.y,sim_center.z,label_parameters=plotting_parameters)
         elif sim_size.y == 0:
@@ -230,60 +233,65 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         theta = np.arctan2(xy[:,1],xy[:,0])
         return xy[np.argsort(theta,axis=0)]
 
-    # Point volume
-    if len(intersection) == 1:
-        point_args = {key:value for key, value in plotting_parameters.items() if key in ['color','marker','alpha','linewidth']}
-        if sim_center.y == center.y:
-            ax.scatter(center.x,center.z, **point_args)
-            return ax
-        elif sim_center.x == center.x:
-            ax.scatter(center.y,center.z, **point_args)
-            return ax
-        elif sim_center.z == center.z:
-            ax.scatter(center.x,center.y, **point_args)
-            return ax
+    if mp.am_master():
+        # Point volume
+        if len(intersection) == 1:
+            point_args = {key:value for key, value in plotting_parameters.items() if key in ['color','marker','alpha','linewidth']}
+            if sim_center.y == center.y:
+                ax.scatter(center.x,center.z, **point_args)
+                return ax
+            elif sim_center.x == center.x:
+                ax.scatter(center.y,center.z, **point_args)
+                return ax
+            elif sim_center.z == center.z:
+                ax.scatter(center.x,center.y, **point_args)
+                return ax
+            else:
+                return ax
+        
+        # Line volume
+        elif len(intersection) == 2:
+            line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
+            # Plot YZ
+            if sim_size.x == 0:
+                ax.plot([a.y for a in intersection],[a.z for a in intersection], **line_args)
+                return ax
+            #Plot XZ
+            elif sim_size.y == 0:
+                ax.plot([a.x for a in intersection],[a.z for a in intersection], **line_args)
+                return ax
+            # Plot XY
+            elif sim_size.z == 0:
+                ax.plot([a.x for a in intersection],[a.y for a in intersection], **line_args)
+                return ax
+            else:
+                return ax
+        
+        # Planar volume
+        elif len(intersection) > 2:
+            planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
+            # Plot YZ
+            if sim_size.x == 0:
+                ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
+                return ax
+            #Plot XZ
+            elif sim_size.y == 0:
+                ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
+                return ax
+            # Plot XY
+            elif sim_size.z == 0:
+                ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
+                return ax
+            else:
+                return ax
         else:
             return ax
-    
-    # Line volume
-    elif len(intersection) == 2:
-        line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
-        # Plot YZ
-        if sim_size.x == 0:
-            ax.plot([a.y for a in intersection],[a.z for a in intersection], **line_args)
-            return ax
-        #Plot XZ
-        elif sim_size.y == 0:
-            ax.plot([a.x for a in intersection],[a.z for a in intersection], **line_args)
-            return ax
-        # Plot XY
-        elif sim_size.z == 0:
-            ax.plot([a.x for a in intersection],[a.y for a in intersection], **line_args)
-            return ax
-        else:
-            return ax
-    
-    # Planar volume
-    elif len(intersection) > 2:
-        planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
-        # Plot YZ
-        if sim_size.x == 0:
-            ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
-            return ax
-        #Plot XZ
-        elif sim_size.y == 0:
-            ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
-            return ax
-        # Plot XY
-        elif sim_size.z == 0:
-            ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
-            return ax
-        else:
-            return ax
-    else:
-        return ax
+    return ax
 
 def plot_eps(sim,ax,output_plane=None,eps_parameters=None):
+    if sim.structure is None:
+        sim.init_sim()
+    
     
     # consolidate plotting parameters
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
@@ -323,15 +331,18 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None):
         ylabel = 'Y'
     else:
         raise ValueError("A 2D plane has not been specified...")
-
+    
     eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric)))
-    ax.imshow(eps_data, extent=extent, **eps_parameters)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if mp.am_master():
+        ax.imshow(eps_data, extent=extent, **eps_parameters)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
     return ax
 
 def plot_boundaries(sim,ax,output_plane=None,boundary_parameters=None):
+    if not sim._is_initialized:
+        sim.init_sim()
 
     # consolidate plotting parameters
     boundary_parameters = default_boundary_parameters if boundary_parameters is None else dict(default_boundary_parameters, **boundary_parameters)
@@ -403,6 +414,9 @@ def plot_boundaries(sim,ax,output_plane=None,boundary_parameters=None):
     return ax
 
 def plot_sources(sim,ax,output_plane=None,labels=False,source_parameters=None):
+    if not sim._is_initialized:
+        sim.init_sim()
+
     from meep.simulation import Volume
 
     # consolidate plotting parameters
@@ -416,6 +430,9 @@ def plot_sources(sim,ax,output_plane=None,labels=False,source_parameters=None):
     return ax
 
 def plot_monitors(sim,ax,output_plane=None,labels=False,monitor_parameters=None):
+    if not sim._is_initialized:
+        sim.init_sim()
+    
     from meep.simulation import Volume
 
      # consolidate plotting parameters
@@ -430,7 +447,9 @@ def plot_monitors(sim,ax,output_plane=None,labels=False,monitor_parameters=None)
     return ax
 
 def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None):
-
+    if not sim._is_initialized:
+        sim.init_sim()
+    
     if fields is None:
         return ax
     
@@ -476,7 +495,8 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
     # Either plot the field, or return the array
     if ax:
         field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
-        ax.imshow(np.rot90(fields), extent=extent, **field_parameters)
+        if mp.am_master():
+            ax.imshow(np.rot90(fields), extent=extent, **field_parameters)
         return ax
     else:
         return np.rot90(fields)
@@ -486,17 +506,13 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
             eps_parameters=None,boundary_parameters=None,
             source_parameters=None,monitor_parameters=None,
             field_parameters=None):
-    
-    if not mp.am_master():
-        return
-
-    if not sim._is_initialized:
+    if sim.structure is None:
         sim.init_sim()
 
-    if ax is None:
+    if ax is None and mp.am_master():
         from matplotlib import pyplot as plt
         ax = plt.gca()
-
+        
     # User incorrectly specified a 3D output plane
     if output_plane and (output_plane.size.x != 0) and (output_plane.size.y != 0) and (output_plane.size.z != 0):
         raise ValueError("output_plane must be a 2 dimensional volume (a plane).")
@@ -547,11 +563,7 @@ def visualize_chunks(sim):
     vols = sim.structure.get_chunk_volumes()
     owners = sim.structure.get_chunk_owners()
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
-
-    def plot_box(box, proc):
+    def plot_box(box, proc, fig, ax):
         low = mp.Vector3(box.low.x, box.low.y, box.low.z)
         high = mp.Vector3(box.high.x, box.high.y, box.high.z)
         points = [low, high]
@@ -586,8 +598,12 @@ def visualize_chunks(sim):
         ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
 
     if mp.am_master():
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
+
         for i, v in enumerate(vols):
-            plot_box(mp.gv2box(v.surroundings()), owners[i])
+            plot_box(mp.gv2box(v.surroundings()), owners[i], fig, ax)
         ax.set_aspect('auto')
         plt.show()
 
@@ -621,15 +637,17 @@ class Animate2D(object):
 
         if f:
             self.f = f
+            self.ax = self.f.gca()
         else:
-            self.f = plt.figure()
+            self.f = None
+
+        self.ax = None
 
         self.realtime = realtime
         self.normalize = normalize
         self.plot_modifiers = plot_modifiers
         self.customization_args = customization_args
 
-        self.ax = None
 
         self.cumulative_fields = []
         self._saved_frames = []
@@ -637,6 +655,8 @@ class Animate2D(object):
         self.frame_format = 'png' # format in which each frame is saved in memory
         self.codec = 'h264' # encoding of mp4 video
         self.default_mode = 'loop' # html5 video control mode
+
+        self.init = False
         
         # Needed for step functions
         self.__code__ = namedtuple('gna_hack',['co_argcount'])
@@ -644,34 +664,40 @@ class Animate2D(object):
     
     def __call__(self,sim,todo):
         from matplotlib import pyplot as plt
-        
-        if todo == 'step':
 
+        if todo == 'step':
             # Initialize the plot
-            if self.ax is None:
-                self.ax = sim.plot2D(ax=self.f.gca(),fields=self.fields,**self.customization_args)
+            if not self.init:
+                self.ax = sim.plot2D(ax=self.ax,fields=self.fields,**self.customization_args)
+                self.f=plt.gcf()
                 # Run the plot modifier functions
+                '''
                 if self.plot_modifiers:
                     for k in range(len(self.plot_modifiers)):
                         self.ax = self.plot_modifiers[k](self.ax)
+                '''
                 # Store the fields
                 self.w, self.h = self.f.get_size_inches()
-                fields = self.ax.images[-1].get_array()
-            else:                
+                if mp.am_master():
+                    fields = self.ax.images[-1].get_array()
+                self.init = True
+                
+            else:               
                 # Update the plot
                 fields = sim.plot_fields(fields=self.fields)
-                self.ax.images[-1].set_data(fields)
-                self.ax.images[-1].set_clim(vmin=0.8*np.min(fields), vmax=0.8*np.max(fields))
+                if mp.am_master():
+                    self.ax.images[-1].set_data(fields)
+                    self.ax.images[-1].set_clim(vmin=0.8*np.min(fields), vmax=0.8*np.max(fields))
             
-            if self.realtime:
+            if self.realtime and mp.am_master():
                 # Redraw the current figure if requested
                 plt.pause(0.05)
 
-            if self.normalize:
+            if self.normalize and mp.am_master():
                 # Save fields as a numpy array to be normalized 
                 # and saved later.
                 self.cumulative_fields.append(fields)
-            else:
+            elif mp.am_master():
                 # Capture figure as a png, but store the png in memory
                 # to avoid writing to disk.
                 self.grab_frame()
@@ -679,15 +705,14 @@ class Animate2D(object):
         elif todo == 'finish':
             
             # Normalize the frames, if requested, and export
-            if self.normalize:
+            if self.normalize and mp.am_master():
                 print("Normalizing field data...")
                 fields = np.array(self.cumulative_fields) / np.max(np.abs(self.cumulative_fields),axis=(0,1,2))
                 for k in range(len(self.cumulative_fields)):
                     self.ax.images[-1].set_data(fields[k,:,:])
                     self.ax.images[-1].set_clim(vmin=-0.8, vmax=0.8)
                     self.grab_frame()
-            
-            plt.close(self.f)
+                
             return
     
     @property
@@ -763,12 +788,13 @@ class Animate2D(object):
         ]
 
         print("Generating GIF...")
-        proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        for i in range(len(self._saved_frames)): 
-            proc.stdin.write(self._saved_frames[i])
-        out, err = proc.communicate() # pipe in images
-        proc.stdin.close()
-        proc.wait()
+        if mp.am_master():
+            proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            for i in range(len(self._saved_frames)): 
+                proc.stdin.write(self._saved_frames[i])
+            out, err = proc.communicate() # pipe in images
+            proc.stdin.close()
+            proc.wait()
         return
 
     def to_mp4(self,fps,filename):
@@ -793,12 +819,13 @@ class Animate2D(object):
                     '-an', filename  # output filename
         ]
         print("Generating MP4...")
-        proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        for i in range(len(self._saved_frames)): 
-            proc.stdin.write(self._saved_frames[i])
-        out, err = proc.communicate() # pipe in images
-        proc.stdin.close()
-        proc.wait()
+        if mp.am_master():
+            proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            for i in range(len(self._saved_frames)): 
+                proc.stdin.write(self._saved_frames[i])
+            out, err = proc.communicate() # pipe in images
+            proc.stdin.close()
+            proc.wait()
         return
     
     def reset(self):
