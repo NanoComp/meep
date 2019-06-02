@@ -272,11 +272,13 @@ protected:
   double noise_amp;
 };
 
+typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, LANDAU_LIFSHITZ_GILBERT } gyrotropy_model;
+
 /* gyrotropic susceptibility */
-class gyrotropic_susceptibility : public lorentzian_susceptibility {
+class gyrotropic_susceptibility : public susceptibility {
 public:
   gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
-                            bool no_omega_0_denominator = true);
+                            gyrotropy_model model=GYROTROPIC_LORENTZIAN);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
@@ -305,6 +307,8 @@ public:
 
 protected:
   double gyro_tensor[3][3];
+  double omega_0, gamma;
+  gyrotropy_model model;
 };
 
 class multilevel_susceptibility : public susceptibility {

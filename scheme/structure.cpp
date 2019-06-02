@@ -1299,10 +1299,10 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
           gyrotropic_lorentzian_susceptibility *gd = d->subclass.gyrotropic_lorentzian_susceptibility_data;
           master_printf("gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
                         gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
-          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma);
+          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma,
+                                                    meep::GYROTROPIC_LORENTZIAN);
         } else { // just a Lorentzian
-          master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency,
-                        d->gamma);
+          master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma);
         }
         break;
@@ -1313,13 +1313,13 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
           noisy_drude_susceptibility *nd = d->subclass.noisy_drude_susceptibility_data;
           master_printf("noisy drude susceptibility: frequency=%g, gamma=%g, amp = %g\n",
                         d->frequency, d->gamma, nd->noise_amp);
-          sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma,
-                                                          true);
+          sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma, true);
         } else if (d->which_subclass == drude_susceptibility::GYROTROPIC_DRUDE_SUSCEPTIBILITY) {
           gyrotropic_drude_susceptibility *gd = d->subclass.gyrotropic_drude_susceptibility_data;
           master_printf("gyrotropic drude susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
                         gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
-          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma, true);
+          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma,
+                                                    meep::GYROTROPIC_DRUDE);
         } else { // just a Drude
           master_printf("drude susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma, true);

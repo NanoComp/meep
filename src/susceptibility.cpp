@@ -324,8 +324,8 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
 
 
 gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
-						     bool no_omega_0_denominator)
-  : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator) {
+						     gyrotropy_model model)
+  : omega_0(omega_0), gamma(gamma), model(model) {
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
   memset(gyro_tensor, 0, 9 * sizeof(double));
   gyro_tensor[X][Y] = bias.z(); gyro_tensor[Y][X] = -bias.z();
@@ -410,7 +410,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
   const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
   const double gamma1 = (1 - g2pi * dt / 2);
-  const double diagfac = 2 - (no_omega_0_denominator ? 0 : omega0dtsqr);
+  const double diagfac = 2 - (model == GYROTROPIC_DRUDE ? 0 : omega0dtsqr);
   const double pt = pi*dt;
   (void)W_prev; // unused;
 
@@ -506,7 +506,7 @@ void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   double bias[] = { gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y] };
   double params_data[] = {
       7, (double)get_id(), bias[X], bias[Y], bias[Z],
-      omega_0, gamma, (double)no_omega_0_denominator};
+      omega_0, gamma, (double)model};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
