@@ -280,10 +280,16 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
         super(NoisyDrudeSusceptibility, self).__init__(**kwargs)
         self.noise_amp = noise_amp
 
-class GyrotropicSusceptibility(LorentzianSusceptibility):
+class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
 
     def __init__(self, bias=Vector3(), **kwargs):
         super(GyrotropicLorentzianSusceptibility, self).__init__(**kwargs)
+        self.bias = bias
+
+class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
+
+    def __init__(self, bias=Vector3(), **kwargs):
+        super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
         self.bias = bias
 
 class MultilevelAtom(Susceptibility):

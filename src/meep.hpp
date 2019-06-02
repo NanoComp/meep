@@ -275,7 +275,8 @@ protected:
 /* gyrotropic susceptibility */
 class gyrotropic_susceptibility : public lorentzian_susceptibility {
 public:
-  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma);
+  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
+                            bool no_omega_0_denominator = true);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
@@ -294,9 +295,6 @@ public:
   virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
 					  int n, void *P_internal_data) const;
 
-  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
-                          void *P_internal_data) const;
-
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 7; }
   virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
@@ -306,9 +304,7 @@ public:
   }
 
 protected:
-  double psat;     // conserved magnitude of the polarization vector
-  double bvec[3];  // unit vector pointing along direction of gyrotropic bias
-  int sgn[3][3];   // antisymmetric tensor: sgn[X][Y] = 1, sgn[Z][Y] = -1, etc.
+  double gyro_tensor[3][3];
 };
 
 class multilevel_susceptibility : public susceptibility {

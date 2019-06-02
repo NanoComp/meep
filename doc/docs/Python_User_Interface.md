@@ -394,7 +394,15 @@ This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with 
 
 ### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
 
-(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by the Landau-Lifshitz-Gilbert equation. Note that the parameters `sigma`, `frequency`, and `gamma` play different roles compared to the Lorentzian or Drude case.
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility. See [Material Dispersion](Materials.md#gyrotropic-media).
+
+For gyrotropic media of Lorentzian (damped harmonic oscillator) or Drude form, the parameters `sigma`, `frequency`, and `gamma` have the same meanings as in `LorentzianSusceptibility` and `DrudeSusceptibility`, but with an additional 3-vector `bias`:
+
+**`bias` [`Vector3`]**
+—
+The gyrotropy vector.  The direction of this vector determines the orientation of the gyrotropic response, and the magnitude equals the precession frequency $|\mathbf{b}_n|/2\pi$.
+
+For gyrotropic media of Landau-Lifshitz-Gilbert form, the parameters `sigma`, `frequency`, and `gamma` play different roles, and there is an additiona `alpha` parameter:
 
 **`sigma` [`number`]**
 —
@@ -402,7 +410,7 @@ The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving f
 
 **`frequency` [`number`]**
 —
-The frequency of gyrotropic precession, $f_n = \omega_n / 2\pi$. In magnetic ferrites, this is the Larmor precession frequency.
+The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
 
 **`gamma` [`number`]**
 —
@@ -411,10 +419,6 @@ The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
 **`alpha` [`number`]**
 —
 The loss factor $\alpha_n$ in the diagonal response (note that there is no 2π factor).
-
-**`bias` [`Vector3`]**
-—
-Gyrotropy vector describing the direction of the static biasing magnetic field. The magnitude is ignored.
 
 ### Vector3
 
