@@ -178,17 +178,19 @@ $$\frac{d\mathbf{P}_n}{dt} = \mathbf{b}_n \times \left( - \sigma_n \mathbf{E} + 
 
 Although this is completely different from the damped harmonic oscillator equation used for [Drude-Lorentz susceptibility](Materials.md#material-dispersion), the constants σ$_n$, ω$_n$, and γ$_n$ play analogous roles: σ$_n$ couples the polarization to the electric field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor. There is also a second damping factor α$_n$, and a "bias vector" **b**$_n$ which typically describes the direction of an applied static magnetic field. The bias vector is assumed to have unit length.
 
+In the frequency domain, a gyroelectric medium has skew-symmetric off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
+
+$$\mathbf{P}_n =  \begin{bmatrix}\chi_\perp & -i\eta & 0 \\ i\eta & \chi_\perp & 0 \\ 0 & 0 & \chi_\parallel \end{bmatrix} \mathbf{E}$$
+
+For the gyrotropic Lorentzian model,
+
 In the frequency domain, the ε tensor acquires off-diagonal components representing a gyrotropic response. Take the case $\mathbf{b}_n = \hat{\mathbf{z}}$, and assume that all fields have harmonic time-dependence $\exp(-i\omega t)$. The polarization equation then reduces to
 
-$$\mathbf{P}_n = \chi_n \mathbf{E}, \quad \chi_n = \frac{\sigma_n}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2} \begin{bmatrix} \omega_n - i \omega \alpha_n & -i(\omega + i \gamma) & 0 \\ i(\omega + i \gamma) & \omega_n - i \omega \alpha_n & 0 \\ 0 & 0 & 0\end{bmatrix}$$
+$$\chi_\perp = \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}),\;\;\; \chi_\parallel = \frac{\omega_n^2}{\Delta_n}\,\sigma_n(\mathbf{x}), \;\;\; \eta = \frac{\omega_n^2 \omega b}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}), \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
 
-Hence, the dielectric function is
+And for the Landau-Lifshitz-Gilbert model,
 
-$$\epsilon = \begin{bmatrix} \epsilon_\perp & -i \eta & 0 \\ i\eta & \epsilon_\perp & 0 \\ 0 & 0 & \epsilon_\infty\end{bmatrix}$$
-
-where
-
-$$\epsilon_\perp = \epsilon_\infty + \frac{\sigma_n (\omega_n - i\omega\alpha_n)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}, \;\;\; \eta = \frac{\sigma_n (\omega + i\gamma_n)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}$$
+$$\chi_\perp = \frac{\sigma_n (\omega_n - i \omega \alpha_n)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}, \;\;\; \chi_\parallel = 0, \;\;\;  \eta = \frac{\sigma_n (\omega + i \gamma)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}$$
 
 Materials Library
 -----------------

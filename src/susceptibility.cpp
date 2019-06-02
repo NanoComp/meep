@@ -92,7 +92,6 @@ typedef struct {
   size_t ntot;
   realnum *P[NUM_FIELD_COMPONENTS][2];
   realnum *P_prev[NUM_FIELD_COMPONENTS][2];
-  realnum *P_tmp[NUM_FIELD_COMPONENTS][2]; // extra slot for gyrotropic medium updating
   realnum data[1];
 } lorentzian_data;
 
@@ -101,9 +100,8 @@ typedef struct {
 void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
                                                    const grid_volume &gv) const {
   int num = 0;
-  int nslots = have_gyrotropy ? 3 : 2;
   FOR_COMPONENTS(c) DOCMP2 {
-    if (needs_P(c, cmp, W)) num += nslots * gv.ntot();
+    if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
   }
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *)malloc(sz);
@@ -121,18 +119,12 @@ void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONEN
   size_t ntot = d->ntot = gv.ntot();
   realnum *P = d->data;
   realnum *P_prev = d->data + ntot;
-  realnum *P_tmp = have_gyrotropy ? P_prev + ntot : NULL;
-  int nslots = have_gyrotropy ? 3 : 2;
-
   FOR_COMPONENTS(c) DOCMP2 {
     if (needs_P(c, cmp, W)) {
       d->P[c][cmp] = P;
       d->P_prev[c][cmp] = P_prev;
-      d->P_tmp[c][cmp] = P_tmp;
-
-      P += nslots * ntot;
-      P_prev += nslots * ntot;
-      if (have_gyrotropy) P_tmp += nslots * ntot;
+      P += 2 * ntot;
+      P_prev += 2 * ntot;
     }
   }
 }
@@ -145,17 +137,12 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   size_t ntot = d->ntot;
   realnum *P = dnew->data;
   realnum *P_prev = dnew->data + ntot;
-  realnum *P_tmp = have_gyrotropy ? P_prev + ntot : NULL;
-  int nslots = have_gyrotropy ? 3 : 2;
-
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
       dnew->P[c][cmp] = P;
       dnew->P_prev[c][cmp] = P_prev;
-      dnew->P_tmp[c][cmp] = P_tmp;
-      P += nslots * ntot;
-      P_prev += nslots * ntot;
-      if (have_gyrotropy) P_tmp += nslots * ntot;
+      P += 2 * ntot;
+      P_prev += 2 * ntot;
     }
   }
   return (void *)dnew;
@@ -336,137 +323,146 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
 }
 
 
-gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma)
-  : lorentzian_susceptibility(omega_0, gamma, false) {
-  have_gyrotropy = true;
+gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
+						     bool no_omega_0_denominator)
+  : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator) {
+  // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
+  memset(gyro_tensor, 0, 9 * sizeof(double));
+  gyro_tensor[X][Y] = bias.z(); gyro_tensor[Y][X] = -bias.z();
+  gyro_tensor[Y][Z] = bias.x(); gyro_tensor[Z][Y] = -bias.x();
+  gyro_tensor[Z][X] = bias.y(); gyro_tensor[X][Z] = -bias.y();
+}
 
-  psat = abs(bias);
+/* To implement gyrotropic susceptibilities, we track three
+   polarization components (e.g. Px, Py, Pz) on EACH of the Yee cell's
+   three driving field positions (e.g., Ex, Ey, and Ez), i.e. 9
+   numbers per cell.  This takes 3x the memory and runtime compared to
+   Lorentzian susceptibility.  The advantage is that during update_P,
+   we can directly access the value of P at each update point without
+   averaging.  */
 
-  const vec b = (psat != 0.0 ? bias/psat : vec(0,0,1));
-  bvec[0] = b.x(); bvec[1] = b.y(); bvec[2] = b.z();
+typedef struct {
+  size_t sz_data;
+  size_t ntot;
+  realnum *P[NUM_FIELD_COMPONENTS][2][3];
+  realnum *P_prev[NUM_FIELD_COMPONENTS][2][3];
+  realnum data[1];
+} gyrotropy_data;
 
-  memset(sgn, 0, 9 * sizeof(int));
-  sgn[X][Y] = sgn[Y][Z] = sgn[Z][X] = 1;
-  sgn[X][Z] = sgn[Z][Y] = sgn[Y][X] = -1;
+void *gyrotropic_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
+                                                   const grid_volume &gv) const {
+  int num = 0;
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (needs_P(c, cmp, W)) num += 6 * gv.ntot();
+  }
+  size_t sz = sizeof(gyrotropy_data) + sizeof(realnum) * (num - 1);
+  gyrotropy_data *d = (gyrotropy_data *)malloc(sz);
+  d->sz_data = sz;
+  return (void *)d;
+}
+
+void gyrotropic_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+                                                   const grid_volume &gv, void *data) const {
+  (void)dt; // unused
+  gyrotropy_data *d = (gyrotropy_data *)data;
+  size_t sz_data = d->sz_data;
+  memset(d, 0, sz_data);
+  d->sz_data = sz_data;
+  d->ntot = gv.ntot();
+  realnum *p = d->data;
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (needs_P(c, cmp, W)) {
+      for (int dd = X; dd < R; dd++) {
+	d->P[c][cmp][dd] = p;      p += d->ntot;
+	d->P_prev[c][cmp][dd] = p; p += d->ntot;
+      }
+    }
+  }
+}
+
+void *gyrotropic_susceptibility::copy_internal_data(void *data) const {
+  gyrotropy_data *d = (gyrotropy_data *)data;
+  if (!d) return 0;
+  gyrotropy_data *dnew = (gyrotropy_data *)malloc(d->sz_data);
+  memcpy(dnew, d, d->sz_data);
+  realnum *p = dnew->data;
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (d->P[c][cmp][0]) {
+      for (int dd = X; dd < R; dd++) {
+	dnew->P[c][cmp][dd] = p;      p += d->ntot;
+	dnew->P_prev[c][cmp][dd] = p; p += d->ntot;
+      }
+    }
+  }
+  return (void *)dnew;
+}
+
+bool gyrotropic_susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+  if (!is_electric(c) && !is_magnetic(c)) return false;
+  direction d0 = component_direction(c);
+  return (d0 == X || d0 == Y || d0 == Z) && sigma[c][d0] && W[c][cmp];
 }
 
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
-                                         const grid_volume &gv, void *P_internal_data) const {
-  lorentzian_data *d = (lorentzian_data *)P_internal_data;
-  const realnum w4pit = 4*pi*dt*omega_0;
-  const realnum g2pi  = 2*pi*gamma;
-  const realnum dt4pi = 4*pi*dt;
+					 realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+					 const grid_volume &gv, void *P_internal_data) const {
+  gyrotropy_data *d = (gyrotropy_data *)P_internal_data;
+  const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
+  const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
+  const double gamma1 = (1 - g2pi * dt / 2);
+  const double diagfac = 2 - (no_omega_0_denominator ? 0 : omega0dtsqr);
+  const double pt = pi*dt;
   (void)W_prev; // unused;
 
-  FOR_COMPONENTS(c) DOCMP2 {
-    if (d->P[c][cmp]) {
-      const direction d0 = component_direction(c);
-      const realnum *w = W[c][cmp];
+  // Precalculate 3x3 matrix inverse, exploiting skew symmetry
+  const double gd = (1 + g2pi * dt / 2);
+  const double gx = pt * gyro_tensor[Y][Z];
+  const double gy = pt * gyro_tensor[Z][X];
+  const double gz = pt * gyro_tensor[X][Y];
+  const double invdet = 1.0 / gd / (gd*gd + gx*gx + gy*gy + gz*gz);
+  const double inv[3][3]
+    = {{ invdet*(gd*gd+gx*gx), invdet*(gx*gy+gd*gz), invdet*(gx*gz-gd*gy) },
+       { invdet*(gy*gx-gd*gz), invdet*(gd*gd+gy*gy), invdet*(gy*gz+gd*gx) },
+       { invdet*(gz*gx+gd*gy), invdet*(gz*gy-gd*gx), invdet*(gd*gd+gz*gz) }};
 
-      if (!w || (d0 != X && d0 != Y && d0 != Z))
-	abort("Cylindrical coordinates not supported for gyrotropic media\n");
+  FOR_COMPONENTS(c) DOCMP2 {
+    if (d->P[c][cmp][0]) {
+      const direction d0 = component_direction(c);
+      const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
+
+      if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
+	abort("gyrotropic media require 3D Cartesian fields\n");
 
       const direction d1 = cycle_direction(gv.dim, d0, 1);
       const direction d2 = cycle_direction(gv.dim, d0, 2);
-      const component c1 = direction_component(c, d1);
-      const component c2 = direction_component(c, d2);
+      const realnum *w1 = W[direction_component(c, d1)][cmp];
+      const realnum *w2 = W[direction_component(c, d2)][cmp];
+      realnum *p0 = d->P[c][cmp][d0], *pp0 = d->P_prev[c][cmp][d0];
+      realnum *p1 = d->P[c][cmp][d1], *pp1 = d->P_prev[c][cmp][d1];
+      realnum *p2 = d->P[c][cmp][d2], *pp2 = d->P_prev[c][cmp][d2];
+      const ptrdiff_t is  = gv.stride(d0) * (is_magnetic(c) ? -1 : +1);
+      const ptrdiff_t is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
+      const ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
+      realnum rhs0, rhs1, rhs2;
 
-      const realnum *pp = d->P_prev[c][cmp];
-      const realnum *p1 = d->P[c1][cmp], *pp1 = d->P_prev[c1][cmp];
-      const realnum *p2 = d->P[c2][cmp], *pp2 = d->P_prev[c2][cmp];
-      realnum *ptmp = d->P_tmp[c][cmp];
+      if (!pp1 || !pp2)
+	abort("gyrotropic media require 3D Cartesian fields\n");
 
-      const realnum *w1 = W[c1][cmp], *s1 = w1 ? sigma[c1][d1] : NULL;
-      const realnum *w2 = W[c2][cmp], *s2 = w2 ? sigma[c2][d2] : NULL;
-      const realnum pb1 = psat  * bvec[d1], pb2 = psat  * bvec[d2];
-      const realnum wb1 = w4pit * bvec[d1], wb2 = w4pit * bvec[d2];
-      const int sgn1 = sgn[d0][d1], sgn2 = sgn[d0][d2];
+      if (sigma[c][d1] || sigma[c][d2])
+	abort("gyrotropic media do not support anisotropic sigma\n");
 
-      if (!pp1 || !pp2 || !p1 || !p2 || !s1 || !s2)
-	abort("Gyrotropic media require 3D fields\n");
+      LOOP_OVER_VOL_OWNED(gv, c, i) {
+	rhs0 = diagfac*p0[i] - gamma1*pp0[i] + omega0dtsqr*s[i]*w0[i]
+	  - pt*gyro_tensor[d0][d1]*pp1[i] - pt*gyro_tensor[d0][d2]*pp2[i];
+	rhs1 = diagfac*p1[i] - gamma1*pp1[i] + (w1 ? omega0dtsqr*s[i]*OFFDIAG(s,w1,is1,is) : 0)
+	  - pt*gyro_tensor[d1][d0]*pp0[i] - pt*gyro_tensor[d1][d2]*pp2[i];
+	rhs2 = diagfac*p2[i] - gamma1*pp2[i] + (w2 ? omega0dtsqr*s[i]*OFFDIAG(s,w2,is2,is) : 0)
+	  - pt*gyro_tensor[d2][d1]*pp1[i] - pt*gyro_tensor[d2][d0]*pp0[i];
 
-      LOOP_OVER_VOL(gv, c, i) {
-	ptmp[i] = pp[i]
-	  + sgn1 * ((g2pi * pp1[i] + dt4pi*s1[i]*w1[i]) * (pb2+p2[i]) + wb1*p2[i])
-	  + sgn2 * ((g2pi * pp2[i] + dt4pi*s2[i]*w2[i]) * (pb1+p1[i]) + wb2*p1[i]);
-      }
-    }
-  }
-
-  FOR_COMPONENTS(c) DOCMP2 {   // Overwrite P_prev
-    if (d->P[c][cmp]) {
-      if (W[c][cmp] && sigma[c][component_direction(c)]) {
-        const realnum *p = d->P[c][cmp];
-        realnum *pp = d->P_prev[c][cmp];
-        LOOP_OVER_VOL(gv, c, i) {
-          pp[i] = p[i];
-        }
-      }
-    }
-  }
-
-  FOR_COMPONENTS(c) DOCMP2 {  // Perform matrix inversion
-    if (d->P[c][cmp]) {
-      const direction d0 = component_direction(c);
-      if (W[c][cmp] && sigma[c][d0]) {
-        const direction d1  = cycle_direction(gv.dim, d0, 1);
-        const direction d2  = cycle_direction(gv.dim, d0, 2);
-        const component c1 = direction_component(c, d1);
-        const component c2 = direction_component(c, d2);
-
-        realnum *p = d->P[c][cmp];
-        const realnum *pp = d->P_prev[c][cmp], *ptmp = d->P_tmp[c][cmp];
-        const realnum *pp1 = d->P_prev[c1][cmp], *ptmp1 = d->P_tmp[c1][cmp];
-        const realnum *pp2 = d->P_prev[c2][cmp], *ptmp2 = d->P_tmp[c2][cmp];
-	const realnum pb0 = psat * bvec[d0];
-        const realnum pb1 = psat * bvec[d1], pb2 = psat  * bvec[d2];
-	const int sgn1 = sgn[d0][d1], sgn2 = sgn[d0][d2];
-	realnum gp0, gp1, gp2;
-
-	LOOP_OVER_VOL(gv, c, i) {
-	  gp0 = g2pi * (pb0 + pp[i]);
-	  gp1 = g2pi * (pb1 + pp1[i]);
-	  gp2 = g2pi * (pb2 + pp2[i]);
-          p[i] = 1/(1 + gp0*gp0 + gp1*gp1 + gp2*gp2)
-	    * ((1 + gp0*gp0) * ptmp[i]
-	       + (gp0*gp1 - sgn1*gp2) * ptmp1[i]
-	       + (gp0*gp2 - sgn2*gp1) * ptmp2[i]);
-        }
-      }
-    }
-  }
-
-  // FIXME: hack to clamp the magnitude of the total polarization vector at psat.
-  FOR_COMPONENTS(c) DOCMP2 {
-    if (d->P[c][cmp]) {
-      const direction d0 = component_direction(c);
-      const direction d1  = cycle_direction(gv.dim, d0, 1);
-      const direction d2  = cycle_direction(gv.dim, d0, 2);
-      const component c1 = direction_component(c, d1);
-      const component c2 = direction_component(c, d2);
-
-      const realnum *p = d->P[c][cmp];
-      const realnum *p1 = d->P_prev[c1][cmp], *p2 = d->P_prev[c2][cmp];
-      const realnum pb0 = psat * bvec[d0];
-      const realnum pb1 = psat * bvec[d1], pb2 = psat  * bvec[d2];
-      realnum *ptmp = d->P_tmp[c][cmp];
-      realnum ptot0, ptot1, ptot2;
-
-      LOOP_OVER_VOL(gv, c, i) {
-	ptot0 = pb0 + p[i];
-	ptot1 = pb1 + p1[i];
-	ptot2 = pb2 + p2[i];
-	ptmp[i] = ptot0*psat/sqrt(ptot0*ptot0+ptot1*ptot1+ptot2*ptot2) - pb0;
-      }
-    }
-  }
-  FOR_COMPONENTS(c) DOCMP2 {
-    if (d->P[c][cmp]) {
-      realnum *p = d->P[c][cmp];
-      const realnum *ptmp = d->P_tmp[c][cmp];
-      LOOP_OVER_VOL(gv, c, i) {
-	p[i] = ptmp[i];
+	pp0[i] = p0[i];	pp1[i] = p1[i];	pp2[i] = p2[i];
+	p0[i]  = inv[d0][d0] * rhs0 + inv[d0][d1] * rhs1 + inv[d0][d2] * rhs2;
+	p1[i]  = inv[d1][d0] * rhs0 + inv[d1][d1] * rhs1 + inv[d1][d2] * rhs2;
+	p2[i]  = inv[d2][d0] * rhs0 + inv[d2][d1] * rhs1 + inv[d2][d2] * rhs2;
       }
     }
   }
@@ -475,21 +471,33 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 void gyrotropic_susceptibility::subtract_P(field_type ft,
                                            realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                                            void *P_internal_data) const {
-  lorentzian_data *d = (lorentzian_data *)P_internal_data;
+  gyrotropy_data *d = (gyrotropy_data *)P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   size_t ntot = d->ntot;
   FOR_FT_COMPONENTS(ft, ec) DOCMP2 {
-    if (d->P[ec][cmp]) {
+    if (d->P[ec][cmp][0]) {
       component dc = field_type_component(ft2, ec);
       if (f_minus_p[dc][cmp]) {
-	const realnum pb = psat * bvec[component_direction(ec)];
-        realnum *p = d->P[ec][cmp];
+        realnum *p = d->P[ec][cmp][component_direction(ec)];
         realnum *fmp = f_minus_p[dc][cmp];
         for (size_t i = 0; i < ntot; ++i)
-          fmp[i] -= pb + p[i];
+          fmp[i] -= p[i];
       }
     }
   }
+}
+
+int gyrotropic_susceptibility::num_cinternal_notowned_needed(component c,
+                                                             void *P_internal_data) const {
+  gyrotropy_data *d = (gyrotropy_data *)P_internal_data;
+  return d->P[c][0][0] ? 3 : 0;
+}
+
+realnum *gyrotropic_susceptibility::cinternal_notowned_ptr(int inotowned, component c, int cmp,
+                                                           int n, void *P_internal_data) const {
+  gyrotropy_data *d = (gyrotropy_data *)P_internal_data;
+  if (!d || !d->P[c][cmp][inotowned]) return NULL;
+  return d->P[c][cmp][inotowned] + n;
 }
 
 void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {

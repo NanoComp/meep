@@ -223,8 +223,7 @@ private:
 class lorentzian_susceptibility : public susceptibility {
 public:
   lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false)
-    : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator),
-      have_gyrotropy(false) {}
+      : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
 
@@ -250,7 +249,6 @@ public:
 protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
-  bool have_gyrotropy; // whether to assign an extra slot for gyrotropy calculations
 };
 
 /* like a Lorentzian susceptibility, but the polarization equation
@@ -280,15 +278,32 @@ public:
   gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
+  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+				  const grid_volume &gv, void *data) const;
+  virtual void *copy_internal_data(void *data) const;
+
+  virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
 			const grid_volume &gv, void *P_internal_data) const;
+  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+			  void *P_internal_data) const;
+
+  virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+					  int n, void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 7; }
+  virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+    (void)c;
+    (void)W;
+    return true;
+  }
 
 protected:
   double psat;     // conserved magnitude of the polarization vector
