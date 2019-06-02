@@ -170,23 +170,29 @@ For a two level gain medium, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. For
 Gyrotropic Media
 ----------------
 
-(**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator). The following discussion concerns a medium with gyrotropic ε (i.e., a gyroelectric medium). Gyromagnetic media can be treated by the usual substitution of ε with μ, **E** with **H**, etc.
+(**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator). The following discussion concerns media with gyrotropic ε (i.e., gyroelectric media). Gyromagnetic media, which have gyrotropic μ, can be treated by the usual substitution of ε with μ, **E** with **H**, etc.
 
-In a gyroelectric medium, the equation of motion of the polarization vector $\mathbf{P}_n$ is a variant of the [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation):
+In a gyrotropic medium, the polarization vector $\mathbf{P}_n$ undergoes precession around a preferred direction. There are two available equations of motion for $\mathbf{P}_n$. The first is a [Drude-Lorentz](Materials.md#material-dispersion) model with an additional precession term:
+
+$$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} + \mathbf{b}_n \times \frac{d\mathbf{P}_n}{dt} + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
+
+(The above equation shows the Lorentz case; for the Drude case, the $\omega_n^2 \mathbf{P}_n$ term on the left-hand side is omitted.) The third term on the left-hand side breaks time-reversal symmetry and is responsible for the gyrotropy; it is parameterized by the bias vector $\mathbf{b}_n$, usually describing the effect of a static magnetic field applied to the material. In the $\gamma_n = \omega_n = 0$ limit, the equation of motion reduces to a precession around $\mathbf{b}_n$, with angular frequency equal to $|\mathbf{b}_n|$:
+
+$$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
+
+The second type of gyrotropic equation of motion is a linearized [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation):
 
 $$\frac{d\mathbf{P}_n}{dt} = \mathbf{b}_n \times \left( - \sigma_n \mathbf{E} + \omega_n \mathbf{P}_n + \alpha_n \frac{d\mathbf{P}_n}{dt} \right) - \gamma_n \mathbf{P}_n$$
 
-Although this is completely different from the damped harmonic oscillator equation used for [Drude-Lorentz susceptibility](Materials.md#material-dispersion), the constants σ$_n$, ω$_n$, and γ$_n$ play analogous roles: σ$_n$ couples the polarization to the electric field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor. There is also a second damping factor α$_n$, and a "bias vector" **b**$_n$ which typically describes the direction of an applied static magnetic field. The bias vector is assumed to have unit length.
+The Landau-Lifshitz-Gilbert equation describes the precessional motion of a point magnetic dipole in a magnetic field; when it is used to model magnetic susceptibility, it accurately describes the behavior of gyromagnetic materials such as ferrites. Although this equation of motion is completely different from the [Drude-Lorentz equation](Materials.md#material-dispersion), the constants σ$_n$, ω$_n$, and γ$_n$ play analogous roles: σ$_n$ couples the polarization to the electric field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor. There is also a second damping factor α$_n$, and a bias vector **b**$_n$.
 
-In the frequency domain, a gyroelectric medium has skew-symmetric off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
+In the frequency domain, a gyroelectric medium exhibits skew-symmetric off-diagonal components in its ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
 
 $$\mathbf{P}_n =  \begin{bmatrix}\chi_\perp & -i\eta & 0 \\ i\eta & \chi_\perp & 0 \\ 0 & 0 & \chi_\parallel \end{bmatrix} \mathbf{E}$$
 
 For the gyrotropic Lorentzian model,
 
-In the frequency domain, the ε tensor acquires off-diagonal components representing a gyrotropic response. Take the case $\mathbf{b}_n = \hat{\mathbf{z}}$, and assume that all fields have harmonic time-dependence $\exp(-i\omega t)$. The polarization equation then reduces to
-
-$$\chi_\perp = \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}),\;\;\; \chi_\parallel = \frac{\omega_n^2}{\Delta_n}\,\sigma_n(\mathbf{x}), \;\;\; \eta = \frac{\omega_n^2 \omega b}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}), \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
+$$\chi_\perp = \frac{\omega_n^2 \Delta_n \sigma_n}{\Delta_n^2 - \omega^2 b^2},\;\;\; \chi_\parallel = \frac{\omega_n^2 \sigma_n}{\Delta_n}, \;\;\; \eta = \frac{\omega_n^2 \omega b \sigma_n}{\Delta_n^2 - \omega^2 b^2}, \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
 
 And for the Landau-Lifshitz-Gilbert model,
 
