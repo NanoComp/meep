@@ -475,7 +475,6 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
       res = PyObject_Call(py_gyrotropic_lorentz_class, args, NULL);
       Py_DECREF(py_gyrotropic_lorentz_class);
     }
-
     PyObject *py_bias = vec2py(vector3_to_vec(s->bias));
     PyObject_SetAttrString(res, "bias", py_bias);
     Py_DECREF(py_bias);

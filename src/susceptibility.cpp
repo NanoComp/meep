@@ -503,8 +503,9 @@ realnum *gyrotropic_susceptibility::cinternal_notowned_ptr(int inotowned, compon
 void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 8;
   size_t params_dims[1] = {num_params};
+  double bias[] = { gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y] };
   double params_data[] = {
-      7, (double)get_id(), bvec[0], bvec[1], bvec[2],
+      7, (double)get_id(), bias[X], bias[Y], bias[Z],
       omega_0, gamma, (double)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;

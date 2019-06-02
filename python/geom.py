@@ -292,7 +292,8 @@ class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
         super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
         self.bias = bias
 
-class MultilevelAtom(Susceptibility):
+
+        class MultilevelAtom(Susceptibility):
 
     def __init__(self, initial_populations=[], transitions=[], **kwargs):
         super(MultilevelAtom, self).__init__(**kwargs)

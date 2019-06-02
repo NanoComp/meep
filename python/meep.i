@@ -749,21 +749,21 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %typemap(in) const meep::src_time & {
-    PyObject *obj = NULL;
+    PyObject *swig_obj = NULL;
     void *tmp_ptr = 0;
     int tmp_res = 0;
 
     if(PyObject_IsInstance($input, py_source_time_object())) {
-        obj = PyObject_GetAttrString($input, "swigobj");
+        swig_obj = PyObject_GetAttrString($input, "swigobj");
     } else if(PyObject_IsInstance($input, py_meep_src_time_object())) {
-        obj = $input;
-        Py_XINCREF(obj);
+        swig_obj = $input;
+        Py_XINCREF(swig_obj);
     } else {
       meep::abort("Expected a meep.source.SourceTime or a meep.src_time\n");
     }
 
-    tmp_res = SWIG_ConvertPtr(obj, &tmp_ptr, $1_descriptor, 0);
-    Py_XDECREF(obj);
+    tmp_res = SWIG_ConvertPtr(swig_obj, &tmp_ptr, $1_descriptor, 0);
+    Py_XDECREF(swig_obj);
 
     if(!SWIG_IsOK(tmp_res)) {
         SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
@@ -1371,8 +1371,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Ellipsoid,
         FreqRange,
         GeometricObject,
-	GyrotropicDrudeSusceptibility,
-	GyrotropicLorentzianSusceptibility,
+        GyrotropicDrudeSusceptibility,
+        GyrotropicLorentzianSusceptibility,
         Lattice,
         LorentzianSusceptibility,
         Matrix,
