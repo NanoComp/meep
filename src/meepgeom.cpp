@@ -1375,18 +1375,23 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         sus = new meep::noisy_lorentzian_susceptibility(ss->noise_amp, ss->frequency, ss->gamma,
                                                         ss->drude);
       } else if (gyrotropic) {
-	meep::gyrotropy_model model
-	  = ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
+        meep::gyrotropy_model model
+          = ss->saturated_gyrotropy ? meep::GYROTROPIC_SATURATED
+          : ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
         sus = new meep::gyrotropic_susceptibility(meep::vec(ss->bias.x, ss->bias.y, ss->bias.z),
-						  ss->frequency, ss->gamma, model);
+                                                  ss->frequency, ss->gamma, ss->alpha, model);
       } else {
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
       master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
                     noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
-                    ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
+                    ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
+                    : ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
       if (noisy) master_printf(", amp=%g ", ss->noise_amp);
-      if (gyrotropic) master_printf(", bias=(%g,%g,%g) ", ss->bias.x, ss->bias.y, ss->bias.z);
+      if (gyrotropic) {
+        if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
+        master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
+      }
       master_printf("\n");
     }
 

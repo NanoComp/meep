@@ -329,8 +329,10 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 
   s->frequency = 0;
   s->gamma = 0;
+  s->alpha = 0;
   s->noise_amp = 0;
   s->bias.x = s->bias.y = s->bias.z = 0;
+  s->saturated_gyrotropy = false;
   s->transitions.resize(0);
   s->initial_populations.resize(0);
 
@@ -348,6 +350,11 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 
   if (PyObject_HasAttrString(po, "bias")) {
     if (!get_attr_v3(po, &s->bias, "bias")) return 0;
+  }
+
+  if (PyObject_HasAttrString(po, "alpha")) {
+    s->saturated_gyrotropy = true;
+    if (!get_attr_dbl(po, &s->alpha, "alpha")) { return 0; }
   }
 
   if (PyObject_HasAttrString(po, "transitions")) {
@@ -464,8 +471,12 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
   PyObject *res;
   PyObject *args = PyTuple_New(0);
 
-  if (s->bias.x || s->bias.y || s->bias.z) {
-    if (s->drude) {
+  if (s->saturated_gyrotropy || s->bias.x || s->bias.y || s->bias.z) {
+    if (s->saturated_gyrotropy) {
+      PyObject *py_gyrotropic_class = PyObject_GetAttrString(geom_mod, "GyrotropicSaturatedSusceptibility");
+      res = PyObject_Call(py_gyrotropic_class, args, NULL);
+      Py_DECREF(py_gyrotropic_class);
+    } else if (s->drude) {
       PyObject *py_gyrotropic_drude_class = PyObject_GetAttrString(geom_mod, "GyrotropicDrudeSusceptibility");
       res = PyObject_Call(py_gyrotropic_drude_class, args, NULL);
       Py_DECREF(py_gyrotropic_drude_class);

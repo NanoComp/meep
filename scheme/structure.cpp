@@ -1300,7 +1300,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
           master_printf("gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
                         gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
           sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma,
-                                                    meep::GYROTROPIC_LORENTZIAN);
+                                                    0.0, meep::GYROTROPIC_LORENTZIAN);
         } else { // just a Lorentzian
           master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma);
@@ -1319,12 +1319,20 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
           master_printf("gyrotropic drude susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
                         gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
           sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma,
-                                                    meep::GYROTROPIC_DRUDE);
+                                                    0.0, meep::GYROTROPIC_DRUDE);
         } else { // just a Drude
           master_printf("drude susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma, true);
         }
         break;
+      }
+      case susceptibility::GYROTROPIC_SATURATED_SUSCEPTIBILITY: {
+	gyrotropic_saturated_susceptibility *d = p->user_s.subclass.gyrotropic_saturated_susceptibility_data;
+	master_printf("gyrotropic Landau-Lifshitz-Gilbert-type susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g, alpha=%g\n",
+                      d->bias.x, d->bias.y, d->bias.z, d->frequency, d->gamma, d->alpha);
+	sus = new meep::gyrotropic_susceptibility(vector3_to_vec(d->bias), d->frequency, d->gamma,
+                                                  d->alpha, meep::GYROTROPIC_SATURATED);
+	break;
       }
       case susceptibility::MULTILEVEL_ATOM: {
         multilevel_atom *d = p->user_s.subclass.multilevel_atom_data;

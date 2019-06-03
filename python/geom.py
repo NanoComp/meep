@@ -292,8 +292,16 @@ class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
         super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
         self.bias = bias
 
+class GyrotropicSaturatedSusceptibility(Susceptibility):
 
-        class MultilevelAtom(Susceptibility):
+    def __init__(self, bias=Vector3(), frequency=0.0, gamma=0.0, alpha=0.0, **kwargs):
+        super(GyrotropicSaturatedSusceptibility, self).__init__(**kwargs)
+        self.frequency = frequency
+        self.gamma = gamma
+        self.bias = bias
+        self.alpha = alpha
+
+class MultilevelAtom(Susceptibility):
 
     def __init__(self, initial_populations=[], transitions=[], **kwargs):
         super(MultilevelAtom, self).__init__(**kwargs)

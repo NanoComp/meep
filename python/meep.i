@@ -1373,6 +1373,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         GeometricObject,
         GyrotropicDrudeSusceptibility,
         GyrotropicLorentzianSusceptibility,
+        GyrotropicSaturatedSusceptibility,
         Lattice,
         LorentzianSusceptibility,
         Matrix,
