@@ -484,9 +484,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
       const double gd = 0.5;
-      const double gx = -0.5 * alpha * gyro_tensor[Y][Z];
-      const double gy = -0.5 * alpha * gyro_tensor[Z][X];
-      const double gz = -0.5 * alpha * gyro_tensor[X][Y];
+      const double gx = -pi * alpha * gyro_tensor[Y][Z];
+      const double gy = -pi * alpha * gyro_tensor[Z][X];
+      const double gz = -pi * alpha * gyro_tensor[X][Y];
       const double invdet = 1.0 / gd / (gd*gd + gx*gx + gy*gy + gz*gz);
       const double inv[3][3]
 	= {{ invdet*(gd*gd+gx*gx), invdet*(gx*gy+gd*gz), invdet*(gx*gz-gd*gy) },
