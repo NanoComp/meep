@@ -2,10 +2,10 @@ import meep as mp
 
 ## Define a gyroelectric medium
 f0 = 1.0
-gamma = 1e-4
-epsn = 2.0
-b0 = 1.05
-sn = 0.2
+gamma = 1e-6
+epsn = 1.5
+b0 = 0.15
+sn = 0.1
 
 susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                               bias=mp.Vector3(0, 0, b0))]
@@ -24,7 +24,7 @@ sources = [mp.Source(mp.ContinuousSource(frequency=fsrc),
 sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources,
                     k_point=mp.Vector3(),   # Periodic boundary conditions
                     boundary_layers=pml_layers,
-                    default_material=mat, resolution=50)
+                    default_material=mat, resolution=100)
 sim.run(until=tmax)
 
 ## Plot results:
@@ -42,13 +42,13 @@ plt.xlim(-L/2, L/2); plt.xlabel('z')
 plt.legend()
 
 ## Comparison with analytic result:
-dfsq = (f0*2 - 1j*f0*gamma - fsrc**2)
+dfsq = (f0**2 - 1j*fsrc*gamma - fsrc**2)
 eperp = epsn + sn * f0**2 * dfsq / (dfsq**2 + (fsrc*b0)**2)
 eta = sn * f0**2 * fsrc * b0 / (dfsq**2 + (fsrc*b0)**2)
 
 k_gyro = 2*np.pi*fsrc * np.sqrt(0.5*(eperp - np.sqrt(eperp**2 - eta**2)))
-Ex_theory = 0.37 * np.cos(k_gyro * (z - src_z))
-Ey_theory = 0.37 * np.sin(k_gyro * (z - src_z))
+Ex_theory = 0.37 * np.cos(k_gyro * (z - src_z)).real
+Ey_theory = 0.37 * np.sin(k_gyro * (z - src_z)).real
 
 plt.figure(2)
 plt.subplot(2,1,1)
