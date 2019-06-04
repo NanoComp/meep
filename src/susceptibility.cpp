@@ -403,6 +403,9 @@ bool gyrotropic_susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIE
   return (d0 == X || d0 == Y || d0 == Z) && sigma[c][d0] && W[c][cmp];
 }
 
+// Similar to the OFFDIAG macro, but without averaging sigma.
+#define OFFDIAGW(g, sx, s) (0.25 * (g[i] + g[i - sx] + g[i + s] + g[i + s - sx]))
+
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 					 realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
 					 const grid_volume &gv, void *P_internal_data) const {
