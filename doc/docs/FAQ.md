@@ -275,13 +275,13 @@ Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), 
 
 For the instantaneous fields, you can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to compute the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. When computing the total field energy, you will need to first [synchronize the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md). To compute the integral of the energy density for a *single* field component e.g. ε|E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Dielectric, meep.Ez], def f(eps,ez): return 0.5*eps*abs(ez)**2, where=meep.Volume(...))`.
 
-For the Fourier-transformed fields, you can use [`add_energy`](Python_User_Interface.md#energy-density-spectra) to compute the energy density over a region and sum the list of values (at a fixed frequency) returned by `get_electric_energy`/`get_magnetic_energy`/`get_total_energy` and multiplying by the volume of the grid voxel to obtain the integral.
+For the Fourier-transformed fields, you can use [`add_energy`](Python_User_Interface.md#energy-density-spectra) to compute the energy density over a region and sum the list of values (at a fixed frequency) returned by `get_electric_energy`/`get_magnetic_energy`/`get_total_energy` multiplied by the volume of the grid voxel to obtain the integral.
 
 ### How do I compute the energy density for a dispersive material?
 
 The energy density computed by Meep is $\frac{1}{2}(\vec{E}\cdot\vec{D}+\vec{H}\cdot\vec{B})$ via [`add_energy`](Python_User_Interface.md#energy-density-spectra) (Fourier-transformed fields) or [`electric_energy_in_box`](Python_User_Interface.md#field-computations)/`magnetic_energy_in_box`/`field_energy_in_box` (instantaneous fields). This is *not* the energy density for a dispersive medium. With dispersion and negligible absorption the energy density includes an additional $\frac{dε}{dω}$ term (and $\frac{dμ}{dω}$ in magnetic media) as described in [Classical Electrodynamics](https://www.amazon.com/Classical-Electrodynamics-Third-David-Jackson/dp/047130932X) by J.D. Jackson as well as other standard textbooks.
 
-Meep cannot directly implement the "correct" formula including the $\frac{dε}{dω}$ term because that is a frequency-domain formula. Also, over a broad bandwidth, including frequency regimes where there is significant absorption, just defining the electromagnetic energy density in a reasonable way becomes problematic.
+A time-domain solver such as Meep cannot directly implement the "correct" formula including the $\frac{dε}{dω}$ term because that is a frequency-domain formula. Also, over a broad bandwidth, including frequency regimes where there is significant absorption, just defining the electromagnetic energy density in a reasonable way becomes problematic.
 
 ### How do I output the angular fields in cylindrical coordinates?
 
