@@ -57,7 +57,7 @@ Computations that only involve isolated points, such as `get_field_point` (Pytho
 
 Although all processes execute the Python/Scheme file in parallel, print statements are ignored for all process but one (process \#0). In this way, you only get one copy of the output.
 
-If for some reason you need to distinguish different MPI processes in your Python/Scheme file, you can use the following two functions:
+Sometimes you only want an operation to take place on one process. A common use case is showing a `matplotlib` plot with `plt.show()`, or saving a file with `plt.savefig()`. In cases where you need to distinguish different MPI processes in your Python/Scheme file, you can use the following functions:
 
 **`meep.am_master()`**,
 **`(meep-am-master)`**
@@ -79,6 +79,6 @@ Returns the index of the process running the current file, from zero to (meep-co
 —
 Blocks until all processes execute this statement (MPI_Barrier).
 
-**Warning**: do not attempt to perform different Meep commands with different processes by using the `meep.my_rank()` or `(meep-my-rank)`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.
+**Warning**: do not attempt to perform different Meep commands with different processes by using the `meep.am_master()`/`(meep-am-master)` or `meep.my_rank()`/`(meep-my-rank)`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.
 
 For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)` as the last line in the Scheme file to ensure that all processors terminate at the same point in the execution. Otherwise, one processor may finish and abruptly terminate the other processors.
