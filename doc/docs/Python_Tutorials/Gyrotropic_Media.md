@@ -22,7 +22,7 @@ $$\begin{bmatrix}E_x \\ E_y\end{bmatrix} = E_0 \begin{bmatrix}\cos(\kappa_c z) \
 
 where $\kappa_c$ is the Faraday rotation, in radians, per unit of propagation distance. Substituting this into Maxwell's equations, with the above gyroelectric dielectric function, yields
 
-$$|\kappa_c| = \frac{1}{2} \omega^2 \mu \sqrt{\epsilon_\perp - \sqrt{\epsilon_\perp^2 - \eta^2}}$$
+$$|\kappa_c| = \omega \sqrt{\frac{\mu}{2} \, \left(\epsilon_\perp - \sqrt{\epsilon_\perp^2 - \eta^2}\right)}$$
 
 We model this phenomenon in the simulation script [faraday-rotation.py](https://github.com/NanoComp/meep/blob/master/python/examples/faraday-rotation.py). First, we define a gyroelectric material:
 
