@@ -746,6 +746,10 @@ class Animate2D(object):
         # ready for jupyter notebook embedding.
         # modified from matplotlib/animation.py code.
         from uuid import uuid4
+        import sys
+        if sys.version_info[0] < 3:
+            warnings.warn('JSHTML output is not supported with python2 builds.')
+            return ""
 
         # save the frames to an html file
         fill_frames = self._embedded_frames(self._saved_frames, self.frame_format)
