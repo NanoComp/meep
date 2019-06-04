@@ -64,6 +64,10 @@ Sometimes you only want an operation to take place on one process. A common use 
 —
 Returns true if the current process is the master process (rank 0).
 
+This can be useful for calling external I/O or visualization routines, e.g. Matplotlib plotting functions, that you only want to execute on the master process.   Note that the Scheme `(print)` or Python `print` functions are *already* set up so that by default their output is suppressed on non-master processes.
+
+**Warning**: Most Meep functions operating on the simulation (e.g. fields or structure) are "collective" operations that must be called from all processes in the same sequence — if you call them from only one process via `am_master` (or `my_rank`) checks, then they will deadlock.  Code inside an `am_master` check should generally only call non-Meep library functions.
+
 **`meep.count_processors()`**,
 **`(meep-count-processors)`**
 —
@@ -78,7 +82,5 @@ Returns the index of the process running the current file, from zero to (meep-co
 **`(meep-all-wait)`**
 —
 Blocks until all processes execute this statement (MPI_Barrier).
-
-**Warning**: do not attempt to perform different Meep commands with different processes by using the `meep.am_master()`/`(meep-am-master)` or `meep.my_rank()`/`(meep-my-rank)`. All processes must for the most part execute the same Meep commands in the same sequence or they will deadlock, waiting forever for one another.
 
 For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)` as the last line in the Scheme file to ensure that all processors terminate at the same point in the execution. Otherwise, one processor may finish and abruptly terminate the other processors.
