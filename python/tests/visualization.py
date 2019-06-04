@@ -97,23 +97,22 @@ class TestVisualization(unittest.TestCase):
     
     def test_animation_output(self):
         # Check without normalization
-        f = plt.figure()
         sim = setup_sim()
-        animation = mp.Animate2D(sim,mp.Ez,f,normalize=False)
-        sim.run(mp.at_every(1),until=25)
+        Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=False, normalize=False)
+        sim.run(mp.at_every(1,Animate),until=5)
 
         # Check with normalization
-        animation = mp.Animate2D(sim,mp.Ez,f,normalize=True)
+        animation = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True)
         sim.run(mp.at_every(1),until=25)
 
         # Check mp4 output
-        animation.to_mp4(10,'test.mp4')
+        Animate.to_mp4(10,'test.mp4')
 
         # Check gif output
-        animation.to_gif(10,'test.gif')
+        Animate.to_gif(10,'test.gif')
 
         # Check jshtml output
-        animation.to_jshtml(10)
+        Animate.to_jshtml(10)
     '''
     Travis does not play well with Mayavi
     def test_3D_mayavi(self):
