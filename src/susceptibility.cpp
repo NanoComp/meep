@@ -461,9 +461,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	  LOOP_OVER_VOL_OWNED(gv, c, i) {
 	    rhs0 = diagfac*p0[i] - gamma1*pp0[i] + omega0dtsqr*s[i]*w0[i]
 	      - pt*gyro_tensor[d0][d1]*pp1[i] - pt*gyro_tensor[d0][d2]*pp2[i];
-	    rhs1 = diagfac*p1[i] - gamma1*pp1[i] + (w1 ? omega0dtsqr*s[i]*OFFDIAG(s,w1,is1,is) : 0)
+	    rhs1 = diagfac*p1[i] - gamma1*pp1[i] + (w1 ? omega0dtsqr*s[i]*OFFDIAGW(w1,is1,is) : 0)
 	      - pt*gyro_tensor[d1][d0]*pp0[i] - pt*gyro_tensor[d1][d2]*pp2[i];
-	    rhs2 = diagfac*p2[i] - gamma1*pp2[i] + (w2 ? omega0dtsqr*s[i]*OFFDIAG(s,w2,is2,is) : 0)
+	    rhs2 = diagfac*p2[i] - gamma1*pp2[i] + (w2 ? omega0dtsqr*s[i]*OFFDIAGW(w2,is2,is) : 0)
 	      - pt*gyro_tensor[d2][d1]*pp1[i] - pt*gyro_tensor[d2][d0]*pp0[i];
 
 	    pp0[i] = p0[i];	pp1[i] = p1[i];	pp2[i] = p2[i];
