@@ -894,7 +894,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of `flux-region` objects (see [above](#flux-region)), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
+Given a bunch of [`flux-region`](#flux-region) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**
 —

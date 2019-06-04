@@ -275,6 +275,18 @@ Note: in any cell direction where there is a [PML](Perfectly_Matched_Layer.md), 
 
 For the instantaneous fields, you can use [`electric_energy_in_box`](Python_User_Interface.md#field-computations) to compute the integral of ε|E|<sup>2</sup>/2 in some region. For the magnetic or total field energy, you can use `magnetic_energy_in_box` or `field_energy_in_box`. When computing the total field energy, you will need to first [synchronize the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md). To compute the integral of the energy density for a *single* field component e.g. ε|E<sub>z</sub>|<sup>2</sup>/2, you can use the [field function](Field_Functions.md): `integrate_field_function([meep.Dielectric, meep.Ez], def f(eps,ez): return 0.5*eps*abs(ez)**2, where=meep.Volume(...))`.
 
+For the Fourier-transformed fields, you can use [`add_energy`](Python_User_Interface.md#energy-density-spectra) to compute the energy density over a region and sum the list of values (at a fixed frequency) returned by `get_electric_energy`/`get_magnetic_energy`/`get_total_energy` multiplied by the volume of the grid voxel to obtain the integral.
+
+### How do I compute the energy density for a dispersive material?
+
+The energy density computed by Meep is $\frac{1}{2}(\vec{E}\cdot\vec{D}+\vec{H}\cdot\vec{B})$ via [`add_energy`](Python_User_Interface.md#energy-density-spectra) (Fourier-transformed fields) or [`electric_energy_in_box`](Python_User_Interface.md#field-computations)/`magnetic_energy_in_box`/`field_energy_in_box` (instantaneous fields). This is *not* the energy density for a dispersive medium. With dispersion and negligible absorption, the energy density is described by a "Brillouin" formula that includes an additional $\frac{dε}{dω}$ term (and $\frac{dμ}{dω}$ in magnetic media) as described in [Classical Electrodynamics](https://www.amazon.com/Classical-Electrodynamics-Third-David-Jackson/dp/047130932X) by J.D. Jackson as well as other standard textbooks.  More generally, one can define a "dynamical energy density" that captures the energy in the fields and the work done on the polarization currents; as reviewed in [Welters (2014)](http://math.mit.edu/~stevenj/papers/Welters14.pdf), the dynamical energy density reduces to the Brillouin formula for negligible absorption, and is constructed so as to enforce Poynting's theorem for conservation of energy.
+
+Although Meep does not currently implement a function to compute the dynamical energy density (or the limiting case of the Brillouin formula) explicitly, since this density is expressed in terms of time derivatives it could in principle be added (or implemented yourself by processing the fields during time-stepping).   However, if you only want the total *energy* in some box, you can instead compute it via Poynting's theorem from the total energy flux flowing into that box (via Meep's various flux-computation features), and this is equivalent to integrating the dynamical energy density or its special case of the Brillouin formula.
+
+### How do I output the angular fields in cylindrical coordinates?
+
+Meep can only output sections of the *rz* plane in cylindrical coordinates. To obtain the angular fields, you will need to do the conversion manually using the fields in the *rz* plane: the fields at all other φ are related by a factor of exp(imφ) due to the continuous rotational symmetry.
+
 Usage: Materials
 ----------------
 
@@ -298,6 +310,10 @@ Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is writ
 
 Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength. In
 a discretized computer model like Meep, this is approximated by a volume conductivity that is one pixel (`1/resolution`) thick *and* has an amplitude scaled by `resolution`. Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
+
+### How do I model a continuously-varying permittivity?
+
+You can use a [material function](Python_User_Interface.md#medium) to model any arbitrary, position-dependent permittivity/permeability function ε(**r**)/μ(**r**) including anisotropic, [dispersive](Materials.md#material-dispersion), and [nonlinear](Materials.md#nonlinearity) media. For an example involving a non-dispersive, anisotropic material, see [Tutorials/Mode Decomposition/Diffraction Spectrum of Liquid-Crystal Polarization Gratings](Python_Tutorials/Mode_Decomposition.md#diffraction-spectrum-of-liquid-crystal-polarization-gratings). The material function construct can also be used to specify arbitrary *shapes* (e.g., curves such as parabolas, sinusoids, etc.) within: (1) the interior boundary of a [`GeometricObject`](Python_User_Interface.md#geometricobject) (e.g., `Block`, `Sphere`, `Cylinder`, etc.), (2) the entire cell via `material_function` parameter of the `Simulation` constructor, or (3) a combination of the two.
 
 Usage: Structures
 -----------------
