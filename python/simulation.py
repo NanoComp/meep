@@ -159,7 +159,7 @@ class Volume(object):
         vec2 = py_v3_to_vec(self.dims, v2, is_cylindrical)
 
         self.swigobj = mp.volume(vec1, vec2)
-    
+
     def get_vertices(self):
         xmin = self.center.x - self.size.x/2
         xmax = self.center.x + self.size.x/2
@@ -170,7 +170,7 @@ class Volume(object):
 
         # Iterate over and remove duplicates for collapsed dimensions (i.e. min=max))
         return [Vector3(x,y,z) for x in list(set([xmin,xmax])) for y in list(set([ymin,ymax])) for z in list(set([zmin,zmax]))]
-        
+
 
     def get_edges(self):
         vertices = self.get_vertices()
@@ -179,16 +179,16 @@ class Volume(object):
         # Useful for importing weird geometries and the sizes are slightly off
         def nearly_equal(a,b,sig_fig=10):
             return a==b or (abs(a-b) < 10**(-sig_fig))
-        
+
         for iter1 in range(len(vertices)):
             for iter2 in range(iter1+1,len(vertices)):
-                if ((iter1 != iter2) and 
-                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.x) or 
+                if ((iter1 != iter2) and
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.x) or
                 nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.y) or
                 nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.z)):
                     edges.append([vertices[iter1],vertices[iter2]])
         return edges
-        
+
     def pt_in_volume(self,pt):
         xmin = self.center.x - self.size.x/2
         xmax = self.center.x + self.size.x/2
@@ -620,6 +620,7 @@ class Simulation(object):
         self.chunk_layout = chunk_layout
         self.collect_stats = collect_stats
         self.fragment_stats = None
+        self._predict_walltime = os.environ.get('PREDICT_WALLTIME', None)
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -1007,6 +1008,23 @@ class Simulation(object):
 
         if self.collect_stats and isinstance(self.default_material, mp.Medium):
             self.fragment_stats = self._compute_fragment_stats(gv)
+
+        if self._predict_walltime and isinstance(self.default_material, mp.Medium):
+            stats = self._compute_fragment_stats(gv)
+            print("BEGIN SIMULATION STATISTICS")
+            print("aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
+            print("anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
+            print("nonlinear: {}".format(stats.num_nonlinear_pixels))
+            print("susceptibility: {}".format(stats.num_susceptibility_pixels))
+            print("nonzero_cond: {}".format(stats.num_nonzero_conductivity_pixels))
+            print("pml_1d: {}".format(stats.num_1d_pml_pixels))
+            print("pml_2d: {}".format(stats.num_2d_pml_pixels))
+            print("pml_3d: {}".format(stats.num_3d_pml_pixels))
+            print("dft: {}".format(stats.num_dft_pixels))
+            print("total_pixels: {}".format(stats.num_pixels_in_box))
+            print("num_cores: {}".format(mp.count_processors()))
+            print("END SIMULATION STATISTICS")
+            sys.exit(0)
 
         dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
 
@@ -2187,10 +2205,10 @@ class Simulation(object):
 
     def plot2D(self,**kwargs):
         return vis.plot2D(self,**kwargs)
-    
+
     def plot_fields(self,**kwargs):
         return vis.plot_fields(self,**kwargs)
-    
+
     def plot3D(self):
         return vis.plot3D(self)
 
