@@ -620,7 +620,7 @@ class Simulation(object):
         self.chunk_layout = chunk_layout
         self.collect_stats = collect_stats
         self.fragment_stats = None
-        self._predict_walltime = os.environ.get('PREDICT_WALLTIME', None)
+        self._output_stats = os.environ.get('MEEP_STATS', None)
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -1009,21 +1009,19 @@ class Simulation(object):
         if self.collect_stats and isinstance(self.default_material, mp.Medium):
             self.fragment_stats = self._compute_fragment_stats(gv)
 
-        if self._predict_walltime and isinstance(self.default_material, mp.Medium):
+        if self._output_stats and isinstance(self.default_material, mp.Medium):
             stats = self._compute_fragment_stats(gv)
-            print("BEGIN SIMULATION STATISTICS")
-            print("aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
-            print("anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
-            print("nonlinear: {}".format(stats.num_nonlinear_pixels))
-            print("susceptibility: {}".format(stats.num_susceptibility_pixels))
-            print("nonzero_cond: {}".format(stats.num_nonzero_conductivity_pixels))
-            print("pml_1d: {}".format(stats.num_1d_pml_pixels))
-            print("pml_2d: {}".format(stats.num_2d_pml_pixels))
-            print("pml_3d: {}".format(stats.num_3d_pml_pixels))
-            print("dft: {}".format(stats.num_dft_pixels))
-            print("total_pixels: {}".format(stats.num_pixels_in_box))
-            print("num_cores: {}".format(mp.count_processors()))
-            print("END SIMULATION STATISTICS")
+            print("STATS: aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
+            print("STATS: anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
+            print("STATS: nonlinear: {}".format(stats.num_nonlinear_pixels))
+            print("STATS: susceptibility: {}".format(stats.num_susceptibility_pixels))
+            print("STATS: nonzero_cond: {}".format(stats.num_nonzero_conductivity_pixels))
+            print("STATS: pml_1d: {}".format(stats.num_1d_pml_pixels))
+            print("STATS: pml_2d: {}".format(stats.num_2d_pml_pixels))
+            print("STATS: pml_3d: {}".format(stats.num_3d_pml_pixels))
+            print("STATS: dft: {}".format(stats.num_dft_pixels))
+            print("STATS: total_pixels: {}".format(stats.num_pixels_in_box))
+            print("STATS: num_cores: {}".format(mp.count_processors()))
             sys.exit(0)
 
         dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
