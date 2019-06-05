@@ -287,7 +287,7 @@ Although Meep does not currently implement a function to compute the dynamical e
 
 Meep can only output sections of the *rz* plane in cylindrical coordinates. To obtain the angular fields, you will need to do the conversion manually using the fields in the *rz* plane: the fields at all other φ are related by a factor of exp(imφ) due to the continuous rotational symmetry.
 
-### How does the use of symmetry affect the sources and fields in nonlinear media?
+### How does the use of symmetry affect nonlinear media?
 
 In linear media, if you use an odd-symmetry source, the even-symmetry modes cannot be excited. If you then specify odd [symmetry](Python_User_Interface.md#symmetry) in your simulation, nothing changes. The even-symmetry modes are not disregarded, they are simply not relevant. Vice-versa for an even-symmetry source.
 
