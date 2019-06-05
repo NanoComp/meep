@@ -1,27 +1,48 @@
 # Meep Release Notes
 
+## Meep 1.10.0
+
+6/5/19
+
+  * New Python functions for simple visualization of the simulation domain (#872).
+
+  * Capture Meep and MPB output in Python notebooks (#891,
+
+  * Add optional `meep.quiet()` parameter to the Python interface (#876).
+
+  * Python evaluation of materials ε(ω) and μ(ω) (#862).
+
+  * Experimental multithreading support for near2far calculation (#868) and other speedups (#869).
+
+  * Add `stop_after_walltime` and `stop_on_interrupt` in Python (#860).
+
+  * GDSII file introspection (#817).
+
+  * Various small bugfixes and documentation improvements.
+
+
 ## Meep 1.9.0
 
 4/17/19
 
   * Adjoint solver to compute sensitivity of solution to material perturbations (#795).
-  
+
   * Experimental `do_averaging` feature for user-defined material functions (#771, #791).
-  
+
   * Periodic boundaries support in `near2far` via `nperiods` option (#769, #789).
-  
+
   * Capture more output in Python notebooks (#785, #807).
-  
+
   * `dft-energy` feature (#744, #747).
-  
+
   * Eigenmode sources are normalized to unit power (#728).
-  
+
   * Fix interpolation of DFT slice output (#787).
-  
+
   * Bug fix in `run-k-points` (#779).
-  
+
   * Eigenmode sources for negative angles (#752).
-  
+
   * Various other minor bugfixes, build fixes, documentation improvements, tutorials, etcetera.
 
 ## Meep 1.8.0
@@ -65,7 +86,7 @@
  * Add `transform` method to `meep.Medium` (#603).
 
  * Read epsilon input from a numpy array when passed to a `Simulation` as `default_material`(#593).
- 
+
  * Support `geometry_center` in Python (#599).
 
  * Add Python `Ldos` class (#581).
@@ -85,7 +106,7 @@
  * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz (#602).
 
  * Fix sync of eigenmode calculation when no mode is found (#596).
- 
+
  * Fix memory leak in `get_dft_array` (#577).
 
  * Use same MPB phase on all processes, fixing bug with eigenmodes and multiprocessing (#578).
