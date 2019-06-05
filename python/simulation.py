@@ -18,6 +18,7 @@ import numpy as np
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
+import meep.visualization as vis
 
 
 try:
@@ -158,6 +159,48 @@ class Volume(object):
         vec2 = py_v3_to_vec(self.dims, v2, is_cylindrical)
 
         self.swigobj = mp.volume(vec1, vec2)
+    
+    def get_vertices(self):
+        xmin = self.center.x - self.size.x/2
+        xmax = self.center.x + self.size.x/2
+        ymin = self.center.y - self.size.y/2
+        ymax = self.center.y + self.size.y/2
+        zmin = self.center.z - self.size.z/2
+        zmax = self.center.z + self.size.z/2
+
+        # Iterate over and remove duplicates for collapsed dimensions (i.e. min=max))
+        return [Vector3(x,y,z) for x in list(set([xmin,xmax])) for y in list(set([ymin,ymax])) for z in list(set([zmin,zmax]))]
+        
+
+    def get_edges(self):
+        vertices = self.get_vertices()
+        edges = []
+
+        # Useful for importing weird geometries and the sizes are slightly off
+        def nearly_equal(a,b,sig_fig=10):
+            return a==b or (abs(a-b) < 10**(-sig_fig))
+        
+        for iter1 in range(len(vertices)):
+            for iter2 in range(iter1+1,len(vertices)):
+                if ((iter1 != iter2) and 
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.x) or 
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.y) or
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.z)):
+                    edges.append([vertices[iter1],vertices[iter2]])
+        return edges
+        
+    def pt_in_volume(self,pt):
+        xmin = self.center.x - self.size.x/2
+        xmax = self.center.x + self.size.x/2
+        ymin = self.center.y - self.size.y/2
+        ymax = self.center.y + self.size.y/2
+        zmin = self.center.z - self.size.z/2
+        zmax = self.center.z + self.size.z/2
+
+        if (pt.x >= xmin and pt.x <= xmax and pt.y >= ymin and pt.y <= ymax and pt.z >= zmin and pt.z <= zmax):
+            return True
+        else:
+            return False
 
 
 class FluxRegion(object):
@@ -2142,65 +2185,17 @@ class Simulation(object):
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=not self.fields.is_real)
 
+    def plot2D(self,**kwargs):
+        return vis.plot2D(self,**kwargs)
+    
+    def plot_fields(self,**kwargs):
+        return vis.plot_fields(self,**kwargs)
+    
+    def plot3D(self):
+        return vis.plot3D(self)
+
     def visualize_chunks(self):
-        if self.structure is None:
-            self.init_sim()
-        try:
-            import matplotlib.pyplot as plt
-            import matplotlib.cm
-            import matplotlib.colors
-            from mpl_toolkits.mplot3d import Axes3D
-            from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
-        except ImportError:
-            warnings.warn("matplotlib is required for visualize_chunks", ImportWarning)
-            return
-
-        vols = self.structure.get_chunk_volumes()
-        owners = self.structure.get_chunk_owners()
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
-
-        def plot_box(box, proc):
-            low = mp.Vector3(box.low.x, box.low.y, box.low.z)
-            high = mp.Vector3(box.high.x, box.high.y, box.high.z)
-            points = [low, high]
-
-            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
-            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
-            xy_len = mp.Vector3(high.x, high.y) - mp.Vector3(low.x, low.y)
-
-            points += [low + x_len]
-            points += [low + y_len]
-            points += [low + xy_len]
-            points += [high - x_len]
-            points += [high - y_len]
-            points += [high - xy_len]
-            points = np.array([np.array(v) for v in points])
-
-            edges = [
-                [points[0], points[2], points[4], points[3]],
-                [points[1], points[5], points[7], points[6]],
-                [points[0], points[3], points[5], points[7]],
-                [points[1], points[4], points[2], points[6]],
-                [points[3], points[4], points[1], points[5]],
-                [points[0], points[7], points[6], points[2]]
-            ]
-
-            faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
-            color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc], alpha=0.2)
-            faces.set_facecolor(color_with_alpha)
-            ax.add_collection3d(faces)
-
-            # Plot the points themselves to force the scaling of the axes
-            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
-
-        if mp.am_master():
-            for i, v in enumerate(vols):
-                plot_box(mp.gv2box(v.surroundings()), owners[i])
-            ax.set_aspect('auto')
-            plt.show()
+        vis.visualize_chunks(self)
 
 
 def _create_boundary_region_from_boundary_layers(boundary_layers, gv):

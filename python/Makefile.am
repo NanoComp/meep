@@ -68,6 +68,7 @@ TESTS =                                   \
     $(TEST_DIR)/simulation.py             \
     $(TEST_DIR)/source.py                 \
     $(TEST_DIR)/user_defined_material.py  \
+    $(TEST_DIR)/visualization.py          \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
@@ -187,6 +188,7 @@ HL_IFACE =                  \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
+    $(srcdir)/visualization.py  \
     $(srcdir)/materials.py
 
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
@@ -224,3 +226,5 @@ clean-local:
 
 distclean-local:
 	rm -f *.h5
+	rm -f *.mp4
+	rm -f *.gif

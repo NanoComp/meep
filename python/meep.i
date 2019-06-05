@@ -1524,6 +1524,12 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         SourceTime,
         check_positive,
     )
+    from .visualization import (
+        plot2D,
+        plot3D,
+        plot_fields,
+        Animate2D
+    )
 
     if with_mpi():
         try:
