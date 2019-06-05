@@ -394,19 +394,19 @@ This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with 
 
 ### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
 
-(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility. See [Material Dispersion](Materials.md#gyrotropic-media).
-
-For gyrotropic media of Lorentzian (damped harmonic oscillator) or Drude form, the parameters `sigma`, `frequency`, and `gamma` have the same meanings as in `LorentzianSusceptibility` and `DrudeSusceptibility`, but with an additional 3-vector `bias`:
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). Its parameters are `sigma`, `frequency`, and `gamma`, which have the usual meanings, and an additional 3-vector `bias`:
 
 **`bias` [`Vector3`]**
 —
 The gyrotropy vector.  The direction of this vector determines the orientation of the gyrotropic response, and the magnitude equals the precession frequency $|\mathbf{b}_n|/2\pi$.
 
-For gyrotropic media of Landau-Lifshitz-Gilbert form, the parameters `sigma`, `frequency`, and `gamma` play different roles, and there is an additiona `alpha` parameter:
+### GyrotropicSaturatedSusceptibility
+
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility governed by a linearized Landau-Lifshitz-Gilbert equation. See [Material Dispersion](Materials.md#gyrotropic-media). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
 
 **`sigma` [`number`]**
 —
-The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field if `bias` is a unit vector.
 
 **`frequency` [`number`]**
 —
@@ -418,7 +418,11 @@ The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
 
 **`alpha` [`number`]**
 —
-The loss factor $\alpha_n$ in the diagonal response (note that there is no 2π factor).
+The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
+
+**`bias` [`Vector3`]**
+—
+Vector specifying the orientation of the gyrotropic response. The magnitude is ignored (unlike the `GyrotropicLorentzianSusceptibility` or `GyrotropicDrudeSusceptibility` case); the relevant precession frequencies are determined by `sigma` and `frequency`, described above.
 
 ### Vector3
 
