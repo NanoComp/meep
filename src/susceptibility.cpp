@@ -327,10 +327,13 @@ gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double ome
 						     double alpha, gyrotropy_model model)
   : omega_0(omega_0), gamma(gamma), alpha(alpha), model(model) {
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
+
+  // Ignore |b| for Landau-Lifshitz-Gilbert gyrotropy model:
+  const vec b = (model == GYROTROPIC_SATURATED) ? bias/abs(bias) : bias;
   memset(gyro_tensor, 0, 9 * sizeof(double));
-  gyro_tensor[X][Y] = bias.z(); gyro_tensor[Y][X] = -bias.z();
-  gyro_tensor[Y][Z] = bias.x(); gyro_tensor[Z][Y] = -bias.x();
-  gyro_tensor[Z][X] = bias.y(); gyro_tensor[X][Z] = -bias.y();
+  gyro_tensor[X][Y] = b.z(); gyro_tensor[Y][X] = -b.z();
+  gyro_tensor[Y][Z] = b.x(); gyro_tensor[Z][Y] = -b.x();
+  gyro_tensor[Z][X] = b.y(); gyro_tensor[X][Z] = -b.y();
 }
 
 /* To implement gyrotropic susceptibilities, we track three
@@ -479,14 +482,11 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
   case GYROTROPIC_SATURATED:
     {
-      const double dwfac = -2*pi*omega2pidt, alppi = pi*alpha;
-      const double dt2pi = 2*pi*dt;
-
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
       const double gd = 0.5;
-      const double gx = -pi * alpha * gyro_tensor[Y][Z];
-      const double gy = -pi * alpha * gyro_tensor[Z][X];
-      const double gz = -pi * alpha * gyro_tensor[X][Y];
+      const double gx = -0.5 * alpha * gyro_tensor[Y][Z];
+      const double gy = -0.5 * alpha * gyro_tensor[Z][X];
+      const double gz = -0.5 * alpha * gyro_tensor[X][Y];
       const double invdet = 1.0 / gd / (gd*gd + gx*gx + gy*gy + gz*gz);
       const double inv[3][3]
 	= {{ invdet*(gd*gd+gx*gx), invdet*(gx*gy+gd*gz), invdet*(gx*gz-gd*gy) },
@@ -519,9 +519,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	    abort("gyrotropic media do not support anisotropic sigma\n");
 
 	  LOOP_OVER_VOL_OWNED(gv, c, i) {
-	    q0 = dwfac*p0[i] + alppi*pp0[i] + dt2pi*s[i]*w0[i];
-	    q1 = dwfac*p1[i] + alppi*pp1[i] + (w1 ? dt2pi*s[i]*OFFDIAGW(w1,is1,is) : 0);
-	    q2 = dwfac*p2[i] + alppi*pp2[i] + (w2 ? dt2pi*s[i]*OFFDIAGW(w2,is2,is) : 0);
+	    q0 = -omega2pidt*p0[i] + 0.5*alpha*pp0[i] + dt*s[i]*w0[i];
+	    q1 = -omega2pidt*p1[i] + 0.5*alpha*pp1[i] + dt*s[i]*(w1 ? OFFDIAGW(w1,is1,is) : 0);
+	    q2 = -omega2pidt*p2[i] + 0.5*alpha*pp2[i] + dt*s[i]*(w2 ? OFFDIAGW(w2,is2,is) : 0);
 
 	    r0 = 0.5*pp0[i] - g2pidt*p0[i] + gyro_tensor[d0][d1]*q1 + gyro_tensor[d0][d2]*q2;
 	    r1 = 0.5*pp1[i] - g2pidt*p1[i] + gyro_tensor[d1][d2]*q2 + gyro_tensor[d1][d0]*q0;
