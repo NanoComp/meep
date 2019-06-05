@@ -24,7 +24,7 @@ sources = [mp.Source(mp.ContinuousSource(frequency=fsrc),
 sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources,
                     k_point=mp.Vector3(),   # Periodic boundary conditions
                     boundary_layers=pml_layers,
-                    default_material=mat, resolution=100)
+                    default_material=mat, resolution=50)
 sim.run(until=tmax)
 
 ## Plot results:
@@ -43,8 +43,8 @@ plt.legend()
 
 ## Comparison with analytic result:
 dfsq = (f0**2 - 1j*fsrc*gamma - fsrc**2)
-eperp = epsn + sn * f0**2 * dfsq / (dfsq**2 + (fsrc*b0)**2)
-eta = sn * f0**2 * fsrc * b0 / (dfsq**2 + (fsrc*b0)**2)
+eperp = epsn + sn * f0**2 * dfsq / (dfsq**2 - (fsrc*b0)**2)
+eta = sn * f0**2 * fsrc * b0 / (dfsq**2 - (fsrc*b0)**2)
 
 k_gyro = 2*np.pi*fsrc * np.sqrt(0.5*(eperp - np.sqrt(eperp**2 - eta**2)))
 Ex_theory = 0.37 * np.cos(k_gyro * (z - src_z)).real
@@ -54,15 +54,15 @@ plt.figure(2)
 plt.subplot(2,1,1)
 plt.plot(z, ex_data, label='Ex (MEEP)')
 plt.plot(z, Ex_theory, 'k--')
-plt.plot(z, -Ex_theory, 'k--', label='Ex (theory)')
+plt.plot(z, -Ex_theory, 'k--', label='Ex envelope (theory)')
 plt.xlim(-L/2, L/2); plt.xlabel('z')
-plt.legend()
+plt.legend(loc='lower right')
 
 plt.subplot(2,1,2)
 plt.plot(z, ey_data, label='Ey (MEEP)')
 plt.plot(z, Ey_theory, 'k--')
-plt.plot(z, -Ey_theory, 'k--', label='Ey (theory)')
+plt.plot(z, -Ey_theory, 'k--', label='Ey envelope (theory)')
 plt.xlim(-L/2, L/2); plt.xlabel('z')
-plt.legend()
+plt.legend(loc='lower right')
 plt.tight_layout()
 plt.show()

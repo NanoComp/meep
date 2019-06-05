@@ -394,7 +394,7 @@ This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with 
 
 ### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
 
-(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). The parameters `sigma`, `frequency`, and `gamma` have the usual meanings, and there is an additional 3-vector `bias`:
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). Its parameters are `sigma`, `frequency`, and `gamma`, which have the usual meanings, and an additional 3-vector `bias`:
 
 **`bias` [`Vector3`]**
 —

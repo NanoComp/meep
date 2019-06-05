@@ -174,11 +174,13 @@ Gyrotropic Media
 
 In a gyroelectric medium, the equation of motion of the polarization vector $\mathbf{P}_n$ is very similar to the [Drude-Lorentz](Materials.md#material-dispersion) case, but contains an additional precession term:
 
-$$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} + \mathbf{b}_n \times \frac{d\mathbf{P}_n}{dt} + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
+$$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} - \frac{d\mathbf{P}_n}{dt} \times \mathbf{b}_n + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
 
-(Optionally, the polarization may be of Drude form, in which case the $\omega_n^2 \mathbf{P}_n$ term on the left-hand side is omitted.) The third term on the left-hand side breaks time-reversal symmetry and describes the gyrotropy of the medium; it is parameterized by the bias vector $\mathbf{b}_n$, usually describing the effect of an applied static magnetic field. In the $\gamma_n = \omega_n = 0$ limit, the equation of motion reduces to a precession around $\mathbf{b}_n$, with angular frequency equal to $|\mathbf{b}_n|$:
+(Optionally, the polarization may be of Drude form, in which case the $\omega_n^2 \mathbf{P}_n$ term on the left is omitted.) The third term on the left side is responsible for the gyrotropy of the medium. This term breaks time-reversal symmetry and typically describes the effect of a static external magnetic field on the motion of electrons within the material. The bias vector $\mathbf{b}_n$ characterizes the direction and magnitude of the external magnetic field. In the $\gamma_n = \omega_n = 0$ limit, the equation of motion reduces to a precession around $\mathbf{b}_n$:
 
 $$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
+
+Hence, the magnitude of the bias vector is the angular frequency of the gyrotropic precession.
 
 In the frequency domain, a gyroelectric medium has skew-symmetric off-diagonal components in the ε tensor. Take the case $\mathbf{b} = b \hat{z}$. When all fields have harmonic time-dependence $\exp(-i\omega t)$, the polarization equation of motion reduces to
 

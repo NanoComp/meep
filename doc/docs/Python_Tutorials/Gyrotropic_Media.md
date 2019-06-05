@@ -6,11 +6,11 @@ In this example, we will perform simulations with gyrotropic media. See [Materia
 
 ### Faraday Rotation
 
-Consider a uniform gyrotroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. According to the [gyrotropic Lorentzian model implemented in Meep](../Materials.md#gyrotropic-media), the *x* and *y* components of the dielectric function are
+Consider a uniform gyroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. In the frequency domain, the *x* and *y* components of the dielectric function are
 
 $$\epsilon = \begin{bmatrix}\epsilon_\perp & -i\eta \\ i\eta & \epsilon_\perp \end{bmatrix}$$
 
-where
+In the [gyrotropic Lorentzian model](../Materials.md#gyrotropic-media), the tensor components are
 
 $$\epsilon_\perp = \epsilon_\infty + \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}),\;\;\; \eta = \frac{\omega_n^2 \omega b}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}), \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
 
@@ -20,7 +20,7 @@ A plane wave undergoing Faraday rotation can be described by the complex ansatz
 
 $$\begin{bmatrix}E_x \\ E_y\end{bmatrix} = E_0 \begin{bmatrix}\cos(\kappa_c z) \\ \sin(\kappa_c z)\end{bmatrix} e^{i(kz-\omega t)}$$
 
-where $\kappa_c$ is the Faraday rotation, in radians, per unit of propagation distance. Substituting this into Maxwell's equations, with the above gyroelectric dielectric function, yields
+where $\kappa_c$ is the Faraday rotation (in radians) per unit of propagation distance. Substituting this into the frequency domain Maxwell's equations, with the above dielectric tensor, yields
 
 $$|\kappa_c| = \omega \sqrt{\frac{\mu}{2} \, \left(\epsilon_\perp - \sqrt{\epsilon_\perp^2 - \eta^2}\right)}$$
 
@@ -30,10 +30,10 @@ We model this phenomenon in the simulation script [faraday-rotation.py](https://
 
 ## Define a gyroelectric medium
 f0 = 1.0
-gamma = 1e-4
-epsn = 2.0
-b0 = 1.05
-sigma = 0.2
+gamma = 1e-6
+epsn = 1.5
+b0 = 0.15
+sn = 0.1
 
 susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sigma,
                                               bias=mp.Vector3(0, 0, b0))]
@@ -84,28 +84,28 @@ plt.show()
 
 We see that the wave indeed rotates in the *x*-*y* plane as it travels. This can be compared quantitatively to the above ansatz for a wave undergoing Faraday rotation, using the material parameters to calculate the rotation rate $\kappa_c$:
 
-```dfsq = (f0*2 - 1j*f0*gamma - fsrc**2)
-eperp = epsn + sigma * f0**2 * dfsq / (dfsq**2 + (fsrc*b0)**2)
-eta = sigma * f0**2 * fsrc * b0 / (dfsq**2 + (fsrc*b0)**2)
+```dfsq = (f0**2 - 1j*fsrc*gamma - fsrc**2)
+eperp = epsn + sn * f0**2 * dfsq / (dfsq**2 - (fsrc*b0)**2)
+eta = sn * f0**2 * fsrc * b0 / (dfsq**2 - (fsrc*b0)**2)
 
 k_gyro = 2*np.pi*fsrc * np.sqrt(0.5*(eperp - np.sqrt(eperp**2 - eta**2)))
-Ex_theory = 0.37 * np.cos(k_gyro * (z - src_z))    # amplitude estimated by eye
-Ey_theory = 0.37 * np.sin(k_gyro * (z - src_z))
+Ex_theory = 0.37 * np.cos(k_gyro * (z - src_z)).real
+Ey_theory = 0.37 * np.sin(k_gyro * (z - src_z)).real
 
 plt.figure(2)
 plt.subplot(2,1,1)
 plt.plot(z, ex_data, label='Ex (MEEP)')
 plt.plot(z, Ex_theory, 'k--')
-plt.plot(z, -Ex_theory, 'k--', label='Ex (theory)')
+plt.plot(z, -Ex_theory, 'k--', label='Ex envelope (theory)')
 plt.xlim(-L/2, L/2); plt.xlabel('z')
-plt.legend()
+plt.legend(loc='lower right')
 
 plt.subplot(2,1,2)
 plt.plot(z, ey_data, label='Ey (MEEP)')
 plt.plot(z, Ey_theory, 'k--')
-plt.plot(z, -Ey_theory, 'k--', label='Ey (theory)')
+plt.plot(z, -Ey_theory, 'k--', label='Ey envelope (theory)')
 plt.xlim(-L/2, L/2); plt.xlabel('z')
-plt.legend()
+plt.legend(loc='lower right')
 plt.tight_layout()
 plt.show()
 ```
