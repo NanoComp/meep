@@ -1540,11 +1540,9 @@ sim = mp.Simulation(...)
 sim.init_sim()
 
 import matplotlib.pyplot as plt
-f = plt.figure()
-ax = f.gca()
-sim.plot2D(ax=ax)
-f.show()
-f.savefig('sim_domain.png')
+sim.plot2D()
+plt.show()
+plt.savefig('sim_domain.png')
 ```
 
 * `ax`: a `matplotlib` axis object. `plot2D()` will add plot objects, like lines, patches, and scatter plots, to this object. If no `ax` is supplied, then the routine will create a new figure and grab its axis.
