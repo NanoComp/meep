@@ -339,9 +339,17 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 —
 The noise has root-mean square amplitude σ $\times$ `noise-amp`.
 
-### gyrotropic-susceptibility
+### gyrotropic-lorentzian-susceptibility or gyrotropic-drude-susceptibility
 
-(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by the Landau-Lifshitz-Gilbert equation. Note that the parameters `sigma`, `frequency`, and `gamma` play different roles compared to the Lorentzian or Drude case.
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). Its parameters are `sigma`, `frequency`, and `gamma`, which have the usual meanings, and an additional 3-vector `bias`:
+
+**`bias` [`vector3`]**
+—
+The gyrotropy vector.  The direction of this vector determines the orientation of the gyrotropic response, and the magnitude equals the precession frequency $|\mathbf{b}_n|/2\pi$.
+
+### gyrotropic-saturated-susceptibility
+
+(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility governed by a linearized Landau-Lifshitz-Gilbert equation. See [Material Dispersion](Materials.md#gyrotropic-media). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
 
 **`sigma` [`number`]**
 —
@@ -349,7 +357,7 @@ The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving f
 
 **`frequency` [`number`]**
 —
-The frequency of gyrotropic precession, $f_n = \omega_n / 2\pi$. In magnetic ferrites, this is the Larmor precession frequency.
+The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
 
 **`gamma` [`number`]**
 —
@@ -357,11 +365,11 @@ The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
 
 **`alpha` [`number`]**
 —
-The loss factor $\alpha_n$ in the diagonal response (note that there is no 2π factor).
+The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
 
 **`bias` [`vector3`]**
 —
-Gyrotropy vector describing the direction of the static biasing magnetic field. The magnitude is ignored.
+Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter in `gyrotropic-lorentzian-susceptibility` or `gyrotropic-drude-susceptibility`, the magnitude is ignored; the relevant precession frequencies are instead determined by `sigma` and `frequency`, described above.
 
 ### geometric-object
 

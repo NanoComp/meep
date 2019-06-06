@@ -327,8 +327,7 @@ gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double ome
 						     double alpha, gyrotropy_model model)
   : omega_0(omega_0), gamma(gamma), alpha(alpha), model(model) {
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
-
-  // Ignore |b| for Landau-Lifshitz-Gilbert gyrotropy model:
+  // Ignore |b| for Landau-Lifshitz-Gilbert gyrotropy model.
   const vec b = (model == GYROTROPIC_SATURATED) ? bias/abs(bias) : bias;
   memset(gyro_tensor, 0, 9 * sizeof(double));
   gyro_tensor[X][Y] = b.z(); gyro_tensor[Y][X] = -b.z();

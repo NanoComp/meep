@@ -422,7 +422,7 @@ The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is
 
 **`bias` [`Vector3`]**
 —
-Vector specifying the orientation of the gyrotropic response. The magnitude is ignored (unlike the `GyrotropicLorentzianSusceptibility` or `GyrotropicDrudeSusceptibility` case); the relevant precession frequencies are determined by `sigma` and `frequency`, described above.
+Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter `GyrotropicLorentzianSusceptibility` or `GyrotropicDrudeSusceptibility`, the magnitude is ignored; the relevant precession frequencies are instead determined by `sigma` and `frequency`, described above.
 
 ### Vector3
 
