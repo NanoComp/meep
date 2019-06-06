@@ -476,6 +476,9 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
       PyObject *py_gyrotropic_class = PyObject_GetAttrString(geom_mod, "GyrotropicSaturatedSusceptibility");
       res = PyObject_Call(py_gyrotropic_class, args, NULL);
       Py_DECREF(py_gyrotropic_class);
+      PyObject *py_alpha = PyFloat_FromDouble(s->alpha);
+      PyObject_SetAttrString(res, "alpha", py_alpha);
+      Py_DECREF(py_alpha);
     } else if (s->drude) {
       PyObject *py_gyrotropic_drude_class = PyObject_GetAttrString(geom_mod, "GyrotropicDrudeSusceptibility");
       res = PyObject_Call(py_gyrotropic_drude_class, args, NULL);
