@@ -88,6 +88,19 @@ parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
 
 **Note:** To update, `pymeep`, you can do `conda update -c conda-forge pymeep`.  If you run into problems (e.g. some other update has interfered with your environment), you can instead create a new environment from scratch each time.
 
+#### Older Releases
+
+Older releases of PyMeep are available on the `conda-forge` channel. The full list of available versions is [here](https://anaconda.org/conda-forge/pymeep/files). Examples:
+
+```bash
+# Create an environment with the serial version of pymeep 1.8.0
+conda create -n mp1.8 -c conda-forge pymeep=1.8.0
+# Create an environment with the parallel version of pymeep 1.9.0
+conda create -n pmp1.9 -c conda-forge pymeep=1.9.0=mpi_mpich_*
+```
+
+Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
+
 ### Nightly Builds
 
 To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  Just put the `dev` label before the other channels like this:
