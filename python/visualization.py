@@ -178,6 +178,8 @@ def intersect_volume_plane(volume,plane):
     # For point sources, check if point lies on plane
     if (volume.size.x == volume.size.y == volume.size.z == 0) and plane.pt_in_volume(volume.size):
         intersection_vertices.append(volume.size)
+    # Remove any duplicate points caused by coplanar lines
+    intersection_vertices = [intersection_vertices[i] for i, x in enumerate(intersection_vertices) if x not in intersection_vertices[i+1:]]
     return intersection_vertices
 
 # ------------------------------------------------------- #
@@ -230,8 +232,9 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
     # Sort the points in a counter clockwise manner to ensure convex polygon is formed
     def sort_points(xy):
         xy = np.squeeze(xy)
-        theta = np.arctan2(xy[:,1],xy[:,0])
-        return xy[np.argsort(theta,axis=0)]
+        xy_mean = np.mean(xy,axis=0)
+        theta = np.arctan2(xy[:,1]-xy_mean[1],xy[:,0]-xy_mean[0])
+        return xy[np.argsort(theta,axis=0),:]
 
     if mp.am_master():
         # Point volume
