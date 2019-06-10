@@ -147,7 +147,7 @@ class Identity(Symmetry):
 
 class Volume(object):
 
-    def __init__(self, center=Vector3(), size=Vector3(), vertices=[], dims=2, is_cylindrical=False):
+    def __init__(self, center=Vector3(), size=Vector3(), dims=2, is_cylindrical=False, vertices=[]):
         
         if len(vertices) == 0:
             self.center = center
