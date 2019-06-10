@@ -147,13 +147,28 @@ class Identity(Symmetry):
 
 class Volume(object):
 
-    def __init__(self, center, size=Vector3(), dims=2, is_cylindrical=False):
-        self.center = center
-        self.size = size
+    def __init__(self, center=Vector3(), size=Vector3(), vertices=[], dims=2, is_cylindrical=False):
+        
+        if len(vertices) == 0:
+            self.center = center
+            self.size = size
+        else:
+            vertices = np.array([np.array(i) for i in vertices])
+            self.center = Vector3(*np.mean(vertices,axis=0))
+            x_list = np.unique(vertices[:,0])
+            y_list = np.unique(vertices[:,1])
+            z_list = np.unique(vertices[:,2])
+
+            x_size = 0 if x_list.size == 1 else np.abs(np.diff(x_list)[0])
+            y_size = 0 if y_list.size == 1 else np.abs(np.diff(y_list)[0])
+            z_size = 0 if z_list.size == 1 else np.abs(np.diff(z_list)[0])
+
+            self.size = Vector3(x_size,y_size,z_size)
+        
         self.dims = dims
 
-        v1 = center - size.scale(0.5)
-        v2 = center + size.scale(0.5)
+        v1 = self.center - self.size.scale(0.5)
+        v2 = self.center + self.size.scale(0.5)
 
         vec1 = py_v3_to_vec(self.dims, v1, is_cylindrical)
         vec2 = py_v3_to_vec(self.dims, v2, is_cylindrical)
