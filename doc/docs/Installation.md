@@ -103,13 +103,13 @@ Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
 
 ### Nightly Builds
 
-To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  Just put the `dev` label before the other channels like this:
+To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  They are hosted on the `simpetus` channel.
 
 ```bash
 # Serial pymeep
-conda create -n mp_test -c chogan/label/dev -c chogan -c conda-forge pymeep
+conda create -n mp_test -c simpetus -c conda-forge pymeep
 # Parallel pymeep
-conda create -n pmp_test -c chogan/label/dev -c chogan -c conda-forge pymeep-parallel
+conda create -n pmp_test -c simpetus -c conda-forge pymeep=*=mpi_mpich*
 ```
 
 Installation on Linux
