@@ -1226,9 +1226,9 @@ After `meep-fields-solve-cw` completes, it should be as if you had just run the 
 Run and Step Functions
 ----------------------
 
-The actual work in Meep is performed by *run* functions, which time-step the simulation for a given amount of time or until a given condition is satisfied.
+The actual work in Meep is performed by `run` functions, which time-step the simulation for a given amount of time or until a given condition is satisfied.
 
-The run functions, in turn, can be modified by use of *step functions*: these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many *modifier functions*, like *at-beginning*, *during-sources*, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
+The run functions, in turn, can be modified by use of [step functions](#predefined-step-functions): these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many [modifier functions](#step-function-modifiers), like `at-beginning`, `during-sources`, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
 
 A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
 
