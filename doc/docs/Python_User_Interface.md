@@ -79,7 +79,7 @@ Specifies the size of the cell which is centered on the origin of the coordinate
 
 **`default_material` [`Medium` class ]**
 —
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below).
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below). If you want to use a material function as the default material, use the `material_function` keyword argument (below).
 
 **`material_function` [ function ]**
 —
