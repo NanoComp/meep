@@ -4,7 +4,7 @@
 
 The main effort in installing Meep lies in installing the various dependency packages. This requires some understanding of how to install software on Unix systems.
 
-It is also possible to install Meep on Windows systems. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) (recommended) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+It is also possible to install Meep on Windows systems. For Windows 10, you can install the [Ubuntu 16.04](https://www.microsoft.com/en-us/p/ubuntu-1604-lts/9pjn388hp8c9) or [18.04](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) terminal as an app (via the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framwork) and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) (recommended) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 For those installing Meep on a supercomputer, a note of caution: most supercomputers have multiple compilers installed, and different versions of libraries compiled with different compilers. Meep is written in C++, and it is almost impossible to mix C++ code compiled by different compilers &mdash; pick one set of compilers by one vendor and stick with it consistently.
 
@@ -284,6 +284,7 @@ sudo apt-get -y install     \
     python3-scipy           \
     python3-matplotlib      \
     python3-pip             \
+    ffmpeg                  \
 
 mkdir -p ~/install
 
@@ -391,7 +392,8 @@ sudo yum -y install    \
     zlib-devel         \
     openssl-devel      \
     sqlite-devel       \
-    bzip2-devel
+    bzip2-devel        \
+    ffmpeg
 
 mkdir -p ~/install
 
