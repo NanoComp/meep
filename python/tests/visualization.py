@@ -8,6 +8,8 @@
 from __future__ import division
 
 import unittest
+from subprocess import call
+
 import meep as mp
 import numpy as np
 
@@ -98,6 +100,7 @@ class TestVisualization(unittest.TestCase):
             hash_figure(f)
             #self.assertAlmostEqual(hash_figure(f),68926258)
     
+    @unittest.skipIf(call(['which', 'ffmpeg']) != 0, "ffmpeg is not installed")
     def test_animation_output(self):
         # Check without normalization
         sim = setup_sim()
