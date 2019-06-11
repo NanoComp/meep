@@ -102,85 +102,84 @@ def place_label(ax,label_text,x,y,centerx,centery,label_parameters=None):
 # ------------------------------------------------------- #
 # Helper functions used to plot volumes on a 2D plane
 
-def intersect_plane_line(plane_0,plane_n,line_0,line_1):
-    # Find the intersection point of a plane and line:
-    # http://www.ambrsoft.com/TrigoCalc/Plan3D/PlaneLineIntersection_.htm
-    # plane_0 ........ [Vector3] origin of plane
-    # plane_n ........ [Vector3] normal vector of plane
-    # line_0 ......... [Vector3] first point of line
-    # line_1 ......... [Vector3] second point of line
-    # If the line segment is parallel with the plane, then the first
-    # and last points (line_0 and line_1) are returned in a list.
+# Returns the intersection points of 2 Volumes. 
+# Volumes must be a line, plane, or rectangular prism 
+# (since they are volume objects)
+def intersect_volume_volume(volume1,volume2):
+    # volume1 ............... [volume]
+    # volume2 ............... [volume]
+    
+    # Represent the volumes by an "upper" and "lower" coordinate
+    U1 = [volume1.center.x+volume1.size.x/2,volume1.center.y+volume1.size.y/2,volume1.center.z+volume1.size.z/2]
+    L1 = [volume1.center.x-volume1.size.x/2,volume1.center.y-volume1.size.y/2,volume1.center.z-volume1.size.z/2]
 
-    # Plane coefficients
-    D = -plane_0.dot(plane_n)
-    A = plane_n.x
-    B = plane_n.y
-    C = plane_n.z
+    U2 = [volume2.center.x+volume2.size.x/2,volume2.center.y+volume2.size.y/2,volume2.center.z+volume2.size.z/2]
+    L2 = [volume2.center.x-volume2.size.x/2,volume2.center.y-volume2.size.y/2,volume2.center.z-volume2.size.z/2]
 
-    # Line coefficients
-    v = line_1 - line_0
-    a = v.x
-    b = v.y
-    c = v.z
-    x1 = line_0.x
-    y1 = line_0.y
-    z1 = line_0.z
+    # Evaluate intersection
+    U = np.min([U1,U2],axis=0)
+    L = np.max([L1,L2],axis=0)
+    
+    # Check for two volumes that don't intersect
+    if np.any(U-L < 0):
+        return []
 
-    den = A*a + B*b + C*c
-
-    # parallel case
-    if den == 0:
-        # coplanar
-        if (line_0-plane_0).dot(plane_n) == 0:
-            return [line_0,line_1]
-        # just parallel
-        else:
-            return None 
-
-    pt = Vector3()
-    pt.x = x1 - a*(A*x1 + B*y1 + C*z1 + D) / den
-    pt.y = y1 - b*(A*x1 + B*y1 + C*z1 + D) / den
-    pt.z = z1 - c*(A*x1 + B*y1 + C*z1 + D) / den
-    return pt
-
-def intersect_volume_plane(volume,plane):
-    # returns the vertices that correspond to the polygon, 
-    # line, or single point of the intersection of a volume
-    # object and a plane
-    # volume ......... [Volume] volume object
-    # plane .......... [Volume] volume object of the plane
-
-    # Get normal vector of plane
-    if plane.size.x == 0:
-        plane_n = Vector3(x=1)
-    elif plane.size.y == 0:
-        plane_n = Vector3(y=1)
-    elif plane.size.z == 0: 
-        plane_n = Vector3(z=1)
-    else:
-        raise ValueError("plane volume must have a nonzero dimension")
-
-    # Get origin of plane
-    plane_0 = plane.center
-
-    intersection_vertices = []
-    edges = volume.get_edges()
-    for ce in edges:          
-        pt = intersect_plane_line(plane_0,plane_n,ce[0],ce[1])
-        if isinstance(pt,(list,)):
-            for pt_iter in pt:
-                if (pt_iter is not None) and volume.pt_in_volume(pt_iter):
-                    intersection_vertices.append(pt_iter)  
-        else:
-            if (pt is not None) and volume.pt_in_volume(pt):
-                intersection_vertices.append(pt)
-    # For point sources, check if point lies on plane
-    if (volume.size.x == volume.size.y == volume.size.z == 0) and plane.pt_in_volume(volume.size):
-        intersection_vertices.append(volume.size)
+    # Pull all possible vertices
+    vertices = []
+    for x_vals in [L[0],U[0]]:
+        for y_vals in [L[1],U[1]]:
+            for z_vals in [L[2],U[2]]:
+                vertices.append(Vector3(x_vals,y_vals,z_vals))
+    
     # Remove any duplicate points caused by coplanar lines
-    intersection_vertices = [intersection_vertices[i] for i, x in enumerate(intersection_vertices) if x not in intersection_vertices[i+1:]]
-    return intersection_vertices
+    vertices = [vertices[i] for i, x in enumerate(vertices) if x not in vertices[i+1:]]
+
+    return vertices
+
+# All of the 2D plotting routines need an output plane over which to plot.
+# The user has many options to specify this output plane. They can pass
+# the output_plane parameter, which is a 2D volume object. They can specify
+# a volume using in_volume, which stores the volume as a C volume, not a python
+# volume. They can also do nothing and plot the XY plane through Z=0.
+#
+# Not only do we need to check for all of these possibilities, but we also need
+# to check if the user accidentally specifies a plane that stretches beyond the 
+# simulation domain.
+def get_2D_dimensions(sim,output_plane):
+    from meep.simulation import Volume
+
+    # Pull correct plane from user
+    if output_plane:
+        plane_center, plane_size = (output_plane.center, output_plane.size)
+    elif sim.output_volume:
+        plane_center, plane_size = mp.get_center_and_size(sim.output_volume)
+    else:
+        plane_center, plane_size = (sim.geometry_center, sim.cell_size)
+    plane_volume = Volume(center=plane_center,size=plane_size)
+
+    # Check if plane extends past domain, truncate, and issue warning if required.
+    if plane_volume.size.x == 0:
+        check_size = Vector3(0,sim.cell_size.y,sim.cell_size.z)
+    elif plane_volume.size.y == 0:
+        check_size = Vector3(sim.cell_size.x,0,sim.cell_size.z)
+    elif plane_volume.size.z == 0:
+        check_size = Vector3(sim.cell_size.x,sim.cell_size.y,0)
+    else:
+        raise ValueError("Plane volume must be 2D (a plane).")
+    check_volume = Volume(center=sim.geometry_center,size=check_size)
+
+    vertices = intersect_volume_volume(check_volume,plane_volume)
+
+    if len(vertices) == 0:
+        raise ValueError("The specified user volume is completely outside of the simulation domain.")
+
+    intersection_vol = Volume(vertices=vertices)
+
+    if (intersection_vol.size != plane_volume.size) or (intersection_vol.center != plane_volume.center):
+        warnings.warn('The specified user volume is larger than the simulation domain and has been truncated.')
+    
+    sim_center, sim_size = (intersection_vol.center, intersection_vol.size)
+    return sim_center, sim_size
 
 # ------------------------------------------------------- #
 # actual plotting routines
@@ -197,12 +196,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
     plotting_parameters = default_volume_parameters if plotting_parameters is None else dict(default_volume_parameters, **plotting_parameters)
 
     # Get domain measurements
-    if output_plane:
-        sim_center, sim_size = (output_plane.center, output_plane.size)
-    elif sim.output_volume:
-        sim_center, sim_size = mp.get_center_and_size(sim.output_volume)
-    else:
-        sim_center, sim_size = (sim.geometry_center, sim.cell_size)
+    sim_center, sim_size = get_2D_dimensions(sim,output_plane)
     
     plane = Volume(center=sim_center,size=sim_size)
 
@@ -227,7 +221,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
             ax = place_label(ax,label,center.x,center.y,sim_center.x,sim_center.y,label_parameters=plotting_parameters)
 
     # Intersect plane with volume
-    intersection = intersect_volume_plane(volume,plane)
+    intersection = intersect_volume_volume(volume,plane)
 
     # Sort the points in a counter clockwise manner to ensure convex polygon is formed
     def sort_points(xy):
@@ -300,12 +294,7 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None):
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
     
     # Get domain measurements
-    if output_plane:
-        sim_center, sim_size = (output_plane.center, output_plane.size)
-    elif sim.output_volume:
-        sim_center, sim_size = mp.get_center_and_size(sim.output_volume)
-    else:
-        sim_center, sim_size = (sim.geometry_center, sim.cell_size)
+    sim_center, sim_size = get_2D_dimensions(sim,output_plane)
 
     xmin = sim_center.x - sim_size.x/2
     xmax = sim_center.x + sim_size.x/2
@@ -459,12 +448,7 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
     # user specifies a field component
     if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
-        if output_plane:
-            sim_center, sim_size = (output_plane.center, output_plane.size)
-        elif sim.output_volume:
-            sim_center, sim_size = mp.get_center_and_size(sim.output_volume)
-        else:
-            sim_center, sim_size = (sim.geometry_center, sim.cell_size)
+        sim_center, sim_size = get_2D_dimensions(sim,output_plane)
         
         xmin = sim_center.x - sim_size.x/2
         xmax = sim_center.x + sim_size.x/2
@@ -674,11 +658,9 @@ class Animate2D(object):
                 self.ax = sim.plot2D(ax=self.ax,fields=self.fields,**self.customization_args)
                 self.f=plt.gcf()
                 # Run the plot modifier functions
-                '''
                 if self.plot_modifiers:
                     for k in range(len(self.plot_modifiers)):
                         self.ax = self.plot_modifiers[k](self.ax)
-                '''
                 # Store the fields
                 self.w, self.h = self.f.get_size_inches()
                 if mp.am_master():
@@ -748,11 +730,15 @@ class Animate2D(object):
         # Exports a javascript enabled html object that is
         # ready for jupyter notebook embedding.
         # modified from matplotlib/animation.py code.
-        from uuid import uuid4
+        
+        # Only works with Python3
         import sys
         if sys.version_info[0] < 3:
             warnings.warn('JSHTML output is not supported with python2 builds.')
             return ""
+
+        from uuid import uuid4
+        from matplotlib._animation_data import (DISPLAY_TEMPLATE, INCLUDED_FRAMES, JS_INCLUDE, STYLE_INCLUDE)
 
         # save the frames to an html file
         fill_frames = self._embedded_frames(self._saved_frames, self.frame_format)
@@ -856,255 +842,3 @@ class JS_Animation():
         return self.jshtml
     def get_jshtml(self):
         return self.jshtml
-
-
-# ------------------------------------------------------- #
-# JSHTML Templates
-# ------------------------------------------------------- #
-# Template functions grabbed from matplotlib/_animation_data.py
-# https://github.com/matplotlib/matplotlib/blob/aac57266803ff09c8c9dc10e1bb2bd389d79e42d/lib/matplotlib/_animation_data.py
-# Included here since python2 only supports matplotlib <3.0
-
-
-# Javascript template for HTMLWriter
-JS_INCLUDE = """
-<link rel="stylesheet"
-href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/
-css/font-awesome.min.css">
-<script language="javascript">
-  function isInternetExplorer() {
-    ua = navigator.userAgent;
-    /* MSIE used to detect old browsers and Trident used to newer ones*/
-    return ua.indexOf("MSIE ") > -1 || ua.indexOf("Trident/") > -1;
-  }
-  /* Define the Animation class */
-  function Animation(frames, img_id, slider_id, interval, loop_select_id){
-    this.img_id = img_id;
-    this.slider_id = slider_id;
-    this.loop_select_id = loop_select_id;
-    this.interval = interval;
-    this.current_frame = 0;
-    this.direction = 0;
-    this.timer = null;
-    this.frames = new Array(frames.length);
-    for (var i=0; i<frames.length; i++)
-    {
-     this.frames[i] = new Image();
-     this.frames[i].src = frames[i];
-    }
-    var slider = document.getElementById(this.slider_id);
-    slider.max = this.frames.length - 1;
-    if (isInternetExplorer()) {
-        // switch from oninput to onchange because IE <= 11 does not conform
-        // with W3C specification. It ignores oninput and onchange behaves
-        // like oninput. In contrast, Mircosoft Edge behaves correctly.
-        slider.setAttribute('onchange', slider.getAttribute('oninput'));
-        slider.setAttribute('oninput', null);
-    }
-    this.set_frame(this.current_frame);
-  }
-  Animation.prototype.get_loop_state = function(){
-    var button_group = document[this.loop_select_id].state;
-    for (var i = 0; i < button_group.length; i++) {
-        var button = button_group[i];
-        if (button.checked) {
-            return button.value;
-        }
-    }
-    return undefined;
-  }
-  Animation.prototype.set_frame = function(frame){
-    this.current_frame = frame;
-    document.getElementById(this.img_id).src =
-            this.frames[this.current_frame].src;
-    document.getElementById(this.slider_id).value = this.current_frame;
-  }
-  Animation.prototype.next_frame = function()
-  {
-    this.set_frame(Math.min(this.frames.length - 1, this.current_frame + 1));
-  }
-  Animation.prototype.previous_frame = function()
-  {
-    this.set_frame(Math.max(0, this.current_frame - 1));
-  }
-  Animation.prototype.first_frame = function()
-  {
-    this.set_frame(0);
-  }
-  Animation.prototype.last_frame = function()
-  {
-    this.set_frame(this.frames.length - 1);
-  }
-  Animation.prototype.slower = function()
-  {
-    this.interval /= 0.7;
-    if(this.direction > 0){this.play_animation();}
-    else if(this.direction < 0){this.reverse_animation();}
-  }
-  Animation.prototype.faster = function()
-  {
-    this.interval *= 0.7;
-    if(this.direction > 0){this.play_animation();}
-    else if(this.direction < 0){this.reverse_animation();}
-  }
-  Animation.prototype.anim_step_forward = function()
-  {
-    this.current_frame += 1;
-    if(this.current_frame < this.frames.length){
-      this.set_frame(this.current_frame);
-    }else{
-      var loop_state = this.get_loop_state();
-      if(loop_state == "loop"){
-        this.first_frame();
-      }else if(loop_state == "reflect"){
-        this.last_frame();
-        this.reverse_animation();
-      }else{
-        this.pause_animation();
-        this.last_frame();
-      }
-    }
-  }
-  Animation.prototype.anim_step_reverse = function()
-  {
-    this.current_frame -= 1;
-    if(this.current_frame >= 0){
-      this.set_frame(this.current_frame);
-    }else{
-      var loop_state = this.get_loop_state();
-      if(loop_state == "loop"){
-        this.last_frame();
-      }else if(loop_state == "reflect"){
-        this.first_frame();
-        this.play_animation();
-      }else{
-        this.pause_animation();
-        this.first_frame();
-      }
-    }
-  }
-  Animation.prototype.pause_animation = function()
-  {
-    this.direction = 0;
-    if (this.timer){
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-  }
-  Animation.prototype.play_animation = function()
-  {
-    this.pause_animation();
-    this.direction = 1;
-    var t = this;
-    if (!this.timer) this.timer = setInterval(function() {
-        t.anim_step_forward();
-    }, this.interval);
-  }
-  Animation.prototype.reverse_animation = function()
-  {
-    this.pause_animation();
-    this.direction = -1;
-    var t = this;
-    if (!this.timer) this.timer = setInterval(function() {
-        t.anim_step_reverse();
-    }, this.interval);
-  }
-</script>
-"""
-
-
-# Style definitions for the HTML template
-STYLE_INCLUDE = """
-<style>
-.animation {
-    display: inline-block;
-    text-align: center;
-}
-input[type=range].anim-slider {
-    width: 374px;
-    margin-left: auto;
-    margin-right: auto;
-}
-.anim-buttons {
-    margin: 8px 0px;
-}
-.anim-buttons button {
-    padding: 0;
-    width: 36px;
-}
-.anim-state label {
-    margin-right: 8px;
-}
-.anim-state input {
-    margin: 0;
-    vertical-align: middle;
-}
-</style>
-"""
-
-
-# HTML template for HTMLWriter
-DISPLAY_TEMPLATE = """
-<div class="animation">
-  <img id="_anim_img{id}">
-  <div class="anim-controls">
-    <input id="_anim_slider{id}" type="range" class="anim-slider"
-           name="points" min="0" max="1" step="1" value="0"
-           oninput="anim{id}.set_frame(parseInt(this.value));"></input>
-    <div class="anim-buttons">
-      <button onclick="anim{id}.slower()"><i class="fa fa-minus"></i></button>
-      <button onclick="anim{id}.first_frame()"><i class="fa fa-fast-backward">
-          </i></button>
-      <button onclick="anim{id}.previous_frame()">
-          <i class="fa fa-step-backward"></i></button>
-      <button onclick="anim{id}.reverse_animation()">
-          <i class="fa fa-play fa-flip-horizontal"></i></button>
-      <button onclick="anim{id}.pause_animation()"><i class="fa fa-pause">
-          </i></button>
-      <button onclick="anim{id}.play_animation()"><i class="fa fa-play"></i>
-          </button>
-      <button onclick="anim{id}.next_frame()"><i class="fa fa-step-forward">
-          </i></button>
-      <button onclick="anim{id}.last_frame()"><i class="fa fa-fast-forward">
-          </i></button>
-      <button onclick="anim{id}.faster()"><i class="fa fa-plus"></i></button>
-    </div>
-    <form action="#n" name="_anim_loop_select{id}" class="anim-state">
-      <input type="radio" name="state" value="once" id="_anim_radio1_{id}"
-             {once_checked}>
-      <label for="_anim_radio1_{id}">Once</label>
-      <input type="radio" name="state" value="loop" id="_anim_radio2_{id}"
-             {loop_checked}>
-      <label for="_anim_radio2_{id}">Loop</label>
-      <input type="radio" name="state" value="reflect" id="_anim_radio3_{id}"
-             {reflect_checked}>
-      <label for="_anim_radio3_{id}">Reflect</label>
-    </form>
-  </div>
-</div>
-<script language="javascript">
-  /* Instantiate the Animation class. */
-  /* The IDs given should match those used in the template above. */
-  (function() {{
-    var img_id = "_anim_img{id}";
-    var slider_id = "_anim_slider{id}";
-    var loop_select_id = "_anim_loop_select{id}";
-    var frames = new Array({Nframes});
-    {fill_frames}
-    /* set a timeout to make sure all the above elements are created before
-       the object is initialized. */
-    setTimeout(function() {{
-        anim{id} = new Animation(frames, img_id, slider_id, {interval},
-                                 loop_select_id);
-    }}, 0);
-  }})()
-</script>
-"""
-
-
-INCLUDED_FRAMES = """
-  for (var i=0; i<{Nframes}; i++){{
-    frames[i] = "{frame_dir}/frame" + ("0000000" + i).slice(-7) +
-                ".{frame_format}";
-  }}
-"""

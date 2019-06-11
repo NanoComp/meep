@@ -927,7 +927,7 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 ### Volume
 
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you. Alternatively, you can specify a list of `Vector3` vertices using the `vertices` parameter. The `center` and `size` will automatically be computed from this list.
 
 **`meep.get_center_and_size(vol)`**
 —
@@ -1584,6 +1584,13 @@ plt.savefig('sim_domain.png')
     - `cmap='RdBu'`: color map for field pixels
     - `alpha=0.6`: transparency of fields
 
+For example, you can simultaneously modify the field parameters and the boundary layer parameters with
+```python
+field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'}
+boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3}
+plot2D(field_parameters=field_parameters, boundary_parameters=boundary_parameters)
+```
+
 **`Simulation.plot3D()`**
 — Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.
 
@@ -1621,7 +1628,7 @@ Properties:
 — Whether or not to update a figure window in realtime as the simulation progresses. Disabled by default. Not compatible with IPython/Jupyter notebooks.
 
 **`normalize=False`**
-— Records fields at each time step in memory in a NumPy array and then normalizes the result for future post-processing.
+— Records fields at each time step in memory in a NumPy array and then normalizes the result by dividing by the maximum field value at a single point in the cell over all the time snapshots.
 
 **`plot_modifiers=None`**
 — A list of functions that can modify the figure's `axis` object. Each function modifier accepts a single argument, an `axis` object, and must return that same axis object. The following modifier changes the `xlabel`:
@@ -1635,7 +1642,14 @@ plot_modifiers = [mod1]
 ```
 
 **`**customization_args`**
-— Customization keyword arguments pass to `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
+— Customization keyword arguments passed to `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
+
+you can simultaneously modify the field parameters and the boundary layer parameters at each specified time step with with
+```python
+field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'}
+boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3}
+Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=True, field_parameters=field_parameters, boundary_parameters=boundary_parameters)
+```
 
 Methods:
 
@@ -1645,8 +1659,8 @@ Methods:
 **`Animate2D.to_mp4(fps,filename)`**
 — Generates and outputs an mp4 video file of the animation with the filename, `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p format. Requires `ffmpeg`.
 
-**`Animate2D.to_mp4(fps,filename)`**
-— Generates and outputs a GIF file of the animation with the filename, `filename`, and the frame rate, `fps`. Requires `ffmpeg`.
+**`Animate2D.to_gif(fps,filename)`**
+— Generates and outputs a GIF file of the animation with the filename, `filename`, and the frame rate, `fps`. Note that GIFs are significantly larger than mp4 videos since they don't use any compression. Artifacts are also common because the GIF format only supports 256 colors from a _predefined_ color palette. Requires `ffmpeg`.
 
 Run and Step Functions
 ----------------------
