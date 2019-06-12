@@ -394,15 +394,15 @@ This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with 
 
 ### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
 
-(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#gyrotropic-media). Its parameters are `sigma`, `frequency`, and `gamma`, which have the usual meanings, and an additional 3-vector `bias`:
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
 
 **`bias` [`Vector3`]**
 —
-The gyrotropy vector.  The direction of this vector determines the orientation of the gyrotropic response, and the magnitude equals the precession frequency $|\mathbf{b}_n|/2\pi$.
+The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
 
 ### GyrotropicSaturatedSusceptibility
 
-(**Experimental feature**) Specifies a single dispersive gyrotropic susceptibility governed by a linearized Landau-Lifshitz-Gilbert equation. See [Material Dispersion](Materials.md#gyrotropic-media). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by a [linearized Landau-Lifshitz-Gilbert equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
 
 **`sigma` [`number`]**
 —
@@ -422,7 +422,7 @@ The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is
 
 **`bias` [`Vector3`]**
 —
-Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter `GyrotropicLorentzianSusceptibility` or `GyrotropicDrudeSusceptibility`, the magnitude is ignored; the relevant precession frequencies are instead determined by `sigma` and `frequency`, described above.
+Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter for the [gyrotropic Lorentzian/Drude susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility), the magnitude is ignored; instead, the relevant precession frequencies are determined by the `sigma` and `frequency` parameters.
 
 ### Vector3
 

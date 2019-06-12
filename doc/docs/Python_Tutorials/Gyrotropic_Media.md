@@ -1,5 +1,5 @@
 ---
-# Gyrotropic media
+# Gyrotropic Media
 ---
 
 In this example, we will perform simulations with gyrotropic media. See [Materials](../Materials.md#gyrotropic-media) for more information on how gyrotropy is supported.
@@ -8,11 +8,11 @@ In this example, we will perform simulations with gyrotropic media. See [Materia
 
 ### Faraday Rotation
 
-Consider a uniform gyroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. In the frequency domain, the *x* and *y* components of the dielectric function have the form
+Consider a uniform gyroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. In the frequency domain, the *x* and *y* components of the dielectric tensor have the form
 
 $$\epsilon = \begin{bmatrix}\epsilon_\perp & -i\eta \\ i\eta & \epsilon_\perp \end{bmatrix}$$
 
-The skew-symmetric off-diagonal components in ε give rise to [Faraday rotation](https://en.wikipedia.org/wiki/Faraday_effect): when a plane wave linearly polarized along *x* is launched along the gyrotropy axis *z*, the polarization vector will precess around the gyrotropy axis as the wave propagates. This is the principle behind [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator), devices that act as one-way valves for light.
+The skew-symmetric off-diagonal components give rise to [Faraday rotation](https://en.wikipedia.org/wiki/Faraday_effect): when a plane wave linearly polarized along *x* is launched along the gyrotropy axis *z*, the polarization vector will precess around the gyrotropy axis as the wave propagates. This is the principle behind [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator), devices that act as one-way valves for light.
 
 A plane wave undergoing Faraday rotation can be described by the complex ansatz
 
@@ -24,7 +24,8 @@ $$|\kappa_c| = \omega \sqrt{\frac{\mu}{2} \, \left(\epsilon_\perp - \sqrt{\epsil
 
 We model this phenomenon in the simulation script [faraday-rotation.py](https://github.com/NanoComp/meep/blob/master/python/examples/faraday-rotation.py). First, we define a gyroelectric material:
 
-```import meep as mp
+```python
+import meep as mp
 
 ## Parameters for a gyrotropic Lorentzian medium
 epsn = 1.5    # background permittivity
@@ -42,7 +43,8 @@ The `GyrotropicLorentzianSusceptibility` object has a `bias` argument that takes
 
 Next, we set up and run the Meep simulation.
 
-```tmax = 100
+```python
+tmax = 100
 L = 20.0
 cell = mp.Vector3(0, 0, L)
 fsrc, src_z = 0.8, -8.5
@@ -58,9 +60,10 @@ sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources,
 sim.run(until=tmax)
 ```
 
-The simulation cell is one pixel wide in the *x* and *y* directions, with periodic boundary conditions. PMLs are placed in the *z* direction. A `ContinuousSource` emits a wave whose electric field is initially polarized along *x*. We then plot the *x* and *y* components of the electric field versus *z*:
+The simulation cell is one pixel wide in the *x* and *y* directions, with periodic boundary conditions. [PMLs](../Perfectly_Matched_Layer.md) are placed in the *z* direction. A `ContinuousSource` emits a wave whose electric field is initially polarized along *x*. We then plot the *x* and *y* components of the electric field versus *z*:
 
-```import numpy as np
+```python
+import numpy as np
 import matplotlib.pyplot as plt
 
 ex_data = sim.get_array(center=mp.Vector3(), size=mp.Vector3(0, 0, L), component=mp.Ex)
@@ -88,7 +91,8 @@ $$\epsilon_\perp = \epsilon_\infty + \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \om
 
 From these expressions, we can calculate the rotation rate $\kappa_c$ at the operating frequency, and hence find the $\mathbf{E}_x$ and $\mathbf{E}_y$ field envelopes for the complex ansatz given at the top of this section.
 
-```dfsq = (f0**2 - 1j*fsrc*gamma - fsrc**2)
+```python
+dfsq = (f0**2 - 1j*fsrc*gamma - fsrc**2)
 eperp = epsn + sn * f0**2 * dfsq / (dfsq**2 - (fsrc*b0)**2)
 eta = sn * f0**2 * fsrc * b0 / (dfsq**2 - (fsrc*b0)**2)
 
