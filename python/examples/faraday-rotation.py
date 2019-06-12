@@ -1,11 +1,13 @@
+# From the Meep tutorial: plotting Faraday rotation of a linearly polarized plane wave
+
 import meep as mp
 
-## Define a gyroelectric medium
-f0 = 1.0
-gamma = 1e-6
-epsn = 1.5
-b0 = 0.15
-sn = 0.1
+## Parameters for a gyrotropic Lorentzian medium
+epsn = 1.5    # background permittivity
+f0   = 1.0    # natural frequency
+gamm = 1e-6   # damping rate
+sn   = 0.1    # sigma parameter
+b0   = 0.15   # magnitude of bias vector
 
 susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                               bias=mp.Vector3(0, 0, b0))]

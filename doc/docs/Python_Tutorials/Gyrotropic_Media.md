@@ -8,13 +8,9 @@ In this example, we will perform simulations with gyrotropic media. See [Materia
 
 ### Faraday Rotation
 
-Consider a uniform gyroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. In the frequency domain, the *x* and *y* components of the dielectric function are
+Consider a uniform gyroelectric medium with bias vector $\mathbf{b} = b \hat{z}$. In the frequency domain, the *x* and *y* components of the dielectric function have the form
 
 $$\epsilon = \begin{bmatrix}\epsilon_\perp & -i\eta \\ i\eta & \epsilon_\perp \end{bmatrix}$$
-
-In the [gyrotropic Lorentzian model](../Materials.md#gyrotropic-media), the tensor components are
-
-$$\epsilon_\perp = \epsilon_\infty + \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}),\;\;\; \eta = \frac{\omega_n^2 \omega b}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}), \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
 
 The skew-symmetric off-diagonal components in ε give rise to [Faraday rotation](https://en.wikipedia.org/wiki/Faraday_effect): when a plane wave linearly polarized along *x* is launched along the gyrotropy axis *z*, the polarization vector will precess around the gyrotropy axis as the wave propagates. This is the principle behind [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator), devices that act as one-way valves for light.
 
@@ -30,12 +26,12 @@ We model this phenomenon in the simulation script [faraday-rotation.py](https://
 
 ```import meep as mp
 
-## Define a gyroelectric medium
-f0 = 1.0
-gamma = 1e-6
-epsn = 1.5
-b0 = 0.15
-sn = 0.1
+## Parameters for a gyrotropic Lorentzian medium
+epsn = 1.5    # background permittivity
+f0   = 1.0    # natural frequency
+gamm = 1e-6   # damping rate
+sn   = 0.1    # sigma parameter
+b0   = 0.15   # magnitude of bias vector
 
 susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sigma,
                                               bias=mp.Vector3(0, 0, b0))]
@@ -84,7 +80,13 @@ plt.show()
 ![](../images/Faraday-rotation.png)
 </center>
 
-We see that the wave indeed rotates in the *x*-*y* plane as it travels. This can be compared quantitatively to the above ansatz for a wave undergoing Faraday rotation, using the material parameters to calculate the rotation rate $\kappa_c$:
+We see that the wave indeed rotates in the *x*-*y* plane as it travels.
+
+Moreover, we can compare the Faraday rotation rate in these simulation results to theoretical predictions. In the [gyrotropic Lorentzian model](../Materials.md#gyrotropic-media), the ε tensor components are given by
+
+$$\epsilon_\perp = \epsilon_\infty + \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}),\;\;\; \eta = \frac{\omega_n^2 \omega b}{\Delta_n^2 - \omega^2 b^2}\,\sigma_n(\mathbf{x}), \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
+
+From these expressions, we can calculate the rotation rate $\kappa_c$ at the operating frequency, and hence find the $\mathbf{E}_x$ and $\mathbf{E}_y$ field envelopes for the complex ansatz given at the top of this section.
 
 ```dfsq = (f0**2 - 1j*fsrc*gamma - fsrc**2)
 eperp = epsn + sn * f0**2 * dfsq / (dfsq**2 - (fsrc*b0)**2)
@@ -112,26 +114,8 @@ plt.tight_layout()
 plt.show()
 ```
 
-The results are in excellent agreement:
+As shown in the figure below, the results are in excellent agreement:
 
 <center>
 ![](../images/Faraday-rotation-comparison.png)
-</center>
-
-## Microwave ferrites
-
-Ferrites are ceramic materials exhibiting strong gyromagnetic resonances, commonly used in microwave engineering to construct isolators (one-way valves) and circulators. In the presence of a biasing magnetic field $\mathbf{H} = H_0 \hat{\mathbf{z}}$, the permeability tensor of a ferrite material has the form
-
-$$\mu = \begin{bmatrix} \mu_\perp & -i \kappa & 0 \\ i\kappa & \mu_\perp & 0 \\ 0 & 0 & 1\end{bmatrix}$$
-
-where
-
-$$\mu_\perp = 1 + \frac{\omega_m (\omega_0 - i\omega\alpha)}{(\omega_0 - i \omega \alpha)^2 - (\omega + i \gamma)^2}, \;\;\; \kappa = \frac{\omega_m (\omega + i\gamma)}{(\omega_0 - i \omega \alpha)^2 - (\omega + i \gamma)^2}$$
-
-This permeability can be derived from the [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation) describing a magnetic dipole in a magnetic field. The Larmor precession frequency is $\omega_0 = \gamma H_0$ where $\gamma$ is the gyromagnetic ratio of the electron. The Larmor precession frequency at saturation field is $\omega_m = \gamma M_s$ where $M_s$ is the saturation magnetization. This precisely matches the permeability tensor derived from [Meep's gyrotropy model](../Materials.md#gyrotropic-media), with the identification $\omega_0 \leftrightarrow \omega_n$ and $\omega_m \leftrightarrow \sigma_n$.
-
-We will take $\omega_0/2\pi = 1$, $\omega_m/2\pi = 1.2$, $\alpha = \gamma/2\pi = 10^{-3}$, and $\epsilon = 15$. The diagonal and off-diagonal components of the permeability tensor are plotted below:
-
-<center>
-![](../images/Ferrite-mu.png)
 </center>
