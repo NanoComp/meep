@@ -481,6 +481,8 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
   case GYROTROPIC_SATURATED:
     {
+      const double dt2pi = 2*pi*dt;
+
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
       const double gd = 0.5;
       const double gx = -0.5 * alpha * gyro_tensor[Y][Z];
@@ -518,9 +520,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 	    abort("gyrotropic media do not support anisotropic sigma\n");
 
 	  LOOP_OVER_VOL_OWNED(gv, c, i) {
-	    q0 = -omega2pidt*p0[i] + 0.5*alpha*pp0[i] + dt*s[i]*w0[i];
-	    q1 = -omega2pidt*p1[i] + 0.5*alpha*pp1[i] + dt*s[i]*(w1 ? OFFDIAGW(w1,is1,is) : 0);
-	    q2 = -omega2pidt*p2[i] + 0.5*alpha*pp2[i] + dt*s[i]*(w2 ? OFFDIAGW(w2,is2,is) : 0);
+	    q0 = -omega2pidt*p0[i] + 0.5*alpha*pp0[i] + dt2pi*s[i]*w0[i];
+	    q1 = -omega2pidt*p1[i] + 0.5*alpha*pp1[i] + dt2pi*s[i]*(w1 ? OFFDIAGW(w1,is1,is) : 0);
+	    q2 = -omega2pidt*p2[i] + 0.5*alpha*pp2[i] + dt2pi*s[i]*(w2 ? OFFDIAGW(w2,is2,is) : 0);
 
 	    r0 = 0.5*pp0[i] - g2pidt*p0[i] + gyro_tensor[d0][d1]*q1 + gyro_tensor[d0][d2]*q2;
 	    r1 = 0.5*pp1[i] - g2pidt*p1[i] + gyro_tensor[d1][d2]*q2 + gyro_tensor[d1][d0]*q0;
