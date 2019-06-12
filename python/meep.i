@@ -1169,6 +1169,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+//--------------------------------------------------
+// IIR transfer function typemaps
+//--------------------------------------------------
+%apply (double *INPLACE_ARRAY1, int DIM1) {(double *r, int N)};
+%apply (double *INPLACE_ARRAY1, int DIM1) {(double *num, int num_N), (double *den, int den_N)};
+
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
 

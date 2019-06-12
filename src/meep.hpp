@@ -325,7 +325,7 @@ protected:
    The user provides the numerator and denominator coefficients in the continuous (s)
    domain. One of the conversion routines is used to transform to the discrete (z)
    domain.  */
-
+/* 
 class iir_susceptibility : public susceptibility {
 public:
   double *numz, *denz;
@@ -358,12 +358,15 @@ public:
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 4; }
 };
+*/
 // generalized method to convert from s domain to z domain.
-void polynomial_transform(int N, double alpha, double beta, double delta, double gamma, double *r);
+void polynomial_transform(double *r, int N, double alpha, double beta, double delta, double gamma);
+
 // tustins method (aka trapezoidal rule) to convert from s domain to z domain.
-void tustins_method(double *num, int num_N, double *den, int den_N, double T);
+void tustins_method(double *num, int num_N, double *den, int den_N, double dt);
+
 // backward difference method used to convert from s domain to z domain.
-void backward_difference(double *num, int num_N, double *den, int den_N, double T);
+void backward_difference(double *num, int num_N, double *den, int den_N, double dt);
 
 class grace;
 
