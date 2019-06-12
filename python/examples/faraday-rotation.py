@@ -3,11 +3,11 @@
 import meep as mp
 
 ## Parameters for a gyrotropic Lorentzian medium
-epsn = 1.5    # background permittivity
-f0   = 1.0    # natural frequency
-gamm = 1e-6   # damping rate
-sn   = 0.1    # sigma parameter
-b0   = 0.15   # magnitude of bias vector
+epsn  = 1.5    # background permittivity
+f0    = 1.0    # natural frequency
+gamma = 1e-6   # damping rate
+sn    = 0.1    # sigma parameter
+b0    = 0.15   # magnitude of bias vector
 
 susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                               bias=mp.Vector3(0, 0, b0))]
