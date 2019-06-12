@@ -320,6 +320,51 @@ protected:
   realnum *sigmat; // 5*T transition-specific sigma-diagonal factors
 };
 
+/* a IIR susceptibility
+   Susceptibility modeled by a general rational function (ratios of p(w)/q(w)).
+   The user provides the numerator and denominator coefficients in the continuous (s)
+   domain. One of the conversion routines is used to transform to the discrete (z)
+   domain.  */
+
+class iir_susceptibility : public susceptibility {
+public:
+  double *numz, *denz;
+  int numz_N, denz_N;
+
+  iir_susceptibility(double *num, int num_N, double *den, int den_N, double dt);
+
+  virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
+
+  virtual ~iir_susceptibility() {}
+
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        void *P_internal_data) const;
+
+  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+                          void *P_internal_data) const;
+
+  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+                                  const grid_volume &gv, void *data) const;
+
+  virtual void *copy_internal_data(void *data) const;
+
+  virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
+
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
+                                          void *P_internal_data) const;
+
+  virtual void dump_params(h5file *h5f, size_t *start);
+  virtual int get_num_params() { return 4; }
+};
+// generalized method to convert from s domain to z domain.
+void polynomial_transform(int N, double alpha, double beta, double delta, double gamma, double *r);
+// tustins method (aka trapezoidal rule) to convert from s domain to z domain.
+void tustins_method(double *num, int num_N, double *den, int den_N, double T);
+// backward difference method used to convert from s domain to z domain.
+void backward_difference(double *num, int num_N, double *den, int den_N, double T);
+
 class grace;
 
 // h5file.cpp: HDF5 file I/O.  Most users, if they use this
