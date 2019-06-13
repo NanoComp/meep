@@ -130,7 +130,7 @@ def intersect_volume_volume(volume1,volume2):
         for y_vals in [L[1],U[1]]:
             for z_vals in [L[2],U[2]]:
                 vertices.append(Vector3(x_vals,y_vals,z_vals))
-    
+
     # Remove any duplicate points caused by coplanar lines
     vertices = [vertices[i] for i, x in enumerate(vertices) if x not in vertices[i+1:]]
 
@@ -234,13 +234,13 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         # Point volume
         if len(intersection) == 1:
             point_args = {key:value for key, value in plotting_parameters.items() if key in ['color','marker','alpha','linewidth']}
-            if sim_center.y == center.y:
+            if sim_center.y == center.y and sim_size.y==0:
                 ax.scatter(center.x,center.z, **point_args)
                 return ax
-            elif sim_center.x == center.x:
+            elif sim_center.x == center.x and sim_size.x==0:
                 ax.scatter(center.y,center.z, **point_args)
                 return ax
-            elif sim_center.z == center.z:
+            elif sim_center.z == center.z and sim_size.z==0:
                 ax.scatter(center.x,center.y, **point_args)
                 return ax
             else:
@@ -250,15 +250,15 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         elif len(intersection) == 2:
             line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
             # Plot YZ
-            if sim_size.x == 0:
+            if sim_center.x == center.x and sim_size.x==0:
                 ax.plot([a.y for a in intersection],[a.z for a in intersection], **line_args)
                 return ax
             #Plot XZ
-            elif sim_size.y == 0:
+            elif sim_center.y == center.y and sim_size.y==0:
                 ax.plot([a.x for a in intersection],[a.z for a in intersection], **line_args)
                 return ax
             # Plot XY
-            elif sim_size.z == 0:
+            elif sim_center.z == center.z and sim_size.z==0:
                 ax.plot([a.x for a in intersection],[a.y for a in intersection], **line_args)
                 return ax
             else:
@@ -268,15 +268,15 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         elif len(intersection) > 2:
             planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
             # Plot YZ
-            if sim_size.x == 0:
+            if sim_center.x == center.x and sim_size.x==0:
                 ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
                 return ax
             #Plot XZ
-            elif sim_size.y == 0:
+            elif sim_center.y == center.y and sim_size.y==0:
                 ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
                 return ax
             # Plot XY
-            elif sim_size.z == 0:
+            elif sim_center.z == center.z and sim_size.z==0:
                 ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
                 return ax
             else:
