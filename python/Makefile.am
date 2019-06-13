@@ -18,12 +18,14 @@ endif # WITH_MPI
 
 if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/binary_grating.py
+  DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/dispersive_eigenmode.py
   KDOM_TEST = $(TEST_DIR)/kdom.py
   MODE_COEFFS_TEST = $(TEST_DIR)/mode_coeffs.py
   MODE_DECOMPOSITION_TEST = $(TEST_DIR)/mode_decomposition.py
   WVG_SRC_TEST = $(TEST_DIR)/wvg_src.py
 else
   BINARY_GRATING_TEST =
+  DISPERSIVE_EIGENMODE_TEST =
   KDOM_TEST =
   MODE_COEFFS_TEST =
   MODE_DECOMPOSITION_TEST =
@@ -41,6 +43,7 @@ TESTS =                                   \
     $(TEST_DIR)/cavity_farfield.py        \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
+    ${DISPERSIVE_EIGENMODE_TEST}          \
     $(TEST_DIR)/dft_energy.py             \
     $(TEST_DIR)/dft_fields.py             \
     $(TEST_DIR)/field_functions.py        \
