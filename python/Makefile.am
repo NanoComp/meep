@@ -43,6 +43,7 @@ TESTS =                                   \
     $(TEST_DIR)/cyl_ellipsoid.py          \
     $(TEST_DIR)/dft_energy.py             \
     $(TEST_DIR)/dft_fields.py             \
+    $(TEST_DIR)/faraday_rotation.py       \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
     $(TEST_DIR)/fragment_stats.py         \
