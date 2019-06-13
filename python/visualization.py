@@ -615,7 +615,7 @@ def visualize_chunks(sim):
 #                       to pass to plot2D()
 
 class Animate2D(object):
-    def __init__(self,sim,fields,f=None,realtime=True,normalize=False,
+    def __init__(self,sim,fields,f=None,realtime=False,normalize=False,
     plot_modifiers=None,**customization_args):
         self.fields = fields
 
@@ -780,8 +780,8 @@ class Animate2D(object):
                     '-an', filename  # output filename
         ]
 
-        print("Generating GIF...")
         if mp.am_master():
+            print("Generating GIF...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
                 proc.stdin.write(self._saved_frames[i])
@@ -811,8 +811,9 @@ class Animate2D(object):
                     '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
                     '-an', filename  # output filename
         ]
-        print("Generating MP4...")
+        
         if mp.am_master():
+            print("Generating MP4...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
                 proc.stdin.write(self._saved_frames[i])
