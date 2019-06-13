@@ -29,9 +29,9 @@ def kgyro_llg(freq, epsn, f0, gamma, sigma, alpha):
 class TestFaradayRotation(unittest.TestCase):
     ## Simulate a linearly polarized plane wave traveling along the gyrotropy axis.
     ## Extract Faraday rotation angle by comparing the Ex and Ey amplitudes, and
-    ## compare to the theoretical result predicted by rotation rate KPRED
-    ## up to relative tolerance RTOL.
-    def check_rotation(self, mat, L, fsrc, zsrc, resolution, tmax, zout, kpred, rtol):
+    ## compare to a theoretical result corresponding to rotation rate KPRED.
+    ## The default acceptable tolerance TOL is 1.5 degrees.
+    def check_rotation(self, mat, L, fsrc, zsrc, resolution, tmax, zout, kpred, tol=1.5):
         cell = mp.Vector3(0, 0, L)
         pml_layers = [mp.PML(thickness=1.0, direction=mp.Z)]
         sources = [mp.Source(mp.ContinuousSource(frequency=fsrc),
@@ -53,42 +53,49 @@ class TestFaradayRotation(unittest.TestCase):
 
         ex_rel = np.amax(abs(np.fft.fft(record_Ex)))
         ey_rel = np.amax(abs(np.fft.fft(record_Ey)))
-        result = np.arctan2(ey_rel, ex_rel)
+        result = np.arctan2(ey_rel, ex_rel) * 180/np.pi
 
         Ex_theory = np.abs(np.cos(kpred * (zout - zsrc)).real)
         Ey_theory = np.abs(np.sin(kpred * (zout - zsrc)).real)
-        expected = np.arctan2(Ey_theory, Ex_theory)
+        expected = np.arctan2(Ey_theory, Ex_theory) * 180/np.pi
 
-        np.testing.assert_allclose(expected, result, rtol=rtol)
+        print("Rotation angle (in degrees): {}, expected {}\n".format(result, expected))
+        np.testing.assert_allclose(expected, result, atol=tol)
 
     def test_faraday_rotation(self):
         L, zsrc, zout = 12.0, -4.5, 4.0
-        freq, tmax = 0.8, 300.0
+        freq, tmax = 0.8, 100.0
         resolution = 24
 
-        ## Test gyrotropic lorentzian (2% tolerance)
+        ## Test gyrotropic Lorentzian medium
         epsn, f0, gamma, sn, b0  = 1.5, 1.0, 1e-3, 0.1, 0.15
         susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                                       bias=mp.Vector3(0, 0, b0))]
         mat = mp.Medium(epsilon=epsn, mu=1, E_susceptibilities=susc)
         k = kgyro_lorentzian(freq, epsn, f0, gamma, sn, b0)
-        self.check_rotation(mat, L, freq, zsrc, resolution, tmax, zout, k, 0.02)
+        print('=' * 24)
+        print("Testing Faraday rotation for gyrotropic Lorentzian model...")
+        self.check_rotation(mat, L, freq, zsrc, resolution, tmax, zout, k)
 
-        ## Test gyrotropic Drude medium (2% tolerance)
+        ## Test gyrotropic Drude medium
         susc = [mp.GyrotropicDrudeSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                                  bias=mp.Vector3(0, 0, b0))]
         mat = mp.Medium(epsilon=epsn, mu=1, E_susceptibilities=susc)
         k = kgyro_drude(freq, epsn, f0, gamma, sn, b0)
-        self.check_rotation(mat, L, freq, zsrc, resolution, tmax, zout, k, 0.02)
+        print('=' * 24)
+        print("Testing Faraday rotation for gyrotropic Drude model...")
+        self.check_rotation(mat, L, freq, zsrc, resolution, tmax, zout, k)
 
-        ## Test Landau-Lifshitz-Gilbert medium (5% tolerance)
+        ## Test Landau-Lifshitz-Gilbert medium
         alpha = 1e-5
         susc = [mp.GyrotropicSaturatedSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                                      alpha=alpha,
                                                      bias=mp.Vector3(0, 0, 1.0))]
         mat = mp.Medium(epsilon=epsn, mu=1, E_susceptibilities=susc)
         k = kgyro_llg(freq, epsn, f0, gamma, sn, alpha)
-        self.check_rotation(mat, L, freq, zsrc, resolution, tmax, zout, k, 0.05)
+        print('=' * 24)
+        print("Testing Faraday rotation for Landau-Lifshitz-Gilbert model...")
+        self.check_rotation(mat, L, freq, zsrc, resolution, tmax, zout, k)
 
 if __name__ == '__main__':
     unittest.main()
