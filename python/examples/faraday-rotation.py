@@ -24,7 +24,6 @@ sources = [mp.Source(mp.ContinuousSource(frequency=fsrc),
                      component=mp.Ex, center=mp.Vector3(0, 0, src_z))]
 
 sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources,
-                    k_point=mp.Vector3(),   # Periodic boundary conditions
                     boundary_layers=pml_layers,
                     default_material=mat, resolution=50)
 sim.run(until=tmax)
@@ -33,8 +32,8 @@ sim.run(until=tmax)
 import numpy as np
 import matplotlib.pyplot as plt
 
-ex_data = sim.get_array(center=mp.Vector3(), size=mp.Vector3(0, 0, L), component=mp.Ex)
-ey_data = sim.get_array(center=mp.Vector3(), size=mp.Vector3(0, 0, L), component=mp.Ey)
+ex_data = sim.get_efield_x().real
+ey_data = sim.get_efield_y().real
 
 z = np.linspace(-L/2, L/2, len(ex_data))
 plt.figure(1)
