@@ -167,6 +167,51 @@ $$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{\gamma_\perp \g
 
 For a two level gain medium, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. For more details on applying SALT to atomic media with an arbitrary number of levels, see [Optics Express, Vol. 23, pp. 6455-77, 2015](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-23-5-6455).
 
+Gyrotropic Media
+----------------
+
+(**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator).
+
+In a gyrotropic medium, the polarization vector undergoes precession around a preferred direction. In the frequency domain, this corresponds to the presence of skew-symmetric off-diagonal components in the ε tensor (for a gyroelectric medium) or the μ tensor (for a gyromagnetic medium). Two different gyrotropy models are supported:
+
+### Gyrotropic Drude-Lorentz Model
+
+The first gyrotropy model is a [Drude-Lorentz](Materials.md#material-dispersion) model with an additional precession, which is intended to describe gyroelectric materials. The polarization equation is
+
+$$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} - \frac{d\mathbf{P}_n}{dt} \times \mathbf{b}_n + \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
+
+(Optionally, the polarization may be of Drude form, in which case the $\omega_n^2 \mathbf{P}_n$ term on the left is omitted.) The third term on the left side, which breaks time-reversal symmetry, is responsible for the gyrotropy; it typically describes the deflection of electrons flowing within the material by a static external magnetic field. In the $\gamma_n = \omega_n = 0$ limit, the equation of motion reduces to a precession around the "bias vector" $\mathbf{b}_n$:
+
+$$\frac{d\mathbf{P}_n}{dt} = \mathbf{P}_n \times \mathbf{b}_n$$
+
+Hence, the magnitude of the bias vector is the angular frequency of the gyrotropic precession induced by the external field.
+
+### Gyrotropic Saturated Dipole (Linearized Landau-Lifshitz-Gilbert) Model
+
+The second gyrotropy model is a linearized [Landau-Lifshitz-Gilbert equation](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation), suitable for modeling gyromagnetic materials such as ferrites. Its polarization equation of motion is
+
+$$\frac{d\mathbf{P}_n}{dt} = \mathbf{b}_n \times \left( - \sigma_n \mathbf{E} + \omega_n \mathbf{P}_n + \alpha_n \frac{d\mathbf{P}_n}{dt} \right) - \gamma_n \mathbf{P}_n$$
+
+Note: although the above equation is written in terms of electric susceptibilities, this model is typically used for magnetic susceptibilities. Meep places no restriction on the field type that either gyrotropy model can be applied to. As usual, electric and magnetic susceptibilities can be swapped by substituting ε with μ, **E** with **H**, etc.
+
+The Landau-Lifshitz-Gilbert equation describes the precessional motion of a saturated point magnetic dipole in a magnetic field. In the above equation, the variable $\mathbf{P}_n$ represents the linearized deviation of the polarization from its static equilibrium value (assumed to be much larger and aligned parallel to $\mathbf{b}_n$). Note that this equation of motion is completely different from the [Drude-Lorentz equation](Materials.md#material-dispersion), though the constants σ$_n$, ω$_n$, and γ$_n$ play analogous roles (σ$_n$ couples the polarization to the driving field, ω$_n$ is the angular frequency of precession, and γ$_n$ is a damping factor).
+
+In this model, $\mathbf{b}_n$ is taken to be a unit vector (i.e., its magnitude is ignored).
+
+### Frequency Domain Susceptibility Tensors
+
+Suppose $\mathbf{b} = b \hat{z}$, and let all fields have harmonic time-dependence $\exp(-i\omega t)$. Then $\mathbf{P}_n$ is related to the applied field $\mathbf{E}$ by
+
+$$\mathbf{P}_n =  \begin{bmatrix}\chi_\perp & -i\eta & 0 \\ i\eta & \chi_\perp & 0 \\ 0 & 0 & \chi_\parallel \end{bmatrix} \mathbf{E}$$
+
+For the [gyrotropic Lorentzian model](Materials.md#gyrotropic-drude-lorentz-model), the components of the susceptibility tensor are
+
+$$\chi_\perp = \frac{\omega_n^2 \Delta_n \sigma_n}{\Delta_n^2 - \omega^2 b^2},\;\;\; \chi_\parallel = \frac{\omega_n^2 \sigma_n}{\Delta_n}, \;\;\; \eta = \frac{\omega_n^2 \omega b \sigma_n}{\Delta_n^2 - \omega^2 b^2}, \;\;\;\Delta_n \equiv \omega_n^2 - \omega^2 - i\omega\gamma_n$$
+
+And for the [gyrotropic saturated dipole (linearized Landau-Lifshitz-Gilbert) model](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model),
+
+$$\chi_\perp = \frac{\sigma_n (\omega_n - i \omega \alpha_n)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}, \;\;\; \chi_\parallel = 0, \;\;\;  \eta = \frac{\sigma_n (\omega + i \gamma)}{(\omega_n - i \omega \alpha_n)^2 - (\omega + i \gamma_n)^2}$$
+
 Materials Library
 -----------------
 

@@ -362,6 +362,32 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
         res = sus;
       }
       if (sus->next) sus = sus->next;
+    } else if (num_params == 8) {
+      // This is a gyrotropic_susceptibility and the next 8 values in the dataset
+      // are id, bias.x, bias.y, bias.z, omega_0, gamma, alpha, and model.
+      size_t gyro_susc_dims[3] = {8, 0, 0};
+      realnum gyro_susc_params[8];
+      file->read_chunk(rank, &start, gyro_susc_dims, gyro_susc_params);
+      start += gyro_susc_dims[0];
+
+      int id = (int)gyro_susc_params[0];
+      const vec bias(gyro_susc_params[1], gyro_susc_params[2], gyro_susc_params[3]);
+      const double omega_0 = gyro_susc_params[4];
+      const double gamma = gyro_susc_params[5];
+      const double alpha = gyro_susc_params[6];
+      const gyrotropy_model model = (gyrotropy_model)gyro_susc_params[7];
+      if (sus) {
+        sus->next =
+            new gyrotropic_susceptibility(bias, omega_0, gamma, alpha, model);
+        sus->next->ntot = ntot;
+        sus->next->set_id(id);
+      } else {
+        sus = new gyrotropic_susceptibility(bias, omega_0, gamma, alpha, model);
+        sus->ntot = ntot;
+        sus->set_id(id);
+        res = sus;
+      }
+      if (sus->next) sus = sus->next;
     } else {
       abort("Invalid number of susceptibility parameters in structure::load");
     }
