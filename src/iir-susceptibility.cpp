@@ -53,14 +53,6 @@ void polynomial_transform(double *r, int N, double alpha, double beta, double de
         for (j=0; j<n-k; j++) r[j] = ((n-k-j)*delta*r[j]+(j+1)*alpha*r[j+1])/(k+1);
         r[n-k] = sum;
     }
-    /*
-    // Flip array
-    for (c = 0; c < N/2; c++) {
-      j = r[c];
-      r[c] = r[n];
-      r[n] = j;
-      n--;
-  }*/
 }
 
 // Uses Tustins method to discretize the transfer function. S = (2/T)*(1-z^-1)/(1+z^-1)
