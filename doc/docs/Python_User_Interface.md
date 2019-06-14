@@ -1569,10 +1569,12 @@ Plots a 2D cross section of the simulation domain using `matplotlib`. The plot i
 
 ```py
 sim = mp.Simulation(...)
-sim.init_sim()
+sim.run(...)
 
 import matplotlib.pyplot as plt
-sim.plot2D()
+sim.plot2D(fields=mp.Ez,
+           field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
+           boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
 plt.show()
 plt.savefig('sim_domain.png')
 ```
@@ -1616,13 +1618,6 @@ plt.savefig('sim_domain.png')
     - `cmap='RdBu'`: color map for field pixels
     - `alpha=0.6`: transparency of fields
 
-For example, you can simultaneously modify the field parameters and the boundary layer parameters with
-```python
-field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'}
-boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3}
-plot2D(field_parameters=field_parameters, boundary_parameters=boundary_parameters)
-```
-
 **`Simulation.plot3D()`**
 — Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.
 
@@ -1635,7 +1630,12 @@ Displays an interactive image of how the cell is divided into chunks. Each recta
 A class used to record the fields during timestepping (i.e., a [`run`](#run-functions) function). The object is initialized prior to timestepping by specifying the simulation object and the field component. The object can then be passed to any [step-function modifier](#step-function-modifiers). For example, one can record the E<sub>z</sub> fields at every one time unit using:
 
 ```py
-animate = mp.Animate2D(sim,mp.Ez)
+animate = mp.Animate2D(sim,
+                       fields=mp.Ez,
+                       realtime=True,
+                       field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
+                       boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
+
 sim.run(mp.at_every(1,animate),until=25)
 ```
 
@@ -1675,13 +1675,6 @@ plot_modifiers = [mod1]
 
 **`**customization_args`**
 — Customization keyword arguments passed to `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
-
-you can simultaneously modify the field parameters and the boundary layer parameters at each specified time step with with
-```python
-field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'}
-boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3}
-Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=True, field_parameters=field_parameters, boundary_parameters=boundary_parameters)
-```
 
 Methods:
 

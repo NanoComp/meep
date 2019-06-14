@@ -6,7 +6,7 @@ Meep implements the [finite-difference time-domain](https://en.wikipedia.org/wik
 
 In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should potentially consider a different method.
 
-This introduction does not describe the [User Interface](Python_User_Interface.md) with which you set up simulations. Instead, the focus here is on the physics and concepts that are being simulated. For tutorial examples which demonstrate core functionality, see [Tutorial/Basics](Python_Tutorials/Basics.md).
+This introduction does not describe the [User Interface](Python_User_Interface.md) with which you set up simulations. Instead, the focus here is on the physics and numerical methods. For tutorial examples which demonstrate core functionality, see [Tutorial/Basics](Python_Tutorials/Basics.md).
 
 [TOC]
 
