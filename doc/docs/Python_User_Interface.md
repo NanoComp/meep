@@ -79,7 +79,7 @@ Specifies the size of the cell which is centered on the origin of the coordinate
 
 **`default_material` [`Medium` class ]**
 —
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below).
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below). If you want to use a material function as the default material, use the `material_function` keyword argument (below).
 
 **`material_function` [ function ]**
 —
@@ -300,17 +300,17 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 —
 Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](FAQ.md#why-does-my-simulation-diverge-if-0).
 
-**`epsilon(freq` [ scalar, list, or `numpy` array, ]`)`**
+**`epsilon(f)`**
 —
-Calculates the medium's permittivity tensor as a 3x3 `numpy` array at the specified frequency, `freq`. Either a scalar, list, or `numpy` array of frequencies may be supplied. In the case `N` frequency points, a `numpy` array size Nx3x3 is returned.
+Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
-**`mu(freq` [ scalar, list, or `numpy` array, ]`)`**
+**`mu(f)`**
 —
-Calculates the medium's permeability tensor as a 3x3 `numpy` array at the specified frequency, `freq`. Either a scalar, list, or `numpy` array of frequencies may be supplied. In the case `N` frequency points, a `numpy` array size Nx3x3 is returned.
+Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
 **material functions**
 
-Any function that accepts a `Medium` instance can also accept a user defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
+Any function that accepts a `Medium` instance can also accept a user-defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
 
 Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
 
@@ -342,7 +342,7 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
-Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` will appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
 
 ### DrudeSusceptibility
 
@@ -399,6 +399,38 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 The noise has root-mean square amplitude σ $\times$ `noise_amp`.
 
 This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to [compute far-field thermal radiation using Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
+
+### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+
+**`bias` [`Vector3`]**
+—
+The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
+
+### GyrotropicSaturatedSusceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by a [linearized Landau-Lifshitz-Gilbert equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
+
+**`sigma` [`number`]**
+—
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+
+**`frequency` [`number`]**
+—
+The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
+
+**`alpha` [`number`]**
+—
+The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
+
+**`bias` [`Vector3`]**
+—
+Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter for the [gyrotropic Lorentzian/Drude susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility), the magnitude is ignored; instead, the relevant precession frequencies are determined by the `sigma` and `frequency` parameters.
 
 ### Vector3
 
@@ -510,7 +542,7 @@ One normally does not create objects of type `GeometricObject` directly, however
 
 In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
-#### Geometry Utilites
+#### Geometry Utilities
 
 See the (MPB documentation)[https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities] for utility functions to help manipulate geometric objects.
 
@@ -880,7 +912,7 @@ where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
 
 ### CustomSource
 
-A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off.
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
 
 **`src_func` [`function`]**
 —
@@ -927,7 +959,7 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 
 ### Volume
 
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you. Alternatively, you can specify a list of `Vector3` vertices using the `vertices` parameter. The `center` and `size` will automatically be computed from this list.
 
 **`meep.get_center_and_size(vol)`**
 —
@@ -935,6 +967,10 @@ Utility function that takes a `meep::volume` `vol` and returns the center and si
 
 Miscellaneous Functions
 -----------------------
+
+**`meep.quiet(quietval=True)`**
+—
+Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
 
 ### Output File Names
 
@@ -1074,7 +1110,7 @@ This can be called in a step function, and is useful for changing the geometry o
 
 ### Flux Spectra
 
-Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These are attributes of the `Simulation` class. The most important function is:
+Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These are attributes of the `Simulation` class. The most important function is:
 
 **`add_flux(fcen, df, nfreq, FluxRegions...)`**
 —
@@ -1411,7 +1447,7 @@ Note that far fields have the same units and scaling as the *Fourier transforms*
 [compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
 `OMP_NUM_THREADS` environment variable to specify multiple threads.)
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Python_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_near2far(filename, near2far)`**
 —
@@ -1525,16 +1561,145 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 
 ### Data Visualization
 
+This module provides basic visualization functionality for the simulation domain. The spirit of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output.
+
+**`Simulation.plot2D(ax=None, output_plane=None, fields=None, labels=False, eps_parameters=None, boundary_parameters=None, source_parameters=None, monitor_parameters=None, field_parameters=None)`**
+—
+Plots a 2D cross section of the simulation domain using `matplotlib`. The plot includes the geometry, boundary layers, sources, and monitors. Fields can also be superimposed on a 2D slice. Requires [matplotlib](https://matplotlib.org). Calling this function would look something like:
+
+```py
+sim = mp.Simulation(...)
+sim.init_sim()
+
+import matplotlib.pyplot as plt
+sim.plot2D()
+plt.show()
+plt.savefig('sim_domain.png')
+```
+
+* `ax`: a `matplotlib` axis object. `plot2D()` will add plot objects, like lines, patches, and scatter plots, to this object. If no `ax` is supplied, then the routine will create a new figure and grab its axis.
+* `output_plane`: a `Volume` object that specifies the plane over which to plot. Must be 2D and a subset of the grid volume (i.e., it should not extend beyond the cell).
+* `fields`: the field component (`mp.Ex`, `mp.Ey`, `mp.Ez`, `mp.Hx`, `mp.Hy`, `mp.Hz`) to superimpose over the simulation geometry. Default is `None`, where no fields are superimposed.
+* `labels`: if `True`, then labels will appear over each of the simulation elements.
+* `eps_parameters`: a `dict` of optional plotting parameters that override the default parameters for the geometry.
+    - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
+    - `cmap='binary'`: the color map of the geometry
+    - `alpha=1.0`: transparency of geometry  
+* `boundary_parameters`: a `dict` of optional plotting parameters that override the default parameters for the boundary layers.
+    - `alpha=1.0`: transparency of boundary layers
+    - `facecolor='g'`: color of polygon face
+    - `edgecolor='g'`: color of outline stroke
+    - `linewidth=1`: line width of outline stroke
+    - `hatch='\'`: hatching pattern
+* `source_parameters`: a `dict` of optional plotting parameters that override the default parameters for the sources.
+    - `color='r'`: color of line and pt sources
+    - `alpha=1.0`: transparency of source
+    - `facecolor='none'`: color of polygon face for planar sources
+    - `edgecolor='r'`: color of outline stroke for planar sources
+    - `linewidth=1`: line width of outline stroke
+    - `hatch='\'`: hatching pattern
+    - `label_color='r'`: color of source labels
+    - `label_alpha=0.3`: transparency of source label box
+    - `offset=20`: distance from source center and label box
+* `monitor_parameters`: a `dict` of optional plotting parameters that override the default parameters for the monitors.
+    - `color='g'`: color of line and point monitors
+    - `alpha=1.0`: transparency of monitors
+    - `facecolor='none'`: color of polygon face for planar monitors
+    - `edgecolor='r'`: color of outline stroke for planar monitors
+    - `linewidth=1`: line width of outline stroke
+    - `hatch='\'`: hatching pattern
+    - `label_color='g'`: color of source labels
+    - `label_alpha=0.3`: transparency of monitor label box
+    - `offset=20`: distance from monitor center and label box
+* `field_parameters`: a `dict` of optional plotting parameters that override the default parameters for the fields.
+    - `interpolation='spline36'`: interpolation function used to upsample field pixels
+    - `cmap='RdBu'`: color map for field pixels
+    - `alpha=0.6`: transparency of fields
+
+For example, you can simultaneously modify the field parameters and the boundary layer parameters with
+```python
+field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'}
+boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3}
+plot2D(field_parameters=field_parameters, boundary_parameters=boundary_parameters)
+```
+
+**`Simulation.plot3D()`**
+— Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.
+
 **`Simulation.visualize_chunks()`**
 —
 Displays an interactive image of how the cell is divided into chunks. Each rectangular region is a chunk, and each color represents a different processor. Requires [matplotlib](https://matplotlib.org).
 
+#### Animate2D
+
+A class used to record the fields during timestepping (i.e., a [`run`](#run-functions) function). The object is initialized prior to timestepping by specifying the simulation object and the field component. The object can then be passed to any [step-function modifier](#step-function-modifiers). For example, one can record the E<sub>z</sub> fields at every one time unit using:
+
+```py
+animate = mp.Animate2D(sim,mp.Ez)
+sim.run(mp.at_every(1,animate),until=25)
+```
+
+By default, the object saves each frame as a PNG image into memory (not disk). This is typically more memory efficient than storing the actual fields. If the user sets the `normalize` argument, then the object will save the actual field information as a NumPy array to be normalized for post processing. The fields of a figure can also be updated in realtime by setting the `realtime` flag. This does not work for IPython/Jupyter notebooks, however.
+
+Once the simulation is run, the animation can be output as an interactive JSHTML object, an mp4, or a GIF.
+
+Multiple Animate2D objects can be initialized and passed to the run function to track different volume locations (using `mp.in_volume`) or field components.
+
+Properties:
+
+**`sim`**
+— Simulation object.
+
+**`fields`**
+— Field component to record at each time instant.
+
+**`f=None`**
+— Optional `matplotlib` figure object that the routine will update on each call. If not supplied, then a new one will be created upon initialization.
+
+**`realtime=True`**
+— Whether or not to update a figure window in realtime as the simulation progresses. Disabled by default. Not compatible with IPython/Jupyter notebooks.
+
+**`normalize=False`**
+— Records fields at each time step in memory in a NumPy array and then normalizes the result by dividing by the maximum field value at a single point in the cell over all the time snapshots.
+
+**`plot_modifiers=None`**
+— A list of functions that can modify the figure's `axis` object. Each function modifier accepts a single argument, an `axis` object, and must return that same axis object. The following modifier changes the `xlabel`:
+
+```py
+def mod1(ax):
+    ax.set_xlabel('Testing')
+    return ax
+
+plot_modifiers = [mod1]
+```
+
+**`**customization_args`**
+— Customization keyword arguments passed to `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
+
+you can simultaneously modify the field parameters and the boundary layer parameters at each specified time step with with
+```python
+field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'}
+boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3}
+Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=True, field_parameters=field_parameters, boundary_parameters=boundary_parameters)
+```
+
+Methods:
+
+**`Animate2D.to_jshtml(fps)`**
+— Outputs an interactable JSHTML animation object that is embeddable in Jupyter notebooks. The object is packaged with controls to manipulate the video's playback. User must specify a frame rate `fps` in frames per second.
+
+**`Animate2D.to_mp4(fps,filename)`**
+— Generates and outputs an mp4 video file of the animation with the filename, `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p format. Requires `ffmpeg`.
+
+**`Animate2D.to_gif(fps,filename)`**
+— Generates and outputs a GIF file of the animation with the filename, `filename`, and the frame rate, `fps`. Note that GIFs are significantly larger than mp4 videos since they don't use any compression. Artifacts are also common because the GIF format only supports 256 colors from a _predefined_ color palette. Requires `ffmpeg`.
+
 Run and Step Functions
 ----------------------
 
-The actual work in Meep is performed by *run* functions, which time-step the simulation for a given amount of time or until a given condition is satisfied. These are attributes of the `Simulation` class.
+The actual work in Meep is performed by `run` functions, which time-step the simulation for a given amount of time or until a given condition is satisfied. These are attributes of the `Simulation` class.
 
-The run functions, in turn, can be modified by use of *step functions*: these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many *modifier functions*, like *at_beginning*, *during_sources*, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
+The run functions, in turn, can be modified by use of [step functions](#predefined-step-functions): these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many [modifier functions](#step-function-modifiers), like `at_beginning`, `during_sources`, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
 
 A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
 
@@ -1587,11 +1752,11 @@ Note that although the various field components are stored at different places i
 <a name="output_epsilon"></a>
 **`output_epsilon()`**
 —
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
+Output the dielectric function (relative permittivity) ε. Note that this only outputs the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`output_mu()`**
 —
-Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
+Output the relative permeability function μ. Note that this only outputs the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`Simulation.output_dft(dft_fields, fname, where=None, center=None, size=None)`**
 —
@@ -1657,7 +1822,7 @@ with the following input parameters:
 
 + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
-For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return complex arrays.
+For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent with the fields (real or complex).
 
 **Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`, etc. use as default `size=meep.Simulation.fields.total_volume()` which for simulations involving Bloch-periodic boundaries (via `k_point`) will result in arrays that have slightly *different* dimensions than e.g. `get_array(center=meep.Vector3(), size=cell_size, component=meep.Dielectric`, etc. (i.e., the slice spans the entire cell volume `cell_size`). Neither of these approaches is "wrong", they are just slightly different methods of fetching the boundaries. The key point is that if you pass the same value for the `size` parameter, or use the default, the slicing routines always give you the same-size array for all components. You should *not* try to predict the exact size of these arrays; rather, you should simply rely on Meep's output.
 

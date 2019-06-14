@@ -281,7 +281,7 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
-Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` will appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
 
 ### drude-susceptibility
 
@@ -338,6 +338,38 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 **`noise-amp` [`number`]**
 —
 The noise has root-mean square amplitude σ $\times$ `noise-amp`.
+
+### gyrotropic-lorentzian-susceptibility or gyrotropic-drude-susceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+
+**`bias` [`vector3`]**
+—
+The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
+
+### gyrotropic-saturated-susceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by a [linearized Landau-Lifshitz-Gilbert equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
+
+**`sigma` [`number`]**
+—
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+
+**`frequency` [`number`]**
+—
+The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
+
+**`alpha` [`number`]**
+—
+The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
+
+**`bias` [`vector3`]**
+—
+Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter for the [gyrotropic Lorentzian/Drude susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility), the magnitude is ignored; instead, the relevant precession frequencies are determined by the `sigma` and `frequency` parameters.
 
 ### geometric-object
 
@@ -701,7 +733,7 @@ How many `width`s the current decays for before we cut it off and set it to zero
 
 ### custom-src
 
-A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped-pulse.ctl`](https://github.com/NanoComp/meep/blob/master/scheme/examples/chirped-pulse.ctl).
 
 **`src-func` [`function`]**
 —
@@ -894,7 +926,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of `flux-region` objects (see [above](#flux-region)), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
+Given a bunch of [`flux-region`](#flux-region) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**
 —
@@ -1171,7 +1203,7 @@ Note that far fields have the same units and scaling as the *Fourier transforms*
 [compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
 `OMP_NUM_THREADS` environment variable to specify multiple threads.)
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Scheme_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-near2far filename near2far)`**
 —
@@ -1226,9 +1258,9 @@ After `meep-fields-solve-cw` completes, it should be as if you had just run the 
 Run and Step Functions
 ----------------------
 
-The actual work in Meep is performed by *run* functions, which time-step the simulation for a given amount of time or until a given condition is satisfied.
+The actual work in Meep is performed by `run` functions, which time-step the simulation for a given amount of time or until a given condition is satisfied.
 
-The run functions, in turn, can be modified by use of *step functions*: these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many *modifier functions*, like *at-beginning*, *during-sources*, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
+The run functions, in turn, can be modified by use of [step functions](#predefined-step-functions): these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many [modifier functions](#step-function-modifiers), like `at-beginning`, `during-sources`, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
 
 A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
 
@@ -1280,11 +1312,11 @@ The predefined output functions are:
 
 **`output-epsilon`**
 —
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
+Output the dielectric function (relative permittivity) ε. Note that this only outputs the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`output-mu`**
 —
-Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
+Output the relative permeability function μ. Note that this only outputs the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`(output-dft dft-fields fname [where])`**
 —

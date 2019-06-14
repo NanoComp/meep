@@ -23,6 +23,7 @@
 -   **Materials library** containing predefined broadband, complex refractive indices.
 -   Field analyses including [Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), [mode decomposition](Python_Tutorials/Mode_Decomposition.md) (for [S-parameters](Python_Tutorials/GDSII_Import.md)), [energy density](Python_User_Interface.md#energy-density-spectra), [near to far transformations](Python_Tutorials/Near_to_Far_Field_Spectra.md), [frequency extraction](Python_Tutorials/Basics.md#modes-of-a-ring-resonator), [local density of states](Python_Tutorials/Local_Density_of_States.md) (LDOS), [modal volume](Python_User_Interface.md#field-computations), [Maxwell stress tensor](Python_Tutorials/Optical_Forces.md), [arbitrary functions](Field_Functions.md); completely programmable.
 -   [Adjoint solver](Python_Tutorials/AdjointSolver.md) for **sensitivity analysis** and **automated design optimization**.
+-   [Visualization routines](Python_User_Interface.md#data-visualization) for the simulation domain involving geometries, fields, boundary layers, sources, and monitors.
 
 Time-Domain Simulation
 ----------------------

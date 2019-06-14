@@ -166,48 +166,49 @@ def_plot_options={ 'line_color'           : [1.0,0.0,1.0],
 #--------------------------------------------------
 # options for permittivity plots
 #--------------------------------------------------
-def_eps_options={ **def_plot_options,
-                  'cmap':matplotlib.cm.Blues,
-                  'line_width': 0.00, 'colorbar_shrink':0.75,
-                  'plot_method':'contourf', # or 'pcolormesh' or 'imshow'
-                  'num_contours':100
-                }
+def_eps_options = {}
+def_eps_options.update(def_plot_options)
+def_eps_options.update({'cmap':matplotlib.cm.Blues,
+                        'line_width': 0.00, 'colorbar_shrink':0.75,
+                        'plot_method':'contourf', # or 'pcolormesh' or 'imshow'
+                        'num_contours':100})
 
 #--------------------------------------------------
 # options for source region visualization (default: cyan line, no label)
 #--------------------------------------------------
-def_src_options={ **def_plot_options,
-                  'line_width':4.0, 'line_color':[0.0,1.0,1.0],
-                  'fontsize':0, 'zrel_min':0.0, 'zrel_max':0.0
-                }
+def_src_options = {}
+def_src_options.update(def_plot_options)
+def_src_options.update({'line_width':4.0, 'line_color':[0.0,1.0,1.0],
+                        'fontsize':0, 'zrel_min':0.0, 'zrel_max':0.0})
 
 #--------------------------------------------------
 # options for PML visualization (default: grey semitransparent blocks)
 #--------------------------------------------------
-def_pml_options={ **def_plot_options,
-                  'boundary_color':'none', 'boundary_width':0.0,
-                  'fill_color': 0.75*np.ones(3), 'alpha':0.25
-                }
+def_pml_options = {}
+def_pml_options.update(def_plot_options)
+def_pml_options.update({'boundary_color':'none', 'boundary_width':0.0,
+                        'fill_color': 0.75*np.ones(3), 'alpha':0.25})
 
 #--------------------------------------------------
 # options for flux monitor visualization (default: magenta line with label)
 #--------------------------------------------------
-def_flux_options={ **def_plot_options,
-                   'boundary_color':[0.0,0.0,0.0], 'boundary_width':2.0,
-                   'boundary_style':'--',
-                   'line_color': [1.0,0.0,1.0], 'line_width':4.0
-                 }
+def_flux_options = {}
+def_flux_options.update(def_plot_options)
+def_flux_options.update({'boundary_color':[0.0,0.0,0.0], 'boundary_width':2.0,
+                         'boundary_style':'--',
+                         'line_color': [1.0,0.0,1.0], 'line_width':4.0})
 
 #--------------------------------------------------
 # options for dft_field cell visualization (default: green dashed border, not filled)
 #--------------------------------------------------
-def_field_options={ **def_plot_options,
-                    'line_width': 0.0,  'alpha': 0.5,
-                    'plot_method': 'contourf',
-                    'zrel_min':0.4, 'zrel_max':0.6
-                  }
+def_field_options = {}
+def_field_options.update(def_plot_options)
+def_field_options.update({'line_width': 0.0,  'alpha': 0.5,
+                          'plot_method': 'contourf',
+                          'zrel_min':0.4, 'zrel_max':0.6})
 
-def_dft_options={ **def_plot_options }
+def_dft_options = {}
+def_dft_options.update(def_plot_options)
 
 
 def set_plot_default(option, value, type=None):

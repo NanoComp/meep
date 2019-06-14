@@ -1,12 +1,12 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.9.0)
+AC_INIT(meep, 1.10.0)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="14:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="15:0:1" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -187,6 +187,11 @@ if test $have_mpb = maybe; then
 fi
 
 AM_CONDITIONAL(WITH_MPB, test "x$have_mpb" = "xyes")
+if test "x$have_mpb" = "xyes"; then
+  # check for mpb_printf_callback
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <mpb.h>]], [mpb_printf_callback = 0;])],
+    AC_DEFINE([HAVE_MPB_PRINTF_CALLBACK], [1], [If we have the mpb_printf_callback variable]))
+fi
 
 ##############################################################################
 # GNU Scientific Library
@@ -227,6 +232,10 @@ if test "x$with_mpi" = "xyes"; then
    AC_CHECK_PROG(MPIRUN, mpirun, mpirun)
    # always use 2 processes for 'make check'
    RUNCODE="$MPIRUN -np 2"
+fi
+if test x"$with_openmp" = "xyes"; then
+   # use 2 openmp threads
+   RUNCODE="env OMP_NUM_THREADS=2 $RUNCODE"
 fi
 AC_SUBST(RUNCODE)
 AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" = "xyes")

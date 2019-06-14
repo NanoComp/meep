@@ -18,6 +18,7 @@ import numpy as np
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
+import meep.visualization as vis
 
 
 try:
@@ -25,10 +26,10 @@ try:
 except NameError:
     basestring = str
 
-# Allow C++ master_printf to print to Python's stdout
+# Send output from Meep, ctlgeom, and MPB to Python's stdout
 mp.cvar.master_printf_callback = mp.py_master_printf_wrap
-# Allow ctlgeom output to print to Python's stdout
 mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
+mp.set_mpb_printf_callback(mp.py_master_printf_wrap)
 
 EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom'])
 FluxData = namedtuple('FluxData', ['E', 'H'])
@@ -146,18 +147,75 @@ class Identity(Symmetry):
 
 class Volume(object):
 
-    def __init__(self, center, size=Vector3(), dims=2, is_cylindrical=False):
-        self.center = center
-        self.size = size
+    def __init__(self, center=Vector3(), size=Vector3(), dims=2, is_cylindrical=False, vertices=[]):
+        
+        if len(vertices) == 0:
+            self.center = center
+            self.size = size
+        else:
+            vertices = np.array([np.array(i) for i in vertices])
+            self.center = Vector3(*np.mean(vertices,axis=0))
+            x_list = np.unique(vertices[:,0])
+            y_list = np.unique(vertices[:,1])
+            z_list = np.unique(vertices[:,2])
+
+            x_size = 0 if x_list.size == 1 else np.abs(np.diff(x_list)[0])
+            y_size = 0 if y_list.size == 1 else np.abs(np.diff(y_list)[0])
+            z_size = 0 if z_list.size == 1 else np.abs(np.diff(z_list)[0])
+
+            self.size = Vector3(x_size,y_size,z_size)
+        
         self.dims = dims
 
-        v1 = center - size.scale(0.5)
-        v2 = center + size.scale(0.5)
+        v1 = self.center - self.size.scale(0.5)
+        v2 = self.center + self.size.scale(0.5)
 
         vec1 = py_v3_to_vec(self.dims, v1, is_cylindrical)
         vec2 = py_v3_to_vec(self.dims, v2, is_cylindrical)
 
         self.swigobj = mp.volume(vec1, vec2)
+
+    def get_vertices(self):
+        xmin = self.center.x - self.size.x/2
+        xmax = self.center.x + self.size.x/2
+        ymin = self.center.y - self.size.y/2
+        ymax = self.center.y + self.size.y/2
+        zmin = self.center.z - self.size.z/2
+        zmax = self.center.z + self.size.z/2
+
+        # Iterate over and remove duplicates for collapsed dimensions (i.e. min=max))
+        return [Vector3(x,y,z) for x in list(set([xmin,xmax])) for y in list(set([ymin,ymax])) for z in list(set([zmin,zmax]))]
+
+
+    def get_edges(self):
+        vertices = self.get_vertices()
+        edges = []
+
+        # Useful for importing weird geometries and the sizes are slightly off
+        def nearly_equal(a,b,sig_fig=10):
+            return a==b or (abs(a-b) < 10**(-sig_fig))
+
+        for iter1 in range(len(vertices)):
+            for iter2 in range(iter1+1,len(vertices)):
+                if ((iter1 != iter2) and
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.x) or
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.y) or
+                nearly_equal((vertices[iter1]-vertices[iter2]).norm(),self.size.z)):
+                    edges.append([vertices[iter1],vertices[iter2]])
+        return edges
+
+    def pt_in_volume(self,pt):
+        xmin = self.center.x - self.size.x/2
+        xmax = self.center.x + self.size.x/2
+        ymin = self.center.y - self.size.y/2
+        ymax = self.center.y + self.size.y/2
+        zmin = self.center.z - self.size.z/2
+        zmax = self.center.z + self.size.z/2
+
+        if (pt.x >= xmin and pt.x <= xmax and pt.y >= ymin and pt.y <= ymax and pt.z >= zmin and pt.z <= zmax):
+            return True
+        else:
+            return False
 
 
 class FluxRegion(object):
@@ -577,6 +635,7 @@ class Simulation(object):
         self.chunk_layout = chunk_layout
         self.collect_stats = collect_stats
         self.fragment_stats = None
+        self._output_stats = os.environ.get('MEEP_STATS', None)
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
@@ -964,6 +1023,21 @@ class Simulation(object):
 
         if self.collect_stats and isinstance(self.default_material, mp.Medium):
             self.fragment_stats = self._compute_fragment_stats(gv)
+
+        if self._output_stats and isinstance(self.default_material, mp.Medium):
+            stats = self._compute_fragment_stats(gv)
+            print("STATS: aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
+            print("STATS: anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
+            print("STATS: nonlinear: {}".format(stats.num_nonlinear_pixels))
+            print("STATS: susceptibility: {}".format(stats.num_susceptibility_pixels))
+            print("STATS: nonzero_cond: {}".format(stats.num_nonzero_conductivity_pixels))
+            print("STATS: pml_1d: {}".format(stats.num_1d_pml_pixels))
+            print("STATS: pml_2d: {}".format(stats.num_2d_pml_pixels))
+            print("STATS: pml_3d: {}".format(stats.num_3d_pml_pixels))
+            print("STATS: dft: {}".format(stats.num_dft_pixels))
+            print("STATS: total_pixels: {}".format(stats.num_pixels_in_box))
+            print("STATS: num_cores: {}".format(mp.count_processors()))
+            sys.exit(0)
 
         dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
 
@@ -2014,193 +2088,145 @@ class Simulation(object):
 
     def get_hfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Hr, cmplx=True)
-            p = self.get_array(mp.Hp, cmplx=True)
+            r = self.get_array(mp.Hr, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Hp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Hx, cmplx=True)
-            y = self.get_array(mp.Hy, cmplx=True)
-            z = self.get_array(mp.Hz, cmplx=True)
+            x = self.get_array(mp.Hx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Hy, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Hz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_hfield_x(self):
-        return self.get_array(mp.Hx, cmplx=True)
+        return self.get_array(mp.Hx, cmplx=not self.fields.is_real)
 
     def get_hfield_y(self):
-        return self.get_array(mp.Hy, cmplx=True)
+        return self.get_array(mp.Hy, cmplx=not self.fields.is_real)
 
     def get_hfield_z(self):
-        return self.get_array(mp.Hz, cmplx=True)
+        return self.get_array(mp.Hz, cmplx=not self.fields.is_real)
 
     def get_hfield_r(self):
-        return self.get_array(mp.Hr, cmplx=True)
+        return self.get_array(mp.Hr, cmplx=not self.fields.is_real)
 
     def get_hfield_p(self):
-        return self.get_array(mp.Hp, cmplx=True)
+        return self.get_array(mp.Hp, cmplx=not self.fields.is_real)
 
     def get_bfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Br, cmplx=True)
-            p = self.get_array(mp.Bp, cmplx=True)
+            r = self.get_array(mp.Br, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Bp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Bx, cmplx=True)
-            y = self.get_array(mp.By, cmplx=True)
-            z = self.get_array(mp.Bz, cmplx=True)
+            x = self.get_array(mp.Bx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.By, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Bz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_bfield_x(self):
-        return self.get_array(mp.Bx, cmplx=True)
+        return self.get_array(mp.Bx, cmplx=not self.fields.is_real)
 
     def get_bfield_y(self):
-        return self.get_array(mp.By, cmplx=True)
+        return self.get_array(mp.By, cmplx=not self.fields.is_real)
 
     def get_bfield_z(self):
-        return self.get_array(mp.Bz, cmplx=True)
+        return self.get_array(mp.Bz, cmplx=not self.fields.is_real)
 
     def get_bfield_r(self):
-        return self.get_array(mp.Br, cmplx=True)
+        return self.get_array(mp.Br, cmplx=not self.fields.is_real)
 
     def get_bfield_p(self):
-        return self.get_array(mp.Bp, cmplx=True)
+        return self.get_array(mp.Bp, cmplx=not self.fields.is_real)
 
     def get_efield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Er, cmplx=True)
-            p = self.get_array(mp.Ep, cmplx=True)
+            r = self.get_array(mp.Er, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Ep, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Ex, cmplx=True)
-            y = self.get_array(mp.Ey, cmplx=True)
-            z = self.get_array(mp.Ez, cmplx=True)
+            x = self.get_array(mp.Ex, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Ey, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Ez, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_efield_x(self):
-        return self.get_array(mp.Ex, cmplx=True)
+        return self.get_array(mp.Ex, cmplx=not self.fields.is_real)
 
     def get_efield_y(self):
-        return self.get_array(mp.Ey, cmplx=True)
+        return self.get_array(mp.Ey, cmplx=not self.fields.is_real)
 
     def get_efield_z(self):
-        return self.get_array(mp.Ez, cmplx=True)
+        return self.get_array(mp.Ez, cmplx=not self.fields.is_real)
 
     def get_efield_r(self):
-        return self.get_array(mp.Er, cmplx=True)
+        return self.get_array(mp.Er, cmplx=not self.fields.is_real)
 
     def get_efield_p(self):
-        return self.get_array(mp.Ep, cmplx=True)
+        return self.get_array(mp.Ep, cmplx=not self.fields.is_real)
 
     def get_dfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Dr, cmplx=True)
-            p = self.get_array(mp.Dp, cmplx=True)
+            r = self.get_array(mp.Dr, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Dp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Dx, cmplx=True)
-            y = self.get_array(mp.Dy, cmplx=True)
-            z = self.get_array(mp.Dz, cmplx=True)
+            x = self.get_array(mp.Dx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Dy, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Dz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_dfield_x(self):
-        return self.get_array(mp.Dx, cmplx=True)
+        return self.get_array(mp.Dx, cmplx=not self.fields.is_real)
 
     def get_dfield_y(self):
-        return self.get_array(mp.Dy, cmplx=True)
+        return self.get_array(mp.Dy, cmplx=not self.fields.is_real)
 
     def get_dfield_z(self):
-        return self.get_array(mp.Dz, cmplx=True)
+        return self.get_array(mp.Dz, cmplx=not self.fields.is_real)
 
     def get_dfield_r(self):
-        return self.get_array(mp.Dr, cmplx=True)
+        return self.get_array(mp.Dr, cmplx=not self.fields.is_real)
 
     def get_dfield_p(self):
-        return self.get_array(mp.Dp, cmplx=True)
+        return self.get_array(mp.Dp, cmplx=not self.fields.is_real)
 
     def get_sfield(self):
         if self.is_cylindrical:
-            r = self.get_array(mp.Sr, cmplx=True)
-            p = self.get_array(mp.Sp, cmplx=True)
+            r = self.get_array(mp.Sr, cmplx=not self.fields.is_real)
+            p = self.get_array(mp.Sp, cmplx=not self.fields.is_real)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Sx, cmplx=True)
-            y = self.get_array(mp.Sy, cmplx=True)
-            z = self.get_array(mp.Sz, cmplx=True)
+            x = self.get_array(mp.Sx, cmplx=not self.fields.is_real)
+            y = self.get_array(mp.Sy, cmplx=not self.fields.is_real)
+            z = self.get_array(mp.Sz, cmplx=not self.fields.is_real)
             return np.stack([x, y, z], axis=-1)
 
     def get_sfield_x(self):
-        return self.get_array(mp.Sx, cmplx=True)
+        return self.get_array(mp.Sx, cmplx=not self.fields.is_real)
 
     def get_sfield_y(self):
-        return self.get_array(mp.Sy, cmplx=True)
+        return self.get_array(mp.Sy, cmplx=not self.fields.is_real)
 
     def get_sfield_z(self):
-        return self.get_array(mp.Sz, cmplx=True)
+        return self.get_array(mp.Sz, cmplx=not self.fields.is_real)
 
     def get_sfield_r(self):
-        return self.get_array(mp.Sr, cmplx=True)
+        return self.get_array(mp.Sr, cmplx=not self.fields.is_real)
 
     def get_sfield_p(self):
-        return self.get_array(mp.Sp, cmplx=True)
+        return self.get_array(mp.Sp, cmplx=not self.fields.is_real)
+
+    def plot2D(self,**kwargs):
+        return vis.plot2D(self,**kwargs)
+
+    def plot_fields(self,**kwargs):
+        return vis.plot_fields(self,**kwargs)
+
+    def plot3D(self):
+        return vis.plot3D(self)
 
     def visualize_chunks(self):
-        if self.structure is None:
-            self.init_sim()
-        try:
-            import matplotlib.pyplot as plt
-            import matplotlib.cm
-            import matplotlib.colors
-            from mpl_toolkits.mplot3d import Axes3D
-            from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
-        except ImportError:
-            warnings.warn("matplotlib is required for visualize_chunks", ImportWarning)
-            return
-
-        vols = self.structure.get_chunk_volumes()
-        owners = self.structure.get_chunk_owners()
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
-
-        def plot_box(box, proc):
-            low = mp.Vector3(box.low.x, box.low.y, box.low.z)
-            high = mp.Vector3(box.high.x, box.high.y, box.high.z)
-            points = [low, high]
-
-            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
-            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
-            xy_len = mp.Vector3(high.x, high.y) - mp.Vector3(low.x, low.y)
-
-            points += [low + x_len]
-            points += [low + y_len]
-            points += [low + xy_len]
-            points += [high - x_len]
-            points += [high - y_len]
-            points += [high - xy_len]
-            points = np.array([np.array(v) for v in points])
-
-            edges = [
-                [points[0], points[2], points[4], points[3]],
-                [points[1], points[5], points[7], points[6]],
-                [points[0], points[3], points[5], points[7]],
-                [points[1], points[4], points[2], points[6]],
-                [points[3], points[4], points[1], points[5]],
-                [points[0], points[7], points[6], points[2]]
-            ]
-
-            faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
-            color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc], alpha=0.2)
-            faces.set_facecolor(color_with_alpha)
-            ax.add_collection3d(faces)
-
-            # Plot the points themselves to force the scaling of the axes
-            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
-
-        if mp.am_master():
-            for i, v in enumerate(vols):
-                plot_box(mp.gv2box(v.surroundings()), owners[i])
-            ax.set_aspect('auto')
-            plt.show()
+        vis.visualize_chunks(self)
 
 
 def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
@@ -2875,3 +2901,7 @@ def complexarray(re, im):
     z = im * 1j
     z += re
     return z
+
+
+def quiet(quietval=True):
+    mp.cvar.quiet = quietval

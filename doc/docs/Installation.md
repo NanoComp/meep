@@ -7,9 +7,9 @@
 Building from Source
 --------------------
 
-Building Meep directly from the source code can be challenging for users unfamiliar with building Unix software, mainly because of the many prerequisites that must be installed combined with the need to tell Meep's build scripts where to find these prerequisites.
+Building Meep directly from the source code can be challenging for users unfamiliar with building Unix software. This is mainly because of the numerous prerequisites that must be installed as well as the need to specify in the build scripts where these packages are to be found.
 
-Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/wiki/GNU_Build_System) `./configure && make && make install` machinery, but requires a number of prerequisites in order to obtain a full-featured Meep installation: [MPB](http://mpb.readthedocs.io/en/latest/), [Libctl](https://github.com/NanoComp/libctl), [Harminv](https://github.com/NanoComp/harminv), [libGDSII](https://github.com/HomerReid/libGDSII), [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface), [HDF5](https://support.hdfgroup.org/HDF5/), [Python](https://www.python.org/), and [Guile](https://www.gnu.org/software/guile/). MPB and Harminv, in turn, require [LAPACK and BLAS](http://www.netlib.org/lapack/lug/node11.html) and [FFTW](http://fftw.org/) to be installed.
+Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/wiki/GNU_Build_System) `./configure && make && make install` machinery, but requires a number of prerequisites in order to obtain a full-featured Meep installation: [MPB](http://mpb.readthedocs.io/en/latest/), [Libctl](https://github.com/NanoComp/libctl), [Harminv](https://github.com/NanoComp/harminv), [libGDSII](https://github.com/HomerReid/libGDSII), [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface), [OpenMP](https://en.wikipedia.org/wiki/OpenMP), [HDF5](https://support.hdfgroup.org/HDF5/), [Python](https://www.python.org/), and [Guile](https://www.gnu.org/software/guile/). MPB and Harminv, in turn, require [LAPACK and BLAS](http://www.netlib.org/lapack/lug/node11.html) and [FFTW](http://fftw.org/) to be installed.
 
 Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/NanoComp/meep/releases), and you can also do a `git clone` of the master branch of the [Meep repository on Github](https://github.com/NanoComp/meep) if you have Autotools installed. For more information, see [Build From Source](Build_From_Source.md).
 
@@ -20,7 +20,9 @@ Conda Packages
 
 ### Official Releases
 
-The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. Binary packages for serial and parallel PyMeep on Linux and macOS are currently available (64 bit architectures only), and are updated with each MEEP release. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
+The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. The precompiled binaries run as fast or faster than the typical build from source, are simple to install, can be upgraded easily, and take advantage of newer compilers and dependencies than those available in typical systems. Obviously, building from source can still provide advantages if you have access to special hardware or performance libraries that require specific compiler flags; building from source is also required if you are interested in working on the Meep source code, are performing system-wide installations on a server, or are using systems unsupported by Conda (e.g. supercomputers).
+
+Binary packages for serial and parallel PyMeep on Linux and macOS are currently available (64 bit architectures only), and are updated with each new Meep release. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
 
 ```bash
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -86,15 +88,28 @@ parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
 
 **Note:** To update, `pymeep`, you can do `conda update -c conda-forge pymeep`.  If you run into problems (e.g. some other update has interfered with your environment), you can instead create a new environment from scratch each time.
 
+#### Older Releases
+
+Older releases of PyMeep are available on the `conda-forge` channel. The full list of available versions is [here](https://anaconda.org/conda-forge/pymeep/files). Examples:
+
+```bash
+# Create an environment with the serial version of pymeep 1.8.0
+conda create -n mp1.8 -c conda-forge pymeep=1.8.0
+# Create an environment with the parallel version of pymeep 1.9.0
+conda create -n pmp1.9 -c conda-forge pymeep=1.9.0=mpi_mpich_*
+```
+
+Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
+
 ### Nightly Builds
 
-To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  Just put the `dev` label before the other channels like this:
+To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  They are hosted on the `simpetus` channel.
 
 ```bash
 # Serial pymeep
-conda create -n mp_test -c chogan/label/dev -c chogan -c conda-forge pymeep
+conda create -n mp_test -c simpetus -c conda-forge pymeep
 # Parallel pymeep
-conda create -n pmp_test -c chogan/label/dev -c chogan -c conda-forge pymeep-parallel
+conda create -n pmp_test -c simpetus -c conda-forge pymeep=*=mpi_mpich*
 ```
 
 Installation on Linux

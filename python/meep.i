@@ -218,6 +218,14 @@ void set_ctl_printf_callback(void (*callback)(const char *s)) {
 #endif
 }
 
+void set_mpb_printf_callback(void (*callback)(const char *s)) {
+#if HAVE_MPB_PRINTF_CALLBACK
+  mpb_printf_callback = callback;
+#else
+  (void)callback;
+#endif
+}
+
 static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
 
     if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
@@ -564,6 +572,7 @@ namespace meep {
     void (*master_printf_callback)(const char *s);
 }
 void set_ctl_printf_callback(void (*callback)(const char *s));
+void set_mpb_printf_callback(void (*callback)(const char *s));
 
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
                      double spectral_density, double Q_thresh, double rel_err_thresh,
@@ -1377,6 +1386,9 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Ellipsoid,
         FreqRange,
         GeometricObject,
+        GyrotropicDrudeSusceptibility,
+        GyrotropicLorentzianSusceptibility,
+        GyrotropicSaturatedSusceptibility,
         Lattice,
         LorentzianSusceptibility,
         Matrix,
@@ -1491,6 +1503,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         output_sfield_r,
         output_sfield_p,
         py_v3_to_vec,
+        quiet,
         scale_energy_fields,
         scale_flux_fields,
         scale_force_fields,
@@ -1513,6 +1526,12 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Source,
         SourceTime,
         check_positive,
+    )
+    from .visualization import (
+        plot2D,
+        plot3D,
+        plot_fields,
+        Animate2D
     )
 
     if with_mpi():

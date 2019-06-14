@@ -280,6 +280,45 @@ protected:
   double noise_amp;
 };
 
+typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } gyrotropy_model;
+
+/* gyrotropic susceptibility */
+class gyrotropic_susceptibility : public susceptibility {
+public:
+  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma, double alpha=0.0,
+                            gyrotropy_model model=GYROTROPIC_LORENTZIAN);
+  virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
+
+  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+				  const grid_volume &gv, void *data) const;
+  virtual void *copy_internal_data(void *data) const;
+
+  virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+			const grid_volume &gv, void *P_internal_data) const;
+  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+			  void *P_internal_data) const;
+
+  virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+					  int n, void *P_internal_data) const;
+
+  virtual void dump_params(h5file *h5f, size_t *start);
+  virtual int get_num_params() { return 8; }
+  virtual bool needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+    (void)c;
+    (void)W;
+    return true;
+  }
+
+protected:
+  double gyro_tensor[3][3];
+  double omega_0, gamma, alpha;
+  gyrotropy_model model;
+};
+
 class multilevel_susceptibility : public susceptibility {
 public:
   multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0) {}
