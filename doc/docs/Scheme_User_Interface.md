@@ -339,6 +339,38 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 —
 The noise has root-mean square amplitude σ $\times$ `noise-amp`.
 
+### gyrotropic-lorentzian-susceptibility or gyrotropic-drude-susceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+
+**`bias` [`vector3`]**
+—
+The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
+
+### gyrotropic-saturated-susceptibility
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by a [linearized Landau-Lifshitz-Gilbert equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
+
+**`sigma` [`number`]**
+—
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+
+**`frequency` [`number`]**
+—
+The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
+
+**`gamma` [`number`]**
+—
+The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
+
+**`alpha` [`number`]**
+—
+The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
+
+**`bias` [`vector3`]**
+—
+Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter for the [gyrotropic Lorentzian/Drude susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility), the magnitude is ignored; instead, the relevant precession frequencies are determined by the `sigma` and `frequency` parameters.
+
 ### geometric-object
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:

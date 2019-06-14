@@ -34,22 +34,34 @@ def setup_sim(zDim=0):
                      center=mp.Vector3(),
                      material=mp.Medium(epsilon=12))]
     
-    # A point source
+    # Add point sources
     sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
-                     component=mp.Ez,
-                     center=mp.Vector3(-5,0))]
-    
-    # A line source
+                        component=mp.Ez,
+                        center=mp.Vector3(-5,0)),
+                mp.Source(mp.ContinuousSource(frequency=0.15),
+                        component=mp.Ez,
+                        center=mp.Vector3(0,2))
+                        ]
+
+    # Add line sources
     sources += [mp.Source(mp.ContinuousSource(frequency=0.15),
-                     component=mp.Ez,
-                     size=mp.Vector3(0,2,0),
-                     center=mp.Vector3(-6,0))]
+                        component=mp.Ez,
+                        size=mp.Vector3(0,2,0),
+                        center=mp.Vector3(-6,0)),
+                mp.Source(mp.ContinuousSource(frequency=0.15),
+                        component=mp.Ez,
+                        size=mp.Vector3(2,0,0),
+                        center=mp.Vector3(0,1))]
         
-    # A plane source
+    # Add plane sources
     sources += [mp.Source(mp.ContinuousSource(frequency=0.15),
-                     component=mp.Ez,
-                     size=mp.Vector3(2,2,0),
-                     center=mp.Vector3(-3,0))]
+                        component=mp.Ez,
+                        size=mp.Vector3(2,2,0),
+                        center=mp.Vector3(-3,0)),
+                mp.Source(mp.ContinuousSource(frequency=0.15),
+                        component=mp.Ez,
+                        size=mp.Vector3(2,2,0),
+                    center=mp.Vector3(0,-2))]
     
     # Different pml layers
     pml_layers = [mp.PML(2.0,mp.X),mp.PML(1.0,mp.Y,mp.Low),mp.PML(1.5,mp.Y,mp.High)]

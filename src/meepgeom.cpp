@@ -38,9 +38,11 @@ void check_offdiag(medium_struct *m) {
 
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2) {
   return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
-          vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) && s1.frequency == s2.frequency &&
-          s1.gamma == s2.gamma && s1.noise_amp == s2.noise_amp && s1.drude == s2.drude &&
-          s1.is_file == s2.is_file);
+          vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
+          vector3_equal(s1.bias, s2.bias) && s1.frequency == s2.frequency &&
+          s1.gamma == s2.gamma && s1.alpha == s2.alpha &&
+          s1.noise_amp == s2.noise_amp && s1.drude == s2.drude &&
+          s1.saturated_gyrotropy == s2.saturated_gyrotropy && s1.is_file == s2.is_file);
 }
 
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2) {
@@ -1178,10 +1180,12 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
    (must be updated manually, re-copying from ctl-io.cpp), if we
    add new susceptibility subclasses) */
 static bool susceptibility_equiv(const susceptibility *o0, const susceptibility *o) {
+  if (!vector3_equal(o0->bias, o->bias)) return 0;
   if (o0->frequency != o->frequency) return 0;
   if (o0->gamma != o->gamma) return 0;
   if (o0->noise_amp != o->noise_amp) return 0;
   if (o0->drude != o->drude) return 0;
+  if (o0->saturated_gyrotropy != o->saturated_gyrotropy) return 0;
   if (o0->is_file != o->is_file) return 0;
 
   if (o0->transitions != o->transitions) return 0;
@@ -1363,6 +1367,8 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
     susceptibility *ss = &(p->user_s);
     if (ss->is_file) meep::abort("unknown susceptibility");
     bool noisy = (ss->noise_amp != 0.0);
+    bool gyrotropic = (ss->saturated_gyrotropy || ss->bias.x != 0.0
+                       || ss->bias.y != 0.0 || ss->bias.z != 0.0);
     meep::susceptibility *sus;
 
     if (ss->transitions.size() != 0 || ss->initial_populations.size() != 0) {
@@ -1373,12 +1379,24 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
       if (noisy) {
         sus = new meep::noisy_lorentzian_susceptibility(ss->noise_amp, ss->frequency, ss->gamma,
                                                         ss->drude);
+      } else if (gyrotropic) {
+        meep::gyrotropy_model model
+          = ss->saturated_gyrotropy ? meep::GYROTROPIC_SATURATED
+          : ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
+        sus = new meep::gyrotropic_susceptibility(meep::vec(ss->bias.x, ss->bias.y, ss->bias.z),
+                                                  ss->frequency, ss->gamma, ss->alpha, model);
       } else {
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
-      master_printf("%s%s susceptibility: frequency=%g, gamma=%g", noisy ? "noisy " : "",
-                    ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
-      if (noisy) master_printf(" amp=%g ", ss->noise_amp);
+      master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
+                    noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
+                    ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
+                    : ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
+      if (noisy) master_printf(", amp=%g ", ss->noise_amp);
+      if (gyrotropic) {
+        if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
+        master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
+      }
       master_printf("\n");
     }
 

@@ -59,10 +59,13 @@ struct transition {
 typedef struct susceptibility_struct {
   vector3 sigma_offdiag;
   vector3 sigma_diag;
+  vector3 bias;
   double frequency;
   double gamma;
+  double alpha;
   double noise_amp;
   bool drude;
+  bool saturated_gyrotropy;
   bool is_file;
   std::vector<transition> transitions;
   std::vector<double> initial_populations;
