@@ -93,6 +93,9 @@ void fields::step() {
     synchronize_magnetic_fields();
     synchronized_magnetic_fields = save_synchronized_magnetic_fields;
   }
+
+  if (!std::isfinite(get_field(D_EnergyDensity, gv.center())))
+    abort("simulation fields are NaN or Inf");
 }
 
 double fields_chunk::peek_field(component c, const vec &where) {
