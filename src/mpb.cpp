@@ -56,10 +56,11 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   eps_inv->m00 = f->get_chi1inv(Ex, X, p, omega);
   eps_inv->m11 = f->get_chi1inv(Ey, Y, p, omega);
   eps_inv->m22 = f->get_chi1inv(Ez, Z, p, omega);
-  //  master_printf("eps_zz(%g,%g) = %g\n", p.x(), p.y(), 1/eps_inv->m00);
+  
   ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p, omega), 0);
   ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p, omega), 0);
   ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p, omega), 0);
+  //master_printf("eps_zz(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m01);
   maxwell_sym_matrix_invert(eps, eps_inv);
 }
 

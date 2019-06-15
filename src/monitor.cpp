@@ -230,17 +230,17 @@ double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, 
   if (is_mine()){
     res =
         chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)] : (d == component_direction(c) ? 1.0 : 0);
-    
     if (res != 0){
       // Get instaneous dielectric (epsilon)
-      std::complex<double> eps(1 / res,0);
+      std::complex<double> eps(1.0 / res,0.0);
       // Loop through and add up susceptibility contributions
       // locate correct susceptibility list
       susceptibility *Esus = chiP[E_stuff];
       while (Esus) {
-        double sigma = 0;
-        if (Esus->sigma[c][d]) sigma = Esus->sigma[c][d][gv.index(c, iloc)];
-        eps += Esus->chi1(omega,sigma);
+        if (Esus->sigma[c][d]) {
+          double sigma = Esus->sigma[c][d][gv.index(c, iloc)];
+          eps += Esus->chi1(omega,sigma);
+        } 
         Esus = Esus->next;
       }
       // Account for conductivity term
@@ -250,11 +250,15 @@ double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, 
        }
       // Return chi1 inverse, take the real part since no support for loss in mpb yet
       // TODO: Add support for metals
-      res = 1 / (std::sqrt(eps).real() * std::sqrt(eps).real());
+      if (eps.imag() == 0.0){
+        res = 1.0 / eps.real();
+      }else{
+        res = 1.0 / (std::sqrt(eps).real() * std::sqrt(eps).real());
+      }
     }
   }
 
-  return broadcast(n_proc(), res);
+  return res;
 }
 
 double structure::get_chi1inv(component c, direction d, const vec &loc, double omega, bool parallel) const {
