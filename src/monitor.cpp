@@ -114,8 +114,8 @@ double fields::get_field(derived_component c, const vec &loc) const {
         }
       if (c != D_EnergyDensity) FOR_MAGNETIC_COMPONENTS(c1) {
           if (gv.has_field(c1)) {
-            complex<double> f = get_field(c1, loc);
-            sum += real(conj(f) * f);
+            c2 = direction_component(Bx, component_direction(c1));
+            sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
           }
         }
       return sum * 0.5;
