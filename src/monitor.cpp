@@ -224,12 +224,13 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, dou
       }
   return 0.0;
 }
-
-double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
+// Useful if you already know the exact location of the point you are interested in
+// (i.e. you know what idx should be). This is used with the get_array() routines.
+double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
   double res = 0.0;
   if (is_mine()){
     res =
-        chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)] : (d == component_direction(c) ? 1.0 : 0);
+        chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
     if (res != 0){
       // Get instaneous dielectric (epsilon)
       std::complex<double> eps(1.0 / res,0.0);
@@ -238,14 +239,14 @@ double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, 
       susceptibility *Esus = chiP[E_stuff];
       while (Esus) {
         if (Esus->sigma[c][d]) {
-          double sigma = Esus->sigma[c][d][gv.index(c, iloc)];
+          double sigma = Esus->sigma[c][d][idx];
           eps += Esus->chi1(omega,sigma);
         } 
         Esus = Esus->next;
       }
       // Account for conductivity term
        if (conductivity[c][d]) {
-         double conductivityCur = conductivity[c][d][gv.index(c, iloc)];
+         double conductivityCur = conductivity[c][d][idx];
          eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
        }
       // Return chi1 inverse, take the real part since no support for loss in mpb yet
@@ -259,6 +260,10 @@ double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, 
   }
 
   return res;
+}
+
+double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
+  return get_chi1inv_at_pt(c,d,gv.index(c, iloc),omega);
 }
 
 double structure::get_chi1inv(component c, direction d, const vec &loc, double omega, bool parallel) const {
