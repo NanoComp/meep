@@ -2605,7 +2605,8 @@ def output_epsilon(sim,*step_func_args,**kwargs):
     sim.output_component(mp.Dielectric,omega=omega)
 
 
-def output_mu(sim,*args,omega=0.0):
+def output_mu(sim,*step_func_args,**kwargs):
+    omega = kwargs.pop('omega', 0.0)
     sim.output_component(mp.Permeability,omega=omega)
 
 
