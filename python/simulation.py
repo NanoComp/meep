@@ -2600,7 +2600,8 @@ def output_png(compnt, options, rm_h5=True):
     return _output_png
 
 
-def output_epsilon(sim,*args,omega=0.0):
+def output_epsilon(sim,*step_func_args,**kwargs):
+    omega = kwargs.pop('omega', 0.0)
     sim.output_component(mp.Dielectric,omega=omega)
 
 
