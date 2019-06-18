@@ -1803,7 +1803,7 @@ class Simulation(object):
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
-        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision, self.get_filename_prefix(), omega)
+        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(),omega)
 
         if h5file is None:
             nm = self.fields.h5file_name(mp.component_name(c), self.get_filename_prefix(), True)
@@ -2600,12 +2600,12 @@ def output_png(compnt, options, rm_h5=True):
     return _output_png
 
 
-def output_epsilon(sim,omega=0):
+def output_epsilon(sim,*args,omega=0.0):
     sim.output_component(mp.Dielectric,omega=omega)
 
 
-def output_mu(sim):
-    sim.output_component(mp.Permeability)
+def output_mu(sim,*args,omega=0.0):
+    sim.output_component(mp.Permeability,omega=omega)
 
 
 def output_hpwr(sim):

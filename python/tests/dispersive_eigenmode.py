@@ -118,17 +118,17 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
         sim = mp.Simulation(cell_size=mp.Vector3(2,2,2),
                             default_material=material,
-                            resolution=20
+                            resolution=20,
+                            eps_averaging=False
                             )
         sim.init_sim()
-        vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(1,1,1))
         
         # Check to make sure the get_slice routine is working with omega
         n_slice = np.sqrt(np.min(sim.get_epsilon(omega)))
         self.assertAlmostEqual(n,n_slice, places=6)
 
         # Check to make sure h5 output is working with omega
-        mp.output_epsilon(sim,omega)
+        mp.output_epsilon(sim,omega=omega)
         n_h5 = np.sqrt(np.min(h5py.File(filename, 'r')['eps']))
         self.assertAlmostEqual(n,n_h5, places=6)
         os.remove(filename)

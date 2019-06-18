@@ -332,7 +332,7 @@ void fields::output_hdf5(const char *dataname, int num_fields, const component *
                 single_precision, omega);
     snprintf(dataname2, len, "%s%s", dataname, ".i");
     output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 1, where, append_data,
-                single_precision), omega;
+                single_precision,omega);
     delete[] dataname2;
   }
   if (delete_file) delete file;
