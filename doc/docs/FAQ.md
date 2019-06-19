@@ -2,7 +2,7 @@
 # FAQ
 ---
 
-The following are frequently asked questions grouped by categories.
+The following are frequently asked questions grouped into ten categories: [General](#general), [Installation](#installation), [Physics](#physics), [Sources](#usage-sources), [Fields](#usage-fields), [Materials](#usage-materials), [Structures](#usage-structures), [Subpixel Averaging](#usage-subpixel-averaging), [Performance](#usage-performance), and [Other](#usage-other).
 
 [TOC]
 
@@ -195,7 +195,7 @@ Usage: Fields
 
 Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the `resolution` and/or reduce the `Courant` factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), or (5) a material with a *wavelength-independent* refractive index between 0 and 1 (fix: reduce the `Courant` factor; alternatively, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
 
-Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling).
+Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling). Also, Meep automatically checks the fields at the cell origin after every timestep and [aborts the simulation if the electric energy density has diverged](https://github.com/NanoComp/meep/blob/master/src/step.cpp#L97-L98).
 
 ### How do I compute the steady-state fields?
 
