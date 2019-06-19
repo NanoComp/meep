@@ -77,7 +77,7 @@ void fields::print_times() {
   sum_to_master(square_times, stddev, Other+1);
   for (int i = 0; i <= Other; ++i) {
     mean[i] /= n;
-    stddev[i] -= n*mean[i]*mean[i]
+    stddev[i] -= n*mean[i]*mean[i];
     stddev[i] = n == 1 || stddev[i] <= 0 ? 0.0 : sqrt(stddev[i] / (n-1));
   }
 
