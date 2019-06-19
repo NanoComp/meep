@@ -224,41 +224,78 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, dou
       }
   return 0.0;
 }
-// Useful if you already know the exact location of the point you are interested in
-// (i.e. you know what idx should be). This is used with the get_array() routines.
+
+// This pulls the dc chi1 value from the chi1inv tensor by inverting it.
+// So far only works for cartesian coordinates...
+double structure_chunk::get_DC_chi1_at_pt(component c, direction d, int idx) const {
+  component comp_list[3];
+  if (is_electric(c)) {
+    comp_list[0] = Ex; comp_list[1] = Ey; comp_list[2] = Ez;
+  }else if (is_magnetic(c)) {
+    comp_list[0] = Hx; comp_list[1] = Hy; comp_list[2] = Hz;
+  } else if (is_D(c)) {
+    comp_list[0] = Dx; comp_list[1] = Dy; comp_list[2] = Dz;
+  } else if (is_B(c)) {
+    comp_list[0] = Bx; comp_list[1] = By; comp_list[2] = Bz;
+  }
+
+  // Set up chi1inv 3x3 symmetric matrix
+  double m00 = chi1inv[comp_list[0]][X] ? chi1inv[comp_list[0]][X][idx] :  1.0;
+  double m11 = chi1inv[comp_list[1]][Y] ? chi1inv[comp_list[1]][Y][idx] :  1.0;
+  double m22 = chi1inv[comp_list[2]][Z] ? chi1inv[comp_list[2]][Z][idx] :  1.0;
+  double m01 = chi1inv[comp_list[0]][Y] ? chi1inv[comp_list[0]][Y][idx] :  0;
+  double m02 = chi1inv[comp_list[0]][Z] ? chi1inv[comp_list[0]][Z][idx] :  0;
+  double m12 = chi1inv[comp_list[1]][Z] ? chi1inv[comp_list[1]][Z][idx] :  0;
+
+  // Calculate determinant
+  double det = m00 * (m11*m22-m12*m12) - m01 * (m01*m22-m12*m02) + m02 * (m01*m12-m11*m02);
+  if (det==0) abort("Chi1 Inverse matrix is singular.\n");
+
+  // Set up chi1 3x3 symmetric matrix, as the inverse
+  double A[3][3];
+  A[0][0] = (m11*m22 - m12*m12)/det;
+  A[1][1] = (m00*m22 - m02*m02)/det;
+  A[2][2] = (m00*m11 - m12*m12)/det;
+  A[0][1] = A[1][0] = (m02*m12 - m22*m01)/det;
+  A[0][2] = A[2][0] = (m01*m12 - m02*m11)/det;
+  A[1][2] = A[2][1] = (m01*m02 - m00*m12)/det;
+
+  // Return the component we care about
+  return A[component_index(c)][d];
+}
+
 double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
   double res = 0.0;
   if (is_mine()){
-    res =
-        chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
-    if (res != 0){
-      // Get instaneous dielectric (epsilon)
-      std::complex<double> eps(1.0 / res,0.0);
-      // Loop through and add up susceptibility contributions
-      // locate correct susceptibility list
-      susceptibility *Esus = chiP[E_stuff];
-      while (Esus) {
-        if (Esus->sigma[c][d]) {
-          double sigma = Esus->sigma[c][d][idx];
-          eps += Esus->chi1(omega,sigma);
-        } 
-        Esus = Esus->next;
+    // Get instantaneous chi1 value (i.e DC value)
+    res = get_DC_chi1_at_pt(c,d,idx);
+    std::complex<double> eps(res,0.0);
+    // Loop through and add up susceptibility contributions
+    // locate correct susceptibility list
+    susceptibility *Esus = chiP[E_stuff];
+    while (Esus) {
+      if (Esus->sigma[c][d]) {
+        double sigma = Esus->sigma[c][d][idx];
+        eps += Esus->chi1(omega,sigma);
+      } 
+      Esus = Esus->next;
+    }
+    // Account for conductivity term
+      if (conductivity[c][d]) {
+        double conductivityCur = conductivity[c][d][idx];
+        eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
       }
-      // Account for conductivity term
-       if (conductivity[c][d]) {
-         double conductivityCur = conductivity[c][d][idx];
-         eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
-       }
-      // Return chi1 inverse, take the real part since no support for loss in mpb yet
-      // TODO: Add support for metals
-      if (eps.imag() == 0.0){
-        res = 1.0 / eps.real();
-      }else{
-        res = 1.0 / (std::sqrt(eps).real() * std::sqrt(eps).real());
-      }
+    // Return chi1 inverse, take the real part since no support for loss in mpb yet
+    // TODO: Add support for metals
+    if (eps.real() == 0.0 && eps.imag() == 0.0){
+      res = 0.0;
+    }else if(eps.imag() == 0.0){
+      res = 1.0 / eps.real();
+    }else{
+      res = 1.0 / (std::sqrt(eps).real() * std::sqrt(eps).real());
     }
   }
-
+  //master_printf("res: %g\n",res);
   return res;
 }
 

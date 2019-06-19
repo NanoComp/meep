@@ -112,9 +112,9 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.compare_meep_mpb(LiNbO3,w0)
         self.compare_meep_mpb(LiNbO3,w1)
     
-    def verify_output_and_slice(self,material,omega,component=0,direction=0):
-        filename = 'dispersive_eigenmode-eps-000000.00.h5'
-        n = np.real(np.sqrt(material.epsilon(omega)[component,direction]))
+    def verify_output_and_slice(self,material,omega):
+        # Since the slice routines average the diagonals, we need to do that too:
+        n = np.mean(np.real(np.sqrt(material.epsilon(omega).diagonal())))
         
         sim = mp.Simulation(cell_size=mp.Vector3(2,2,2),
                             default_material=material,
@@ -128,10 +128,12 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.assertAlmostEqual(n,n_slice, places=6)
 
         # Check to make sure h5 output is working with omega
-        mp.output_epsilon(sim,omega=omega)
-        n_h5 = np.sqrt(np.min(h5py.File(filename, 'r')['eps']))
-        self.assertAlmostEqual(n,n_h5, places=6)
-        os.remove(filename)
+        # NOTE: We'll add this test once h5 support is added
+        #filename = 'dispersive_eigenmode-eps-000000.00.h5'
+        #mp.output_epsilon(sim,omega=omega)
+        #n_h5 = np.sqrt(np.min(h5py.File(filename, 'r')['eps']))
+        #self.assertAlmostEqual(n,n_h5, places=6)
+        #os.remove(filename)
     
     def test_get_with_dispersion(self):
         # This test checks the get_array_slice and output_fields method
@@ -157,7 +159,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.verify_output_and_slice(Au,w0)
         self.verify_output_and_slice(Au,w1)       
 
-        # Check Lithium Niobate (X,X)
+        # Check Lithium Niobate
         w0 = LiNbO3.valid_freq_range.min
         w1 = LiNbO3.valid_freq_range.max
         #self.verify_output_and_slice(LiNbO3,w0)

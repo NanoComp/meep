@@ -600,7 +600,8 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-   double get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
+  double get_DC_chi1_at_pt(component c, direction d, int idx) const;
+  double get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
   double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
   double get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {
     return get_chi1inv(c, d, iloc, omega);
@@ -1526,23 +1527,23 @@ public:
   // low-level function:
   void output_hdf5(h5file *file, const char *dataname, int num_fields, const component *components,
                    field_function fun, void *fun_data_, int reim, const volume &where,
-                   bool append_data = false, bool single_precision = false, double omega = 0);
+                   bool append_data = false, bool single_precision = false);
   // higher-level functions
   void output_hdf5(const char *dataname, // OUTPUT COMPLEX-VALUED FUNCTION
                    int num_fields, const component *components, field_function fun, void *fun_data_,
                    const volume &where, h5file *file = 0, bool append_data = false,
                    bool single_precision = false, const char *prefix = 0,
-                   bool real_part_only = false, double omega = 0);
+                   bool real_part_only = false);
   void output_hdf5(const char *dataname, // OUTPUT REAL-VALUED FUNCTION
                    int num_fields, const component *components, field_rfunction fun,
                    void *fun_data_, const volume &where, h5file *file = 0, bool append_data = false,
-                   bool single_precision = false, const char *prefix = 0, double omega = 0);
+                   bool single_precision = false, const char *prefix = 0);
   void output_hdf5(component c, // OUTPUT FIELD COMPONENT (or Dielectric)
                    const volume &where, h5file *file = 0, bool append_data = false,
-                   bool single_precision = false, const char *prefix = 0, double omega = 0);
+                   bool single_precision = false, const char *prefix = 0);
   void output_hdf5(derived_component c, // OUTPUT DERIVED FIELD COMPONENT
                    const volume &where, h5file *file = 0, bool append_data = false,
-                   bool single_precision = false, const char *prefix = 0, double omega = 0);
+                   bool single_precision = false, const char *prefix = 0);
   h5file *open_h5file(const char *name, h5file::access_mode mode = h5file::WRITE,
                       const char *prefix = NULL, bool timestamp = false);
   const char *h5file_name(const char *name, const char *prefix = NULL, bool timestamp = false);
