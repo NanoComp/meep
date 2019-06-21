@@ -85,6 +85,26 @@ void fields::print_times() {
   for (int i = 0; i <= Other; i++)
     pt(mean, stddev, (time_sink)i);
   master_printf("\n");
+
+  if (verbosity > 0) {
+    master_printf("\nField time usage for all processes:\n");
+    double *alltimes_tmp = new double[n * (Other+1)];
+    double *alltimes = new double[n * (Other+1)];
+    for (int i = 0; i <= Other; ++i) {
+      for (int j = 0; j < n; ++j)
+        alltimes_tmp[i*n+j] = j == my_rank() ? times_spent[i] : 0;
+    }
+    sum_to_master(alltimes_tmp, alltimes, n * (Other+1));
+    delete[] alltimes_tmp;
+    for (int i = 0; i <= Other; i++) {
+      master_printf("    %21s: %g", ts2n((time_sink)i), alltimes[i*n]);
+      for (int j = 1; j < n; ++j)
+        master_printf(", %g", alltimes[i*n+j]);
+      master_printf("\n");
+    }
+    master_printf("\n");
+    delete[] alltimes;
+  }
 }
 
 } // namespace meep
