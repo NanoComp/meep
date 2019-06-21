@@ -60,7 +60,14 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p, omega), 0);
   ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p, omega), 0);
   ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p, omega), 0);
-  //master_printf("eps_zz(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m01);
+  /*
+  master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
+  master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
+  master_printf("m33(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m22);
+  master_printf("m12(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m01);
+  master_printf("m13(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m02);
+  master_printf("m23(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m12);
+  */
   maxwell_sym_matrix_invert(eps, eps_inv);
 }
 

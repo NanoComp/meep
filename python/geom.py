@@ -239,6 +239,29 @@ class Medium(object):
         for s in self.H_susceptibilities:
             s.transform(m)
 
+    def rotate(self, rotations):
+        for rot in rotations:
+            if np.count_nonzero(rot) != 1:
+                raise ValueError("Each rotation vector should only have 1 coordinate.")
+            if rot.x != 0: # rotate about x axis
+                self.transform(Matrix(
+                    Vector3(1,0,0),
+                    Vector3(0,np.cos(rot.x),np.sin(rot.x)),
+                    Vector3(0,-np.sin(rot.x),np.cos(rot.x))
+                    ))
+            elif rot.y != 0: # rotate about z axis
+                self.transform(Matrix(
+                    Vector3(np.cos(rot.y),0,-np.sin(rot.y)),
+                    Vector3(0,1,0),
+                    Vector3(np.sin(rot.y),0,np.cos(np.y))
+                    ))
+            else:
+                self.transform(Matrix(
+                    Vector3(np.cos(rot.z),np.sin(rot.z),0),
+                    Vector3(-np.sin(np.z),np.cos(rot.z),0),
+                    Vector3(0,0,1)
+                    ))
+    
     def epsilon(self,freq):
         return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
     
