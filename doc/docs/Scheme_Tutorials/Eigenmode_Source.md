@@ -90,7 +90,7 @@ There are numerical dispersion artifacts due to the FDTD spatial and temporal di
 ![](../images/oblique_source_multimode.png)
 </center>
 
-Finally, we demonstrate that the total power in a waveguide with *arbitrary* orientation can be computed by a single flux plane oriented along the y direction: thanks to Poynting's theorem, the flux through any plane crossing a lossless waveguide is the same, regardless of whether the plane is oriented perpendicular to the waveguide. Furthermore, the eigenmode source is normalized in such a way as to produce the same power regardless of the waveguide orientation — in consequence, the flux values for mode **A** of the single-mode case for rotation angles of 0°, 20°, and 40° are 77.000266, 76.879339, and 76.817850, within 0.2% (discretization error) of one another.
+Finally, we demonstrate that the total power in a waveguide with *arbitrary* orientation can be computed by a single flux plane oriented along the y direction: thanks to Poynting's theorem, the flux through any plane crossing a lossless waveguide is the same, regardless of whether the plane is oriented perpendicular to the waveguide. Furthermore, the eigenmode source is normalized in such a way as to produce the same power regardless of the waveguide orientation — in consequence, the flux values for mode **A** of the single-mode case for rotation angles of 0°, 20°, and 40° are 1111.280794, 1109.565028, and 1108.759159, within 0.2% (discretization error) of one another.
 
 Planewaves in Homogeneous Media
 -------------------------------
