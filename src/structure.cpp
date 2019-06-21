@@ -186,12 +186,14 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
+    if (!quiet && desired_num_chunks > 1) master_printf("Splitting into %d chunks evenly\n", desired_num_chunks);
     for (int i = 0; i < adjusted_num_chunks; i++) {
       grid_volume vi =
           gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes, effort);
       chunk_volumes.push_back(vi);
     }
   } else {
+    if (!quiet && desired_num_chunks > 1) master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
   }
 
