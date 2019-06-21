@@ -59,10 +59,7 @@ const double nan = -7.0415659787563146e103; // ideally, a value never encountere
 class h5file;
 
 // Defined in monitor.cpp
-typedef struct {
-  double m00, m01, m02, m11, m12, m22;
-} simple_symmetric_matrix;
-void sym_matrix_invert(simple_symmetric_matrix *Vinv, const simple_symmetric_matrix *V);
+void matrix_invert(double *Vinv, double *V);
 
 double pml_quadratic_profile(double, void *);
 
@@ -608,7 +605,7 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  void get_chi1inv_tensor(simple_symmetric_matrix *chi1_inv_tensor, component c, direction d, int idx, double omega) const;
+  void get_chi1inv_tensor(double *chi1_inv_tensor, component c, direction d, int idx, double omega) const;
   double get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
   double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
   double get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {

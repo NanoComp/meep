@@ -226,38 +226,24 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, dou
 }
 
 /* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
-void sym_matrix_invert(simple_symmetric_matrix *Vinv, const simple_symmetric_matrix *V) {
-  double m00 = V->m00, m11 = V->m11, m22 = V->m22;
-  double m01 = V->m01, m02 = V->m02, m12 = V->m12;
+void matrix_invert(double *Vinv, double *V) {
+  
+  double det = (V[0 +3*0] * (V[1 + 3*1]*V[2 +3*2] - V[1 + 3*2]*V[2 +3*1]) - 
+  V[0 + 3*1] * (V[0 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[0 + 3*2]) + 
+  V[0 + 3*2] * (V[0 + 3*1]*V[1 + 3*2] - V[1 + 3*1]*V[0 + 3*2]));
 
-  if (m01 == 0.0 && m02 == 0.0 && m12 == 0.0) {
-    /* optimize common case of a diagonal matrix: */
-    Vinv->m00 = 1.0 / m00;
-    Vinv->m11 = 1.0 / m11;
-    Vinv->m22 = 1.0 / m22;
-    Vinv->m01 = Vinv->m02 = Vinv->m12 = 0.0;
-  } else {
-    double detinv;
-
-    /* compute the determinant: */
-    detinv = m00 * m11 * m22 - m02 * m11 * m02 + 2.0 * m01 * m12 * m02 - m01 * m01 * m22 -
-             m12 * m12 * m00;
-
-    if (detinv == 0.0) meep::abort("singular 3x3 matrix");
-
-    detinv = 1.0 / detinv;
-
-    Vinv->m00 = detinv * (m11 * m22 - m12 * m12);
-    Vinv->m11 = detinv * (m00 * m22 - m02 * m02);
-    Vinv->m22 = detinv * (m11 * m00 - m01 * m01);
-
-    Vinv->m02 = detinv * (m01 * m12 - m11 * m02);
-    Vinv->m01 = detinv * (m12 * m02 - m01 * m22);
-    Vinv->m12 = detinv * (m01 * m02 - m00 * m12);
-  }
+  Vinv[0 + 3*0] = 1/det * (V[1 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[2 + 3*1]);
+  Vinv[0 + 3*1] = 1/det * (V[0 + 3*2]*V[2 + 3*1] - V[0 + 3*1]*V[2 + 3*2]);
+  Vinv[0 + 3*2] = 1/det * (V[0 + 3*1]*V[1 + 3*2] - V[0 + 3*2]*V[1 + 3*1]);
+  Vinv[1 + 3*0] = 1/det * (V[1 + 3*2]*V[2 + 3*0] - V[1 + 3*0]*V[2 + 3*2]);
+  Vinv[1 + 3*1] = 1/det * (V[0 + 3*0]*V[2 + 3*2] - V[0 + 3*2]*V[2 + 3*0]);
+  Vinv[1 + 3*2] = 1/det * (V[0 + 3*2]*V[1 + 3*0] - V[0 + 3*0]*V[1 + 3*2]);
+  Vinv[2 + 3*0] = 1/det * (V[1 + 3*0]*V[2 + 3*1] - V[1 + 3*1]*V[2 + 3*0]);
+  Vinv[2 + 3*1] = 1/det * (V[0 + 3*1]*V[2 + 3*0] - V[0 + 3*0]*V[2 + 3*1]);
+  Vinv[2 + 3*2] = 1/det * (V[0 + 3*0]*V[1 + 3*1] - V[0 + 3*1]*V[1 + 3*0]);
 }
 
-void structure_chunk::get_chi1inv_tensor(simple_symmetric_matrix *chi1_inv_tensor, component c, direction d, int idx, double omega) const {
+void structure_chunk::get_chi1inv_tensor(double *chi1_inv_tensor, component c, direction d, int idx, double omega) const {
   // ----------------------------------------------------------------- //
   // ---- Step 1: Get instantaneous chi1 tensor ----------------------
   // ----------------------------------------------------------------- //
@@ -276,77 +262,75 @@ void structure_chunk::get_chi1inv_tensor(simple_symmetric_matrix *chi1_inv_tenso
     comp_list[0] = Bx; comp_list[1] = By; comp_list[2] = Bz;
     my_stuff = B_stuff;
   }
-  simple_symmetric_matrix chi1_tensor;
-  // Set up chi1inv 3x3 symmetric matrix
-  chi1_inv_tensor->m00 = chi1inv[comp_list[0]][X] ? chi1inv[comp_list[0]][X][idx] :  1.0;
-  chi1_inv_tensor->m11 = chi1inv[comp_list[1]][Y] ? chi1inv[comp_list[1]][Y][idx] :  1.0;
-  chi1_inv_tensor->m22 = chi1inv[comp_list[2]][Z] ? chi1inv[comp_list[2]][Z][idx] :  1.0;
-  chi1_inv_tensor->m01 = chi1inv[comp_list[0]][Y] ? chi1inv[comp_list[0]][Y][idx] :  0;
-  chi1_inv_tensor->m02 = chi1inv[comp_list[0]][Z] ? chi1inv[comp_list[0]][Z][idx] :  0;
-  chi1_inv_tensor->m12 = chi1inv[comp_list[1]][Z] ? chi1inv[comp_list[1]][Z][idx] :  0;
+  
+  double * chi1_tensor = new double[9];
 
-  sym_matrix_invert(&chi1_tensor, chi1_inv_tensor); // We have the inverse, so let's invert it.
+  // Set up the chi1inv tensor
+  for (int com_it=0; com_it<3;com_it++){
+    for (int dir_int=0;dir_int<3;dir_int++){
+      if (chi1inv[comp_list[com_it]][dir_int] )
+        chi1_inv_tensor[com_it + 3*dir_int] = chi1inv[comp_list[0]][dir_int][idx];
+      else if(dir_int == component_direction(comp_list[com_it]))
+        chi1_inv_tensor[com_it + 3*dir_int] = 1;
+      else
+        chi1_inv_tensor[com_it + 3*dir_int] = 0;
+    }
+  }
+  
+  matrix_invert(chi1_tensor, chi1_inv_tensor); // We have the inverse, so let's invert it.
   
   // ----------------------------------------------------------------- //
   // ---- Step 2: Evaluate susceptibilities of each tensor element ---
   // ----------------------------------------------------------------- //
-  // loop over unique tensor elements
-  double *chi1_elements[6] = {&chi1_tensor.m00,&chi1_tensor.m11,&chi1_tensor.m22,&chi1_tensor.m01,&chi1_tensor.m02,&chi1_tensor.m12};
-  component element_com[6] = {comp_list[0],comp_list[1],comp_list[2],comp_list[0],comp_list[0],comp_list[1]};
-  direction element_dir[6] = {X,Y,Z,Y,Z,Z};
-  for (int el_iter=0; el_iter<6; el_iter++){
-    std::complex<double> eps(*chi1_elements[el_iter],0.0);
-    component cc = element_com[el_iter];
-    direction dd = element_dir[el_iter];
-    // Loop through and add up susceptibility contributions
-    // locate correct susceptibility list
-    susceptibility *my_sus = chiP[my_stuff];
-    while (my_sus) {
-      if (my_sus->sigma[cc][dd]) {
-        double sigma = my_sus->sigma[cc][dd][idx];
-        eps += my_sus->chi1(omega,sigma);
-      } 
-      my_sus = my_sus->next;
-    }
+  // loop over tensor elements
+  for (int com_it=0; com_it<3;com_it++){
+    for (int dir_int=0;dir_int<3;dir_int++){
+      std::complex<double> eps(chi1_tensor[com_it  + 3*dir_int],0.0);
+      component cc = comp_list[com_it];
+      direction dd = (direction)dir_int;
+      // Loop through and add up susceptibility contributions
+      // locate correct susceptibility list
+      susceptibility *my_sus = chiP[my_stuff];
+      while (my_sus) {
+        if (my_sus->sigma[cc][dd]) {
+          double sigma = my_sus->sigma[cc][dd][idx];
+          eps += my_sus->chi1(omega,sigma);
+        } 
+        my_sus = my_sus->next;
+      }
 
-    // Account for conductivity term
-    if (conductivity[cc][dd]) {
-      double conductivityCur = conductivity[cc][dd][idx];
-      eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
-    }
+      // Account for conductivity term
+      if (conductivity[cc][dd]) {
+        double conductivityCur = conductivity[cc][dd][idx];
+        eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
+      }
 
-    // assign to eps tensor
-    if (eps.imag() == 0 )
-      *chi1_elements[el_iter] = eps.real();
-    else
-      *chi1_elements[el_iter] = std::sqrt(eps).real() * std::sqrt(eps).real(); // hack for metals
+      // assign to eps tensor
+      if (eps.imag() == 0 )
+        chi1_tensor[com_it + 3*dir_int] = eps.real();
+      else
+        chi1_tensor[com_it + 3*dir_int] = std::sqrt(eps).real() * std::sqrt(eps).real(); // hack for metals
+    }
   }
 
   // ----------------------------------------------------------------- //
   // ---- Step 3: Invert chi1 matrix to get chi1inv matrix -----------
   // ----------------------------------------------------------------- //
-  sym_matrix_invert(chi1_inv_tensor, &chi1_tensor); // We have the inverse, so let's invert it.
+  matrix_invert(chi1_inv_tensor, chi1_tensor); // We have the inverse, so let's invert it.
+
+  delete[] chi1_tensor;
 }
 
 double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
   double res = 0.0;
   if (is_mine()){
-    simple_symmetric_matrix chi1_inv_tensor;
-    get_chi1inv_tensor(&chi1_inv_tensor, c, d, idx, omega);
-    
-      // Set up chi1 3x3 symmetric matrix, as the inverse
-      double A[3][3];
-      A[0][0] = chi1_inv_tensor.m00;
-      A[1][1] = chi1_inv_tensor.m11;
-      A[2][2] = chi1_inv_tensor.m22;
-      A[0][1] = A[1][0] = chi1_inv_tensor.m01;
-      A[0][2] = A[2][0] = chi1_inv_tensor.m02;
-      A[1][2] = A[2][1] = chi1_inv_tensor.m12;
+    double * chi1_inv_tensor = new double[9];
+    get_chi1inv_tensor(chi1_inv_tensor, c, d, idx, omega);
 
-      // Return the component we care about
-      res = A[component_index(c)][d];
+    // Return the component we care about
+    res = chi1_inv_tensor[component_index(c) + 3*d];
+    delete[] chi1_inv_tensor;
   }
-  //master_printf("res: %g\n",res);
   return res;
 }
 
