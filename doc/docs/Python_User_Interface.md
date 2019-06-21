@@ -178,7 +178,7 @@ Minimum number of "chunks" (subarrays) to divide the structure/fields into (defa
 
 **`split_chunks_evenly` [`boolean`]**
 —
-When `True` (the default), the work per chunk is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of parallel simulations.
+When `True` (the default), the work per [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of parallel simulations.
 
 Predefined Variables
 --------------------
