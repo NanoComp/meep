@@ -134,7 +134,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.call_chi1(LiNbO3,w0)
         self.call_chi1(LiNbO3,w1)
     
-    def test_meep_eigenmode(self):
+    def atest_meep_eigenmode(self):
         # Checks the get_eigenmode features with dispersive materials
         # NOTE: metals are not supported
         from meep.materials import Si, Ag, LiNbO3, Au
@@ -155,7 +155,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         #self.simulate_meep(LiNbO3,w0)
         #self.simulate_meep(LiNbO3,w1)
     
-    def test_get_with_dispersion(self):
+    def atest_get_with_dispersion(self):
         # Checks the get_array_slice and output_fields method
         # with dispersive materials.
 
