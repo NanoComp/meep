@@ -1385,18 +1385,23 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
           : ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
         sus = new meep::gyrotropic_susceptibility(meep::vec(ss->bias.x, ss->bias.y, ss->bias.z),
                                                   ss->frequency, ss->gamma, ss->alpha, model);
+      } else if (ss->iir) {
+        // Initialize IIR filter sus
+        sus = new meep::iir_susceptibility(ss->numS,ss->denS,s->dt);
       } else {
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
       master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
                     noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
                     ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
+                    : ss->iir ? "IIR filter"
                     : ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
       if (noisy) master_printf(", amp=%g ", ss->noise_amp);
       if (gyrotropic) {
         if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
         master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
       }
+      if (ss->iir) master_printf(", numerator=%lu, denominator=%lu", ss->numS.size(), ss->denS.size());
       master_printf("\n");
     }
 

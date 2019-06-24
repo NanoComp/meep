@@ -364,18 +364,15 @@ protected:
    The user provides the numerator and denominator coefficients in the continuous (s)
    domain. One of the conversion routines is used to transform to the discrete (z)
    domain.  */
-/* 
+ 
 class iir_susceptibility : public susceptibility {
 public:
-  double *numz, *denz;
-  int numz_N, denz_N;
+  iir_susceptibility(std::vector<double> numS, std::vector<double> denS, double d);
 
-  iir_susceptibility(double *num, int num_N, double *den, int den_N, double dt);
+  //virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
 
-  virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
-
-  virtual ~iir_susceptibility() {}
-
+  virtual ~iir_susceptibility();
+  
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
@@ -396,16 +393,17 @@ public:
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 4; }
+  
+
+protected:
+double *numS, *denS, *numZ, *denZ, T;
+int N, D, N_z, D_z;
+
 };
-*/
-// generalized method to convert from s domain to z domain.
-void polynomial_transform(double *r, int N, double alpha, double beta, double delta, double gamma);
-
 // tustins method (aka trapezoidal rule) to convert from s domain to z domain.
-void tustins_method(double *num, int num_N, double *den, int den_N, double dt);
-
-// backward difference method used to convert from s domain to z domain.
-void backward_difference(double *num, int num_N, double *den, int den_N, double dt);
+void tustins_method(double* vec_numS, int N, double* vec_denS, int D, double* vec_numZ, int N_z, double* vec_denZ, int D_z, double T);
+double factorial(int i);
+double comb(int n, int k);
 
 class grace;
 
