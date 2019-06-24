@@ -245,90 +245,88 @@ void matrix_invert(std::vector<double> &Vinv, std::vector<double> &V) {
   Vinv[2 + 3*2] = 1/det * (V[0 + 3*0]*V[1 + 3*1] - V[0 + 3*1]*V[1 + 3*0]);
 }
 
-double structure_chunk::get_chi1inv_tensor(std::vector<double> &chi1_inv_tensor, component c, direction d, int idx, double omega) const {
-  // ----------------------------------------------------------------- //
-  // ---- Step 1: Get instantaneous chi1 tensor ----------------------
-  // ----------------------------------------------------------------- //
-  int my_stuff = E_stuff;
-  component comp_list[3];
-  if (is_electric(c)) {
-    comp_list[0] = Ex; comp_list[1] = Ey; comp_list[2] = Ez;
-    my_stuff = E_stuff;
-  }else if (is_magnetic(c)) {
-    comp_list[0] = Hx; comp_list[1] = Hy; comp_list[2] = Hz;
-    my_stuff = H_stuff;
-  } else if (is_D(c)) {
-    comp_list[0] = Dx; comp_list[1] = Dy; comp_list[2] = Dz;
-    my_stuff = D_stuff;
-  } else if (is_B(c)) {
-    comp_list[0] = Bx; comp_list[1] = By; comp_list[2] = Bz;
-    my_stuff = B_stuff;
-  }
-  
-  std::vector<double> chi1_tensor(9,0);
-
-  // Set up the chi1inv tensor
-  for (int com_it=0; com_it<3;com_it++){
-    for (int dir_int=0;dir_int<3;dir_int++){
-      if (chi1inv[comp_list[com_it]][dir_int] )
-        chi1_inv_tensor[com_it + 3*dir_int] = chi1inv[comp_list[com_it]][dir_int][idx];
-      else if(dir_int == component_direction(comp_list[com_it]))
-        chi1_inv_tensor[com_it + 3*dir_int] = 1;
-      else
-        chi1_inv_tensor[com_it + 3*dir_int] = 0;
-    }
-  }
-  
-  
-  matrix_invert(chi1_tensor, chi1_inv_tensor); // We have the inverse, so let's invert it.
-  
-  // ----------------------------------------------------------------- //
-  // ---- Step 2: Evaluate susceptibilities of each tensor element ---
-  // ----------------------------------------------------------------- //
-  // loop over tensor elements
-  for (int com_it=0; com_it<3;com_it++){
-    for (int dir_int=0;dir_int<3;dir_int++){
-      std::complex<double> eps(chi1_tensor[com_it  + 3*dir_int],0.0);
-      component cc = comp_list[com_it];
-      direction dd = (direction)dir_int;
-      // Loop through and add up susceptibility contributions
-      // locate correct susceptibility list
-      susceptibility *my_sus = chiP[my_stuff];
-      while (my_sus) {
-        if (my_sus->sigma[cc][dd]) {
-          double sigma = my_sus->sigma[cc][dd][idx];
-          eps += my_sus->chi1(omega,sigma);
-        } 
-        my_sus = my_sus->next;
-      }
-
-      // Account for conductivity term
-      if (conductivity[cc][dd]) {
-        double conductivityCur = conductivity[cc][dd][idx];
-        eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
-      }
-
-      // assign to eps tensor
-      if (eps.imag() == 0 )
-        chi1_tensor[com_it + 3*dir_int] = eps.real();
-      else
-        chi1_tensor[com_it + 3*dir_int] = std::sqrt(eps).real() * std::sqrt(eps).real(); // hack for metals
-    }
-  }
-
-  // ----------------------------------------------------------------- //
-  // ---- Step 3: Invert chi1 matrix to get chi1inv matrix -----------
-  // ----------------------------------------------------------------- //
-  matrix_invert(chi1_inv_tensor, chi1_tensor); // We have the inverse, so let's invert it.
-
-  return chi1_inv_tensor[component_index(c) + 3*d];
-}
-
 double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
   double res = 0.0;
   if (is_mine()){
+    // ----------------------------------------------------------------- //
+    // ---- Step 1: Get instantaneous chi1 tensor ----------------------
+    // ----------------------------------------------------------------- //
+    
+    int my_stuff = E_stuff;
+    component comp_list[3];
+    if (is_electric(c)) {
+      comp_list[0] = Ex; comp_list[1] = Ey; comp_list[2] = Ez;
+      my_stuff = E_stuff;
+    }else if (is_magnetic(c)) {
+      comp_list[0] = Hx; comp_list[1] = Hy; comp_list[2] = Hz;
+      my_stuff = H_stuff;
+    } else if (is_D(c)) {
+      comp_list[0] = Dx; comp_list[1] = Dy; comp_list[2] = Dz;
+      my_stuff = D_stuff;
+    } else if (is_B(c)) {
+      comp_list[0] = Bx; comp_list[1] = By; comp_list[2] = Bz;
+      my_stuff = B_stuff;
+    }
+
     std::vector<double> chi1_inv_tensor(9,0);
-    res = get_chi1inv_tensor(chi1_inv_tensor, c, d, idx, omega);
+    std::vector<double> chi1_tensor(9,0);
+
+    // Set up the chi1inv tensor
+    for (int com_it=0; com_it<3;com_it++){
+      for (int dir_int=0;dir_int<3;dir_int++){
+        if (chi1inv[comp_list[com_it]][dir_int] )
+          chi1_inv_tensor[com_it + 3*dir_int] = chi1inv[comp_list[com_it]][dir_int][idx];
+        else if(dir_int == component_direction(comp_list[com_it]))
+          chi1_inv_tensor[com_it + 3*dir_int] = 1;
+        else
+          chi1_inv_tensor[com_it + 3*dir_int] = 0;
+      }
+    }
+    
+    
+    matrix_invert(chi1_tensor, chi1_inv_tensor); // We have the inverse, so let's invert it.
+    
+    // ----------------------------------------------------------------- //
+    // ---- Step 2: Evaluate susceptibilities of each tensor element ---
+    // ----------------------------------------------------------------- //
+    
+    // loop over tensor elements
+    for (int com_it=0; com_it<3;com_it++){
+      for (int dir_int=0;dir_int<3;dir_int++){
+        std::complex<double> eps(chi1_tensor[com_it  + 3*dir_int],0.0);
+        component cc = comp_list[com_it];
+        direction dd = (direction)dir_int;
+        // Loop through and add up susceptibility contributions
+        // locate correct susceptibility list
+        susceptibility *my_sus = chiP[my_stuff];
+        while (my_sus) {
+          if (my_sus->sigma[cc][dd]) {
+            double sigma = my_sus->sigma[cc][dd][idx];
+            eps += my_sus->chi1(omega,sigma);
+          } 
+          my_sus = my_sus->next;
+        }
+
+        // Account for conductivity term
+        if (conductivity[cc][dd]) {
+          double conductivityCur = conductivity[cc][dd][idx];
+          eps = std::complex<double>(1.0, (conductivityCur/omega)) * eps;
+        }
+
+        // assign to eps tensor
+        if (eps.imag() == 0 )
+          chi1_tensor[com_it + 3*dir_int] = eps.real();
+        else
+          chi1_tensor[com_it + 3*dir_int] = std::sqrt(eps).real() * std::sqrt(eps).real(); // hack for metals
+      }
+    }
+
+    // ----------------------------------------------------------------- //
+    // ---- Step 3: Invert chi1 matrix to get chi1inv matrix -----------
+    // ----------------------------------------------------------------- //
+    
+    matrix_invert(chi1_inv_tensor, chi1_tensor); // We have the inverse, so let's invert it.
+    res = chi1_inv_tensor[component_index(c) + 3*d];
   }
   return res;
 }

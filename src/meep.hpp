@@ -605,7 +605,6 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  double get_chi1inv_tensor(std::vector<double> &chi1_inv_tensor, component c, direction d, int idx, double omega) const;
   double get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
   double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
   double get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {
