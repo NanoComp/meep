@@ -2,7 +2,7 @@
 # FAQ
 ---
 
-The following are frequently asked questions grouped by categories.
+The following are frequently asked questions grouped into ten categories: [General](#general), [Installation](#installation), [Physics](#physics), [Sources](#usage-sources), [Fields](#usage-fields), [Materials](#usage-materials), [Structures](#usage-structures), [Subpixel Averaging](#usage-subpixel-averaging), [Performance](#usage-performance), and [Other](#usage-other).
 
 [TOC]
 
@@ -50,11 +50,11 @@ Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, 
 
 ### Can I install Meep on Windows machines?
 
-Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). Support for visualization is enabled using a browser-based [Jupyter notebook](https://jupyter.org/) which can also be installed via the Ubuntu terminal. For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app which is based on the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) (recommended) or [building from source](Build_From_Source.md#building-from-source). Support for visualization is enabled using a browser-based [Jupyter notebook](https://jupyter.org/) which can also be installed via the Ubuntu terminal. For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 ### Are there precompiled binary packages for Ubuntu?
 
-Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases) (March 2015) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
+Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
 
 ### Guile is installed, but configure complains that it can't find `guile`
 
@@ -195,7 +195,7 @@ Usage: Fields
 
 Instability in the fields is likely due to one of five causes: (1) [PML](Python_User_Interface.md#pml) overlapping dispersive materials based on a [Drude-Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility) in the presence of [backward-wave modes](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.79.065601) (fix: replace the PML with an [Absorber](Python_User_Interface.md#absorber)), (2) the frequency of a Lorentzian susceptibility term is *too high* relative to the grid discretization (fix: increase the `resolution` and/or reduce the `Courant` factor), (3) a material with a [wavelength-independent negative real permittivity](#why-does-my-simulation-diverge-if-0) (fix: [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)), (4) a grid voxel contains *more than one* dielectric interface (fix: turn off subpixel averaging), or (5) a material with a *wavelength-independent* refractive index between 0 and 1 (fix: reduce the `Courant` factor; alternatively, [fit the permittivity to a broadband Drude-Lorentzian susceptibility](#how-do-i-import-n-and-k-values-into-meep)).
 
-Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling).
+Note: when the fields blow up, the CPU *slows down* due to [floating-point exceptions in IEEE 754](https://en.wikipedia.org/wiki/IEEE_754#Exception_handling). Also, Meep automatically checks the fields at the cell origin after every timestep and [aborts the simulation if the electric energy density has diverged](https://github.com/NanoComp/meep/blob/master/src/step.cpp#L97-L98).
 
 ### How do I compute the steady-state fields?
 
@@ -306,7 +306,7 @@ Yes. A materials library is available containing [crystalline silicon](https://e
 
 ### Does Meep support gyrotropic materials?
 
-No. Currently, Meep only supports anisotropic, real-symmetric, permittivity tensors. In the [magneto-optic effect](https://en.wikipedia.org/wiki/Magneto-optic_effect), an external magnetic field yields imaginary off-diagonal components of ε (with no absorption) which is not yet supported (issue [#60](https://github.com/NanoComp/meep/issues/60)).
+Yes. Meep supports [gyrotropic media](Materials.md#gyrotropic-media) which involve tensor ε (or μ) with imaginary off-diagonal components and no absorption due to an [external magnetic field](https://en.wikipedia.org/wiki/Magneto-optic_effect).
 
 ### When outputting the permittivity function to a file, I don't see any dispersive materials
 
@@ -334,7 +334,7 @@ Yes. The [`get_GDSII_prisms`](Python_User_Interface.md#gdsii-support) routine is
 
 ### Can Meep simulate time-varying structures?
 
-Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry` in C++, or `simulation.set_materials` in Python. However, this is potentially quite slow. One alternative is a function [`field::phase_in_material`](Python_User_Interface.md#field-computations) that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; we hope to have a more general version of this functionality in the future (issue [#207](https://github.com/NanoComp/meep/issues/207)).
+Yes. The most general method is to re-initialize the material at every timestep by calling `field::set_materials` or `set_materials_from_geometry` in C++, or `simulation.set_materials` in Python. However, this is potentially quite slow. One alternative is a function [`field::phase_in_material`](Python_User_Interface.md#field-computations) that allows you to linearly interpolate between two precomputed structures, gradually transitioning over a given time period; a more general version of this functionality may be enabled in the future (Issue [#207](https://github.com/NanoComp/meep/issues/207)).
 
 Usage: Subpixel Averaging
 -------------------------
@@ -418,7 +418,7 @@ At least 8 pixels per wavelength in the lossless dielectric material with the hi
 
 ### What is a good rule of thumb for the PML thickness?
 
-We typically use a PML thickness around half the wavelength. (Note that the boundary condition, metallic or periodic, is essentially irrelevant to the operation of the PML.) PML allows inhomogeneous materials like waveguides as long as the materials are only varying in the boundary-*parallel* directions; wave media that are inhomogeneous in the boundary-normal directions (e.g., gratings or other periodic structures, oblique waveguides, etc.) as well as unusual waveguides with backward-wave modes cause PML to break down, in which case one alternative is a thicker non-PML [absorber](Python_User_Interface.md#absorber) as described in [Perfectly Matched Layers](Perfectly_Matched_Layer.md).
+Around half the wavelength, typically. (Note that the boundary condition, metallic or periodic, is essentially irrelevant to the operation of the PML.) PML allows inhomogeneous materials like waveguides as long as the materials are only varying in the boundary-*parallel* directions; wave media that are inhomogeneous in the boundary-normal directions (e.g., gratings or other periodic structures, oblique waveguides, etc.) as well as unusual waveguides with backward-wave modes cause PML to break down, in which case one alternative is a thicker non-PML [absorber](Python_User_Interface.md#absorber) as described in [Perfectly Matched Layers](Perfectly_Matched_Layer.md).
 
 ### What is Meep's frequency-domain solver and how does it work?
 

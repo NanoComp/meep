@@ -34,6 +34,8 @@ mpirun -np 4 meep foo.ctl > foo.out
 
 There is one important requirement: every MPI process must be able to read the `foo.py`/`foo.ctl` input file or whatever your script file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something.
 
+For a potential improvement in load balancing, you can try setting [`split_chunks_evenly=False`](Python_User_Interface.md#the-simulation-class) in the `Simulation` constructor.
+
 In general, you cannot run Meep interactively on multiple processors.
 
 ### Different Forms of Parallelization

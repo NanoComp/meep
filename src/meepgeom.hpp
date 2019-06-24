@@ -99,6 +99,12 @@ struct fragment_stats {
 
   fragment_stats() {}
   fragment_stats(geom_box &bx);
+
+  void compute();
+  double cost() const;
+  void print_stats() const;
+
+private:
   void update_stats_from_material(material_type mat, size_t pixels);
   void compute_stats();
   void count_anisotropic_pixels(medium_struct *med, size_t pixels);
@@ -108,9 +114,6 @@ struct fragment_stats {
   void compute_dft_stats();
   void compute_pml_stats();
   void compute_absorber_stats();
-  void compute();
-  double cost() const;
-  void print_stats() const;
 };
 
 fragment_stats
