@@ -253,12 +253,12 @@ class Medium(object):
                 self.transform(Matrix(
                     Vector3(np.cos(rot.y),0,-np.sin(rot.y)),
                     Vector3(0,1,0),
-                    Vector3(np.sin(rot.y),0,np.cos(np.y))
+                    Vector3(np.sin(rot.y),0,np.cos(rot.y))
                     ))
             else:
                 self.transform(Matrix(
                     Vector3(np.cos(rot.z),np.sin(rot.z),0),
-                    Vector3(-np.sin(np.z),np.cos(rot.z),0),
+                    Vector3(-np.sin(rot.z),np.cos(rot.z),0),
                     Vector3(0,0,1)
                     ))
     
