@@ -42,7 +42,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
         sim = mp.Simulation(cell_size=mp.Vector3(1,1,1),
                             default_material=material,
-                            resolution=1
+                            resolution=10
                             )
 
         band_num = 1

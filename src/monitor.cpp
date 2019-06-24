@@ -226,11 +226,13 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, dou
 }
 
 /* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
-void matrix_invert(double *Vinv, double *V) {
+void matrix_invert(std::vector<double> &Vinv, std::vector<double> &V) {
   
   double det = (V[0 +3*0] * (V[1 + 3*1]*V[2 +3*2] - V[1 + 3*2]*V[2 +3*1]) - 
   V[0 + 3*1] * (V[0 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[0 + 3*2]) + 
   V[0 + 3*2] * (V[0 + 3*1]*V[1 + 3*2] - V[1 + 3*1]*V[0 + 3*2]));
+
+  if (det == 0) abort("meep: Matrix is singular, aborting.\n");
 
   Vinv[0 + 3*0] = 1/det * (V[1 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[2 + 3*1]);
   Vinv[0 + 3*1] = 1/det * (V[0 + 3*2]*V[2 + 3*1] - V[0 + 3*1]*V[2 + 3*2]);
@@ -243,7 +245,7 @@ void matrix_invert(double *Vinv, double *V) {
   Vinv[2 + 3*2] = 1/det * (V[0 + 3*0]*V[1 + 3*1] - V[0 + 3*1]*V[1 + 3*0]);
 }
 
-void structure_chunk::get_chi1inv_tensor(double *chi1_inv_tensor, component c, direction d, int idx, double omega) const {
+double structure_chunk::get_chi1inv_tensor(std::vector<double> &chi1_inv_tensor, component c, direction d, int idx, double omega) const {
   // ----------------------------------------------------------------- //
   // ---- Step 1: Get instantaneous chi1 tensor ----------------------
   // ----------------------------------------------------------------- //
@@ -263,19 +265,20 @@ void structure_chunk::get_chi1inv_tensor(double *chi1_inv_tensor, component c, d
     my_stuff = B_stuff;
   }
   
-  double * chi1_tensor = new double[9];
+  std::vector<double> chi1_tensor(9,0);
 
   // Set up the chi1inv tensor
   for (int com_it=0; com_it<3;com_it++){
     for (int dir_int=0;dir_int<3;dir_int++){
       if (chi1inv[comp_list[com_it]][dir_int] )
-        chi1_inv_tensor[com_it + 3*dir_int] = chi1inv[comp_list[0]][dir_int][idx];
+        chi1_inv_tensor[com_it + 3*dir_int] = chi1inv[comp_list[com_it]][dir_int][idx];
       else if(dir_int == component_direction(comp_list[com_it]))
         chi1_inv_tensor[com_it + 3*dir_int] = 1;
       else
         chi1_inv_tensor[com_it + 3*dir_int] = 0;
     }
   }
+  
   
   matrix_invert(chi1_tensor, chi1_inv_tensor); // We have the inverse, so let's invert it.
   
@@ -318,18 +321,14 @@ void structure_chunk::get_chi1inv_tensor(double *chi1_inv_tensor, component c, d
   // ----------------------------------------------------------------- //
   matrix_invert(chi1_inv_tensor, chi1_tensor); // We have the inverse, so let's invert it.
 
-  delete[] chi1_tensor;
+  return chi1_inv_tensor[component_index(c) + 3*d];
 }
 
 double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
   double res = 0.0;
   if (is_mine()){
-    double * chi1_inv_tensor = new double[9];
-    get_chi1inv_tensor(chi1_inv_tensor, c, d, idx, omega);
-
-    // Return the component we care about
-    res = chi1_inv_tensor[component_index(c) + 3*d];
-    delete[] chi1_inv_tensor;
+    std::vector<double> chi1_inv_tensor(9,0);
+    res = get_chi1inv_tensor(chi1_inv_tensor, c, d, idx, omega);
   }
   return res;
 }

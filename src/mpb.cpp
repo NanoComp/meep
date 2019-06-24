@@ -53,6 +53,7 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
                             : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
   const fields *f = eps_data->f;
+
   eps_inv->m00 = f->get_chi1inv(Ex, X, p, omega);
   eps_inv->m11 = f->get_chi1inv(Ey, Y, p, omega);
   eps_inv->m22 = f->get_chi1inv(Ez, Z, p, omega);
