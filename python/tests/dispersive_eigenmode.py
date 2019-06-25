@@ -59,6 +59,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         filename = 'dispersive_eigenmode-eps-000000.00.h5'
         mp.output_epsilon(sim,omega=omega)
         n_h5 = 0
+        mp.all_wait()
         with h5py.File(filename, 'r') as f:
             n_h5 = np.sqrt(np.mean(f['eps'][()]))
         self.assertAlmostEqual(n,n_h5, places=4)
