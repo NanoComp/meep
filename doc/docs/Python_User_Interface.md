@@ -282,11 +282,11 @@ The frequency-independent magnetic conductivity $\sigma_B$. Default is 0. You ca
 
 **`chi2` [`number`]**
 —
-The nonlinear (Pockels) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear ([Pockels](https://en.wikipedia.org/wiki/Pockels_effect)) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`chi3` [`number`]**
 —
-The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear ([Kerr](https://en.wikipedia.org/wiki/Kerr_effect)) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`E_susceptibilities` [ list of `Susceptibility` class ]**
 —
@@ -807,7 +807,7 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
 —
-By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the specific **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the specific **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave), $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]**
 —
@@ -837,7 +837,7 @@ Eigenmode sources are normalized so that in the case of a time-harmonic simulati
 
 + For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver) involving a `ContinuousSrc` time dependence, the time-average power of the fields is 1.
 
-+ For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the Poynting flux and energy density are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
++ For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the [Poynting flux](#flux-spectra) and [energy density](#energy-density-spectra) are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
 
 In either case, the `eig_power` class method returns the total power at frequency `f`. However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not* include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier transform of your source function $W(t)$. You will have to multiply by this yourself if you need it.
 

@@ -6,7 +6,7 @@
 ![](images/Yee-cube.png)
 </center>
 
-In order to discretize Maxwell's equations with second-order accuracy for homogeneous regions where there are no discontinuous material boundaries, FDTD methods *store different field components for different grid locations*. This discretization is known as a **Yee lattice**.
+In order to discretize Maxwell's equations with [second-order accuracy](https://en.wikipedia.org/wiki/Finite_difference_method#Accuracy_and_order) for homogeneous regions where there are no discontinuous material boundaries, FDTD methods *store different field components for different grid locations*. This discretization is known as a **Yee lattice**.
 
 The form of the Yee lattice in 3d is shown in the schematic above for a single cubic grid voxel with dimensions $\Delta x \times \Delta x \times \Delta x$. The three components of **E** are stored on the *edges* of the cube in the corresponding directions, while the components of **H** are stored on the cube *faces*.
 
