@@ -59,7 +59,7 @@ const double nan = -7.0415659787563146e103; // ideally, a value never encountere
 class h5file;
 
 // Defined in monitor.cpp
-void matrix_invert(std::vector<double> &Vinv, std::vector<double> &V);
+void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]);
 
 double pml_quadratic_profile(double, void *);
 

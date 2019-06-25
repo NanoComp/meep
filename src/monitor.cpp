@@ -225,29 +225,31 @@ double structure::get_chi1inv(component c, direction d, const ivec &origloc, dou
   return 0.0;
 }
 
-/* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
-void matrix_invert(std::vector<double> &Vinv, std::vector<double> &V) {
+/* Set Vinv = inverse of V, where both V and Vinv are complex matrices.*/
+void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]) {
   
-  double det = (V[0 +3*0] * (V[1 + 3*1]*V[2 +3*2] - V[1 + 3*2]*V[2 +3*1]) - 
+  std::complex<double> det = (V[0 +3*0] * (V[1 + 3*1]*V[2 +3*2] - V[1 + 3*2]*V[2 +3*1]) - 
   V[0 + 3*1] * (V[0 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[0 + 3*2]) + 
   V[0 + 3*2] * (V[0 + 3*1]*V[1 + 3*2] - V[1 + 3*1]*V[0 + 3*2]));
 
-  if (det == 0) abort("meep: Matrix is singular, aborting.\n");
+  if (det.real() == 0 && det.imag() == 0) abort("meep: Matrix is singular, aborting.\n");
 
-  Vinv[0 + 3*0] = 1/det * (V[1 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[2 + 3*1]);
-  Vinv[0 + 3*1] = 1/det * (V[0 + 3*2]*V[2 + 3*1] - V[0 + 3*1]*V[2 + 3*2]);
-  Vinv[0 + 3*2] = 1/det * (V[0 + 3*1]*V[1 + 3*2] - V[0 + 3*2]*V[1 + 3*1]);
-  Vinv[1 + 3*0] = 1/det * (V[1 + 3*2]*V[2 + 3*0] - V[1 + 3*0]*V[2 + 3*2]);
-  Vinv[1 + 3*1] = 1/det * (V[0 + 3*0]*V[2 + 3*2] - V[0 + 3*2]*V[2 + 3*0]);
-  Vinv[1 + 3*2] = 1/det * (V[0 + 3*2]*V[1 + 3*0] - V[0 + 3*0]*V[1 + 3*2]);
-  Vinv[2 + 3*0] = 1/det * (V[1 + 3*0]*V[2 + 3*1] - V[1 + 3*1]*V[2 + 3*0]);
-  Vinv[2 + 3*1] = 1/det * (V[0 + 3*1]*V[2 + 3*0] - V[0 + 3*0]*V[2 + 3*1]);
-  Vinv[2 + 3*2] = 1/det * (V[0 + 3*0]*V[1 + 3*1] - V[0 + 3*1]*V[1 + 3*0]);
+  Vinv[0 + 3*0] = 1.0/det * (V[1 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[2 + 3*1]);
+  Vinv[0 + 3*1] = 1.0/det * (V[0 + 3*2]*V[2 + 3*1] - V[0 + 3*1]*V[2 + 3*2]);
+  Vinv[0 + 3*2] = 1.0/det * (V[0 + 3*1]*V[1 + 3*2] - V[0 + 3*2]*V[1 + 3*1]);
+  Vinv[1 + 3*0] = 1.0/det * (V[1 + 3*2]*V[2 + 3*0] - V[1 + 3*0]*V[2 + 3*2]);
+  Vinv[1 + 3*1] = 1.0/det * (V[0 + 3*0]*V[2 + 3*2] - V[0 + 3*2]*V[2 + 3*0]);
+  Vinv[1 + 3*2] = 1.0/det * (V[0 + 3*2]*V[1 + 3*0] - V[0 + 3*0]*V[1 + 3*2]);
+  Vinv[2 + 3*0] = 1.0/det * (V[1 + 3*0]*V[2 + 3*1] - V[1 + 3*1]*V[2 + 3*0]);
+  Vinv[2 + 3*1] = 1.0/det * (V[0 + 3*1]*V[2 + 3*0] - V[0 + 3*0]*V[2 + 3*1]);
+  Vinv[2 + 3*2] = 1.0/det * (V[0 + 3*0]*V[1 + 3*1] - V[0 + 3*1]*V[1 + 3*0]);
 }
 
 double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
   double res = 0.0;
   if (is_mine()){
+    if (omega == 0)
+      return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0); 
     // ----------------------------------------------------------------- //
     // ---- Step 1: Get instantaneous chi1 tensor ----------------------
     // ----------------------------------------------------------------- //
@@ -268,21 +270,22 @@ double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, dou
       my_stuff = B_stuff;
     }
 
-    std::vector<double> chi1_inv_tensor(9,0);
-    std::vector<double> chi1_tensor(9,0);
+    std::complex<double> chi1_inv_tensor[9] = {std::complex<double>(1, 0),std::complex<double>(0, 0),std::complex<double>(0, 0),
+                                            std::complex<double>(0, 0),std::complex<double>(1, 0),std::complex<double>(0, 0),
+                                            std::complex<double>(0, 0),std::complex<double>(0, 0),std::complex<double>(1, 0)
+                                            };
+    std::complex<double> chi1_tensor[9] = {std::complex<double>(1, 0),std::complex<double>(0, 0),std::complex<double>(0, 0),
+                                        std::complex<double>(0, 0),std::complex<double>(1, 0),std::complex<double>(0, 0),
+                                        std::complex<double>(0, 0),std::complex<double>(0, 0),std::complex<double>(1, 0)
+                                            };
 
-    // Set up the chi1inv tensor
+    // Set up the chi1inv tensor with the DC components
     for (int com_it=0; com_it<3;com_it++){
       for (int dir_int=0;dir_int<3;dir_int++){
         if (chi1inv[comp_list[com_it]][dir_int] )
           chi1_inv_tensor[com_it + 3*dir_int] = chi1inv[comp_list[com_it]][dir_int][idx];
-        else if(dir_int == component_direction(comp_list[com_it]))
-          chi1_inv_tensor[com_it + 3*dir_int] = 1;
-        else
-          chi1_inv_tensor[com_it + 3*dir_int] = 0;
       }
     }
-    
     
     matrix_invert(chi1_tensor, chi1_inv_tensor); // We have the inverse, so let's invert it.
     
@@ -293,7 +296,7 @@ double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, dou
     // loop over tensor elements
     for (int com_it=0; com_it<3;com_it++){
       for (int dir_int=0;dir_int<3;dir_int++){
-        std::complex<double> eps(chi1_tensor[com_it  + 3*dir_int],0.0);
+        std::complex<double> eps = chi1_tensor[com_it  + 3*dir_int];
         component cc = comp_list[com_it];
         direction dd = (direction)dir_int;
         // Loop through and add up susceptibility contributions
@@ -326,7 +329,7 @@ double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, dou
     // ----------------------------------------------------------------- //
     
     matrix_invert(chi1_inv_tensor, chi1_tensor); // We have the inverse, so let's invert it.
-    res = chi1_inv_tensor[component_index(c) + 3*d];
+    res = chi1_inv_tensor[component_index(c) + 3*d].real();
   }
   return res;
 }
