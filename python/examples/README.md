@@ -26,6 +26,8 @@ GitHub is able to render some of the smaller notebooks as plain text. However, t
 
 Below are summaries for each tutorial, along with the features the tutorials highlight. While there is no particular order to the tutorials, they progressively incorporate more complicated features.
 
+#### Basics 
+
 1. __`straight-waveguide.ipynb`__ -
 A simple 2D straight waveguide tutorial that explores basic meep features like `geometry`, `sources`, and `PML` layers. The tutorial also explores basic visualization and animation features.
 
@@ -40,3 +42,31 @@ Computes the resonant mode frequencies of a 2D ring resonator using `harminv`.
 
 5. __`visualization.ipynb`__ -
 Demonstrates various visualization and animation features.
+
+##### Ring Resonator in Cylindrical Coordinates
+
+##### Band Diagram, Resonant Modes, and Transmission of a Waveguide Cavity
+
+##### Material Dispersion
+
+##### Third Harmonic Generation
+
+##### Near to Far Field Spectra
+
+##### Local Density of States
+
+##### Optical Forces
+
+##### Gyrotropic Media
+
+##### Multilevel-Atomic Susceptibility
+
+##### Frequency Domain Solver
+
+##### Eigenmode Source
+
+##### Mode Decomposition
+
+##### GDSII Import
+
+##### Adjoint Solver
