@@ -204,12 +204,13 @@ void iir_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           }
         } else { // isotropic
           LOOP_OVER_VOL_OWNED(gv, c, i) {
-            realnum pcur = p[i];
+            realnum pcur = data->p[i];
             // Assign current polarization by looping through first 
-            // the numerator coefficients and then the denominator
-            // coefficients.
+            // the numerator coefficients...
             data->p[i] = numZ[0] * W[c2][cmp][i];
             for (int num_c=0; num_c<N_z-1; num_c++) data->p[i] += numZ[num_c+1] * data->W_prev[num_c];
+            //... and now throught the denominator coefficients.
+            data->p[i] = denZ[0] * 
             for (int num_c=0; num_c<N_z-1; num_c++) data->p[i] += numZ[num_c+1] * data->W_prev[num_c];
 
             // shift the W field
