@@ -155,7 +155,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         #self.simulate_meep(LiNbO3,w0)
         #self.simulate_meep(LiNbO3,w1)
     
-    def atest_get_with_dispersion(self):
+    def test_get_with_dispersion(self):
         # Checks the get_array_slice and output_fields method
         # with dispersive materials.
 
