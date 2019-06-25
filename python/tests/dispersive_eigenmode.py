@@ -57,10 +57,10 @@ class TestDispersiveEigenmode(unittest.TestCase):
 
         # Check to make sure h5 output is working with omega
         # NOTE: We'll add this test once h5 support is added
-        filename = 'dispersive_eigenmode-eps-000000.00.h5'
-        mp.output_epsilon(sim,omega=omega)
-        n_h5 = np.sqrt(np.mean(h5py.File(filename, 'r')['eps']))
-        self.assertAlmostEqual(n,n_h5, places=4)
+        #filename = 'dispersive_eigenmode-eps-000000.00.h5'
+        #mp.output_epsilon(sim,omega=omega)
+        #n_h5 = np.sqrt(np.mean(h5py.File(filename, 'r')['eps']))
+        #self.assertAlmostEqual(n,n_h5, places=4)
     
     # ----------------------------------------- #
     # ----------- Test Routines --------------- #
