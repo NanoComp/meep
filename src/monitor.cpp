@@ -232,7 +232,7 @@ void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]
   V[0 + 3*1] * (V[0 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[0 + 3*2]) + 
   V[0 + 3*2] * (V[0 + 3*1]*V[1 + 3*2] - V[1 + 3*1]*V[0 + 3*2]));
 
-  if (det.real() == 0 && det.imag() == 0) abort("meep: Matrix is singular, aborting.\n");
+  if (det == 0.0) abort("meep: Matrix is singular, aborting.\n");
 
   Vinv[0 + 3*0] = 1.0/det * (V[1 + 3*1]*V[2 + 3*2] - V[1 + 3*2]*V[2 + 3*1]);
   Vinv[0 + 3*1] = 1.0/det * (V[0 + 3*2]*V[2 + 3*1] - V[0 + 3*1]*V[2 + 3*2]);
