@@ -483,10 +483,10 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
     if ax:
         field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
         if mp.am_master():
-            ax.imshow(np.rot90(fields), extent=extent, **field_parameters)
+            ax.imshow(np.rot90(np.real(fields)), extent=extent, **field_parameters)
         return ax
     else:
-        return np.rot90(fields)
+        return np.rot90(np.real(fields))
     return ax
 
 def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,

@@ -28,45 +28,68 @@ Below are summaries for each tutorial, along with the features the tutorials hig
 
 #### Basics 
 
-1. __`straight-waveguide.ipynb`__ -
+* __`straight-waveguide.ipynb`__ -
 A simple 2D straight waveguide tutorial that explores basic meep features like `geometry`, `sources`, and `PML` layers. The tutorial also explores basic visualization and animation features.
 
-2. __`bent-waveguide.ipynb`__-
+* __`bent-waveguide.ipynb`__-
 A followup to the 2D straight waveguide tutorial by adding a bend.
 
-3. __`bend-flux.ipynb`__-
+* __`bend-flux.ipynb`__-
 Using the previous bent waveguide example, this tutorial calculates the loss, transmission, and reflection that the bent waveguide undergoes.
 
-4. __`ring.ipynb`__ -
+* __`ring.ipynb`__ -
 Computes the resonant mode frequencies of a 2D ring resonator using `harminv`.
 
-5. __`visualization.ipynb`__ -
-Demonstrates various visualization and animation features.
+#### Ring Resonator in Cylindrical Coordinates
 
-##### Ring Resonator in Cylindrical Coordinates
+#### Band Diagram, Resonant Modes, and Transmission of a Waveguide Cavity
 
-##### Band Diagram, Resonant Modes, and Transmission of a Waveguide Cavity
+* __`holey-wg-cavity.ipynb`__ -
+Calculates the transmission and resonant modes of a waveguide photonic crystal cavity. Demonstrates the `harminv` routines and how to estimate the $Q$ of cavities.
 
-##### Material Dispersion
+* __`holey-wg-bands.ipynb`__ - 
+Computes the band diagram of the infinite periodic waveguide by itself with no defects in the time domain. Explores the `k_point`, `run_k_point`, and periodic boundary conditions features.
 
-##### Third Harmonic Generation
+#### MPB and Band diagrams
 
-##### Near to Far Field Spectra
+#### Material Dispersion
 
-##### Local Density of States
+* __`refl-quartz.ipynb`__ -
 
-##### Optical Forces
+#### Nonlinear Optics
 
-##### Gyrotropic Media
+* __`3rd-harm-1d.ipynb`__ - 
+Examines 3rd harmonic generation in a $\chi^{(3)}$ material. Explores the proper way to do 1d simulations, how to include nonlinearities in materials, and compares experimental results to theory.
 
-##### Multilevel-Atomic Susceptibility
+#### Near to Far Field Spectra
 
-##### Frequency Domain Solver
+We demonstrate Meep's near-to-far field transformation feature using four different examples. There are three steps involved in this type of calculation. First, we need to define the "near" surface(s) as a set of surfaces capturing all outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, a CW source via the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
-##### Eigenmode Source
+* __`antenna-radiation.ipynb`__ - 
+Computes the radiation pattern of a simple point source "antenna". Explores `add_near2far`, `add_flux`, `get_fluxes`, and `get_farfield` features.
 
-##### Mode Decomposition
+* __`metasurface_lens.ipynb`__ -
 
-##### GDSII Import
+* __`binary_grating_n2f.ipynb`__ -
 
-##### Adjoint Solver
+* __`cavity-farfield.ipynb`__ -
+
+#### Local Density of States
+
+#### Optical Forces
+
+#### Gyrotropic Media
+
+#### Multilevel-Atomic Susceptibility
+
+#### Frequency Domain Solver
+
+* __`solve-cw.ipynb`__ -
+
+#### Eigenmode Source
+
+#### Mode Decomposition
+
+#### GDSII Import
+
+#### Adjoint Solver
