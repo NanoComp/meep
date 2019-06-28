@@ -57,7 +57,7 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   eps_inv->m00 = f->get_chi1inv(Ex, X, p, omega);
   eps_inv->m11 = f->get_chi1inv(Ey, Y, p, omega);
   eps_inv->m22 = f->get_chi1inv(Ez, Z, p, omega);
-  
+
   ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p, omega), 0);
   ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p, omega), 0);
   ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p, omega), 0);
@@ -746,14 +746,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        bool verbose) {
+                                        bool verbose, direction d) {
   double freq_min = flux.freq_min;
   double dfreq = flux.dfreq;
   int num_freqs = flux.Nfreq;
-  direction d = flux.normal_direction;
   bool match_frequency = true;
-
-  if (d == NO_DIRECTION) abort("cannot determine normal direction in get_eigenmode_coefficients");
 
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
     abort("flux regions for eigenmode projection with symmetry should be created by "
@@ -862,7 +859,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        bool verbose) {
+                                        bool verbose, direction d) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -877,6 +874,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)user_kpoint_data;
   (void)kdom;
   (void)verbose;
+  (void) d;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
@@ -903,5 +901,16 @@ vec get_k(void *vedata) {
 }
 
 #endif // HAVE_MPB
+
+/* compatibility wrapper routine that passes the default flux.normal_direction to the eigensolver
+   (we pass NO_DIRECTION to use the kpoint direction instead, for oblique sources). */
+void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands,
+                                        int num_bands, int parity, double eig_resolution,
+                                        double eigensolver_tol, std::complex<double> *coeffs,
+                                        double *vgrp, kpoint_func user_kpoint_func,
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom, bool verbose) {
+  get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
+    coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose, flux.normal_direction);
+}
 
 } // namespace meep

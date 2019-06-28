@@ -1672,6 +1672,11 @@ public:
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
+                                  kpoint_func user_kpoint_func, void *user_kpoint_data,
+                                  vec *kpoints, vec *kdom, bool verbose, direction d);
+  void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
+                                  int parity, double eig_resolution, double eigensolver_tol,
+                                  std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func = 0, void *user_kpoint_data = 0,
                                   vec *kpoints = 0, vec *kdom = 0, bool verbose = false);
 
