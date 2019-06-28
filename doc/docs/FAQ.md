@@ -405,6 +405,10 @@ Note: a simple approach to reduce the cost of the DTFT computation is to reduce 
 
 You can always run the MPI parallel Meep on a shared-memory machine, and some MPI implementations take special advantage of shared memory communications. Meep currently also provides limited support for [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) via OpenMP on a single, shared-memory, multi-core machine to speed up *multi-frequency* [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) calculations involving `get_farfields` or `output_farfields`.
 
+### Why does the time-stepping rate fluctuate erratically for jobs running on a shared-memory system?
+
+Running jobs may experience intermittent slowdown on [shared-memory](https://en.wikipedia.org/wiki/Shared_memory) systems (Issue [#882](https://github.com/NanoComp/meep/issues/882)). This may possibly be due to [cache contention](https://en.wikipedia.org/wiki/Resource_contention) with other simultaneous jobs although though the cause has yet to be determined. The slowdown can be observed via increasing values of the time-stepping rate (units of "s/step") which is shown as part of the progress output.
+
 Usage: Other
 ------------
 
