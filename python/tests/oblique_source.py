@@ -14,13 +14,15 @@ class TestEigenmodeSource(unittest.TestCase):
         rot_angles = range(0,60,20) # rotation angle of waveguide, CCW around z-axis
 
         fluxes = []
+        coeff_fluxes = []
         for t in rot_angles:
             rot_angle = math.radians(t)
+            kpoint = mp.Vector3(math.cos(rot_angle),math.sin(rot_angle),0)
             sources = [mp.EigenModeSource(src=mp.GaussianSource(1.0,fwidth=0.1),
                                           size=mp.Vector3(y=10),
                                           center=mp.Vector3(x=-3),
                                           direction=mp.NO_DIRECTION,
-                                          eig_kpoint=mp.Vector3(math.cos(rot_angle),math.sin(rot_angle),0),
+                                          eig_kpoint=kpoint,
                                           eig_band=1,
                                           eig_parity=mp.ODD_Z,
                                           eig_match_freq=True)]
@@ -41,11 +43,19 @@ class TestEigenmodeSource(unittest.TestCase):
 
             sim.run(until_after_sources=100)
 
+            res = sim.get_eigenmode_coefficients(tran, [1],
+                    eig_parity=mp.ODD_Z, direction=mp.NO_DIRECTION,
+                    kpoint_func=lambda f,n: kpoint)
+
             fluxes.append(mp.get_fluxes(tran)[0])
+            coeff_fluxes.append(abs(res.alpha[0,0,0])**2)
             print("flux:, {:.2f}, {:.6f}".format(t,fluxes[-1]))
+            print("coef_flux:, {:.2f}, {:.6f}".format(t,coeff_fluxes[-1]))
 
         self.assertAlmostEqual(fluxes[0], fluxes[1], places=0)
         self.assertAlmostEqual(fluxes[1], fluxes[2], places=0)
+        for i in range(3):
+            self.assertAlmostEqual(fluxes[i], coeff_fluxes[i], places=0)
 
         # self.assertAlmostEqual(fluxes[0], fluxes[2], places=0)
         # sadly the above line requires a workaround due to the
