@@ -1264,9 +1264,9 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt):
+    def get_epsilon_point(self, pt, omega = 0):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        return self.fields.get_eps(v3)
+        return self.fields.get_eps(v3,omega)
 
     def get_filename_prefix(self):
         if isinstance(self.filename_prefix, str):
@@ -1795,7 +1795,7 @@ class Simulation(object):
 
         return stuff
 
-    def output_component(self, c, h5file=None):
+    def output_component(self, c, h5file=None, omega=0):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
@@ -1803,7 +1803,7 @@ class Simulation(object):
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
-        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision, self.get_filename_prefix())
+        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(), omega)
 
         if h5file is None:
             nm = self.fields.h5file_name(mp.component_name(c), self.get_filename_prefix(), True)
@@ -1833,7 +1833,7 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None):
+    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, omega = 0):
         if component is None:
             raise ValueError("component is required")
         if isinstance(component, mp.Volume) or isinstance(component, mp.volume):
@@ -1868,9 +1868,9 @@ class Simulation(object):
             arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
         if np.iscomplexobj(arr):
-            self.fields.get_complex_array_slice(v, component, arr)
+            self.fields.get_complex_array_slice(v, component, arr, omega)
         else:
-            self.fields.get_array_slice(v, component, arr)
+            self.fields.get_array_slice(v, component, arr, omega)
 
         return arr
 
@@ -2071,8 +2071,8 @@ class Simulation(object):
         else:
             raise ValueError("Invalid run configuration")
 
-    def get_epsilon(self):
-        return self.get_array(component=mp.Dielectric)
+    def get_epsilon(self,omega=0):
+        return self.get_array(component=mp.Dielectric,omega=omega)
 
     def get_mu(self):
         return self.get_array(component=mp.Permeability)
@@ -2600,12 +2600,14 @@ def output_png(compnt, options, rm_h5=True):
     return _output_png
 
 
-def output_epsilon(sim):
-    sim.output_component(mp.Dielectric)
+def output_epsilon(sim,*step_func_args,**kwargs):
+    omega = kwargs.pop('omega', 0.0)
+    sim.output_component(mp.Dielectric,omega=omega)
 
 
-def output_mu(sim):
-    sim.output_component(mp.Permeability)
+def output_mu(sim,*step_func_args,**kwargs):
+    omega = kwargs.pop('omega', 0.0)
+    sim.output_component(mp.Permeability,omega=omega)
 
 
 def output_hpwr(sim):

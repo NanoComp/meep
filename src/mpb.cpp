@@ -38,6 +38,7 @@ namespace meep {
 
 typedef struct {
   const double *s, *o;
+  double omega;
   ndim dim;
   const fields *f;
 } meep_mpb_eps_data;
@@ -47,17 +48,27 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   const double *s = eps_data->s;
   const double *o = eps_data->o;
+  double omega = eps_data->omega;
   vec p(eps_data->dim == D3 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2])
                             : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
   const fields *f = eps_data->f;
-  eps_inv->m00 = f->get_chi1inv(Ex, X, p);
-  eps_inv->m11 = f->get_chi1inv(Ey, Y, p);
-  eps_inv->m22 = f->get_chi1inv(Ez, Z, p);
-  //  master_printf("eps_zz(%g,%g) = %g\n", p.x(), p.y(), 1/eps_inv->m00);
-  ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p), 0);
-  ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p), 0);
-  ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p), 0);
+
+  eps_inv->m00 = f->get_chi1inv(Ex, X, p, omega);
+  eps_inv->m11 = f->get_chi1inv(Ey, Y, p, omega);
+  eps_inv->m22 = f->get_chi1inv(Ez, Z, p, omega);
+  
+  ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p, omega), 0);
+  ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p, omega), 0);
+  ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p, omega), 0);
+  /*
+  master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
+  master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
+  master_printf("m33(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m22);
+  master_printf("m12(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m01);
+  master_printf("m13(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m02);
+  master_printf("m23(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m12);
+  */
   maxwell_sym_matrix_invert(eps, eps_inv);
 }
 
@@ -355,6 +366,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     eps_data.o = o;
     eps_data.dim = gv.dim;
     eps_data.f = this;
+    eps_data.omega = omega_src;
     set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
     if (user_mdata) *user_mdata = (void *)mdata;
   } else {
@@ -381,7 +393,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   // which we automatically pick if kmatch == 0.
   if (match_frequency && kmatch == 0) {
     vec cen = eig_vol.center();
-    kmatch = omega_src * sqrt(get_eps(cen) * get_mu(cen));
+    kmatch = omega_src * sqrt(get_eps(cen, omega_src) * get_mu(cen, omega_src));
     if (d == NO_DIRECTION) {
       for (int i = 0; i < 3; ++i)
         k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis

@@ -58,6 +58,11 @@ const double nan = -7.0415659787563146e103; // ideally, a value never encountere
 
 class h5file;
 
+// Defined in monitor.cpp
+void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]);
+
+double pml_quadratic_profile(double, void *);
+
 /* generic base class, only used by subclassing: represents susceptibility
    polarizability vector P = chi(omega) W  (where W = E or H). */
 class susceptibility {
@@ -88,6 +93,9 @@ public:
 
   int get_id() const { return id; }
   bool operator==(const susceptibility &s) const { return id == s.id; };
+
+  // Returns the 1st order nonlinear susceptibility (generic)
+  virtual std::complex<double> chi1(double freq, double sigma=1);
 
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
@@ -228,6 +236,9 @@ public:
       : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
+
+  // Returns the 1st order nonlinear susceptibility
+  virtual std::complex<double> chi1(double freq, double sigma=1);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
@@ -594,9 +605,10 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &iloc) const;
-  double get_inveps(component c, direction d, const ivec &iloc) const {
-    return get_chi1inv(c, d, iloc);
+  double get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
+  double get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {
+    return get_chi1inv(c, d, iloc, omega);
   }
   double max_eps() const;
 
@@ -605,8 +617,6 @@ private:
   int the_proc;
   int the_is_mine;
 };
-
-double pml_quadratic_profile(double, void *);
 
 // linked list of descriptors for boundary regions (currently just for PML)
 class boundary_region {
@@ -760,16 +770,16 @@ public:
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc, bool parallel = true) const;
-  double get_chi1inv(component, direction, const vec &loc, bool parallel = true) const;
-  double get_inveps(component c, direction d, const ivec &origloc) const {
-    return get_chi1inv(c, d, origloc);
+  double get_chi1inv(component, direction, const ivec &origloc, double omega = 0, bool parallel = true) const;
+  double get_chi1inv(component, direction, const vec &loc, double omega = 0, bool parallel = true) const;
+  double get_inveps(component c, direction d, const ivec &origloc, double omega = 0) const {
+    return get_chi1inv(c, d, origloc, omega);
   }
-  double get_inveps(component c, direction d, const vec &loc) const {
-    return get_chi1inv(c, d, loc);
+  double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
+    return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc) const;
-  double get_mu(const vec &loc) const;
+  double get_eps(const vec &loc, double omega = 0) const;
+  double get_mu(const vec &loc, double omega = 0) const;
   double max_eps() const;
 
   friend class boundary_region;
@@ -1330,7 +1340,7 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  double get_chi1inv(component, direction, const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
 
   void backup_component(component c);
   void average_with_backup(component c);
@@ -1519,23 +1529,23 @@ public:
   // low-level function:
   void output_hdf5(h5file *file, const char *dataname, int num_fields, const component *components,
                    field_function fun, void *fun_data_, int reim, const volume &where,
-                   bool append_data = false, bool single_precision = false);
+                   bool append_data = false, bool single_precision = false, double omega = 0);
   // higher-level functions
   void output_hdf5(const char *dataname, // OUTPUT COMPLEX-VALUED FUNCTION
                    int num_fields, const component *components, field_function fun, void *fun_data_,
                    const volume &where, h5file *file = 0, bool append_data = false,
                    bool single_precision = false, const char *prefix = 0,
-                   bool real_part_only = false);
+                   bool real_part_only = false, double omega = 0);
   void output_hdf5(const char *dataname, // OUTPUT REAL-VALUED FUNCTION
                    int num_fields, const component *components, field_rfunction fun,
                    void *fun_data_, const volume &where, h5file *file = 0, bool append_data = false,
-                   bool single_precision = false, const char *prefix = 0);
+                   bool single_precision = false, const char *prefix = 0, double = 0);
   void output_hdf5(component c, // OUTPUT FIELD COMPONENT (or Dielectric)
                    const volume &where, h5file *file = 0, bool append_data = false,
-                   bool single_precision = false, const char *prefix = 0);
+                   bool single_precision = false, const char *prefix = 0, double omega = 0);
   void output_hdf5(derived_component c, // OUTPUT DERIVED FIELD COMPONENT
                    const volume &where, h5file *file = 0, bool append_data = false,
-                   bool single_precision = false, const char *prefix = 0);
+                   bool single_precision = false, const char *prefix = 0, double omega = 0);
   h5file *open_h5file(const char *name, h5file::access_mode mode = h5file::WRITE,
                       const char *prefix = NULL, bool timestamp = false);
   const char *h5file_name(const char *name, const char *prefix = NULL, bool timestamp = false);
@@ -1576,20 +1586,23 @@ public:
   // otherwise, a new buffer is allocated and returned; it
   // must eventually be caller-deallocated via delete[].
   double *get_array_slice(const volume &where, std::vector<component> components,
-                          field_rfunction rfun, void *fun_data, double *slice = 0);
+                          field_rfunction rfun, void *fun_data, double *slice = 0,
+                          double omega = 0);
 
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 std::vector<component> components,
                                                 field_function fun, void *fun_data,
-                                                std::complex<double> *slice = 0);
+                                                std::complex<double> *slice = 0,
+                                                double omega = 0);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
   // derived component.)
-  double *get_array_slice(const volume &where, component c, double *slice = 0);
-  double *get_array_slice(const volume &where, derived_component c, double *slice = 0);
+  double *get_array_slice(const volume &where, component c, double *slice = 0, double omega = 0);
+  double *get_array_slice(const volume &where, derived_component c, double *slice = 0, double omega = 0);
   std::complex<double> *get_complex_array_slice(const volume &where, component c,
-                                                std::complex<double> *slice = 0);
+                                                std::complex<double> *slice = 0,
+                                                double omega = 0);
 
   // like get_array_slice, but for *sources* instead of fields
   std::complex<double> *get_source_slice(const volume &where, component source_slice_component,
@@ -1597,7 +1610,8 @@ public:
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where, std::vector<component> components,
-                           field_function fun, field_rfunction rfun, void *fun_data, void *vslice);
+                           field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
+                           double omega = 0);
 
   /* fetch and return coordinates and integration weights of grid points covered by an array slice,
    */
@@ -1775,12 +1789,12 @@ public:
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int Nperiods = 1);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc, bool parallel = true) const;
-  double get_inveps(component c, direction d, const vec &loc) const {
-    return get_chi1inv(c, d, loc);
+  double get_chi1inv(component, direction, const vec &loc, double omega = 0, bool parallel = true) const;
+  double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
+    return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc) const;
-  double get_mu(const vec &loc) const;
+  double get_eps(const vec &loc, double omega = 0) const;
+  double get_mu(const vec &loc, double omega = 0) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
@@ -1862,7 +1876,7 @@ private:
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
-  double get_chi1inv(component, direction, const ivec &iloc, bool parallel = true) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0, bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp

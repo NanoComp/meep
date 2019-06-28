@@ -177,7 +177,7 @@ class Medium(object):
                  E_chi3=None,
                  H_chi2=None,
                  H_chi3=None,
-                 valid_freq_range=None):
+                 valid_freq_range=FreqRange(min=-mp.inf, max=mp.inf)):
 
         if epsilon:
             epsilon_diag = Vector3(epsilon, epsilon, epsilon)
@@ -239,6 +239,10 @@ class Medium(object):
         for s in self.H_susceptibilities:
             s.transform(m)
 
+    def rotate(self, axis, theta):
+        T = get_rotation_matrix(axis,theta)
+        self.transform(T)
+    
     def epsilon(self,freq):
         return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
     

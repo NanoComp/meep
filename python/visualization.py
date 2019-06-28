@@ -119,7 +119,12 @@ def intersect_volume_volume(volume1,volume2):
     # Evaluate intersection
     U = np.min([U1,U2],axis=0)
     L = np.max([L1,L2],axis=0)
-    
+
+    # For single points we have to check manually
+    if np.all(U-L == 0):
+        if (not volume1.pt_in_volume(Vector3(*U))) or (not volume2.pt_in_volume(Vector3(*U))):
+            return []
+
     # Check for two volumes that don't intersect
     if np.any(U-L < 0):
         return []
@@ -157,16 +162,10 @@ def get_2D_dimensions(sim,output_plane):
         plane_center, plane_size = (sim.geometry_center, sim.cell_size)
     plane_volume = Volume(center=plane_center,size=plane_size)
 
-    # Check if plane extends past domain, truncate, and issue warning if required.
-    if plane_volume.size.x == 0:
-        check_size = Vector3(0,sim.cell_size.y,sim.cell_size.z)
-    elif plane_volume.size.y == 0:
-        check_size = Vector3(sim.cell_size.x,0,sim.cell_size.z)
-    elif plane_volume.size.z == 0:
-        check_size = Vector3(sim.cell_size.x,sim.cell_size.y,0)
-    else:
+    if plane_size.x!=0 and plane_size.y!=0 and plane_size.z!=0:
         raise ValueError("Plane volume must be 2D (a plane).")
-    check_volume = Volume(center=sim.geometry_center,size=check_size)
+        
+    check_volume = Volume(center=sim.geometry_center,size=sim.cell_size)
 
     vertices = intersect_volume_volume(check_volume,plane_volume)
 
@@ -234,13 +233,13 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         # Point volume
         if len(intersection) == 1:
             point_args = {key:value for key, value in plotting_parameters.items() if key in ['color','marker','alpha','linewidth']}
-            if sim_center.y == center.y and sim_size.y==0:
+            if sim_size.y==0:
                 ax.scatter(center.x,center.z, **point_args)
                 return ax
-            elif sim_center.x == center.x and sim_size.x==0:
+            elif sim_size.x==0:
                 ax.scatter(center.y,center.z, **point_args)
                 return ax
-            elif sim_center.z == center.z and sim_size.z==0:
+            elif sim_size.z==0:
                 ax.scatter(center.x,center.y, **point_args)
                 return ax
             else:
@@ -250,15 +249,15 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         elif len(intersection) == 2:
             line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
             # Plot YZ
-            if sim_center.x == center.x and sim_size.x==0:
+            if sim_size.x==0:
                 ax.plot([a.y for a in intersection],[a.z for a in intersection], **line_args)
                 return ax
             #Plot XZ
-            elif sim_center.y == center.y and sim_size.y==0:
+            elif sim_size.y==0:
                 ax.plot([a.x for a in intersection],[a.z for a in intersection], **line_args)
                 return ax
             # Plot XY
-            elif sim_center.z == center.z and sim_size.z==0:
+            elif sim_size.z==0:
                 ax.plot([a.x for a in intersection],[a.y for a in intersection], **line_args)
                 return ax
             else:
@@ -268,15 +267,15 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
         elif len(intersection) > 2:
             planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
             # Plot YZ
-            if sim_center.x == center.x and sim_size.x==0:
+            if sim_size.x==0:
                 ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
                 return ax
             #Plot XZ
-            elif sim_center.y == center.y and sim_size.y==0:
+            elif sim_size.y==0:
                 ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
                 return ax
             # Plot XY
-            elif sim_center.z == center.z and sim_size.z==0:
+            elif sim_size.z==0:
                 ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
                 return ax
             else:
@@ -285,7 +284,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
             return ax
     return ax
 
-def plot_eps(sim,ax,output_plane=None,eps_parameters=None):
+def plot_eps(sim,ax,output_plane=None,eps_parameters=None,omega=0):
     if sim.structure is None:
         sim.init_sim()
     
@@ -324,7 +323,7 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None):
     else:
         raise ValueError("A 2D plane has not been specified...")
     
-    eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric)))
+    eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric, omega=omega)))
     if mp.am_master():
         ax.imshow(eps_data, extent=extent, **eps_parameters)
         ax.set_xlabel(xlabel)
@@ -492,13 +491,24 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
 def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
             eps_parameters=None,boundary_parameters=None,
             source_parameters=None,monitor_parameters=None,
-            field_parameters=None):
+            field_parameters=None, omega=None):
+
+    # Initialize the simulation
     if sim.structure is None:
         sim.init_sim()
-
+    # Ensure a figure axis exists
     if ax is None and mp.am_master():
         from matplotlib import pyplot as plt
         ax = plt.gca()
+    # Determine a frequency to plot all epsilon
+    if omega is None:
+        try:
+            omega = sim.sources[0].frequency
+        except:
+            try:
+                omega = sim.sources[0].src.frequency
+            except:
+                omega = 0
         
     # User incorrectly specified a 3D output plane
     if output_plane and (output_plane.size.x != 0) and (output_plane.size.y != 0) and (output_plane.size.z != 0):
@@ -508,7 +518,7 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
         raise ValueError("For 3D simulations, you must specify an output_plane.")
     
     # Plot geometry
-    ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters)
+    ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,omega=omega)
     
     # Plot boundaries
     ax = plot_boundaries(sim,ax,output_plane=output_plane,boundary_parameters=boundary_parameters)

@@ -31,40 +31,50 @@ def setup_sim(zDim=0):
 
     # A simple waveguide
     geometry = [mp.Block(mp.Vector3(mp.inf,1,1),
-                     center=mp.Vector3(),
-                     material=mp.Medium(epsilon=12))]
-    
+                        center=mp.Vector3(),
+                        material=mp.Medium(epsilon=12))]
+
     # Add point sources
     sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
-                        center=mp.Vector3(-5,0)),
+                        center=mp.Vector3(-5,0),
+                        size=mp.Vector3(0,0,2)),
                 mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
-                        center=mp.Vector3(0,2))
+                        center=mp.Vector3(0,2),
+                        size=mp.Vector3(0,0,2)),
+                mp.Source(mp.ContinuousSource(frequency=0.15),
+                        component=mp.Ez,
+                        center=mp.Vector3(-1,1),
+                        size=mp.Vector3(0,0,2)),
+                mp.Source(mp.ContinuousSource(frequency=0.15),
+                        component=mp.Ez,
+                        center=mp.Vector3(-2,-2,1),
+                        size=mp.Vector3(0,0,0)), 
                         ]
 
     # Add line sources
     sources += [mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
-                        size=mp.Vector3(0,2,0),
+                        size=mp.Vector3(0,2,2),
                         center=mp.Vector3(-6,0)),
                 mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
-                        size=mp.Vector3(2,0,0),
+                        size=mp.Vector3(0,2,2),
                         center=mp.Vector3(0,1))]
         
     # Add plane sources
     sources += [mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
-                        size=mp.Vector3(2,2,0),
+                        size=mp.Vector3(2,2,2),
                         center=mp.Vector3(-3,0)),
                 mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
-                        size=mp.Vector3(2,2,0),
+                        size=mp.Vector3(2,2,2),
                     center=mp.Vector3(0,-2))]
-    
+
     # Different pml layers
-    pml_layers = [mp.PML(2.0,mp.X),mp.PML(1.0,mp.Y,mp.Low),mp.PML(1.5,mp.Y,mp.High)]
+    pml_layers = [mp.PML(2.0,mp.X),mp.PML(1.0,mp.Y,mp.Low),mp.PML(1.5,mp.Y,mp.High),mp.PML(1.5,mp.Z)]
 
     resolution = 10
 
@@ -74,13 +84,33 @@ def setup_sim(zDim=0):
                     sources=sources,
                     resolution=resolution)
     # Line monitor
-    sim.add_flux(1,0,1,mp.FluxRegion(center=mp.Vector3(5,0,0),size=mp.Vector3(0,4), direction=mp.X))
+    sim.add_flux(1,0,1,mp.FluxRegion(center=mp.Vector3(5,0,0),size=mp.Vector3(0,4,4), direction=mp.X))
 
     # Plane monitor
-    sim.add_flux(1,0,1,mp.FluxRegion(center=mp.Vector3(2,0,0),size=mp.Vector3(4,4), direction=mp.X))
-    
+    sim.add_flux(1,0,1,mp.FluxRegion(center=mp.Vector3(2,0,0),size=mp.Vector3(4,4,4), direction=mp.X))
+
     return sim
 
+def view_sim():
+    sim = setup_sim(8)
+    xy0 = mp.Volume(center=mp.Vector3(0,0,0), size=mp.Vector3(sim.cell_size.x,sim.cell_size.y,0))
+    xy1 = mp.Volume(center=mp.Vector3(0,0,1), size=mp.Vector3(sim.cell_size.x,sim.cell_size.y,0))
+    yz0 = mp.Volume(center=mp.Vector3(0,0,0), size=mp.Vector3(0,sim.cell_size.y,sim.cell_size.z))
+    yz1 = mp.Volume(center=mp.Vector3(1,0,0), size=mp.Vector3(0,sim.cell_size.y,sim.cell_size.z))
+    xz0 = mp.Volume(center=mp.Vector3(0,0,0), size=mp.Vector3(sim.cell_size.x,0,sim.cell_size.z))
+    xz1 = mp.Volume(center=mp.Vector3(0,1,0), size=mp.Vector3(sim.cell_size.x,0,sim.cell_size.z))
+    vols = [xy0,xy1,yz0,yz1,xz0,xz1]
+    titles = ['xy0','xy1','yz0','yz1','xz0','xz1']
+    xlabel = ['x','x','y','y','x','x']
+    ylabel = ['y','y','z','z','z','z']
+    for k in range(len(vols)):
+        ax = plt.subplot(2,3,k+1)
+        sim.plot2D(ax=ax,output_plane=vols[k])
+        ax.set_xlabel(xlabel[k])
+        ax.set_ylabel(ylabel[k])
+        ax.set_title(titles[k])
+    plt.tight_layout()
+    plt.show()
 class TestVisualization(unittest.TestCase):
     
     def test_plot2D(self):

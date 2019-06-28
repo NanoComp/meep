@@ -66,6 +66,8 @@ typedef struct {
   cdouble *fields;
   ptrdiff_t *offsets;
 
+  double omega;
+
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -274,6 +276,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
+  double omega = data->omega;
   complex<double> *fields = data->fields, *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
@@ -315,23 +318,21 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
       } else if (cS[i] == Dielectric) {
         double tr = 0.0;
         for (int k = 0; k < data->ninveps; ++k) {
-          const realnum *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
-          if (ie)
-            tr += (ie[idx] + ie[idx + ieos[2 * k]] + ie[idx + ieos[1 + 2 * k]] +
-                   ie[idx + ieos[2 * k] + ieos[1 + 2 * k]]);
-          else
-            tr += 4; // default inveps == 1
+          tr += (fc->s->get_chi1inv_at_pt(iecs[k],ieds[k],idx,omega) + 
+                  fc->s->get_chi1inv_at_pt(iecs[k],ieds[k],idx + ieos[2 * k],omega) + 
+                  fc->s->get_chi1inv_at_pt(iecs[k],ieds[k],idx + ieos[1 + 2 * k],omega) +
+                  fc->s->get_chi1inv_at_pt(iecs[k],ieds[k],idx + ieos[2 * k] + ieos[1 + 2 * k],omega));
+          if (tr == 0.0) tr += 4.0; // default inveps == 1
         }
         fields[i] = (4 * data->ninveps) / tr;
       } else if (cS[i] == Permeability) {
         double tr = 0.0;
         for (int k = 0; k < data->ninvmu; ++k) {
-          const realnum *im = fc->s->chi1inv[imcs[k]][imds[k]];
-          if (im)
-            tr += (im[idx] + im[idx + imos[2 * k]] + im[idx + imos[1 + 2 * k]] +
-                   im[idx + imos[2 * k] + imos[1 + 2 * k]]);
-          else
-            tr += 4; // default invmu == 1
+          tr += (fc->s->get_chi1inv_at_pt(imcs[k],imds[k],idx,omega) + 
+                  fc->s->get_chi1inv_at_pt(imcs[k],imds[k],idx + imos[2 * k],omega) + 
+                  fc->s->get_chi1inv_at_pt(imcs[k],imds[k],idx + imos[1 + 2 * k],omega) +
+                  fc->s->get_chi1inv_at_pt(imcs[k],imds[k],idx + imos[2 * k] + imos[1 + 2 * k],omega));
+          if (tr == 0.0) tr += 4.0; // default invmu == 1
         }
         fields[i] = (4 * data->ninvmu) / tr;
       } else {
@@ -462,7 +463,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
 /**********************************************************************/
 void *fields::do_get_array_slice(const volume &where, std::vector<component> components,
                                  field_function fun, field_rfunction rfun, void *fun_data,
-                                 void *vslice) {
+                                 void *vslice, double omega) {
   am_now_working_on(FieldOutput);
 
   /***************************************************************/
@@ -498,6 +499,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   data.rfun = rfun;
   data.fun_data = fun_data;
   data.components = components;
+  data.omega = omega;
   int num_components = components.size();
   data.cS = new component[num_components];
   data.ph = new cdouble[num_components];
@@ -555,33 +557,35 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 /* entry points to get_array_slice                             */
 /***************************************************************/
 double *fields::get_array_slice(const volume &where, std::vector<component> components,
-                                field_rfunction rfun, void *fun_data, double *slice) {
-  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice);
+                                field_rfunction rfun, void *fun_data, double *slice,
+                                double omega) {
+  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice, omega);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                         field_function fun, void *fun_data, cdouble *slice) {
-  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice);
+                                         field_function fun, void *fun_data, cdouble *slice,
+                                         double omega) {
+  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice, omega);
 }
 
-double *fields::get_array_slice(const volume &where, component c, double *slice) {
+double *fields::get_array_slice(const volume &where, component c, double *slice, double omega) {
   std::vector<component> components(1);
   components[0] = c;
-  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice);
+  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice, omega);
 }
 
-double *fields::get_array_slice(const volume &where, derived_component c, double *slice) {
+double *fields::get_array_slice(const volume &where, derived_component c, double *slice, double omega) {
   int nfields;
   component carray[12];
   field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
   std::vector<component> cs(carray, carray + nfields);
-  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice);
+  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice, omega);
 }
 
-cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice) {
+cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice, double omega) {
   std::vector<component> components(1);
   components[0] = c;
-  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice);
+  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice, omega);
 }
 
 cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
