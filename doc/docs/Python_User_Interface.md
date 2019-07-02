@@ -1570,10 +1570,10 @@ Plots a 2D cross section of the simulation domain using `matplotlib`. The plot i
 ```py
 sim = mp.Simulation(...)
 sim.run(...)
-
+field_func = lambda x: 20*np.log10(np.abs(x))
 import matplotlib.pyplot as plt
 sim.plot2D(fields=mp.Ez,
-           field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
+           field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
            boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
 plt.show()
 plt.savefig('sim_domain.png')
@@ -1617,6 +1617,7 @@ plt.savefig('sim_domain.png')
     - `interpolation='spline36'`: interpolation function used to upsample field pixels
     - `cmap='RdBu'`: color map for field pixels
     - `alpha=0.6`: transparency of fields
+    - `post_process=np.real`: post processing function to apply to fields (must be a function object) 
 
 **`Simulation.plot3D()`**
 — Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.

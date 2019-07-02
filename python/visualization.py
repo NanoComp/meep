@@ -39,7 +39,8 @@ default_monitor_parameters = {
 default_field_parameters = {
         'interpolation':'spline36',
         'cmap':'RdBu',
-        'alpha':0.6
+        'alpha':0.6,
+        'post_process':np.real
         }
 
 default_eps_parameters = {
@@ -71,6 +72,24 @@ default_label_parameters = {
     'offset':20,
     'label_alpha':0.3
 }
+
+# Used to remove the elements of a dictionary (dict_to_filter) that
+# don't correspond to the keyword arguments of a particular
+# function (func_with_kwargs.)
+# Adapted from https://stackoverflow.com/questions/26515595/how-does-one-ignore-unexpected-keyword-arguments-passed-to-a-function/44052550
+def filter_dict(dict_to_filter, func_with_kwargs):
+    import inspect
+    filter_keys = []
+    try:
+        # Python3 ...
+        sig = inspect.signature(func_with_kwargs)
+        filter_keys = [param.name for param in sig.parameters.values() if param.kind == param.POSITIONAL_OR_KEYWORD]
+    except:
+        # Python2 ...
+        filter_keys = inspect.getargspec(func_with_kwargs)[0]
+
+    filtered_dict = {filter_key:dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
+    return filtered_dict
 
 # ------------------------------------------------------- #
 # Routines to add legends to plot
@@ -444,6 +463,8 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
     if fields is None:
         return ax
     
+    field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
+
     # user specifies a field component
     if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
@@ -478,14 +499,16 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
     else:
         raise ValueError('Please specify a valid field component (mp.Ex, mp.Ey, ...')
     
+    
+    fields = field_parameters['post_process'](fields)
+
     # Either plot the field, or return the array
     if ax:
-        field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
         if mp.am_master():
-            ax.imshow(np.rot90(np.real(fields)), extent=extent, **field_parameters)
+            ax.imshow(np.rot90(fields), extent=extent, **filter_dict(field_parameters,ax.imshow))
         return ax
     else:
-        return np.rot90(np.real(fields))
+        return np.rot90(fields)
     return ax
 
 def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,

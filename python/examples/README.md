@@ -52,6 +52,15 @@ Computes the band diagram of the infinite periodic waveguide by itself with no d
 
 #### MPB and Band diagrams
 
+#### Eigenmode Source
+
+* __`oblique-source.ipynb`__ -
+
+* __`oblique-planewave.ipynb`__ -
+
+
+#### Mode Decomposition
+
 #### Material Dispersion
 
 * __`refl-quartz.ipynb`__ -
@@ -85,10 +94,6 @@ Computes the radiation pattern of a simple point source "antenna". Explores `add
 #### Frequency Domain Solver
 
 * __`solve-cw.ipynb`__ -
-
-#### Eigenmode Source
-
-#### Mode Decomposition
 
 #### GDSII Import
 
