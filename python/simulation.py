@@ -148,7 +148,7 @@ class Identity(Symmetry):
 class Volume(object):
 
     def __init__(self, center=Vector3(), size=Vector3(), dims=2, is_cylindrical=False, vertices=[]):
-        
+
         if len(vertices) == 0:
             self.center = center
             self.size = size
@@ -164,7 +164,7 @@ class Volume(object):
             z_size = 0 if z_list.size == 1 else np.abs(np.diff(z_list)[0])
 
             self.size = Vector3(x_size,y_size,z_size)
-        
+
         self.dims = dims
 
         v1 = self.center - self.size.scale(0.5)
@@ -1934,13 +1934,15 @@ class Simulation(object):
                                        center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
-                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
+                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False, direction=mp.AUTOMATIC):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
             eig_vol = flux.where
         else:
             eig_vol = self._volume_from_kwargs(vol=eig_vol)
+        if direction is None or direction == mp.AUTOMATIC:
+            direction = flux.normal_direction
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
@@ -1957,7 +1959,8 @@ class Simulation(object):
             coeffs,
             vgrp,
             kpoint_func,
-            verbose
+            verbose,
+            direction
         )
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)

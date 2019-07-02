@@ -1323,9 +1323,6 @@ public:
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
-  // step.cpp
-  double peek_field(component, const vec &);
-
   void use_real_fields();
   bool have_component(component c, bool is_complex = false) {
     switch (c) {
@@ -1669,6 +1666,11 @@ public:
                             double eigensolver_tol, std::complex<double> amp,
                             std::complex<double> A(const vec &) = 0);
 
+  void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
+                                  int parity, double eig_resolution, double eigensolver_tol,
+                                  std::complex<double> *coeffs, double *vgrp,
+                                  kpoint_func user_kpoint_func, void *user_kpoint_data,
+                                  vec *kpoints, vec *kdom, bool verbose, direction d);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,

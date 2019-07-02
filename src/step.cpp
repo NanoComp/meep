@@ -98,21 +98,6 @@ void fields::step() {
     abort("simulation fields are NaN or Inf");
 }
 
-double fields_chunk::peek_field(component c, const vec &where) {
-  double w[8];
-  ivec ilocs[8];
-  gv.interpolate(c, where, ilocs, w);
-  if (gv.contains(ilocs[0]) && f[c][0]) {
-    double hello = 0.0;
-    if (is_mine()) hello = f[c][0][gv.index(c, ilocs[0])];
-    broadcast(n_proc(), &hello, 1);
-    return hello;
-  }
-  // abort("Got no such %s field at %g %g!\n",
-  //      component_name(c), gv[ilocs[0]].x(), gv[ilocs[0]].y());
-  return 0.0;
-}
-
 void fields::phase_material() {
   bool changed = false;
   if (is_phasing()) {
