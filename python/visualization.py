@@ -79,15 +79,15 @@ default_label_parameters = {
 # Adapted from https://stackoverflow.com/questions/26515595/how-does-one-ignore-unexpected-keyword-arguments-passed-to-a-function/44052550
 def filter_dict(dict_to_filter, func_with_kwargs):
     import inspect
-    sig = []
+    filter_keys = []
     try:
         # Python3 ...
         sig = inspect.signature(func_with_kwargs)
+        filter_keys = [param.name for param in sig.parameters.values() if param.kind == param.POSITIONAL_OR_KEYWORD]
     except:
         # Python2 ...
-        sig = inspect.getargspec(func_with_kwargs)[2]
+        filter_keys = inspect.getargspec(func_with_kwargs)[0]
 
-    filter_keys = [param.name for param in sig.parameters.values() if param.kind == param.POSITIONAL_OR_KEYWORD]
     filtered_dict = {filter_key:dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
     return filtered_dict
 
