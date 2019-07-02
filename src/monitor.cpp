@@ -63,11 +63,11 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
   }
 }
 
-complex<double> fields::get_field(int c, const vec &loc) const {
-  return (is_derived(c) ? get_field(derived_component(c), loc) : get_field(component(c), loc));
+complex<double> fields::get_field(int c, const vec &loc, bool parallel) const {
+  return (is_derived(c) ? get_field(derived_component(c), loc, parallel) : get_field(component(c), loc, parallel));
 }
 
-double fields::get_field(derived_component c, const vec &loc) const {
+double fields::get_field(derived_component c, const vec &loc, bool parallel) const {
   component c1 = Ex, c2 = Ex;
   double sum = 0;
   switch (c) {
@@ -99,9 +99,9 @@ double fields::get_field(derived_component c, const vec &loc) const {
           break;
         default: break; // never
       }
-      sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
-      sum -= real(conj(get_field(direction_component(Ex, component_direction(c2)), loc)) *
-                  get_field(direction_component(Hx, component_direction(c1)), loc));
+      sum += real(conj(get_field(c1, loc, parallel)) * get_field(c2, loc, parallel));
+      sum -= real(conj(get_field(direction_component(Ex, component_direction(c2)), loc, parallel)) *
+                  get_field(direction_component(Hx, component_direction(c1)), loc, parallel));
       return sum;
     case EnergyDensity:
     case D_EnergyDensity:
@@ -109,13 +109,13 @@ double fields::get_field(derived_component c, const vec &loc) const {
       if (c != H_EnergyDensity) FOR_ELECTRIC_COMPONENTS(c1) {
           if (gv.has_field(c1)) {
             c2 = direction_component(Dx, component_direction(c1));
-            sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
+            sum += real(conj(get_field(c1, loc, parallel)) * get_field(c2, loc, parallel));
           }
         }
       if (c != D_EnergyDensity) FOR_MAGNETIC_COMPONENTS(c1) {
           if (gv.has_field(c1)) {
             c2 = direction_component(Bx, component_direction(c1));
-            sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
+            sum += real(conj(get_field(c1, loc, parallel)) * get_field(c2, loc, parallel));
           }
         }
       return sum * 0.5;

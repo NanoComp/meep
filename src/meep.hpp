@@ -1803,9 +1803,9 @@ public:
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
-  std::complex<double> get_field(int c, const vec &loc) const;
+  std::complex<double> get_field(int c, const vec &loc, bool parallel = true) const;
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
-  double get_field(derived_component c, const vec &loc) const;
+  double get_field(derived_component c, const vec &loc, bool parallel = true) const;
 
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();
