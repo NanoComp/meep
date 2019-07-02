@@ -1323,9 +1323,6 @@ public:
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
-  // step.cpp
-  double peek_field(component, const vec &);
-
   void use_real_fields();
   bool have_component(component c, bool is_complex = false) {
     switch (c) {
