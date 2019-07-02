@@ -1019,7 +1019,7 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 
 **`get_epsilon_point(pt, omega=0)`**
 —
-Given a frequency `omega` and a `Vector3` `pt`, returns the average of the diagonal of the permittivity tensor at that location and frequency.
+Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue of the permittivity tensor at that location and frequency.
 
 **`initialize_field(c, func)`**
 —
@@ -1570,7 +1570,7 @@ Plots a 2D cross section of the simulation domain using `matplotlib`. The plot i
 ```py
 sim = mp.Simulation(...)
 sim.run(...)
-field_func = lambda x: 20*np.log10(np.abs(10))
+field_func = lambda x: 20*np.log10(np.abs(x))
 import matplotlib.pyplot as plt
 sim.plot2D(fields=mp.Ez,
            field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
@@ -1816,7 +1816,7 @@ with the following input parameters:
 
 + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
-+ `omega`: optional frequency point over which the average of the diagonal of the dielectric and permeability tensors are evaluated (defaults to 0).
++ `omega`: optional frequency point over which the average eigenvalue of the dielectric and permeability tensors are evaluated (defaults to 0).
 
 For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent with the fields (real or complex). The routines `get_epsilon()` and `get_mu()` accept the optional omega parameter (defaults to 0).
 
