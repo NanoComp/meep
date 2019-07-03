@@ -314,7 +314,9 @@ void fields::connect_the_chunks() {
     FOR_H_AND_B(hc, bc) {
       B_redundant[5 * (num_chunks + i) + bc - Bx] = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
     }
+  am_now_working_on(Other);
   and_to_all(B_redundant + 5 * num_chunks, B_redundant, 5 * num_chunks);
+  finished_working();
 
   /* Figure out whether we need the notowned W field (== E/H in
      non-PML regions) in update_pols, e.g. if we have an anisotropic
