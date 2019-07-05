@@ -52,7 +52,9 @@ structure::structure(const grid_volume &thegv, material_function &eps, const bou
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
+  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n",wall_time()-tstart);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
@@ -64,7 +66,9 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
+  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n",wall_time()-tstart);
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
