@@ -52,14 +52,26 @@ Computes the band diagram of the infinite periodic waveguide by itself with no d
 
 #### MPB and Band diagrams
 
+* __`mpb_strip.ipynb`__ - 
+
 #### Eigenmode Source
 
-* __`oblique-source.ipynb`__ -
+* __`oblique-source.ipynb`__ - Launches straight and oblique sources within a silicon photonic strip waveguide and measures the flux using the eigenmode decomposition feature at an arbitrary angle. Explores features like `EigenModeSource`, the geometry `rotate` function, `get_eigenmode_coefficients`, and `k` vectors that point in arbitrary directions.
 
-* __`oblique-planewave.ipynb`__ -
+* __`oblique-planewave.ipynb`__ - Launches a planewave in a homogenous medium using the `EigenModeSource`. Explores Bloch-periodic boundaries via the `k_point`.
 
 
 #### Mode Decomposition
+
+* __`mode-decomposition.ipynb`__ - Computes the reflectance and fundamental mode of a linear waveguide taper. Explores features like `EigenModeSource`, `get_eigenmode_coefficients`, `eig_parity`, and how to extract S Parameters.
+
+* __`binary_grating.ipynb`__ - Computes the diffraction orders of a periodic grating in fuzed quartz as a function of wavelength. Explores planewave sources using `EigenModeSource`, `get_eigenmode_coefficients` with a specified polarization constraint, mode decomposition using materials with dispersion, Bloch-periodic boundaries via the `k_point` parameter, and how to compute diffraction angles from mode coefficients.
+
+* __`binary_grating_oblique.ipynb`__ - Computes the diffraction orders of a periodic grating when a planewave is launched at an arbitrary angle. Explores user defined source profiles via `amp_func`, and compares the frequency domain solver `solve_cw` to the time domain solutions.
+
+* __`binary_grating_phasemap.ipynb`__ -
+
+* __`polarization_grating.ipynb`__ -
 
 #### Material Dispersion
 
@@ -71,8 +83,6 @@ Computes the band diagram of the infinite periodic waveguide by itself with no d
 Examines 3rd harmonic generation in a $\chi^{(3)}$ material. Explores the proper way to do 1d simulations, how to include nonlinearities in materials, and compares experimental results to theory.
 
 #### Near to Far Field Spectra
-
-We demonstrate Meep's near-to-far field transformation feature using four different examples. There are three steps involved in this type of calculation. First, we need to define the "near" surface(s) as a set of surfaces capturing all outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, a CW source via the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 * __`antenna-radiation.ipynb`__ - 
 Computes the radiation pattern of a simple point source "antenna". Explores `add_near2far`, `add_flux`, `get_fluxes`, and `get_farfield` features.
