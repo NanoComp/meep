@@ -31,12 +31,6 @@ void fields::update_pols(field_type ft) {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->update_pols(ft)) chunk_connections_valid = false;
-
-  /* synchronize to avoid deadlocks if one process decides it needs
-     to allocate E or H ... */
-  am_now_working_on(Other);
-  chunk_connections_valid = and_to_all(chunk_connections_valid);
-  finished_working();
 }
 
 bool fields_chunk::update_pols(field_type ft) {

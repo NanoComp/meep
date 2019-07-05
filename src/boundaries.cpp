@@ -121,6 +121,11 @@ void fields::disconnect_chunks() {
 }
 
 void fields::connect_chunks() {
+  /* make sure all processes agree on chunk_connections_valid to avoid deadlocks */
+  am_now_working_on(MpiTime);
+  chunk_connections_valid = and_to_all(chunk_connections_valid);
+  finished_working();
+
   if (!chunk_connections_valid) {
     am_now_working_on(Connecting);
     disconnect_chunks();
