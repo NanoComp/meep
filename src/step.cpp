@@ -94,7 +94,7 @@ void fields::step() {
     synchronized_magnetic_fields = save_synchronized_magnetic_fields;
   }
 
-  if (!std::isfinite(get_field(D_EnergyDensity, gv.center())) && am_master())
+  if (!std::isfinite(get_field(D_EnergyDensity, gv.center(), false)))
     abort("simulation fields are NaN or Inf");
 }
 
