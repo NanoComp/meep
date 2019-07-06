@@ -30,10 +30,6 @@ void fields::update_eh(field_type ft, bool skip_w_components) {
     if (chunks[i]->is_mine())
       if (chunks[i]->update_eh(ft, skip_w_components))
         chunk_connections_valid = false; // E/H allocated - reconnect chunks
-
-  /* synchronize to avoid deadlocks if one process decides it needs
-     to allocate E or H ... */
-  chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
 bool fields_chunk::needs_W_prev(component c) const {
