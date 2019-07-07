@@ -26,7 +26,7 @@ void fields::finished_working() {
   if (last_wall_time >= 0) times_spent[working_on] += now - last_wall_time;
   last_wall_time = now;
   working_on = was_working_on[0];
-  for (int i = 0; i + 1 < MEEP_TIMING_STACK_SZ; ++i)
+  for (int i = 0; i < MEEP_TIMING_STACK_SZ - 1; ++i)
     was_working_on[i] = was_working_on[i + 1];
   was_working_on[MEEP_TIMING_STACK_SZ - 1] = Other;
 }
@@ -35,8 +35,8 @@ void fields::am_now_working_on(time_sink s) {
   double now = wall_time();
   if (last_wall_time >= 0) times_spent[working_on] += now - last_wall_time;
   last_wall_time = now;
-  for (int i = 0; i + 1 < MEEP_TIMING_STACK_SZ; ++i)
-    was_working_on[i + 1] = was_working_on[i];
+  for (int i = MEEP_TIMING_STACK_SZ - 1; i > 0; --i)
+    was_working_on[i] = was_working_on[i - 1];
   was_working_on[0] = working_on;
   working_on = s;
 }

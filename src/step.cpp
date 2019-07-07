@@ -108,7 +108,10 @@ void fields::phase_material() {
       }
     phasein_time--;
   }
-  if (or_to_all(changed)) {
+  am_now_working_on(MpiTime);
+  bool changed_mpi = or_to_all(changed);
+  finished_working();
+  if (changed_mpi) {
     calc_sources(time() + 0.5 * dt); // for integrated H sources
     update_eh(H_stuff);              // ensure H = 1/mu * B
     step_boundaries(H_stuff);
