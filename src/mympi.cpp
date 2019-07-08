@@ -121,14 +121,20 @@ double wall_time(void) {
 void abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  fprintf(stderr, "meep: ");
-  vfprintf(stderr, fmt, ap);
+  char *s;
+  vasprintf(&s, fmt, ap);
   va_end(ap);
-  if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
+  // Make a std::string to support older compilers (std::runtime_error(char *) was added in C++11)
+  std::string error_msg(s);
+  free(s);
+  if (count_processors() == 1) {
+    throw runtime_error("meep: " + error_msg);
+  }
 #ifdef HAVE_MPI
+  fprintf(stderr, "meep: %s", error_msg.c_str());
+  if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
   MPI_Abort(MPI_COMM_WORLD, 1);
 #endif
-  exit(1);
 }
 
 void send(int from, int to, double *data, int size) {

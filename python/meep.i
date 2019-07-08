@@ -1206,6 +1206,15 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     double *total
 };
 
+%exception {
+  try {
+    $action
+  } catch (std::runtime_error &e) {
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+    SWIG_fail;
+  }
+}
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
