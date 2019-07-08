@@ -766,6 +766,7 @@ class Animate2D(object):
         
         # Only works with Python3 and matplotlib > 3.1.0
         from distutils.version import LooseVersion
+        import matplotlib
         if LooseVersion(matplotlib.__version__) < LooseVersion("3.1.0"):
             warnings.warn('JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+')
             return ""
