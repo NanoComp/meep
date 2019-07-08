@@ -107,17 +107,17 @@ void fields::phase_material() {
         changed = changed || chunks[i]->new_s;
       }
     phasein_time--;
-  }
-  am_now_working_on(MpiTime);
-  bool changed_mpi = or_to_all(changed);
-  finished_working();
-  if (changed_mpi) {
-    calc_sources(time() + 0.5 * dt); // for integrated H sources
-    update_eh(H_stuff);              // ensure H = 1/mu * B
-    step_boundaries(H_stuff);
-    calc_sources(time() + dt); // for integrated E sources
-    update_eh(E_stuff);        // ensure E = 1/eps * D
-    step_boundaries(E_stuff);
+    am_now_working_on(MpiTime);
+    bool changed_mpi = or_to_all(changed);
+    finished_working();
+    if (changed_mpi) {
+      calc_sources(time() + 0.5 * dt); // for integrated H sources
+      update_eh(H_stuff);              // ensure H = 1/mu * B
+      step_boundaries(H_stuff);
+      calc_sources(time() + dt); // for integrated E sources
+      update_eh(E_stuff);        // ensure E = 1/eps * D
+      step_boundaries(E_stuff);
+    }
   }
 }
 
