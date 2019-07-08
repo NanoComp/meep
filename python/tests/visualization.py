@@ -153,19 +153,14 @@ class TestVisualization(unittest.TestCase):
         animation = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True)
         sim.run(mp.at_every(1),until=25)
 
-        from distutils.version import LooseVersion
-        if LooseVersion(matplotlib.__version__) >= LooseVersion("3.1.0"):
-            # Check mp4 output
-            Animate.to_mp4(10,'test.mp4')
+        # Check mp4 output
+        Animate.to_mp4(10,'test.mp4')
 
-            # Check gif output
-            Animate.to_gif(10,'test.gif')
+        # Check gif output
+        Animate.to_gif(10,'test.gif')
 
-            # Check jshtml output
-            Animate.to_jshtml(10)
-        else:
-            import warnings
-            warnings.warn("Warning: Animation export is not supported with the current version of matplotlib. Consider upgrading.")
+        # Check jshtml output
+        Animate.to_jshtml(10)
     '''
     Travis does not play well with Mayavi
     def test_3D_mayavi(self):
