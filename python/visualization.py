@@ -652,16 +652,12 @@ class Animate2D(object):
     plot_modifiers=None,**customization_args):
         self.fields = fields
 
-        from matplotlib import pyplot as plt
-        from matplotlib import animation
-
         if f:
             self.f = f
             self.ax = self.f.gca()
         else:
             self.f = None
-
-        self.ax = None
+            self.ax = None
 
         self.realtime = realtime
         self.normalize = normalize
@@ -768,9 +764,11 @@ class Animate2D(object):
         from distutils.version import LooseVersion
         import matplotlib
         if LooseVersion(matplotlib.__version__) < LooseVersion("3.1.0"):
-            warnings.warn('JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+')
-            return ""
-
+            print('-------------------------------')
+            print('Warning: JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+')
+            print('-------------------------------')
+            return
+        
         from uuid import uuid4
         from matplotlib._animation_data import (DISPLAY_TEMPLATE, INCLUDED_FRAMES, JS_INCLUDE, STYLE_INCLUDE)
 
