@@ -918,8 +918,8 @@ private:
 class custom_src_time : public src_time {
 public:
   custom_src_time(std::complex<double> (*func)(double t, void *), void *data, double st = -infinity,
-                  double et = infinity)
-      : func(func), data(data), start_time(float(st)), end_time(float(et)) {}
+                  double et = infinity, std::complex<double> f = 0)
+      : func(func), data(data), start_time(float(st)), end_time(float(et)), freq(f) {}
   virtual ~custom_src_time() {}
 
   virtual std::complex<double> current(double time, double dt) const {
@@ -938,10 +938,13 @@ public:
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
+  virtual std::complex<double> frequency() const { return freq; }
+  virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
   std::complex<double> (*func)(double t, void *);
   void *data;
+  std::complex<double> freq;
   double start_time, end_time;
 };
 
