@@ -912,7 +912,7 @@ where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
 
 ### CustomSource
 
-A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off. To use a custom source within an `EigenModeSource`, you must specify the `center_frequency` parameter, since Meep does not know the frequency content of the `CustomSource`. The resultant eigenmode is calculated at this frequency only. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
 
 **`src_func` [`function`]**
 —
@@ -929,6 +929,10 @@ The end time for the source. Default is 10<sup>20</sup> (never turn off).
 **`is_integrated` [`boolean`]**
 —
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources. Default is `False`.
+
+**`center_frequency` [`number`]**
+—
+Optional center frequency so that the `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
 
 <a name="fluxregion"></a>
 
