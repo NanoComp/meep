@@ -1221,7 +1221,7 @@
       (define coeffs (make-typed-array 'c64 '0 num-bands (meep-dft-flux-Nfreq-get flux) 2))
       (define vgrp (make-typed-array 'f64 '0 num-bands (meep-dft-flux-Nfreq-get flux)))
       (define kpoints-and-kdom (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp
-                                                             eig-resolution eig-tolerance kpoint-func))
+                                                             eig-resolution eig-tolerance kpoint-func direction))
       (list coeffs vgrp (first kpoints-and-kdom) (second kpoints-and-kdom)))))
 
 ; ****************************************************************
