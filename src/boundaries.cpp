@@ -338,7 +338,9 @@ void fields::connect_the_chunks() {
     for (int i = 0; i < num_chunks; i++)
       needs_W_notowned[c] = needs_W_notowned[c] || chunks[i]->needs_W_notowned(c);
   }
+  am_now_working_on(MpiTime);
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
+  finished_working();
 
   for (int i = 0; i < num_chunks; i++) {
     // First count the border elements...
