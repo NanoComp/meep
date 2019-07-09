@@ -282,7 +282,6 @@ sudo apt-get -y install     \
     libpython3.5-dev        \
     python3-numpy           \
     python3-scipy           \
-    python3-matplotlib      \
     python3-pip             \
     ffmpeg                  \
 
@@ -324,6 +323,7 @@ sudo pip3 install --upgrade pip
 pip3 install --user --no-cache-dir mpi4py
 export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
+pip3 install --user matplotlib>3.0.0
 
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
