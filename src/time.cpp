@@ -43,6 +43,12 @@ void fields::am_now_working_on(time_sink s) {
 
 double fields::time_spent_on(time_sink s) { return times_spent[s]; }
 
+double fields::mean_time_spent_on(time_sink s) {
+  int n = count_processors();
+  double total_time_spent = sum_to_master(times_spent[s]);
+  return total_time_spent/n;
+}
+
 static const char *ts2n(time_sink s) {
   switch (s) {
     case Stepping: return "time stepping";

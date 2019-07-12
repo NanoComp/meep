@@ -1513,6 +1513,7 @@ public:
 
   // time.cpp
   double time_spent_on(time_sink);
+  double mean_time_spent_on(time_sink);
   void print_times();
   // boundaries.cpp
   void set_boundary(boundary_side, direction, boundary_condition);
