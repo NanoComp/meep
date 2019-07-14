@@ -438,7 +438,7 @@ Properties:
 
 **`x`, `y`, `z` [`float` or `complex`]**
 —
-The `x`, `y`, and `z` components of the vector.
+The `x`, `y`, and `z` components of the vector. Generally, functions that take a `Vector3` as an argument will accept an iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
 
 **`Vector3(x=0.0, y=0.0, z=0.0)`**
 —

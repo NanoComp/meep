@@ -16,8 +16,8 @@ class Source(object):
                  amp_func_file='', amp_data=None):
         self.src = src
         self.component = component
-        self.center = center
-        self.size = size
+        self.center = Vector3(*center)
+        self.size = Vector3(*size)
         self.amplitude = complex(amplitude)
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file

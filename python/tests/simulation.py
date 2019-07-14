@@ -626,6 +626,31 @@ class TestSimulation(unittest.TestCase):
         _check(mp.Medium(), False)
         _check(mat_func, False)
 
+    def test_iterable_as_v3(self):
+        t0 = ()
+        t1 = (1,)
+        t2 = (1, 2)
+        t3 = (1, 2, 3)
+
+        l0 = []
+        l1 = [1]
+        l2 = [1, 2]
+        l3 = [1, 2, 3]
+
+        v0 = mp.Vector3()
+        v1 = mp.Vector3(1)
+        v2 = mp.Vector3(1, 2)
+        v3 = mp.Vector3(1, 2, 3)
+
+        sim = self.init_simple_simulation()
+        sim.run(until=1)
+
+        for t, l, v3 in zip([t0, t1, t2, t3], [l0, l1, l2, l3], [v0, v1, v2, v3]):
+            pt1 = sim.get_field_point(mp.Ez, t)
+            pt2 = sim.get_field_point(mp.Ez, l)
+            expected = sim.get_field_point(mp.Ez, v3)
+            self.assertAlmostEqual(pt1, expected)
+            self.assertAlmostEqual(pt2, expected)
 
 if __name__ == '__main__':
     unittest.main()
