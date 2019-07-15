@@ -1,12 +1,30 @@
 # Meep Release Notes
 
+## Meep 1.11.0
+
+7/16/19
+
+  * Support for gyrotropic media including magneto-optical effects (#863).
+
+  * Mode decomposition of oblique waveguides (#940, #945) and dispersive materials (#919).
+
+  * Accept tuples in place of Vector3 arguments (#960).
+
+  * Capture C++ error messages in Python notebooks (#953).
+
+  * Automatically abort simulation if the fields blow up (#922).
+
+  * Print additional timing statistics (#927, #952).
+
+  * Various small bugfixes and documentation improvements.
+
 ## Meep 1.10.0
 
 6/5/19
 
   * New Python functions for simple visualization of the simulation domain (#872).
 
-  * Capture Meep and MPB output in Python notebooks (#891,
+  * Capture Meep and MPB output in Python notebooks (#891, #894)
 
   * Add optional `meep.quiet()` parameter to the Python interface (#876).
 
