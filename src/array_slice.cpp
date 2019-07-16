@@ -476,7 +476,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   size_t dims[3];
   direction dirs[3];
   array_slice_data data;
-  int rank = get_array_slice_dimensions(where, dims, dirs, collapse, snap, 0, &data);
+  get_array_slice_dimensions(where, dims, dirs, collapse, snap, 0, &data);
   size_t slice_size = data.slice_size;
 
   bool complex_data = (rfun == 0);
