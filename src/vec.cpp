@@ -1068,11 +1068,10 @@ grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
   grid_volume split_gv =
       split_at_fraction(!split_low, split_point, best_split_direction, num_in_split_dir);
 
-  if (split_low) {
+  if (split_low)
     return split_gv.split_by_cost(num_low, proc_num);
-  } else {
+  else
     return split_gv.split_by_cost(desired_chunks - num_low, proc_num - num_low);
-  }
 }
 
 void grid_volume::split_into_three(std::vector<grid_volume> &result) const {
@@ -1152,9 +1151,9 @@ void grid_volume::split_into_three(std::vector<grid_volume> &result) const {
 std::vector<grid_volume> grid_volume::split_into_n(int n) const {
   std::vector<grid_volume> result;
 
-  if (n == 3) {
+  if (n == 3)
     split_into_three(result);
-  } else {
+  else {
     for (int i = 0; i < n; ++i) {
       grid_volume split_gv = split_by_cost(n, i);
       result.push_back(split_gv);
