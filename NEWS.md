@@ -4,9 +4,9 @@
 
 7/16/19
 
-  * Support for gyrotropic media including magneto-optical effects (#863).
+  * Experimental support for gyrotropic media including magneto-optical effects (#863).
 
-  * Mode decomposition of oblique waveguides (#940, #945) and dispersive materials (#919).
+  * Mode decomposition for oblique waveguides (#940, #945) and dispersive materials (#919).
 
   * Accept tuples in place of Vector3 arguments (#960).
 
