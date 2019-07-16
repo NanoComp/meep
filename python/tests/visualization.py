@@ -74,7 +74,9 @@ def setup_sim(zDim=0):
                     center=mp.Vector3(0,-2))]
 
     # Different pml layers
-    pml_layers = [mp.PML(2.0,mp.X),mp.PML(1.0,mp.Y,mp.Low),mp.PML(1.5,mp.Y,mp.High),mp.PML(1.5,mp.Z)]
+    pml_layers = [mp.PML(2.0,mp.X),mp.PML(1.0,mp.Y,mp.Low),mp.PML(1.5,mp.Y,mp.High)]
+    if zDim > 0:
+        pml_layers += [mp.PML(1.5,mp.Z)]
 
     resolution = 10
 
@@ -144,23 +146,50 @@ class TestVisualization(unittest.TestCase):
     
     @unittest.skipIf(call(['which', 'ffmpeg']) != 0, "ffmpeg is not installed")
     def test_animation_output(self):
-        # Check without normalization
-        sim = setup_sim()
-        Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=False, normalize=False)
-        sim.run(mp.at_every(1,Animate),until=5)
+        # ------------------------- #
+        # Check over 2D domain
+        # ------------------------- #
 
-        # Check with normalization
-        animation = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True)
-        sim.run(mp.at_every(1),until=25)
+        sim = setup_sim() # generate 2D simulation
+        
+        Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=False, normalize=False) # Check without normalization
+        Animate_norm = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True) # Check with normalization
 
-        # Check mp4 output
-        Animate.to_mp4(10,'test.mp4')
+        # test both animation objects during same run
+        sim.run(
+            mp.at_every(1,Animate),
+            mp.at_every(1,Animate_norm),
+            until=5)
+        
+        # Test outputs
+        Animate.to_mp4(5,'test_2D.mp4') # Check mp4 output
+        Animate.to_gif(150,'test_2D.gif') # Check gif output
+        Animate.to_jshtml(10) # Check jshtml output
+        Animate_norm.to_mp4(5,'test_2D_norm.mp4') # Check mp4 output
+        Animate_norm.to_gif(150,'test_2D_norm.gif') # Check gif output
+        Animate_norm.to_jshtml(10) # Check jshtml output
 
-        # Check gif output
-        Animate.to_gif(10,'test.gif')
+        # ------------------------- #
+        # Check over 3D domain
+        # ------------------------- #
+        sim = setup_sim(5) # generate 2D simulation
+        
+        Animate_xy = mp.Animate2D(sim,fields=mp.Ey, realtime=False, normalize=True) # Check without normalization
+        Animate_xz = mp.Animate2D(sim,mp.Ey,realtime=False,normalize=True) # Check with normalization
 
-        # Check jshtml output
-        Animate.to_jshtml(10)
+        # test both animation objects during same run
+        sim.run(
+            mp.at_every(1,mp.in_volume(mp.Volume(center=mp.Vector3(),size=mp.Vector3(sim.cell_size.x,sim.cell_size.y)),Animate_xy)),
+            mp.at_every(1,mp.in_volume(mp.Volume(center=mp.Vector3(),size=mp.Vector3(sim.cell_size.x,0,sim.cell_size.z)),Animate_xz)),
+            until=5)
+        
+        # Test outputs
+        Animate_xy.to_mp4(5,'test_3D_xy.mp4') # Check mp4 output
+        Animate_xy.to_gif(150,'test_3D_xy.gif') # Check gif output
+        Animate_xy.to_jshtml(10) # Check jshtml output
+        Animate_xz.to_mp4(5,'test_3D_xz.mp4') # Check mp4 output
+        Animate_xz.to_gif(150,'test_3D_xz.gif') # Check gif output
+        Animate_xz.to_jshtml(10) # Check jshtml output
     '''
     Travis does not play well with Mayavi
     def test_3D_mayavi(self):

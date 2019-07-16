@@ -526,19 +526,24 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
     # Determine a frequency to plot all epsilon
     if omega is None:
         try:
+            # Continuous sources
             omega = sim.sources[0].frequency
         except:
             try:
+                # Gaussian sources
                 omega = sim.sources[0].src.frequency
             except:
-                omega = 0
+                try:
+                    # Custom sources
+                    omega = sim.sources[0].src.center_frequency
+                except:
+                    # No sources
+                    omega = 0
         
-    # User incorrectly specified a 3D output plane
-    if output_plane and (output_plane.size.x != 0) and (output_plane.size.y != 0) and (output_plane.size.z != 0):
-        raise ValueError("output_plane must be a 2 dimensional volume (a plane).")
-    # User forgot to specify a 2D output plane for a 3D simulation
-    elif output_plane is None and (sim.cell_size.x != 0) and (sim.cell_size.y != 0) and (sim.cell_size.z != 0):
-        raise ValueError("For 3D simulations, you must specify an output_plane.")
+    # validate the output plane to ensure proper 2D coordinates
+    from meep.simulation import Volume
+    sim_center, sim_size = get_2D_dimensions(sim,output_plane)
+    output_plane = Volume(center=sim_center,size=sim_size)
     
     # Plot geometry
     ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,omega=omega)
@@ -655,6 +660,10 @@ class Animate2D(object):
         if f:
             self.f = f
             self.ax = self.f.gca()
+        elif mp.am_master():
+            from matplotlib import pyplot as plt
+            self.f = plt.figure()
+            self.ax = self.f.gca()
         else:
             self.f = None
             self.ax = None
@@ -684,21 +693,22 @@ class Animate2D(object):
         if todo == 'step':
             # Initialize the plot
             if not self.init:
-                self.ax = sim.plot2D(ax=self.ax,fields=self.fields,**self.customization_args)
-                self.f=plt.gcf()
+                filtered_plot2D = filter_dict(self.customization_args, plot2D)
+                ax = sim.plot2D(ax=self.ax,fields=self.fields,**filtered_plot2D)
                 # Run the plot modifier functions
                 if self.plot_modifiers:
                     for k in range(len(self.plot_modifiers)):
-                        self.ax = self.plot_modifiers[k](self.ax)
+                        ax = self.plot_modifiers[k](self.ax)
                 # Store the fields
-                self.w, self.h = self.f.get_size_inches()
                 if mp.am_master():
-                    fields = self.ax.images[-1].get_array()
+                    fields = ax.images[-1].get_array()
+                    self.ax = ax
+                    self.w, self.h = self.f.get_size_inches()
                 self.init = True
-                
             else:               
                 # Update the plot
-                fields = sim.plot_fields(fields=self.fields)
+                filtered_plot_fields= filter_dict(self.customization_args, plot_fields)
+                fields = sim.plot_fields(fields=self.fields,**filtered_plot_fields)
                 if mp.am_master():
                     self.ax.images[-1].set_data(fields)
                     self.ax.images[-1].set_clim(vmin=0.8*np.min(fields), vmax=0.8*np.max(fields))
@@ -768,51 +778,50 @@ class Animate2D(object):
             print('Warning: JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+')
             print('-------------------------------')
             return
-        
-        from uuid import uuid4
-        from matplotlib._animation_data import (DISPLAY_TEMPLATE, INCLUDED_FRAMES, JS_INCLUDE, STYLE_INCLUDE)
+        if mp.am_master():
+            from uuid import uuid4
+            from matplotlib._animation_data import (DISPLAY_TEMPLATE, INCLUDED_FRAMES, JS_INCLUDE, STYLE_INCLUDE)
 
-        # save the frames to an html file
-        fill_frames = self._embedded_frames(self._saved_frames, self.frame_format)
-        Nframes = len(self._saved_frames)
-        mode_dict = dict(once_checked='',
-                         loop_checked='',
-                         reflect_checked='')
-        mode_dict[self.default_mode + '_checked'] = 'checked'
+            # save the frames to an html file
+            fill_frames = self._embedded_frames(self._saved_frames, self.frame_format)
+            Nframes = len(self._saved_frames)
+            mode_dict = dict(once_checked='',
+                            loop_checked='',
+                            reflect_checked='')
+            mode_dict[self.default_mode + '_checked'] = 'checked'
 
-        interval = 1000 // fps
-        
-        html_string = ""
-        html_string += JS_INCLUDE
-        html_string += STYLE_INCLUDE
-        html_string += DISPLAY_TEMPLATE.format(id=uuid4().hex,
-                                             Nframes=Nframes,
-                                             fill_frames=fill_frames,
-                                             interval=interval,
-                                             **mode_dict)
-        return JS_Animation(html_string)
+            interval = 1000 // fps
+            
+            html_string = ""
+            html_string += JS_INCLUDE
+            html_string += STYLE_INCLUDE
+            html_string += DISPLAY_TEMPLATE.format(id=uuid4().hex,
+                                                Nframes=Nframes,
+                                                fill_frames=fill_frames,
+                                                interval=interval,
+                                                **mode_dict)
+            return JS_Animation(html_string)
 
     def to_gif(self,fps,filename):
         # Exports a gif of the recorded animation
         # requires ffmpeg to be installed
         # modified from the matplotlib library
-        from subprocess import Popen, PIPE
-        from io import TextIOWrapper, BytesIO
-        FFMPEG_BIN = 'ffmpeg'
-        command = [FFMPEG_BIN, 
-                    '-f', 'image2pipe', # force piping of rawvideo
-                    '-vcodec', self.frame_format, # raw input codec
-                    '-s', '%dx%d' % (self.frame_size),
-                    '-r', str(fps), # frame rate in frames per second
-                    '-i', 'pipe:', # The input comes from a pipe
-                    '-vcodec', 'gif', # output gif format
-                    '-r', str(fps), # frame rate in frames per second
-                    '-y', 
-                    '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
-                    '-an', filename  # output filename
-        ]
-
         if mp.am_master():
+            from subprocess import Popen, PIPE
+            from io import TextIOWrapper, BytesIO
+            FFMPEG_BIN = 'ffmpeg'
+            command = [FFMPEG_BIN, 
+                        '-f', 'image2pipe', # force piping of rawvideo
+                        '-vcodec', self.frame_format, # raw input codec
+                        '-s', '%dx%d' % (self.frame_size),
+                        '-r', str(fps), # frame rate in frames per second
+                        '-i', 'pipe:', # The input comes from a pipe
+                        '-vcodec', 'gif', # output gif format
+                        '-r', str(fps), # frame rate in frames per second
+                        '-y', 
+                        '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
+                        '-an', filename  # output filename
+            ]
             print("Generating GIF...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
@@ -826,25 +835,24 @@ class Animate2D(object):
         # Exports an mp4 of the recorded animation
         # requires ffmpeg to be installed
         # modified from the matplotlib library
-        from subprocess import Popen, PIPE
-        from io import TextIOWrapper, BytesIO
-        FFMPEG_BIN = 'ffmpeg'
-        command = [FFMPEG_BIN, 
-                    '-f', 'image2pipe', # force piping of rawvideo
-                    '-vcodec', self.frame_format, # raw input codec
-                    '-s', '%dx%d' % (self.frame_size),
-                    #'-pix_fmt', self.frame_format,
-                    '-r', str(fps), # frame rate in frames per second
-                    '-i', 'pipe:', # The input comes from a pipe
-                    '-vcodec', self.codec, # output mp4 format
-                    '-pix_fmt','yuv420p',
-                    '-r', str(fps), # frame rate in frames per second
-                    '-y', 
-                    '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
-                    '-an', filename  # output filename
-        ]
-        
         if mp.am_master():
+            from subprocess import Popen, PIPE
+            from io import TextIOWrapper, BytesIO
+            FFMPEG_BIN = 'ffmpeg'
+            command = [FFMPEG_BIN, 
+                        '-f', 'image2pipe', # force piping of rawvideo
+                        '-vcodec', self.frame_format, # raw input codec
+                        '-s', '%dx%d' % (self.frame_size),
+                        #'-pix_fmt', self.frame_format,
+                        '-r', str(fps), # frame rate in frames per second
+                        '-i', 'pipe:', # The input comes from a pipe
+                        '-vcodec', self.codec, # output mp4 format
+                        '-pix_fmt','yuv420p',
+                        '-r', str(fps), # frame rate in frames per second
+                        '-y', 
+                        '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
+                        '-an', filename  # output filename
+            ]
             print("Generating MP4...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
