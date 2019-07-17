@@ -631,12 +631,10 @@ class TestSimulation(unittest.TestCase):
         t1 = (1,)
         t2 = (1, 2)
         t3 = (1, 2, 3)
-
         l0 = []
         l1 = [1]
         l2 = [1, 2]
         l3 = [1, 2, 3]
-
         v0 = mp.Vector3()
         v1 = mp.Vector3(1)
         v2 = mp.Vector3(1, 2)
