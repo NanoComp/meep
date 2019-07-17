@@ -1050,7 +1050,10 @@ grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
     while (first < last) { // bisection search for balanced splitting
       int mid = (first + last) / 2;
       double mid_diff = cost_diff(desired_chunks, get_split_costs(d, mid));
-      if (mid_diff > 0) first = mid;
+      if (mid_diff > 0) {
+        if (first == mid) break;
+        first = mid;
+      }
       else if (mid_diff < 0) last = mid;
       else break;
     }
