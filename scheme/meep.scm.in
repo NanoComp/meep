@@ -16,6 +16,10 @@
 
 ; ****************************************************************
 
+; for define* (keyword args) in guile 1.8
+(if (< (string->number (major-version)) 2)
+    (use-modules (ice-9 optargs)))
+
 ; Get the number of arguments to a function p.  However, some
 ; older versions of Guile (e.g. 1.2) do not support the 'arity
 ; property, and procedure-property just returns false.  In

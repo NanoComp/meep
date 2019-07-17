@@ -19,14 +19,13 @@
 (set-param! resolution 10)
 
 (define-param fcen 0.118)
-(define-param df 0.08)
 (set! sources (list
                (make source
-                 (src (make continuous-src (frequency fcen) (fwidth df)))
+                 (src (make continuous-src (frequency fcen)))
                  (component Ez)
                  (center (+ r 0.1) 0))
                (make source
-                 (src (make continuous-src (frequency fcen) (fwidth df)))
+                 (src (make continuous-src (frequency fcen)))
                  (component Ez)
                  (center (- (+ r 0.1)) 0)
                  (amplitude -1))))

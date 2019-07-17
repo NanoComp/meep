@@ -113,12 +113,10 @@ static void split_by_cost(std::vector<int> factors, grid_volume gvol,
   factors.pop_back();
 
   std::vector<grid_volume> new_gvs = gvol.split_into_n(n);
-  if (new_gvs.size() != (size_t)n) {
+  if (new_gvs.size() != (size_t)n)
     abort("Error splitting by cost: expected %d grid_volumes but got %zu", n, new_gvs.size());
-  }
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     split_by_cost(factors, new_gvs[i], result);
-  }
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
@@ -178,9 +176,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
   // We may have to use a different number of chunks than the user requested
   int adjusted_num_chunks = 1;
-  for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i) {
+  for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i)
     adjusted_num_chunks *= prime_factors[i];
-  }
 
   // Finally, create the chunks:
   num_chunks = 0;
@@ -190,14 +187,14 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
-    if (!quiet && desired_num_chunks > 1) master_printf("Splitting into %d chunks evenly\n", desired_num_chunks);
+    if (!quiet && adjusted_num_chunks > 1) master_printf("Splitting into %d chunks evenly\n", adjusted_num_chunks);
     for (int i = 0; i < adjusted_num_chunks; i++) {
       grid_volume vi =
           gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes, effort);
       chunk_volumes.push_back(vi);
     }
   } else {
-    if (!quiet && desired_num_chunks > 1) master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
+    if (!quiet && adjusted_num_chunks > 1) master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
   }
 
