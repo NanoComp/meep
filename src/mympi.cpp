@@ -127,13 +127,15 @@ void abort(const char *fmt, ...) {
   // Make a std::string to support older compilers (std::runtime_error(char *) was added in C++11)
   std::string error_msg(s);
   free(s);
+#ifdef HAVE_MPI
   if (count_processors() == 1) {
     throw runtime_error("meep: " + error_msg);
   }
-#ifdef HAVE_MPI
   fprintf(stderr, "meep: %s", error_msg.c_str());
   if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
   MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+  throw runtime_error("meep: " + error_msg);
 #endif
 }
 

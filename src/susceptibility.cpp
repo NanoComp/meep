@@ -55,6 +55,7 @@ susceptibility *susceptibility::clone() const {
 
 // generic base class definition.
 std::complex<double> susceptibility::chi1(double freq, double sigma) {
+  (void) freq; (void) sigma;
   return std::complex<double>(0,0);
 }
 
@@ -153,6 +154,7 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   return (void *)dnew;
 }
 
+#if 0
 /* Return true if the discretized Lorentzian ODE is intrinsically unstable,
    i.e. if it corresponds to a filter with a pole z outside the unit circle.
    Note that the pole satisfies the quadratic equation:
@@ -167,6 +169,7 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   double b = (1 - w2 / 2) / (1 + g2), c = (1 - g2) / (1 + g2);
   return b * b > c && 2 * b * b - c + 2 * fabs(b) * sqrt(b * b - c) > 1;
 }
+#endif
 
 #define SWAP(t, a, b)                                                                              \
   {                                                                                                \

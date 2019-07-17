@@ -122,7 +122,7 @@ component first_field_component(field_type ft) {
     case H_stuff: return Hx;
     case D_stuff: return Dx;
     case B_stuff: return Bx;
-    default: abort("bug - only E/H/D/B stuff have components");
+    default: abort("bug - only E/H/D/B stuff have components"); return NO_COMPONENT;
   }
 }
 
