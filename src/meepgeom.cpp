@@ -380,14 +380,15 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
 
-      display_geometric_object_info(5, geometry.items[i]);
+      if (!meep::quiet) display_geometric_object_info(5, geometry.items[i]);
 
       medium_struct *mm;
       if (is_medium(geometry.items[i].material, &mm)) {
         check_offdiag(mm);
-        master_printf("%*sdielectric constant epsilon diagonal "
-                      "= (%g,%g,%g)\n",
-                      5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
+        if (!meep::quiet)
+          master_printf("%*sdielectric constant epsilon diagonal "
+                        "= (%g,%g,%g)\n",
+                        5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       }
     }
   }
@@ -395,7 +396,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
-  if (verbose && meep::am_master()) {
+  if (!meep::quiet && verbose && meep::am_master()) {
     master_printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 
@@ -1374,7 +1375,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
     if (ss->transitions.size() != 0 || ss->initial_populations.size() != 0) {
       // multilevel atom
       sus = make_multilevel_sus(ss);
-      master_printf("multilevel atom susceptibility\n");
+      if (!meep::quiet) master_printf("multilevel atom susceptibility\n");
     } else {
       if (noisy) {
         sus = new meep::noisy_lorentzian_susceptibility(ss->noise_amp, ss->frequency, ss->gamma,
@@ -1388,16 +1389,18 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
       } else {
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
-      master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
-                    noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
-                    ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
-                    : ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
-      if (noisy) master_printf(", amp=%g ", ss->noise_amp);
-      if (gyrotropic) {
-        if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
-        master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
+      if (!meep::quiet) {
+        master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
+                      noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
+                      ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
+                      : ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
+        if (noisy) master_printf(", amp=%g ", ss->noise_amp);
+        if (gyrotropic) {
+          if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
+          master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
+        }
+        master_printf("\n");
       }
-      master_printf("\n");
     }
 
     current_pol = p;
@@ -1507,9 +1510,11 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
   geometry_lattice.size = size;
   geometry_edge = vector3_to_vec(size) * 0.5;
 
-  master_printf("Working in %s dimensions.\n", meep::dimension_name(s->gv.dim));
-  master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
-                resolution);
+  if (!meep::quiet) {
+    master_printf("Working in %s dimensions.\n", meep::dimension_name(s->gv.dim));
+    master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
+                  resolution);
+  }
 
   geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
 
@@ -1539,7 +1544,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
   s->remove_susceptibilities();
   geps.add_susceptibilities(s);
 
-  master_printf("-----------\n");
+  if (!meep::quiet) master_printf("-----------\n");
 }
 
 /***************************************************************/
@@ -1578,8 +1583,9 @@ material_type make_file_material(const char *eps_input_file) {
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     md->epsilon_data = eps_file.read(dataname, &rank, md->epsilon_dims, 3);
-    master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", md->epsilon_dims[0],
-                  md->epsilon_dims[1], md->epsilon_dims[2], eps_input_file);
+    if (!meep::quiet)
+      master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", md->epsilon_dims[0],
+                    md->epsilon_dims[1], md->epsilon_dims[2], eps_input_file);
     delete[] fname;
   }
 
