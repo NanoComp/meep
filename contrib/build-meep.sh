@@ -21,6 +21,16 @@ Press return to continue
 EOF
 read junk
 
+if ! lsb_release; then
+    echo "Minimum requirements:"
+    echo "    Ubuntu:"
+    echo "        sudo apt-get -y install lsb-release sudo git"
+    echo "    CentOS:"
+    echo "        sudo yum -y install redhat-lsb-core sudo git"
+    echo ""
+    exit 1
+fi
+
 set -ex
 
 ubuntu=false
