@@ -814,7 +814,7 @@ class Animate2D(object):
         ]
 
         if mp.am_master():
-            not mp.cvar.quiet:
+            if not mp.cvar.quiet:
                 print("Generating GIF...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
@@ -847,7 +847,7 @@ class Animate2D(object):
         ]
         
         if mp.am_master():
-            not mp.cvar.quiet:
+            if not mp.cvar.quiet:
                 print("Generating MP4...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
