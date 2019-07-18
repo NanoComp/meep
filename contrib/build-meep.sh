@@ -84,7 +84,7 @@ autogensh ()
 
 if $ubuntu; then
 
-    sudo apt-get; update
+    sudo apt-get update
 
     # If building on Ubuntu 18.04LTS, replace libpng16-dev with libpng-dev,
     # and libpython3.5-dev with libpython3-dev.
