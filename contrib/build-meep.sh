@@ -54,14 +54,6 @@ SUDO=
 mkdir -p ${SRCDIR}
 cd ${SRCDIR}
 
-RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
-CPPFLAGS=${CFLAGS}
-PKG_CONFIG_PATH=${DESDTIR}/pkgconfig
-export PKG_CONFIG_PATH
-export PATH=${DESTDIR}/bin:${PATH}
-
 gitclone ()
 {
     repo=${1##*/}
@@ -117,6 +109,11 @@ if $ubuntu; then
     export HDF5_MPI="ON"
     sudo -H pip3 install --no-binary=h5py h5py
     sudo -H pip3 install matplotlib>3.0.0
+
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
+
 fi
 
 if $centos; then
@@ -169,10 +166,19 @@ if $centos; then
     sudo yum -y install    \
         openmpi-devel      \
         hdf5-openmpi-devel \
-        guile-devel
+        guile-devel        \
+        swig
 
     export PATH=${PATH}:/usr/lib64/openmpi/bin
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib64/openmpi/lib"
+    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
 fi
+
+CPPFLAGS=${CFLAGS}
+PKG_CONFIG_PATH=${DESDTIR}/pkgconfig
+export PKG_CONFIG_PATH
+export PATH=${DESTDIR}/bin:${PATH}
 
 mkdir -p $SRCDIR
 
