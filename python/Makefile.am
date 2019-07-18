@@ -72,7 +72,6 @@ TESTS =                                   \
     $(TEST_DIR)/simulation.py             \
     $(TEST_DIR)/source.py                 \
     $(TEST_DIR)/user_defined_material.py  \
-    $(TEST_DIR)/visualization.py          \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
