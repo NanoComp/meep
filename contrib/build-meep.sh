@@ -33,7 +33,7 @@ case "$distrib" in
         libpython=libpython3-dev
         ubuntu=true
         ;;
-    16.04) # ubuntu 16.04 xenal
+    16.04) # ubuntu 16.04 xenial
         libpng=libpng16-dev
         libpython=libpython3.5-dev
         ubuntu=true
@@ -78,8 +78,6 @@ if $ubuntu; then
 
     sudo apt-get update
 
-    # If building on Ubuntu 18.04LTS, replace libpng16-dev with libpng-dev,
-    # and libpython3.5-dev with libpython3-dev.
     sudo apt-get -y install     \
         build-essential         \
         gfortran                \
@@ -102,9 +100,7 @@ if $ubuntu; then
         python3-pip             \
         ffmpeg                  \
 
-    # The next line is only required on Ubuntu  16.04
-    [ "$distrib" = xenial ] && sudo -H pip3 install --upgrade pip
-
+    [ "$distrib" = 16.04 ] && sudo -H pip3 install --upgrade pip
     sudo -H pip3 install --no-cache-dir mpi4py
     export HDF5_MPI="ON"
     sudo -H pip3 install --no-binary=h5py h5py
