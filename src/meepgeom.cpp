@@ -268,7 +268,7 @@ bool is_metal(meep::field_type ft, const material_type *material) {
         return (md->medium.epsilon_diag.x < 0 || md->medium.epsilon_diag.y < 0 ||
                 md->medium.epsilon_diag.z < 0);
       case material_data::PERFECT_METAL: return true;
-      default: meep::abort("unknown material type");
+      default: meep::abort("unknown material type"); return false;
     }
   else
     switch (md->which_subclass) {
@@ -276,7 +276,7 @@ bool is_metal(meep::field_type ft, const material_type *material) {
         return (md->medium.mu_diag.x < 0 || md->medium.mu_diag.y < 0 || md->medium.mu_diag.z < 0);
       case material_data::PERFECT_METAL:
         return false; // is an electric conductor, but not a magnetic conductor
-      default: meep::abort("unknown material type");
+      default: meep::abort("unknown material type"); return false;
     }
 }
 

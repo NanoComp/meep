@@ -45,7 +45,7 @@ private:
 #define PRINTF_ATTR(f, a)
 #endif
 
-void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1, 2);
+void abort(const char *fmt, ...) PRINTF_ATTR(1, 2);
 void all_wait();
 int count_processors();
 int my_rank();

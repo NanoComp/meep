@@ -919,7 +919,7 @@ class custom_src_time : public src_time {
 public:
   custom_src_time(std::complex<double> (*func)(double t, void *), void *data, double st = -infinity,
                   double et = infinity, std::complex<double> f = 0)
-      : func(func), data(data), start_time(float(st)), end_time(float(et)), freq(f) {}
+      : func(func), data(data), freq(f), start_time(float(st)), end_time(float(et)) {}
   virtual ~custom_src_time() {}
 
   virtual std::complex<double> current(double time, double dt) const {
