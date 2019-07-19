@@ -228,7 +228,8 @@ void dft_chunk::update_dft(double time) {
     if (include_dV_and_interp_weights) {
       w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
       if (sqrt_dV_and_interp_weights) w = sqrt(w);
-    } else
+    }
+    else
       w = 1.0;
     double f[2]; // real/imag field value at epsilon point
     if (avg2)
@@ -246,7 +247,8 @@ void dft_chunk::update_dft(double time) {
       complex<realnum> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
-    } else {
+    }
+    else {
       realnum fr = f[0];
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
@@ -775,7 +777,8 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
 
       cdouble val = (mode1_data ? mode1val : dft_val);
       buffer[idx2] = reim ? imag(val) : real(val);
-    } else if (field_array) {
+    }
+    else if (field_array) {
       IVEC_LOOP_ILOC(fc->gv, iloc);         // iloc <-- indices of parent point in Yee grid
       iloc = S.transform(iloc, sn) + shift; // iloc <-- indices of child point in Yee grid
       iloc -= min_corner;                   // iloc <-- 2*(indices of point in DFT array)
@@ -789,7 +792,8 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
       for (int i = rank - 1, stride = 1; i >= 0; stride *= array_count[i--])
         idx2 += stride * (iloc.in_direction(ds[i]) / 2);
       field_array[idx2] = interp_w * dft_val;
-    } else {
+    }
+    else {
       mode1val = conj(mode1val); // conjugated inner product
       if (mode2_data)
         integral += w * mode1val * mode2val;
@@ -922,7 +926,8 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   if (HDF5FileName) {
     buffer = new realnum[bufsz];
     reim_max = 1;
-  } else if (pfield_array)
+  }
+  else if (pfield_array)
     *pfield_array = field_array = (array_size ? new cdouble[array_size] : 0);
 
   bool append_data = false;
@@ -949,7 +954,8 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       file->done_writing_chunks();
       file->prevent_deadlock(); // hackery
       delete file;
-    } else if (field_array) {
+    }
+    else if (field_array) {
 /***************************************************************/
 /* repeatedly call sum_to_all to consolidate full field array  */
 /* on all cores                                                */
@@ -1062,7 +1068,8 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
       if (!have_empty_dims) {
         process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0,
                               0, Ex, &first_component);
-      } else {
+      }
+      else {
         cdouble *array = 0;
         int rank;
         size_t dims[3];

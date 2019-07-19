@@ -41,7 +41,8 @@ src_time *src_time::add_to(src_time *others, src_time **added) const {
     else
       others->next = add_to(others->next, added);
     return others;
-  } else {
+  }
+  else {
     src_time *t = clone();
     t->next = others;
     *added = t;
@@ -189,10 +190,12 @@ src_vol *src_vol::add_to(src_vol *others) {
         if (others->index[j] != index[j]) abort("Different indices\n");
         others->A[j] += A[j];
       }
-    } else
+    }
+    else
       others->next = add_to(others->next);
     return others;
-  } else {
+  }
+  else {
     next = others;
     return this;
   }
@@ -209,7 +212,8 @@ void fields::add_point_source(component c, double freq, double width, double pea
     continuous_src_time src(freq, width, time(), infinity, cutoff);
     if (is_magnetic(c)) src.is_integrated = false;
     add_point_source(c, src, p, amp);
-  } else {
+  }
+  else {
     cutoff = gv.inva + cutoff * width;
     if (peaktime <= 0.0) peaktime = time() + cutoff;
 

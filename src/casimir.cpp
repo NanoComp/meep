@@ -222,11 +222,13 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
   else if (dforce != dnormal && dsource == dnormal) {
     // force-source offdiagonal term
     dcomponent = dforce;
-  } else if (dforce == dnormal && dsource == dnormal) {
+  }
+  else if (dforce == dnormal && dsource == dnormal) {
     // +source-source/2 diagonal term
     dcomponent = dsource;
     coefficient = +0.5;
-  } else /* if (dforce == dnormal && dsource != dnormal) */ {
+  }
+  else /* if (dforce == dnormal && dsource != dnormal) */ {
     // -source-source/2 diagonal term
     dcomponent = dsource;
     coefficient = -0.5;
@@ -240,7 +242,8 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
   if (gv.dim == Dcyl) {
     data.xd = R;
     data.yd = P;
-  } else {
+  }
+  else {
     data.xd = X;
     data.yd = Y;
   }
@@ -251,7 +254,8 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
                   : (0.5 * (where.in_direction_min(data.xd) + where.in_direction_max(data.xd)));
     data.kx = mx * pi / (!is_bloch ? where.in_direction(data.xd) : 1.0);
     coefficient *= sqrt((mx == 0 || is_bloch ? 1.0 : 2.0) / where.in_direction(data.xd));
-  } else {
+  }
+  else {
     data.xd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.x0 = data.kx = 0;                // innocuous values: ignore this dir
   }
@@ -261,7 +265,8 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
                   : (0.5 * (where.in_direction_min(data.yd) + where.in_direction_max(data.yd)));
     data.ky = my * pi / (!is_bloch ? where.in_direction(data.yd) : 1.0);
     coefficient *= sqrt((my == 0 || is_bloch ? 1.0 : 2.0) / where.in_direction(data.yd));
-  } else {
+  }
+  else {
     data.yd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.y0 = data.ky = 0;                // innocuous values: ignore this dir
   }
@@ -271,7 +276,8 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
                   : (0.5 * (where.in_direction_min(data.zd) + where.in_direction_max(data.zd)));
     data.kz = mz * pi / (!is_bloch ? where.in_direction(data.zd) : 1.0);
     coefficient *= sqrt((mz == 0 || is_bloch ? 1.0 : 2.0) / where.in_direction(data.zd));
-  } else {
+  }
+  else {
     data.zd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.z0 = data.kz = 0;                // innocuous values: ignore this dir
   }

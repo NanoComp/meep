@@ -57,7 +57,8 @@ int compare(double a, double b, const char *n) {
     master_printf("%s = %g differs by %g from %g\n", n, a, a - b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
-  } else {
+  }
+  else {
     return 1;
   }
 }

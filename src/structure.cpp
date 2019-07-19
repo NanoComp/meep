@@ -54,7 +54,7 @@ structure::structure(const grid_volume &thegv, material_function &eps, const bou
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
-  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n",wall_time()-tstart);
+  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
@@ -68,7 +68,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
-  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n",wall_time()-tstart);
+  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -95,7 +95,8 @@ static std::vector<int> get_prime_factors(int n) {
     // If we end up with a prime number greater than 5, then start over with n -1 in order to get
     // the largest number that is a multiple of 2, 3, or 5.
     return get_prime_factors(initial_n - 1);
-  } else if (n >= 2 && n <= 5) {
+  }
+  else if (n >= 2 && n <= 5) {
     result.push_back(n);
   }
   return result;
@@ -187,14 +188,17 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
-    if (!quiet && adjusted_num_chunks > 1) master_printf("Splitting into %d chunks evenly\n", adjusted_num_chunks);
+    if (!quiet && adjusted_num_chunks > 1)
+      master_printf("Splitting into %d chunks evenly\n", adjusted_num_chunks);
     for (int i = 0; i < adjusted_num_chunks; i++) {
       grid_volume vi =
           gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes, effort);
       chunk_volumes.push_back(vi);
     }
-  } else {
-    if (!quiet && adjusted_num_chunks > 1) master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
+  }
+  else {
+    if (!quiet && adjusted_num_chunks > 1)
+      master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
   }
 
@@ -323,7 +327,8 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
         temp_volumes[counter] = others[k];
         counter++;
       }
-    } else {
+    }
+    else {
       temp_effort[counter] = effort[j];
       temp_volumes[counter] = effort_volumes[j];
       counter++;
@@ -716,7 +721,8 @@ void structure_chunk::update_condinv() {
     if (conductivity[c][d]) {
       if (!condinv[c][d]) condinv[c][d] = new realnum[gv.ntot()];
       LOOP_OVER_VOL(gv, c, i) { condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5); }
-    } else if (condinv[c][d]) { // condinv not needed
+    }
+    else if (condinv[c][d]) { // condinv not needed
       delete[] condinv[c][d];
       condinv[c][d] = NULL;
     }
@@ -735,7 +741,8 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
         if (cur) {
           cur->next = ocur->clone();
           cur = cur->next;
-        } else {
+        }
+        else {
           chiP[ft] = cur = ocur->clone();
         }
         cur->next = NULL;
@@ -754,7 +761,8 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       if (chi3[c] == NULL) abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi3[c][i] = o->chi3[c][i];
-    } else {
+    }
+    else {
       chi3[c] = NULL;
     }
     if (is_mine() && o->chi2[c]) {
@@ -762,7 +770,8 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       if (chi2[c] == NULL) abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi2[c][i] = o->chi2[c][i];
-    } else {
+    }
+    else {
       chi2[c] = NULL;
     }
   }
@@ -773,14 +782,16 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       if (o->chi1inv[c][d]) {
         chi1inv[c][d] = new realnum[gv.ntot()];
         memcpy(chi1inv[c][d], o->chi1inv[c][d], gv.ntot() * sizeof(realnum));
-      } else
+      }
+      else
         chi1inv[c][d] = NULL;
       if (o->conductivity[c][d]) {
         conductivity[c][d] = new realnum[gv.ntot()];
         memcpy(conductivity[c][d], o->conductivity[c][d], gv.ntot() * sizeof(realnum));
         condinv[c][d] = new realnum[gv.ntot()];
         memcpy(condinv[c][d], o->condinv[c][d], gv.ntot() * sizeof(realnum));
-      } else
+      }
+      else
         conductivity[c][d] = condinv[c][d] = NULL;
     }
   }
@@ -836,7 +847,8 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
     if (!trivial) {
       chi2[c] = new realnum[gv.ntot()];
       memset(chi2[c], 0, gv.ntot() * sizeof(realnum)); // chi2 = 0
-    } else { // no chi3, and chi2 is trivial (== 0), so delete
+    }
+    else { // no chi3, and chi2 is trivial (== 0), so delete
       delete[] chi3[c];
       chi3[c] = NULL;
     }
@@ -871,7 +883,8 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
     if (!trivial) {
       chi3[c] = new realnum[gv.ntot()];
       memset(chi3[c], 0, gv.ntot() * sizeof(realnum)); // chi3 = 0
-    } else { // no chi2, and chi3 is trivial (== 0), so delete
+    }
+    else { // no chi2, and chi3 is trivial (== 0), so delete
       delete[] chi2[c];
       chi2[c] = NULL;
     }
@@ -902,7 +915,8 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
       cnd[i] = C.conductivity(c, here) * multby[i];
       trivial = trivial && (cnd[i] == 0.0);
     }
-  } else {
+  }
+  else {
     LOOP_OVER_VOL(gv, c_C, i) {
       IVEC_LOOP_LOC(gv, here);
       cnd[i] = C.conductivity(c, here);

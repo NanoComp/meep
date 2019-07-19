@@ -20,10 +20,12 @@ int find_exponent(double a_mean, double a_meansqr, double a2_mean, double a2_mea
   if (a2_sigma / a2_mean < 0.15) {
     master_printf("converged as %3.1e / (a*a)\n", a_mean);
     return 2;
-  } else if (a_sigma / a_mean < 0.15) {
+  }
+  else if (a_sigma / a_mean < 0.15) {
     master_printf("converged as %3.1e / a\n", a_mean);
     return 1;
-  } else {
+  }
+  else {
     master_printf("Not clear if it converges...\n");
     return 0;
   }

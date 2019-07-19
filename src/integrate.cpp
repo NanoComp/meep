@@ -92,7 +92,8 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
             tr += 4; // default inveps == 1
         }
         fvals[i] = (4 * data->ninveps) / tr;
-      } else if (cS[i] == Permeability) {
+      }
+      else if (cS[i] == Permeability) {
         double tr = 0.0;
         for (int k = 0; k < data->ninvmu; ++k) {
           const realnum *im = fc->s->chi1inv[imcs[k]][imds[k]];
@@ -103,7 +104,8 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
             tr += 4; // default invmu == 1
         }
         fvals[i] = (4 * data->ninvmu) / tr;
-      } else {
+      }
+      else {
         double f[2];
         for (int k = 0; k < 2; ++k)
           if (fc->f[cS[i]][k])

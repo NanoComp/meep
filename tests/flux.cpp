@@ -43,7 +43,8 @@ int compare(double a, double b, double eps, double thresh, const char *n) {
     master_printf("%s differs by\t%g out of\t%g\n", n, a - b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
-  } else {
+  }
+  else {
     if (fabs(a - b) > fabs(b) * eps * 1.1 && fabs(b) > thresh)
       master_printf("%s fractional error is %g, close to %g threshold.\n", n, fabs(a - b) / fabs(b),
                     eps);

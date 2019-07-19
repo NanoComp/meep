@@ -104,10 +104,12 @@ int main(int argc, char *argv[]) {
     if (!strcasecmp(argv[narg], "--use-symmetry")) {
       use_symmetry = true;
       master_printf("Using symmetry.\n");
-    } else if (!strcasecmp(argv[narg], "--write-files")) {
+    }
+    else if (!strcasecmp(argv[narg], "--write-files")) {
       write_files = true;
       master_printf("writing HDF5 data files");
-    } else {
+    }
+    else {
       master_printf("unknown command-line option %s (aborting)", argv[narg]);
       usage(argv[0]);
     };
@@ -193,7 +195,8 @@ int main(int argc, char *argv[]) {
     master_printf("Wrote binary data to file %s.h5\n", H5FILENAME);
     delete file;
     exit(0);
-  } else {
+  }
+  else {
     //
     // read 1D and 2D array-slice data from HDF5 file
     //

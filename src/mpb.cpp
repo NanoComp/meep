@@ -369,7 +369,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     eps_data.omega = omega_src;
     set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
     if (user_mdata) *user_mdata = (void *)mdata;
-  } else {
+  }
+  else {
     mdata = (maxwell_data *)(*user_mdata);
     maxwell_set_num_bands(mdata, band_num);
     N_start = mdata->N_start;
@@ -384,7 +385,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     for (int i = 0; i < 3; ++i)
       kdir[i] = kcart[i] / kcart_len;
     kmatch = kcart_len;
-  } else {
+  }
+  else {
     kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
     kdir[d - X] = 1;                     // kdir = unit vector in d direction
   }
@@ -397,7 +399,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     if (d == NO_DIRECTION) {
       for (int i = 0; i < 3; ++i)
         k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
-    } else {
+    }
+    else {
       k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
       if (eig_vol.in_direction(d) > 0 &&
           fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
@@ -489,7 +492,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         if (d == NO_DIRECTION) {
           for (int i = 0; i < 3; ++i)
             k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
-        } else {
+        }
+        else {
           k[d - X] = kmatch * R[d - X][d - X];
         }
         update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
@@ -874,7 +878,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)user_kpoint_data;
   (void)kdom;
   (void)verbose;
-  (void) d;
+  (void)d;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
@@ -908,9 +912,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         int num_bands, int parity, double eig_resolution,
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints, vec *kdom, bool verbose) {
-  get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-    coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose, flux.normal_direction);
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom,
+                                        bool verbose) {
+  get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
+                             eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
+                             kpoints, kdom, verbose, flux.normal_direction);
 }
 
 } // namespace meep

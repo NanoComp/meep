@@ -79,7 +79,8 @@ void check_convergence(component c, double best_guess, double beta) {
     if (!best_guess) {
       best_guess = freq + 0.5 * (freq_shifted - freq);
       master_printf("The frequency is approximately %g\n", best_guess);
-    } else {
+    }
+    else {
       master_printf("frequency for a=%g is %g, %g (shifted), %g (mean)\n", a, freq, freq_shifted,
                     0.5 * (freq + freq_shifted));
       master_printf("Unshifted freq error is %g/%g/%g\n", (freq - best_guess) * a * a, a, a);

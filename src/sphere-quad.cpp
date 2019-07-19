@@ -130,7 +130,8 @@ void spherical_quadrature_points(double *x, double *y, double *z, double *weight
         }
       }
     }
-  } else if (num_sq_pts == 72 || num_sq_pts == 12) {
+  }
+  else if (num_sq_pts == 72 || num_sq_pts == 12) {
     /* As above (same references), but with a 72-point 14th degree
        formula, this time with the symmetry group of an icosohedron.
        (Stroud formula number U3:14-1.)  Alternatively, just use
@@ -192,7 +193,8 @@ void spherical_quadrature_points(double *x, double *y, double *z, double *weight
         }
       }
     }
-  } else
+  }
+  else
     CHECK(0, "spherical_quadrature_points: passed unknown # points!");
 
   CHECK(n == num_sq_pts, "bug in spherical_quadrature_points: wrong number of points!");

@@ -264,12 +264,14 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
       s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2);
       e0.set_direction(d, w1 * w1 / 2);
       e1.set_direction(d, 1 - (1 - w1) * (1 - w1) / 2);
-    } else if (ie.in_direction(d) == is.in_direction(d) + 2 * 2) {
+    }
+    else if (ie.in_direction(d) == is.in_direction(d) + 2 * 2) {
       s0.set_direction(d, w0 * w0 / 2);
       s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2 - (1 - w1) * (1 - w1) / 2);
       e0.set_direction(d, w1 * w1 / 2);
       e1.set_direction(d, s1.in_direction(d));
-    } else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
+    }
+    else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
       if (snap_empty_dimensions) {
         if (w0 > w1)
           ie.set_direction(d, is.in_direction(d));
@@ -283,12 +285,14 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
       s1.set_direction(d, w1);
       e0.set_direction(d, w1);
       e1.set_direction(d, w0);
-    } else if (ie.in_direction(d) == is.in_direction(d) + 1 * 2) {
+    }
+    else if (ie.in_direction(d) == is.in_direction(d) + 1 * 2) {
       s0.set_direction(d, w0 * w0 / 2 - (1 - w1) * (1 - w1) / 2);
       e0.set_direction(d, w1 * w1 / 2 - (1 - w0) * (1 - w0) / 2);
       s1.set_direction(d, e0.in_direction(d));
       e1.set_direction(d, s0.in_direction(d));
-    } else
+    }
+    else
       abort("bug: impossible(?) looping boundaries");
   }
 }
@@ -393,7 +397,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         max_ishift.set_direction(
             d,
             int(ceil((wherec.in_direction_max(d) - gvS.in_direction_min(d)) / L.in_direction(d))));
-      } else {
+      }
+      else {
         min_ishift.set_direction(d, 0);
         max_ishift.set_direction(d, 0);
       }
@@ -442,13 +447,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
             if (iscS.in_direction(dS) == is.in_direction(dS)) {
               s0c.set_direction(d, s0.in_direction(dS));
               s1c.set_direction(d, s1.in_direction(dS));
-            } else if (iscS.in_direction(dS) == is.in_direction(dS) + 2) {
+            }
+            else if (iscS.in_direction(dS) == is.in_direction(dS) + 2) {
               s0c.set_direction(d, s1.in_direction(dS));
             }
             if (iecS.in_direction(dS) == ie.in_direction(dS)) {
               e0c.set_direction(d, e0.in_direction(dS));
               e1c.set_direction(d, e1.in_direction(dS));
-            } else if (iecS.in_direction(dS) == ie.in_direction(dS) - 2) {
+            }
+            else if (iecS.in_direction(dS) == ie.in_direction(dS) - 2) {
               e0c.set_direction(d, e1.in_direction(dS));
             }
             if (iecS.in_direction(dS) == iscS.in_direction(dS)) {
@@ -457,14 +464,16 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
               e0c.set_direction(d, w);
               s1c.set_direction(d, w);
               e1c.set_direction(d, w);
-            } else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 1 * 2) {
+            }
+            else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 1 * 2) {
               double w = min(s0c.in_direction(d), e1c.in_direction(d));
               s0c.set_direction(d, w);
               e1c.set_direction(d, w);
               w = min(s1c.in_direction(d), e0c.in_direction(d));
               s1c.set_direction(d, w);
               e0c.set_direction(d, w);
-            } else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 2 * 2) {
+            }
+            else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 2 * 2) {
               double w = min(s1c.in_direction(d), e1c.in_direction(d));
               s1c.set_direction(d, w);
               e1c.set_direction(d, w);

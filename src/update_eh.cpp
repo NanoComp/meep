@@ -62,7 +62,8 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       }
       if (need_fmp) {
         if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[gv.ntot()];
-      } else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
+      }
+      else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
         delete[] f_minus_p[dc][cmp];
         f_minus_p[dc][cmp] = 0;
       }

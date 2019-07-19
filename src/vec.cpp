@@ -450,14 +450,18 @@ bool grid_volume::owns(const ivec &p) const {
   if (dim == Dcyl) {
     if (origin.r() == 0.0 && o.z() > 0 && o.z() <= nz() * 2 && o.r() == 0) return true;
     return o.r() > 0 && o.z() > 0 && o.r() <= nr() * 2 && o.z() <= nz() * 2;
-  } else if (dim == D3) {
+  }
+  else if (dim == D3) {
     return o.x() > 0 && o.x() <= nx() * 2 && o.y() > 0 && o.y() <= ny() * 2 && o.z() > 0 &&
            o.z() <= nz() * 2;
-  } else if (dim == D2) {
+  }
+  else if (dim == D2) {
     return o.x() > 0 && o.x() <= nx() * 2 && o.y() > 0 && o.y() <= ny() * 2;
-  } else if (dim == D1) {
+  }
+  else if (dim == D1) {
     return o.z() > 0 && o.z() <= nz() * 2;
-  } else {
+  }
+  else {
     abort("Unsupported dimension in owns.\n");
     return false;
   }
@@ -501,7 +505,8 @@ static inline void stupidsort(ptrdiff_t *ind, double *w, int l) {
       ind[0] = ind[l - 1];
       w[l - 1] = 0.0;
       ind[l - 1] = 0;
-    } else {
+    }
+    else {
       w += 1;
       ind += 1;
     }
@@ -516,7 +521,8 @@ static inline void stupidsort(ivec *locs, double *w, int l) {
       locs[0] = locs[l - 1];
       w[l - 1] = 0.0;
       locs[l - 1] = 0;
-    } else {
+    }
+    else {
       w += 1;
       locs += 1;
     }
@@ -590,7 +596,8 @@ void grid_volume::interpolate(component c, const vec &pc, ivec locs[8], double w
       if (-weights[i] >= SMALL * 1e5)
         abort("large negative interpolation weight[%d] = %e\n", i, weights[i]);
       weights[i] = 0.0;
-    } else if (weights[i] < SMALL)
+    }
+    else if (weights[i] < SMALL)
       weights[i] = 0.0;
   }
   stupidsort(locs, weights, already_have);
@@ -676,9 +683,8 @@ double grid_volume::rmax() const {
 double grid_volume::rmin() const {
   const double qinva = 0.25 * inva;
   if (dim == Dcyl) {
-    if (origin.r() == 0.0) {
-      return 0.0;
-    } else {
+    if (origin.r() == 0.0) { return 0.0; }
+    else {
       return origin.r() + qinva;
     }
   }
@@ -967,7 +973,8 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
     if (Ngv == 0) {
       total_left_effort = v_left.ntot();
       total_right_effort = v_right.ntot();
-    } else {
+    }
+    else {
       for (int j = 0; j < Ngv; j++) {
         if (v_left.intersect_with(v[j], &vol)) total_left_effort += effort[j] * vol.ntot();
         if (v_right.intersect_with(v[j], &vol)) total_right_effort += effort[j] * vol.ntot();
@@ -1002,7 +1009,8 @@ double grid_volume::get_cost() const {
   return fstats.cost();
 }
 
-// return complex(left cost, right cost).  Should really be a tuple, but we don't want to require C++11? yet?
+// return complex(left cost, right cost).  Should really be a tuple, but we don't want to require
+// C++11? yet?
 std::complex<double> grid_volume::get_split_costs(direction d, int split_point) const {
   double left_cost = 0, right_cost = 0;
   if (split_point > 0) {
@@ -1024,7 +1032,9 @@ static double cost_diff(int desired_chunks, std::complex<double> costs) {
   return right_cost / (desired_chunks - desired_chunks / 2) - left_cost / (desired_chunks / 2);
 }
 
-void grid_volume::find_best_split(int desired_chunks, int &best_split_point, direction &best_split_direction, double &left_effort_fraction) const {
+void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
+                                  direction &best_split_direction,
+                                  double &left_effort_fraction) const {
   if (size_t(desired_chunks) > nowned_min()) {
     abort("Cannot split %zd grid points into %d parts\n", nowned_min(), desired_chunks);
   }
@@ -1053,8 +1063,10 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point, dir
         if (first == mid) break;
         first = mid;
       }
-      else if (mid_diff < 0) last = mid;
-      else break;
+      else if (mid_diff < 0)
+        last = mid;
+      else
+        break;
     }
     int split_point = (first + last) / 2;
     std::complex<double> costs = get_split_costs(d, split_point);
@@ -1063,8 +1075,7 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point, dir
     double split_measure =
         max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - desired_chunks / 2));
     if (split_measure < best_split_measure) {
-      if (d == longest_axis ||
-          split_measure < (best_split_measure - (0.3 * best_split_measure))) {
+      if (d == longest_axis || split_measure < (best_split_measure - (0.3 * best_split_measure))) {
         // Only use this split_measure if we're on the longest_axis, or if the split_measure is
         // more than 30% better than the best_split_measure. This is a heuristic to prefer lower
         // communication costs when the split_measure is somewhat close.
@@ -1085,11 +1096,13 @@ grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
   direction best_split_direction;
   double left_effort_fraction;
   find_best_split(desired_chunks, best_split_point, best_split_direction, left_effort_fraction);
-  return split_by_cost(desired_chunks, proc_num, best_split_point, best_split_direction, left_effort_fraction);
+  return split_by_cost(desired_chunks, proc_num, best_split_point, best_split_direction,
+                       left_effort_fraction);
 }
 
-grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num,
-                                       int best_split_point, direction best_split_direction, double left_effort_fraction) const {
+grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num, int best_split_point,
+                                       direction best_split_direction,
+                                       double left_effort_fraction) const {
   if (desired_chunks == 1) return *this;
 
   const int split_point = best_split_point;
@@ -1201,7 +1214,8 @@ std::vector<grid_volume> grid_volume::split_into_n(int n) const {
     double left_effort_fraction;
     find_best_split(n, best_split_point, best_split_direction, left_effort_fraction);
     for (int i = 0; i < n; ++i) {
-      grid_volume split_gv = split_by_cost(n, i, best_split_point, best_split_direction, left_effort_fraction);
+      grid_volume split_gv =
+          split_by_cost(n, i, best_split_point, best_split_direction, left_effort_fraction);
       result.push_back(split_gv);
     }
   }
@@ -1217,7 +1231,8 @@ grid_volume grid_volume::split_at_fraction(bool want_high, int numer, int bestd,
         bestd = i;
         bestlen = num[i];
       }
-  } else {
+  }
+  else {
     bestd %= 3;
   }
 
@@ -1424,7 +1439,8 @@ signed_direction symmetry::transform(direction d, int n) const {
   if (n < 0) {
     nme = (g - (-n) % g) % g;
     nrest = -((-n) / g);
-  } else {
+  }
+  else {
     nme = n % g;
     nrest = n / g;
   }
@@ -1433,7 +1449,8 @@ signed_direction symmetry::transform(direction d, int n) const {
       return signed_direction(d);
     else
       return next->transform(d, nrest);
-  } else {
+  }
+  else {
     signed_direction sd;
     if (nme == 1) sd = S[d];
     if (S[d].flipped)
@@ -1446,7 +1463,8 @@ signed_direction symmetry::transform(direction d, int n) const {
         return flip(next->transform(sd.d, nrest)) * ph;
       else
         return next->transform(sd.d, nrest) * ph;
-    } else {
+    }
+    else {
       return sd * ph;
     }
   }
@@ -1541,7 +1559,8 @@ complex<double> symmetry::phase_shift(derived_component c, int n) const {
     signed_direction ds = transform(component_direction(c), n);
     complex<double> ph = conj(ds.phase) * ds.phase; // E x H gets |phase|^2
     return (ds.flipped ? -ph : ph);
-  } else /* energy density */
+  }
+  else /* energy density */
     return 1.0;
 }
 
@@ -1630,7 +1649,8 @@ volume_list *symmetry::reduce(const volume_list *gl) const {
       g->next = 0; // necessary so that g->next is not deleted recursively
       delete g;
       g = gprev ? gprev->next : glnew;
-    } else
+    }
+    else
       g = (gprev = g)->next;
   }
 
