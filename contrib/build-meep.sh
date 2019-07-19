@@ -18,6 +18,8 @@ EOF
 
 [ -z "$1" ] && echo "(use -h for help)"
 
+installdeps=true
+
 while [ ! -z "$1" ]; do
     case "$1" in
         -h)         # help
@@ -29,6 +31,9 @@ while [ ! -z "$1" ]; do
             ;;
         -s)         # use 'sudo' for 'make install'
             SUDO=sudo
+            ;;
+        -n)         # do not check for distribution dependencies
+            installdeps=false
             ;;
         *)
             echo "'$1' ?"
@@ -117,7 +122,7 @@ autogensh ()
         "$@"
 }
 
-if $ubuntu; then
+if $installdeps && $ubuntu; then
 
     sudo apt-get update
 
@@ -155,7 +160,7 @@ if $ubuntu; then
 
 fi
 
-if $centos; then
+if $installdeps && $centos; then
 
     sudo yum -y --enablerepo=extras install epel-release
 
