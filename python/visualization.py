@@ -730,7 +730,8 @@ class Animate2D(object):
             
             # Normalize the frames, if requested, and export
             if self.normalize and mp.am_master():
-                print("Normalizing field data...")
+                if not mp.cvar.quiet:
+                    print("Normalizing field data...")
                 fields = np.array(self.cumulative_fields) / np.max(np.abs(self.cumulative_fields),axis=(0,1,2))
                 for k in range(len(self.cumulative_fields)):
                     self.ax.images[-1].set_data(fields[k,:,:])
@@ -822,7 +823,8 @@ class Animate2D(object):
                         '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
                         '-an', filename  # output filename
             ]
-            print("Generating GIF...")
+            if not mp.cvar.quiet:
+                print("Generating GIF...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
                 proc.stdin.write(self._saved_frames[i])
@@ -853,7 +855,8 @@ class Animate2D(object):
                         '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
                         '-an', filename  # output filename
             ]
-            print("Generating MP4...")
+            if not mp.cvar.quiet:
+                print("Generating MP4...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)): 
                 proc.stdin.write(self._saved_frames[i])
