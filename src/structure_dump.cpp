@@ -329,14 +329,16 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
         sus->next = new lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator);
         sus->next->ntot = ntot;
         sus->next->set_id(id);
-      } else {
+      }
+      else {
         sus = new lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator);
         sus->ntot = ntot;
         sus->set_id(id);
         res = sus;
       }
       if (sus->next) sus = sus->next;
-    } else if (num_params == 5) {
+    }
+    else if (num_params == 5) {
       // This is a noisy_lorentzian_susceptibility and the next 5 values in the dataset
       // are id, noise_amp, omega_0, gamma, and no_omega_0_denominator.
       size_t noisy_lorentzian_dims[3] = {5, 0, 0};
@@ -354,7 +356,8 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
             new noisy_lorentzian_susceptibility(noise_amp, omega_0, gamma, no_omega_0_denominator);
         sus->next->ntot = ntot;
         sus->next->set_id(id);
-      } else {
+      }
+      else {
         sus =
             new noisy_lorentzian_susceptibility(noise_amp, omega_0, gamma, no_omega_0_denominator);
         sus->ntot = ntot;
@@ -362,7 +365,8 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
         res = sus;
       }
       if (sus->next) sus = sus->next;
-    } else if (num_params == 8) {
+    }
+    else if (num_params == 8) {
       // This is a gyrotropic_susceptibility and the next 8 values in the dataset
       // are id, bias.x, bias.y, bias.z, omega_0, gamma, alpha, and model.
       size_t gyro_susc_dims[3] = {8, 0, 0};
@@ -377,18 +381,19 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       const double alpha = gyro_susc_params[6];
       const gyrotropy_model model = (gyrotropy_model)gyro_susc_params[7];
       if (sus) {
-        sus->next =
-            new gyrotropic_susceptibility(bias, omega_0, gamma, alpha, model);
+        sus->next = new gyrotropic_susceptibility(bias, omega_0, gamma, alpha, model);
         sus->next->ntot = ntot;
         sus->next->set_id(id);
-      } else {
+      }
+      else {
         sus = new gyrotropic_susceptibility(bias, omega_0, gamma, alpha, model);
         sus->ntot = ntot;
         sus->set_id(id);
         res = sus;
       }
       if (sus->next) sus = sus->next;
-    } else {
+    }
+    else {
       abort("Invalid number of susceptibility parameters in structure::load");
     }
   }
@@ -503,7 +508,8 @@ void structure::load(const char *filename) {
           if (n == 0) {
             delete[] chunks[i]->chi1inv[c][d];
             chunks[i]->chi1inv[c][d] = NULL;
-          } else {
+          }
+          else {
             if (n != ntot) abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
             chunks[i]->chi1inv[c][d] = new realnum[ntot];
             my_ntot += ntot;

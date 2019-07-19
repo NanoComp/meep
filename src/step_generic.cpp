@@ -91,21 +91,25 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             f[i] = ((1 - dt2 * cnd[i]) * f[i] - dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2])) *
                    cndinv[i];
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             f[i] = ((1 - dt2 * cnd[i]) * f[i] - dtdx * (g1[i + s1] - g1[i])) * cndinv[i];
           }
         }
-      } else { // no conductivity
+      }
+      else { // no conductivity
         if (g2) {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             f[i] -= dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2]);
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] -= dtdx * (g1[i + s1] - g1[i]); }
         }
       }
-    } else { // fu update, no PML in f update
+    }
+    else { // fu update, no PML in f update
       KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
         double dt2 = dt * 0.5;
@@ -118,7 +122,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
                 cndinv[i];
             f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
             double fprev = fu[i];
@@ -126,7 +131,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
           }
         }
-      } else { // no conductivity
+      }
+      else { // no conductivity
         if (g2) {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
@@ -134,7 +140,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             fu[i] -= dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2]);
             f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_ku;
             double fprev = fu[i];
@@ -144,7 +151,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
         }
       }
     }
-  } else { /* PML in f update */
+  }
+  else { /* PML in f update */
     KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
@@ -158,7 +166,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
                 cndinv[i];
             f[i] = ((kap[k] - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             realnum fcnd_prev = fcnd[i];
@@ -166,21 +175,24 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             f[i] = ((kap[k] - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
           }
         }
-      } else { // no conductivity (other than PML conductivity)
+      }
+      else { // no conductivity (other than PML conductivity)
         if (g2) {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i + s1] - g1[i] + g2[i] - g2[i + s2])) *
                    siginv[k];
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i + s1] - g1[i])) * siginv[k];
           }
         }
       }
-    } else { // fu update + PML in f update
+    }
+    else { // fu update + PML in f update
       KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
         double dt2 = dt * 0.5;
@@ -198,7 +210,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
           }
           /////////////////////////////////////////////////////////////
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             DEF_ku;
@@ -209,7 +222,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
           }
         }
-      } else { // no conductivity (other than PML conductivity)
+      }
+      else { // no conductivity (other than PML conductivity)
         if (g2) {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
@@ -219,7 +233,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
                     siginv[k];
             f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
           }
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED0(gv, c, i) {
             DEF_k;
             DEF_ku;
@@ -257,7 +272,8 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, double be
           f[i] += siginvu[ku] * df;
         }
         /////////////////////////////////////////////////////////////
-      } else { // PML only
+      }
+      else { // PML only
         LOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
           DEF_ku;
@@ -266,7 +282,8 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, double be
           f[i] += siginvu[ku] * df;
         }
       }
-    } else {        // PML in f, no fu
+    }
+    else {          // PML in f, no fu
       if (cndinv) { // conductivity + PML
         LOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
@@ -274,14 +291,16 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, double be
           fcnd[i] += dfcnd;
           f[i] += dfcnd * siginv[k];
         }
-      } else { // PML only
+      }
+      else { // PML only
         LOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_k;
           f[i] += betadt * g[i] * siginv[k];
         }
       }
     }
-  } else {                       // no PML in f update
+  }
+  else {                         // no PML in f update
     if (dsigu != NO_DIRECTION) { // fu, no PML in f
       KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity, no PML
@@ -291,7 +310,8 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, double be
           fu[i] += (df = betadt * g[i] * cndinv[i]);
           f[i] += siginvu[ku] * df;
         }
-      } else { // no conductivity or PML
+      }
+      else { // no conductivity or PML
         LOOP_OVER_VOL_OWNED0(gv, c, i) {
           DEF_ku;
           double df;
@@ -299,10 +319,12 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, double be
           f[i] += siginvu[ku] * df;
         }
       }
-    } else {        // no PML, no fu
+    }
+    else {          // no PML, no fu
       if (cndinv) { // conductivity, no PML
         LOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] += betadt * g[i] * cndinv[i]; }
-      } else { // no conductivity or PML
+      }
+      else { // no conductivity or PML
         LOOP_OVER_VOL_OWNED0(gv, c, i) { f[i] += betadt * g[i]; }
       }
     }
@@ -377,7 +399,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
         }
         /////////////////////////////////////////////////////////////
-      } else {
+      }
+      else {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double gs = g[i];
           double us = u[i];
@@ -387,7 +410,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
         }
       }
-    } else if (u1) { // 2x2 off-diagonal u
+    }
+    else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
@@ -399,7 +423,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
                   calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s), gs, us, chi2[i], chi3[i]);
           f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
         }
-      } else {
+      }
+      else {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double gs = g[i];
           double us = u[i];
@@ -409,9 +434,11 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
         }
       }
-    } else if (u2) { // 2x2 off-diagonal u
+    }
+    else if (u2) { // 2x2 off-diagonal u
       abort("bug - didn't swap off-diagonal terms!?");
-    } else { // diagonal u
+    }
+    else { // diagonal u
       if (chi3) {
         if (g1 && g2) {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
@@ -425,7 +452,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
                                                  chi2[i], chi3[i]);
             f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
           }
-        } else if (g1) {
+        }
+        else if (g1) {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
             double g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
             double gs = g[i];
@@ -436,9 +464,11 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
                     calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s), gs, us, chi2[i], chi3[i]);
             f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
           }
-        } else if (g2) {
+        }
+        else if (g2) {
           abort("bug - didn't swap off-diagonal terms!?");
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
             double gs = g[i];
             double us = u[i];
@@ -448,7 +478,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
             f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
           }
         }
-      } else if (u) {
+      }
+      else if (u) {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double gs = g[i];
           double us = u[i];
@@ -457,7 +488,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           fw[i] = (gs * us);
           f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
         }
-      } else {
+      }
+      else {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           DEF_kw;
           double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
@@ -466,7 +498,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
         }
       }
     }
-  } else {          /////////////// no PML (no fw) ///////////////////
+  }
+  else {            /////////////// no PML (no fw) ///////////////////
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
@@ -478,14 +511,16 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
                  calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s + g2s * g2s), gs, us, chi2[i],
                                   chi3[i]);
         }
-      } else {
+      }
+      else {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double gs = g[i];
           double us = u[i];
           f[i] = (gs * us + OFFDIAG(u1, g1, s1) + OFFDIAG(u2, g2, s2));
         }
       }
-    } else if (u1) { // 2x2 off-diagonal u
+    }
+    else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
@@ -494,16 +529,19 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           f[i] = (gs * us + OFFDIAG(u1, g1, s1)) *
                  calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s), gs, us, chi2[i], chi3[i]);
         }
-      } else {
+      }
+      else {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double gs = g[i];
           double us = u[i];
           f[i] = (gs * us + OFFDIAG(u1, g1, s1));
         }
       }
-    } else if (u2) { // 2x2 off-diagonal u
+    }
+    else if (u2) { // 2x2 off-diagonal u
       abort("bug - didn't swap off-diagonal terms!?");
-    } else { // diagonal u
+    }
+    else { // diagonal u
       if (chi3) {
         if (g1 && g2) {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
@@ -514,7 +552,8 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
             f[i] = (gs * us) * calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s + g2s * g2s), gs, us,
                                                 chi2[i], chi3[i]);
           }
-        } else if (g1) {
+        }
+        else if (g1) {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
             double g1s = g1[i] + g1[i + s] + g1[i - s1] + g1[i + (s - s1)];
             double gs = g[i];
@@ -522,22 +561,26 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
             f[i] = (gs * us) *
                    calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s), gs, us, chi2[i], chi3[i]);
           }
-        } else if (g2) {
+        }
+        else if (g2) {
           abort("bug - didn't swap off-diagonal terms!?");
-        } else {
+        }
+        else {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
             double gs = g[i];
             double us = u[i];
             f[i] = (gs * us) * calc_nonlinear_u(gs * gs, gs, us, chi2[i], chi3[i]);
           }
         }
-      } else if (u) {
+      }
+      else if (u) {
         LOOP_OVER_VOL_OWNED(gv, fc, i) {
           double gs = g[i];
           double us = u[i];
           f[i] = (gs * us);
         }
-      } else
+      }
+      else
         LOOP_OVER_VOL_OWNED(gv, fc, i) { f[i] = g[i]; }
     }
   }

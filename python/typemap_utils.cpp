@@ -45,14 +45,14 @@ static int pymaterial_to_material(PyObject *po, material_type *mt);
 
 #if PY_MAJOR_VERSION == 2
 static char *py2_string_as_utf8(PyObject *po) {
-  if (PyString_Check(po)) {
-    return PyString_AsString(po);
-  } else if (PyUnicode_Check(po)) {
+  if (PyString_Check(po)) { return PyString_AsString(po); }
+  else if (PyUnicode_Check(po)) {
     PyObject *s = PyUnicode_AsUTF8String(po);
     char *result = PyString_AsString(s);
     Py_DECREF(s);
     return result;
-  } else {
+  }
+  else {
     return NULL;
   }
 }
@@ -111,7 +111,8 @@ static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
     Py_DECREF(args);
 
     return res;
-  } else {
+  }
+  else {
     if (py_callback_v3 == NULL) {
       PyObject *v3_class = py_vector3_object();
       PyObject *args = PyTuple_New(0);
@@ -384,9 +385,8 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 
   std::string class_name = py_class_name_as_string(po);
 
-  if (class_name.find(std::string("Drude")) != std::string::npos) {
-    s->drude = true;
-  } else {
+  if (class_name.find(std::string("Drude")) != std::string::npos) { s->drude = true; }
+  else {
     s->drude = false;
   }
 
@@ -415,22 +415,24 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   if (PyObject_IsInstance(po, py_material_object())) {
     md = make_dielectric(1);
     if (!pymedium_to_medium(po, &md->medium)) { return 0; }
-  } else if (PyFunction_Check(po)) {
+  }
+  else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
     PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
     bool do_averaging = false;
     if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
-    if (eps && eps == Py_True) {
-      md = make_user_material(py_epsilon_func_wrap, po, do_averaging);
-    } else {
+    if (eps && eps == Py_True) { md = make_user_material(py_epsilon_func_wrap, po, do_averaging); }
+    else {
       md = make_user_material(py_user_material_func_wrap, po, do_averaging);
     }
     Py_XDECREF(eps);
     Py_XDECREF(py_do_averaging);
-  } else if (IsPyString(po)) {
+  }
+  else if (IsPyString(po)) {
     const char *eps_input_file = PyObject_ToCharPtr(po);
     md = make_file_material(eps_input_file);
-  } else if (PyArray_Check(po)) {
+  }
+  else if (PyArray_Check(po)) {
     PyArrayObject *pao = (PyArrayObject *)po;
 
     if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array must be C-style contiguous."); }
@@ -446,7 +448,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
 
     master_printf("read in %zdx%zdx%zd numpy array for epsilon\n", md->epsilon_dims[0],
                   md->epsilon_dims[1], md->epsilon_dims[2]);
-  } else {
+  }
+  else {
     meep::abort("Expected a Medium, a function, or a filename");
   }
 
@@ -473,41 +476,49 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
 
   if (s->saturated_gyrotropy || s->bias.x || s->bias.y || s->bias.z) {
     if (s->saturated_gyrotropy) {
-      PyObject *py_gyrotropic_class = PyObject_GetAttrString(geom_mod, "GyrotropicSaturatedSusceptibility");
+      PyObject *py_gyrotropic_class =
+          PyObject_GetAttrString(geom_mod, "GyrotropicSaturatedSusceptibility");
       res = PyObject_Call(py_gyrotropic_class, args, NULL);
       Py_DECREF(py_gyrotropic_class);
       PyObject *py_alpha = PyFloat_FromDouble(s->alpha);
       PyObject_SetAttrString(res, "alpha", py_alpha);
       Py_DECREF(py_alpha);
-    } else if (s->drude) {
-      PyObject *py_gyrotropic_drude_class = PyObject_GetAttrString(geom_mod, "GyrotropicDrudeSusceptibility");
+    }
+    else if (s->drude) {
+      PyObject *py_gyrotropic_drude_class =
+          PyObject_GetAttrString(geom_mod, "GyrotropicDrudeSusceptibility");
       res = PyObject_Call(py_gyrotropic_drude_class, args, NULL);
       Py_DECREF(py_gyrotropic_drude_class);
-    } else {
+    }
+    else {
       PyObject *py_gyrotropic_lorentz_class =
-       PyObject_GetAttrString(geom_mod, "GyrotropicLorentzianSusceptibility");
+          PyObject_GetAttrString(geom_mod, "GyrotropicLorentzianSusceptibility");
       res = PyObject_Call(py_gyrotropic_lorentz_class, args, NULL);
       Py_DECREF(py_gyrotropic_lorentz_class);
     }
     PyObject *py_bias = vec2py(vector3_to_vec(s->bias));
     PyObject_SetAttrString(res, "bias", py_bias);
     Py_DECREF(py_bias);
-  } else if (s->noise_amp == 0) {
+  }
+  else if (s->noise_amp == 0) {
     if (s->drude) {
       PyObject *py_drude_class = PyObject_GetAttrString(geom_mod, "DrudeSusceptibility");
       res = PyObject_Call(py_drude_class, args, NULL);
       Py_DECREF(py_drude_class);
-    } else {
+    }
+    else {
       PyObject *py_lorentz_class = PyObject_GetAttrString(geom_mod, "LorentzianSusceptibility");
       res = PyObject_Call(py_lorentz_class, args, NULL);
       Py_DECREF(py_lorentz_class);
     }
-  } else {
+  }
+  else {
     if (s->drude) {
       PyObject *py_noisy_drude_class = PyObject_GetAttrString(geom_mod, "NoisyDrudeSusceptibility");
       res = PyObject_Call(py_noisy_drude_class, args, NULL);
       Py_DECREF(py_noisy_drude_class);
-    } else {
+    }
+    else {
       PyObject *py_noisy_lorentz_class =
           PyObject_GetAttrString(geom_mod, "NoisyLorentzianSusceptibility");
       res = PyObject_Call(py_noisy_lorentz_class, args, NULL);
@@ -778,21 +789,26 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   int success = 0;
   std::string go_type = py_class_name_as_string(po);
 
-  if (go_type == "Sphere") {
-    success = pysphere_to_sphere(po, o);
-  } else if (go_type == "Cylinder") {
+  if (go_type == "Sphere") { success = pysphere_to_sphere(po, o); }
+  else if (go_type == "Cylinder") {
     success = pycylinder_to_cylinder(po, o);
-  } else if (go_type == "Wedge") {
+  }
+  else if (go_type == "Wedge") {
     success = pywedge_to_wedge(po, o);
-  } else if (go_type == "Cone") {
+  }
+  else if (go_type == "Cone") {
     success = pycone_to_cone(po, o);
-  } else if (go_type == "Block") {
+  }
+  else if (go_type == "Block") {
     success = pyblock_to_block(po, o);
-  } else if (go_type == "Ellipsoid") {
+  }
+  else if (go_type == "Ellipsoid") {
     success = pyellipsoid_to_ellipsoid(po, o);
-  } else if (go_type == "Prism") {
+  }
+  else if (go_type == "Prism") {
     success = pyprism_to_prism(po, o);
-  } else {
+  }
+  else {
     meep::abort("Error: %s is not a valid GeometricObject type\n", go_type.c_str());
     return 0;
   }

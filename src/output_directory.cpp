@@ -116,9 +116,8 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   char sourcename[buflen]; // Holds the "example.cpp" filename.
   snprintf(sourcename, buflen, "%s.cpp", stripped_name);
 
-  if (jobname != NULL) {
-    snprintf(basename, buflen, "%s", jobname);
-  } else {
+  if (jobname != NULL) { snprintf(basename, buflen, "%s", jobname); }
+  else {
     snprintf(basename, buflen, "%s", stripped_name);
   }
 

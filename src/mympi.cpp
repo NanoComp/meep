@@ -128,9 +128,7 @@ void abort(const char *fmt, ...) {
   std::string error_msg(s);
   free(s);
 #ifdef HAVE_MPI
-  if (count_processors() == 1) {
-    throw runtime_error("meep: " + error_msg);
-  }
+  if (count_processors() == 1) { throw runtime_error("meep: " + error_msg); }
   fprintf(stderr, "meep: %s", error_msg.c_str());
   if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
   MPI_Abort(MPI_COMM_WORLD, 1);
@@ -439,7 +437,8 @@ complex<long double> sum_to_all(complex<long double> in) {
     complex<double> dout;
     dout = sum_to_all(complex<double>(double(in.real()), double(in.imag())));
     out = complex<long double>(dout.real(), dout.imag());
-  } else
+  }
+  else
     MPI_Allreduce(&in, &out, 2, MPI_LONG_DOUBLE, MPI_SUM, mycomm);
 #endif
   return out;
@@ -584,7 +583,8 @@ void master_printf(const char *fmt, ...) {
       vasprintf(&s, fmt, ap);
       master_printf_callback(s);
       free(s);
-    } else {
+    }
+    else {
       vprintf(fmt, ap);
       fflush(stdout);
     }

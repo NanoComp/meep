@@ -86,7 +86,8 @@ int different(double a, double a0, double thresh, const char *msg) {
     master_printf("error: %s\n --- %g vs. %g (%g error > %g)\n", msg, a, a0,
                   fabs(a - a0) / fabs(a0), thresh);
     return 1;
-  } else
+  }
+  else
     return 0;
 }
 

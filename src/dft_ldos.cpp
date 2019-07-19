@@ -27,7 +27,8 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
     omega_min = (freq_min + freq_max) * pi;
     domega = 0;
     Nomega = 1;
-  } else {
+  }
+  else {
     omega_min = freq_min * 2 * pi;
     domega = (freq_max - freq_min) * 2 * pi / (Nfreq - 1);
     Nomega = Nfreq;

@@ -27,11 +27,13 @@ public:
       chi1inv_row[0] = (1 + offdiag) * detinv;
       chi1inv_row[1] = -offdiag * detinv;
       chi1inv_row[2] = 0.0;
-    } else if (component_direction(c) == Y) {
+    }
+    else if (component_direction(c) == Y) {
       chi1inv_row[0] = -offdiag * detinv;
       chi1inv_row[1] = (1 + offdiag) * detinv;
       chi1inv_row[2] = 0.0;
-    } else {
+    }
+    else {
       chi1inv_row[0] = 0.0;
       chi1inv_row[1] = 0.0;
       chi1inv_row[2] = 1.0;
