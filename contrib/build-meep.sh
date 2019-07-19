@@ -27,6 +27,9 @@ while [ ! -z "$1" ]; do
             DESTDIR="$2"
             shift
             ;;
+        -s)         # use 'sudo' for 'make install'
+            SUDO=sudo
+            ;;
         *)
             echo "'$1' ?"
             help "$0"
@@ -90,10 +93,6 @@ case "$distrib" in
         false
         ;;
 esac
-
-# sudo not needed for 'make install'
-#SUDO=sudo
-SUDO=
 
 mkdir -p ${SRCDIR}
 cd ${SRCDIR}
