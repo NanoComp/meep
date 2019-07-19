@@ -38,9 +38,8 @@ void check_offdiag(medium_struct *m) {
 
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2) {
   return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
-          vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
-          vector3_equal(s1.bias, s2.bias) && s1.frequency == s2.frequency &&
-          s1.gamma == s2.gamma && s1.alpha == s2.alpha &&
+          vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) && vector3_equal(s1.bias, s2.bias) &&
+          s1.frequency == s2.frequency && s1.gamma == s2.gamma && s1.alpha == s2.alpha &&
           s1.noise_amp == s2.noise_amp && s1.drude == s2.drude &&
           s1.saturated_gyrotropy == s2.saturated_gyrotropy && s1.is_file == s2.is_file);
 }
@@ -143,7 +142,8 @@ void sym_matrix_invert(symmetric_matrix *Vinv, const symmetric_matrix *V) {
     Vinv->m11 = 1.0 / m11;
     Vinv->m22 = 1.0 / m22;
     Vinv->m01 = Vinv->m02 = Vinv->m12 = 0.0;
-  } else {
+  }
+  else {
     double detinv;
 
     /* compute the determinant: */
@@ -194,7 +194,8 @@ void set_dimensions(int dims) {
   if (dims == CYLINDRICAL) {
     dimensions = 2;
     dim = meep::Dcyl;
-  } else {
+  }
+  else {
     dimensions = dims;
     dim = meep::ndim(dims - 1);
   }
@@ -380,14 +381,15 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
 
-      display_geometric_object_info(5, geometry.items[i]);
+      if (!meep::quiet) display_geometric_object_info(5, geometry.items[i]);
 
       medium_struct *mm;
       if (is_medium(geometry.items[i].material, &mm)) {
         check_offdiag(mm);
-        master_printf("%*sdielectric constant epsilon diagonal "
-                      "= (%g,%g,%g)\n",
-                      5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
+        if (!meep::quiet)
+          master_printf("%*sdielectric constant epsilon diagonal "
+                        "= (%g,%g,%g)\n",
+                        5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       }
     }
   }
@@ -395,7 +397,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
-  if (verbose && meep::am_master()) {
+  if (!meep::quiet && verbose && meep::am_master()) {
     master_printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 
@@ -642,14 +644,16 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
       shiftby1 = shiftby;
       id1 = id;
       mat1 = mat;
-    } else if (id2 == -1 ||
-               ((id >= id1 && id >= id2) && (id1 == id2 || material_type_equal(mat1, mat2)))) {
+    }
+    else if (id2 == -1 ||
+             ((id >= id1 && id >= id2) && (id1 == id2 || material_type_equal(mat1, mat2)))) {
       o2 = o;
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
-    } else if (!(id1 < id2 && (id1 == id || material_type_equal(mat1, mat))) &&
-               !(id2 < id1 && (id2 == id || material_type_equal(mat2, mat))))
+    }
+    else if (!(id1 < id2 && (id1 == id || material_type_equal(mat1, mat))) &&
+             !(id2 < id1 && (id2 == id || material_type_equal(mat2, mat))))
       return false;
   }
 
@@ -691,9 +695,8 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
   eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);
   ;
 
-  if (fallback) {
-    fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
-  } else {
+  if (fallback) { fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval); }
+  else {
     switch (component_direction(c)) {
       case meep::X:
       case meep::R:
@@ -740,7 +743,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
     if (mat && mat->which_subclass == material_data::MATERIAL_USER && mat->do_averaging) {
       fallback = true;
       return;
-    } else {
+    }
+    else {
       goto trivial;
     }
   }
@@ -774,7 +778,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
     Rot[0][2] = normal.y;
     Rot[1][2] = -normal.x;
     Rot[2][2] = 0;
-  } else { /* n is not parallel to z direction, use (x x n) instead */
+  }
+  else { /* n is not parallel to z direction, use (x x n) instead */
     Rot[0][2] = 0;
     Rot[1][2] = -normal.z;
     Rot[2][2] = normal.y;
@@ -926,11 +931,13 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
       chi1inv_row[0] = chi1p1_inv.m00;
       chi1inv_row[1] = chi1p1_inv.m01;
       chi1inv_row[2] = chi1p1_inv.m02;
-    } else if (rownum == 1) {
+    }
+    else if (rownum == 1) {
       chi1inv_row[0] = chi1p1_inv.m01;
       chi1inv_row[1] = chi1p1_inv.m11;
       chi1inv_row[2] = chi1p1_inv.m12;
-    } else {
+    }
+    else {
       chi1inv_row[0] = chi1p1_inv.m02;
       chi1inv_row[1] = chi1p1_inv.m12;
       chi1inv_row[2] = chi1p1_inv.m22;
@@ -951,7 +958,8 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     xmin[2] = gvmin.y;
     xmax[1] = gvmax.z;
     xmax[2] = gvmax.y;
-  } else {
+  }
+  else {
     xmin[1] = gvmin.y;
     xmin[2] = gvmin.z;
     xmax[1] = gvmax.y;
@@ -1296,7 +1304,8 @@ static meep::susceptibility *make_multilevel_sus(const susceptibility_struct *d)
         sigmat[5 * tr + meep::R] = d->transitions[t].sigma_diag.x;
         sigmat[5 * tr + meep::P] = d->transitions[t].sigma_diag.y;
         sigmat[5 * tr + meep::Z] = d->transitions[t].sigma_diag.z;
-      } else {
+      }
+      else {
         sigmat[5 * tr + meep::X] = d->transitions[t].sigma_diag.x;
         sigmat[5 * tr + meep::Y] = d->transitions[t].sigma_diag.y;
         sigmat[5 * tr + meep::Z] = d->transitions[t].sigma_diag.z;
@@ -1367,37 +1376,44 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
     susceptibility *ss = &(p->user_s);
     if (ss->is_file) meep::abort("unknown susceptibility");
     bool noisy = (ss->noise_amp != 0.0);
-    bool gyrotropic = (ss->saturated_gyrotropy || ss->bias.x != 0.0
-                       || ss->bias.y != 0.0 || ss->bias.z != 0.0);
+    bool gyrotropic =
+        (ss->saturated_gyrotropy || ss->bias.x != 0.0 || ss->bias.y != 0.0 || ss->bias.z != 0.0);
     meep::susceptibility *sus;
 
     if (ss->transitions.size() != 0 || ss->initial_populations.size() != 0) {
       // multilevel atom
       sus = make_multilevel_sus(ss);
-      master_printf("multilevel atom susceptibility\n");
-    } else {
+      if (!meep::quiet) master_printf("multilevel atom susceptibility\n");
+    }
+    else {
       if (noisy) {
         sus = new meep::noisy_lorentzian_susceptibility(ss->noise_amp, ss->frequency, ss->gamma,
                                                         ss->drude);
-      } else if (gyrotropic) {
-        meep::gyrotropy_model model
-          = ss->saturated_gyrotropy ? meep::GYROTROPIC_SATURATED
-          : ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
+      }
+      else if (gyrotropic) {
+        meep::gyrotropy_model model =
+            ss->saturated_gyrotropy
+                ? meep::GYROTROPIC_SATURATED
+                : ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
         sus = new meep::gyrotropic_susceptibility(meep::vec(ss->bias.x, ss->bias.y, ss->bias.z),
                                                   ss->frequency, ss->gamma, ss->alpha, model);
-      } else {
+      }
+      else {
         sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
       }
-      master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
-                    noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
-                    ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
-                    : ss->drude ? "drude" : "lorentzian", ss->frequency, ss->gamma);
-      if (noisy) master_printf(", amp=%g ", ss->noise_amp);
-      if (gyrotropic) {
-        if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
-        master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
+      if (!meep::quiet) {
+        master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
+                      noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
+                      ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
+                                              : ss->drude ? "drude" : "lorentzian",
+                      ss->frequency, ss->gamma);
+        if (noisy) master_printf(", amp=%g ", ss->noise_amp);
+        if (gyrotropic) {
+          if (ss->saturated_gyrotropy) master_printf(", alpha=%g", ss->alpha);
+          master_printf(", bias=(%g,%g,%g)", ss->bias.x, ss->bias.y, ss->bias.z);
+        }
+        master_printf("\n");
       }
-      master_printf("\n");
     }
 
     current_pol = p;
@@ -1507,9 +1523,11 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
   geometry_lattice.size = size;
   geometry_edge = vector3_to_vec(size) * 0.5;
 
-  master_printf("Working in %s dimensions.\n", meep::dimension_name(s->gv.dim));
-  master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
-                resolution);
+  if (!meep::quiet) {
+    master_printf("Working in %s dimensions.\n", meep::dimension_name(s->gv.dim));
+    master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
+                  resolution);
+  }
 
   geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
 
@@ -1539,7 +1557,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
   s->remove_susceptibilities();
   geps.add_susceptibilities(s);
 
-  master_printf("-----------\n");
+  if (!meep::quiet) master_printf("-----------\n");
 }
 
 /***************************************************************/
@@ -1578,8 +1596,9 @@ material_type make_file_material(const char *eps_input_file) {
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     md->epsilon_data = eps_file.read(dataname, &rank, md->epsilon_dims, 3);
-    master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", md->epsilon_dims[0],
-                  md->epsilon_dims[1], md->epsilon_dims[2], eps_input_file);
+    if (!meep::quiet)
+      master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", md->epsilon_dims[0],
+                    md->epsilon_dims[1], md->epsilon_dims[2], eps_input_file);
     delete[] fname;
   }
 

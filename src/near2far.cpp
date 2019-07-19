@@ -143,7 +143,8 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
     EH[3] = expfac * term3 * rhatcrossp.x() / Z;
     EH[4] = expfac * term3 * rhatcrossp.y() / Z;
     EH[5] = expfac * term3 * rhatcrossp.z() / Z;
-  } else if (is_magnetic(c0)) {
+  }
+  else if (is_magnetic(c0)) {
     expfac /= mu;
 
     EH[0] = -expfac * term3 * rhatcrossp.x() * Z;
@@ -153,7 +154,8 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
     EH[3] = expfac * (term1 * p.x() + term2 * rhat.x());
     EH[4] = expfac * (term1 * p.y() + term2 * rhat.y());
     EH[5] = expfac * (term1 * p.z() + term2 * rhat.z());
-  } else
+  }
+  else
     abort("unrecognized source type");
 }
 
@@ -201,7 +203,8 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
       EH[3] = -rhat.y() * ikH1;
       EH[4] = rhat.x() * ikH1;
       EH[5] = 0.0;
-    } else /* (is_magnetic(c0)) */ { // Hz source
+    }
+    else /* (is_magnetic(c0)) */ { // Hz source
       EH[0] = rhat.y() * ikH1;
       EH[1] = -rhat.x() * ikH1;
       EH[2] = 0.0;
@@ -209,7 +212,8 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
       EH[3] = EH[4] = 0.0;
       EH[5] = (-0.25 * omega * eps) * H0;
     }
-  } else { /* in-plane source */
+  }
+  else { /* in-plane source */
     std::complex<double> H2 = hankel(2, kr) * f0;
 
     vec p = zero_vec(rhat.dim);
@@ -227,7 +231,8 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 
       EH[3] = EH[4] = 0.0;
       EH[5] = -rhatcrossp * ikH1;
-    } else /* (is_magnetic(c0)) */ { // Hxy source
+    }
+    else /* (is_magnetic(c0)) */ { // Hxy source
       EH[0] = EH[1] = 0.0;
       EH[2] = rhatcrossp * ikH1;
 
@@ -254,7 +259,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
 #ifdef HAVE_OPENMP
-#  pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (int i = 0; i < Nfreq; ++i) {
       std::complex<double> EH6[6];
@@ -305,7 +310,8 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
     if (dims[rank] <= 1) {
       dims[rank] = 1;
       dx[rank] = 0;
-    } else
+    }
+    else
       dx[rank] = where.in_direction(d) / (dims[rank] - 1);
     N *= dims[rank];
     dirs[rank++] = d;
@@ -333,15 +339,15 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
         x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2 * dx[2]);
         double t;
         if (!quiet && (t = wall_time()) > start + MEEP_MIN_OUTPUT_TIME) {
-          size_t this_point = (dims[1]*dims[2]*i0) + (dims[2]*i1) + i2 + 1;
+          size_t this_point = (dims[1] * dims[2] * i0) + (dims[2] * i1) + i2 + 1;
           master_printf("get_farfields_array working on point %zu of %zu (%d%% done), %g s/point\n",
-                        this_point, total_points, (int)((double)this_point/total_points*100),
+                        this_point, total_points, (int)((double)this_point / total_points * 100),
                         (t - start) / (std::max(1, (int)(this_point - last_point))));
           start = t;
           last_point = this_point;
         }
         farfield_lowlevel(EH1, x);
-        if (!quiet) all_wait();  // Allow consistent progress updates from master
+        if (!quiet) all_wait(); // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
         for (int i = 0; i < Nfreq; ++i)
           for (int k = 0; k < 6; ++k) {
@@ -412,7 +418,8 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     if (dims[rank] <= 1) {
       dims[rank] = 1;
       dx[rank] = 0;
-    } else {
+    }
+    else {
       dx[rank] = where.in_direction(d) / (dims[rank] - 1);
       vol *= dx[rank];
     }
@@ -447,7 +454,9 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
             case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
             case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
             case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
-            case R: case P: case NO_DIRECTION: abort("invalid flux direction");
+            case R:
+            case P:
+            case NO_DIRECTION: abort("invalid flux direction");
           }
           for (int j = 0; j < 2; ++j)
             F_[i] += real(cE[j] * conj(cH[j])) * (1 - 2 * j);

@@ -46,7 +46,7 @@ double fields::time_spent_on(time_sink s) { return times_spent[s]; }
 double fields::mean_time_spent_on(time_sink s) {
   int n = count_processors();
   double total_time_spent = sum_to_master(times_spent[s]);
-  return total_time_spent/n;
+  return total_time_spent / n;
 }
 
 static const char *ts2n(time_sink s) {
@@ -79,12 +79,12 @@ void fields::print_times() {
 
   for (int i = 0; i <= Other; ++i)
     square_times[i] = times_spent[i] * times_spent[i];
-  sum_to_master(times_spent, mean, Other+1);
-  sum_to_master(square_times, stddev, Other+1);
+  sum_to_master(times_spent, mean, Other + 1);
+  sum_to_master(square_times, stddev, Other + 1);
   for (int i = 0; i <= Other; ++i) {
     mean[i] /= n;
-    stddev[i] -= n*mean[i]*mean[i];
-    stddev[i] = n == 1 || stddev[i] <= 0 ? 0.0 : sqrt(stddev[i] / (n-1));
+    stddev[i] -= n * mean[i] * mean[i];
+    stddev[i] = n == 1 || stddev[i] <= 0 ? 0.0 : sqrt(stddev[i] / (n - 1));
   }
 
   master_printf("\nField time usage:\n");
@@ -94,18 +94,18 @@ void fields::print_times() {
 
   if (verbosity > 0) {
     master_printf("\nField time usage for all processes:\n");
-    double *alltimes_tmp = new double[n * (Other+1)];
-    double *alltimes = new double[n * (Other+1)];
+    double *alltimes_tmp = new double[n * (Other + 1)];
+    double *alltimes = new double[n * (Other + 1)];
     for (int i = 0; i <= Other; ++i) {
       for (int j = 0; j < n; ++j)
-        alltimes_tmp[i*n+j] = j == my_rank() ? times_spent[i] : 0;
+        alltimes_tmp[i * n + j] = j == my_rank() ? times_spent[i] : 0;
     }
-    sum_to_master(alltimes_tmp, alltimes, n * (Other+1));
+    sum_to_master(alltimes_tmp, alltimes, n * (Other + 1));
     delete[] alltimes_tmp;
     for (int i = 0; i <= Other; i++) {
-      master_printf("    %21s: %g", ts2n((time_sink)i), alltimes[i*n]);
+      master_printf("    %21s: %g", ts2n((time_sink)i), alltimes[i * n]);
       for (int j = 1; j < n; ++j)
-        master_printf(", %g", alltimes[i*n+j]);
+        master_printf(", %g", alltimes[i * n + j]);
       master_printf("\n");
     }
     master_printf("\n");

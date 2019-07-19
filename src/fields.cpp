@@ -252,7 +252,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
       if (cur) {
         cur->next = p;
         cur = p;
-      } else {
+      }
+      else {
         pol[ft] = cur = p;
       }
     }
@@ -313,7 +314,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef) : gv(thef.gv), v(thef.v) {
       if (cur) {
         cur->next = p;
         cur = p;
-      } else {
+      }
+      else {
         pol[ft] = cur = p;
       }
     }
@@ -429,7 +431,8 @@ void fields_chunk::figure_out_step_plan() {
             minus_component[c1] = c2;
             have_minus_deriv[c1] = true;
             minus_deriv_direction[c1] = d_deriv;
-          } else {
+          }
+          else {
             plus_component[c1] = c2;
             have_plus_deriv[c1] = true;
             plus_deriv_direction[c1] = d_deriv;
@@ -477,7 +480,8 @@ bool fields_chunk::alloc_f(component c) {
               f[bc][cmp][i] = 0.0;
           }
           f[c][cmp] = f[bc][cmp];
-        } else {
+        }
+        else {
           f[c][cmp] = new realnum[gv.ntot()];
           for (size_t i = 0; i < gv.ntot(); i++)
             f[c][cmp][i] = 0.0;

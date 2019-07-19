@@ -161,9 +161,10 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
           *there += ilattice_vector(d);
           *phase *= conj(eikna[d]);
         }
-      } else if (boundaries[High][d] == Periodic &&
-                 there->in_direction(d) - ilattice_vector(d).in_direction(d) >
-                     user_volume.little_corner().in_direction(d)) {
+      }
+      else if (boundaries[High][d] == Periodic &&
+               there->in_direction(d) - ilattice_vector(d).in_direction(d) >
+                   user_volume.little_corner().in_direction(d)) {
         while (there->in_direction(d) - ilattice_vector(d).in_direction(d) >
                user_volume.little_corner().in_direction(d)) {
           *there -= ilattice_vector(d);
@@ -214,8 +215,9 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
           kphase[ncopies + j] = kphase[j] * conj(eikna[d]);
         }
         ncopies *= 2;
-      } else if (newp1[0].in_direction(d) > gv.boundary_location(High, d) ||
-                 newp2[0].in_direction(d) > gv.boundary_location(High, d)) {
+      }
+      else if (newp1[0].in_direction(d) > gv.boundary_location(High, d) ||
+               newp2[0].in_direction(d) > gv.boundary_location(High, d)) {
         for (int j = 0; j < ncopies; j++) {
           newp1[ncopies + j] = newp1[j] - lattice_vector(d);
           newp2[ncopies + j] = newp2[j] - lattice_vector(d);
@@ -388,7 +390,8 @@ void fields::connect_the_chunks() {
                         if (pi->data && chunks[i]->is_mine()) {
                           ni += pi->s->num_internal_notowned_needed(corig, pi->data);
                           cni += pi->s->num_cinternal_notowned_needed(corig, pi->data);
-                        } else if (pj->data && chunks[j]->is_mine()) {
+                        }
+                        else if (pj->data && chunks[j]->is_mine()) {
                           ni += pj->s->num_internal_notowned_needed(c, pj->data);
                           cni += pj->s->num_cinternal_notowned_needed(c, pj->data);
                         }

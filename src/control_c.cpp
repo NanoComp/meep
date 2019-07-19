@@ -31,11 +31,11 @@ static int kill_time = 2;
 static void handle_control_c(int i) {
   (void)i; // unused: should equal SIGINT
   interrupt++;
-  if (interrupt >= kill_time) {
-    abort("interrupted");
-  } else if (interrupt + 1 == kill_time) {
+  if (interrupt >= kill_time) { abort("interrupted"); }
+  else if (interrupt + 1 == kill_time) {
     printf("Be patient... hit ctrl-C one more time to kill me.\n");
-  } else {
+  }
+  else {
     printf("Be patient... hit ctrl-C %d more times to kill me.\n", kill_time - interrupt);
   }
 }

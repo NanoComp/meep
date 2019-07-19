@@ -95,7 +95,7 @@ public:
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
   // Returns the 1st order nonlinear susceptibility (generic)
-  virtual std::complex<double> chi1(double freq, double sigma=1);
+  virtual std::complex<double> chi1(double freq, double sigma = 1);
 
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
@@ -238,7 +238,7 @@ public:
   virtual ~lorentzian_susceptibility() {}
 
   // Returns the 1st order nonlinear susceptibility
-  virtual std::complex<double> chi1(double freq, double sigma=1);
+  virtual std::complex<double> chi1(double freq, double sigma = 1);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
@@ -290,25 +290,25 @@ typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } g
 /* gyrotropic susceptibility */
 class gyrotropic_susceptibility : public susceptibility {
 public:
-  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma, double alpha=0.0,
-                            gyrotropy_model model=GYROTROPIC_LORENTZIAN);
+  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma, double alpha = 0.0,
+                            gyrotropy_model model = GYROTROPIC_LORENTZIAN);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
   virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
-				  const grid_volume &gv, void *data) const;
+                                  const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
   virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-			realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
-			const grid_volume &gv, void *P_internal_data) const;
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        void *P_internal_data) const;
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
-			  void *P_internal_data) const;
+                          void *P_internal_data) const;
 
   virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
-					  int n, void *P_internal_data) const;
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
+                                          void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 8; }
@@ -770,8 +770,10 @@ public:
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc, double omega = 0, bool parallel = true) const;
-  double get_chi1inv(component, direction, const vec &loc, double omega = 0, bool parallel = true) const;
+  double get_chi1inv(component, direction, const ivec &origloc, double omega = 0,
+                     bool parallel = true) const;
+  double get_chi1inv(component, direction, const vec &loc, double omega = 0,
+                     bool parallel = true) const;
   double get_inveps(component c, direction d, const ivec &origloc, double omega = 0) const {
     return get_chi1inv(c, d, origloc, omega);
   }
@@ -1593,17 +1595,16 @@ public:
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 std::vector<component> components,
                                                 field_function fun, void *fun_data,
-                                                std::complex<double> *slice = 0,
-                                                double omega = 0);
+                                                std::complex<double> *slice = 0, double omega = 0);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
   // derived component.)
   double *get_array_slice(const volume &where, component c, double *slice = 0, double omega = 0);
-  double *get_array_slice(const volume &where, derived_component c, double *slice = 0, double omega = 0);
+  double *get_array_slice(const volume &where, derived_component c, double *slice = 0,
+                          double omega = 0);
   std::complex<double> *get_complex_array_slice(const volume &where, component c,
-                                                std::complex<double> *slice = 0,
-                                                double omega = 0);
+                                                std::complex<double> *slice = 0, double omega = 0);
 
   // like get_array_slice, but for *sources* instead of fields
   std::complex<double> *get_source_slice(const volume &where, component source_slice_component,
@@ -1795,7 +1796,8 @@ public:
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int Nperiods = 1);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc, double omega = 0, bool parallel = true) const;
+  double get_chi1inv(component, direction, const vec &loc, double omega = 0,
+                     bool parallel = true) const;
   double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
     return get_chi1inv(c, d, loc, omega);
   }
@@ -1882,7 +1884,8 @@ private:
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
-  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0, bool parallel = true) const;
+  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0,
+                     bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp

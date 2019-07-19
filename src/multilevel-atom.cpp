@@ -278,7 +278,8 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
         wp = W_prev[cdot[idot]][1];
         E8[idot][1] = w[i] + w[i + o1[idot]] + w[i + o2[idot]] + w[i + o1[idot] + o2[idot]] +
                       wp[i] + wp[i + o1[idot]] + wp[i + o2[idot]] + wp[i + o1[idot] + o2[idot]];
-      } else
+      }
+      else
         E8[idot][1] = 0;
     }
 
@@ -361,9 +362,8 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const realnum *w2 = W[c2][cmp];
           const realnum *s2 = w2 ? sigma[c][d2] : NULL;
 
-          if (s1 || s2) {
-            abort("nondiagonal saturable gain is not yet supported");
-          } else { // isotropic
+          if (s1 || s2) { abort("nondiagonal saturable gain is not yet supported"); }
+          else { // isotropic
             LOOP_OVER_VOL_OWNED(gv, c, i) {
               realnum pcur = p[i];
               const realnum *Ni = N + i * L;

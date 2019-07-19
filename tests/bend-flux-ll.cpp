@@ -133,7 +133,8 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms, volume &vsrc, 
       objects[0] = make_prism(dielectric, vertices, 4, height, axis);
       geometric_object_list g = {1, objects};
       meep_geom::set_materials_from_geometry(&the_structure, g);
-    } else {
+    }
+    else {
       vector3 center = v3(0.0, wvg_ycen, 0.0);
       vector3 size = v3(sx, w, 0.0);
       geometric_object objects[1];
@@ -141,7 +142,8 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms, volume &vsrc, 
       geometric_object_list g = {1, objects};
       meep_geom::set_materials_from_geometry(&the_structure, g);
     }
-  } else {
+  }
+  else {
     if (use_prisms) {
       vector3 vertices[6];
       vertices[0] = v3(-0.5 * sx, wvg_ycen - 0.5 * w);
@@ -156,7 +158,8 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms, volume &vsrc, 
       objects[0] = make_prism(dielectric, vertices, 6, height, axis);
       geometric_object_list g = {1, objects};
       meep_geom::set_materials_from_geometry(&the_structure, g);
-    } else {
+    }
+    else {
       geometric_object objects[2];
       vector3 hcenter = v3(-0.5 * pad, wvg_ycen), hsize = v3(sx - pad, w);
       vector3 vcenter = v3(wvg_xcen, 0.5 * pad), vsize = v3(w, sy - pad);

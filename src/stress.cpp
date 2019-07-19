@@ -156,7 +156,8 @@ dft_force fields::add_dft_force(const volume_list *where_, double freq_min, doub
                          where->weight, offdiag1);
       offdiag2 = add_dft(direction_component(Hx, nd), where->v, freq_min, freq_max, Nfreq, false,
                          1.0, offdiag2);
-    } else // diagonal stress-tensor terms
+    }
+    else // diagonal stress-tensor terms
       LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
         complex<double> weight1 = where->weight * (d == fd ? +0.5 : -0.5);
         diag = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq, true, 1.0,

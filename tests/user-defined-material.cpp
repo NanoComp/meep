@@ -165,7 +165,8 @@ int main(int argc, char *argv[]) {
     if (argv[narg] && !strcmp(argv[narg], "--eps_ref_file")) {
       if (narg + 1 == argc) abort("no option specified for --eps_ref_file");
       eps_ref_file = argv[++narg];
-    } else if (argv[narg] && !strcmp(argv[narg], "--without_susceptibility"))
+    }
+    else if (argv[narg] && !strcmp(argv[narg], "--without_susceptibility"))
       with_susceptibility = false;
     else
       abort("unrecognized command-line option %s", argv[narg]);

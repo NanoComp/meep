@@ -1029,6 +1029,11 @@ public:
   double origin_z() const { return origin.z(); }
 
 private:
+  std::complex<double> get_split_costs(direction d, int split_point) const;
+  grid_volume split_by_cost(int desired_chunks, int proc_num, int best_split_point,
+                            direction best_split_direction, double left_effort_fraction) const;
+  void find_best_split(int desired_chunks, int &best_split_point, direction &best_split_direction,
+                       double &left_effort_fraction) const;
   grid_volume(ndim d, double ta, int na, int nb, int nc);
   ivec io;    // integer origin ... always change via set_origin etc.!
   vec origin; // cache of operator[](io), for performance
