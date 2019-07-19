@@ -1,18 +1,52 @@
 #!/bin/bash
 
-# latest version of this script can be found at:
+# Latest version of this script can be found at:
 #   https://github.com/NanoComp/meep/blob/master/contrib/build-meep.sh
 
-# detect if script is in a directory called src/
-DESTDIR=$(pwd)
+help ()
+{
+    cat << EOF
+
+$1: Download MEEP sources and dependencies, compile, and install
+
+Usage: $1 [options]
+EOF
+    sed -ne 's,[ \t]*\(-[^ \t]*\))[^#]*#[ \t]*\(.*\),    \1 \2,p' "$1"
+    echo ""
+    exit 1
+}
+
+[ -z "$1" ] && echo "(use -h for help)"
+
+while [ ! -z "$1" ]; do
+    case "$1" in
+        -h)         # help
+            help "$0"
+            ;;
+        -d)         # <installdir>  (default: current directory)
+            DESTDIR="$2"
+            shift
+            ;;
+        *)
+            echo "'$1' ?"
+            help "$0"
+            ;;
+    esac
+    shift
+done
+
+
+# detect wether DESTDIR is ending with src/
+[ -z ${DESTDIR} ] && DESTDIR=$(pwd)
 [ ${DESTDIR##*/} = src ] && DESTDIR=$(cd $(pwd)/..; pwd)
 SRCDIR=${DESTDIR}/src
 
-cat <<EOF
+cat << EOF
 
 This sript will download or update sources, compile and install MEEP.
 Please ensure the following final paths fit your needs:
     '${DESTDIR}/bin/meep'
+    '${DESTDIR}/lib/...'
     '${DESTDIR}/share/...'
     '${DESTDIR}/...'
     '${SRCDIR}/<sources>'
