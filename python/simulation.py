@@ -1952,9 +1952,6 @@ class Simulation(object):
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
         vgrp = np.zeros(num_bands * flux.Nfreq)
 
-        if kpoint_func is not None:
-            kpoint_func = Vector3(*kpoint_func)
-
         kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
             self.fields,
             flux.swigobj,
