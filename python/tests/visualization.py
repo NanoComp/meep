@@ -114,7 +114,6 @@ def view_sim():
 class TestVisualization(unittest.TestCase):
     
     def test_plot2D(self):
-        
         # Check plotting of geometry with several sources, monitors, and PMLs
         f = plt.figure()
         ax = f.gca()
@@ -149,7 +148,6 @@ class TestVisualization(unittest.TestCase):
         Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=False, normalize=False)
         sim.run(mp.at_every(1,Animate),until=5)
 
-        sim.reset_meep()
         # Check with normalization
         animation = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True)
         sim.run(mp.at_every(1),until=25)

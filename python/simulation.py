@@ -2078,6 +2078,10 @@ class Simulation(object):
         else:
             raise ValueError("Invalid run configuration")
 
+    def print_times(self):
+        if self.fields:
+            self.fields.print_times()
+
     def get_epsilon(self,omega=0):
         return self.get_array(component=mp.Dielectric,omega=omega)
 
