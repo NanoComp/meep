@@ -104,7 +104,7 @@ class EigenModeSource(Source):
         self.component = component
         self.direction = direction
         self.eig_band = eig_band
-        self.eig_kpoint = eig_kpoint
+        self.eig_kpoint = mp.Vector3(*eig_kpoint)
         self.eig_match_freq = eig_match_freq
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution
