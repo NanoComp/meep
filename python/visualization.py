@@ -573,58 +573,92 @@ def plot3D(sim):
 def visualize_chunks(sim):
     if sim.structure is None:
         sim.init_sim()
-    
+
     import matplotlib.pyplot as plt
     import matplotlib.cm
     import matplotlib.colors
-    from mpl_toolkits.mplot3d import Axes3D
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+
+    if sim.structure.gv.dim == 2:
+        from mpl_toolkits.mplot3d import Axes3D
+        from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    else:
+        from matplotlib.collections import PolyCollection
 
     vols = sim.structure.get_chunk_volumes()
     owners = sim.structure.get_chunk_owners()
 
     def plot_box(box, proc, fig, ax):
-        low = mp.Vector3(box.low.x, box.low.y, box.low.z)
-        high = mp.Vector3(box.high.x, box.high.y, box.high.z)
-        points = [low, high]
+        if sim.structure.gv.dim == 2:
+            low = mp.Vector3(box.low.x, box.low.y, box.low.z)
+            high = mp.Vector3(box.high.x, box.high.y, box.high.z)
+            points = [low, high]
 
-        x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
-        y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
-        xy_len = mp.Vector3(high.x, high.y) - mp.Vector3(low.x, low.y)
+            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
+            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
+            xy_len = mp.Vector3(high.x, high.y) - mp.Vector3(low.x, low.y)
 
-        points += [low + x_len]
-        points += [low + y_len]
-        points += [low + xy_len]
-        points += [high - x_len]
-        points += [high - y_len]
-        points += [high - xy_len]
-        points = np.array([np.array(v) for v in points])
+            points += [low + x_len]
+            points += [low + y_len]
+            points += [low + xy_len]
+            points += [high - x_len]
+            points += [high - y_len]
+            points += [high - xy_len]
+            points = np.array([np.array(v) for v in points])
 
-        edges = [
-            [points[0], points[2], points[4], points[3]],
-            [points[1], points[5], points[7], points[6]],
-            [points[0], points[3], points[5], points[7]],
-            [points[1], points[4], points[2], points[6]],
-            [points[3], points[4], points[1], points[5]],
-            [points[0], points[7], points[6], points[2]]
-        ]
+            edges = [
+                [points[0], points[2], points[4], points[3]],
+                [points[1], points[5], points[7], points[6]],
+                [points[0], points[3], points[5], points[7]],
+                [points[1], points[4], points[2], points[6]],
+                [points[3], points[4], points[1], points[5]],
+                [points[0], points[7], points[6], points[2]]
+            ]
 
-        faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
-        color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc], alpha=0.2)
-        faces.set_facecolor(color_with_alpha)
-        ax.add_collection3d(faces)
+            faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
+            color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc], alpha=0.2)
+            faces.set_facecolor(color_with_alpha)
+            ax.add_collection3d(faces)
 
-        # Plot the points themselves to force the scaling of the axes
-        ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
+            # Plot the points themselves to force the scaling of the axes
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
+        else:
+            low = mp.Vector3(box.low.x, box.low.y)
+            high = mp.Vector3(box.high.x, box.high.y)
+            points = [low, high]
+
+            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
+            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
+
+            points += [low + x_len]
+            points += [low + y_len]
+            points = np.array([np.array(v)[:-1] for v in points])
+
+            edges = [
+                [points[0], points[2], points[1], points[3]]
+            ]
+
+            faces = PolyCollection(edges, linewidths=1, edgecolors='k')
+            color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc])
+            faces.set_facecolor(color_with_alpha)
+            ax.add_collection(faces)
+
+            # Plot the points themselves to force the scaling of the axes
+            ax.scatter(points[:, 0], points[:, 1], s=0)
 
     if mp.am_master():
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection='3d' if sim.structure.gv.dim == 2 else None)
         chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
 
         for i, v in enumerate(vols):
             plot_box(mp.gv2box(v.surroundings()), owners[i], fig, ax)
-        ax.set_aspect('auto')
+        ax.set_aspect('equal')
+        plt.autoscale(tight=True)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        if sim.structure.gv.dim == 2:
+            ax.set_zlabel('z')
+        plt.tight_layout()
         plt.show()
 
 # ------------------------------------------------------- #
