@@ -218,7 +218,7 @@ class TestCustomEigenModeSource(unittest.TestCase):
                             geometry=geometry,
                             symmetries=[mp.Mirror(mp.Y)])
 
-        t = np.linspace(0,50,1e3)
+        t = np.linspace(0,50,1000)
         sim.run(until=t0+50)
 
         # For now, just check to make sure the simulation can run and the fields don't blow up.

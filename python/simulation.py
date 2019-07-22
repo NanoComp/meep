@@ -60,7 +60,8 @@ def vec(*args):
             raise
 
 
-def py_v3_to_vec(dims, v3, is_cylindrical=False):
+def py_v3_to_vec(dims, iterable, is_cylindrical=False):
+    v3 = Vector3(*iterable)
     if dims == 1:
         return mp.vec(v3.z)
     elif dims == 2:
@@ -228,8 +229,8 @@ class FluxRegion(object):
             self.center = volume.center
             self.size = volume.size
         else:
-            self.center = center
-            self.size = size
+            self.center = Vector3(*center)
+            self.size = Vector3(*size)
 
         self.direction = direction
         self.weight = complex(weight)
@@ -248,8 +249,8 @@ class FieldsRegion(object):
             self.center = where.center
             self.size = where.size
         else:
-            self.center = center
-            self.size = size
+            self.center = Vector3(*center) if center is not None else None
+            self.size = Vector3(*size) if size is not None else None
 
         self.where = where
 
@@ -587,14 +588,14 @@ class Simulation(object):
                  chunk_layout=None,
                  collect_stats=False):
 
-        self.cell_size = cell_size
+        self.cell_size = Vector3(*cell_size)
         self.geometry = geometry
         self.sources = sources
         self.resolution = resolution
         self.dimensions = dimensions
         self.boundary_layers = boundary_layers
         self.symmetries = symmetries
-        self.geometry_center = geometry_center
+        self.geometry_center = Vector3(*geometry_center)
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
@@ -654,8 +655,9 @@ class Simulation(object):
             else:
                 # A SWIG-wrapped meep::volume
                 return vol
-        elif size and center:
-            return Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical).swigobj
+        elif size is not None and center is not None:
+            return Volume(center=Vector3(*center), size=Vector3(*size), dims=self.dimensions,
+                          is_cylindrical=self.is_cylindrical).swigobj
         else:
             raise ValueError("Need either a Volume, or a size and center")
 
@@ -1477,7 +1479,9 @@ class Simulation(object):
                 dft.swigobj = dft.func(*dft.args)
 
     def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None):
-        dftf = DftFields(self._add_dft_fields, [components, where, center, size, freq_min, freq_max, nfreq])
+        center_v3 = Vector3(*center) if center is not None else None
+        size_v3 = Vector3(*size) if size is not None else None
+        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freq_min, freq_max, nfreq])
         self.dft_objects.append(dftf)
         return dftf
 
@@ -2076,6 +2080,10 @@ class Simulation(object):
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
+
+    def print_times(self):
+        if self.fields:
+            self.fields.print_times()
 
     def get_epsilon(self,omega=0):
         return self.get_array(component=mp.Dielectric,omega=omega)

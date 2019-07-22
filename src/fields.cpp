@@ -154,7 +154,6 @@ fields::~fields() {
   delete sources;
   delete fluxes;
   delete[] outdir;
-  if (!quiet) print_times();
 }
 
 void fields::verbose(int gv) {
