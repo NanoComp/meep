@@ -438,7 +438,7 @@ Properties:
 
 **`x`, `y`, `z` [`float` or `complex`]**
 —
-The `x`, `y`, and `z` components of the vector.
+The `x`, `y`, and `z` components of the vector. Generally, functions that take a `Vector3` as an argument will accept an iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
 
 **`Vector3(x=0.0, y=0.0, z=0.0)`**
 —
@@ -1000,6 +1000,20 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 Return the current simulation time in simulation time units (e.g. during a run function). This is not the wall-clock time.
 
 Occasionally, e.g. for termination conditions of the form *time* &lt; *T*?, it is desirable to round the time to single precision in order to avoid small differences in roundoff error from making your results different by one timestep from machine to machine (a difference much bigger than roundoff error); in this case you can call `Simulation.round_time()` instead, which returns the time rounded to single precision.
+
+**`Simulation.print_times()`**
+—
+Call after running a simulation to print the times spent on various types of work. Example output:
+
+```
+Field time usage:
+        connecting chunks: 0.0819176 s +/- 0.000428381 s
+            time stepping: 0.198949 s +/- 0.0225551 s
+            communicating: 0.410577 s +/- 0.278853 s
+        outputting fields: 0.512352 s +/- 0.0238399 s
+     Fourier transforming: 0.0738274 s +/- 0.0967926 s
+          everything else: 0.324933 s +/- 0.377573 s
+```
 
 ### Field Computations
 

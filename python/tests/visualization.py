@@ -116,7 +116,6 @@ def view_sim():
 class TestVisualization(unittest.TestCase):
     
     def test_plot2D(self):
-        
         # Check plotting of geometry with several sources, monitors, and PMLs
         f = plt.figure()
         ax = f.gca()

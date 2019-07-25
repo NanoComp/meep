@@ -104,7 +104,7 @@ class ModeSolver(object):
         self.k_points = k_points
         self.geometry = geometry
         self.geometry_lattice = geometry_lattice
-        self.geometry_center = geometry_center
+        self.geometry_center = mp.Vector3(*geometry_center)
         self.default_material = default_material
         self.random_fields = random_fields
         self.filename_prefix = filename_prefix
