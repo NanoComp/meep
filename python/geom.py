@@ -309,15 +309,17 @@ class IIR_Susceptibility(Susceptibility):
         self.den = np.squeeze(den).tolist()
     
     def eval_susceptibility(self,freq):
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+
         freq = np.squeeze(freq)
         eval_num = np.zeros(freq.shape,dtype=np.float64)
         eval_den = np.zeros(freq.shape,dtype=np.float64)
         N = self.num.size
         D = self.den.size
-        for k in range(N): eval_num += pow(1j*freq,N-k)*self.num[k]
-        for k in range(D): eval_den += pow(1j*freq,D-k)*self.den[k]
+        for k in range(N): eval_num += pow(1j*freq,k)*self.num[k]
+        for k in range(D): eval_den += pow(1j*freq,k)*self.den[k]
 
-        return eval_num / eval_den
+        return sigma * eval_num / eval_den
 
 class DrudeSusceptibility(Susceptibility):
 

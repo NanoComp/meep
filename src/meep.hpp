@@ -369,11 +369,12 @@ class iir_susceptibility : public susceptibility {
 public:
   iir_susceptibility(std::vector<double> numS, std::vector<double> denS, double d);
 
-  //virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
+  virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
 
   virtual ~iir_susceptibility();
   
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
