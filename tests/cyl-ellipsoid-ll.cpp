@@ -83,12 +83,15 @@ int main(int argc, char *argv[]) {
       else if (!strcasecmp(argv[narg + 1], "P")) {
         src_cmpt = Hz;
         master_printf("Using P-polarization\n");
-      } else
+      }
+      else
         meep::abort("invalid --polarization %s", argv[narg + 1]);
-    } else if (argv[narg] && !strcmp(argv[narg], "--eps_ref_file")) {
+    }
+    else if (argv[narg] && !strcmp(argv[narg], "--eps_ref_file")) {
       if (narg + 1 == argc) meep::abort("no option specified for --eps_ref_file");
       eps_ref_file = argv[++narg];
-    } else
+    }
+    else
       meep::abort("unrecognized command-line option %s", argv[narg]);
   };
 

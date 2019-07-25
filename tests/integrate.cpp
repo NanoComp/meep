@@ -207,7 +207,8 @@ void check_splitsym(const grid_volume &gv, int splitting, const symmetry &S, con
     d.dx = R;
     d.dy = P;
     d.dz = Z;
-  } else {
+  }
+  else {
     d.dx = X;
     d.dy = Y;
     d.dz = Z;

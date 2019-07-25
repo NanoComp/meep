@@ -60,7 +60,8 @@ def vec(*args):
             raise
 
 
-def py_v3_to_vec(dims, v3, is_cylindrical=False):
+def py_v3_to_vec(dims, iterable, is_cylindrical=False):
+    v3 = Vector3(*iterable)
     if dims == 1:
         return mp.vec(v3.z)
     elif dims == 2:
@@ -148,7 +149,7 @@ class Identity(Symmetry):
 class Volume(object):
 
     def __init__(self, center=Vector3(), size=Vector3(), dims=2, is_cylindrical=False, vertices=[]):
-        
+
         if len(vertices) == 0:
             self.center = center
             self.size = size
@@ -164,7 +165,7 @@ class Volume(object):
             z_size = 0 if z_list.size == 1 else np.abs(np.diff(z_list)[0])
 
             self.size = Vector3(x_size,y_size,z_size)
-        
+
         self.dims = dims
 
         v1 = self.center - self.size.scale(0.5)
@@ -228,8 +229,8 @@ class FluxRegion(object):
             self.center = volume.center
             self.size = volume.size
         else:
-            self.center = center
-            self.size = size
+            self.center = Vector3(*center)
+            self.size = Vector3(*size)
 
         self.direction = direction
         self.weight = complex(weight)
@@ -248,8 +249,8 @@ class FieldsRegion(object):
             self.center = where.center
             self.size = where.size
         else:
-            self.center = center
-            self.size = size
+            self.center = Vector3(*center) if center is not None else None
+            self.size = Vector3(*size) if size is not None else None
 
         self.where = where
 
@@ -587,14 +588,14 @@ class Simulation(object):
                  chunk_layout=None,
                  collect_stats=False):
 
-        self.cell_size = cell_size
+        self.cell_size = Vector3(*cell_size)
         self.geometry = geometry
         self.sources = sources
         self.resolution = resolution
         self.dimensions = dimensions
         self.boundary_layers = boundary_layers
         self.symmetries = symmetries
-        self.geometry_center = geometry_center
+        self.geometry_center = Vector3(*geometry_center)
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
@@ -654,8 +655,9 @@ class Simulation(object):
             else:
                 # A SWIG-wrapped meep::volume
                 return vol
-        elif size and center:
-            return Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical).swigobj
+        elif size is not None and center is not None:
+            return Volume(center=Vector3(*center), size=Vector3(*size), dims=self.dimensions,
+                          is_cylindrical=self.is_cylindrical).swigobj
         else:
             raise ValueError("Need either a Volume, or a size and center")
 
@@ -1002,8 +1004,9 @@ class Simulation(object):
         return stats
 
     def _init_structure(self, k=False):
-        print('-' * 11)
-        print('Initializing structure...')
+        if not mp.cvar.quiet:
+            print('-' * 11)
+            print('Initializing structure...')
 
         gv = self._create_grid_volume(k)
         sym = self._create_symmetries(gv)
@@ -1024,7 +1027,7 @@ class Simulation(object):
         if self.collect_stats and isinstance(self.default_material, mp.Medium):
             self.fragment_stats = self._compute_fragment_stats(gv)
 
-        if self._output_stats and isinstance(self.default_material, mp.Medium):
+        if self._output_stats and isinstance(self.default_material, mp.Medium) and not mp.cvar.quiet:
             stats = self._compute_fragment_stats(gv)
             print("STATS: aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
             print("STATS: anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
@@ -1163,7 +1166,7 @@ class Simulation(object):
 
         if use_real(self):
             self.fields.use_real_fields()
-        else:
+        elif not mp.cvar.quiet:
             print("Meep: using complex fields.")
 
         if self.k_point:
@@ -1264,9 +1267,9 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt):
+    def get_epsilon_point(self, pt, omega = 0):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        return self.fields.get_eps(v3)
+        return self.fields.get_eps(v3,omega)
 
     def get_filename_prefix(self):
         if isinstance(self.filename_prefix, str):
@@ -1288,7 +1291,8 @@ class Simulation(object):
         closure = {'trashed': False}
 
         def hook():
-            print("Meep: using output directory '{}'".format(dname))
+            if not mp.cvar.quiet:
+                print("Meep: using output directory '{}'".format(dname))
             self.fields.set_output_directory(dname)
             if not closure['trashed']:
                 mp.trash_output_directory(dname)
@@ -1339,7 +1343,8 @@ class Simulation(object):
         for func in step_funcs:
             _eval_step_func(self, func, 'finish')
 
-        print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
+        if not mp.cvar.quiet:
+            print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
 
     def _run_sources_until(self, cond, step_funcs):
@@ -1474,7 +1479,9 @@ class Simulation(object):
                 dft.swigobj = dft.func(*dft.args)
 
     def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None):
-        dftf = DftFields(self._add_dft_fields, [components, where, center, size, freq_min, freq_max, nfreq])
+        center_v3 = Vector3(*center) if center is not None else None
+        size_v3 = Vector3(*size) if size is not None else None
+        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freq_min, freq_max, nfreq])
         self.dft_objects.append(dftf)
         return dftf
 
@@ -1795,7 +1802,7 @@ class Simulation(object):
 
         return stuff
 
-    def output_component(self, c, h5file=None):
+    def output_component(self, c, h5file=None, omega=0):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
@@ -1803,7 +1810,7 @@ class Simulation(object):
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
-        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision, self.get_filename_prefix())
+        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(), omega)
 
         if h5file is None:
             nm = self.fields.h5file_name(mp.component_name(c), self.get_filename_prefix(), True)
@@ -1833,7 +1840,7 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None):
+    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, omega = 0):
         if component is None:
             raise ValueError("component is required")
         if isinstance(component, mp.Volume) or isinstance(component, mp.volume):
@@ -1868,9 +1875,9 @@ class Simulation(object):
             arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
         if np.iscomplexobj(arr):
-            self.fields.get_complex_array_slice(v, component, arr)
+            self.fields.get_complex_array_slice(v, component, arr, omega)
         else:
-            self.fields.get_array_slice(v, component, arr)
+            self.fields.get_array_slice(v, component, arr, omega)
 
         return arr
 
@@ -1934,13 +1941,15 @@ class Simulation(object):
                                        center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
-                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False):
+                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False, direction=mp.AUTOMATIC):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
             eig_vol = flux.where
         else:
             eig_vol = self._volume_from_kwargs(vol=eig_vol)
+        if direction is None or direction == mp.AUTOMATIC:
+            direction = flux.normal_direction
 
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
@@ -1957,7 +1966,8 @@ class Simulation(object):
             coeffs,
             vgrp,
             kpoint_func,
-            verbose
+            verbose,
+            direction
         )
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
@@ -2071,8 +2081,12 @@ class Simulation(object):
         else:
             raise ValueError("Invalid run configuration")
 
-    def get_epsilon(self):
-        return self.get_array(component=mp.Dielectric)
+    def print_times(self):
+        if self.fields:
+            self.fields.print_times()
+
+    def get_epsilon(self,omega=0):
+        return self.get_array(component=mp.Dielectric,omega=omega)
 
     def get_mu(self):
         return self.get_array(component=mp.Permeability)
@@ -2462,7 +2476,7 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
             closure['cur_max'] = 0
             closure['t0'] = sim.round_time()
             closure['max_abs'] = max(closure['max_abs'], old_cur)
-            if closure['max_abs'] != 0:
+            if closure['max_abs'] != 0 and not mp.cvar.quiet:
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
@@ -2533,7 +2547,7 @@ def display_progress(t0, t, dt):
 
     def _disp(sim):
         t1 = mp.wall_time()
-        if t1 - closure['tlast'] >= dt:
+        if t1 - closure['tlast'] >= dt and not mp.cvar.quiet:
             msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
             val1 = sim.meep_time() - t0
             val2 = val1 / (0.01 * t)
@@ -2600,12 +2614,14 @@ def output_png(compnt, options, rm_h5=True):
     return _output_png
 
 
-def output_epsilon(sim):
-    sim.output_component(mp.Dielectric)
+def output_epsilon(sim,*step_func_args,**kwargs):
+    omega = kwargs.pop('omega', 0.0)
+    sim.output_component(mp.Dielectric,omega=omega)
 
 
-def output_mu(sim):
-    sim.output_component(mp.Permeability)
+def output_mu(sim,*step_func_args,**kwargs):
+    omega = kwargs.pop('omega', 0.0)
+    sim.output_component(mp.Permeability,omega=omega)
 
 
 def output_hpwr(sim):

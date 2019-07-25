@@ -16,6 +16,10 @@
 
 ; ****************************************************************
 
+; for define* (keyword args) in guile 1.8
+(if (< (string->number (major-version)) 2)
+    (use-modules (ice-9 optargs)))
+
 ; Get the number of arguments to a function p.  However, some
 ; older versions of Guile (e.g. 1.2) do not support the 'arity
 ; property, and procedure-property just returns false.  In
@@ -1214,13 +1218,14 @@
         (eig-vol (get-keyword-value args #:eig-vol (meep-dft-flux-where-get flux)))
         (eig-resolution (get-keyword-value args #:eig-resolution 0))
         (eig-tolerance (get-keyword-value args #:eig-tolerance 1e-12))
+        (direction (get-keyword-value args #:direction AUTOMATIC))
         (num-bands (length bands))
         (kpoint-func (get-keyword-value args #:kpoint-func '())))
     (begin
       (define coeffs (make-typed-array 'c64 '0 num-bands (meep-dft-flux-Nfreq-get flux) 2))
       (define vgrp (make-typed-array 'f64 '0 num-bands (meep-dft-flux-Nfreq-get flux)))
       (define kpoints-and-kdom (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp
-                                                             eig-resolution eig-tolerance kpoint-func))
+                                                             eig-resolution eig-tolerance kpoint-func direction))
       (list coeffs vgrp (first kpoints-and-kdom) (second kpoints-and-kdom)))))
 
 ; ****************************************************************

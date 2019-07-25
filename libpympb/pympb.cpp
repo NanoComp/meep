@@ -112,14 +112,12 @@ cnumber cscalar2cnumber(scalar_complex cs) { return make_cnumber(CSCALAR_RE(cs),
 const char *parity_string(maxwell_data *d) {
   static char s[128];
   strcpy(s, "");
-  if (d->parity & EVEN_Z_PARITY) {
-    strcat(s, (d->nz == 1) ? "te" : "zeven");
-  } else if (d->parity & ODD_Z_PARITY) {
+  if (d->parity & EVEN_Z_PARITY) { strcat(s, (d->nz == 1) ? "te" : "zeven"); }
+  else if (d->parity & ODD_Z_PARITY) {
     strcat(s, (d->nz == 1) ? "tm" : "zodd");
   }
-  if (d->parity & EVEN_Y_PARITY) {
-    strcat(s, "yeven");
-  } else if (d->parity & ODD_Y_PARITY) {
+  if (d->parity & EVEN_Y_PARITY) { strcat(s, "yeven"); }
+  else if (d->parity & ODD_Y_PARITY) {
     strcat(s, "yodd");
   }
   return s;
@@ -337,14 +335,16 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
       shiftby1 = shiftby;
       id1 = id;
       mat1 = mat;
-    } else if (id2 == -1 || ((id >= id1 && id >= id2) &&
-                             (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
+    }
+    else if (id2 == -1 || ((id >= id1 && id >= id2) &&
+                           (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
       o2 = o;
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
-    } else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
-               !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
+    }
+    else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
+             !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
       return 0; /* too many nearby objects for analysis */
     }
   }
@@ -376,9 +376,8 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
     return 1;
   }
 
-  if (id1 > id2) {
-    normal = normal_to_fixed_object(vector3_minus(p, shiftby1), *o1);
-  } else {
+  if (id1 > id2) { normal = normal_to_fixed_object(vector3_minus(p, shiftby1), *o1); }
+  else {
     normal = normal_to_fixed_object(vector3_minus(p, shiftby2), *o2);
   }
 
@@ -398,7 +397,8 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
     pixel.low = vector3_minus(pixel.low, shiftby1);
     pixel.high = vector3_minus(pixel.high, shiftby1);
     fill = box_overlap_with_object(pixel, *o1, tol, 100 / tol);
-  } else {
+  }
+  else {
     pixel.low = vector3_minus(pixel.low, shiftby2);
     pixel.high = vector3_minus(pixel.high, shiftby2);
     fill = 1 - box_overlap_with_object(pixel, *o2, tol, 100 / tol);
@@ -428,7 +428,8 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
       Rot[0][2] = n1;
       Rot[1][2] = -n0;
       Rot[2][2] = 0;
-    } else { /* n is ~ parallel to z direction, use (x x n) instead */
+    }
+    else { /* n is ~ parallel to z direction, use (x x n) instead */
       Rot[0][2] = 0;
       Rot[1][2] = -n2;
       Rot[2][2] = n1;
@@ -581,7 +582,8 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
         break;
       default: meep::abort("Unknown material type");
     }
-  } else {
+  }
+  else {
     switch (md->which_subclass) {
       case meep_geom::material_data::MEDIUM:
       case meep_geom::material_data::MATERIAL_FILE:
@@ -647,9 +649,8 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
   switch (md->which_subclass) {
     // material read from file: interpolate to get properties at r
     case meep_geom::material_data::MATERIAL_FILE:
-      if (md->epsilon_data) {
-        meep_geom::epsilon_file_material(md, p);
-      } else {
+      if (md->epsilon_data) { meep_geom::epsilon_file_material(md, p); }
+      else {
         material = (meep_geom::material_type)default_material;
       }
       return;
@@ -686,9 +687,8 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
   if (target_freq != 0.0) { meep::master_printf("Target frequency is %g\n", target_freq); }
 
   int true_rank = n[2] > 1 ? 3 : (n[1] > 1 ? 2 : 1);
-  if (true_rank < dimensions) {
-    dimensions = true_rank;
-  } else if (true_rank > dimensions) {
+  if (true_rank < dimensions) { dimensions = true_rank; }
+  else if (true_rank > dimensions) {
     meep::master_printf("WARNING: rank of grid is > dimensions.\n"
                         "         setting extra grid dims. to 1.\n");
     // force extra dims to be 1
@@ -709,7 +709,8 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
       block_size = (num_bands + block_size - 1) / block_size;
     }
     meep::master_printf("Solving for %d bands at a time.\n", block_size);
-  } else {
+  }
+  else {
     block_size = num_bands;
   }
 
@@ -719,7 +720,8 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
         eigensolver_nwork + (mdata->mu_inv != NULL) == nwork_alloc) {
 
       have_old_fields = 1;
-    } else {
+    }
+    else {
       destroy_evectmatrix(H);
       for (int i = 0; i < nwork_alloc; ++i) {
         destroy_evectmatrix(W[i]);
@@ -733,7 +735,8 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
     destroy_maxwell_data(mdata);
     mdata = NULL;
     curfield_reset();
-  } else {
+  }
+  else {
     srand(time(NULL));
   }
 
@@ -770,13 +773,15 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
 
     if (block_size < num_bands) {
       Hblock = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
-    } else {
+    }
+    else {
       Hblock = H;
     }
 
     if (using_mu() && block_size < num_bands) {
       muinvH = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
-    } else {
+    }
+    else {
       muinvH = H;
     }
   }
@@ -1030,7 +1035,8 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       }
     }
     evectmatrix_resize(&H, H.p - ib0, 1);
-  } else {
+  }
+  else {
     ib0 = 0; /* solve for all bands */
   }
 
@@ -1100,7 +1106,8 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       // get the true eigenvalues and eigenvectors
       CHECK(nwork_alloc >= 2, "not enough workspace");
       eigensolver_get_eigenvals(Hblock, eigvals.data() + ib, maxwell_operator, mdata, W[0], W[1]);
-    } else {
+    }
+    else {
       eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *)mdata,
                   mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *)mdata,
                   use_simple_preconditioner ? maxwell_preconditioner : maxwell_preconditioner2,
@@ -1201,9 +1208,8 @@ void mode_solver::get_epsilon() {
   int N = mdata->fft_output_size;
 
   for (int i = 0; i < N; ++i) {
-    if (mdata->eps_inv == NULL) {
-      epsilon[i] = 1.0;
-    } else {
+    if (mdata->eps_inv == NULL) { epsilon[i] = 1.0; }
+    else {
       epsilon[i] = mean_medium_from_matrix(mdata->eps_inv + i);
     }
     if (epsilon[i] < eps_low) { eps_low = epsilon[i]; }
@@ -1255,9 +1261,8 @@ void mode_solver::get_mu() {
   int N = mdata->fft_output_size;
 
   for (int i = 0; i < N; ++i) {
-    if (mdata->mu_inv == NULL) {
-      mu[i] = 1.0;
-    } else {
+    if (mdata->mu_inv == NULL) { mu[i] = 1.0; }
+    else {
       mu[i] = mean_medium_from_matrix(mdata->mu_inv + i);
     }
 
@@ -1325,9 +1330,8 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
 #endif
 
   for (int i = 0; i < N; ++i) {
-    if (inv) {
-      epsilon[i] = *((mpb_real *)(((char *)&mdata->eps_inv[i]) + offset));
-    } else {
+    if (inv) { epsilon[i] = *((mpb_real *)(((char *)&mdata->eps_inv[i]) + offset)); }
+    else {
       symmetric_matrix eps;
       maxwell_sym_matrix_invert(&eps, &mdata->eps_inv[i]);
       epsilon[i] = *((mpb_real *)(((char *)&eps) + offset));
@@ -1373,9 +1377,8 @@ void mode_solver::get_dfield(int band) {
   curfield_band = band;
   curfield_type = 'd';
 
-  if (mdata->mu_inv == NULL) {
-    maxwell_compute_d_from_H(mdata, H, curfield, band - 1, 1);
-  } else {
+  if (mdata->mu_inv == NULL) { maxwell_compute_d_from_H(mdata, H, curfield, band - 1, 1); }
+  else {
     evectmatrix_resize(&W[0], 1, 0);
     maxwell_compute_H_from_B(mdata, H, W[0], curfield, band - 1, 0, 1);
     maxwell_compute_d_from_H(mdata, W[0], curfield, 0, 1);
@@ -1393,9 +1396,8 @@ void mode_solver::get_dfield(int band) {
   double scale;
   int N = mdata->fft_output_size;
 
-  if (freqs[band - 1] != 0.0) {
-    scale = -1.0 / freqs[band - 1];
-  } else
+  if (freqs[band - 1] != 0.0) { scale = -1.0 / freqs[band - 1]; }
+  else
     scale = -1.0; /* arbitrary */
 
   scale /= sqrt(vol);
@@ -1557,9 +1559,11 @@ double mode_solver::compute_field_energy_internal(mpb_real comp_sum[6]) {
        depending upon whether it is B or D. */
     if (curfield_type == 'd') {
       assign_symmatrix_vector(field, mdata->eps_inv[i], curfield + 3 * i);
-    } else if (curfield_type == 'b' && mdata->mu_inv != NULL) {
+    }
+    else if (curfield_type == 'b' && mdata->mu_inv != NULL) {
       assign_symmatrix_vector(field, mdata->mu_inv[i], curfield + 3 * i);
-    } else {
+    }
+    else {
       field[0] = curfield[3 * i];
       field[1] = curfield[3 * i + 1];
       field[2] = curfield[3 * i + 2];
@@ -1599,7 +1603,8 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   if (!curfield || !strchr("dhb", curfield_type)) {
     meep::master_fprintf(stderr, "The D or H field must be loaded first.\n");
     return retval;
-  } else if (curfield_type == 'h' && mdata->mu_inv != NULL) {
+  }
+  else if (curfield_type == 'h' && mdata->mu_inv != NULL) {
     meep::master_fprintf(stderr, "B, not H, must be loaded if we have mu.\n");
     return retval;
   }
@@ -2169,7 +2174,8 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
   for (int i = 0; i < num_bands; ++i) {
     if (freqs[i] == 0) { /* v is undefined in this case */
       group_v[i] = 0.0;  /* just set to zero */
-    } else {
+    }
+    else {
       group_v[i] /= negative_epsilon_ok ? sqrt(fabs(freqs[i])) : freqs[i];
     }
   }
@@ -2216,7 +2222,8 @@ mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
 
   if (freqs[ib] == 0) { /* v is undefined in this case */
     group_v = 0.0;      /* just set to zero */
-  } else {
+  }
+  else {
     group_v /= negative_epsilon_ok ? sqrt(fabs(freqs[ib])) : freqs[ib];
   }
   return group_v;
@@ -2364,9 +2371,8 @@ cnumber mode_solver::compute_field_integral(field_integral_func field_func,
     p.y = i2 * s2 - c2;
     p.z = i3 * s3 - c3;
 
-    if (integrate_energy) {
-      integral.re += energy_func(energy[xyz_index], epsilon, p, py_func);
-    } else {
+    if (integrate_energy) { integral.re += energy_func(energy[xyz_index], epsilon, p, py_func); }
+    else {
       double phase_phi =
           TWOPI * (kvector.x * (p.x / latx) + kvector.y * (p.y / laty) + kvector.z * (p.z / latz));
 
@@ -2444,14 +2450,17 @@ vector3 mode_solver::get_dominant_planewave(int band) {
       if (i2 >= nx) {                                                                              \
         i2 -= nx;                                                                                  \
         xi2 = xi + 1.0;                                                                            \
-      } else                                                                                       \
+      }                                                                                            \
+      else                                                                                         \
         xi2 = xi;                                                                                  \
-    } else {                                                                                       \
+    }                                                                                              \
+    else {                                                                                         \
       i2 = i1 - 1;                                                                                 \
       if (i2 < 0) {                                                                                \
         i2 += nx;                                                                                  \
         xi2 = xi - 1.0;                                                                            \
-      } else                                                                                       \
+      }                                                                                            \
+      else                                                                                         \
         xi2 = xi;                                                                                  \
       dx = -dx;                                                                                    \
     }                                                                                              \
@@ -2588,7 +2597,8 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
                                 d_in_im[IN_INDEX(i2, j2, k2)], xi2, yi2, zi2, s, dx * dy * dz);
           min_out_im = MIN2(min_out_im, d_out_im[ijk]);
           max_out_im = MAX2(max_out_im, d_out_im[ijk]);
-        } else {
+        }
+        else {
           d_out_re[ijk] = d_in_re[IN_INDEX(i1, j1, k1)] * mdx * mdy * mdz +
                           d_in_re[IN_INDEX(i1, j1, k2)] * mdx * mdy * dz +
                           d_in_re[IN_INDEX(i1, j2, k1)] * mdx * dy * mdz +

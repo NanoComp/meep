@@ -55,13 +55,12 @@ double gaussian_random(double mean, double stddev) {
   // see Knuth vol II algorithm P, sec. 3.4.1
   double v1, v2, s;
   do {
-    v1 = 2*meep_mt_genrand_res53() - 1;
-    v2 = 2*meep_mt_genrand_res53() - 1;
+    v1 = 2 * meep_mt_genrand_res53() - 1;
+    v2 = 2 * meep_mt_genrand_res53() - 1;
     s = v1 * v1 + v2 * v2;
   } while (s >= 1.0);
-  if (s == 0) {
-    return mean;
-  } else {
+  if (s == 0) { return mean; }
+  else {
     return mean + v1 * sqrt(-2 * log(s) / s) * stddev;
   }
 }

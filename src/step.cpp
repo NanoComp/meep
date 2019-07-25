@@ -93,21 +93,9 @@ void fields::step() {
     synchronize_magnetic_fields();
     synchronized_magnetic_fields = save_synchronized_magnetic_fields;
   }
-}
 
-double fields_chunk::peek_field(component c, const vec &where) {
-  double w[8];
-  ivec ilocs[8];
-  gv.interpolate(c, where, ilocs, w);
-  if (gv.contains(ilocs[0]) && f[c][0]) {
-    double hello = 0.0;
-    if (is_mine()) hello = f[c][0][gv.index(c, ilocs[0])];
-    broadcast(n_proc(), &hello, 1);
-    return hello;
-  }
-  // abort("Got no such %s field at %g %g!\n",
-  //      component_name(c), gv[ilocs[0]].x(), gv[ilocs[0]].y());
-  return 0.0;
+  if (!std::isfinite(get_field(D_EnergyDensity, gv.center(), false)))
+    abort("simulation fields are NaN or Inf");
 }
 
 void fields::phase_material() {
@@ -119,14 +107,17 @@ void fields::phase_material() {
         changed = changed || chunks[i]->new_s;
       }
     phasein_time--;
-  }
-  if (or_to_all(changed)) {
-    calc_sources(time() + 0.5 * dt); // for integrated H sources
-    update_eh(H_stuff);              // ensure H = 1/mu * B
-    step_boundaries(H_stuff);
-    calc_sources(time() + dt); // for integrated E sources
-    update_eh(E_stuff);        // ensure E = 1/eps * D
-    step_boundaries(E_stuff);
+    am_now_working_on(MpiTime);
+    bool changed_mpi = or_to_all(changed);
+    finished_working();
+    if (changed_mpi) {
+      calc_sources(time() + 0.5 * dt); // for integrated H sources
+      update_eh(H_stuff);              // ensure H = 1/mu * B
+      step_boundaries(H_stuff);
+      calc_sources(time() + dt); // for integrated E sources
+      update_eh(E_stuff);        // ensure E = 1/eps * D
+      step_boundaries(E_stuff);
+    }
   }
 }
 

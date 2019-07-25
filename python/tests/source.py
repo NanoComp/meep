@@ -176,6 +176,53 @@ class TestAmpFileFunc(unittest.TestCase):
         self.assertAlmostEqual(field_point_amp_file, field_point_amp_func, places=4)
         self.assertAlmostEqual(field_point_amp_arr, field_point_amp_func, places=4)
 
+class TestCustomEigenModeSource(unittest.TestCase):
+
+    def test_custom_em_source(self):
+        resolution = 20
+
+        dpml = 2
+        pml_layers = [mp.PML(thickness=dpml)]
+
+        sx = 40
+        sy = 12
+        cell_size = mp.Vector3(sx+2*dpml,sy)
+
+        v0 = 0.15  # pulse center frequency
+        a = 0.2*v0   # Gaussian envelope half-width
+        b = -0.1  # linear chirp rate (positive: up-chirp, negative: down-chirp)
+        t0 = 15   # peak time
+
+        chirp = lambda t: np.exp(1j*2*np.pi*v0*(t-t0)) * np.exp(-a*(t-t0)**2+1j*b*(t-t0)**2)
+
+        geometry = [mp.Block(center=mp.Vector3(0,0,0),size=mp.Vector3(mp.inf,1,mp.inf),material=mp.Medium(epsilon=12))]
+
+        kx = 0.4    # initial guess for wavevector in x-direction of eigenmode
+        kpoint = mp.Vector3(kx)
+        bnum = 1
+
+        sources = [mp.EigenModeSource(src=mp.CustomSource(src_func=chirp,center_frequency=v0),
+                            center=mp.Vector3(-0.5*sx + dpml + 1),
+                            size=mp.Vector3(y=sy),
+                            eig_kpoint=kpoint,
+                            eig_band=bnum,
+                            eig_parity=mp.EVEN_Y+mp.ODD_Z,
+                            eig_match_freq=True
+                            )]
+
+        sim = mp.Simulation(cell_size=cell_size,
+                            boundary_layers=pml_layers,
+                            resolution=resolution,
+                            k_point=mp.Vector3(),
+                            sources=sources,
+                            geometry=geometry,
+                            symmetries=[mp.Mirror(mp.Y)])
+
+        t = np.linspace(0,50,1000)
+        sim.run(until=t0+50)
+
+        # For now, just check to make sure the simulation can run and the fields don't blow up.
+
 
 if __name__ == '__main__':
     unittest.main()

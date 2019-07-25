@@ -303,18 +303,21 @@ realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank
       if (is_cur(dataname)) {
         data_id = HID(cur_id);
         close_data_id = false;
-      } else {
+      }
+      else {
         if (!dataset_exists(dataname)) { abort("missing dataset in HDF5 file: %s", dataname); }
         data_id = H5Dopen(file_id, dataname);
       }
-    } else { // find first dataset in file
+    }
+    else { // find first dataset in file
       char *dname = 0;
       CHECK(H5Giterate(file_id, "/", NULL, find_dataset, &dname) >= 0 && dname,
             "cannot find dataset in HDF5 file");
       if (is_cur(dname)) {
         data_id = HID(cur_id);
         close_data_id = false;
-      } else {
+      }
+      else {
         data_id = H5Dopen(file_id, dname);
       }
       delete[] dname;
@@ -490,7 +493,8 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims, boo
     if (data_id < 0) abort("Error creating dataset");
 
     H5Pclose(prop_id);
-  } else {
+  }
+  else {
     data_id = H5Dopen(file_id, dataname);
     CHECK(data_id >= 0, "missing dataset for subsequent processor");
     space_id = H5Dget_space(data_id);
@@ -644,7 +648,8 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
     H5Sselect_hyperslab(space_id, H5S_SELECT_SET, start, NULL, count, NULL);
     mem_space_id = H5Screate_simple(!rank1 ? 1 : rank1, count, NULL);
     H5Sselect_all(mem_space_id);
-  } else { /* this can happen on leftover processes in MPI */
+  }
+  else { /* this can happen on leftover processes in MPI */
     H5Sselect_none(space_id);
     mem_space_id = H5Scopy(space_id); /* can't create an empty space */
     H5Sselect_none(mem_space_id);
@@ -774,7 +779,8 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
     H5Sselect_hyperslab(space_id, H5S_SELECT_SET, start, NULL, count, NULL);
     mem_space_id = H5Screate_simple(rank1, count, NULL);
     H5Sselect_all(mem_space_id);
-  } else { /* this can happen on leftover processes in MPI */
+  }
+  else { /* this can happen on leftover processes in MPI */
     H5Sselect_none(space_id);
     mem_space_id = H5Scopy(space_id); /* can't create an empty space */
     H5Sselect_none(mem_space_id);

@@ -33,9 +33,6 @@ void fields::step_db(field_type ft) {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->step_db(ft)) chunk_connections_valid = false;
-
-  /* synchronize to avoid deadlocks in connect_the_chunks */
-  chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
 bool fields_chunk::step_db(field_type ft) {
@@ -200,7 +197,8 @@ bool fields_chunk::step_db(field_type ft) {
                   the_f[idx] += siginvu[ku] * df;
                 }
               }
-          } else {      // PML - fu
+          }
+          else {        // PML - fu
             if (cndinv) // PML - fu + conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
                 double rinv = the_m / (ir + ir0);
@@ -223,7 +221,8 @@ bool fields_chunk::step_db(field_type ft) {
                 }
               }
           }
-        } else {         // no PML in f update
+        }
+        else {           // no PML in f update
           if (siginvu) { // no PML + fu
             if (cndinv)  // no PML + fu + conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
@@ -247,7 +246,8 @@ bool fields_chunk::step_db(field_type ft) {
                   the_f[idx] += siginvu[ku] * df;
                 }
               }
-          } else {      // no PML - fu
+          }
+          else {        // no PML - fu
             if (cndinv) // no PML - fu + conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
                 double rinv = the_m / (ir + ir0);
@@ -297,11 +297,13 @@ bool fields_chunk::step_db(field_type ft) {
         ZERO_Z(f[Dp][cmp]);
         if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
         if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
-      } else if (m == 0 && ft == B_stuff && f[Br][cmp]) {
+      }
+      else if (m == 0 && ft == B_stuff && f[Br][cmp]) {
         ZERO_Z(f[Br][cmp]);
         if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
         if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
-      } else if (fabs(m) == 1) {
+      }
+      else if (fabs(m) == 1) {
         // D_stuff: d(Dp)/dt = d(Hr)/dz - d(Hz)/dr
         // B_stuff: d(Br)/dt = d(Ep)/dz - i*m*Ez/r
         component cc = ft == D_stuff ? Dp : Br;
@@ -335,7 +337,8 @@ bool fields_chunk::step_db(field_type ft) {
           if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
           if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
         }
-      } else if (m != 0) {                // m != {0,+1,-1}
+      }
+      else if (m != 0) {                  // m != {0,+1,-1}
         if (zero_fields_near_cylorigin) { /* default behavior */
           /* I seem to recall David telling me that this was for numerical
              stability of some sort - the larger m is, the farther from
@@ -372,7 +375,8 @@ bool fields_chunk::step_db(field_type ft) {
               if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp] + ir);
               if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp] + ir);
             }
-        } else {
+        }
+        else {
           /* Without David's hack: just set boundary conditions at r=0.
              This seems to be unstable unless we make the Courant number
              around 1 / (|m| + 0.5) or smaller.  Pros: probably maintains
@@ -386,7 +390,8 @@ bool fields_chunk::step_db(field_type ft) {
             if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
             if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
             if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
-          } else {
+          }
+          else {
             ZERO_Z(f[Br][cmp]);
             if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
             if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);

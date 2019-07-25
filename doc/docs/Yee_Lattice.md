@@ -6,7 +6,7 @@
 ![](images/Yee-cube.png)
 </center>
 
-In order to discretize Maxwell's equations with second-order accuracy for homogeneous regions where there are no discontinuous material boundaries, FDTD methods *store different field components for different grid locations*. This discretization is known as a **Yee lattice**.
+In order to discretize Maxwell's equations with [second-order accuracy](https://en.wikipedia.org/wiki/Finite_difference_method#Accuracy_and_order) for homogeneous regions where there are no discontinuous material boundaries, FDTD methods *store different field components for different grid locations*. This discretization is known as a **Yee lattice**.
 
 The form of the Yee lattice in 3d is shown in the schematic above for a single cubic grid voxel with dimensions $\Delta x \times \Delta x \times \Delta x$. The three components of **E** are stored on the *edges* of the cube in the corresponding directions, while the components of **H** are stored on the cube *faces*.
 
@@ -28,4 +28,4 @@ In two dimensions, the arrangement is similar except that we set $\hat{\mathbf{e
 ![](images/Yee-te.png)
 </center>
 
-The consequence of the Yee lattice is that, whenever you need to access field components, e.g. to find the energy density $(\mathbf{E}^* \cdot \mathbf{D} + |\mathbf{H}|^2)/2$ or the flux $\textrm{Re}\, \mathbf{E}^* \times \mathbf{H}$, then the components need to be **interpolated** to some common point in order to remain second-order accurate. Meep automatically does this interpolation for you wherever necessary &mdash; in particular, whenever you compute energy density or flux, or whenever you output a field to a file, it is stored at the centers of each grid voxel: $(i+0.5,j+0.5,k+0.5)$.
+The consequence of the Yee lattice is that, whenever you need to access field components, e.g. to find the energy density $(\mathbf{E}^* \cdot \mathbf{D} + |\mathbf{H}|^2)/2$ or the flux $\textrm{Re}\, \mathbf{E}^* \times \mathbf{H}$, then the components need to be **interpolated** to some common point in order to remain second-order accurate. Meep automatically does this [interpolation](Introduction.md#the-illusion-of-continuity) for you wherever necessary &mdash; in particular, whenever you compute [energy density](Python_User_Interface/#energy-density-spectra) or [Poynting flux](Python_User_Interface.md#flux-spectra), or whenever you [output a field to a file](Python_User_Interface.md#output-functions), it is stored at the centers of each grid voxel: $(i+0.5,j+0.5,k+0.5)$.

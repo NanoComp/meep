@@ -26,17 +26,85 @@ GitHub is able to render some of the smaller notebooks as plain text. However, t
 
 Below are summaries for each tutorial, along with the features the tutorials highlight. While there is no particular order to the tutorials, they progressively incorporate more complicated features.
 
-1. __`straight-waveguide.ipynb`__ -
+#### Basics 
+
+* __`straight-waveguide.ipynb`__ -
 A simple 2D straight waveguide tutorial that explores basic meep features like `geometry`, `sources`, and `PML` layers. The tutorial also explores basic visualization and animation features.
 
-2. __`bent-waveguide.ipynb`__-
+* __`bent-waveguide.ipynb`__-
 A followup to the 2D straight waveguide tutorial by adding a bend.
 
-3. __`bend-flux.ipynb`__-
+* __`bend-flux.ipynb`__-
 Using the previous bent waveguide example, this tutorial calculates the loss, transmission, and reflection that the bent waveguide undergoes.
 
-4. __`ring.ipynb`__ -
+* __`ring.ipynb`__ -
 Computes the resonant mode frequencies of a 2D ring resonator using `harminv`.
 
-5. __`visualization.ipynb`__ -
-Demonstrates various visualization and animation features.
+#### Ring Resonator in Cylindrical Coordinates
+
+#### Band Diagram, Resonant Modes, and Transmission of a Waveguide Cavity
+
+* __`holey-wg-cavity.ipynb`__ -
+Calculates the transmission and resonant modes of a waveguide photonic crystal cavity. Demonstrates the `harminv` routines and how to estimate the $Q$ of cavities.
+
+* __`holey-wg-bands.ipynb`__ - 
+Computes the band diagram of the infinite periodic waveguide by itself with no defects in the time domain. Explores the `k_point`, `run_k_point`, and periodic boundary conditions features.
+
+#### MPB and Band diagrams
+
+* __`mpb_strip.ipynb`__ - 
+
+#### Eigenmode Source
+
+* __`oblique-source.ipynb`__ - Launches straight and oblique sources within a silicon photonic strip waveguide and measures the flux using the eigenmode decomposition feature at an arbitrary angle. Explores features like `EigenModeSource`, the geometry `rotate` function, `get_eigenmode_coefficients`, and `k` vectors that point in arbitrary directions.
+
+* __`oblique-planewave.ipynb`__ - Launches a planewave in a homogenous medium using the `EigenModeSource`. Explores Bloch-periodic boundaries via the `k_point`.
+
+
+#### Mode Decomposition
+
+* __`mode-decomposition.ipynb`__ - Computes the reflectance and fundamental mode of a linear waveguide taper. Explores features like `EigenModeSource`, `get_eigenmode_coefficients`, `eig_parity`, and how to extract S Parameters.
+
+* __`binary_grating.ipynb`__ - Computes the diffraction orders of a periodic grating in fuzed quartz as a function of wavelength. Explores planewave sources using `EigenModeSource`, `get_eigenmode_coefficients` with a specified polarization constraint, mode decomposition using materials with dispersion, Bloch-periodic boundaries via the `k_point` parameter, and how to compute diffraction angles from mode coefficients.
+
+* __`binary_grating_oblique.ipynb`__ - Computes the diffraction orders of a periodic grating when a planewave is launched at an arbitrary angle. Explores user defined source profiles via `amp_func`, and compares the frequency domain solver `solve_cw` to the time domain solutions.
+
+* __`binary_grating_phasemap.ipynb`__ -
+
+* __`polarization_grating.ipynb`__ -
+
+#### Material Dispersion
+
+* __`refl-quartz.ipynb`__ -
+
+#### Nonlinear Optics
+
+* __`3rd-harm-1d.ipynb`__ - 
+Examines 3rd harmonic generation in a $\chi^{(3)}$ material. Explores the proper way to do 1d simulations, how to include nonlinearities in materials, and compares experimental results to theory.
+
+#### Near to Far Field Spectra
+
+* __`antenna-radiation.ipynb`__ - 
+Computes the radiation pattern of a simple point source "antenna". Explores `add_near2far`, `add_flux`, `get_fluxes`, and `get_farfield` features.
+
+* __`metasurface_lens.ipynb`__ -
+
+* __`binary_grating_n2f.ipynb`__ -
+
+* __`cavity-farfield.ipynb`__ -
+
+#### Local Density of States
+
+#### Optical Forces
+
+#### Gyrotropic Media
+
+#### Multilevel-Atomic Susceptibility
+
+#### Frequency Domain Solver
+
+* __`solve-cw.ipynb`__ -
+
+#### GDSII Import
+
+#### Adjoint Solver

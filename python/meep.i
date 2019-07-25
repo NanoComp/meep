@@ -421,7 +421,7 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     int rank;
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
- 
+
     if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
      return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
@@ -492,14 +492,14 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int *bands, int num_bands, int parity, double eig_resolution,
                                                    double eigensolver_tol, std::complex<double> *coeffs,
                                                    double *vgrp, meep::kpoint_func user_kpoint_func,
-                                                   void *user_kpoint_data, bool verbose) {
+                                                   void *user_kpoint_data, bool verbose, meep::direction d) {
 
     size_t num_kpoints = num_bands * flux.Nfreq;
     meep::vec *kpoints = new meep::vec[num_kpoints];
     meep::vec *kdom = new meep::vec[num_kpoints];
 
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose);
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose, d);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -1212,6 +1212,15 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     double *total
 };
 
+%exception {
+  try {
+    $action
+  } catch (std::runtime_error &e) {
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+    SWIG_fail;
+  }
+}
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
@@ -1359,7 +1368,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                                   bool verbose);
+                                                   bool verbose, meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions);
 

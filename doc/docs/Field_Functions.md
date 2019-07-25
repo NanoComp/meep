@@ -126,4 +126,11 @@ meep.Simulation.run(meep.synchronized_magnetic(meep.at_every(1,my_weird_output))
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
 
+As a final example, the Python interface routine [`get_array_metadata`](Python_User_Interface.md#array-metadata) used to obtain the coordinates of grid points in a volume slice can be replicated in Scheme via e.g.:
+
+```scm
+(define (f r eps) (vector3-x r))
+(output-real-field-function "x" Dielectric f)
+```
+
 For more information, see [Python User Interface](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface](Scheme_User_Interface.md#writing-your-own-step-functions).

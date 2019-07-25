@@ -104,7 +104,7 @@ class ModeSolver(object):
         self.k_points = k_points
         self.geometry = geometry
         self.geometry_lattice = geometry_lattice
-        self.geometry_center = geometry_center
+        self.geometry_center = mp.Vector3(*geometry_center)
         self.default_material = default_material
         self.random_fields = random_fields
         self.filename_prefix = filename_prefix
@@ -1040,7 +1040,7 @@ class ModeSolver(object):
             ks.append(mp.find_root_deriv(rootfun(b), tol, kmag_min, kmag_max, k0s[b - band_min]))
 
         if band_funcs:
-            for b, k in zip(range(band_max, band_max - nb, -1), reversed(ks)):
+            for b, k in zip(range(1, band_max +1), reversed(ks)):
                 self.num_bands = b
                 self.k_points = [korig + kdir1.scale(k)]
 

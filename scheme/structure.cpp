@@ -48,7 +48,8 @@ void sym_matrix_invert(symmetric_matrix *Vinv, const symmetric_matrix *V) {
     Vinv->m11 = 1.0 / m11;
     Vinv->m22 = 1.0 / m22;
     Vinv->m01 = Vinv->m02 = Vinv->m12 = 0.0;
-  } else {
+  }
+  else {
     double detinv;
 
     /* compute the determinant: */
@@ -99,7 +100,8 @@ void set_dimensions(int dims) {
   if (dims == CYLINDRICAL) {
     dimensions = 2;
     dim = meep::Dcyl;
-  } else {
+  }
+  else {
     dimensions = dims;
     dim = meep::ndim(dims - 1);
   }
@@ -276,7 +278,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
-  if (verbose && meep::am_master()) {
+  if (!meep::quiet && verbose && meep::am_master()) {
     printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 
@@ -368,7 +370,7 @@ static bool is_metal(meep::field_type ft, const material_type *material) {
                 material->subclass.medium_data->epsilon_diag.y < 0 ||
                 material->subclass.medium_data->epsilon_diag.z < 0);
       case MTS::PERFECT_METAL: return true;
-      default: meep::abort("unknown material type");
+      default: meep::abort("unknown material type"); return false;
     }
   else
     switch (material->which_subclass) {
@@ -378,7 +380,7 @@ static bool is_metal(meep::field_type ft, const material_type *material) {
                 material->subclass.medium_data->mu_diag.z < 0);
       case MTS::PERFECT_METAL:
         return false; // is an electric conductor, but not a magnetic conductor
-      default: meep::abort("unknown material type");
+      default: meep::abort("unknown material type"); return false;
     }
 }
 
@@ -444,13 +446,16 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
   if (!inobject && epsilon_data) {
     epsilon_file_material(material, p);
     destroy_material = true;
-  } else if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+  }
+  else if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
     if (epsilon_data) {
       epsilon_file_material(material, p);
       destroy_material = true;
-    } else
+    }
+    else
       material = default_material;
-  } else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  }
+  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
     material = eval_material_func(material.subclass.material_function_data->material_func, p);
     destroy_material = true;
   }
@@ -546,14 +551,16 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
       shiftby1 = shiftby;
       id1 = id;
       mat1 = mat;
-    } else if (id2 == -1 ||
-               ((id >= id1 && id >= id2) && (id1 == id2 || material_type_equal(&mat1, &mat2)))) {
+    }
+    else if (id2 == -1 ||
+             ((id >= id1 && id >= id2) && (id1 == id2 || material_type_equal(&mat1, &mat2)))) {
       o2 = o;
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
-    } else if (!(id1 < id2 && (id1 == id || material_type_equal(&mat1, &mat))) &&
-               !(id2 < id1 && (id2 == id || material_type_equal(&mat2, &mat))))
+    }
+    else if (!(id1 < id2 && (id1 == id || material_type_equal(&mat1, &mat))) &&
+             !(id2 < id1 && (id2 == id || material_type_equal(&mat2, &mat))))
       return false;
   }
 
@@ -664,7 +671,8 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
     Rot[0][2] = normal.y;
     Rot[1][2] = -normal.x;
     Rot[2][2] = 0;
-  } else { /* n is not parallel to z direction, use (x x n) instead */
+  }
+  else { /* n is not parallel to z direction, use (x x n) instead */
     Rot[0][2] = 0;
     Rot[1][2] = -normal.z;
     Rot[2][2] = normal.y;
@@ -835,11 +843,13 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
       chi1inv_row[0] = chi1p1_inv.m00;
       chi1inv_row[1] = chi1p1_inv.m01;
       chi1inv_row[2] = chi1p1_inv.m02;
-    } else if (rownum == 1) {
+    }
+    else if (rownum == 1) {
       chi1inv_row[0] = chi1p1_inv.m01;
       chi1inv_row[1] = chi1p1_inv.m11;
       chi1inv_row[2] = chi1p1_inv.m12;
-    } else {
+    }
+    else {
       chi1inv_row[0] = chi1p1_inv.m02;
       chi1inv_row[1] = chi1p1_inv.m12;
       chi1inv_row[2] = chi1p1_inv.m22;
@@ -860,7 +870,8 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     xmin[2] = gvmin.y;
     xmax[1] = gvmax.z;
     xmax[2] = gvmax.y;
-  } else {
+  }
+  else {
     xmin[1] = gvmin.y;
     xmin[2] = gvmin.z;
     xmax[1] = gvmax.y;
@@ -1100,11 +1111,13 @@ static bool susceptibility_equiv(const susceptibility *o0, const susceptibility 
   if (o0->which_subclass == susceptibility::MULTILEVEL_ATOM) {
     if (!multilevel_atom_equal(o0->subclass.multilevel_atom_data, o->subclass.multilevel_atom_data))
       return 0;
-  } else if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
+  }
+  else if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
     if (!drude_susceptibility_equal(o0->subclass.drude_susceptibility_data,
                                     o->subclass.drude_susceptibility_data))
       return 0;
-  } else if (o0->which_subclass == susceptibility::LORENTZIAN_SUSCEPTIBILITY) {
+  }
+  else if (o0->which_subclass == susceptibility::LORENTZIAN_SUSCEPTIBILITY) {
     if (!lorentzian_susceptibility_equal(o0->subclass.lorentzian_susceptibility_data,
                                          o->subclass.lorentzian_susceptibility_data))
       return 0;
@@ -1214,7 +1227,8 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
         sigmat[5 * tr + meep::R] = d->transitions.items[t].sigma_diag.x;
         sigmat[5 * tr + meep::P] = d->transitions.items[t].sigma_diag.y;
         sigmat[5 * tr + meep::Z] = d->transitions.items[t].sigma_diag.z;
-      } else {
+      }
+      else {
         sigmat[5 * tr + meep::X] = d->transitions.items[t].sigma_diag.x;
         sigmat[5 * tr + meep::Y] = d->transitions.items[t].sigma_diag.y;
         sigmat[5 * tr + meep::Z] = d->transitions.items[t].sigma_diag.z;
@@ -1292,17 +1306,26 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         lorentzian_susceptibility *d = p->user_s.subclass.lorentzian_susceptibility_data;
         if (d->which_subclass == lorentzian_susceptibility::NOISY_LORENTZIAN_SUSCEPTIBILITY) {
           noisy_lorentzian_susceptibility *nd = d->subclass.noisy_lorentzian_susceptibility_data;
-          master_printf("noisy lorentzian susceptibility: frequency=%g, gamma=%g, amp = %g\n",
-                        d->frequency, d->gamma, nd->noise_amp);
+          if (!meep::quiet)
+            master_printf("noisy lorentzian susceptibility: frequency=%g, gamma=%g, amp = %g\n",
+                          d->frequency, d->gamma, nd->noise_amp);
           sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma);
-        } else if (d->which_subclass == lorentzian_susceptibility::GYROTROPIC_LORENTZIAN_SUSCEPTIBILITY) {
-          gyrotropic_lorentzian_susceptibility *gd = d->subclass.gyrotropic_lorentzian_susceptibility_data;
-          master_printf("gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
-                        gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
-          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma,
-                                                    0.0, meep::GYROTROPIC_LORENTZIAN);
-        } else { // just a Lorentzian
-          master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
+        }
+        else if (d->which_subclass ==
+                 lorentzian_susceptibility::GYROTROPIC_LORENTZIAN_SUSCEPTIBILITY) {
+          gyrotropic_lorentzian_susceptibility *gd =
+              d->subclass.gyrotropic_lorentzian_susceptibility_data;
+          if (!meep::quiet)
+            master_printf(
+                "gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
+                gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
+          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency,
+                                                    d->gamma, 0.0, meep::GYROTROPIC_LORENTZIAN);
+        }
+        else { // just a Lorentzian
+          if (!meep::quiet)
+            master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency,
+                          d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma);
         }
         break;
@@ -1311,28 +1334,38 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         drude_susceptibility *d = p->user_s.subclass.drude_susceptibility_data;
         if (d->which_subclass == drude_susceptibility::NOISY_DRUDE_SUSCEPTIBILITY) {
           noisy_drude_susceptibility *nd = d->subclass.noisy_drude_susceptibility_data;
-          master_printf("noisy drude susceptibility: frequency=%g, gamma=%g, amp = %g\n",
-                        d->frequency, d->gamma, nd->noise_amp);
-          sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma, true);
-        } else if (d->which_subclass == drude_susceptibility::GYROTROPIC_DRUDE_SUSCEPTIBILITY) {
+          if (!meep::quiet)
+            master_printf("noisy drude susceptibility: frequency=%g, gamma=%g, amp = %g\n",
+                          d->frequency, d->gamma, nd->noise_amp);
+          sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma,
+                                                          true);
+        }
+        else if (d->which_subclass == drude_susceptibility::GYROTROPIC_DRUDE_SUSCEPTIBILITY) {
           gyrotropic_drude_susceptibility *gd = d->subclass.gyrotropic_drude_susceptibility_data;
-          master_printf("gyrotropic drude susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
-                        gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
-          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency, d->gamma,
-                                                    0.0, meep::GYROTROPIC_DRUDE);
-        } else { // just a Drude
-          master_printf("drude susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
+          if (!meep::quiet)
+            master_printf(
+                "gyrotropic drude susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
+                gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
+          sus = new meep::gyrotropic_susceptibility(vector3_to_vec(gd->bias), d->frequency,
+                                                    d->gamma, 0.0, meep::GYROTROPIC_DRUDE);
+        }
+        else { // just a Drude
+          if (!meep::quiet)
+            master_printf("drude susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma, true);
         }
         break;
       }
       case susceptibility::GYROTROPIC_SATURATED_SUSCEPTIBILITY: {
-	gyrotropic_saturated_susceptibility *d = p->user_s.subclass.gyrotropic_saturated_susceptibility_data;
-	master_printf("gyrotropic Landau-Lifshitz-Gilbert-type susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g, alpha=%g\n",
-                      d->bias.x, d->bias.y, d->bias.z, d->frequency, d->gamma, d->alpha);
-	sus = new meep::gyrotropic_susceptibility(vector3_to_vec(d->bias), d->frequency, d->gamma,
+        gyrotropic_saturated_susceptibility *d =
+            p->user_s.subclass.gyrotropic_saturated_susceptibility_data;
+        if (!meep::quiet)
+          master_printf("gyrotropic Landau-Lifshitz-Gilbert-type susceptibility: bias=(%g,%g,%g), "
+                        "frequency=%g, gamma=%g, alpha=%g\n",
+                        d->bias.x, d->bias.y, d->bias.z, d->frequency, d->gamma, d->alpha);
+        sus = new meep::gyrotropic_susceptibility(vector3_to_vec(d->bias), d->frequency, d->gamma,
                                                   d->alpha, meep::GYROTROPIC_SATURATED);
-	break;
+        break;
       }
       case susceptibility::MULTILEVEL_ATOM: {
         multilevel_atom *d = p->user_s.subclass.multilevel_atom_data;
@@ -1386,7 +1419,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
                                 const char *eps_input_file, pml_list pml_layers,
                                 symmetry_list symmetries, int num_chunks, double Courant,
                                 double global_D_conductivity_, double global_B_conductivity_) {
-  master_printf("-----------\nInitializing structure...\n");
+  if (!meep::quiet) master_printf("-----------\nInitializing structure...\n");
 
   // only cartesian lattices are currently allowed
   geom_initialize();
@@ -1405,9 +1438,11 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
   geometry_lattice.size = size;
   geometry_edge = vector3_to_vec(size) * 0.5;
 
-  master_printf("Working in %s dimensions.\n", meep::dimension_name(dim));
-  master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
-                resolution);
+  if (!meep::quiet) {
+    master_printf("Working in %s dimensions.\n", meep::dimension_name(dim));
+    master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
+                  resolution);
+  }
 
   meep::grid_volume gv;
   switch (dims) {
@@ -1465,7 +1500,8 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
                                                  1e-4, 50000, &esterr, &errflag),
                             d, b);
             }
-          } else
+          }
+          else
             br = br + meep::boundary_region(
                           meep::boundary_region::PML, pml_layers.items[i].thickness,
                           pow(pml_layers.items[i].R_asymptotic, pml_layers.items[i].strength),
@@ -1479,7 +1515,8 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
                                                50000, &esterr, &errflag),
                           d, (meep::boundary_side)pml_layers.items[i].side);
         }
-      } else {
+      }
+      else {
         if (pml_layers.items[i].side == -1) {
           FOR_SIDES(b) {
             br = br + meep::boundary_region(
@@ -1495,7 +1532,8 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
                                                50000, &esterr, &errflag),
                           (meep::direction)pml_layers.items[i].direction, b);
           }
-        } else
+        }
+        else
           br = br + meep::boundary_region(
                         meep::boundary_region::PML, pml_layers.items[i].thickness,
                         pow(pml_layers.items[i].R_asymptotic, pml_layers.items[i].strength),
@@ -1527,18 +1565,21 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
               geps.set_cond_profile(d, b, layer.thickness, gv.inva * 0.5, scm_pml_profile2,
                                     layer.pml_profile, pow(layer.R_asymptotic, layer.strength));
             }
-          } else
+          }
+          else
             geps.set_cond_profile(d, (meep::boundary_side)layer.side, layer.thickness,
                                   gv.inva * 0.5, scm_pml_profile2, layer.pml_profile,
                                   pow(layer.R_asymptotic, layer.strength));
         }
-      } else if (layer.side == -1) {
+      }
+      else if (layer.side == -1) {
         FOR_SIDES(b) {
           geps.set_cond_profile((meep::direction)layer.direction, b, layer.thickness, gv.inva * 0.5,
                                 scm_pml_profile2, layer.pml_profile,
                                 pow(layer.R_asymptotic, layer.strength));
         }
-      } else
+      }
+      else
         geps.set_cond_profile((meep::direction)layer.direction, (meep::boundary_side)layer.side,
                               layer.thickness, gv.inva * 0.5, scm_pml_profile2, layer.pml_profile,
                               pow(layer.R_asymptotic, layer.strength));
@@ -1551,7 +1592,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
 
   geps.add_susceptibilities(s);
 
-  master_printf("-----------\n");
+  if (!meep::quiet) master_printf("-----------\n");
 
   return s;
 }

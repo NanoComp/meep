@@ -66,6 +66,8 @@ typedef struct {
   cdouble *fields;
   ptrdiff_t *offsets;
 
+  double omega;
+
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -132,33 +134,39 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
 /* chunkloop for get_source_slice ******************************/
 /***************************************************************/
 typedef struct {
- component source_component;
- ivec slice_imin, slice_imax;
- cdouble *slice;
+  component source_component;
+  ivec slice_imin, slice_imax;
+  cdouble *slice;
 } source_slice_data;
 
-bool in_range(int imin, int i, int imax)
-{ return (imin<=i && i<=imax); }
+bool in_range(int imin, int i, int imax) { return (imin <= i && i <= imax); }
 
-bool in_subgrid(ivec ivmin, ivec iv, ivec ivmax)
-{ LOOP_OVER_DIRECTIONS(iv.dim,d)
-   if ( !in_range(ivmin.in_direction(d),iv.in_direction(d),ivmax.in_direction(d)) )
-    return false;
+bool in_subgrid(ivec ivmin, ivec iv, ivec ivmax) {
+  LOOP_OVER_DIRECTIONS(iv.dim, d)
+  if (!in_range(ivmin.in_direction(d), iv.in_direction(d), ivmax.in_direction(d))) return false;
   return true;
 }
 
-static void get_source_slice_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
-                                       ivec is, ivec ie, vec s0, vec s1, vec e0, vec e1,
-                                       double dV0, double dV1, ivec shift,
-                                       complex<double> shift_phase, const symmetry &S,
-                                       int sn, void *data_) {
+static void get_source_slice_chunkloop(fields_chunk *fc, int ichnk, component cgrid, ivec is,
+                                       ivec ie, vec s0, vec s1, vec e0, vec e1, double dV0,
+                                       double dV1, ivec shift, complex<double> shift_phase,
+                                       const symmetry &S, int sn, void *data_) {
 
-  UNUSED(ichnk); UNUSED(cgrid); UNUSED(is); UNUSED(ie); UNUSED(s0); UNUSED(s1);
-  UNUSED(e0); UNUSED(e1); UNUSED(dV0); UNUSED(dV1); UNUSED(shift_phase);
+  UNUSED(ichnk);
+  UNUSED(cgrid);
+  UNUSED(is);
+  UNUSED(ie);
+  UNUSED(s0);
+  UNUSED(s1);
+  UNUSED(e0);
+  UNUSED(e1);
+  UNUSED(dV0);
+  UNUSED(dV1);
+  UNUSED(shift_phase);
 
   source_slice_data *data = (source_slice_data *)data_;
-  ivec slice_imin = data->slice_imin, slice_imax=data->slice_imax;
-  ndim dim=fc->gv.dim;
+  ivec slice_imin = data->slice_imin, slice_imax = data->slice_imax;
+  ndim dim = fc->gv.dim;
 
   // the following works in all cases except cylindrical coordinates
   ptrdiff_t NY = 1, NZ = 1;
@@ -179,7 +187,7 @@ static void get_source_slice_chunkloop(fields_chunk *fc, int ichnk, component cg
         cdouble amp = s->A[npt];
         ptrdiff_t chunk_index = s->index[npt];
         ivec iloc_parent = fc->gv.iloc(Dielectric, chunk_index);
-        ivec iloc_child  = S.transform(iloc_parent,sn) + shift;
+        ivec iloc_child = S.transform(iloc_parent, sn) + shift;
         if (!in_subgrid(slice_imin, iloc_child, slice_imax)) continue; // source point outside slice
         ivec slice_offset = iloc_child - slice_imin;
         ptrdiff_t slice_index = 0;
@@ -274,6 +282,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
+  double omega = data->omega;
   complex<double> *fields = data->fields, *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
@@ -312,29 +321,32 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
       // special case for fetching grid point coordinates and weights
       if (cS[i] == NO_COMPONENT) {
         fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-      } else if (cS[i] == Dielectric) {
+      }
+      else if (cS[i] == Dielectric) {
         double tr = 0.0;
         for (int k = 0; k < data->ninveps; ++k) {
-          const realnum *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
-          if (ie)
-            tr += (ie[idx] + ie[idx + ieos[2 * k]] + ie[idx + ieos[1 + 2 * k]] +
-                   ie[idx + ieos[2 * k] + ieos[1 + 2 * k]]);
-          else
-            tr += 4; // default inveps == 1
+          tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, omega) +
+                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], omega) +
+                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[1 + 2 * k], omega) +
+                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k] + ieos[1 + 2 * k],
+                                          omega));
+          if (tr == 0.0) tr += 4.0; // default inveps == 1
         }
         fields[i] = (4 * data->ninveps) / tr;
-      } else if (cS[i] == Permeability) {
+      }
+      else if (cS[i] == Permeability) {
         double tr = 0.0;
         for (int k = 0; k < data->ninvmu; ++k) {
-          const realnum *im = fc->s->chi1inv[imcs[k]][imds[k]];
-          if (im)
-            tr += (im[idx] + im[idx + imos[2 * k]] + im[idx + imos[1 + 2 * k]] +
-                   im[idx + imos[2 * k] + imos[1 + 2 * k]]);
-          else
-            tr += 4; // default invmu == 1
+          tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, omega) +
+                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], omega) +
+                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[1 + 2 * k], omega) +
+                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k] + imos[1 + 2 * k],
+                                          omega));
+          if (tr == 0.0) tr += 4.0; // default invmu == 1
         }
         fields[i] = (4 * data->ninvmu) / tr;
-      } else {
+      }
+      else {
         double f[2];
         for (int k = 0; k < 2; ++k)
           if (fc->f[cS[i]][k])
@@ -370,20 +382,19 @@ double *array_to_all(double *array, size_t array_size) {
   ptrdiff_t offset = 0;
   size_t remaining = array_size;
   while (remaining != 0) {
-   size_t xfer_size = (remaining > BUFSIZE ? BUFSIZE : remaining);
-   sum_to_all(array + offset, buffer, xfer_size);
-   memcpy(array + offset, buffer, xfer_size*sizeof(double));
-   remaining -= xfer_size;
-   offset += xfer_size;
+    size_t xfer_size = (remaining > BUFSIZE ? BUFSIZE : remaining);
+    sum_to_all(array + offset, buffer, xfer_size);
+    memcpy(array + offset, buffer, xfer_size * sizeof(double));
+    remaining -= xfer_size;
+    offset += xfer_size;
   }
   delete[] buffer;
   return array;
 }
 
 cdouble *array_to_all(cdouble *array, size_t array_size) {
- return (cdouble *)array_to_all( (double *)array, 2*array_size);
+  return (cdouble *)array_to_all((double *)array, 2 * array_size);
 }
-
 
 /***************************************************************/
 /* given a volume, fill in the dims[] and dirs[] arrays        */
@@ -462,7 +473,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
 /**********************************************************************/
 void *fields::do_get_array_slice(const volume &where, std::vector<component> components,
                                  field_function fun, field_rfunction rfun, void *fun_data,
-                                 void *vslice) {
+                                 void *vslice, double omega) {
   am_now_working_on(FieldOutput);
 
   /***************************************************************/
@@ -475,7 +486,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   size_t dims[3];
   direction dirs[3];
   array_slice_data data;
-  int rank = get_array_slice_dimensions(where, dims, dirs, collapse, snap, 0, &data);
+  get_array_slice_dimensions(where, dims, dirs, collapse, snap, 0, &data);
   size_t slice_size = data.slice_size;
 
   bool complex_data = (rfun == 0);
@@ -486,7 +497,8 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       zslice = new cdouble[slice_size];
       memset(zslice, 0, slice_size * sizeof(cdouble));
       vslice = (void *)zslice;
-    } else {
+    }
+    else {
       slice = new double[slice_size];
       memset(slice, 0, slice_size * sizeof(double));
       vslice = (void *)slice;
@@ -498,6 +510,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   data.rfun = rfun;
   data.fun_data = fun_data;
   data.components = components;
+  data.omega = omega;
   int num_components = components.size();
   data.cS = new component[num_components];
   data.ph = new cdouble[num_components];
@@ -540,7 +553,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   /***************************************************************/
   /*consolidate full array on all cores                          */
   /***************************************************************/
-  vslice=(void *)array_to_all( (double *)vslice, (complex_data ? 2:1)*slice_size);
+  vslice = (void *)array_to_all((double *)vslice, (complex_data ? 2 : 1) * slice_size);
 
   delete[] data.offsets;
   delete[] data.fields;
@@ -555,33 +568,38 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 /* entry points to get_array_slice                             */
 /***************************************************************/
 double *fields::get_array_slice(const volume &where, std::vector<component> components,
-                                field_rfunction rfun, void *fun_data, double *slice) {
-  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice);
+                                field_rfunction rfun, void *fun_data, double *slice, double omega) {
+  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice, omega);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                         field_function fun, void *fun_data, cdouble *slice) {
-  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice);
+                                         field_function fun, void *fun_data, cdouble *slice,
+                                         double omega) {
+  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice, omega);
 }
 
-double *fields::get_array_slice(const volume &where, component c, double *slice) {
+double *fields::get_array_slice(const volume &where, component c, double *slice, double omega) {
   std::vector<component> components(1);
   components[0] = c;
-  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice);
+  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice,
+                                      omega);
 }
 
-double *fields::get_array_slice(const volume &where, derived_component c, double *slice) {
+double *fields::get_array_slice(const volume &where, derived_component c, double *slice,
+                                double omega) {
   int nfields;
   component carray[12];
   field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
   std::vector<component> cs(carray, carray + nfields);
-  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice);
+  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice, omega);
 }
 
-cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice) {
+cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice,
+                                         double omega) {
   std::vector<component> components(1);
   components[0] = c;
-  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice);
+  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
+                                       omega);
 }
 
 cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
@@ -590,19 +608,19 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];
-  bool collapse=false, snap=false;
-  int rank=get_array_slice_dimensions(where, dims, dirs, collapse, snap, min_max_loc);
-  size_t slice_size = dims[0] * (rank>=2 ? dims[1] : 1) * (rank==3 ? dims[2] : 1);
+  bool collapse = false, snap = false;
+  int rank = get_array_slice_dimensions(where, dims, dirs, collapse, snap, min_max_loc);
+  size_t slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
   source_slice_data data;
-  data.source_component=source_slice_component;
-  data.slice_imin=gv.round_vec(min_max_loc[0]);
-  data.slice_imax=gv.round_vec(min_max_loc[1]);
+  data.source_component = source_slice_component;
+  data.slice_imin = gv.round_vec(min_max_loc[0]);
+  data.slice_imax = gv.round_vec(min_max_loc[1]);
   data.slice = slice ? slice : new cdouble[slice_size];
   if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, true);
-  return array_to_all(data.slice,slice_size);
+  return array_to_all(data.slice, slice_size);
 }
 
 /**********************************************************************/
@@ -719,7 +737,8 @@ std::vector<double> fields::get_array_metadata(const volume &where, bool collaps
     if (where.in_direction(d) == 0.0 && collapse_empty_dimensions) {
       xyzmin[nd] = xyzmax[nd] = where.in_direction_min(d);
       nxyz[nd] = 1;
-    } else {
+    }
+    else {
       nxyz[nd] = dims[rr++];
       xyzmin[nd] = min_max_loc[0].in_direction(d);
       xyzmax[nd] = min_max_loc[1].in_direction(d);

@@ -71,10 +71,12 @@ double fields::field_energy_in_box(component c, const volume &where) {
   if (is_electric(c) || is_D(c)) {
     cs[0] = direction_component(Ex, component_direction(c));
     cs[1] = direction_component(Dx, component_direction(c));
-  } else if (is_magnetic(c) || is_B(c)) {
+  }
+  else if (is_magnetic(c) || is_B(c)) {
     cs[0] = direction_component(Hx, component_direction(c));
     cs[1] = direction_component(Bx, component_direction(c));
-  } else
+  }
+  else
     abort("invalid field component in field_energy_in_box");
 
   return real(integrate(2, cs, dot_integrand, 0, where)) * 0.5;
@@ -264,7 +266,8 @@ double fields::electric_energy_max_in_box(const volume &where) {
     cs[3 + 0] = Dr;
     cs[3 + 1] = Dp;
     cs[3 + 2] = Dz;
-  } else {
+  }
+  else {
     cs[0] = Ex;
     cs[1] = Ey;
     cs[2] = Ez;

@@ -121,6 +121,11 @@ void fields::disconnect_chunks() {
 }
 
 void fields::connect_chunks() {
+  /* make sure all processes agree on chunk_connections_valid to avoid deadlocks */
+  am_now_working_on(MpiTime);
+  chunk_connections_valid = and_to_all(chunk_connections_valid);
+  finished_working();
+
   if (!chunk_connections_valid) {
     am_now_working_on(Connecting);
     disconnect_chunks();
@@ -156,9 +161,10 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
           *there += ilattice_vector(d);
           *phase *= conj(eikna[d]);
         }
-      } else if (boundaries[High][d] == Periodic &&
-                 there->in_direction(d) - ilattice_vector(d).in_direction(d) >
-                     user_volume.little_corner().in_direction(d)) {
+      }
+      else if (boundaries[High][d] == Periodic &&
+               there->in_direction(d) - ilattice_vector(d).in_direction(d) >
+                   user_volume.little_corner().in_direction(d)) {
         while (there->in_direction(d) - ilattice_vector(d).in_direction(d) >
                user_volume.little_corner().in_direction(d)) {
           *there -= ilattice_vector(d);
@@ -209,8 +215,9 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
           kphase[ncopies + j] = kphase[j] * conj(eikna[d]);
         }
         ncopies *= 2;
-      } else if (newp1[0].in_direction(d) > gv.boundary_location(High, d) ||
-                 newp2[0].in_direction(d) > gv.boundary_location(High, d)) {
+      }
+      else if (newp1[0].in_direction(d) > gv.boundary_location(High, d) ||
+               newp2[0].in_direction(d) > gv.boundary_location(High, d)) {
         for (int j = 0; j < ncopies; j++) {
           newp1[ncopies + j] = newp1[j] - lattice_vector(d);
           newp2[ncopies + j] = newp2[j] - lattice_vector(d);
@@ -314,7 +321,9 @@ void fields::connect_the_chunks() {
     FOR_H_AND_B(hc, bc) {
       B_redundant[5 * (num_chunks + i) + bc - Bx] = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
     }
+  am_now_working_on(MpiTime);
   and_to_all(B_redundant + 5 * num_chunks, B_redundant, 5 * num_chunks);
+  finished_working();
 
   /* Figure out whether we need the notowned W field (== E/H in
      non-PML regions) in update_pols, e.g. if we have an anisotropic
@@ -331,7 +340,9 @@ void fields::connect_the_chunks() {
     for (int i = 0; i < num_chunks; i++)
       needs_W_notowned[c] = needs_W_notowned[c] || chunks[i]->needs_W_notowned(c);
   }
+  am_now_working_on(MpiTime);
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
+  finished_working();
 
   for (int i = 0; i < num_chunks; i++) {
     // First count the border elements...
@@ -379,7 +390,8 @@ void fields::connect_the_chunks() {
                         if (pi->data && chunks[i]->is_mine()) {
                           ni += pi->s->num_internal_notowned_needed(corig, pi->data);
                           cni += pi->s->num_cinternal_notowned_needed(corig, pi->data);
-                        } else if (pj->data && chunks[j]->is_mine()) {
+                        }
+                        else if (pj->data && chunks[j]->is_mine()) {
                           ni += pj->s->num_internal_notowned_needed(c, pj->data);
                           cni += pj->s->num_cinternal_notowned_needed(c, pj->data);
                         }
