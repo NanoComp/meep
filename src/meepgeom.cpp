@@ -1738,11 +1738,14 @@ bool fragment_stats::has_non_medium_material() {
   return false;
 }
 
-void fragment_stats::update_stats_from_material(material_type mat, size_t pixels) {
+void fragment_stats::update_stats_from_material(material_type mat, size_t pixels,
+                                                bool anisotropic_pixels_already_added) {
   switch (mat->which_subclass) {
     case material_data::MEDIUM: {
       medium_struct *med = &mat->medium;
-      count_anisotropic_pixels(med, pixels);
+      if (!anisotropic_pixels_already_added) {
+        count_anisotropic_pixels(med, pixels);
+      }
       count_nonlinear_pixels(med, pixels);
       count_susceptibility_pixels(med, pixels);
       count_nonzero_conductivity_pixels(med, pixels);
@@ -1765,17 +1768,30 @@ void fragment_stats::compute_stats() {
     geometric_object *go = &geom.items[i];
     double overlap = box_overlap_with_object(box, *go, tol, maxeval);
 
+    // If the object doesn't overlap the entire box, that implies that
+    // an object interface intercepts the box, which means we treat
+    // the entire box as anisotropic.
+    bool anisotropic_pixels_already_added = false;
+    if (overlap != 1.0) {
+      anisotropic_pixels_already_added = true;
+      num_anisotropic_eps_pixels += num_pixels_in_box;
+      if (mu_not_1(go->material)) {
+        num_anisotropic_mu_pixels += num_pixels_in_box;
+      }
+    }
+
     // Count contributions from material of object
     size_t pixels = (size_t)ceil(overlap * num_pixels_in_box);
     if (pixels > 0) {
       material_type mat = (material_type)go->material;
-      update_stats_from_material(mat, pixels);
+      update_stats_from_material(mat, pixels, anisotropic_pixels_already_added);
     }
 
     // Count contributions from default_material
     size_t default_material_pixels = num_pixels_in_box - pixels;
     if (default_material_pixels > 0) {
-      update_stats_from_material((material_type)default_material, default_material_pixels);
+      update_stats_from_material((material_type)default_material, default_material_pixels,
+                                 anisotropic_pixels_already_added);
     }
   }
 }
