@@ -75,8 +75,8 @@ class TestFragmentStats(unittest.TestCase):
 
         sym_factor = 2 if sym else 1
         self.check_stats(fs,
-                         a_eps=100 / sym_factor,
-                         a_mu=100 / sym_factor,
+                         a_eps=300 / sym_factor,
+                         a_mu=300 / sym_factor,
                          nonlin=300 / sym_factor,
                          susc=300 / sym_factor,
                          cond=300 / sym_factor)
@@ -101,7 +101,7 @@ class TestFragmentStats(unittest.TestCase):
         # A z=30 cell, with a block covering the middle 20 units.
         mat = mp.Medium(H_susceptibilities=[mp.DrudeSusceptibility()])
         fs = self.get_fragment_stats(mp.Vector3(z=20), mp.Vector3(z=30), 1, def_mat=mat)
-        self.check_stats(fs, a_eps=200, a_mu=200, nonlin=600, susc=700, cond=600)
+        self.check_stats(fs, a_eps=300, a_mu=300, nonlin=600, susc=700, cond=600)
 
     def test_1d_with_partial_fragment(self):
         # A cell with z=26, with a 16 unit block in the center
@@ -114,7 +114,7 @@ class TestFragmentStats(unittest.TestCase):
         ])
         fs = self.get_fragment_stats(mp.Vector3(z=16), mp.Vector3(z=26), 1, dft_vecs=dft_vecs)
 
-        self.check_stats(fs, a_eps=160, a_mu=160, nonlin=480, susc=480, cond=480)
+        self.check_stats(fs, a_eps=260, a_mu=260, nonlin=480, susc=480, cond=480)
         # Check dft stats
         self.assertEqual(fs.num_dft_pixels, 10400)
 
@@ -152,8 +152,8 @@ class TestFragmentStats(unittest.TestCase):
         # Middle fragment contains entire block
         sym_factor = 4 if sym else 1
         self.check_stats(fs,
-                         a_eps=10000 / sym_factor,
-                         a_mu=10000 / sym_factor,
+                         a_eps=90000 / sym_factor,
+                         a_mu=90000 / sym_factor,
                          nonlin=30000 / sym_factor,
                          susc=30000 / sym_factor,
                          cond=30000 / sym_factor)
@@ -218,8 +218,8 @@ class TestFragmentStats(unittest.TestCase):
 
         sym_factor = 8 if sym else 1
         self.check_stats(fs,
-                         a_eps=1000000 / sym_factor,
-                         a_mu=1000000 / sym_factor,
+                         a_eps=27000000 / sym_factor,
+                         a_mu=27000000 / sym_factor,
                          nonlin=3000000 / sym_factor,
                          susc=3000000 / sym_factor,
                          cond=3000000 / sym_factor)
@@ -265,7 +265,7 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs.box.low.z, -15)
         self.assertEqual(fs.box.high.x, 15)
         self.assertEqual(fs.box.high.z, 15)
-        self.check_stats(fs, a_eps=10000, a_mu=10000, nonlin=30000, susc=30000, cond=30000)
+        self.check_stats(fs, a_eps=90000, a_mu=90000, nonlin=30000, susc=30000, cond=30000)
         self.assertEqual(fs.num_dft_pixels, 2040000)
 
     def test_no_geometry(self):
