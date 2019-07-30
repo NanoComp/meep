@@ -478,7 +478,7 @@ class Cone(Cylinder):
 class Block(GeometricObject):
 
     def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0), e3=Vector3(0, 0, 1), **kwargs):
-        self.size = size
+        self.size = Vector3(*size)
         self.e1 = Vector3(*e1)
         self.e2 = Vector3(*e2)
         self.e3 = Vector3(*e3)
