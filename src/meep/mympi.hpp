@@ -20,6 +20,7 @@
 
 #include <complex>
 #include <stddef.h>
+#include <stdexcept>
 
 namespace meep {
 

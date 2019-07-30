@@ -246,6 +246,16 @@ This flag enables some experimental support for [OpenMP](https://en.wikipedia.or
 
 The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
 
+A contributed script is also available:
+```bash
+mkdir -p /where/to/install/meep
+cd /where/to/install/meep
+wget https://raw.githubusercontent.com/NanoComp/meep/master/contrib/build-meep.sh
+chmod +x build-meep.sh
+./build-meep.sh
+```
+In case of issue, please fix and propose your changes to this script, or report issues.
+
 #### Ubuntu 16.04 and 18.04
 
 There are a few differences in building for 16.04 and 18.04, so be sure to read the script and adjust appropriately.
