@@ -1647,6 +1647,7 @@ std::vector<meep::volume> fragment_stats::pml_2d_vols;
 std::vector<meep::volume> fragment_stats::pml_3d_vols;
 std::vector<meep::volume> fragment_stats::absorber_vols;
 bool fragment_stats::split_chunks_evenly = false;
+bool fragment_stats::eps_averaging = false;
 
 static geom_box make_box_from_cell(vector3 cell_size) {
   double edgex = cell_size.x / 2;
@@ -1693,7 +1694,7 @@ fragment_stats compute_fragment_stats(
     material_type default_mat, std::vector<dft_data> dft_data_list_,
     std::vector<meep::volume> pml_1d_vols_, std::vector<meep::volume> pml_2d_vols_,
     std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_, double tol,
-    int maxeval, bool ensure_per) {
+    int maxeval, bool ensure_per, bool eps_averaging) {
 
   fragment_stats::geom = geom_;
   fragment_stats::dft_data_list = dft_data_list_;
@@ -1701,6 +1702,7 @@ fragment_stats compute_fragment_stats(
   fragment_stats::pml_2d_vols = pml_2d_vols_;
   fragment_stats::pml_3d_vols = pml_3d_vols_;
   fragment_stats::absorber_vols = absorber_vols_;
+  fragment_stats::eps_averaging = eps_averaging;
 
   fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
   geom_box box = make_box_from_cell(cell_size);
@@ -1768,15 +1770,21 @@ void fragment_stats::compute_stats() {
     geometric_object *go = &geom.items[i];
     double overlap = box_overlap_with_object(box, *go, tol, maxeval);
 
-    // If the object doesn't overlap the entire box, that implies that
-    // an object interface intercepts the box, which means we treat
-    // the entire box as anisotropic.
     bool anisotropic_pixels_already_added = false;
-    if (overlap != 1.0) {
-      anisotropic_pixels_already_added = true;
-      num_anisotropic_eps_pixels += num_pixels_in_box;
-      if (mu_not_1(go->material)) {
-        num_anisotropic_mu_pixels += num_pixels_in_box;
+    if (eps_averaging) {
+      // If the object doesn't overlap the entire box, that implies that
+      // an object interface intercepts the box, which means we treat
+      // the entire box as anisotropic. This method could give some false
+      // positives if there is another object with the same material behind
+      // the current object, but in practice it is probably reasonable to
+      // assume that there is a material interface somwhere in the box so
+      // we won't worry about fancier edge-detection methods for now.
+      if (overlap != 1.0) {
+        anisotropic_pixels_already_added = true;
+        num_anisotropic_eps_pixels += num_pixels_in_box;
+        if (mu_not_1(go->material)) {
+          num_anisotropic_mu_pixels += num_pixels_in_box;
+        }
       }
     }
 

@@ -73,6 +73,7 @@ struct fragment_stats {
   static std::vector<meep::volume> pml_3d_vols;
   static std::vector<meep::volume> absorber_vols;
   static bool split_chunks_evenly;
+  static bool eps_averaging;
 
   static bool has_non_medium_material();
   static void init_libctl(meep_geom::material_type default_mat, bool ensure_per,
@@ -123,7 +124,7 @@ compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv, vector
                        std::vector<dft_data> dft_data_list, std::vector<meep::volume> pml_1d_vols,
                        std::vector<meep::volume> pml_2d_vols, std::vector<meep::volume> pml_3d_vols,
                        std::vector<meep::volume> absorber_vols, double tol, int maxeval,
-                       bool ensure_per);
+                       bool ensure_per, bool eps_averaging);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */
