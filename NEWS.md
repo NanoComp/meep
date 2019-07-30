@@ -2,7 +2,7 @@
 
 ## Meep 1.11.0
 
-7/16/19
+7/29/19
 
   * Experimental support for gyrotropic media including magneto-optical effects (#863).
 
