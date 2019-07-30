@@ -678,7 +678,10 @@ class Simulation(object):
         fmin = float('-inf')
         fmax = float('inf')
 
-        for mat in [go.material for go in self.geometry] + self.extra_materials:
+        all_materials = [go.material for go in self.geometry] + self.extra_materials
+        all_materials.append(self.default_material)
+
+        for mat in all_materials:
             if isinstance(mat, mp.Medium) and mat.valid_freq_range:
                 if mat.valid_freq_range.min > fmin:
                     fmin = mat.valid_freq_range.min
