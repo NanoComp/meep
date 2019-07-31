@@ -378,7 +378,8 @@ protected:
  
 class iir_susceptibility : public susceptibility {
 public:
-  iir_susceptibility(std::vector<double> numS, std::vector<double> denS, double d);
+  iir_susceptibility(std::vector<double> vec_numS, std::vector<double> vec_denS, double dt);
+  iir_susceptibility(const iir_susceptibility &from);
 
   virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
 
@@ -405,17 +406,21 @@ public:
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 4; }
-  
+
+  virtual std::complex<double> chi1(double freq, double sigma = 1);
 
 protected:
-double *numS, *denS, *numZ, *denZ, T;
 int N, D, N_z, D_z;
+realnum T, *numS, *denS, *numZ, *denZ;
+
 
 };
 // tustins method (aka trapezoidal rule) to convert from s domain to z domain.
-void tustins_method(double* vec_numS, int N, double* vec_denS, int D, double* vec_numZ, int N_z, double* vec_denZ, int D_z, double T);
-double factorial(int i);
-double comb(int n, int k);
+void polynomial_transform(double *r, int N, double alpha, double beta, double delta, double gamma);
+void backward_difference(realnum* vec_numS, int N, realnum* vec_denS, int D, realnum* vec_numZ, int N_z, realnum* vec_denZ, int D_z, realnum T);
+void tustins_method(realnum* vec_numS, int N, realnum* vec_denS, int D, realnum* vec_numZ, int N_z, realnum* vec_denZ, int D_z, realnum T);
+realnum factorial(int i);
+realnum comb(int n, int k);
 
 class grace;
 
