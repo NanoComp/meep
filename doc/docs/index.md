@@ -16,7 +16,7 @@
 -   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   [Subpixel smoothing](Subpixel_Smoothing.md) for improving accuracy and shape optimization.
--   Arbitrary current sources including a [unidirectional mode launcher](Python_Tutorials/Eigenmode_Source.md).
+-   Arbitrary current sources including a [mode launcher](Python_Tutorials/Eigenmode_Source.md).
 -   Frequency-domain solver for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   **GDSII** file import for planar geometries.
@@ -46,7 +46,7 @@ The source repository is on [GitHub](https://github.com/NanoComp/meep). Gzipped 
 Documentation
 -------------
 
-For a list of topics, see the left navigation sidebar. For first-time users, the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md) are the most important items to review.
+For a list of topics, see the left navigation sidebar. For new users, the most important items to review are the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md).
 
 This documentation is for the master branch of the [source repository](Download.md#github-source-repository).
 

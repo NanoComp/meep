@@ -112,6 +112,17 @@ conda create -n mp_test -c simpetus -c conda-forge pymeep
 conda create -n pmp_test -c simpetus -c conda-forge pymeep=*=mpi_mpich*
 ```
 
+### Version Number
+
+You can determine the version number as well as the most recent commit of the Meep module via:
+
+```py
+import meep as mp
+print(mp.__version__)
+```
+
+This will show something like `1.11.0` where the first two digits (`1.11`) refer to a stable tarball release and the last digit is the number of commits after this stable release.
+
 Installation on Linux
 -------------------------
 
