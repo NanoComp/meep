@@ -1073,7 +1073,7 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
     double split_measure =
-      split_measure to max(left_cost * (desired_chunks-1), right_cost);
+      split_measure = max(left_cost * (desired_chunks-1), right_cost);
     if (split_measure < best_split_measure) {
       if (d == longest_axis || split_measure < (best_split_measure - (0.3 * best_split_measure))) {
         // Only use this split_measure if we're on the longest_axis, or if the split_measure is
