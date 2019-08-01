@@ -442,7 +442,7 @@ The `x`, `y`, and `z` components of the vector. Generally, functions that take a
 
 **`Vector3(x=0.0, y=0.0, z=0.0)`**
 —
-Create a new `Vector3` with the given components. All three components default to zero.
+Create a new `Vector3` with the given components. All three components default to zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
 
 
 ```python

@@ -91,7 +91,7 @@ If you are not the system administrator of your machine, and/or want to install 
 
 ### Python
 
-If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep.
+If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+.
 
 By default, Meep's Python module is installed for the program `python` on your system.  If you want to install using a different Python program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the Meep `configure` script. An Anaconda (`conda`) [package for Meep](Installation.md#conda-packages) is also available on some systems.
 
@@ -246,15 +246,15 @@ This flag enables some experimental support for [OpenMP](https://en.wikipedia.or
 
 The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
 
-A contributed script is also available:
-```bash
+The entire build and install procedure can also be performed using an automated script:
+
+```sh
 mkdir -p /where/to/install/meep
 cd /where/to/install/meep
 wget https://raw.githubusercontent.com/NanoComp/meep/master/contrib/build-meep.sh
 chmod +x build-meep.sh
 ./build-meep.sh
 ```
-In case of issue, please fix and propose your changes to this script, or report issues.
 
 #### Ubuntu 16.04 and 18.04
 
