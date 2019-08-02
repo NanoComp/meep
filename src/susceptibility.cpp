@@ -261,8 +261,6 @@ void lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
             p[i] = gamma1inv *
                    (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] + omega0dtsqr * (s[i] * w[i]));
             pp[i] = pcur;
-            //master_printf("w_0: %3.3e, p_1: %3.3e, p_2: %3.3e\n",gamma1inv * omega0dtsqr * s[i] ,(2 - omega0dtsqr_denom) * gamma1inv, -gamma1 * gamma1inv);
-            //master_printf("pcure: %3.6e\n",pcur);
           }
         }
       }
