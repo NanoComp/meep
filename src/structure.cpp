@@ -216,6 +216,25 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   check_chunks();
 }
 
+double structure::chunk_cost(int i) const {
+  return i < 0 || i > num_chunks ? 0.0 : chunks[i]->gv.get_cost();
+}
+
+void structure::print_chunk_costs() const {
+  double sum = 0, sumsq = 0;
+  master_printf("chunk costs: ");
+  for (int i = 0; i < num_chunks; i++) {
+    double cost = chunk_cost(i);
+    sum += cost;
+    sumsq += cost*cost;
+    master_printf("%g%s", cost, i == num_chunks - 1 ? "\n" : ", ");
+  }
+  double mean = sum / num_chunks;
+  double stddev = sumsq - num_chunks * mean * mean;
+  stddev = num_chunks == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (num_chunks - 1));
+  master_printf("chunk cost mean = %g, stddev = %g\n", mean, stddev);
+}
+
 void boundary_region::apply(structure *s) const {
   if (has_direction(s->gv.dim, d) && s->user_volume.has_boundary(side, d) &&
       s->user_volume.num_direction(d) > 1) {
