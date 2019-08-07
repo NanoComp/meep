@@ -1549,7 +1549,7 @@ The frequency-domain solver supports arbitrary geometries, PML, boundary conditi
 
 The frequency-domain solver requires you to use complex-valued fields, via `force_complex_fields=True`.
 
-After `solve_cw` completes, it should be as if you had just run the simulation for an infinite time with the source at that frequency. You can call the various field-output functions and so on as usual at this point.
+After `solve_cw` completes, it should be as if you had just run the simulation for an infinite time with the source at that frequency. You can call the various field-output functions and so on as usual at this point. For examples, see [Tutorial/Frequency Domain Solver](Python_Tutorials/Frequency_Domain_Solver.md) and [Tutorial/Mode Decomposition/Reflectance and Transmittance Spectra for Planewave at Oblique Incidence](Python_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence).
 
 ### GDSII Support
 
