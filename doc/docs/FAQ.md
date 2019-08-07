@@ -117,7 +117,7 @@ For simulations involving [solar radiation](https://en.wikipedia.org/wiki/Sunlig
 
 ### Are complex fields physical?
 
-No. Unlike quantum mechanics, complex fields in classical electromagnetics are not physical. In a linear system, one can always take the real part at the end of the computation to obtain a physical result. When there are nonlinearities, the physical interpretation is much more non-obvious.
+No. Unlike quantum mechanics, complex fields in classical electromagnetics are not physical; they are simply a convenient mathematical representation of sinusoidal waves using [Euler's formula](https://en.wikipedia.org/wiki/Euler%27s_formula). In a linear system, one can always take the real part at the end of the computation to obtain a physical result. When there are nonlinearities, the physical interpretation is much more non-obvious.
 
 Note: specifying a complex `amplitude` for the `Source` object does not automatically yield complex fields. Unless the parameter `force_complex_fields=True` is specified, only the real part of the source is used. The complex amplitude is just a phase shift of the real sinusoidal source.
 

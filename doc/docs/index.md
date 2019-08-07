@@ -9,18 +9,18 @@
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
+-   Distributed memory [parallelism](Parallel_Meep) on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
 -   **Precompiled binary packages** of official releases and nightly builds via [Conda](Installation.md#conda-packages).
--   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, **saturable** gain/absorption, and **gyrotropic** media (magneto-optical effects).
--   **Perfectly-matched layer** (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
--   Exploitation of **symmetries** to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
+-   Variety of arbitrary [material](Materials) types: **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, **saturable** gain/absorption, and **gyrotropic** media (magneto-optical effects).
+-   [Materials library](Materials#materials-library) containing predefined broadband, complex refractive indices.
+-   [Perfectly-matched layer](Perfectly_Matched_Layer/) (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
+-   Exploitation of [symmetries](Exploiting_Symmetry) to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   [Subpixel smoothing](Subpixel_Smoothing.md) for improving accuracy and shape optimization.
 -   Arbitrary current sources including a [mode launcher](Python_Tutorials/Eigenmode_Source.md).
--   Frequency-domain solver for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source.
+-   [Frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
--   **GDSII** file import for planar geometries.
--   **Materials library** containing predefined broadband, complex refractive indices.
+-   [GDSII](Python_User_Interface.md#gdsii-support) file import for planar geometries.
 -   Field analyses including [Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), [mode decomposition](Python_Tutorials/Mode_Decomposition.md) (for [S-parameters](Python_Tutorials/GDSII_Import.md)), [energy density](Python_User_Interface.md#energy-density-spectra), [near to far transformations](Python_Tutorials/Near_to_Far_Field_Spectra.md), [frequency extraction](Python_Tutorials/Basics.md#modes-of-a-ring-resonator), [local density of states](Python_Tutorials/Local_Density_of_States.md) (LDOS), [modal volume](Python_User_Interface.md#field-computations), [Maxwell stress tensor](Python_Tutorials/Optical_Forces.md), [arbitrary functions](Field_Functions.md); completely programmable.
 -   [Adjoint solver](Python_Tutorials/AdjointSolver.md) for **sensitivity analysis** and **automated design optimization**.
 -   [Visualization routines](Python_User_Interface.md#data-visualization) for the simulation domain involving geometries, fields, boundary layers, sources, and monitors.
