@@ -1351,8 +1351,11 @@ static pol *add_pols(pol *pols, const susceptibility_list slist) {
 }
 
 void geom_epsilon::add_susceptibilities(meep::structure *s) {
+  double tstart = meep::wall_time();
   add_susceptibilities(meep::E_stuff, s);
   add_susceptibilities(meep::H_stuff, s);
+  s->t_addsusceptibility = meep::wall_time() - tstart;
+  if (!meep::quiet) master_printf("time for add_susceptibility = %g s\n", s->t_addsusceptibility);
 }
 
 void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s) {

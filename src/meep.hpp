@@ -714,6 +714,7 @@ public:
   grid_volume *effort_volumes;
   double *effort;
   int num_effort_volumes;
+  double t_setepsilon, t_setconductivity, t_chunkdivision, t_addsusceptibility;
 
   ~structure();
   structure();

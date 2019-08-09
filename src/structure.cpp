@@ -40,6 +40,10 @@ structure::structure()
   a = 1;
   dt = Courant / a;
   shared_chunks = false;
+  t_setepsilon = 0;
+  t_setconductivity = 0;
+  t_chunkdivision = 0;
+  t_addsusceptibility = 0;
 }
 
 typedef structure_chunk *structure_chunk_ptr;
@@ -54,7 +58,8 @@ structure::structure(const grid_volume &thegv, material_function &eps, const bou
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
-  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
+  t_chunkdivision = wall_time() - tstart;
+  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", t_chunkdivision);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
@@ -68,7 +73,8 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
-  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
+  t_chunkdivision = wall_time() - tstart;
+  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", t_chunkdivision);
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -412,11 +418,17 @@ void structure::changing_chunks() { // call this whenever chunks are modified
 
 void structure::set_materials(material_function &mat, bool use_anisotropic_averaging, double tol,
                               int maxeval) {
+  double tstart = wall_time();
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
+  t_setepsilon = wall_time() - tstart;
+  if (!quiet) master_printf("time for set_epsilon = %g s\n", t_setepsilon);
   if (mat.has_mu()) set_mu(mat, use_anisotropic_averaging, tol, maxeval);
+  tstart = wall_time();
   FOR_D_AND_B(c) {
     if (mat.has_conductivity(c)) set_conductivity(c, mat);
   }
+  t_setconductivity = wall_time() - tstart;
+  if (!quiet) master_printf("time for set_conductivity = %g s\n", t_setconductivity);
   FOR_E_AND_H(c) {
     if (mat.has_chi3(c)) set_chi3(c, mat);
   }
@@ -437,7 +449,6 @@ void structure::set_epsilon(material_function &eps, bool use_anisotropic_averagi
                             int maxeval) {
   double tstart = wall_time();
   FOR_ELECTRIC_COMPONENTS(c) { set_chi1inv(c, eps, use_anisotropic_averaging, tol, maxeval); }
-  if (!quiet) master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_epsilon(double eps(const vec &), bool use_anisotropic_averaging, double tol,
@@ -461,11 +472,9 @@ void structure::set_mu(double mufunc(const vec &), bool use_anisotropic_averagin
 
 void structure::set_conductivity(component c, material_function &C) {
   if (!gv.has_field(c)) return;
-  double tstart = wall_time();
   changing_chunks();
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->set_conductivity(c, C);
-  if (!quiet) master_printf("time for set_conductivity = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_conductivity(component c, double Cfunc(const vec &)) {
