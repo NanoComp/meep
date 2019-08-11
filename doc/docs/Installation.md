@@ -121,7 +121,7 @@ import meep as mp
 print(mp.__version__)
 ```
 
-This will show something like `1.11.0-1-g415bc8eb` where the first three digits (`1.11.0`) refer to a stable tarball release. the next digit is the number of commits after this stable release, and the eight characters following the `g` in the final string refer to the commit hash.
+This will show something like `1.11.0-1-g415bc8eb` where the first three digits (`1.11.0`) refer to a stable tarball release, the following digit is the number of commits after this stable release, and the eight characters following the `g` in the final string refer to the commit hash.
 
 Installation on Linux
 -------------------------
