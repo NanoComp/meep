@@ -409,6 +409,10 @@ You can always run the MPI parallel Meep on a shared-memory machine, and some MP
 
 Running jobs may experience intermittent slowdown on [shared-memory](https://en.wikipedia.org/wiki/Shared_memory) systems (Issue [#882](https://github.com/NanoComp/meep/issues/882)). This may possibly be due to [cache contention](https://en.wikipedia.org/wiki/Resource_contention) with other simultaneous jobs although though the cause has yet to be determined. The slowdown can be observed via increasing values of the time-stepping rate (units of "s/step") which is shown as part of the progress output.
 
+### What is an estimate of the memory requirements of a simulation given only its cell size and resolution?
+
+In general, calculating the computational cost of an arbitrary simulation is challenging given the number and variety of computational elements involved. A simple lower bound of the memory requirements can be obtained for an *empty* cell (i.e., no [geometric objects](Python_User_Interface.md#geometricobject), [PMLs](Python_User_Interface.md#pml), [DFT monitors](Python_User_Interface.md#flux-spectra), etc.) with dimensions s$_x$ x s$_y$ x s$_z$ and grid resolution $r$ containing only real fields as: 96s$_x$s$_y$s$_z$$r^3$ bytes. In this case which involves a single [chunk](Chunks_and_Symmetry.md#chunk-data-structures), each grid voxel stores 6 electromagnetic field components as well as 3 scalar permittivity and permeability values using [double-precision floating point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Note that doubling the grid resolution would increase the memory requirements by a factor of 8 *and* the number of timesteps by a factor of 2 (given that the Courant factor and runtime remain fixed).
+
 Usage: Other
 ------------
 
