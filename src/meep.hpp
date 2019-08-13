@@ -787,7 +787,7 @@ public:
   friend class boundary_region;
 
   double chunk_cost(int i) const;
-  void print_chunk_costs() const;
+  void print_estimated_costs() const;
 
 private:
   void use_pml(direction d, boundary_side b, double dx);

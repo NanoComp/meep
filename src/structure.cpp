@@ -220,19 +220,23 @@ double structure::chunk_cost(int i) const {
   return i < 0 || i > num_chunks ? 0.0 : chunks[i]->gv.get_cost();
 }
 
-void structure::print_chunk_costs() const {
+void structure::print_estimated_costs() const {
+  double *costs = new double[count_processors()];
+  for (int i = 0; i < num_chunks; i++)
+    costs[chunks[i]->n_proc()] += chunk_cost(i);
   double sum = 0, sumsq = 0;
-  master_printf("chunk costs: ");
-  for (int i = 0; i < num_chunks; i++) {
-    double cost = chunk_cost(i);
+  master_printf("estimated costs per process: ");
+  for (int i = 0; i < count_processors(); i++) {
+    double cost = costs[i];
     sum += cost;
     sumsq += cost*cost;
-    master_printf("%g%s", cost, i == num_chunks - 1 ? "\n" : ", ");
+    master_printf("%g%s", cost, i == count_processors() - 1 ? "\n" : ", ");
   }
-  double mean = sum / num_chunks;
+  delete[] costs;
+  double mean = sum / count_processors();
   double stddev = sumsq - num_chunks * mean * mean;
-  stddev = num_chunks == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (num_chunks - 1));
-  master_printf("chunk cost mean = %g, stddev = %g\n", mean, stddev);
+  stddev = count_processors() == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (count_processors() - 1));
+  master_printf("estimated cost mean = %g, stddev = %g\n", mean, stddev);
 }
 
 void boundary_region::apply(structure *s) const {
