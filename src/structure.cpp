@@ -222,6 +222,8 @@ double structure::chunk_cost(int i) const {
 
 void structure::print_estimated_costs() const {
   double *costs = new double[count_processors()];
+  for (int i = 0; i < count_processors(); i++)
+    costs[i] = 0;
   for (int i = 0; i < num_chunks; i++)
     costs[chunks[i]->n_proc()] += chunk_cost(i);
   double sum = 0, sumsq = 0;
