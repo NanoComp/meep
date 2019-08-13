@@ -1072,7 +1072,7 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
     std::complex<double> costs = get_split_costs(d, split_point);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
-    double split_measure = max(left_cost * (desired_chunks-1), right_cost);      
+    double split_measure = max(left_cost * (desired_chunks-1), right_cost);
     if (split_measure < best_split_measure) {
       if (d == longest_axis || split_measure < (best_split_measure - (0.3 * best_split_measure))) {
         // Only use this split_measure if we're on the longest_axis, or if the split_measure is
@@ -1090,86 +1090,20 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
   }
 }
 
-grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num) const {
-  int best_split_point;
-  direction best_split_direction;
-  double left_effort_fraction;
-  find_best_split(desired_chunks, best_split_point, best_split_direction, left_effort_fraction);
-  return split_by_cost(desired_chunks, proc_num, best_split_point, best_split_direction,
-                       left_effort_fraction);
-}
-
-grid_volume grid_volume::split_by_cost(int desired_chunks, int proc_num, int best_split_point,
-                                       direction best_split_direction,
-                                       double left_effort_fraction) const {
-  if (desired_chunks == 1) return *this;
-
-  const int split_point = best_split_point;
-  const int num_in_split_dir = num_direction(best_split_direction);
-
-  const int num_low = (size_t)(left_effort_fraction * desired_chunks + 0.5);
-  // Revert to split() when cost method gives less grid points than chunks
-  const size_t grid_points_owned = nowned_min();
-  if (size_t(num_low) > best_split_point * (grid_points_owned / num_in_split_dir) ||
-      size_t(desired_chunks - num_low) >
-          (grid_points_owned - best_split_point * (grid_points_owned / num_in_split_dir)))
-    return split(desired_chunks, proc_num);
-
-  bool split_low = proc_num < num_low;
-  grid_volume split_gv =
-      split_at_fraction(!split_low, split_point, best_split_direction, num_in_split_dir);
-
-  if (split_low)
-    return split_gv.split_by_cost(num_low, proc_num);
-  else
-    return split_gv.split_by_cost(desired_chunks - num_low, proc_num - num_low);
-}
-
-void grid_volume::split_into_three(std::vector<grid_volume> &result) const {
-  int best_low_split_point;
-  direction best_low_split_direction;
-  double left_effort_fraction;
-  find_best_split(3, best_low_split_point, best_low_split_direction, left_effort_fraction);
-
-  grid_volume low_gv = split_at_fraction(false, best_low_split_point, best_low_split_direction,
-                                         num_direction(best_low_split_direction));
-  grid_volume high_two_gvs = split_at_fraction(true, best_low_split_point, best_low_split_direction,
-                                               num_direction(best_low_split_direction));
-
-  int best_high_split_point;
-  direction best_high_split_direction;
-  double right_effort_fraction;
-  high_two_gvs.find_best_split(2, best_high_split_point, best_high_split_direction, right_effort_fraction);
-
-  grid_volume mid_gv = high_two_gvs.split_at_fraction(false, best_high_split_point, best_high_split_direction,
-                                                      high_two_gvs.num_direction(best_high_split_direction));
-  grid_volume high_gv = high_two_gvs.split_at_fraction(true, best_high_split_point, best_high_split_direction,
-                                                       high_two_gvs.num_direction(best_high_split_direction));
-
-  result.push_back(low_gv);
-  result.push_back(mid_gv);
-  result.push_back(high_gv);
-}
-
 std::vector<grid_volume> grid_volume::split_into_n(int n) const {
   std::vector<grid_volume> result;
-
-  if (n == 3)
-    split_into_three(result);
-  else if (n == 1) {
-    result.push_back(*this);
-  }
-  else {
+  grid_volume rest_gv = *this;
+  while (n > 1) {
     int best_split_point;
     direction best_split_direction;
-    double left_effort_fraction;
-    find_best_split(n, best_split_point, best_split_direction, left_effort_fraction);
-    for (int i = 0; i < n; ++i) {
-      grid_volume split_gv =
-          split_by_cost(n, i, best_split_point, best_split_direction, left_effort_fraction);
-      result.push_back(split_gv);
-    }
+    double effort_fraction;
+    rest_gv.find_best_split(n, best_split_point, best_split_direction, effort_fraction);
+    int num_in_split_dir = num_direction(best_split_direction);
+    result.push_back(rest_gv.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir));
+    rest_gv = rest_gv.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
+    --n;
   }
+  result.push_back(rest_gv);
   return result;
 }
 

@@ -989,9 +989,7 @@ public:
   grid_volume split(size_t num, int which) const;
   grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL,
                               double *effort = NULL) const;
-  grid_volume split_by_cost(int desired_num_chunks, int proc_num) const;
   std::vector<grid_volume> split_into_n(int n) const;
-  void split_into_three(std::vector<grid_volume> &result) const;
   grid_volume split_at_fraction(bool want_high, int numer, int bestd = -1, int bestlen = 1) const;
   double get_cost() const;
   grid_volume halve(direction d) const;
@@ -1030,8 +1028,6 @@ public:
 
 private:
   std::complex<double> get_split_costs(direction d, int split_point) const;
-  grid_volume split_by_cost(int desired_chunks, int proc_num, int best_split_point,
-                            direction best_split_direction, double left_effort_fraction) const;
   void find_best_split(int desired_chunks, int &best_split_point, direction &best_split_direction,
                        double &left_effort_fraction) const;
   grid_volume(ndim d, double ta, int na, int nb, int nc);
