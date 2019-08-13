@@ -20,9 +20,9 @@ Conda Packages
 
 ### Official Releases
 
-The **recommended** way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. The precompiled binaries run as fast or faster than the typical build from source, are simple to install, can be upgraded easily, and take advantage of newer compilers and dependencies than those available in typical systems. Obviously, building from source can still provide advantages if you have access to special hardware or performance libraries that require specific compiler flags; building from source is also required if you are interested in working on the Meep source code, are performing system-wide installations on a server, or are using systems unsupported by Conda (e.g. supercomputers).
+The **recommended** way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. The precompiled binaries run as *fast or faster* than the typical build from source, are simple to install, can be upgraded easily, and take advantage of newer compilers and dependencies than those available in typical systems (e.g., [gcc](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) 7.3.0 vs. Ubuntu 16.04's 5.4; a gap of nearly three years of advances in compiler optimization). Obviously, building from source can still provide advantages if you have access to special hardware or performance libraries that require specific compiler flags (e.g., [icc](https://en.wikipedia.org/wiki/Intel_C%2B%2B_Compiler)); building from source is also required if you are interested in working on the Meep [source code](https://github.com/NanoComp/meep), are performing system-wide installations on a server, or are using systems unsupported by Conda (e.g., supercomputers with Cray MPI).
 
-Binary packages for serial and parallel PyMeep on Linux and macOS are currently available (64 bit architectures only), and are updated with each new Meep release. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
+Binary packages for serial and parallel PyMeep on Linux and macOS are currently available (64 bit architectures only), and are [updated with each new Meep release](https://github.com/conda-forge/pymeep-feedstock). The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
 
 ```bash
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -103,7 +103,7 @@ Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
 
 ### Nightly Builds
 
-To experiment with new features before they are distributed in an official release, you can try the nightly development builds.  They are hosted on the `simpetus` channel.
+To experiment with new features before they are distributed in an official release, you can try the [nightly-development builds](https://github.com/Simpetus/pymeep-nightly-recipe).  They are hosted on the `simpetus` channel.
 
 ```bash
 # Serial pymeep
@@ -121,7 +121,7 @@ import meep as mp
 print(mp.__version__)
 ```
 
-This will show something like `1.11.0` where the first two digits (`1.11`) refer to a stable tarball release and the last digit is the number of commits after this stable release.
+This will show something like `1.11.0-1-g415bc8eb` where the first three digits (`1.11.0`) refer to a stable tarball release, the following digit is the number of commits after this stable release, and the eight characters following the `g` in the final string refer to the commit hash.
 
 Installation on Linux
 -------------------------
