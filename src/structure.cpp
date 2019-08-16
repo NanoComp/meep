@@ -217,7 +217,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 }
 
 double structure::chunk_cost(int i) const {
-  return i < 0 || i > num_chunks ? 0.0 : chunks[i]->gv.get_cost();
+  return i < 0 || i >= num_chunks ? 0.0 : chunks[i]->gv.get_cost();
 }
 
 void structure::print_estimated_costs() const {
