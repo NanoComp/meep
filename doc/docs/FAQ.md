@@ -415,7 +415,7 @@ In general, calculating the computational cost of an arbitrary simulation is cha
 
 ### Can Meep be compiled to run on graphics processing units (GPUs)?
 
-No. Currently, Meep does not support GPUs via frameworks such as a [CUDA](https://en.wikipedia.org/wiki/CUDA), [OpenCL](https://en.wikipedia.org/wiki/OpenCL), etc.
+No. Currently, Meep does not support GPUs via frameworks such as ([CUDA](https://en.wikipedia.org/wiki/CUDA), [OpenCL](https://en.wikipedia.org/wiki/OpenCL), etc.)  [Other authors](https://www.sciencedirect.com/science/article/pii/S0010465518303990) have reported FDTD speedups using GPUs, so this is a potential future area of development for Meep, but requires a substantial effort to port the core timestepping routines to a GPU architecture.
 
 Usage: Other
 ------------
