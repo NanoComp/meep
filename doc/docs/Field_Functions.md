@@ -4,6 +4,8 @@
 
 As described in [Python User Interface](Python_User_Interface.md), Meep provides several routines to integrate, analyze, and output arbitrary user-specified functions of the field components. See the functions whose names end with `_field_function`. This facility, while powerful, requires a bit more programming than most Meep usage, and is best illustrated by a few examples.
 
+Note: field functions can be applied to time- *as well as* [frequency-domain](Python_User_Interface.md#frequency-domain-solver) fields.
+
 Every field-function that can be passed to these routines is of the form *f*(**r**,components...), where **r** is a position vector and "components..." are zero or more field components that the function depends on. The set of desired components is user-specified. As an example, suppose we are interested in the arbitrary function:
 
 $$f(\mathbf{r}, E_x, H_z, \varepsilon) = x |\mathbf{r}| + E_x - \varepsilon H_z$$
@@ -22,7 +24,7 @@ def f(r, ex, hz, eps):
    (- (+ (* (vector3-x r) (vector3-norm r)) ex) (* eps hz)))
 ```
 
-Note that the argument `r` is a [`Vector3`](Python_User_Interface.md#vector3) (Python) or [`vector3`](https://libctl.readthedocs.io/en/latest/User_Reference) (Scheme) object.
+Note that the (mandatory) first argument `r` is a [`Vector3`](Python_User_Interface.md#vector3) (Python) or [`vector3`](https://libctl.readthedocs.io/en/latest/User_Reference) (Scheme) object.
 
 Now, suppose we want to compute the integral of this function, over the whole cell. We can do this by calling the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme), as follows:
 
@@ -133,4 +135,4 @@ As a final example, the Python interface routine [`get_array_metadata`](Python_U
 (output-real-field-function "x" Dielectric f)
 ```
 
-For more information, see [Python User Interface](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface](Scheme_User_Interface.md#writing-your-own-step-functions).
+For more information, see [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).

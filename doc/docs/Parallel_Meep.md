@@ -68,7 +68,7 @@ Returns true if the current process is the master process (rank 0).
 
 This can be useful for calling external I/O or visualization routines, e.g. Matplotlib plotting functions, that you only want to execute on the master process.   Note that the Scheme `(print)` or Python `print` functions are *already* set up so that by default their output is suppressed on non-master processes.
 
-**Warning**: Most Meep functions operating on the simulation (e.g. fields or structure) are "collective" operations that must be called from all processes in the same sequence — if you call them from only one process via `am_master` (or `my_rank`) checks, then they will deadlock.  Code inside an `am_master` check should generally only call non-Meep library functions.
+**Warning**: Most Meep functions operating on the simulation (e.g. fields or structure) are "collective" operations that must be called from all processes in the same sequence — if you call them from only one process via `am_master` (or `my_rank`) checks, then they will [deadlock](https://en.wikipedia.org/wiki/Deadlock).  Code inside an `am_master` check should generally only call non-Meep library functions.
 
 **`meep.count_processors()`**,
 **`(meep-count-processors)`**
