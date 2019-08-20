@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
   bool ok = true;
   // we can only use one process for this 1-pixel simulation
   if (0 == divide_parallel_processes(count_processors())) {
-    quiet = true;
+    verbosity = 0;
     const double res = 200;
     grid_volume gv = vol3d(0, 0, 0, res);
     gv.center_origin();

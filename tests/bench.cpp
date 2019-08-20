@@ -269,7 +269,7 @@ bench bench_3d(const double xmax, const double ymax, const double zmax, double e
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   master_printf("Benchmarking with %d processor%s...\n", count_processors(),
                 count_processors() > 1 ? "s" : "");
 

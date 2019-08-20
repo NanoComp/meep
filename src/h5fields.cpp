@@ -451,7 +451,7 @@ const char *fields::h5file_name(const char *name, const char *prefix, bool times
 h5file *fields::open_h5file(const char *name, h5file::access_mode mode, const char *prefix,
                             bool timestamp) {
   const char *filename = h5file_name(name, prefix, timestamp);
-  if (!quiet && mode == h5file::WRITE) master_printf("creating output file \"%s\"...\n", filename);
+  if (verbosity > 0 && mode == h5file::WRITE) master_printf("creating output file \"%s\"...\n", filename);
   return new h5file(filename, mode, true);
 }
 

@@ -250,7 +250,7 @@ breakout:
       trivial[2] = trivial[2] && (chi1inv[c][d2][i] == trivial_val[2]);
     }
 
-    if (!quiet && (ipixel + 1) % 1000 == 0 &&
+    if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
         wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
       master_printf("subpixel-averaging is %g%% done, %g s remaining\n", ipixel * 100.0 / npixels,
                     (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);

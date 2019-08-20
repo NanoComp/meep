@@ -44,7 +44,7 @@ typedef double realnum;
 
 #define MEEP_MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
-extern bool quiet; // if true, suppress all non-error messages from Meep
+extern int verbosity; // if 0, suppress all non-error messages from Meep; 1 is default, 2 is debug output
 
 const double pi = 3.141592653589793238462643383276;
 
@@ -1349,7 +1349,6 @@ public:
   void restore_component(component c);
 
   void set_output_directory(const char *name);
-  void verbose(int gv = 1) { verbosity = gv; }
 
   double count_volume(component);
   friend class fields;
@@ -1386,7 +1385,6 @@ private:
   bool doing_solve_cw;                 // true when inside solve_cw
   std::complex<double> solve_cw_omega; // current omega for solve_cw
 
-  int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
   bool have_plus_deriv[NUM_FIELD_COMPONENTS], have_minus_deriv[NUM_FIELD_COMPONENTS];
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
@@ -1832,7 +1830,6 @@ public:
   double electric_energy_weighted_integral(double (*f)(const vec &), const volume &where);
 
   void set_output_directory(const char *name);
-  void verbose(int gv = 1);
   double count_volume(component);
   // fields.cpp
   bool have_component(component);
@@ -1853,7 +1850,6 @@ public:
   void unset_solve_cw_omega();
 
 private:
-  int verbosity;                    // Turn on verbosity for debugging purposes...
   int synchronized_magnetic_fields; // count number of nested synchs
   double last_wall_time;
 #define MEEP_TIMING_STACK_SZ 10

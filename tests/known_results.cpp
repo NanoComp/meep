@@ -150,7 +150,7 @@ double polariton_energy(const grid_volume &gv, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   const char *mydirname = "known_results-out";
   trash_output_directory(mydirname);
   master_printf("Testing with some known results...\n");

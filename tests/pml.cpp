@@ -318,7 +318,7 @@ int pmlcyl_scaling(double eps(const vec &), int m) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   master_printf("Running PML tests...\n");
   if (check_pml1d(one, 0)) abort("not a pml in 1d.");
   if (check_pml1d(one, 10.0)) abort("not a pml in 1d + conductivity.");

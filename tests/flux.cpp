@@ -300,7 +300,7 @@ void attempt(const char *name, int allright) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   master_printf("Trying out the fluxes...\n");
 
   attempt("Split flux plane split by 7...", split_1d(cavity, 7));

@@ -92,7 +92,7 @@ void fields::print_times() {
     pt(mean, stddev, (time_sink)i);
   master_printf("\n");
 
-  if (verbosity > 0) {
+  if (verbosity > 1) {
     master_printf("\nField time usage for all processes:\n");
     double *alltimes_tmp = new double[n * (Other + 1)];
     double *alltimes = new double[n * (Other + 1)];

@@ -315,7 +315,7 @@ void check_loop_vol(const grid_volume &gv, component c) {
 int main(int argc, char **argv) {
   const double a = 10.0;
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   const grid_volume v3d = vol3d(sz[0], sz[1], sz[2], a);
   const grid_volume v3d0 = vol3d(sz[0], sz[1], 0, a);
   const grid_volume v3d00 = vol3d(sz[0], 0, 0, a);

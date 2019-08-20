@@ -1158,7 +1158,7 @@ class Simulation(object):
             self.fields.require_component(mp.Hz)
 
         if self.verbose:
-            self.fields.verbose()
+            verbosity(2)
 
         def use_real(self):
             cond1 = self.is_cylindrical and self.m != 0
@@ -2924,4 +2924,7 @@ def complexarray(re, im):
 
 
 def quiet(quietval=True):
-    mp.cvar.quiet = quietval
+    mp.cvar.verbose = int(not quietval)
+
+def verbosity(verbose_val):
+    mp.cvar.verbose = verbose_val

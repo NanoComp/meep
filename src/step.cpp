@@ -44,7 +44,7 @@ void fields::step() {
     last_step_output_wall_time = wall_time();
     last_step_output_t = t;
   }
-  if (!quiet && wall_time() > last_step_output_wall_time + MEEP_MIN_OUTPUT_TIME) {
+  if (verbosity > 0 && wall_time() > last_step_output_wall_time + MEEP_MIN_OUTPUT_TIME) {
     master_printf("on time step %d (time=%g), %g s/step\n", t, time(),
                   (wall_time() - last_step_output_wall_time) / (t - last_step_output_t));
     if (save_synchronized_magnetic_fields)
