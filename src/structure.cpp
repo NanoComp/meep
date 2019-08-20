@@ -185,6 +185,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
   std::vector<grid_volume> chunk_volumes;
 
+  bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
@@ -200,6 +201,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     if (!quiet && adjusted_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
+    by_cost = true;
   }
 
   // Break off PML regions into their own chunks
@@ -215,7 +217,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   }
   check_chunks();
 
-  if (!quiet) {
+  if (!quiet && by_cost) {
     double *costs = new double[count_processors()];
     for (int i = 0; i < count_processors(); i++)
       costs[i] = 0;
