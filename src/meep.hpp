@@ -786,9 +786,6 @@ public:
 
   friend class boundary_region;
 
-  double chunk_cost(int i) const;
-  void print_estimated_costs() const;
-
 private:
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort);
