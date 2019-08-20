@@ -185,6 +185,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
   std::vector<grid_volume> chunk_volumes;
 
+  bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
@@ -200,6 +201,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     if (!quiet && adjusted_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
+    by_cost = true;
   }
 
   // Break off PML regions into their own chunks
@@ -214,6 +216,27 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     }
   }
   check_chunks();
+
+  if (!quiet && by_cost) {
+    double *costs = new double[count_processors()];
+    for (int i = 0; i < count_processors(); i++)
+      costs[i] = 0;
+    for (int i = 0; i < num_chunks; i++)
+      costs[chunks[i]->n_proc()] += chunks[i]->gv.get_cost();
+    double sum = 0, sumsq = 0;
+    master_printf("estimated costs per process: ");
+    for (int i = 0; i < count_processors(); i++) {
+      double cost = costs[i];
+      sum += cost;
+      sumsq += cost*cost;
+      master_printf("%g%s", cost, i == count_processors() - 1 ? "\n" : ", ");
+    }
+    delete[] costs;
+    double mean = sum / count_processors();
+    double stddev = sumsq - num_chunks * mean * mean;
+    stddev = count_processors() == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (count_processors() - 1));
+    master_printf("estimated cost mean = %g, stddev = %g\n", mean, stddev);
+  }
 }
 
 void boundary_region::apply(structure *s) const {
