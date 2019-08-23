@@ -8,7 +8,7 @@ import numpy as np
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
-    
+
 
 # ------------------------------------------------------- #
 # Visualization
@@ -44,7 +44,7 @@ default_field_parameters = {
         }
 
 default_eps_parameters = {
-        'interpolation':'spline36', 
+        'interpolation':'spline36',
         'cmap':'binary',
         'alpha':1.0
     }
@@ -110,24 +110,24 @@ def place_label(ax,label_text,x,y,centerx,centery,label_parameters=None):
         ytext = -offset
     else:
         ytext = offset
-    
-    ax.annotate(label_text, xy=(x, y), xytext=(xtext,ytext), 
+
+    ax.annotate(label_text, xy=(x, y), xytext=(xtext,ytext),
             textcoords='offset points', ha='center', va='bottom',
             bbox=dict(boxstyle='round,pad=0.2', fc=color, alpha=alpha),
-            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5', 
+            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5',
                             color=color))
     return ax
 
 # ------------------------------------------------------- #
 # Helper functions used to plot volumes on a 2D plane
 
-# Returns the intersection points of 2 Volumes. 
-# Volumes must be a line, plane, or rectangular prism 
+# Returns the intersection points of 2 Volumes.
+# Volumes must be a line, plane, or rectangular prism
 # (since they are volume objects)
 def intersect_volume_volume(volume1,volume2):
     # volume1 ............... [volume]
     # volume2 ............... [volume]
-    
+
     # Represent the volumes by an "upper" and "lower" coordinate
     U1 = [volume1.center.x+volume1.size.x/2,volume1.center.y+volume1.size.y/2,volume1.center.z+volume1.size.z/2]
     L1 = [volume1.center.x-volume1.size.x/2,volume1.center.y-volume1.size.y/2,volume1.center.z-volume1.size.z/2]
@@ -167,7 +167,7 @@ def intersect_volume_volume(volume1,volume2):
 # volume. They can also do nothing and plot the XY plane through Z=0.
 #
 # Not only do we need to check for all of these possibilities, but we also need
-# to check if the user accidentally specifies a plane that stretches beyond the 
+# to check if the user accidentally specifies a plane that stretches beyond the
 # simulation domain.
 def get_2D_dimensions(sim,output_plane):
     from meep.simulation import Volume
@@ -183,7 +183,7 @@ def get_2D_dimensions(sim,output_plane):
 
     if plane_size.x!=0 and plane_size.y!=0 and plane_size.z!=0:
         raise ValueError("Plane volume must be 2D (a plane).")
-        
+
     check_volume = Volume(center=sim.geometry_center,size=sim.cell_size)
 
     vertices = intersect_volume_volume(check_volume,plane_volume)
@@ -195,7 +195,7 @@ def get_2D_dimensions(sim,output_plane):
 
     if (intersection_vol.size != plane_volume.size) or (intersection_vol.center != plane_volume.center):
         warnings.warn('The specified user volume is larger than the simulation domain and has been truncated.')
-    
+
     sim_center, sim_size = (intersection_vol.center, intersection_vol.size)
     return sim_center, sim_size
 
@@ -215,7 +215,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim,output_plane)
-    
+
     plane = Volume(center=sim_center,size=sim_size)
 
     # Pull volume parameters
@@ -263,7 +263,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
                 return ax
             else:
                 return ax
-        
+
         # Line volume
         elif len(intersection) == 2:
             line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
@@ -281,7 +281,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
                 return ax
             else:
                 return ax
-        
+
         # Planar volume
         elif len(intersection) > 2:
             planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
@@ -306,11 +306,11 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
 def plot_eps(sim,ax,output_plane=None,eps_parameters=None,omega=0):
     if sim.structure is None:
         sim.init_sim()
-    
-    
+
+
     # consolidate plotting parameters
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
-    
+
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim,output_plane)
 
@@ -341,7 +341,7 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None,omega=0):
         ylabel = 'Y'
     else:
         raise ValueError("A 2D plane has not been specified...")
-    
+
     eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric, omega=omega)))
     if mp.am_master():
         ax.imshow(eps_data, extent=extent, **eps_parameters)
@@ -396,7 +396,7 @@ def plot_boundaries(sim,ax,output_plane=None,boundary_parameters=None):
             size=Vector3(cell_x,cell_y,thickness))
         else:
             raise ValueError("Invalid boundary type")
-    
+
     import itertools
     for boundary in sim.boundary_layers:
         # All 4 side are the same
@@ -442,7 +442,7 @@ def plot_sources(sim,ax,output_plane=None,labels=False,source_parameters=None):
 def plot_monitors(sim,ax,output_plane=None,labels=False,monitor_parameters=None):
     if not sim._is_initialized:
         sim.init_sim()
-    
+
     from meep.simulation import Volume
 
      # consolidate plotting parameters
@@ -459,17 +459,17 @@ def plot_monitors(sim,ax,output_plane=None,labels=False,monitor_parameters=None)
 def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None):
     if not sim._is_initialized:
         sim.init_sim()
-    
+
     if fields is None:
         return ax
-    
+
     field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
     if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
         sim_center, sim_size = get_2D_dimensions(sim,output_plane)
-        
+
         xmin = sim_center.x - sim_size.x/2
         xmax = sim_center.x + sim_size.x/2
         ymin = sim_center.y - sim_size.y/2
@@ -498,8 +498,8 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
         fields = sim.get_array(center=center, size=cell_size, component=fields)
     else:
         raise ValueError('Please specify a valid field component (mp.Ex, mp.Ey, ...')
-    
-    
+
+
     fields = field_parameters['post_process'](fields)
 
     # Either plot the field, or return the array
@@ -539,21 +539,21 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
                 except:
                     # No sources
                     omega = 0
-        
+
     # validate the output plane to ensure proper 2D coordinates
     from meep.simulation import Volume
     sim_center, sim_size = get_2D_dimensions(sim,output_plane)
     output_plane = Volume(center=sim_center,size=sim_size)
-    
+
     # Plot geometry
     ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,omega=omega)
-    
+
     # Plot boundaries
     ax = plot_boundaries(sim,ax,output_plane=output_plane,boundary_parameters=boundary_parameters)
-            
+
     # Plot sources
     ax = plot_sources(sim,ax,output_plane=output_plane,labels=labels,source_parameters=source_parameters)
-        
+
     # Plot monitors
     ax = plot_monitors(sim,ax,output_plane=output_plane,labels=labels,monitor_parameters=monitor_parameters)
 
@@ -567,10 +567,10 @@ def plot3D(sim):
 
     if not sim._is_initialized:
         sim.init_sim()
-        
+
     if sim.dimensions < 3:
         raise ValueError("Simulation must have 3 dimensions to visualize 3D")
-    
+
     eps_data = sim.get_epsilon()
     s = mlab.contour3d(eps_data, colormap="YlGnBu")
     return s
@@ -683,7 +683,7 @@ def visualize_chunks(sim):
 #                       after simulation ends.
 # plot_modifiers ...... [list] additional functions to
 #                       modify plot
-# customization_args .. [dict] other customization args 
+# customization_args .. [dict] other customization args
 #                       to pass to plot2D()
 
 class Animate2D(object):
@@ -716,11 +716,11 @@ class Animate2D(object):
         self.default_mode = 'loop' # html5 video control mode
 
         self.init = False
-        
+
         # Needed for step functions
         self.__code__ = namedtuple('gna_hack',['co_argcount'])
         self.__code__.co_argcount=2
-    
+
     def __call__(self,sim,todo):
         from matplotlib import pyplot as plt
 
@@ -739,20 +739,20 @@ class Animate2D(object):
                     self.ax = ax
                     self.w, self.h = self.f.get_size_inches()
                 self.init = True
-            else:               
+            else:
                 # Update the plot
                 filtered_plot_fields= filter_dict(self.customization_args, plot_fields)
                 fields = sim.plot_fields(fields=self.fields,**filtered_plot_fields)
                 if mp.am_master():
                     self.ax.images[-1].set_data(fields)
                     self.ax.images[-1].set_clim(vmin=0.8*np.min(fields), vmax=0.8*np.max(fields))
-            
+
             if self.realtime and mp.am_master():
                 # Redraw the current figure if requested
                 plt.pause(0.05)
 
             if self.normalize and mp.am_master():
-                # Save fields as a numpy array to be normalized 
+                # Save fields as a numpy array to be normalized
                 # and saved later.
                 self.cumulative_fields.append(fields)
             elif mp.am_master():
@@ -761,26 +761,26 @@ class Animate2D(object):
                 self.grab_frame()
             return
         elif todo == 'finish':
-            
+
             # Normalize the frames, if requested, and export
             if self.normalize and mp.am_master():
-                if not mp.cvar.quiet:
+                if mp.cvar.verbosity > 0:
                     print("Normalizing field data...")
                 fields = np.array(self.cumulative_fields) / np.max(np.abs(self.cumulative_fields),axis=(0,1,2))
                 for k in range(len(self.cumulative_fields)):
                     self.ax.images[-1].set_data(fields[k,:,:])
                     self.ax.images[-1].set_clim(vmin=-0.8, vmax=0.8)
                     self.grab_frame()
-                
+
             return
-    
+
     @property
     def frame_size(self):
         # A tuple ``(width, height)`` in pixels of a movie frame.
         # modified from matplotlib library
         w, h = self.f.get_size_inches()
         return int(w * self.f.dpi), int(h * self.f.dpi)
-    
+
     def grab_frame(self):
         # Saves the figures frame to memory.
         # modified from matplotlib library
@@ -804,7 +804,7 @@ class Animate2D(object):
         # Exports a javascript enabled html object that is
         # ready for jupyter notebook embedding.
         # modified from matplotlib/animation.py code.
-        
+
         # Only works with Python3 and matplotlib > 3.1.0
         from distutils.version import LooseVersion
         import matplotlib
@@ -826,7 +826,7 @@ class Animate2D(object):
             mode_dict[self.default_mode + '_checked'] = 'checked'
 
             interval = 1000 // fps
-            
+
             html_string = ""
             html_string += JS_INCLUDE
             html_string += STYLE_INCLUDE
@@ -845,7 +845,7 @@ class Animate2D(object):
             from subprocess import Popen, PIPE
             from io import TextIOWrapper, BytesIO
             FFMPEG_BIN = 'ffmpeg'
-            command = [FFMPEG_BIN, 
+            command = [FFMPEG_BIN,
                         '-f', 'image2pipe', # force piping of rawvideo
                         '-vcodec', self.frame_format, # raw input codec
                         '-s', '%dx%d' % (self.frame_size),
@@ -853,14 +853,14 @@ class Animate2D(object):
                         '-i', 'pipe:', # The input comes from a pipe
                         '-vcodec', 'gif', # output gif format
                         '-r', str(fps), # frame rate in frames per second
-                        '-y', 
+                        '-y',
                         '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
                         '-an', filename  # output filename
             ]
-            if not mp.cvar.quiet:
+            if mp.cvar.verbosity > 0:
                 print("Generating GIF...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            for i in range(len(self._saved_frames)): 
+            for i in range(len(self._saved_frames)):
                 proc.stdin.write(self._saved_frames[i])
             out, err = proc.communicate() # pipe in images
             proc.stdin.close()
@@ -875,7 +875,7 @@ class Animate2D(object):
             from subprocess import Popen, PIPE
             from io import TextIOWrapper, BytesIO
             FFMPEG_BIN = 'ffmpeg'
-            command = [FFMPEG_BIN, 
+            command = [FFMPEG_BIN,
                         '-f', 'image2pipe', # force piping of rawvideo
                         '-vcodec', self.frame_format, # raw input codec
                         '-s', '%dx%d' % (self.frame_size),
@@ -885,20 +885,20 @@ class Animate2D(object):
                         '-vcodec', self.codec, # output mp4 format
                         '-pix_fmt','yuv420p',
                         '-r', str(fps), # frame rate in frames per second
-                        '-y', 
+                        '-y',
                         '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
                         '-an', filename  # output filename
             ]
-            if not mp.cvar.quiet:
+            if mp.cvar.verbosity > 0:
                 print("Generating MP4...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            for i in range(len(self._saved_frames)): 
+            for i in range(len(self._saved_frames)):
                 proc.stdin.write(self._saved_frames[i])
             out, err = proc.communicate() # pipe in images
             proc.stdin.close()
             proc.wait()
         return
-    
+
     def reset(self):
         self.cumulative_fields = []
         self.ax = None
@@ -910,7 +910,7 @@ class Animate2D(object):
 # ------------------------------------------------------- #
 # JS_Animation
 # ------------------------------------------------------- #
-# A helper class used to make jshtml animations embed 
+# A helper class used to make jshtml animations embed
 # seamlessly within Jupyter notebooks.
 
 class JS_Animation():

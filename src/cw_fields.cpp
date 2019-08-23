@@ -172,9 +172,9 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
   data.iters = 0;
 
   int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
-                            reinterpret_cast<realnum *>(b), tol, &maxiters, work, quiet);
+                            reinterpret_cast<realnum *>(b), tol, &maxiters, work, verbosity == 0);
 
-  if (!quiet) {
+  if (verbosity > 0) {
     master_printf("Finished solve_cw after %d steps and %d CG iters.\n", data.iters, maxiters);
     if (ierr) master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
   }

@@ -327,7 +327,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     default: abort("unsupported dimensionality in add_eigenmode_source");
   }
 
-  if (!quiet && verbose) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+  if (verbosity > 0 && verbose) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
 
   double kcart_len = sqrt(dot_product(kcart, kcart));
 
@@ -406,7 +406,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
           fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
         k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
     }
-    if (!quiet && verbose) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+    if (verbosity > 0 && verbose) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
   set_maxwell_data_parity(mdata, parity);
@@ -456,8 +456,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
 #endif
                   maxwell_preconditioner2, (void *)mdata, evectconstraint_chain_func,
                   (void *)constraints, W, 3, eigensolver_tol, &num_iters,
-                  EIGS_DEFAULT_FLAGS | (am_master() && verbose && !quiet ? EIGS_VERBOSE : 0));
-      if (!quiet)
+                  EIGS_DEFAULT_FLAGS | (am_master() && verbose && verbosity > 0 ? EIGS_VERBOSE : 0));
+      if (verbosity > 0)
         master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n", band_num,
                       G[0][0] * k[0], G[1][1] * k[1], G[2][2] * k[2], sqrt(eigvals[band_num - 1]),
                       num_iters);
@@ -482,7 +482,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         // update k via Newton step
         double dkmatch = (sqrt(eigvals[band_num - 1]) - omega_src) / vgrp;
         kmatch = kmatch - dkmatch;
-        if (!quiet && verbose)
+        if (verbosity > 0 && verbose)
           master_printf("Newton step: group velocity v=%g, kmatch=%g\n", vgrp, kmatch);
         count_dkmatch_increase += fabs(dkmatch) > fabs(dkmatch_prev);
         if (count_dkmatch_increase > 4) {
@@ -609,7 +609,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   if (kdom) {
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
     maxwell_dominant_planewave(mdata, H, band_num, kdom);
-    if (!quiet)
+    if (verbosity > 0)
       master_printf("Dominant planewave for band %d: (%f,%f,%f)\n", band_num, kdom[0], kdom[1],
                     kdom[2]);
 #else

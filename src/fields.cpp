@@ -30,7 +30,6 @@ namespace meep {
 fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin)
     : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta) {
   shared_chunks = s->shared_chunks;
-  verbosity = 0;
   components_allocated = false;
   synchronized_magnetic_fields = 0;
   outdir = new char[strlen(s->outdir) + 1];
@@ -92,7 +91,6 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
 fields::fields(const fields &thef)
     : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v) {
   shared_chunks = thef.shared_chunks;
-  verbosity = 0;
   components_allocated = thef.components_allocated;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
   outdir = new char[strlen(thef.outdir) + 1];
@@ -154,12 +152,6 @@ fields::~fields() {
   delete sources;
   delete fluxes;
   delete[] outdir;
-}
-
-void fields::verbose(int gv) {
-  verbosity = gv;
-  for (int i = 0; i < num_chunks; i++)
-    chunks[i]->verbose(gv);
 }
 
 void fields::use_real_fields() {
@@ -231,7 +223,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
       beta(beta) {
   s = the_s;
   s->refcount++;
-  verbosity = 0;
   outdir = od;
   new_s = NULL;
   is_real = 0;
@@ -289,7 +280,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
 fields_chunk::fields_chunk(const fields_chunk &thef) : gv(thef.gv), v(thef.v) {
   s = thef.s;
   s->refcount++;
-  verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
   zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;

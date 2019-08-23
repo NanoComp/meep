@@ -75,7 +75,7 @@ namespace meep {
 static MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
 
-bool quiet = false; // defined in meep.h
+int verbosity = 1; // defined in meep.h
 void (*master_printf_callback)(const char *s) = NULL;
 
 initialize::initialize(int &argc, char **&argv) {
@@ -83,7 +83,7 @@ initialize::initialize(int &argc, char **&argv) {
   MPI_Init(&argc, &argv);
   int major, minor;
   MPI_Get_version(&major, &minor);
-  if (!quiet)
+  if (verbosity > 0)
     master_printf("Using MPI version %d.%d, %d processes\n", major, minor, count_processors());
 #else
   UNUSED(argc);
@@ -99,7 +99,7 @@ initialize::initialize(int &argc, char **&argv) {
 }
 
 initialize::~initialize() {
-  if (!quiet) master_printf("\nElapsed run time = %g s\n", elapsed_time());
+  if (verbosity > 0) master_printf("\nElapsed run time = %g s\n", elapsed_time());
 #ifdef HAVE_MPI
   end_divide_parallel();
   MPI_Finalize();

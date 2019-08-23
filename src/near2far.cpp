@@ -338,7 +338,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
       for (size_t i2 = 0; i2 < dims[2]; ++i2) {
         x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2 * dx[2]);
         double t;
-        if (!quiet && (t = wall_time()) > start + MEEP_MIN_OUTPUT_TIME) {
+        if (verbosity > 0 && (t = wall_time()) > start + MEEP_MIN_OUTPUT_TIME) {
           size_t this_point = (dims[1] * dims[2] * i0) + (dims[2] * i1) + i2 + 1;
           master_printf("get_farfields_array working on point %zu of %zu (%d%% done), %g s/point\n",
                         this_point, total_points, (int)((double)this_point / total_points * 100),
@@ -347,7 +347,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
           last_point = this_point;
         }
         farfield_lowlevel(EH1, x);
-        if (!quiet) all_wait(); // Allow consistent progress updates from master
+        if (verbosity > 0) all_wait(); // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
         for (int i = 0; i < Nfreq; ++i)
           for (int k = 0; k < 6; ++k) {

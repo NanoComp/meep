@@ -240,7 +240,7 @@ void doit(bool use_hdf5) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
 
 #ifdef HAVE_HDF5
   doit(true);

@@ -278,7 +278,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
-  if (!meep::quiet && verbose && meep::am_master()) {
+  if (meep::verbosity > 0 && verbose && meep::am_master()) {
     printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 
@@ -1306,7 +1306,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         lorentzian_susceptibility *d = p->user_s.subclass.lorentzian_susceptibility_data;
         if (d->which_subclass == lorentzian_susceptibility::NOISY_LORENTZIAN_SUSCEPTIBILITY) {
           noisy_lorentzian_susceptibility *nd = d->subclass.noisy_lorentzian_susceptibility_data;
-          if (!meep::quiet)
+          if (meep::verbosity > 0)
             master_printf("noisy lorentzian susceptibility: frequency=%g, gamma=%g, amp = %g\n",
                           d->frequency, d->gamma, nd->noise_amp);
           sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma);
@@ -1315,7 +1315,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
                  lorentzian_susceptibility::GYROTROPIC_LORENTZIAN_SUSCEPTIBILITY) {
           gyrotropic_lorentzian_susceptibility *gd =
               d->subclass.gyrotropic_lorentzian_susceptibility_data;
-          if (!meep::quiet)
+          if (meep::verbosity > 0)
             master_printf(
                 "gyrotropic lorentzian susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
                 gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
@@ -1323,7 +1323,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
                                                     d->gamma, 0.0, meep::GYROTROPIC_LORENTZIAN);
         }
         else { // just a Lorentzian
-          if (!meep::quiet)
+          if (meep::verbosity > 0)
             master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n", d->frequency,
                           d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma);
@@ -1334,7 +1334,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         drude_susceptibility *d = p->user_s.subclass.drude_susceptibility_data;
         if (d->which_subclass == drude_susceptibility::NOISY_DRUDE_SUSCEPTIBILITY) {
           noisy_drude_susceptibility *nd = d->subclass.noisy_drude_susceptibility_data;
-          if (!meep::quiet)
+          if (meep::verbosity > 0)
             master_printf("noisy drude susceptibility: frequency=%g, gamma=%g, amp = %g\n",
                           d->frequency, d->gamma, nd->noise_amp);
           sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma,
@@ -1342,7 +1342,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
         }
         else if (d->which_subclass == drude_susceptibility::GYROTROPIC_DRUDE_SUSCEPTIBILITY) {
           gyrotropic_drude_susceptibility *gd = d->subclass.gyrotropic_drude_susceptibility_data;
-          if (!meep::quiet)
+          if (meep::verbosity > 0)
             master_printf(
                 "gyrotropic drude susceptibility: bias=(%g,%g,%g), frequency=%g, gamma=%g\n",
                 gd->bias.x, gd->bias.y, gd->bias.z, d->frequency, d->gamma);
@@ -1350,7 +1350,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
                                                     d->gamma, 0.0, meep::GYROTROPIC_DRUDE);
         }
         else { // just a Drude
-          if (!meep::quiet)
+          if (meep::verbosity > 0)
             master_printf("drude susceptibility: frequency=%g, gamma=%g\n", d->frequency, d->gamma);
           sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma, true);
         }
@@ -1359,7 +1359,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
       case susceptibility::GYROTROPIC_SATURATED_SUSCEPTIBILITY: {
         gyrotropic_saturated_susceptibility *d =
             p->user_s.subclass.gyrotropic_saturated_susceptibility_data;
-        if (!meep::quiet)
+        if (meep::verbosity > 0)
           master_printf("gyrotropic Landau-Lifshitz-Gilbert-type susceptibility: bias=(%g,%g,%g), "
                         "frequency=%g, gamma=%g, alpha=%g\n",
                         d->bias.x, d->bias.y, d->bias.z, d->frequency, d->gamma, d->alpha);
@@ -1419,7 +1419,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
                                 const char *eps_input_file, pml_list pml_layers,
                                 symmetry_list symmetries, int num_chunks, double Courant,
                                 double global_D_conductivity_, double global_B_conductivity_) {
-  if (!meep::quiet) master_printf("-----------\nInitializing structure...\n");
+  if (meep::verbosity > 0) master_printf("-----------\nInitializing structure...\n");
 
   // only cartesian lattices are currently allowed
   geom_initialize();
@@ -1438,7 +1438,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
   geometry_lattice.size = size;
   geometry_edge = vector3_to_vec(size) * 0.5;
 
-  if (!meep::quiet) {
+  if (meep::verbosity > 0) {
     master_printf("Working in %s dimensions.\n", meep::dimension_name(dim));
     master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
                   resolution);
@@ -1592,7 +1592,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center, double r
 
   geps.add_susceptibilities(s);
 
-  if (!meep::quiet) master_printf("-----------\n");
+  if (meep::verbosity > 0) master_printf("-----------\n");
 
   return s;
 }

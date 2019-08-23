@@ -54,7 +54,7 @@ structure::structure(const grid_volume &thegv, material_function &eps, const bou
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
-  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
+  if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
@@ -68,7 +68,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s);
-  if (!quiet) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
+  if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   if (eps) {
     simple_material_function epsilon(eps);
     set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -140,7 +140,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       for (int n = 0; n < S.multiplicity(); n++)
         if (has_direction(thegv.dim, d) &&
             (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
-          if (thegv.num_direction(d) & 1 && !break_this[d] && !quiet)
+          if (thegv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
             master_printf("Padding %s to even number of grid points.\n", direction_name(d));
           break_this[dd] = true;
         }
@@ -150,7 +150,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       if (break_mult == S.multiplicity()) break_this[d] = false;
       if (break_this[d]) {
         break_mult *= 2;
-        if (!quiet)
+        if (verbosity > 0)
           master_printf("Halving computational cell along direction %s\n",
                         direction_name(direction(d)));
         gv = gv.halve((direction)d);
@@ -189,7 +189,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
-    if (!quiet && adjusted_num_chunks > 1)
+    if (verbosity > 0 && adjusted_num_chunks > 1)
       master_printf("Splitting into %d chunks evenly\n", adjusted_num_chunks);
     for (int i = 0; i < adjusted_num_chunks; i++) {
       grid_volume vi =
@@ -198,7 +198,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     }
   }
   else {
-    if (!quiet && adjusted_num_chunks > 1)
+    if (verbosity > 0 && adjusted_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
     by_cost = true;
@@ -217,7 +217,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   }
   check_chunks();
 
-  if (!quiet && by_cost) {
+  if (verbosity > 1 && by_cost) {
     double *costs = new double[count_processors()];
     for (int i = 0; i < count_processors(); i++)
       costs[i] = 0;
@@ -460,7 +460,7 @@ void structure::set_epsilon(material_function &eps, bool use_anisotropic_averagi
                             int maxeval) {
   double tstart = wall_time();
   FOR_ELECTRIC_COMPONENTS(c) { set_chi1inv(c, eps, use_anisotropic_averaging, tol, maxeval); }
-  if (!quiet) master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
+  if (verbosity > 0) master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_epsilon(double eps(const vec &), bool use_anisotropic_averaging, double tol,
@@ -473,7 +473,7 @@ void structure::set_mu(material_function &m, bool use_anisotropic_averaging, dou
                        int maxeval) {
   double tstart = wall_time();
   FOR_MAGNETIC_COMPONENTS(c) { set_chi1inv(c, m, use_anisotropic_averaging, tol, maxeval); }
-  if (!quiet) master_printf("time for set_mu = %g s\n", wall_time() - tstart);
+  if (verbosity > 0) master_printf("time for set_mu = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_mu(double mufunc(const vec &), bool use_anisotropic_averaging, double tol,
@@ -488,7 +488,7 @@ void structure::set_conductivity(component c, material_function &C) {
   changing_chunks();
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->set_conductivity(c, C);
-  if (!quiet) master_printf("time for set_conductivity = %g s\n", wall_time() - tstart);
+  if (verbosity > 0) master_printf("time for set_conductivity = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_conductivity(component c, double Cfunc(const vec &)) {

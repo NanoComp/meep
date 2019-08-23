@@ -84,7 +84,7 @@ void structure::dump_chunk_layout(const char *filename) {
 }
 
 void structure::dump(const char *filename) {
-  if (!quiet) master_printf("creating epsilon output file \"%s\"...\n", filename);
+  if (verbosity > 0) master_printf("creating epsilon output file \"%s\"...\n", filename);
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.
@@ -479,7 +479,7 @@ void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_
 void structure::load(const char *filename) {
   h5file file(filename, h5file::READONLY, true);
 
-  if (!quiet) master_printf("reading epsilon from file \"%s\"...\n", filename);
+  if (verbosity > 0) master_printf("reading epsilon from file \"%s\"...\n", filename);
 
   // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
   // the number of entries in the chi1inv array for each chunk.

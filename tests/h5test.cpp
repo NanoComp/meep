@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
   const double a = 10.0;
   initialize mpi(argc, argv);
   int chances;
-  quiet = true;
+  verbosity = 0;
 #ifdef HAVE_HDF5
   const double pad1 = 0.314159, pad2 = 0.27183, pad3 = 0.14142;
 

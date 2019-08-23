@@ -93,7 +93,7 @@ int different(double a, double a0, double thresh, const char *msg) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   const double freq = 1.0 / 3.0;
 
   double a2, a3, a2_2, a3_2;

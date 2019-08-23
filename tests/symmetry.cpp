@@ -920,7 +920,7 @@ double nonlinear_ex(const grid_volume &gv, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   trash_output_directory(mydirname);
   master_printf("Testing with various kinds of symmetry...\n");
 

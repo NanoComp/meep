@@ -35,7 +35,7 @@ const char symlink_name[] = "latest_output";
 void structure::set_output_directory(const char *name) {
   char buf[300];
   outdir = name;
-  if (!quiet) master_printf("Using output directory %s/\n", name);
+  if (verbosity > 0) master_printf("Using output directory %s/\n", name);
   if (readlink(symlink_name, buf, 300) > 0) {
     // Link already exists.
     unlink(symlink_name);
@@ -126,7 +126,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   {
     int i = 0;
     while (!is_ok_dir(outdirname)) {
-      if (!quiet) master_printf("Output directory %s already exists!\n", outdirname);
+      if (verbosity > 0) master_printf("Output directory %s already exists!\n", outdirname);
       snprintf(outdirname, buflen, "%s-out-%d", basename, i++);
     }
   }
