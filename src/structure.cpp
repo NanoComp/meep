@@ -233,7 +233,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     }
     delete[] costs;
     double mean = sum / count_processors();
-    double stddev = sumsq - num_chunks * mean * mean;
+    double stddev = sumsq - count_processors() * mean * mean;
     stddev = count_processors() == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (count_processors() - 1));
     master_printf("estimated cost mean = %g, stddev = %g\n", mean, stddev);
   }
