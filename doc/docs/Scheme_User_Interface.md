@@ -353,11 +353,11 @@ The gyrotropy vector.  Its direction determines the orientation of the gyrotropi
 
 **`sigma` [`number`]**
 —
-The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In [magnetic ferrites](https://en.wikipedia.org/wiki/Ferrite_(magnet)), this is the Larmor precession frequency at the saturation field.
 
 **`frequency` [`number`]**
 —
-The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
+The [Larmor precession](https://en.wikipedia.org/wiki/Larmor_precession) frequency, $f_n = \omega_n / 2\pi$.
 
 **`gamma` [`number`]**
 —

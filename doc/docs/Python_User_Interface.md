@@ -414,11 +414,11 @@ The gyrotropy vector.  Its direction determines the orientation of the gyrotropi
 
 **`sigma` [`number`]**
 —
-The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In [magnetic ferrites](https://en.wikipedia.org/wiki/Ferrite_(magnet)), this is the Larmor precession frequency at the saturation field.
 
 **`frequency` [`number`]**
 —
-The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
+The [Larmor precession](https://en.wikipedia.org/wiki/Larmor_precession) frequency, $f_n = \omega_n / 2\pi$.
 
 **`gamma` [`number`]**
 —
@@ -975,6 +975,10 @@ Miscellaneous Functions
 **`meep.quiet(quietval=True)`**
 —
 Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
+
+**`meep.interpolate(n, nums)`**
+—
+Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to add `n` new evenly-spaced values between each pair of consecutive values in the original list.
 
 ### Output File Names
 
