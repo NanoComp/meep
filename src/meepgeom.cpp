@@ -358,8 +358,6 @@ public:
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
-  static bool verbose;
-
 private:
   void get_material_pt(material_type &material, const meep::vec &r);
 
@@ -368,7 +366,6 @@ private:
 };
 
 /***********************************************************************/
-bool geom_epsilon::verbose = false;
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
                            const meep::volume &v) {
@@ -397,7 +394,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
-  if (meep::verbosity > 0 && verbose && meep::am_master()) {
+  if (meep::verbosity > 1 && meep::am_master()) {
     master_printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 
@@ -1475,11 +1472,9 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 /***************************************************************/
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g, vector3 center,
                                  bool use_anisotropic_averaging, double tol, int maxeval,
-                                 bool _ensure_periodicity, bool verbose,
+                                 bool _ensure_periodicity,
                                  material_type _default_material, absorber_list alist,
                                  material_type_list extra_materials) {
-  geom_epsilon::verbose = verbose;
-
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
   geometry_center = center;
