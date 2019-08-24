@@ -2924,7 +2924,7 @@ def complexarray(re, im):
 
 
 def quiet(quietval=True):
-    mp.cvar.verbose = int(not quietval)
+    mp.cvar.verbosity = int(not quietval)
 
 def verbosity(verbose_val):
-    mp.cvar.verbose = verbose_val
+    mp.cvar.verbosity = verbose_val
