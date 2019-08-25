@@ -1513,7 +1513,6 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         output_sfield_p,
         py_v3_to_vec,
         quiet,
-        verbosity,
         scale_energy_fields,
         scale_flux_fields,
         scale_force_fields,
@@ -1524,6 +1523,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         synchronized_magnetic,
         to_appended,
         vec,
+        verbosity,
         when_true,
         when_false,
         with_prefix
