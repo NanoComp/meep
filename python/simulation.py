@@ -1066,7 +1066,6 @@ class Simulation(object):
             self.geometry,
             self.geometry_center,
             self.ensure_periodicity and not not self.k_point,
-            self.verbose,
             self.default_material,
             absorbers,
             self.extra_materials,
@@ -1095,7 +1094,6 @@ class Simulation(object):
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
-            False,
             default_material if default_material else self.default_material,
             absorbers,
             self.extra_materials

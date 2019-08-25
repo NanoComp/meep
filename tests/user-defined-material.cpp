@@ -196,10 +196,9 @@ int main(int argc, char *argv[]) {
   vector3 center = {0, 0, 0};
   bool use_anisotropic_averaging = true;
   bool ensure_periodicity = true;
-  bool verbose = false;
   meep_geom::set_materials_from_geometry(&the_structure, g, center, use_anisotropic_averaging,
                                          DEFAULT_SUBPIXEL_TOL, DEFAULT_SUBPIXEL_MAXEVAL,
-                                         ensure_periodicity, verbose, my_material);
+                                         ensure_periodicity, my_material);
 
   fields f(&the_structure);
 

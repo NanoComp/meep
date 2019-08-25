@@ -70,7 +70,6 @@ int main(int argc, char *argv[]) {
                                          DEFAULT_SUBPIXEL_TOL,     // tol
                                          DEFAULT_SUBPIXEL_MAXEVAL, // maxeval
                                          false,                    // ensure_periodicity
-                                         false,                    // verbose
                                          meep_geom::vacuum, alist);
 
   if (alist) meep_geom::destroy_absorber_list(alist);
