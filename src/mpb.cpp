@@ -455,7 +455,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
 #endif
                   maxwell_preconditioner2, (void *)mdata, evectconstraint_chain_func,
                   (void *)constraints, W, 3, eigensolver_tol, &num_iters,
-                  EIGS_DEFAULT_FLAGS | (am_master() && verbosity > 0 ? EIGS_VERBOSE : 0));
+                  EIGS_DEFAULT_FLAGS | (am_master() && verbosity > 1 ? EIGS_VERBOSE : 0));
       if (verbosity > 0)
         master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n", band_num,
                       G[0][0] * k[0], G[1][1] * k[1], G[2][2] * k[2], sqrt(eigvals[band_num - 1]),
@@ -481,7 +481,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         // update k via Newton step
         double dkmatch = (sqrt(eigvals[band_num - 1]) - omega_src) / vgrp;
         kmatch = kmatch - dkmatch;
-        if (verbosity > 0)
+        if (verbosity > 1)
           master_printf("Newton step: group velocity v=%g, kmatch=%g\n", vgrp, kmatch);
         count_dkmatch_increase += fabs(dkmatch) > fabs(dkmatch_prev);
         if (count_dkmatch_increase > 4) {

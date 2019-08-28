@@ -1203,11 +1203,8 @@
 ; ****************************************************************
 ; verbosity
 
-(define (quiet quietval)
-  (set! meep-verbosity (or (and (not quietval) 1) 0)))
-
-(define (verbosity verboseval)
-  (set! meep-verbosity verboseval))
+(define* (quiet #:optional (quiet? true))
+  (verbosity (if quiet? 0 1)))
 
 ; ****************************************************************
 ; get-eigenmode-coefficients
