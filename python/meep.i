@@ -1601,7 +1601,6 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     geometric_object_list gobj_list,
                                                     vector3 center,
                                                     bool _ensure_periodicity,
-                                                    bool verbose,
                                                     meep_geom::material_type _default_material,
                                                     meep_geom::absorber_list alist,
                                                     meep_geom::material_type_list extra_materials,
@@ -1628,7 +1627,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     if (set_materials) {
       meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
-                                             maxeval, _ensure_periodicity, verbose, _default_material,
+                                             maxeval, _ensure_periodicity, _default_material,
                                              alist, extra_materials);
     }
 
