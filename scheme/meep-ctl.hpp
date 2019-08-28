@@ -11,7 +11,7 @@
 
 #include "meep-ctl-swig.hpp"
 
-extern int verbose; // in main.c
+extern int verbosity; // in main.c
 
 /***************************************************************************/
 

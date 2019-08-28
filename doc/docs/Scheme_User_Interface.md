@@ -772,7 +772,11 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 Miscellaneous Functions
 -----------------------
 
-Here, we describe a number of miscellaneous useful functions provided by Meep.
+### Verbose Output
+
+**`(quiet quietval)`**
+—
+Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `true`. The output can be enabled again by passing `false`. This sets a global variable, so the value will persist across runs within the same script.
 
 ### Geometry Utilities
 
@@ -976,7 +980,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
 
-**`(get-eigenmode-coefficients flux bands eig-parity eig-vol eig-resolution eig-tolerance kpoint-func verbose=False direction=AUTOMATIC)`**
+**`(get-eigenmode-coefficients flux bands eig-parity eig-vol eig-resolution eig-tolerance kpoint-func direction=AUTOMATIC)`**
 —
 Given a flux object and list of band indices, return a list with the following data:
 

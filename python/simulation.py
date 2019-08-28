@@ -562,7 +562,6 @@ class Simulation(object):
                  dimensions=3,
                  boundary_layers=[],
                  symmetries=[],
-                 verbose=False,
                  force_complex_fields=False,
                  default_material=mp.Medium(),
                  m=0,
@@ -614,7 +613,6 @@ class Simulation(object):
         self.accurate_fields_near_cylorigin = accurate_fields_near_cylorigin
         self.m = m
         self.force_complex_fields = force_complex_fields
-        self.verbose = verbose
         self.progress_interval = progress_interval
         self.init_sim_hooks = []
         self.run_index = 0
@@ -1154,9 +1152,6 @@ class Simulation(object):
         if self.force_all_components and self.dimensions != 1:
             self.fields.require_component(mp.Ez)
             self.fields.require_component(mp.Hz)
-
-        if self.verbose:
-            verbosity(2)
 
         def use_real(self):
             cond1 = self.is_cylindrical and self.m != 0
@@ -1943,7 +1938,7 @@ class Simulation(object):
                                        center=center, size=size, collapse=True)
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
-                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, verbose=False, direction=mp.AUTOMATIC):
+                                   eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
@@ -1968,14 +1963,13 @@ class Simulation(object):
             coeffs,
             vgrp,
             kpoint_func,
-            verbose,
             direction
         )
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
 
     def get_eigenmode(self, freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
-                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12, verbose=False):
+                      parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12):
 
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode")
@@ -1989,7 +1983,7 @@ class Simulation(object):
         swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
         kdom = np.zeros(3)
         emdata = mp._get_eigenmode(self.fields, freq, direction, where, eig_vol, band_num, swig_kpoint,
-                                   match_frequency, parity, resolution, eigensolver_tol, verbose, kdom)
+                                   match_frequency, parity, resolution, eigensolver_tol, kdom)
         Gk = mp._get_eigenmode_Gk(emdata)
 
         return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, Gk,
