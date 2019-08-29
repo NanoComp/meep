@@ -774,7 +774,7 @@ Miscellaneous Functions
 
 ### Verbose Output
 
-**`(quiet quietval)`**
+**`(quiet)`** or **`(quiet quietval)`**
 —
 Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `true` (the default). The output can be enabled again by passing `false`. This sets a global variable, so the value will persist across runs within the same script.
 
