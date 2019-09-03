@@ -326,7 +326,7 @@ Usage: Structures
 
 ### What are the different ways to define a structure?
 
-There are four ways to define a structure: (1) the [`GeometricObject`](Python_User_Interface.md#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface.md#geometric-object) (Scheme) class used to specify a collection of predefined shapes including `Prism`, `Sphere`, `Cylinder`, `Cone`, `Block`, and `Ellipsoid`, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function: for a given position in the cell, return the ε/μ at that point, (3) import the scalar, real-valued, frequency-independent permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter, or (4) import planar geometries from a [GDSII file](Python_User_Interface.md#gdsii-support). Combinations of (1), (2), and (4) are allowed but not (3).
+There are five ways to define a structure: (1) the [`GeometricObject`](Python_User_Interface.md#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface.md#geometric-object) (Scheme) class used to specify a collection of predefined shapes including `Prism`, `Sphere`, `Cylinder`, `Cone`, `Block`, and `Ellipsoid`, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function: for a given position in the cell, return the ε/μ at that point, (3) import the scalar, real-valued, frequency-independent permittivity from an HDF5 file (which can be created using e.g., [h5py](http://docs.h5py.org/en/stable/)) via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter, (4) import planar geometries from a [GDSII file](Python_User_Interface.md#gdsii-support), or (5) load the raw ε/μ saved from a previous simulation using [`load_structure`](Python_User_Interface.md#load-and-dump-structure) (Python) or [`meep-structure-load`](Scheme_User_Interface.md#load-and-dump-structure) (Scheme). Combinations of (1), (2), and (4) are allowed but not (3) or (5).
 
 ### Does Meep support importing GDSII files?
 
@@ -478,6 +478,12 @@ Any [output](Python_User_Interface.md#output-functions) or [computation](Python_
 ### Is it possible to specify the boundary conditions independently?
 
 Yes. You can use the [`set_boundary`](Python_User_Interface.md#field-computations) routine to specify different boundary conditions (`Metallic`, `Magnetic`) on different sides of the cell (`High` for positive or `Low` for negative directions). The default boundary condition is perfect electric conductor (i.e., `Metallic` or zero electric field), unless you specified a `k_point` in which case the default is Bloch-periodic. Note that PML is *not* a boundary condition. It is an artificial absorbing material placed adjacent to the boundaries. The boundary condition is essentially irrelevant to the operation of the PML.
+
+### How do I model a 2d structure involving an out-of-plane wavevector?
+
+To model e.g., fiber waveguides with 2d claddings, diffractive binary gratings with arbitrary incident planewaves in 3d, etc. in Cartesian coordinates, you would create a 2d cell in the $xy$ plane and specify a `k_point` with *non-zero* component in $z$. The resulting 3d simulation involves all electromagnetic fields (rather than a 2d simulation which involves a subset of the fields determined by the polarization of the current source).
+
+Note: [mode decomposition](Python_Tutorials/Mode_Decomposition.md) is *not* currently supported for this use case (Issues [#291](https://github.com/NanoComp/meep/issues/291), [#604](https://github.com/NanoComp/meep/issues/604)).
 
 ### Can Meep model electrostatic effects?
 
