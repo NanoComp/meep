@@ -278,7 +278,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
-  if (meep::verbosity > 0 && verbose && meep::am_master()) {
+  if (meep::verbosity > 2 && meep::am_master()) {
     printf("Geometric-object bounding-box tree:\n");
     display_geom_box_tree(5, geometry_tree);
 

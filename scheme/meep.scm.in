@@ -458,7 +458,6 @@
 				(if (and special-kz? k-point)
 				    (vector3-z k-point) 0.0)
 				(not accurate-fields-near-cylorigin?)))
-  (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
 	       (not (for-all? symmetries
@@ -1201,6 +1200,12 @@
 (define (harminv c pt fcen df . mxbands)
   (harminv! harminv-data harminv-data-dt harminv-results c pt fcen df mxbands))
 
+; ****************************************************************
+; verbosity
+
+(define* (quiet #:optional (quiet? true))
+  (verbosity (if quiet? 0 1)))
+(if verbose? (verbosity 2))
 
 ; ****************************************************************
 ; get-eigenmode-coefficients

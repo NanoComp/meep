@@ -253,7 +253,7 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
 /****************************************************************/
 void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
-                            double resolution, double eigensolver_tol, bool verbose, double *kdom,
+                            double resolution, double eigensolver_tol, double *kdom,
                             void **user_mdata) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
@@ -279,7 +279,6 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     empty_dim[2] = true;
   }
 
-  // bool verbose=true;
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1, 1, 1};
   mpb_real k[3] = {0, 0, 0}, kcart[3] = {0, 0, 0};
@@ -327,7 +326,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     default: abort("unsupported dimensionality in add_eigenmode_source");
   }
 
-  if (verbosity > 0 && verbose) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+  if (verbosity > 1) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
 
   double kcart_len = sqrt(dot_product(kcart, kcart));
 
@@ -406,7 +405,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
           fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
         k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
     }
-    if (verbosity > 0 && verbose) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+    if (verbosity > 1) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
   set_maxwell_data_parity(mdata, parity);
@@ -456,7 +455,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
 #endif
                   maxwell_preconditioner2, (void *)mdata, evectconstraint_chain_func,
                   (void *)constraints, W, 3, eigensolver_tol, &num_iters,
-                  EIGS_DEFAULT_FLAGS | (am_master() && verbose && verbosity > 0 ? EIGS_VERBOSE : 0));
+                  EIGS_DEFAULT_FLAGS | (am_master() && verbosity > 1 ? EIGS_VERBOSE : 0));
       if (verbosity > 0)
         master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n", band_num,
                       G[0][0] * k[0], G[1][1] * k[1], G[2][2] * k[2], sqrt(eigvals[band_num - 1]),
@@ -482,7 +481,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         // update k via Newton step
         double dkmatch = (sqrt(eigvals[band_num - 1]) - omega_src) / vgrp;
         kmatch = kmatch - dkmatch;
-        if (verbosity > 0 && verbose)
+        if (verbosity > 1)
           master_printf("Newton step: group velocity v=%g, kmatch=%g\n", vgrp, kmatch);
         count_dkmatch_increase += fabs(dkmatch) > fabs(dkmatch_prev);
         if (count_dkmatch_increase > 4) {
@@ -750,7 +749,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        bool verbose, direction d) {
+                                        direction d) {
   double freq_min = flux.freq_min;
   double dfreq = flux.dfreq;
   int num_freqs = flux.Nfreq;
@@ -778,7 +777,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       am_now_working_on(MPBTime);
       void *mode_data =
           get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint, match_frequency, parity,
-                        eig_resolution, eigensolver_tol, verbose, kdom, (void **)&mdata);
+                        eig_resolution, eigensolver_tol, kdom, (void **)&mdata);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
@@ -818,7 +817,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 #else // #ifdef HAVE_MPB
 void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &kpoint, bool match_frequency, int parity,
-                            double resolution, double eigensolver_tol, bool verbose, double *kdom,
+                            double resolution, double eigensolver_tol, double *kdom,
                             void **user_mdata) {
 
   (void)omega_src;
@@ -831,7 +830,6 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   (void)parity;
   (void)resolution;
   (void)eigensolver_tol;
-  (void)verbose;
   (void)kdom;
   (void)user_mdata;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
@@ -863,7 +861,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        bool verbose, direction d) {
+                                        direction d) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -877,7 +875,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)user_kpoint_func;
   (void)user_kpoint_data;
   (void)kdom;
-  (void)verbose;
   (void)d;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
@@ -912,11 +909,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         int num_bands, int parity, double eig_resolution,
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        bool verbose) {
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom) {
   get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                              eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
-                             kpoints, kdom, verbose, flux.normal_direction);
+                             kpoints, kdom, flux.normal_direction);
 }
 
 } // namespace meep

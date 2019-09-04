@@ -492,14 +492,14 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int *bands, int num_bands, int parity, double eig_resolution,
                                                    double eigensolver_tol, std::complex<double> *coeffs,
                                                    double *vgrp, meep::kpoint_func user_kpoint_func,
-                                                   void *user_kpoint_data, bool verbose, meep::direction d) {
+                                                   void *user_kpoint_data, meep::direction d) {
 
     size_t num_kpoints = num_bands * flux.Nfreq;
     meep::vec *kpoints = new meep::vec[num_kpoints];
     meep::vec *kdom = new meep::vec[num_kpoints];
 
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose, d);
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, d);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -523,10 +523,10 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                     bool verbose, double kdom[3]) {
+                                     double kdom[3]) {
 
     void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
-                                  parity, resolution, eigensolver_tol, verbose, kdom);
+                                  parity, resolution, eigensolver_tol, kdom);
     return (meep::eigenmode_data *)data;
 }
 
@@ -542,10 +542,10 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
 void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                    bool verbose, double kdom[3]) {
+                    double kdom[3]) {
     (void) f; (void) omega_src; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
     (void) match_frequency; (void) parity; (void) resolution; (void) eigensolver_tol;
-    (void) verbose; (void) kdom;
+    (void) kdom;
     meep::abort("Must compile Meep with MPB for get_eigenmode");
 }
 #endif
@@ -1309,7 +1309,7 @@ struct eigenmode_data {
 meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                     bool verbose, double kdom[3]);
+                                     double kdom[3]);
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 
 %extend meep::eigenmode_data {
@@ -1322,7 +1322,7 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                    bool verbose, double kdom[3]);
+                    double kdom[3]);
 #endif // HAVE_MPB
 
 // Make omega members of meep::dft_ldos available as 'freq' in python
@@ -1362,7 +1362,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                                   bool verbose, meep::direction d);
+                                                   meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions);
 

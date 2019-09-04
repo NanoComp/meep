@@ -1660,7 +1660,7 @@ public:
   // call destroy_eigenmode_data() to deallocate it when finished.
   void *get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
-                      double resolution, double eigensolver_tol, bool verbose = false,
+                      double resolution, double eigensolver_tol,
                       double *kdom = 0, void **user_mdata = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
@@ -1673,12 +1673,12 @@ public:
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                  vec *kpoints, vec *kdom, bool verbose, direction d);
+                                  vec *kpoints, vec *kdom, direction d);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func = 0, void *user_kpoint_data = 0,
-                                  vec *kpoints = 0, vec *kdom = 0, bool verbose = false);
+                                  vec *kpoints = 0, vec *kdom = 0);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
