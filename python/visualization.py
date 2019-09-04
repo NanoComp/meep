@@ -657,12 +657,21 @@ def visualize_chunks(sim):
 
         for i, v in enumerate(vols):
             plot_box(mp.gv2box(v.surroundings()), owners[i], fig, ax)
-        ax.set_aspect('equal')
-        plt.autoscale(tight=True)
+
         ax.set_xlabel('x')
         ax.set_ylabel('y')
+
+        cell_box = mp.gv2box(sim.structure.gv.surroundings())
         if sim.structure.gv.dim == 2:
+            ax.set_xlim3d(left=cell_box.low.x,right=cell_box.high.x)
+            ax.set_ylim3d(bottom=cell_box.low.y,top=cell_box.high.y)
+            ax.set_zlim3d(bottom=cell_box.low.z,top=cell_box.high.z)
             ax.set_zlabel('z')
+        else:
+            ax.set_xlim(left=cell_box.low.x,right=cell_box.high.x)
+            ax.set_ylim(bottom=cell_box.low.y,top=cell_box.high.y)
+            ax.set_aspect('equal')
+
         plt.tight_layout()
         plt.show()
 
