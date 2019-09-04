@@ -1605,7 +1605,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     meep_geom::absorber_list alist,
                                                     meep_geom::material_type_list extra_materials,
                                                     bool split_chunks_evenly,
-                                                    bool set_materials) {
+                                                    bool set_materials,
+                                                    meep::structure *existing_s) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1620,15 +1621,42 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
     meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
                                            &gv, cell_size, center, &gobj_list);
-
-    meep::structure *s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
-                                             use_anisotropic_averaging, tol, maxeval);
+    meep::structure *s;
+    if (existing_s) {
+      s = existing_s;
+    }
+    else {
+      s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
+                              use_anisotropic_averaging, tol, maxeval);
+    }
     s->shared_chunks = true;
 
     if (set_materials) {
       meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
                                              maxeval, _ensure_periodicity, _default_material,
                                              alist, extra_materials);
+    }
+
+    if (meep::verbosity > 1 && !split_chunks_evenly && set_materials) {
+      int num_procs = meep::count_processors();
+      double *costs = new double[num_procs];
+      for (int i = 0; i < num_procs; i++)
+        costs[i] = 0;
+      for (int i = 0; i < s->num_chunks; i++)
+        costs[s->chunks[i]->n_proc()] += s->chunks[i]->gv.get_cost();
+      double sum = 0, sumsq = 0;
+      master_printf("estimated costs per process: ");
+      for (int i = 0; i < num_procs; i++) {
+        double cost = costs[i];
+        sum += cost;
+        sumsq += cost*cost;
+        master_printf("%g%s", cost, i == num_procs - 1 ? "\n" : ", ");
+      }
+      delete[] costs;
+      double mean = sum / num_procs;
+      double stddev = sumsq - num_procs * mean * mean;
+      stddev = num_procs == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (num_procs - 1));
+      master_printf("estimated cost mean = %g, stddev = %g\n", mean, stddev);
     }
 
     // Return params to default state

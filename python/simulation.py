@@ -1044,15 +1044,21 @@ class Simulation(object):
             print("STATS: num_cores: {}".format(mp.count_processors()))
             sys.exit(0)
 
-        dft_data_list, pml_vols1, pml_vols2, pml_vols3, absorber_vols = self._make_fragment_lists(gv)
+        fragment_vols = self._make_fragment_lists(gv)
+        self.dft_data_list = fragment_vols[0]
+        self.pml_vols1 = fragment_vols[1]
+        self.pml_vols2 = fragment_vols[2]
+        self.pml_vols3 = fragment_vols[3]
+        self.absorber_vols = fragment_vols[4]
+        self.gv = gv
 
         self.structure = mp.create_structure_and_set_materials(
             self.cell_size,
-            dft_data_list,
-            pml_vols1,
-            pml_vols2,
-            pml_vols3,
-            absorber_vols,
+            self.dft_data_list,
+            self.pml_vols1,
+            self.pml_vols2,
+            self.pml_vols3,
+            self.absorber_vols,
             gv,
             br,
             sym,
@@ -1068,7 +1074,8 @@ class Simulation(object):
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False if self.chunk_layout else True
+            False if self.chunk_layout else True,
+            None
        )
 
         if self.chunk_layout:
@@ -1084,17 +1091,30 @@ class Simulation(object):
 
         absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
-        mp.set_materials_from_geometry(
-            self.structure,
-            geometry if geometry is not None else self.geometry,
-            self.geometry_center,
+        self.structure = mp.create_structure_and_set_materials(
+            self.cell_size,
+            self.dft_data_list,
+            self.pml_vols1,
+            self.pml_vols2,
+            self.pml_vols3,
+            self.absorber_vols,
+            self.gv,
+            mp.boundary_region(),
+            mp.symmetry(),
+            self.num_chunks,
+            self.Courant,
             self.eps_averaging,
             self.subpixel_tol,
             self.subpixel_maxeval,
-            self.ensure_periodicity,
+            geometry if geometry is not None else self.geometry,
+            self.geometry_center,
+            self.ensure_periodicity and not not self.k_point,
             default_material if default_material else self.default_material,
             absorbers,
-            self.extra_materials
+            self.extra_materials,
+            self.split_chunks_evenly,
+            True,
+            self.structure
         )
 
     def dump_structure(self, fname):
