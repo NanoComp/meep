@@ -1205,7 +1205,7 @@
 
 (define* (quiet #:optional (quiet? true))
   (verbosity (if quiet? 0 1)))
-(if verbose? (verbosity 2))
+(if (and (defined? 'verbose) verbose?) (verbosity 2))
 
 ; ****************************************************************
 ; get-eigenmode-coefficients
