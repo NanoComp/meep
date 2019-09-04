@@ -376,19 +376,22 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = NULL; }
 
   if (meep::am_master()) {
+    int num_print = meep::verbosity > 2 ? geometry.num_items : std::min(geometry.num_items, meep::verbosity > 0 ? 10 : 0);
     for (int i = 0; i < geometry.num_items; ++i) {
 
-      if (meep::verbosity > 0) display_geometric_object_info(5, geometry.items[i]);
+      if (i < num_print) display_geometric_object_info(5, geometry.items[i]);
 
       medium_struct *mm;
       if (is_medium(geometry.items[i].material, &mm)) {
         check_offdiag(mm);
-        if (meep::verbosity > 0)
+        if (i < num_print)
           master_printf("%*sdielectric constant epsilon diagonal "
                         "= (%g,%g,%g)\n",
                         5 + 5, "", mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       }
     }
+    if (num_print < geometry.num_items && meep::verbosity > 0)
+      master_printf("%*s...(+ %d objects not shown)...\n", 5, "", geometry.num_items - num_print);
   }
 
   geom_fix_object_list(geometry);
