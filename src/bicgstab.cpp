@@ -158,7 +158,7 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
   double resid;
   while ((resid = norm2(n, r[0])) > tol * bnrm) {
     ++iter;
-    if (verbosity > 0 && wall_time() > last_output_wall_time + MEEP_MIN_OUTPUT_TIME) {
+    if (!quiet && wall_time() > last_output_wall_time + MEEP_MIN_OUTPUT_TIME) {
       master_printf("residual[%d] = %g\n", iter, resid / bnrm);
       last_output_wall_time = wall_time();
     }
@@ -220,7 +220,7 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
     }
   }
 
-  if (verbosity > 0) master_printf("final residual = %g\n", norm2(n, r[0]) / bnrm);
+  if (!quiet) master_printf("final residual = %g\n", norm2(n, r[0]) / bnrm);
 
 finish:
   delete[] sigma;
