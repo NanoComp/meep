@@ -70,6 +70,7 @@ TESTS =                                   \
     $(TEST_DIR)/ring.py                   \
     $(TEST_DIR)/ring_cyl.py               \
     $(TEST_DIR)/simulation.py             \
+    $(TEST_DIR)/special_kz.py             \
     $(TEST_DIR)/source.py                 \
     $(TEST_DIR)/user_defined_material.py  \
     $(TEST_DIR)/visualization.py          \

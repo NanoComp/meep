@@ -481,9 +481,9 @@ Yes. You can use the [`set_boundary`](Python_User_Interface.md#field-computation
 
 ### How do I model a 2d structure involving an out-of-plane wavevector?
 
-To model e.g., fiber waveguides with 2d claddings, diffractive binary gratings with arbitrary incident planewaves in 3d, etc. in Cartesian coordinates, you would create a 2d cell in the $xy$ plane and specify a `k_point` with *non-zero* component in $z$. The resulting 3d simulation involves all electromagnetic fields (rather than a 2d simulation which involves a subset of the fields determined by the polarization of the current source).
+To model e.g., fiber waveguides with 2d claddings, diffractive binary gratings with arbitrary incident planewaves in 3d, etc. in Cartesian coordinates, you would create a 2d cell in the $xy$ plane and specify a `k_point` with *non-zero* component in $z$. The resulting 3d simulation involves all electromagnetic fields (rather than a 2d simulation which involves a subset of the fields determined by the polarization of the current source). Performance can be improved by specifying `special_kz=True` in the `Simulation` constructor; this results in a 2d simulation with real rather than complex fields (as long as the $x$ and $y$ components of `k_point` are zero).
 
-Note: [mode decomposition](Python_Tutorials/Mode_Decomposition.md) is *not* currently supported for this use case (Issues [#291](https://github.com/NanoComp/meep/issues/291), [#604](https://github.com/NanoComp/meep/issues/604)).
+Note: [mode decomposition](Python_Tutorials/Mode_Decomposition.md) is *not* yet currently supported for this use case (Issues [#291](https://github.com/NanoComp/meep/issues/291), [#604](https://github.com/NanoComp/meep/issues/604)).
 
 ### Can Meep model electrostatic effects?
 

@@ -566,6 +566,7 @@ class Simulation(object):
                  default_material=mp.Medium(),
                  m=0,
                  k_point=False,
+                 special_kz=False,
                  extra_materials=[],
                  material_function=None,
                  epsilon_func=None,
@@ -606,7 +607,7 @@ class Simulation(object):
         self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
-        self.special_kz = False
+        self.special_kz = special_kz
         self.k_point = k_point
         self.fields = None
         self.structure = None
