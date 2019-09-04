@@ -64,6 +64,10 @@ Specifies the computational grid resolution in pixels per distance unit. Default
 —
 If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a `vector3`, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. A non-zero `vector3` will produce complex fields. The `k-point` vector is specified in Cartesian coordinates in units of 2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k-points` through its function `reciprocal->cartesian`.
 
+**`special-kz?` [`boolean`]**
+—
+By default, a 2d cell (i.e., `dimensions` is `2`) combined with a `k-point` that has a *non-zero* component in $z$ results in a 3d simulation with complex fields. However, by setting `special-kz?` to `true`, Meep will use a 2d cell and real fields (if the $x$ and $y$ components of `k-point` are zero) which improves performance.
+
 **`ensure-periodicity` [`boolean`]**
 —
 If `true` (the default) *and* if the boundary conditions are periodic (`k-point` is not `false`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the cell.
