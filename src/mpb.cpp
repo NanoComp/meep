@@ -279,6 +279,10 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     empty_dim[2] = true;
   }
 
+  // special case: in a 2d cell, fields::beta is kz
+  if (gv.dim == D2)
+    kpoint.set_direction(Z, beta);
+
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1, 1, 1};
   mpb_real k[3] = {0, 0, 0}, kcart[3] = {0, 0, 0};
