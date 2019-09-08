@@ -576,6 +576,7 @@ public:
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
   susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
+  double cost;  // The cost of this chunk's grid_volume as computed by split_by_cost and fragment_stats
 
   int refcount; // reference count of objects using this structure_chunk
 
@@ -783,6 +784,7 @@ public:
   double get_eps(const vec &loc, double omega = 0) const;
   double get_mu(const vec &loc, double omega = 0) const;
   double max_eps() const;
+  double estimated_cost(int process = my_rank());
 
   friend class boundary_region;
 
