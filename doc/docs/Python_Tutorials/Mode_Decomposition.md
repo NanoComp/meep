@@ -286,6 +286,14 @@ In the limit where the grating periodicity is much larger than the wavelength an
 
 To convert the diffraction efficiency into transmittance in the *x* direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1 (2.9°), 3 (8.6°), 5 (14.5°), and 7 (20.5°). The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
+Finally, by investigating the transmittance of the zeroth order (at a wavelength of 0.5 μm) in the limit as the grating periodicity approaches zero, we can demonstrate the breakdown of the scalar theory in the wavelength regime which can only be solved using a full-wave method. When the periodicity is much less than the wavelength (i.e., subwavelength), the transmittance can again be solved analytically using effective-medium theory involving a three-layer structure: a layer of the averaged ε (mean or harmonic mean depending on the polarization E<sub>z</sub> or H<sub>z</sub>) sandwiched between the glass substrate and air. Results are shown in the following figure.
+
+<center>
+![](../images/grating_0th_order_tran.png)
+</center>
+
+Starting around a grating periodicity of 1.0 μm, the transmittance is no longer zero and increases rapidly with decreasing periodicity. As shown in the inset, for periodicities less than 0.5 μm, the transmittance converges to its asymptotic limit determined by the effective-medium theory: 0.99744 for the E<sub>z</sub> and 0.99057 for the H<sub>z</sub> polarization. The weak polarization dependence is due to the low index contrast. The oscillations in the data are real and *not* an artifact of the discretization.
+
 ### Reflectance and Transmittance Spectra for Planewave at Oblique Incidence
 
 As an additional demonstration of the mode-decomposition feature, the reflectance and transmittance of all diffracted orders for any grating with no material absorption and a planewave source incident at any arbitrary angle and wavelength must necessarily sum to unity. Also, the total reflectance and transmittance must be equivalent to values computed using the Poynting flux. This demonstration is somewhat similar to the [single-mode waveguide example](#reflectance-of-a-waveguide-taper).
