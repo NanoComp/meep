@@ -220,7 +220,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   if (by_cost) {
     // Save cost of each chunk's grid_volume
     for (int i = 0; i < num_chunks; ++i) {
-      chunks[i]->cost = chunk_volumes[i].get_cost();
+      chunks[i]->cost = chunks[i]->gv.get_cost();
     }
   }
 }
