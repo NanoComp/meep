@@ -185,6 +185,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
   std::vector<grid_volume> chunk_volumes;
 
+  bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
@@ -200,6 +201,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     if (verbosity > 0 && adjusted_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
+    by_cost = true;
   }
 
   // Break off PML regions into their own chunks
@@ -214,6 +216,23 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     }
   }
   check_chunks();
+
+  if (by_cost) {
+    // Save cost of each chunk's grid_volume
+    for (int i = 0; i < num_chunks; ++i) {
+      chunks[i]->cost = chunks[i]->gv.get_cost();
+    }
+  }
+}
+
+double structure::estimated_cost(int process) {
+  double proc_cost = 0;
+  for (int i = 0; i < num_chunks; i++) {
+    if (chunks[i]->n_proc() == process) {
+      proc_cost += chunks[i]->cost;
+    }
+  }
+  return proc_cost;
 }
 
 void boundary_region::apply(structure *s) const {
@@ -755,6 +774,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   gv = o->gv;
   the_proc = o->the_proc;
   the_is_mine = my_rank() == n_proc();
+  cost = o->cost;
   FOR_COMPONENTS(c) {
     if (is_mine() && o->chi3[c]) {
       chi3[c] = new realnum[gv.ntot()];
@@ -934,7 +954,7 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
 
 structure_chunk::structure_chunk(const grid_volume &thegv, const volume &vol_limit, double Courant,
                                  int pr)
-    : Courant(Courant), v(thegv.surroundings() & vol_limit) {
+    : Courant(Courant), v(thegv.surroundings() & vol_limit), cost(0.0) {
   refcount = 1;
   pml_fmin = 0.2;
   FOR_FIELD_TYPES(ft) { chiP[ft] = NULL; }

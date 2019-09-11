@@ -1086,6 +1086,9 @@ class Simulation(object):
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 
+    def get_estimated_costs(self):
+        return [self.structure.estimated_cost(i) for i in range(mp.count_processors())]
+
     def set_materials(self, geometry=None, default_material=None):
         if self.fields:
             self.fields.remove_susceptibilities()
