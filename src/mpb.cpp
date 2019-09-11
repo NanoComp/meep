@@ -315,6 +315,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       s[1] = eig_vol.in_direction(Y);
       kcart[0] = kpoint.in_direction(X);
       kcart[1] = kpoint.in_direction(Y);
+      kcart[2] = beta; // special_kz feature
       empty_dim[2] = true;
       break;
     case D1:
@@ -325,8 +326,6 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       break;
     default: abort("unsupported dimensionality in add_eigenmode_source");
   }
-
-  if (verbosity > 1) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
 
   double kcart_len = sqrt(dot_product(kcart, kcart));
 
@@ -354,6 +353,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     for (int j = 0; j < 3; ++j)
       G[i][j] /= GdotR;
   }
+
+  if (verbosity > 1) master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
 
   maxwell_data *mdata;
   if (!user_mdata || *user_mdata == NULL) {
@@ -383,7 +384,12 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   if (d == NO_DIRECTION) {
     for (int i = 0; i < 3; ++i)
       kdir[i] = kcart[i] / kcart_len;
-    kmatch = kcart_len;
+    if (gv.dim == D2) {
+      kdir[2] = 0; // beta is fixed
+      kmatch = sqrt(kcart[0]*kcart[0] + kcart[1]*kcart[1]);
+    }
+    else
+      kmatch = kcart_len;
   }
   else {
     kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
@@ -398,6 +404,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
     if (d == NO_DIRECTION) {
       for (int i = 0; i < 3; ++i)
         k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
+      if (gv.dim == D2) k[2] = beta;
     }
     else {
       k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
@@ -491,6 +498,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
         if (d == NO_DIRECTION) {
           for (int i = 0; i < 3; ++i)
             k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
+          if (gv.dim == D2) k[2] = beta;
         }
         else {
           k[d - X] = kmatch * R[d - X][d - X];
