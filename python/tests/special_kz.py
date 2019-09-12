@@ -131,7 +131,7 @@ class TestSpecialKz(unittest.TestCase):
         mode1_flux = abs(res.alpha[0,0,0])**2
         mode2_flux = abs(res.alpha[1,0,0])**2
 
-        mode1_frac = 0.995
+        mode1_frac = 0.992
         self.assertGreater(mode1_flux/total_flux, mode1_frac)
         self.assertLess(mode2_flux/total_flux, 1-mode1_frac)
 
