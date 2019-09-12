@@ -92,5 +92,48 @@ class TestSpecialKz(unittest.TestCase):
         self.assertAlmostEqual(Rmeep_kz,Rfres,places=2)
         self.assertLess(t_kz,t_no_kz)
 
+    def test_eigsrc_kz(self):
+        resolution = 30 # pixels/um
+        cell_size = mp.Vector3(14,14)
+        pml_layers = [mp.PML(thickness=2)]
+
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(mp.inf,1,mp.inf),
+                             material=mp.Medium(epsilon=12))]
+
+        fsrc = 0.3  # frequency of eigenmode or constant-amplitude source
+        bnum = 1    # band number of eigenmode
+        kz = 0.2    # fixed out-of-plane wavevector component
+
+        sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc),
+                                      center=mp.Vector3(),
+                                      size=mp.Vector3(y=14),
+                                      eig_band=bnum,
+                                      eig_parity=mp.EVEN_Y,
+                                      eig_match_freq=True)]
+
+        sim = mp.Simulation(cell_size=cell_size,
+                            resolution=resolution,
+                            boundary_layers=pml_layers,
+                            sources=sources,
+                            geometry=geometry,
+                            symmetries=[mp.Mirror(mp.Y)],
+                            k_point=mp.Vector3(z=kz),
+                            special_kz=True)
+
+        tran = sim.add_flux(fsrc, 0, 1, mp.FluxRegion(center=mp.Vector3(x=5), size=mp.Vector3(y=14)))
+        sim.run(until_after_sources=50)
+        res = sim.get_eigenmode_coefficients(tran,
+                                             [1,2],
+                                             eig_parity=mp.EVEN_Y)
+
+        total_flux = mp.get_fluxes(tran)[0]
+        mode1_flux = abs(res.alpha[0,0,0])**2
+        mode2_flux = abs(res.alpha[1,0,0])**2
+
+        mode1_frac = 0.99
+        self.assertGreater(mode1_flux/total_flux, mode1_frac)
+        self.assertLess(mode2_flux/total_flux, 1-mode1_frac)
+
 if __name__ == '__main__':
     unittest.main()
