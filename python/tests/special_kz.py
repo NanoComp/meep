@@ -93,7 +93,7 @@ class TestSpecialKz(unittest.TestCase):
         self.assertLess(t_kz,t_no_kz)
 
     def test_eigsrc_kz(self):
-        resolution = 30 # pixels/μm
+        resolution = 30 # pixels/um
         cell_size = mp.Vector3(14,14)
         pml_layers = [mp.PML(thickness=2)]
 
