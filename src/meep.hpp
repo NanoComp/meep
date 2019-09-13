@@ -1889,6 +1889,7 @@ public:
   // time.cpp
   void am_now_working_on(time_sink);
   void finished_working();
+  void reset_timers();
 };
 
 class flux_vol {
