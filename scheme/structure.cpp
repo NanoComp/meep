@@ -138,7 +138,11 @@ vector3 vec_to_vector3(const meep::vec &pt) {
 meep::vec vector3_to_vec(const vector3 v3) {
   switch (dim) {
     case meep::D1: return meep::vec(v3.z);
-    case meep::D2: return meep::vec(v3.x, v3.y);
+    case meep::D2: {
+      meep::vec v(v3.x, v3.y);
+      v.set_direction(meep::Z, v3.z); // for special_kz handling
+      return v;
+    }
     case meep::D3: return meep::vec(v3.x, v3.y, v3.z);
     case meep::Dcyl: return meep::veccyl(v3.x, v3.z);
     default: meep::abort("unknown dimensionality in vector3_to_vec");
