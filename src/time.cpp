@@ -41,6 +41,16 @@ void fields::am_now_working_on(time_sink s) {
   working_on = s;
 }
 
+void fields::reset_timers() {
+  for (int i = 0; i < MEEP_TIMING_STACK_SZ; ++i)
+    was_working_on[i] = Other;
+  working_on = Other;
+  for (int i = 0; i <= Other; ++i)
+    times_spent[i] = 0;
+  last_wall_time = -1;
+  am_now_working_on(Other);
+}
+
 double fields::time_spent_on(time_sink s) { return times_spent[s]; }
 
 double fields::mean_time_spent_on(time_sink s) {
