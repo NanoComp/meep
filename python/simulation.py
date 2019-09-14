@@ -68,9 +68,7 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
         if is_cylindrical:
             return mp.veccyl(v3.x, v3.z)
         else:
-            v = mp.vec(v3.x, v3.y)
-            v.set_direction(mp.Z, v3.z) # for special_kz handling
-            return v
+            return mp.vec(v3.x, v3.y)
     elif dims == 3:
         return mp.vec(v3.x, v3.y, v3.z)
     else:
