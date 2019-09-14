@@ -173,8 +173,10 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
         }
       }
     }
-    if (gv.dim == D2 && beta != 0 && there->in_direction(Z) != 0) // special_kz handling
-      *phase *= std::polar(1.0, (2*pi/a)*beta * there->in_direction(Z));
+  }
+  if (gv.dim == D2 && there->in_direction(Z) != 0) { // special_kz handling
+    *phase *= std::polar(1.0, (pi/a)*beta * there->in_direction(Z));
+    there->set_direction(Z, 0);
   }
   return user_volume.owns(*there);
 }
