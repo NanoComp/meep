@@ -1639,6 +1639,7 @@ int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
 meep::ndim fragment_stats::dims = meep::D1;
 geometric_object_list fragment_stats::geom = {};
+geom_box_tree fragment_stats::geom_tree = NULL;
 std::vector<dft_data> fragment_stats::dft_data_list;
 std::vector<meep::volume> fragment_stats::pml_1d_vols;
 std::vector<meep::volume> fragment_stats::pml_2d_vols;
@@ -1706,6 +1707,7 @@ fragment_stats compute_fragment_stats(
   geom_box box = make_box_from_cell(cell_size);
   fragment_stats stats = init_stats(box, tol, maxeval, gv);
   stats.compute();
+  fragment_stats::reset();
   return stats;
 }
 
@@ -1715,6 +1717,13 @@ fragment_stats::fragment_stats(geom_box &bx)
       num_2d_pml_pixels(0), num_3d_pml_pixels(0), num_dft_pixels(0), num_pixels_in_box(0), box(bx) {
 
   num_pixels_in_box = get_pixels_in_box(&bx);
+}
+
+void fragment_stats::reset() {
+  resolution = 0;
+  split_chunks_evenly = false;
+  destroy_geom_box_tree(geom_tree);
+  geom_tree = NULL;
 }
 
 void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
@@ -1727,6 +1736,8 @@ void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, mee
   dimensions = meep::number_of_directions(gv->dim);
   geometry_lattice.size = cell_size;
   geom_fix_object_list(*geom_);
+  geom_box cell_box =  make_box_from_cell(cell_size);
+  geom_tree = create_geom_box_tree0(*geom_, cell_box);
 }
 
 bool fragment_stats::has_non_medium_material() {
@@ -1763,6 +1774,9 @@ void fragment_stats::compute_stats() {
     // If there is no geometry, count the default material for the whole fragment
     update_stats_from_material((material_type)default_material, num_pixels_in_box);
   }
+
+  geom_box_tree current_tree = geom_tree;
+  std::vector<geometric_object*> potential_objs_in_box;
 
   for (int i = 0; i < geom.num_items; ++i) {
     geometric_object *go = &geom.items[i];
