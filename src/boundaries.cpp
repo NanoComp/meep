@@ -154,7 +154,8 @@ inline bool fields::on_metal_boundary(const ivec &here) {
 
 bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) const {
   // Check if a translational symmetry is needed to bring the point in...
-  if (!user_volume.owns(*there)) FOR_DIRECTIONS(d) {
+  if (!user_volume.owns(*there)) {
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
       if (boundaries[High][d] == Periodic &&
           there->in_direction(d) <= user_volume.little_corner().in_direction(d)) {
         while (there->in_direction(d) <= user_volume.little_corner().in_direction(d)) {
@@ -172,6 +173,7 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
         }
       }
     }
+  }
   return user_volume.owns(*there);
 }
 
