@@ -72,7 +72,7 @@ The following are the parameters:
 
 + `coeffs` is a user-allocated array of type `std::complex<double>` (shortened hereafter to `cdouble`) of length `2*num_freqs*num_bands` where `num_freqs` is the number of frequencies stored in the `flux` object (equivalent to `flux->Nfreq`) and `num_bands` is the length of the `bands` input array. The expansion coefficients for the mode with frequency `nf` and band index `nb`  are stored sequentially as α$^+$, α$^-$ starting at slot `2*nb*num_freqs+nf` of this array
 
-+ `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands.` On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
++ `vgrp` is an optional user-allocated `double` array of length `num_freqs*num_bands`. On return, `vgrp[nb*num_freqs + nf]` is the group velocity of the mode with frequency `nf` and band index `nb.` If you do not need this information, simply pass `NULL` for this parameter.
 
 + `user_kpoint_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
 
