@@ -2,6 +2,7 @@ from __future__ import division
 
 import unittest
 import meep as mp
+import cmath
 import math
 from time import time
 
@@ -134,6 +135,15 @@ class TestSpecialKz(unittest.TestCase):
         mode1_frac = 0.99
         self.assertGreater(mode1_flux/total_flux, mode1_frac)
         self.assertLess(mode2_flux/total_flux, 1-mode1_frac)
+
+        d = 3.5
+        ez1 = sim.get_field_point(mp.Ez, mp.Vector3(2.3,-5.7,4.8))
+        ez2 = sim.get_field_point(mp.Ez, mp.Vector3(2.3,-5.7,4.8+d))
+        ratio_ez = ez2/ez1
+        phase_diff = cmath.exp(1j*2*cmath.pi*kz*d)
+        self.assertAlmostEqual(ratio_ez.real,phase_diff.real,places=10)
+        self.assertAlmostEqual(ratio_ez.imag,phase_diff.imag,places=10)
+
 
 if __name__ == '__main__':
     unittest.main()
