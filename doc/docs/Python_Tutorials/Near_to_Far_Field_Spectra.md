@@ -530,9 +530,128 @@ plt.show()
 
 For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with finite angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which, along with the diffraction efficiency, can be computed analytically using scalar theory as described in [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). As an additional validation of the simulation results, the ratio of any two diffraction peaks p<sub>a</sub>/p<sub>b</sub> (a,b = 1,3,5,...) is consistent with that of its diffraction efficiencies: b<sup>2</sup>/a<sup>2</sup>.
 
-Finally, we verify that the error in `add_near2far` &mdash; defined as the L<sub>2</sub>-norm of the difference of the two far-field datasets from the unit- and super-cell calculations normalized by `nperiods` &mdash; is O(1/`nperiods`) by comparing results for three values of `nperiods`: 5, 10, and 20. The error values, which are displayed in the output in the line prefixed by `error:`, are: `0.0001195599054639075`, `5.981324591508146e-05`, and `2.989829913961854e-05`. The pairwise ratios of these errors is nearly 2 as expected (i.e., doubling `nperiods` results in halving the error).
+We verify that the error in `add_near2far` &mdash; defined as the L<sub>2</sub>-norm of the difference of the two far-field datasets from the unit- and super-cell calculations normalized by `nperiods` &mdash; is O(1/`nperiods`) by comparing results for three values of `nperiods`: 5, 10, and 20. The error values, which are displayed in the output in the line prefixed by `error:`, are: `0.0001195599054639075`, `5.981324591508146e-05`, and `2.989829913961854e-05`. The pairwise ratios of these errors is nearly 2 as expected (i.e., doubling `nperiods` results in halving the error).
 
 For a single process, the far-field calculation in both runs takes roughly the same amount of time. The wall-clock time is indicated by the `getting farfields` category of the `Field time usage` statistics displayed as part of the output after time stepping is complete. Time-stepping a supercell, however, which for `nperiods=20` is more than 41 times larger than the unit cell (because of the PML termination) results in a total wall-clock time that is more than 40% larger. The slowdown is also due to the requirement of computing 41 times as many Fourier-transformed near fields. Thus, in the case of the unit-cell simulation, the reduced accuracy is a tradeoff for shorter runtime and less storage. In this example which involves multiple output wavelengths, the time for the far-field calculation can be reduced further on a single, shared-memory, multi-core machine via [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) by compiling Meep with OpenMP and specifying the environment variable `OMP_NUM_THREADS` to be an integer greater than one prior to execution.
+
+Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the spatial Fourier transform of the scattered (near) fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the Fourier-transformed fields at a given frequency ω from the two runs to obtain the scattered fields s(y). The spatial Fourier transform of the scattered fields is then computed in post processing: a(k) = ∫ s(y) exp(iky) dy, where |a(k)|² is the amplitude of the corresponding Fourier component. For a grating with periodicity Λ, we should expect to see peaks in the diffraction spectra at m/Λ for integers m (the total number of diffraction orders is determined by the wavelength).
+
+This is demonstrated in the script below for a binary grating with Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse. The grating structure is terminated with a flat-surface padding extending into the PML in order to give the scattered field space to decay at the edge of the cell. Results are shown for a finite grating with 5 and 20 periods.
+
+```py
+import meep as mp
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+
+resolution = 50         # pixels/μm
+
+dpml = 1.0              # PML thickness
+dsub = 3.0              # substrate thickness
+dpad = 3.0              # padding between grating and PML
+gp = 1.0                # grating periodicity
+gh = 0.5                # grating height
+gdc = 0.5               # grating duty cycle
+
+num_cells = 20
+gdc_list = [gdc for _ in range(num_cells)]
+
+wvl = 0.5               # center wavelength
+fcen = 1/wvl            # center frequency
+
+k_point = mp.Vector3()
+
+glass = mp.Medium(index=1.5)
+
+pml_layers = [mp.PML(thickness=dpml)]
+
+symmetries=[mp.Mirror(mp.Y)]
+
+sx = dpml+dsub+gh+dpad+dpml
+sy = dpml+dpad+num_cells*gp+dpad+dpml
+cell_size = mp.Vector3(sx,sy)
+
+src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub)
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                     component=mp.Ez,
+                     center=src_pt,
+                     size=mp.Vector3(y=sy-2*dpml))]
+
+geometry = [mp.Block(material=glass,
+                     size=mp.Vector3(dpml+dsub,mp.inf,mp.inf),
+                     center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub)))]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    k_point=k_point,
+                    sources=sources,
+                    symmetries=symmetries)
+
+mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad)
+near_fields = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, center=mon_pt, size=mp.Vector3(y=sy-2*dpml))
+
+sim.run(until_after_sources=100)
+
+flat_dft = sim.get_dft_array(near_fields, mp.Ez, 0)
+
+sim.reset_meep()
+
+for j in range(num_cells):
+  geometry.append(mp.Block(material=glass,
+                           size=mp.Vector3(gh,gdc_list[j]*gp,mp.inf),
+                           center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,-0.5*sy+dpml+dpad+(j+0.5)*gp)))
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    geometry=geometry,
+                    k_point=k_point,
+                    sources=sources,
+                    symmetries=symmetries)
+
+near_fields = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, center=mon_pt, size=mp.Vector3(y=sy-2*dpml))
+
+sim.run(until_after_sources=100)
+
+grating_dft = sim.get_dft_array(near_fields, mp.Ez, 0)
+
+scattered_field = grating_dft-flat_dft
+FT_scattered_field = np.fft.fftshift(np.fft.fft(scattered_field))
+
+[x,y,z,w] = sim.get_array_metadata(dft_cell=near_fields)
+ky = np.fft.fftshift(np.fft.fftfreq(len(scattered_field), 1/resolution))
+
+if mp.am_master():
+  plt.subplot(2,1,1)
+  plt.title("finite grating with {} periods".format(num_cells))
+  plt.plot(y,np.abs(scattered_field)**2,'bo-')
+  plt.gca().get_yaxis().set_ticks([])
+  plt.xlabel("y (μm)")
+  plt.ylabel("scattered field\namplitude (a.u.)")
+
+  plt.subplot(2,1,2)
+  plt.plot(ky,np.abs(FT_scattered_field)**2,'ro-')
+  plt.gca().get_yaxis().set_ticks([])
+  plt.xlabel(r'wavevector k$_y$, 2π (μm)$^{-1}$')
+  plt.ylabel("diffraction spectra of\nscattered field (a.u.)")
+  plt.gca().set_xlim([-3, 3])
+
+  plt.subplots_adjust(hspace=0.3)
+  plt.tight_layout(pad=1.0)
+  plt.show()
+```
+
+<center>
+![](../images/finite_grating_nperiods5.png)
+</center>
+
+<center>
+![](../images/finite_grating_nperiods20.png)
+</center>
+
+The scattered field amplitude profile (the top figure in each of the two sets of results) shows that the fields are nonzero above the grating (which is positioned at the left edge of the figure in the region indicated by the bright spots) and decay to zero away from the grating. The second figure below the field profile is the scattered field amplitude along a 1d slice at a distance 1.5 μm above the grating. Note that the fields are decaying away at the edges due to the flat-surface padding. The third figure is the spatial Fourier transform of the fields from the 1d slice. As expected, there are only three diffraction orders present at k<sub>y</sub>=m/Λ for m=0, ±1, ±2. These peaks are becoming sharper as the number of grating periods increases.
 
 Far-Field Profile of a Cavity
 -----------------------------
