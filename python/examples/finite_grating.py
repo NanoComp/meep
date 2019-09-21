@@ -83,20 +83,21 @@ FT_scattered_field = np.fft.fftshift(np.fft.fft(scattered_field))
 ky = np.fft.fftshift(np.fft.fftfreq(len(scattered_field), 1/resolution))
 
 if mp.am_master():
+  plt.figure(dpi=150)
+  plt.subplots_adjust(hspace=0.3)
+
   plt.subplot(2,1,1)
-  plt.title("finite grating with {} periods".format(num_cells))
   plt.plot(y,np.abs(scattered_field)**2,'bo-')
   plt.gca().get_yaxis().set_ticks([])
   plt.xlabel("y (μm)")
-  plt.ylabel("scattered field\namplitude (a.u.)")
+  plt.ylabel("field amplitude (a.u.)")
 
   plt.subplot(2,1,2)
   plt.plot(ky,np.abs(FT_scattered_field)**2,'ro-')
   plt.gca().get_yaxis().set_ticks([])
   plt.xlabel(r'wavevector k$_y$, 2π (μm)$^{-1}$')
-  plt.ylabel("diffraction spectra of\nscattered field (a.u.)")
+  plt.ylabel("Fourier transform (a.u.)")
   plt.gca().set_xlim([-3, 3])
 
-  plt.subplots_adjust(hspace=0.3)
   plt.tight_layout(pad=1.0)
   plt.show()

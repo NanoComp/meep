@@ -534,9 +534,9 @@ We verify that the error in `add_near2far` &mdash; defined as the L<sub>2</sub>-
 
 For a single process, the far-field calculation in both runs takes roughly the same amount of time. The wall-clock time is indicated by the `getting farfields` category of the `Field time usage` statistics displayed as part of the output after time stepping is complete. Time-stepping a supercell, however, which for `nperiods=20` is more than 41 times larger than the unit cell (because of the PML termination) results in a total wall-clock time that is more than 40% larger. The slowdown is also due to the requirement of computing 41 times as many Fourier-transformed near fields. Thus, in the case of the unit-cell simulation, the reduced accuracy is a tradeoff for shorter runtime and less storage. In this example which involves multiple output wavelengths, the time for the far-field calculation can be reduced further on a single, shared-memory, multi-core machine via [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) by compiling Meep with OpenMP and specifying the environment variable `OMP_NUM_THREADS` to be an integer greater than one prior to execution.
 
-Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the spatial Fourier transform of the scattered (near) fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the Fourier-transformed fields at a given frequency ω from the two runs to obtain the scattered fields s(y). The spatial Fourier transform of the scattered fields is then computed in post processing: a(k) = ∫ s(y) exp(iky) dy, where |a(k)|² is the amplitude of the corresponding Fourier component. For a grating with periodicity Λ, we should expect to see peaks in the diffraction spectra at m/Λ for integers m (the total number of diffraction orders is determined by the wavelength).
+Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the (spatial) Fourier transform of the scattered (near) fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the (time) Fourier-transformed fields at a given frequency ω from the two runs to obtain the scattered fields s(y). The Fourier transform of the scattered fields is then computed in post processing: a(k) = ∫ s(y) exp(iky) dy, where |a(k)|² is the amplitude of the corresponding Fourier component. For a grating with periodicity Λ, we should expect to see peaks in the diffraction spectra at m/Λ for m=0, ±1, ±2, ... (the total number of diffraction orders is determined by the wavelength).
 
-This is demonstrated in the script below for a binary grating with Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse. The grating structure is terminated with a flat-surface padding extending into the PML in order to give the scattered field space to decay at the edge of the cell. Results are shown for a finite grating with 5 and 20 periods.
+This is demonstrated in the script below for a binary grating with Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse. The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell. Results are shown for a finite grating with 5 and 20 periods.
 
 ```py
 import meep as mp
@@ -624,21 +624,22 @@ FT_scattered_field = np.fft.fftshift(np.fft.fft(scattered_field))
 ky = np.fft.fftshift(np.fft.fftfreq(len(scattered_field), 1/resolution))
 
 if mp.am_master():
+  plt.figure(dpi=150)
+  plt.subplots_adjust(hspace=0.3)
+
   plt.subplot(2,1,1)
-  plt.title("finite grating with {} periods".format(num_cells))
   plt.plot(y,np.abs(scattered_field)**2,'bo-')
   plt.gca().get_yaxis().set_ticks([])
   plt.xlabel("y (μm)")
-  plt.ylabel("scattered field\namplitude (a.u.)")
+  plt.ylabel("field amplitude (a.u.)")
 
   plt.subplot(2,1,2)
   plt.plot(ky,np.abs(FT_scattered_field)**2,'ro-')
   plt.gca().get_yaxis().set_ticks([])
   plt.xlabel(r'wavevector k$_y$, 2π (μm)$^{-1}$')
-  plt.ylabel("diffraction spectra of\nscattered field (a.u.)")
+  plt.ylabel("Fourier transform (a.u.)")
   plt.gca().set_xlim([-3, 3])
 
-  plt.subplots_adjust(hspace=0.3)
   plt.tight_layout(pad=1.0)
   plt.show()
 ```
@@ -651,7 +652,7 @@ if mp.am_master():
 ![](../images/finite_grating_nperiods20.png)
 </center>
 
-The scattered field amplitude profile (the top figure in each of the two sets of results) shows that the fields are nonzero above the grating (which is positioned at the left edge of the figure in the region indicated by the bright spots) and decay to zero away from the grating. The second figure below the field profile is the scattered field amplitude along a 1d slice at a distance 1.5 μm above the grating. Note that the fields are decaying away at the edges due to the flat-surface padding. The third figure is the spatial Fourier transform of the fields from the 1d slice. As expected, there are only three diffraction orders present at k<sub>y</sub>=m/Λ for m=0, ±1, ±2. These peaks are becoming sharper as the number of grating periods increases.
+The scattered field amplitude profile (the top figure in each of the two sets of results) shows that the fields are nonzero above the grating (which is positioned at the left edge of the figure in the region indicated by the bright spots) and decay to zero away from the grating. The middle figure is the field amplitude along a 1d slice at a distance 1.5 μm above the grating (shown as the dotted green line in the top figure). Note that the fields are decaying away at the edges due to the flat-surface termination. The bottom figure is the Fourier transform of the fields from the 1d slice. As expected, there are only three diffraction orders present at k<sub>y</sub>=m/Λ for m=0, ±1, ±2. These peaks are becoming sharper as the number of grating periods increases.
 
 Far-Field Profile of a Cavity
 -----------------------------
