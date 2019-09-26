@@ -688,7 +688,7 @@ The simulation script is in [examples/finite_grating.ctl](https://github.com/Nan
 (output-dft grating-fields "grating")
 ```
 
-Results are plotted using Matlab/Octave from the two HDF5 files and shown for a finite grating with 5 and 20 periods.
+Results from the two HDF5 files are plotted using Matlab/Octave and shown for a finite grating with 5 and 20 periods.
 
 ```matlab
 resolution = 50;
