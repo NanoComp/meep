@@ -118,8 +118,7 @@ private:
   void compute_dft_stats();
   void compute_pml_stats();
   void compute_absorber_stats();
-  // TODO rename
-  void tree_search(geom_box_tree t, std::vector<double> &overlaps);
+  void compute_overlaps_from_tree(geom_box_tree t, std::vector<double> &overlaps);
 };
 
 fragment_stats
