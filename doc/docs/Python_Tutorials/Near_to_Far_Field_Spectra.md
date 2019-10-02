@@ -542,7 +542,7 @@ The simulation setup is shown in the schematic below. The binary grating has Λ 
 ![](../images/finite_grating_schematic.png)
 </center>
 
-The simulation script is in [examples/finite_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/finite_grating.py).
+The simulation script is in [examples/finite_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/finite_grating.py). The notebook is [examples/finite_grating.ipynb](https://github.com/NanoComp/meep/blob/master/python/examples/finite_grating.ipynb).
 
 ```py
 import meep as mp
