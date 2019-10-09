@@ -58,7 +58,7 @@ class TestFragmentStats(unittest.TestCase):
 
         gv = sim._create_grid_volume(False)
         stats = sim._compute_fragment_stats(gv)
-
+        stats.print_stats()
         return stats
 
     def _test_1d(self, sym, pml=[]):
@@ -308,17 +308,17 @@ class TestFragmentStats(unittest.TestCase):
         self.assertEqual(fs.num_pixels_in_box, 1000)
 
     def test_geom_box_tree(self):
-
         block_size = mp.Vector3(3, 3)
-        mat = mp.Medium(index=13)
+        mat = mp.Medium(index=13, E_chi2_diag=mp.Vector3(1, 1))
         geometry = [
             mp.Block(size=block_size, center=mp.Vector3(-3, 3), material=mat),
             mp.Block(size=block_size, center=mp.Vector3(3, 3), material=mat),
             mp.Block(size=block_size, center=mp.Vector3(3, -3), material=mat),
-            mp.Block(size=block_size, center=mp.Vector3(-3, -3), material=mat)
+            mp.Block(size=block_size, center=mp.Vector3(-3, -3), material=mat),
+            mp.Block(size=mp.Vector3(9, 1.5), center=mp.Vector3(0, 0), material=mat)
         ]
         fs = self.get_fragment_stats(mp.Vector3(), mp.Vector3(9, 9), 2, geom=geometry)
-        self.check_stats(fs, 32400, 0, 0, 0, 0)
+        self.check_stats(fs, 8100, 0, 9900, 0, 0)
         self.assertEqual(fs.num_pixels_in_box, 8100)
 
 

@@ -118,7 +118,7 @@ private:
   void compute_dft_stats();
   void compute_pml_stats();
   void compute_absorber_stats();
-  void compute_overlaps_from_tree(geom_box_tree t, std::vector<double> &overlaps);
+  void compute_overlaps_from_tree(geom_box_tree t, bool &anisotropic_pixels_already_added);
 };
 
 fragment_stats
