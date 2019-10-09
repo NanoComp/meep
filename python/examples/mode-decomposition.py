@@ -3,14 +3,14 @@
 import meep as mp
 import matplotlib.pyplot as plt
 
-resolution = 61   # pixels/μm
+resolution = 25   # pixels/μm
 
 w1 = 1.0          # width of waveguide 1
 w2 = 2.0          # width of waveguide 2
 Lw = 10.0         # length of waveguides 1 and 2
 
 # lengths of waveguide taper
-Lts = [2**m for m in range(5)]
+Lts = [2**m for m in range(4)]
 
 dair = 3.0        # length of air region
 dpml_x = 6.0      # length of PML in x direction

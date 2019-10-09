@@ -19,20 +19,20 @@ The structure, which can be viewed as a [two-port network](https://en.wikipedia.
 
 The structure has mirror symmetry in the $y$ direction which can be exploited to reduce the computation size by a factor of two. This requires using `add_flux` rather than `add_mode_monitor` (which is not optimized for symmetry) and specifying the keyword argument `eig_parity=mp.ODD_Z+mp.EVEN_Y` in the call to `get_eigenmode_coefficients`. Alternatively, the waveguide could have been oriented along an arbitrary oblique direction which would require specifying `direction=mp.NO_DIRECTION` and `kpoint_func` as the waveguide axis. For an example, see [Tutorials/Eigenmode Source/Index-Guided Modes in a Ridge Waveguide](Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide).
 
-The simulation script is in [examples/mode-decomposition.py](https://github.com/NanoComp/meep/blob/master/python/examples/mode-decomposition.py).
+The simulation script is in [examples/mode-decomposition.py](https://github.com/NanoComp/meep/blob/master/python/examples/mode-decomposition.py). The notebook is [examples/mode-decomposition.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/mode-decomposition.ipynb).
 
 ```py
 import meep as mp
 import matplotlib.pyplot as plt
 
-resolution = 61   # pixels/μm
+resolution = 25   # pixels/μm
 
 w1 = 1.0          # width of waveguide 1
 w2 = 2.0          # width of waveguide 2
 Lw = 10.0         # length of waveguides 1 and 2
 
 # lengths of waveguide taper
-Lts = [2**m for m in range(5)]
+Lts = [2**m for m in range(4)]
 
 dair = 3.0        # length of air region
 dpml_x = 6.0      # length of PML in x direction
@@ -639,9 +639,9 @@ A schematic of the grating geometry is shown below. The grating is a 2d slab in 
 ![](../images/polarization_grating_schematic.png)
 </center>
 
-In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of λ=0.54 μm. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. As usual, this requires a separate normalization run to compute the power of the input planewave.
+In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of λ=0.54 μm. The linear polarization is in the *yz*-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to +k<sub>y</sub> + -k<sub>y</sub> (cosine) and +k<sub>y</sub> - -k<sub>y</sub> (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. Following usual practice, this requires a separate normalization run to compute the power of the input planewave.
 
-The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py).
+The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py). The notebook is [examples/polarization_grating.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/polarization_grating.ipynb).
 
 The main part of the script is the function `pol_grating` which computes the mode coefficients for a grating with thickness `d`, twisted-nematic rotation angle `ph`, and periodicity `gp`. The anisotropic permittivity of the grating is specified using the [material function](../Python_User_Interface.md#medium) `lc_mat` which involves a position-dependent rotation of the diagonal ε tensor about the *x*-axis. For φ=0°, the nematic director is oriented along the *z*-axis: E<sub>z</sub> has a larger permittivity than E<sub>y</sub> where the birefringence (Δn) is 0.159. The grating has a periodicity of Λ=6.5 μm in the *y* direction.
 

@@ -77,7 +77,7 @@ refl_flux = mp.get_fluxes(refl)
 R_meep = -1*np.divide(refl_flux,empty_flux)
 ```
 
-A plot of the reflectance spectrum based on the simulated data and the analytic Fresnel equations is generated using the Python script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
+A plot of the reflectance spectrum based on the simulated data and the analytic Fresnel equation is generated using the Python script below. The plot is shown in the accompanying figure. There is agreement between the simulated and analytic results. Note that the reflectance spectra is plotted as a function of wavelength, not frequency from which the Meep data is obtained. Thus, the data points are not equally spaced: the spacing is smaller at low wavelengths (high frequencies) than at high wavelengths (low frequencies).
 
 ```py
 freqs = mp.get_flux_freqs(refl)
