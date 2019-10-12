@@ -649,6 +649,9 @@ class Simulation(object):
         else:
             raise ValueError("Invalid kz_2d option: {} not in [complex, real/imag, 3d]".format(kz_2d))
 
+        if self.special_kz and self.k_point is False:
+            self.k_point = Vector3()
+
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based
     # on the settings in the Simulation instance. This method must be called on
