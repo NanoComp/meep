@@ -638,19 +638,18 @@ class Simulation(object):
         self.fragment_stats = None
         self._output_stats = os.environ.get('MEEP_STATS', None)
 
-        if kz_2d == "complex":
-            self.special_kz = True
-            self.force_complex_fields = True
-        elif kz_2d == "real/imag":
-            self.special_kz = True
-            self.force_complex_fields = False
-        elif kz_2d == "3d":
-            self.special_kz = False
-        else:
-            raise ValueError("Invalid kz_2d option: {} not in [complex, real/imag, 3d]".format(kz_2d))
-
-        if self.special_kz and self.k_point is False:
-            self.k_point = Vector3()
+        self.special_kz = False
+        if self.cell_size.z == 0 and self.k_point and self.k_point.z != 0:
+            if kz_2d == "complex":
+                self.special_kz = True
+                self.force_complex_fields = True
+            elif kz_2d == "real/imag":
+                self.special_kz = True
+                self.force_complex_fields = False
+            elif kz_2d == "3d":
+                self.special_kz = False
+            else:
+                raise ValueError("Invalid kz_2d option: {} not in [complex, real/imag, 3d]".format(kz_2d))
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based

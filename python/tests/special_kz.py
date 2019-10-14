@@ -87,17 +87,11 @@ class TestSpecialKz(unittest.TestCase):
         Rmeep_real_imag = self.refl_planar(theta, 'real/imag')
         t_real_imag = time() - start
 
-        start = time()
-        Rmeep_3d = self.refl_planar(theta, '3d')
-        t_3d = time() - start
-
         Rfres = Rfresnel(theta)
 
         self.assertAlmostEqual(Rmeep_complex,Rfres,places=2)
         self.assertAlmostEqual(Rmeep_real_imag,Rfres,places=2)
-        self.assertAlmostEqual(Rmeep_3d,Rfres,places=2)
         self.assertLess(t_real_imag,t_complex)
-        self.assertLess(t_complex,t_3d)
 
 
     def eigsrc_kz(self, kz_2d):
@@ -155,8 +149,6 @@ class TestSpecialKz(unittest.TestCase):
     def test_eigsrc_kz(self):
         self.eigsrc_kz("complex")
         self.eigsrc_kz("real/imag")
-        # This test takes over 15 minutes, which is probably too long for Travis
-        # self.eigsrc_kz("3d")
 
 
 if __name__ == '__main__':
