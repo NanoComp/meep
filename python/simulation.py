@@ -1097,6 +1097,16 @@ class Simulation(object):
 
         absorbers = [bl for bl in self.boundary_layers if type(bl) is Absorber]
 
+        # Since we are about to overwrite self.structure, SWIG will garbage
+        # collect it. However, that's not what we want because we're just
+        # passing self.structure into create_structure_and_set_materials for
+        # the "set_materials" half of that function. The return value will be
+        # the same structure we passed in. We tell SWIG to disown (and not
+        # delete) the current self.structure. SWIG will properly take ownership
+        # of the returned self.structure (which is the same structure as
+        # before).
+        self.structure.this.disown()
+
         self.structure = mp.create_structure_and_set_materials(
             self.cell_size,
             self.dft_data_list,
