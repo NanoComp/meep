@@ -192,11 +192,9 @@ int sym_matrix_positive_definite(symmetric_matrix *V) {
 static meep::ndim dim = meep::D3;
 void set_dimensions(int dims) {
   if (dims == CYLINDRICAL) {
-    dimensions = 2;
     dim = meep::Dcyl;
   }
   else {
-    dimensions = dims;
     dim = meep::ndim(dims - 1);
   }
 }
@@ -621,14 +619,15 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
   d1 = (pixel.high.x - pixel.low.x) * 0.5;
   d2 = (pixel.high.y - pixel.low.y) * 0.5;
   d3 = (pixel.high.z - pixel.low.z) * 0.5;
-  for (int i = 0; i < num_neighbors[dimensions - 1]; ++i) {
+  int dimension_index = meep::number_of_directions(dim) - 1;
+  for (int i = 0; i < num_neighbors[dimension_index]; ++i) {
     const geometric_object *o;
     material_type mat;
     vector3 q, shiftby;
     int id;
-    q.x = p.x + neighbors[dimensions - 1][i][0] * d1;
-    q.y = p.y + neighbors[dimensions - 1][i][1] * d2;
-    q.z = p.z + neighbors[dimensions - 1][i][2] * d3;
+    q.x = p.x + neighbors[dimension_index][i][0] * d1;
+    q.y = p.y + neighbors[dimension_index][i][1] * d2;
+    q.z = p.z + neighbors[dimension_index][i][2] * d3;
     o = object_of_point_in_tree(q, geometry_tree, &shiftby, &id);
     if ((id == id1 && vector3_equal(shiftby, shiftby1)) ||
         (id == id2 && vector3_equal(shiftby, shiftby2)))
@@ -1491,32 +1490,32 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
   meep::grid_volume gv = s->gv;
   double resolution = gv.a;
 
-  dimensions = 3;
+  int sim_dims = 3;
   vector3 size = {0.0, 0.0, 0.0};
   switch (s->user_volume.dim) {
     case meep::D1:
-      dimensions = 1;
+      sim_dims = 1;
       size.z = s->user_volume.nz() / resolution;
       break;
     case meep::D2:
-      dimensions = 2;
+      sim_dims = 2;
       size.x = s->user_volume.nx() / resolution;
       size.y = s->user_volume.ny() / resolution;
       break;
     case meep::D3:
-      dimensions = 3;
+      sim_dims = 3;
       size.x = s->user_volume.nx() / resolution;
       size.y = s->user_volume.ny() / resolution;
       size.z = s->user_volume.nz() / resolution;
       break;
     case meep::Dcyl:
-      dimensions = CYLINDRICAL;
+      sim_dims = CYLINDRICAL;
       size.x = s->user_volume.nr() / resolution;
       size.z = s->user_volume.nz() / resolution;
       break;
   };
 
-  set_dimensions(dimensions);
+  set_dimensions(sim_dims);
 
   geometry_lattice.size = size;
   geometry_edge = vector3_to_vec(size) * 0.5;
