@@ -400,7 +400,12 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 
   int length = PyList_Size(po);
   sl->num_items = length;
-  sl->items = new susceptibility_struct[length];
+  if (length > 0) {
+    sl->items = new susceptibility_struct[length];
+  }
+  else {
+    sl->items = NULL;
+  }
 
   for (int i = 0; i < length; i++) {
     if (!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &sl->items[i])) { return 0; }
@@ -826,9 +831,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
 
   for (int i = 0; i < length; i++) {
     PyObject *py_gobj = PyList_GetItem(po, i);
-    geometric_object go;
-    if (!py_gobj_to_gobj(py_gobj, &go)) { return 0; }
-    geometric_object_copy(&go, &l->items[i]);
+    if (!py_gobj_to_gobj(py_gobj, &l->items[i])) { return 0; }
   }
 
   return 1;
