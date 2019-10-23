@@ -568,7 +568,7 @@ class Simulation(object):
                  default_material=mp.Medium(),
                  m=0,
                  k_point=False,
-                 special_kz=False,
+                 kz_2d="complex",
                  extra_materials=[],
                  material_function=None,
                  epsilon_func=None,
@@ -609,7 +609,6 @@ class Simulation(object):
         self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
-        self.special_kz = special_kz
         self.k_point = k_point
         self.fields = None
         self.structure = None
@@ -638,6 +637,19 @@ class Simulation(object):
         self.collect_stats = collect_stats
         self.fragment_stats = None
         self._output_stats = os.environ.get('MEEP_STATS', None)
+
+        self.special_kz = False
+        if self.cell_size.z == 0 and self.k_point and self.k_point.z != 0:
+            if kz_2d == "complex":
+                self.special_kz = True
+                self.force_complex_fields = True
+            elif kz_2d == "real/imag":
+                self.special_kz = True
+                self.force_complex_fields = False
+            elif kz_2d == "3d":
+                self.special_kz = False
+            else:
+                raise ValueError("Invalid kz_2d option: {} not in [complex, real/imag, 3d]".format(kz_2d))
 
     # To prevent the user from having to specify `dims` and `is_cylindrical`
     # to Volumes they create, the library will adjust them appropriately based

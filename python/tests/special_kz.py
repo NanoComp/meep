@@ -8,7 +8,7 @@ from time import time
 
 class TestSpecialKz(unittest.TestCase):
 
-    def refl_planar(self, theta, special_kz):
+    def refl_planar(self, theta, kz_2d):
         resolution = 100  # pixels/um
 
         dpml = 1.0
@@ -30,7 +30,7 @@ class TestSpecialKz(unittest.TestCase):
                             boundary_layers=pml_layers,
                             sources=sources,
                             k_point=k_point,
-                            special_kz=special_kz,
+                            kz_2d=kz_2d,
                             resolution=resolution)
 
         refl_fr = mp.FluxRegion(center=mp.Vector3(-0.25*sx),
@@ -52,7 +52,7 @@ class TestSpecialKz(unittest.TestCase):
                             geometry=geometry,
                             sources=sources,
                             k_point=k_point,
-                            special_kz=special_kz,
+                            kz_2d=kz_2d,
                             resolution=resolution)
 
         refl = sim.add_flux(fcen,0,1,refl_fr)
@@ -80,20 +80,22 @@ class TestSpecialKz(unittest.TestCase):
         theta = math.radians(23)
 
         start = time()
-        Rmeep_no_kz = self.refl_planar(theta, False)
-        t_no_kz = time() - start
+        Rmeep_complex = self.refl_planar(theta, 'complex')
+        t_complex = time() - start
 
         start = time()
-        Rmeep_kz = self.refl_planar(theta, True)
-        t_kz = time() - start
+        Rmeep_real_imag = self.refl_planar(theta, 'real/imag')
+        t_real_imag = time() - start
 
         Rfres = Rfresnel(theta)
 
-        self.assertAlmostEqual(Rmeep_no_kz,Rfres,places=2)
-        self.assertAlmostEqual(Rmeep_kz,Rfres,places=2)
-        self.assertLess(t_kz,t_no_kz)
+        self.assertAlmostEqual(Rmeep_complex,Rfres,places=2)
+        self.assertAlmostEqual(Rmeep_real_imag,Rfres,places=2)
+        self.assertLess(t_real_imag,t_complex)
 
-    def test_eigsrc_kz(self):
+
+    def eigsrc_kz(self, kz_2d):
+        print(kz_2d)
         resolution = 30 # pixels/um
         cell_size = mp.Vector3(14,14)
         pml_layers = [mp.PML(thickness=2)]
@@ -120,7 +122,7 @@ class TestSpecialKz(unittest.TestCase):
                             geometry=geometry,
                             symmetries=[mp.Mirror(mp.Y)],
                             k_point=mp.Vector3(z=kz),
-                            special_kz=True)
+                            kz_2d=kz_2d)
 
         tran = sim.add_flux(fsrc, 0, 1, mp.FluxRegion(center=mp.Vector3(x=5), size=mp.Vector3(y=14)))
         sim.run(until_after_sources=50)
@@ -143,6 +145,10 @@ class TestSpecialKz(unittest.TestCase):
         phase_diff = cmath.exp(1j*2*cmath.pi*kz*d)
         self.assertAlmostEqual(ratio_ez.real,phase_diff.real,places=10)
         self.assertAlmostEqual(ratio_ez.imag,phase_diff.imag,places=10)
+
+    def test_eigsrc_kz(self):
+        self.eigsrc_kz("complex")
+        self.eigsrc_kz("real/imag")
 
 
 if __name__ == '__main__':
