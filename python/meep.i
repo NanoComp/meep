@@ -1578,6 +1578,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     atexit.register(report_elapsed_time)
 %}
 
+%newobject create_structure_and_set_materials;
 %inline %{
 
 size_t get_realnum_size() {
