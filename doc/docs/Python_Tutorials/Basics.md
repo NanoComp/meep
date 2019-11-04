@@ -299,7 +299,7 @@ geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
                      material=mp.Medium(epsilon=12))]
 ```
 
-The source is a `GaussianSource` instead of a `ContinuousSrc`, parameterized by a center frequency and a frequency width (the width of the Gaussian spectrum).
+The source is a `GaussianSource` instead of a `ContinuousSource`, parameterized by a center frequency and a frequency width (the width of the Gaussian spectrum).
 
 ```py
 fcen = 0.15  # pulse center frequency

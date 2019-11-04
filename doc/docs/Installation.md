@@ -44,7 +44,7 @@ Next, we need to activate the environment before we can start using it.
 conda activate mp
 ```
 
-Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
+Now, `python -c 'import meep'` (or `python3 -c 'import meep'`) should work, and you can try running some of the examples in the `meep/python/examples` directory.
 
 **Note:** There is currently an issue with openblas 0.3.5 that causes segmentation faults on newer Skylake X-series cpus. If import meep results in an "illegal instruction" error, downgrade openblas to version `0.3.4` as follows:
 
