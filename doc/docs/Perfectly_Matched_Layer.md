@@ -11,8 +11,56 @@ For a more detailed discussion of PMLs in Meep, see Chapter 5 ("Rigorous PML Val
 -   [Notes on Perfectly Matched Layers](http://math.mit.edu/~stevenj/18.369/pml.pdf) by S. G. Johnson: a general introduction to PML concepts
 -   [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf): a description of the precise PML formulation that is used in Meep, which is slightly different from many PML formulations described elsewhere in order to properly handle arbitrary anisotropy. This paper also describes a general strategy to validate PML.
 
+[TOC]
+
+Breakdown of PML in Inhomogeneous Media
+---------------------------------------
+
 As shown in the figure below, there are two important cases involving *inhomogeneous* media where the fundamental coordinate stretching idea behind PML breaks down giving rise to reflection artifacts. The workaround is to replace the PML with an adiabatic [absorber](Python_User_Interface.md#absorber). Additionally, if you operate near a low-group velocity band edge in a periodic media, you may need to make the PML/absorber very thick (overlapping many periods) to be effective. For more details on why PML breaks down in these cases, see [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). Also, [Physical Review E, Vol. 79, 065601, 2011](http://math.mit.edu/~stevenj/papers/LohOs09.pdf) describes a separate case where PML fails involving backward-wave modes which may occur at metal-dielectric interfaces (i.e., [surface-plasmon polaritons](https://en.wikipedia.org/wiki/Surface_plasmon_polariton)).
 
 <center>
 ![](images/PML_failure.png)
 </center>
+
+Planewave Sources Extending into PML
+------------------------------------
+
+For sources extending into the PML, such as planewaves which must span the entire width of the cell with Bloch-periodic boundary conditions, the `is_integrated` parameter of the `Source` object must be set to `True` in order to generate planar wavefronts. This is demonstrated in the following example for an $E_z$-polarized planewave propagating in the $x$ direction in a 2d cell surrounded by PML. A side-by-side comparison of the $E_z$ field profile indicates that the wavefronts are not planar for `is_integrated=False` (the default).
+
+(`is_integrated=True` is required for technical reasons having to do with how current sources are implemented in Meep; you need a very particular source in the PML in order to correspond mathematically to an infinitely long source current that produces a planewave.  In contrast, if the current source did *not* extend into the PML, it would correspond to simulating a *finite*-length current source in an infinite domain, which does *not* produce a planewave.)
+
+```py
+import meep as mp
+import matplotlib.pyplot as plt
+
+pml_layers = [mp.PML(thickness=1)]
+cell_size = mp.Vector3(10,10)
+
+sources = [mp.Source(mp.ContinuousSource(1,is_integrated=True),
+                     center=mp.Vector3(-4),
+                     size=mp.Vector3(y=10),
+                     component=mp.Ez)]
+
+sim = mp.Simulation(resolution=20,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3())
+
+sim.run(until=30)
+
+sim.plot2D(fields=mp.Ez)
+plt.show()
+```
+
+<center>
+![](images/pwsource_Ez_PML.png)
+</center>
+
+For an $E_y$-polarized source and `is_integrated=True`, the wavefronts are planar only in the non-PML region as shown below. This is because the $E_y$ fields in the $y$-PML are being rescaled by a Jacobian matrix. (The key thing to remember is that the fields in the PML region are not "physical," but are carefully designed artificial quantities in order to eliminate boundary reflections; you should generally extract physical data only from the interior of the computational cell (outside the PML).)
+
+<center>
+![](images/pwsource_Ey_PML.png)
+</center>
+
+In the future, `is_integrated=True` will be set automatically for sources extending into the PML ([#1049](https://github.com/NanoComp/meep/issues/1049)).
