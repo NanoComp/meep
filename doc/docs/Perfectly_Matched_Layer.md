@@ -55,7 +55,7 @@ plt.show()
 ![](images/pwsource_Ez_PML.png)
 </center>
 
-For an $E_y$-polarized source and `is_integrated=True`, the wavefronts are planar only in the non-PML region as shown below. This is because the $E_y$ fields in the $y$-PML are being rescaled by a Jacobian matrix. The overall effect of this rescaling is minimal and can be safely ignored.
+For an $E_y$-polarized source and `is_integrated=True`, the wavefronts are planar only in the non-PML region as shown below. This is because the $E_y$ fields in the $y$-PML are being rescaled by a Jacobian matrix. (The key thing to remember is that the fields in the PML region are not "physical," but are carefully designed artificial quantities in order to eliminate boundary reflections; you should generally extract physical data only from the interior of the computational cell (outside the PML).)
 
 <center>
 ![](images/pwsource_Ey_PML.png)
