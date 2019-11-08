@@ -27,6 +27,8 @@ Planewave Sources Extending into PML
 
 For sources extending into the PML, such as planewaves which must span the entire width of the cell with Bloch-periodic boundary conditions, the `is_integrated` parameter of the `Source` object must be set to `True` in order to generate planar wavefronts. This is demonstrated in the following example for an $E_z$-polarized planewave propagating in the $x$ direction in a 2d cell surrounded by PML. A side-by-side comparison of the $E_z$ field profile indicates that the wavefronts are not planar for `is_integrated=False` (the default).
 
+(`is_integrated=True` is required for technical reasons having to do with how current sources are implemented in Meep; you need a very particular source in the PML in order to correspond mathematically to an infinitely long source current that produces a planewave.  In contrast, if the current source did *not* extend into the PML, it would correspond to simulating a *finite*-length current source in an infinite domain, which does *not* produce a planewave.)
+
 ```py
 import meep as mp
 import matplotlib.pyplot as plt
