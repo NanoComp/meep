@@ -615,118 +615,143 @@ plt.show()
 
 <center>![](../images/reflectance_angular_spectrum.png)</center>
 
-Mie Scattering of a Lossless Metallic Sphere
---------------------------------------------
+Mie Scattering of a Lossless Dielectric Sphere
+----------------------------------------------
 
-A common reference calculation in computational electromagnetics for which an analytical solution is known is [Mie scattering](https://en.wikipedia.org/wiki/Mie_scattering) which involves computing the [scattering cross section](https://en.wikipedia.org/wiki/Cross_section_(physics)#Scattering_of_light) of a lossless metallic sphere. The scattered power of any object (even if it is absorbing) can be computed by surrounding it with a closed DFT flux box and doing two simulations: (1) a normalization run involving an empty cell to save the incident flux from the planwave source and (2) the main run with the object but first subtracting the incident fields to obtain the scattered power. The scattering cross section is the scattered power divided by the incident intensity. The same computational approach can be used to obtain the [radar cross section](https://en.wikipedia.org/wiki/Radar_cross-section). 
+A common reference calculation in computational electromagnetics for which an analytical solution is known is [Mie scattering](https://en.wikipedia.org/wiki/Mie_scattering) which involves computing the [scattering efficiency](http://www.thermopedia.com/content/956/) of a homogeneous spherical object. The scattered power of any object (absorbing or not) can be computed by surrounding it with a *closed* [DFT flux](../Python_User_Interface.md#flux-spectra) box (its size and orientation are irrelevant because of Poynting's theorem) and performing two simulations: (1) a normalization run involving an empty cell to save the incident flux from the planewave source and (2) the scattering run with the spherical object but first subtracting the incident fields to obtain the scattered power. This approach has already been demonstrated in [Transmittance Spectrum of a Waveguide Bend](#transmittance-spectrum-of-a-waveguide-bend).
 
-In the following example, the scattering cross section of a metallic sphere is computed over a range of radii spanning two regimes: (1) $r/λ ≪  1$ ([Rayleigh scattering](https://en.wikipedia.org/wiki/Rayleigh_scattering)) and (2) $r/λ ≫  1$.
+The scattering cross section is the scattered power divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, we can use [subpixel smoothing](../Subpixel_Smoothing.md) to improve accuracy at low resolutions which is important as this is a 3d simulation. The scattering efficiency is computed over a broad bandwidth for a fixed sphere radius. The results are compared to the analytic theory obtained from [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/). There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml), `is_integrated=True` must be specified in the source object definition.
+
+The simulation script is in [examples/mie-scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie-scattering.py). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) runs in about 15 minutes on a machine with three Intel Xeon 4.20 GHz cores.
 
 ```py
 import meep as mp
 import numpy as np
 import matplotlib.pyplot as plt
+import PyMieScatt as ps
 
-resolution = 35
+r = 1.0  # radius of sphere
 
-wvl = 1.0
-fcen = 1/wvl
+wvl_min = 2*np.pi*r/10
+wvl_max = 2*np.pi*r/2
 
-dpml = 1.0
-dair = 2.0
+frq_min = 1/wvl_max
+frq_max = 1/wvl_min
+frq_cen = 0.5*(frq_min+frq_max)
+dfrq = frq_max-frq_min
+nfrq = 100
+
+## at least 8 pixels per smallest wavelength, i.e. np.floor(8/wvl_min)
+resolution = 30
+
+dpml = 0.5*wvl_max
+dair = 0.5*wvl_max
 
 pml_layers = [mp.PML(thickness=dpml)]
 
 symmetries = [mp.Mirror(mp.Y),
               mp.Mirror(mp.Z,phase=-1)]
 
-def mie_scat(r):
-    s = 2*(dpml+dair+r)
-    cell_size = mp.Vector3(s,s,s)
+s = 2*(dpml+dair+r)
+cell_size = mp.Vector3(s,s,s)
 
-    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                         center=mp.Vector3(-0.5*s+dpml),
-                         size=mp.Vector3(0,s,s),
-                         component=mp.Ez)]
+# is_integrated=True necessary for any planewave source extending into PML
+sources = [mp.Source(mp.GaussianSource(frq_cen,fwidth=dfrq,is_integrated=True),
+                     center=mp.Vector3(-0.5*s+dpml),
+                     size=mp.Vector3(0,s,s),
+                     component=mp.Ez)]
 
-    sim = mp.Simulation(resolution=resolution,
-                        cell_size=cell_size,
-                        boundary_layers=pml_layers,
-                        sources=sources,
-                        k_point=mp.Vector3(),
-                        symmetries=symmetries)
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3(),
+                    symmetries=symmetries)
 
-    input = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mp.Vector3(0.5*s-dpml),size=mp.Vector3(0,s-2*dpml,s-2*dpml)))
+box_x1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r,2*r)))
+box_x2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r,2*r)))
+box_y1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0,2*r)))
+box_y2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0,2*r)))
+box_z1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=-r),size=mp.Vector3(2*r,2*r,0)))
+box_z2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=+r),size=mp.Vector3(2*r,2*r,0)))
 
-    box = sim.add_flux(fcen, 0, 1,
-                       mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r,2*r),weight=+1),
-                       mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r,2*r),weight=-1),
-                       mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0,2*r),weight=+1),
-                       mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0,2*r),weight=-1),
-                       mp.FluxRegion(center=mp.Vector3(z=-r),size=mp.Vector3(2*r,2*r,0),weight=+1),
-                       mp.FluxRegion(center=mp.Vector3(z=+r),size=mp.Vector3(2*r,2*r,0),weight=-1))
+sim.run(until_after_sources=20)
 
-    sim.run(until_after_sources=20)
+freqs = mp.get_flux_freqs(box_x1)
+box_x1_data = sim.get_flux_data(box_x1)
+box_x2_data = sim.get_flux_data(box_x2)
+box_y1_data = sim.get_flux_data(box_y1)
+box_y2_data = sim.get_flux_data(box_y2)
+box_z1_data = sim.get_flux_data(box_z1)
+box_z2_data = sim.get_flux_data(box_z2)
 
-    input_flux = mp.get_fluxes(input)[0]
-    box_flux_data = sim.get_flux_data(box)
-    box_flux = mp.get_fluxes(box)[0]
-    if mp.am_master():
-        print("input-flux:, {:.6f}".format(input_flux))
+box_x1_flux0 = mp.get_fluxes(box_x1)
+box_x2_flux0 = mp.get_fluxes(box_x2)
+box_y1_flux0 = mp.get_fluxes(box_y1)
+box_y2_flux0 = mp.get_fluxes(box_y2)
+box_z1_flux0 = mp.get_fluxes(box_z1)
+box_z2_flux0 = mp.get_fluxes(box_z2)
 
-    sim.reset_meep()
+sim.reset_meep()
 
-    geometry = [mp.Sphere(material=mp.metal,
-                          center=mp.Vector3(),
-                          radius=r)]
+n_sphere = 2.0
+geometry = [mp.Sphere(material=mp.Medium(index=n_sphere),
+                      center=mp.Vector3(),
+                      radius=r)]
 
-    sim = mp.Simulation(resolution=resolution,
-                        cell_size=cell_size,
-                        boundary_layers=pml_layers,
-                        sources=sources,
-                        k_point=mp.Vector3(),
-                        symmetries=symmetries,
-                        geometry=geometry)
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3(),
+                    symmetries=symmetries,
+                    geometry=geometry)
 
-    box = sim.add_flux(fcen, 0, 1,
-                       mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r,2*r),weight=+1),
-                       mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r,2*r),weight=-1),
-                       mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0,2*r),weight=+1),
-                       mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0,2*r),weight=-1),
-                       mp.FluxRegion(center=mp.Vector3(z=-r),size=mp.Vector3(2*r,2*r,0),weight=+1),
-                       mp.FluxRegion(center=mp.Vector3(z=+r),size=mp.Vector3(2*r,2*r,0),weight=-1))
-    
-    sim.load_minus_flux_data(box, box_flux_data)
+box_x1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r,2*r)))
+box_x2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r,2*r)))
+box_y1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0,2*r)))
+box_y2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0,2*r)))
+box_z1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=-r),size=mp.Vector3(2*r,2*r,0)))
+box_z2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=+r),size=mp.Vector3(2*r,2*r,0)))
 
-    sim.run(until_after_sources=40)
+sim.load_minus_flux_data(box_x1, box_x1_data)
+sim.load_minus_flux_data(box_x2, box_x2_data)
+sim.load_minus_flux_data(box_y1, box_y1_data)
+sim.load_minus_flux_data(box_y2, box_y2_data)
+sim.load_minus_flux_data(box_z1, box_z1_data)
+sim.load_minus_flux_data(box_z2, box_z2_data)
 
-    scat_flux = mp.get_fluxes(box)[0]
-    if mp.am_master():
-        print("scat-flux:, {:.6f}".format(scat_flux))
+sim.run(until_after_sources=60)
 
-    return scat_flux
+box_x1_flux = mp.get_fluxes(box_x1)
+box_x2_flux = mp.get_fluxes(box_x2)
+box_y1_flux = mp.get_fluxes(box_y1)
+box_y2_flux = mp.get_fluxes(box_y2)
+box_z1_flux = mp.get_fluxes(box_z1)
+box_z2_flux = mp.get_fluxes(box_z2)
 
-if __name__ == '__main__':
-    rs = np.logspace(-1,1,30) * wvl/(2*np.pi)
-    rcs = np.zeros(len(rs))
-    for m in range(len(rs)):
-        rcs[m] = mie_scat(rs[m])/(4*np.pi*rs[m]**2)
-        print("rcs:, {:.4f}, {:.6f}".format(rs[m],rcs[m]))
+scatt_flux = np.asarray(box_x1_flux)-np.asarray(box_x2_flux)+np.asarray(box_y1_flux)-np.asarray(box_y2_flux)+np.asarray(box_z1_flux)-np.asarray(box_z2_flux)
+intensity = np.asarray(box_x1_flux0)/(2*r)**2
+scatt_cross_section = np.divide(scatt_flux,intensity)
+scatt_eff_meep = scatt_cross_section*-1/(np.pi*r**2)
+scatt_eff_theory = [ ps.MieQ(n_sphere,1000/f,2*r*1000,asDict=True)['Qsca'] for f in freqs ]
 
-    non_zero_idx = np.nonzero(rcs)
+if mp.am_master():
     plt.figure(dpi=150)
-    plt.loglog(2*np.pi/wvl*rs[non_zero_idx],abs(rcs[non_zero_idx]),'bo-')
-    plt.loglog(2*np.pi/wvl*rs[non_zero_idx],np.ones(np.size(non_zero_idx)),'r-')    
+    plt.loglog(2*np.pi*r*np.asarray(freqs),scatt_eff_meep,'bo-',label='Meep')
+    plt.loglog(2*np.pi*r*np.asarray(freqs),scatt_eff_theory,'ro-',label='theory')
     plt.grid(True,which="both",ls="-")
     plt.xlabel('(sphere circumference)/wavelength, 2πr/λ')
-    plt.ylabel(r'(scattered power)/(sphere surface area), P/(4πr$^{2}$)')
-    plt.title('Mie scattering of a lossless metallic sphere')
-    plt.show()
+    plt.ylabel('scattering efficiency, σ/πr$^{2}$)')
+    plt.legend(loc='upper right')
+    plt.title('Mie scattering of a lossless dielectirc sphere')
+    plt.tight_layout()
+    plt.savefig("mie_scattering.png")
 ```
 
-At low radii, discretization errors dominate and the scattered power reaches a noise floor set by the `resolution`. At large radii, the scattered power converges to the asymptotic limit of the surface area of the sphere consistent with Mie scattering theory.
-
 <center>![](../images/mie_scattering.png)</center>
+
+The Meep results agree well with the analytic theory.
 
 Modes of a Ring Resonator
 -------------------------
