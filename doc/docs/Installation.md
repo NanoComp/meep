@@ -103,7 +103,7 @@ Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
 
 ### Nightly Builds
 
-To experiment with new features before they are distributed in an official release, you can try the [nightly-development builds](https://github.com/Simpetus/pymeep-nightly-recipe). They are hosted on the `simpetus` channel. Currently, the nightly builds are only available in Python 2.7 and 3.6 versions.
+To experiment with new features before they are distributed in an official release, you can try the [nightly-development builds](https://github.com/Simpetus/pymeep-nightly-recipe). They are hosted on the `simpetus` channel. Currently, the nightly builds are only available for Python 2.7 and 3.6.
 
 ```bash
 # Serial pymeep
