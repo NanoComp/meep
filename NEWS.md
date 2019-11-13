@@ -1,5 +1,19 @@
 # Meep Release Notes
 
+## Meep 1.12.0
+
+11/12/19
+
+  * Faster 2d simulations with nonzero `kz` via the `kz_2d` option (#1047).
+
+  * New Meep `verbosity` option superseding `quiet` and `verbose` flags (#994).
+
+  * Output now only shows ≤ 10 geometric objects by default (#1002).
+
+  * Performance improvements for `split_chunks_evenly=False`.
+
+  * Fixed memory leaks (#1041, #1042).
+
 ## Meep 1.11.0
 
 7/29/19
