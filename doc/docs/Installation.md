@@ -44,7 +44,7 @@ Next, we need to activate the environment before we can start using it.
 conda activate mp
 ```
 
-Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
+Now, `python -c 'import meep'` (or `python3 -c 'import meep'`) should work, and you can try running some of the examples in the `meep/python/examples` directory.
 
 **Note:** There is currently an issue with openblas 0.3.5 that causes segmentation faults on newer Skylake X-series cpus. If import meep results in an "illegal instruction" error, downgrade openblas to version `0.3.4` as follows:
 
@@ -103,7 +103,7 @@ Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
 
 ### Nightly Builds
 
-To experiment with new features before they are distributed in an official release, you can try the [nightly-development builds](https://github.com/Simpetus/pymeep-nightly-recipe).  They are hosted on the `simpetus` channel.
+To experiment with new features before they are distributed in an official release, you can try the [nightly-development builds](https://github.com/Simpetus/pymeep-nightly-recipe). They are hosted on the `simpetus` channel. Currently, the nightly builds are only available for Python 2.7 and 3.6.
 
 ```bash
 # Serial pymeep
