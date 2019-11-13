@@ -106,6 +106,10 @@ make
 python ../../python/tests/my_test.py MyNewTest.test_my_feature
 ```
 
+## Creating a Release Tarball
+
+Since the pymeep package version is based off of the Git version tag, it is important to tag the release in Github before running `make dist` to create the release tarball. You may also have to run `git fetch --tags`.
+
 ## Conda Packages
 
 Binary conda packages for official releases of [libctl](https://github.com/conda-forge/libctl-feedstock), [MPB](https://github.com/conda-forge/mpb-feedstock), and [pymeep](https://github.com/conda-forge/pymeep-feedstock) are hosted on [conda-forge](https://conda-forge.org/docs/). Whenever a new release tarball is created and posted to GitHub, a conda-forge bot will automatically detect that an update is needed and open a pull request in the corresponding repository. The developer need only review and merge the pull request and a conda package of the newest release will automatically be posted to the `conda-forge` channel on [anaconda.org](https://anaconda.org/conda-forge/) within an hour or so.
