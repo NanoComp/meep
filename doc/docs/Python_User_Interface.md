@@ -116,7 +116,7 @@ If `False` (the default), then the boundaries are perfect metallic (zero electri
 **`kz_2d` [`"complex"`, `"real/imag"`, or `"3d"`]**
 —
 A 2d cell (i.e., `dimensions=2`) combined with a `k_point` that has a *non-zero* component in $z$ would normally result in a 3d simulation with complex fields. However, by default (`kz_2d="complex"`), Meep will use a 2d computational cell in which $k_z$ is incorporated as an additional term in Maxwell's equations, which still results in complex fields but greatly improved performance.
-Setting `kz_2d="3d"` will instead use a 3d cell that is one pixel thick (with Bloch-periodic boundary conditions), which is considerably more expensive. The third possibility, `kz_2d="real/imag"`, saves an additional factor of two by storing some field components as purely real and some as purely imaginary in a "real" field, but this option requires some care to use and will be explained elsewhere in the future.
+Setting `kz_2d="3d"` will instead use a 3d cell that is one pixel thick (with Bloch-periodic boundary conditions), which is considerably more expensive. The third possibility, `kz_2d="real/imag"`, saves an additional factor of two by storing some field components as purely real and some as purely imaginary in a "real" field, but this option requires some care to use. See [2d Cell with Out-of-Plane Wavevector](2d_Cell_Special_kz.md).
 
 **`ensure_periodicity` [`boolean`]**
 —
