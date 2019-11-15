@@ -622,7 +622,7 @@ A common reference calculation in computational electromagnetics for which an an
 
 The scattering cross section is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `is_integrated=True` must be specified in the source object definition. A `k_point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module (which you will have to install in order to run the script below).
 
-The simulation script is in [examples/mie-scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie-scattering.py). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
+The simulation script is in [examples/mie_scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie_scattering.py). The notebook is [examples/mie_scattering.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/mie_scattering.ipynb). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
 ```py
 import meep as mp
@@ -744,7 +744,7 @@ if mp.am_master():
     plt.xlabel('(sphere circumference)/wavelength, 2πr/λ')
     plt.ylabel('scattering efficiency, σ/πr$^{2}$')
     plt.legend(loc='upper right')
-    plt.title('Mie scattering of a lossless dielectric sphere')
+    plt.title('Mie Scattering of a Lossless Dielectric Sphere')
     plt.tight_layout()
     plt.savefig("mie_scattering.png")
 ```

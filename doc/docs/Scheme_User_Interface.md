@@ -715,6 +715,10 @@ Roughly, the temporal width of the smoothing (technically, the inverse of the ex
 —
 Controls how far into the exponential tail of the tanh function the source turns on. Default is 3.0. A larger value means that the source turns on more gradually at the beginning.
 
+**`is-integrated?` [`boolean`]**
+—
+If `true`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `false`.
+
 ### gaussian-src
 
 A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
@@ -735,6 +739,10 @@ The starting time for the source. Default is 0 (turn on at $t=0$). This is not t
 —
 How many `width`s the current decays for before it is cut off and set to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start-time + cutoff*width`.
 
+**`is-integrated?` [`boolean`]**
+—
+If `true`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `false`.
+
 ### custom-src
 
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped-pulse.ctl`](https://github.com/NanoComp/meep/blob/master/scheme/examples/chirped-pulse.ctl).
@@ -750,6 +758,10 @@ The starting time for the source. Default is `(-infinity)`: turn on at $t=-\inft
 **`end-time` [`number`]**
 —
 The end time for the source. Default is `infinity` (never turn off).
+
+**`is-integrated?` [`boolean`]**
+—
+If `true`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `false`.
 
 ### flux-region
 
