@@ -117,6 +117,6 @@ if mp.am_master():
     plt.xlabel('(sphere circumference)/wavelength, 2πr/λ')
     plt.ylabel('scattering efficiency, σ/πr$^{2}$')
     plt.legend(loc='upper right')
-    plt.title('Mie scattering of a lossless dielectirc sphere')
+    plt.title('Mie Scattering of a Lossless Dielectirc Sphere')
     plt.tight_layout()
     plt.savefig("mie_scattering.png")

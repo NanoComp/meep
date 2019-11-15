@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-We'll go through several examples using the Scheme interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
+We'll go through several examples using the Scheme interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are mainly 1d or 2d simulations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d simulations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields, this tutorial uses the [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
@@ -549,6 +549,163 @@ title("reflectance (analytic)");
 ```
 
 <center>![](../images/reflectance_angular_spectrum.png)</center>
+
+Mie Scattering of a Lossless Dielectric Sphere
+----------------------------------------------
+
+A common reference calculation in computational electromagnetics for which an analytical solution is known is [Mie scattering](https://en.wikipedia.org/wiki/Mie_scattering) which involves computing the [scattering efficiency](http://www.thermopedia.com/content/956/) of a single, homogeneous sphere given an incident planewave. The scattered power of any object (absorbing or non) can be computed by surrounding it with a *closed* [DFT flux](../Scheme_User_Interface.md#flux-spectra) box (its size and orientation are irrelevant because of Poynting's theorem) and performing two simulations: (1) a normalization run involving an empty cell to save the incident fields from the source and (2) the scattering run with the object but first subtracting the incident fields in order to obtain just the scattered fields. This approach has already been described in [Transmittance Spectrum of a Waveguide Bend](#transmittance-spectrum-of-a-waveguide-bend).
+
+The scattering cross section is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `(is-integrated? true)` must be specified in the source object definition. A `k-point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module.
+
+The simulation script is in [examples/mie-scattering.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/mie-scattering.ctl). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
+
+```scm
+(define-param r 1.0) ;; radius of sphere
+
+(define wvl-min (/ (* 2 pi r) 10))
+(define wvl-max (/ (* 2 pi r) 2))
+
+(define frq-min (/ wvl-max))
+(define frq-max (/ wvl-min))
+(define frq-cen (* 0.5 (+ frq-min frq-max)))
+(define dfrq (- frq-max frq-min))
+(define nfrq 100)
+
+;; at least 8 pixels per smallest wavelength, i.e. (floor (/ 8 wvl-min))
+(set-param! resolution 25)
+
+(define dpml (* 0.5 wvl-max))
+(define dair (* 0.5 wvl-max))
+
+(define boundary-layers (list (make pml (thickness dpml))))
+(set! pml-layers boundary-layers)
+
+(define symm (list (make mirror-sym (direction Y))
+                   (make mirror-sym (direction Z) (phase -1))))
+(set! symmetries symm)
+
+(define s (* 2 (+ dpml dair r)))
+(define cell (make lattice (size s s s)))
+(set! geometry-lattice cell)
+
+;; (is-integrated? true) necessary for any planewave source extending into PML
+(define pw-src (make source
+                 (src (make gaussian-src (frequency frq-cen) (fwidth dfrq) (is-integrated? true)))
+                 (center (+ (* -0.5 s) dpml) 0 0)
+                 (size 0 s s)
+                 (component Ez)))
+(set! sources (list pw-src))
+
+(set! k-point (vector3 0))
+
+(define box-x1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (- r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-x2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (+ r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-y1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (- r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-y2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (+ r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-z1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (- r)) (size (* 2 r) (* 2 r) 0))))
+(define box-z2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (+ r)) (size (* 2 r) (* 2 r) 0))))
+
+(run-sources+ 10)
+
+(display-fluxes box-x1 box-x2 box-y1 box-y2 box-z1 box-z2)
+
+(save-flux "box-x1-flux" box-x1)
+(save-flux "box-x2-flux" box-x2)
+(save-flux "box-y1-flux" box-y1)
+(save-flux "box-y2-flux" box-y2)
+(save-flux "box-z1-flux" box-z1)
+(save-flux "box-z2-flux" box-z2)
+
+(reset-meep)
+
+(define nsphere 2.0)
+(set! geometry (list
+                (make sphere
+                  (material (make medium (index nsphere)))
+                  (radius r)
+                  (center 0))))
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! symmetries symm)
+
+(set! sources (list pw-src))
+
+(set! k-point (vector3 0))
+
+(define box-x1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (- r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-x2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (+ r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-y1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (- r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-y2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (+ r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-z1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (- r)) (size (* 2 r) (* 2 r) 0))))
+(define box-z2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (+ r)) (size (* 2 r) (* 2 r) 0))))
+
+(load-minus-flux "box-x1-flux" box-x1)
+(load-minus-flux "box-x2-flux" box-x2)
+(load-minus-flux "box-y1-flux" box-y1)
+(load-minus-flux "box-y2-flux" box-y2)
+(load-minus-flux "box-z1-flux" box-z1)
+(load-minus-flux "box-z2-flux" box-z2)
+
+(run-sources+ 100)
+
+(display-fluxes box-x1 box-x2 box-y1 box-y2 box-z1 box-z2)
+```
+
+The following Bash shell script runs the parallel simulation. The script pipes the output to a file and extracts the input and scattering flux data to separate files.
+```sh
+#!/bin/bash
+
+mpirun -n 3 meep mie-scattering.ctl |tee mie.out
+
+grep flux1: mie.out |cut -d, -f2- > input.dat
+grep flux2: mie.out |cut -d, -f2- > scatt.dat
+```
+
+The scattering efficiency is computed from the simulation data and plotted using the following Matlab/Octave script.
+```matlab
+input = dlmread('input.dat',',');
+scatt = dlmread('scatt.dat',',');
+
+r = 1.0;
+
+freqs = input(:,1);
+scatt_flux = scatt(:,2) - scatt(:,3) + scatt(:,4) - scatt(:,5) + scatt(:,6) - scatt(:,7);
+intensity = input(:,2)/(2*r)^2;
+scatt_cross_section = scatt_flux./intensity;
+scatt_eff_meep = scatt_cross_section*-1/(pi*r^2);
+
+loglog(2*pi*r*freqs,scatt_eff_meep,'bo-');
+xlabel('(sphere circumference)/wavelength, 2πr/\lambda');
+ylabel('scattering efficiency, \sigma/\pir^2');
+title("Mie Scattering of a Lossless Dielectric Sphere");
+set(gca, "xminorgrid", "on");
+set(gca, "yminorgrid", "on");
+set(gca, "xlim", [1 10]);
+```
+
+The incident intensity (`intensity`) is the flux in one of the six monitor planes (the one closest to and facing the planewave source propagating in the $x$ direction) divided by its area. This is why the six sides of the flux box are defined separately. (Otherwise, the entire box could have been defined as a single flux object with different weights ±1 for each side.) The scattered power is multiplied by -1 since it is the *outgoing* power (a positive quantity) rather than the incoming power as defined by the orientation of the flux box. Note that because of the linear $E_z$ polarization of the source, the flux through the $y$ and $z$ planes will *not* be the same. A circularly-polarized source would have produced equal flux in these two monitor planes. The runtime of the scattering run is chosen to be sufficiently long to ensure that the Fourier-transformed fields have [converged](../FAQ.md#checking-convergence).
+
+Results are shown below. Overall, the Meep results agree well with the analytic theory.
+
+<center>![](../images/mie_scattering.png)</center>
+
+Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load-minus-flux` calls.
+
 
 Modes of a Ring Resonator
 -------------------------
