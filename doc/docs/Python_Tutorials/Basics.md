@@ -861,6 +861,8 @@ for n in range(npts):
     E[n,:] = [np.conj(ff[j]) for j in range(3)]
     H[n,:] = [ff[j+3] for j in range(3)]
 
+# compute Poynting flux Pr in the radial direction.  At large r, 
+# all of the flux is radial so we can simply compute the magnitude of the Poynting vector.
 Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
 Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
 Pz = np.real(np.multiply(E[:,0],H[:,1])-np.multiply(E[:,1],H[:,0]))
@@ -868,7 +870,7 @@ Pr = np.sqrt(np.square(Px)+np.square(Py)+np.square(Pz))
 
 intensity = input_flux/(4*r)**2
 diff_cross_section = ff_r**2 * Pr / intensity
-scatt_cross_section_meep = 2*np.pi * np.sum(np.multiply(diff_cross_section,np.sin(angles))) * np.pi/npts
+scatt_cross_section_meep = 2*np.pi * np.sum(diff_cross_section * np.sin(angles)) * np.pi/npts # trapezoidal rule integration
 scatt_cross_section_theory = ps.MieQ(n_sphere,1000/frq_cen,2*r*1000,asDict=True,asCrossSection=True)['Csca']*1e-6 # units of um^2
 
 if mp.am_master():
