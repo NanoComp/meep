@@ -555,7 +555,7 @@ Mie Scattering of a Lossless Dielectric Sphere
 
 A common reference calculation in computational electromagnetics for which an analytical solution is known is [Mie scattering](https://en.wikipedia.org/wiki/Mie_scattering) which involves computing the [scattering efficiency](http://www.thermopedia.com/content/956/) of a single, homogeneous sphere given an incident planewave. The scattered power of any object (absorbing or non) can be computed by surrounding it with a *closed* [DFT flux](../Scheme_User_Interface.md#flux-spectra) box (its size and orientation are irrelevant because of Poynting's theorem) and performing two simulations: (1) a normalization run involving an empty cell to save the incident fields from the source and (2) the scattering run with the object but first subtracting the incident fields in order to obtain just the scattered fields. This approach has already been described in [Transmittance Spectrum of a Waveguide Bend](#transmittance-spectrum-of-a-waveguide-bend).
 
-The scattering cross section is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `(is-integrated? true)` must be specified in the source object definition. A `k-point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module.
+The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `(is-integrated? true)` must be specified in the source object definition. A `k-point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module.
 
 The simulation script is in [examples/mie-scattering.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/mie-scattering.ctl). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
@@ -704,8 +704,174 @@ Results are shown below. Overall, the Meep results agree well with the analytic 
 
 <center>![](../images/mie_scattering.png)</center>
 
-Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load-minus-flux` calls.
+Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section ($\sigma_{abs}$) to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load-minus-flux` calls. The extinction cross section ($\sigma_{ext}$) is simply the sum of the scattering and absorption cross sections: $\sigma_{scat}+\sigma_{abs}$.
 
+
+### Differential/Radar Cross Section
+
+As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-dielectric-sphere) which involved computing the *scattering* cross section ($\sigma_{scat}$), we will compute the *differential* cross section ($\sigma_{diff}$) which is proportional to the [radar cross section](https://en.wikipedia.org/wiki/Radar_cross-section). Computing $\sigma_{diff}$ in a given direction involves three steps: (1) solve for the [near fields](../Scheme_User_Interface.md#near-to-far-field-spectra) on a closed box surrounding the object, (2) from the near fields, compute the far fields at a single point a large distance away (i.e., $R$ ≫  object diameter), and (3) calculate the Poynting flux of the far fields in the outward direction: $F = \hat{r}\cdot\Re[E^* \times H]$. The differential cross section in that direction is $R^2F$ divided by the incident intensity. The radar cross section is simply $\sigma_{diff}$ in the "backwards" direction (i.e., backscattering) multiplied by 4π.
+
+The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
+
+<center>![](../images/scatt_diff_cross_section_equation.png)</center>
+
+In this demonstration, we will verify this expression for the lossless dielectric sphere at a single wavelength by comparing with the analytic theory via PyMieScatt.
+
+The simulation script is in [examples/differential-cross-section.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/differential-cross-section.ctl).
+
+```scm
+(define-param r 1.0) ;; radius of sphere
+
+(define-param frq-cen 1.0)
+
+(set-param! resolution 20) ;; pixels/um
+
+(define dpml 0.5)
+(define dair 1.5) ;; at least 0.5/frq_cen padding between source and near-field monitor
+
+(define boundary-layers (list (make pml (thickness dpml))))
+(set! pml-layers boundary-layers)
+
+(define s (* 2 (+ dpml dair r)))
+(define cell (make lattice (size s s s)))
+(set! geometry-lattice cell)
+
+;; circularly-polarized source with propagation axis along x
+;; (is-integrated? true) necessary for any planewave source extending into PML
+(define circ-pol-src (list
+                      (make source
+                       (src (make gaussian-src (frequency frq-cen) (fwidth (* 0.2 frq-cen)) (is-integrated? true)))
+                       (center (+ (* -0.5 s) dpml) 0 0)
+                       (size 0 s s)
+                       (component Ez))
+                      (make source
+                       (src (make gaussian-src (frequency frq-cen) (fwidth (* 0.2 frq-cen)) (is-integrated? true)))
+                       (center (+ (* -0.5 s) dpml) 0 0)
+                       (size 0 s s)
+                       (component Ey)
+                       (amplitude 0+1i))))
+
+(set! sources circ-pol-src)
+
+(set! k-point (vector3 0))
+
+(define box-flux (add-flux frq-cen 0 1
+                  (make flux-region (center (- (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)))))
+
+(define nearfield-box (add-near2far frq-cen 0 1
+                       (make near2far-region (center (- (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight +1))
+                       (make near2far-region (center (+ (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 (- (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight +1))
+                       (make near2far-region (center 0 (+ (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 0 (- (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight +1))
+                       (make near2far-region (center 0 0 (+ (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight -1))))
+
+(run-sources+ 10)
+
+(display-fluxes box-flux)
+
+(save-near2far "nearfield-box-n2f" nearfield-box)
+
+(reset-meep)
+
+(define nsphere 2.0)
+(set! geometry (list
+                (make sphere
+                  (material (make medium (index nsphere)))
+                  (radius r)
+                  (center 0))))
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! sources circ-pol-src)
+
+(set! k-point (vector3 0))
+
+(define nearfield-box (add-near2far frq-cen 0 1
+                       (make near2far-region (center (- (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight +1))
+                       (make near2far-region (center (+ (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 (- (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight +1))
+                       (make near2far-region (center 0 (+ (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 0 (- (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight +1))
+                       (make near2far-region (center 0 0 (+ (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight -1))))
+
+(load-minus-near2far "nearfield-box-n2f" nearfield-box)
+
+(run-sources+ 100)
+
+(define-param npts 100)           ;; number of points in [0,pi) range of polar angles to sample far fields along semi-circle
+
+(define-param ff-r (* 10000 r))
+
+(map (lambda (n)
+       (let ((ff (get-farfield nearfield-box (vector3* ff-r (vector3 (cos (* pi (/ n npts))) 0 (sin (* pi (/ n npts))))))))
+        (print "farfield:, " n ", " (* pi (/ n npts)))
+        (map (lambda (m)
+              (print ", " (list-ref ff m)))
+         (arith-sequence 0 1 6))
+        (print "\n")))
+ (arith-sequence 0 1 npts))
+```
+
+The script is similar to the previous Mie scattering example with the main difference being the replacement of the `add-flux` with `add-near2far` objects. Instead of a linearly-polarized planewave, the source is circularly-polarized so that $\sigma_{diff}$ is invariant with the rotation angle $\phi$ around the axis of the incident direction (i.e., $x$). This way, the far fields need only be sampled with the polar angle $\theta$. A circularly-polarized planewave can be generated by overlapping two linearly-polarized planewaves ($E_y$ and $E_z$) which are 90° out of phase via specifying an `amplitude` of `0+1i` for one of the two sources. Note, however, that there is no need to use complex fields (by specifying `(set! force-complex-fields true)`) which would double the floating-point memory consumption since only the real part of the source amplitude is used by default. The circularly-polarized source breaks the mirror symmetry which increases the size of the simulation. The size of the near-field monitor box surrounding the sphere is doubled so that it lies *entirely within* the homogeneous air region (a requirement of the `near2far` feature). After the near fields have been obtained for λ = 1 μm, the far fields are computed for 100 points along a semi-circle with radius 10,000X that of the dielectric sphere. (Note: any such large radius would give the same $\sigma_{scat}$ to within discretization error). Finally, the scattered cross section is computed by numerically integrating the expression from above using the radial Poynting flux values.
+
+The following Bash shell script runs the parallel simulation. The script pipes the output to a file and extracts the input and far-field data to separate files.
+
+```
+#!/bin/bash
+
+mpirun -n 3 meep differential-cross-section.ctl |tee dcs.out
+
+grep flux1: dcs.out |cut -d, -f2- > input.dat
+grep farfield: dcs.out |cut -d, -f2- > farfields.dat
+```
+
+The differential and scattering cross section are computed from the simulation data using the following Matlab/Octave script.
+
+```matlab
+
+f = dlmread('input.dat');
+d = dlmread('farfields.dat');
+
+Ex = conj(d(:,3));
+Ey = conj(d(:,4));
+Ez = conj(d(:,5));
+
+Hx = d(:,6);
+Hy = d(:,7);
+Hz = d(:,8);
+
+Px = real(Ey.*Hz-Ez.*Hy);
+Py = real(Ez.*Hx-Ex.*Hz);
+Pz = real(Ex.*Hy-Ey.*Hx);
+Pr = sqrt(Px.^2+Py.^2+Pz.^2);
+
+r = 1.0;
+ff_r = 10000*r;
+
+npts = size(d,1);
+angles = pi/npts * [0:npts-1];
+
+intensity = f(:,2)/(4*r)^2;
+diff_cross_section = ff_r^2 * Pr / intensity;
+scatt_cross_section_meep = 2*pi * (diff_cross_section' * sin(angles)') * pi/npts;
+
+disp(sprintf("scatt:, %0.16f",scatt_cross_section_meep));
+```
+
+The Meep results agree well with the analytic theory of `8.3429545590438750`.
+
+For `resolution` of 20, the error between the simulated and analytic result is 2.2%.
+```
+scatt:, 8.1554468258454094
+```
+
+For `resolution` of 25, the error decreases (as expected) to 1.5%.
+```
+scatt:, 8.2215436693775636
+```
 
 Modes of a Ring Resonator
 -------------------------
