@@ -767,7 +767,7 @@ The scattering cross section can be obtained by integrating the differential cro
 
 In this demonstration, we will verify this expression for the lossless dielectric sphere at a single wavelength by comparing with the analytic theory via PyMieScatt.
 
-The simulation script is in [examples/differential_cross_section.py](https://github.com/NanoComp/meep/blob/master/python/examples/differential_cross_section.py).
+The simulation script is in [examples/differential_cross_section.py](https://github.com/NanoComp/meep/blob/master/python/examples/differential_cross_section.py). The notebook is [examples/differential_cross_section.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/differential_cross_section.ipynb).
 
 ```py
 import meep as mp
