@@ -557,6 +557,10 @@ A common reference calculation in computational electromagnetics for which an an
 
 The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `(is-integrated? true)` must be specified in the source object definition. A `k-point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module.
 
+A schematic of the 2d cross section at $z = 0$ of the 3d cell is shown below.
+
+<center>![](../images/mie_scattering_schematic.png)</center>
+
 The simulation script is in [examples/mie-scattering.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/mie-scattering.ctl). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
 ```scm
@@ -613,7 +617,7 @@ The simulation script is in [examples/mie-scattering.ctl](https://github.com/Nan
 
 (run-sources+ 10)
 
-(display-fluxes box-x1 box-x2 box-y1 box-y2 box-z1 box-z2)
+(display-fluxes box-x1)
 
 (save-flux "box-x1-flux" box-x1)
 (save-flux "box-x2-flux" box-x2)
