@@ -51,7 +51,7 @@
 
 (run-sources+ 10)
 
-(display-fluxes box-x1 box-x2 box-y1 box-y2 box-z1 box-z2)
+(display-fluxes box-x1)
 
 (save-flux "box-x1-flux" box-x1)
 (save-flux "box-x2-flux" box-x2)

@@ -622,6 +622,10 @@ A common reference calculation in computational electromagnetics for which an an
 
 The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `is_integrated=True` must be specified in the source object definition. A `k_point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module (which you will have to install in order to run the script below).
 
+A schematic of the 2d cross section at $z = 0$ of the 3d cell is shown below.
+
+<center>![](../images/mie_scattering_schematic.png)</center>
+
 The simulation script is in [examples/mie_scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie_scattering.py). The notebook is [examples/mie_scattering.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/mie_scattering.ipynb). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
 ```py
@@ -686,11 +690,6 @@ box_z1_data = sim.get_flux_data(box_z1)
 box_z2_data = sim.get_flux_data(box_z2)
 
 box_x1_flux0 = mp.get_fluxes(box_x1)
-box_x2_flux0 = mp.get_fluxes(box_x2)
-box_y1_flux0 = mp.get_fluxes(box_y1)
-box_y2_flux0 = mp.get_fluxes(box_y2)
-box_z1_flux0 = mp.get_fluxes(box_z1)
-box_z2_flux0 = mp.get_fluxes(box_z2)
 
 sim.reset_meep()
 
@@ -759,11 +758,13 @@ Finally, for the case of a *lossy* dielectric material (i.e. complex refractive 
 
 ### Differential/Radar Cross Section
 
-As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-dielectric-sphere) which involved computing the *scattering* cross section ($\sigma_{scat}$), we will compute the *differential* cross section ($\sigma_{diff}$) which is proportional to the [radar cross section](https://en.wikipedia.org/wiki/Radar_cross-section). Computing $\sigma_{diff}$ in a given direction involves three steps: (1) solve for the [near fields](../Python_User_Interface.md#near-to-far-field-spectra) on a closed box surrounding the object, (2) from the near fields, compute the far fields at a single point a large distance away (i.e., $R$ ≫  object diameter), and (3) calculate the Poynting flux of the far fields in the outward direction: $F = \hat{r}\cdot\Re[E^* \times H]$. The differential cross section in that direction is $R^2F$ divided by the incident intensity. The radar cross section is simply $\sigma_{diff}$ in the "backwards" direction (i.e., backscattering) multiplied by 4π.
+As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-dielectric-sphere) which involved computing the *scattering* cross section ($\sigma_{scat}$), we will compute the *differential* cross section (DCS, $\sigma_{diff}$) which is proportional to the [radar cross section](https://en.wikipedia.org/wiki/Radar_cross-section). Computing $\sigma_{diff}$ in a given direction involves three steps: (1) solve for the [near fields](../Python_User_Interface.md#near-to-far-field-spectra) on a closed box surrounding the object, (2) from the near fields, compute the far fields at a single point a large distance away (i.e., $R$ ≫  object diameter), and (3) calculate the Poynting flux of the far fields in the outward direction: $F = \hat{r}\cdot\Re[E^* \times H]$. The differential cross section in that direction is $R^2F$ divided by the incident intensity. The radar cross section (RCS) is simply $\sigma_{diff}$ in the "backwards" direction (i.e., backscattering) multiplied by 4π.
 
 The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
 <center>![](../images/scatt_diff_cross_section_equation.png)</center>
+
+(In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives to the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of 4π.)
 
 In this demonstration, we will verify this expression for the lossless dielectric sphere at a single wavelength by comparing with the analytic theory via PyMieScatt.
 

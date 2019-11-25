@@ -59,11 +59,6 @@ box_z1_data = sim.get_flux_data(box_z1)
 box_z2_data = sim.get_flux_data(box_z2)
 
 box_x1_flux0 = mp.get_fluxes(box_x1)
-box_x2_flux0 = mp.get_fluxes(box_x2)
-box_y1_flux0 = mp.get_fluxes(box_y1)
-box_y2_flux0 = mp.get_fluxes(box_y2)
-box_z1_flux0 = mp.get_fluxes(box_z1)
-box_z2_flux0 = mp.get_fluxes(box_z2)
 
 sim.reset_meep()
 
