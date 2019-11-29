@@ -13,7 +13,7 @@ def refl_planar(theta, kz_2d):
     fcen = 1.0
 
     # plane of incidence is XZ
-    k = mp.Vector3(z=math.sin(theta_r)).scale(fcen)
+    k = mp.Vector3(z=math.sin(theta)).scale(fcen)
 
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
                          component=mp.Ey,
@@ -31,12 +31,12 @@ def refl_planar(theta, kz_2d):
     
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3(-0.5*sx+dpml), 1e-9))
 
-    empty_flux = mp.get_fluxes(refl)
-    empty_data = sim.get_flux_data(refl)
+    input_flux = mp.get_fluxes(refl)
+    input_data = sim.get_flux_data(refl)
     sim.reset_meep()
 
     # add a block with n=3.5 for the air-dielectric interface
-    geometry = [mp.Block(mp.Vector3(0.5*sx,mp.inf,mp.inf),
+    geometry = [mp.Block(size=mp.Vector3(0.5*sx,mp.inf,mp.inf),
                          center=mp.Vector3(0.25*sx),
                          material=mp.Medium(index=3.5))]
 
@@ -49,14 +49,14 @@ def refl_planar(theta, kz_2d):
                         resolution=resolution)
 
     refl = sim.add_flux(fcen, 0, 1, refl_fr)
-    sim.load_minus_flux_data(refl, empty_data)
+    sim.load_minus_flux_data(refl, input_data)
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3(-0.5*sx+dpml), 1e-9))
 
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
 
-    Rmeep = -refl_flux[0]/empty_flux[0]
+    Rmeep = -refl_flux[0]/input_flux[0]
     return Rmeep
 
 
@@ -78,4 +78,4 @@ theta_out = lambda theta_in: math.asin(n1*math.sin(theta_in)/n2)
 # for incident planewave in medium n1 at angle theta_in
 Rfresnel = lambda theta_in: math.fabs((n2*math.cos(theta_out(theta_in))-n1*math.cos(theta_in))/(n2*math.cos(theta_out(theta_in))+n1*math.cos(theta_in)))**2
 
-print("refl:, {:.16f}, {:.16f}, {:.16f}, {:.16f}".format(Rmeep_real_imag,Rmeep_complex,Rmeep_3d,Rfresnel(theta_r)))
+print("refl:, {} (real/imag), {} (complex), {} (3d), {} (analytic)".format(Rmeep_real_imag,Rmeep_complex,Rmeep_3d,Rfresnel(theta_r)))
