@@ -266,7 +266,7 @@
   (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions
       (if (and (= (vector3-z (object-property-value geometry-lattice 'size))
 		  no-size)
-	       (or (not k) (not (eq? kz-2d "3d")) (zero? (vector3-z k))))
+	       (or (not k) (not (equal? kz-2d "3d")) (zero? (vector3-z k))))
 	  2
 	  3)
       dimensions))
@@ -453,7 +453,7 @@
   (let ((kz2d (if (= (infer-dimensions k-point) 2) kz-2d "3d")))
     (set! fields (new-meep-fields structure
 				  (if (= dimensions CYLINDRICAL) m 0)
-				  (if (and (not (eq? kz2d "3d")) k-point)
+				  (if (and (not (equal? kz2d "3d")) k-point)
 				      (vector3-z k-point) 0.0)
 				  (not accurate-fields-near-cylorigin?)))
     (if (not (or force-complex-fields?
@@ -463,14 +463,14 @@
 				  (zero? (imag-part
 					  (object-property-value s 'phase))))))
 	         (not (or (not k-point)
-			  (and (eq? kz2d "real/imag")
+			  (and (equal? kz2d "real/imag")
 			       (= (vector3-x k-point) 0)
 			       (= (vector3-y k-point) 0))
 			  (vector3= k-point (vector3 0))))))
         (meep-fields-use-real-fields fields)
         (print "Meep: using complex fields.\n"))
     (if k-point (meep-fields-use-bloch fields
-				       (if (not (eq? kz2d "3d"))
+				       (if (not (equal? kz2d "3d"))
 					   (vector3 (vector3-x k-point)
 						    (vector3-y k-point))
 					   k-point))))
