@@ -168,12 +168,12 @@ quantum mechanics, but can also be beneficial when solving problems in classical
 In [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) we found the 
 resonance modes of a ring resonator in two-dimensional cylindrical coordinates. We will expand this problem using 
 perturbation theory to show how performing one simulation can easily allow us to find the resonance states of ring 
-resonators with slightly different shapes without performing additional simulations.
+resonators with slightly different shapes without performing additional simulations. See [ring_cyl_perturbation_theory.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring_cyl_perturbation_theory.py).
 
 Parallel Fields
 -------------------
 We begin by defining a cylindrical space and resonator, as performed in [Tutorial/Ring Resonator in Cylindrical 
-Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md). (See [ring_Ez_perturbation_theory.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring_Ez_perturbation_theory.py).)
+Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md).
 ```py
 import meep as mp
 import numpy as np
@@ -255,27 +255,19 @@ sim.run(until_after_sources=200)
 ```
 
 Now things get a bit different. To use one simulation to predict perturbed states, we will find 
-$\mathrm{d}\omega/\mathrm{d}R$ using Eq. (3) found in [Physical Review E, Volume 65, pp. 066611-1-7, 2002](http://math.mit.edu/~stevenj/papers/JohnsonIb02.pdf)
+$\mathrm{d}\omega/\mathrm{d}R$ using Eq. (30) found in Chapter 2 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book/photonic-crystals-book.pdf):
 
 <center>
 
-$$ \large \frac{\mathrm{d} \omega}{\mathrm{d} R} = - \frac{\omega^{(0)}}{2} \frac{\left \langle E^{(0)} \left | \frac{\mathrm{d} \epsilon}{\mathrm{d} R} \right | E^{(0)} \right \rangle}{\left \langle E^{(0)} \left | \epsilon \right | E^{(0)} \right \rangle}, $$
+$$ \large \frac{\mathrm{d} \omega}{\mathrm{d} R} \approx - \frac{\omega}{2} \frac{\int \int (\epsilon_{1} - \epsilon_{2})\left | \textbf{E}_{\parallel}(\textbf{r})) \right |^{2} - (\frac{1}{\epsilon_{1}} - \frac{1}{\epsilon_{2}})\left | \epsilon \textbf{E}_{\perp}(\textbf{r}) \right |^{2}}{\int \mathrm{d}^{3} \textbf{r} \epsilon(\textbf{r}) \left | \textbf{E}(\textbf{r}) \right |^{2}}. $$
 
 </center>
 
-where the numerator is Eq. (12) from the same paper
-
-<center>
-
-$$ \large \left \langle E \left | \frac{\mathrm{d} \epsilon}{\mathrm{d} R} \right | E^{\prime} \right \rangle = \int \mathrm{d}A \frac{\mathrm{d} h}{\mathrm{d} R} [\Delta \epsilon_{12} (\textbf{E}_{\parallel}^{\ast} - \textbf{E}_{\parallel}^{\prime}) - \Delta(\epsilon_{12}^{-1})(D_{\perp}^{\ast} - D_{\perp}^{\prime})]. $$
-
-</center>
-
-We will approximate Eq. (12) by using `Simulation.get_field_point()` at $N$ equally spaced points around the ring's
+We will approximate the numerator of Eq. (30) by using `Simulation.get_field_point()` at $N$ equally spaced points around the ring's
 inner and outer surfaces—the average (multiplied by $2 \pi R$) is a good approximation for that surface integral. Note that 
 the surface integral separates the components of the field parallel and perpendicular to the interface. In the case we are investigating 
 where the source is $E_{z}$-polarized, only components parallel to the surface are excited, so here we only approximate 
-Eq. (12) for $E_{z}$ components
+the numerator of Eq. (30) for $E_{z}$ components
 
 ```py
 # section for fields at inner surface
@@ -320,7 +312,7 @@ numerator_surface_integral = 2 * np.pi * b * mean([mean(parallel_fields_inner),
                                                    mean(parallel_fields_outer)])
 ```
  
- The denominator of Eq. (3) will be calculated using `Simulation.electric_energy_in_box()`, which calculates the integral
+ The denominator of Eq. (30) will be calculated using `Simulation.electric_energy_in_box()`, which calculates the integral
  of $\textbf{E} \cdot \tfrac{\textbf{D}}{2} = \epsilon \tfrac{\left | \textbf{E} \right | ^{2}}{2}$, which is exactly the integral in the denominator of Eq. (3) divided by 2.
  
 ```py
@@ -361,8 +353,8 @@ usefulness of perturbation theory in finding perturbed states without running ad
 ---------------------
 
 In the previous section we investigated the case when only fields parallel to the interface were excited. Now we will 
-consider the case when fields that are also perpendicular to the interface are excited. (See [ring_Hz_perturbation_theory.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring_Hz_perturbation_theory.py).)
- To excite these fields, we will simply replace every instance of 
+consider the case when fields that are also perpendicular to the interface are excited. To excite these fields, we will 
+simply replace every instance of 
 
 ```py
 sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r+0.1))]
@@ -376,7 +368,7 @@ sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Hz, mp.Vector3(r+0.1
 
 The `Hz` ($H_{z}$) field component excites fields in the plane of the resonator in both the radial ($E_{r}$, `meep.Er`)
 direction as well as the $\phi$ ($E_{\phi}$, `meep.Ep`) direction. To compensate for this change we will alter our method
-of calculating Eq. (12):
+of calculating the numerator of Eq. (30):
 
 ```py
 # section for fields at inner surface
