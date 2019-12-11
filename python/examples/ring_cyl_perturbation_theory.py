@@ -40,7 +40,7 @@ def main(args):
     else:
         component = mp.Ez
 
-    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=component, mp.Vector3(r+0.1), amplitude=1)]
+    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r+0.1), amplitude=1)]
 
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
@@ -50,7 +50,7 @@ def main(args):
                         dimensions=dimensions,
                         m=m)
 
-    h = mp.Harminv(c=component, mp.Vector3(r+0.1), fcen, df)
+    h = mp.Harminv(component, mp.Vector3(r+0.1), fcen, df)
     sim.run(mp.after_sources(h), until_after_sources=200)
 
     Harminv_freq_at_R = h.modes[0].freq
@@ -62,7 +62,7 @@ def main(args):
     fcen = Harminv_freq_at_R
     df = 0.01
 
-    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=component, mp.Vector3(r+0.1), amplitude=1)]
+    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r+0.1), amplitude=1)]
 
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
@@ -151,7 +151,7 @@ def main(args):
             fcen = Harminv_freqs_at_R_plus_dR[-1]
         df = 0.01
 
-        sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=component, mp.Vector3(r + 0.1))]
+        sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r + 0.1))]
 
         geometry = [mp.Block(center=mp.Vector3(a + (w / 2)),
                              size=mp.Vector3(w, 1e20, 1e20),
@@ -165,7 +165,7 @@ def main(args):
                             dimensions=dimensions,
                             m=m)
 
-        h = mp.Harminv(c=component, mp.Vector3(r + 0.1), fcen, df)
+        h = mp.Harminv(component, mp.Vector3(r + 0.1), fcen, df)
         sim.run(mp.after_sources(h), until_after_sources=200)
 
         Harminv_freq_at_R_plus_dR = h.modes[0].freq
@@ -181,7 +181,7 @@ def main(args):
         abs((perturb_predicted_freqs_at_R_plus_dR[i] - Harminv_freqs_at_R_plus_dR[i]) / Harminv_freqs_at_R_plus_dR[i])
         for i in range(len(Harminv_freqs_at_R_plus_dR))]
 
-    results_string = 'component={}\ndrs={}\nrelative_errors_dw_dR={}\nrelative_errors_freqs_at_R_plus_dR={}'.format(component,drs,relative_errors_dw_dR,relative_errors_freqs_at_R_plus_dR)
+    results_string = 'component={}\nperturb_theory_dw_dR={}\ndrs={}\ncenter_diff_dw_dR={}\nHarminv_freqs_at_R_plus_dR={}\nrelative_errors_dw_dR={}\nrelative_errors_freqs_at_R_plus_dR={}'.format(component,perturb_theory_dw_dR,drs,center_diff_dw_dR,Harminv_freqs_at_R_plus_dR,relative_errors_dw_dR,relative_errors_freqs_at_R_plus_dR)
 
     if mp.am_master():
         f = open('ring_cyl_perturbation_theory.dat', 'a')
