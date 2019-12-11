@@ -259,7 +259,7 @@ $\mathrm{d}\omega/\mathrm{d}R$ using Eq. (30) found in Chapter 2 of [Photonic Cr
 
 <center>
 
-$$ \large \frac{\mathrm{d} \omega}{\mathrm{d} R} \approx - \frac{\omega}{2} \frac{\int \int (\epsilon_{1} - \epsilon_{2})\left | \textbf{E}_{\parallel}(\textbf{r})) \right |^{2} - (\frac{1}{\epsilon_{1}} - \frac{1}{\epsilon_{2}})\left | \epsilon \textbf{E}_{\perp}(\textbf{r}) \right |^{2}}{\int \mathrm{d}^{3} \textbf{r} \epsilon(\textbf{r}) \left | \textbf{E}(\textbf{r}) \right |^{2}}. $$
+$$ \frac{\mathrm{d} \omega}{\mathrm{d} R} \approx - \frac{\omega}{2} \frac{\int \int (\epsilon_{1} - \epsilon_{2})\left | \textbf{E}_{\parallel}(\textbf{r})) \right |^{2} - (\frac{1}{\epsilon_{1}} - \frac{1}{\epsilon_{2}})\left | \epsilon \textbf{E}_{\perp}(\textbf{r}) \right |^{2}}{\int \mathrm{d}^{3} \textbf{r} \epsilon(\textbf{r}) \left | \textbf{E}(\textbf{r}) \right |^{2}}. $$
 
 </center>
 
@@ -332,7 +332,7 @@ is changed by a perturbation value $\mathrm{d}R$, following
 
 <center>
 
-$$ \large \omega(R + \mathrm{d}R) \approx \omega(R)+\frac{\mathrm{d} \omega}{\mathrm{d}R}\cdot \Delta R. $$
+$$ \omega(R + \mathrm{d}R) \approx \omega(R)+\frac{\mathrm{d} \omega}{\mathrm{d}R}\cdot \Delta R. $$
 
 </center>
 
