@@ -37,8 +37,10 @@ def main(args):
 
     if (args.perpendicular):
         component = mp.Hz
+        component_name = 'meep.Hz'
     else:
         component = mp.Ez
+        component_name = 'meep.Ez'
 
     sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r+0.1), amplitude=1)]
 
@@ -181,36 +183,12 @@ def main(args):
         abs((perturb_predicted_freqs_at_R_plus_dR[i] - Harminv_freqs_at_R_plus_dR[i]) / Harminv_freqs_at_R_plus_dR[i])
         for i in range(len(Harminv_freqs_at_R_plus_dR))]
 
-    results_string = 'component={}\nperturb_theory_dw_dR={}\ndrs={}\ncenter_diff_dw_dR={}\nHarminv_freqs_at_R_plus_dR={}\nrelative_errors_dw_dR={}\nrelative_errors_freqs_at_R_plus_dR={}'.format(component,perturb_theory_dw_dR,drs,center_diff_dw_dR,Harminv_freqs_at_R_plus_dR,relative_errors_dw_dR,relative_errors_freqs_at_R_plus_dR)
+    results_string = '\ncomponent={}\nperturb_theory_dw_dR={}\ndrs={}\ncenter_diff_dw_dR={}\nHarminv_freqs_at_R_plus_dR={}\nrelative_errors_dw_dR={}\nrelative_errors_freqs_at_R_plus_dR={}'.format(component_name,perturb_theory_dw_dR,drs,center_diff_dw_dR,Harminv_freqs_at_R_plus_dR,relative_errors_dw_dR,relative_errors_freqs_at_R_plus_dR)
 
     if mp.am_master():
         f = open('ring_cyl_perturbation_theory.dat', 'a')
         f.write(results_string)
         f.close
-
-        #plt.figure(dpi=150)
-        #plt.loglog(drs, relative_errors_dw_dR, 'bo-', label='relative error')
-        #plt.grid(True, which='both', ls='-')
-        #plt.xlabel('perturbation amount $dR$')
-        #plt.ylabel('relative error between $dω/dR$')
-        #plt.legend(loc='upper right')
-        #plt.title('Comparison of Perturbation Theory and \nCenter-Difference Calculations in Finding $dω/dR$')
-        #plt.tight_layout()
-        # plt.show()
-        #plt.savefig('ring_Hz_perturbation_theory.dw_dR_error.png')
-        #plt.clf()
-
-        #plt.figure(dpi=150)
-        #plt.loglog(drs, relative_errors_freqs_at_R_plus_dR, 'bo-', label='relative error')
-        #plt.grid(True, which='both', ls='-')
-        #plt.xlabel('perturbation amount $dR$')
-        #plt.ylabel('relative error between $ω(R+dR)$')
-        #plt.legend(loc='upper left')
-        #plt.title('Comparison of resonance frequencies at $R+dR$ predicted by\nperturbation theory and found with Harminv')
-        #plt.tight_layout()
-        # plt.show()
-        #plt.savefig('ring_Hz_perturbation_theory.freqs_error.png')
-        #plt.clf()
 
 
 if __name__ == '__main__':
