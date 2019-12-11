@@ -10,7 +10,7 @@ However, an additional trick is possible.  Since the $i\beta\hat{z} \times {}$ c
 
 As a demonstration of this feature, consider the example of computing the reflectance of a planar air/dielectric interface for a planewave incident from the out-of-plane direction. This is a slightly modified version of [Tutorials/Basics/Angular Reflectance Spectrum of a Planar Interface](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface). The interface normal is along the $x$ axis. An $E_y$-polarized planewave is incident at an angle of 19.4° counter clockwise around the $y$-axis with 0° along the $+x$ direction (i.e., the plane of incidence is $xz$ which corresponds to the $\mathcal{S}$-polarization). The 2d cell is in the $xy$ plane (with a $y$ dimension of a single pixel). The reflectance at a wavelength of 1 μm is computed using separate simulations for `kz_2d` of `"real/imag"`, `"complex"`, and `"3d"`. The three results are compared with the analytic Fresnel equation.
 
-The simulation script is [examples/refl-angular-kz2d.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular-kz2d.py).
+The simulation script is [examples/refl-angular-kz2d.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular-kz2d.py). The Scheme version is [examples/refl-angular-kz2d.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/refl-angular-kz2d.ctl).
 
 ```py
 import meep as mp
@@ -28,7 +28,7 @@ def refl_planar(theta, kz_2d):
     fcen = 1.0
 
     # plane of incidence is XZ
-    k = mp.Vector3(z=math.sin(theta_r)).scale(fcen)
+    k = mp.Vector3(z=math.sin(theta)).scale(fcen)
 
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
                          component=mp.Ey,
@@ -46,12 +46,12 @@ def refl_planar(theta, kz_2d):
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3(-0.5*sx+dpml), 1e-9))
 
-    empty_flux = mp.get_fluxes(refl)
-    empty_data = sim.get_flux_data(refl)
+    input_flux = mp.get_fluxes(refl)
+    input_data = sim.get_flux_data(refl)
     sim.reset_meep()
 
     # add a block with n=3.5 for the air-dielectric interface
-    geometry = [mp.Block(mp.Vector3(0.5*sx,mp.inf,mp.inf),
+    geometry = [mp.Block(size=mp.Vector3(0.5*sx,mp.inf,mp.inf),
                          center=mp.Vector3(0.25*sx),
                          material=mp.Medium(index=3.5))]
 
@@ -64,14 +64,14 @@ def refl_planar(theta, kz_2d):
                         resolution=resolution)
 
     refl = sim.add_flux(fcen, 0, 1, refl_fr)
-    sim.load_minus_flux_data(refl, empty_data)
+    sim.load_minus_flux_data(refl, input_data)
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3(-0.5*sx+dpml), 1e-9))
 
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
 
-    Rmeep = -refl_flux[0]/empty_flux[0]
+    Rmeep = -refl_flux[0]/input_flux[0]
     return Rmeep
 
 
@@ -93,11 +93,10 @@ theta_out = lambda theta_in: math.asin(n1*math.sin(theta_in)/n2)
 # for incident planewave in medium n1 at angle theta_in
 Rfresnel = lambda theta_in: math.fabs((n2*math.cos(theta_out(theta_in))-n1*math.cos(theta_in))/(n2*math.cos(theta_out(theta_in))+n1*math.cos(theta_in)))**2
 
-print("refl:, {:.16f} (real/imag), {:.16f} (complex), {:.16f} (3d), {:.16f} (analytic)".format(Rmeep_real_imag,Rmeep_complex,Rmeep_3d,Rfresnel(theta_r)))
+print("refl:, {} (real/imag), {} (complex), {} (3d), {} (analytic)".format(Rmeep_real_imag,Rmeep_complex,Rmeep_3d,Rfresnel(theta_r)))
 ```
 
 The Meep results are identical to within six decimal digits and agree well with the analytic theory with an error of less than 0.7%.
-
 
 ```
 refl:, 0.3272338236967464 (real/imag), 0.3272338244372344 (complex), 0.3272330216564413 (3d), 0.3293821216165117 (analytic)

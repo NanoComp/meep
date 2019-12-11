@@ -717,9 +717,13 @@ As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-di
 
 The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
-<center>![](../images/scatt_diff_cross_section_equation.png)</center>
+<center>
 
-(In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives to the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of 4π.)
+$$ \sigma_{scatt} = \int_0^{2\pi} d\phi \int_0^{\pi} \sigma_{diff}(\phi,\theta)\sin(\theta)d\theta $$
+
+</center>
+
+(In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of 4π.)
 
 In this demonstration, we will verify this expression for the lossless dielectric sphere at a single wavelength by comparing with the analytic theory via PyMieScatt.
 
