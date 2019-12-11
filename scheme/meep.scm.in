@@ -219,10 +219,7 @@
 (define-param k-point false)
 
 ; whether to use the "beta" trick to handle kz in 2d
-; -- this is not true by default because its use changes
-;    the interpretation of the fields somewhat (for real fields),
-;    and it only works in 2d right now.
-(define-param special-kz? false)
+(define-param kz-2d "complex")
 
 (define fields '())
 
@@ -269,7 +266,7 @@
   (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions
       (if (and (= (vector3-z (object-property-value geometry-lattice 'size))
 		  no-size)
-	       (or (not k) special-kz? (zero? (vector3-z k))))
+	       (or (not k) (not (equal? kz-2d "3d")) (zero? (vector3-z k))))
 	  2
 	  3)
       dimensions))
@@ -453,29 +450,30 @@
 (define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
   (if (null? structure) (init-structure k-point))
-  (set! fields (new-meep-fields structure
-				(if (= dimensions CYLINDRICAL) m 0)
-				(if (and special-kz? k-point)
-				    (vector3-z k-point) 0.0)
-				(not accurate-fields-near-cylorigin?)))
-  (if (not (or force-complex-fields?
-	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
-	       (not (for-all? symmetries
-			      (lambda (s)
-				(zero? (imag-part
-					(object-property-value s 'phase))))))
-	       (not (or (not k-point)
-			(and special-kz?
-			     (= (vector3-x k-point) 0)
-			     (= (vector3-y k-point) 0))
-			(vector3= k-point (vector3 0))))))
-      (meep-fields-use-real-fields fields)
-      (print "Meep: using complex fields.\n"))
-  (if k-point (meep-fields-use-bloch fields
-				     (if special-kz?
-					 (vector3 (vector3-x k-point)
-						  (vector3-y k-point))
-					 k-point)))
+  (let ((kz2d (if (= (infer-dimensions k-point) 2) kz-2d "3d")))
+    (set! fields (new-meep-fields structure
+				  (if (= dimensions CYLINDRICAL) m 0)
+				  (if (and (not (equal? kz2d "3d")) k-point)
+				      (vector3-z k-point) 0.0)
+				  (not accurate-fields-near-cylorigin?)))
+    (if (not (or force-complex-fields?
+	         (and (= dimensions CYLINDRICAL) (not (zero? m)))
+	         (not (for-all? symmetries
+			        (lambda (s)
+				  (zero? (imag-part
+					  (object-property-value s 'phase))))))
+	         (not (or (not k-point)
+			  (and (equal? kz2d "real/imag")
+			       (= (vector3-x k-point) 0)
+			       (= (vector3-y k-point) 0))
+			  (vector3= k-point (vector3 0))))))
+        (meep-fields-use-real-fields fields)
+        (print "Meep: using complex fields.\n"))
+    (if k-point (meep-fields-use-bloch fields
+				       (if (not (equal? kz2d "3d"))
+					   (vector3 (vector3-x k-point)
+						    (vector3-y k-point))
+					   k-point))))
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
 
