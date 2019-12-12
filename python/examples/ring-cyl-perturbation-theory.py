@@ -3,7 +3,6 @@ from __future__ import division
 import meep as mp
 import numpy as np
 from statistics import mean
-import matplotlib.pyplot as plt
 import argparse
 
 
@@ -35,7 +34,7 @@ def main(args):
     fcen = 0.15         # pulse center frequency
     df = 0.1            # pulse width (in frequency)
 
-    if (args.perpendicular):
+    if args.perpendicular:
         component = mp.Hz
         component_name = 'meep.Hz'
     else:
@@ -137,6 +136,7 @@ def main(args):
     denominator_surface_integral = sim.electric_energy_in_box(center=mp.Vector3((b + pad/2) / 2), size=mp.Vector3(b + pad/2))
     perturb_theory_dw_dR = -Harminv_freq_at_R * numerator_surface_integral / (4 * denominator_surface_integral)
 
+    # The rest of main() is not explicitly included in the tutorial, but this shows you how we did some error calculations
     center_diff_dw_dR = []
     Harminv_freqs_at_R_plus_dR = []
 
@@ -183,16 +183,22 @@ def main(args):
         abs((perturb_predicted_freqs_at_R_plus_dR[i] - Harminv_freqs_at_R_plus_dR[i]) / Harminv_freqs_at_R_plus_dR[i])
         for i in range(len(Harminv_freqs_at_R_plus_dR))]
 
-    results_string = '\ncomponent={}\nperturb_theory_dw_dR={}\ndrs={}\ncenter_diff_dw_dR={}\nHarminv_freqs_at_R_plus_dR={}\nrelative_errors_dw_dR={}\nrelative_errors_freqs_at_R_plus_dR={}'.format(component_name,perturb_theory_dw_dR,drs,center_diff_dw_dR,Harminv_freqs_at_R_plus_dR,relative_errors_dw_dR,relative_errors_freqs_at_R_plus_dR)
+    results_string  = '\ncomponent={}\n'.format(component_name)
+    results_string += 'perturb_theory_dw_dR={}\n'.format(perturb_theory_dw_dR)
+    results_string += 'drs={}\n'.format(drs)
+    results_string += 'center_diff_dw_dR={}\n'.format(center_diff_dw_dR)
+    results_string += 'Harminv_freqs_at_R_plus_dR={}\n'.format(Harminv_freqs_at_R_plus_dR)
+    results_string += 'relative_errors_dw_dR={}\n'.format(relative_errors_dw_dR)
+    results_string += 'relative_errors_freqs_at_R_plus_dR={}'.format(relative_errors_freqs_at_R_plus_dR)
 
     if mp.am_master():
         f = open('ring_cyl_perturbation_theory.dat', 'a')
         f.write(results_string)
-        f.close
+        f.close()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-perpendicular', type=bool, default=False, help='True for perpendicular field source, False for parallel field source. False default.' )
+    parser.add_argument('-perpendicular', type=bool, default=False, help='True for perpendicular field source, False for parallel field source. False default.')
     args = parser.parse_args()
     main(args)
