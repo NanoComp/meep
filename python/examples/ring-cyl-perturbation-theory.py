@@ -26,7 +26,7 @@ def main(args):
 
     # Finding a resonance mode with a high Q-value (calculated with Harminv)
 
-    fcen = 0.15         # pulse center frequency
+    fcen = 0.18         # pulse center frequency
     df = 0.1            # pulse width (in frequency)
 
     m = 5
@@ -53,7 +53,7 @@ def main(args):
 
     h = mp.Harminv(component, mp.Vector3(r+0.1), fcen, df)
     sim.run(mp.after_sources(h),
-            until_after_sources=100)
+            until_after_sources=200)
 
     harminv_freq_at_r = h.modes[0].freq
 
@@ -62,7 +62,7 @@ def main(args):
     # unperturbed geometry with narrowband source centered at resonant frequency
 
     fcen = harminv_freq_at_r
-    df = 0.05 * fcen
+    df = 0.01
 
     sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
                          component=component,
@@ -77,7 +77,7 @@ def main(args):
                         dimensions=dimensions,
                         m=m)
 
-    sim.run(until_after_sources=100)
+    sim.run(until_after_sources=200)
 
     # now need to calculate the surface integrals that go into dw/dR. Fields parallel and perpendicular to the interface
     # AND at the inner and outer surfaces are treated differently, so each will be calculated separately.
@@ -144,13 +144,15 @@ def main(args):
     a = r + dr  # inner radius of ring
     b = a + w  # outer radius of ring
 
+    fcen = perturb_theory_dw_dr * dr + harminv_freq_at_r
+    df = 0.01
+
     sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
                          component=component,
-                         center=mp.Vector3(r + dr + 0.1),
-                         amplitude=1)]
+                         center=mp.Vector3(r + dr + 0.1))]
 
     geometry = [mp.Block(center=mp.Vector3(a + (w / 2)),
-                         size=mp.Vector3(w, mp.inf, mp.inf),
+                         size=mp.Vector3(w, 1e20, 1e20),
                          material=mp.Medium(index=n))]
 
     sim = mp.Simulation(cell_size=cell,
@@ -161,9 +163,9 @@ def main(args):
                         dimensions=dimensions,
                         m=m)
 
-    h = mp.Harminv(mp.Ez, mp.Vector3(r + dr + 0.1), fcen, df)
+    h = mp.Harminv(component, mp.Vector3(r + dr + 0.1), fcen, df)
     sim.run(mp.after_sources(h),
-            until_after_sources=100)
+            until_after_sources=200)
 
     harminv_freq_at_r_plus_dr = h.modes[0].freq
 
