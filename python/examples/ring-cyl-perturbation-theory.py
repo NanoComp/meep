@@ -53,7 +53,7 @@ def main(args):
 
     h = mp.Harminv(component, mp.Vector3(r+0.1), fcen, df)
     sim.run(mp.after_sources(h),
-            until_after_sources=200)
+            until_after_sources=100)
 
     harminv_freq_at_r = h.modes[0].freq
 
@@ -77,12 +77,12 @@ def main(args):
                         dimensions=dimensions,
                         m=m)
 
-    sim.run(until_after_sources=200)
+    sim.run(until_after_sources=100)
 
     # now need to calculate the surface integrals that go into dw/dR. Fields parallel and perpendicular to the interface
     # AND at the inner and outer surfaces are treated differently, so each will be calculated separately.
 
-    npts = 100
+    npts = 50
     angles = 2 * np.pi / npts * np.arange(npts)
     deps_inner = 1 - n ** 2
     deps_inv_inner = 1 - 1/(n**2)
@@ -131,7 +131,6 @@ def main(args):
         perpendicular_field_integrand = deps_inv_outer * (abs(sim.get_epsilon_point(point, harminv_freq_at_r))**2) * perpendicular_field
         perpendicular_fields_outer.append(perpendicular_field_integrand)
 
-    # numerator_surface_integral = 2 * np.pi * b * (mean([mean(parallel_fields_inner), mean(parallel_fields_outer)]) - mean([mean(perpendicular_fields_inner), mean(perpendicular_fields_outer)]))
     numerator_surface_integral = (np.sum(parallel_fields_outer)-np.sum(perpendicular_fields_outer))*2*np.pi*b/npts \
                                  + (np.sum(parallel_fields_inner)-np.sum(perpendicular_fields_inner))*2*np.pi*a/npts
     denominator_surface_integral = sim.electric_energy_in_box(center=mp.Vector3(), size=mp.Vector3(2*sr))
@@ -139,7 +138,7 @@ def main(args):
 
     # perturbed geometry with narrowband source
 
-    dr = 0.02
+    dr = args.dr
 
     sim.reset_meep()
     a = r + dr  # inner radius of ring
@@ -170,73 +169,13 @@ def main(args):
 
     finite_diff_dw_dr = (harminv_freq_at_r_plus_dr - harminv_freq_at_r) / dr
 
-    print("res: {}, dr: {}\ndwdR:, {} (pert. theory), {} (finite diff.)".format(resolution, dr, perturb_theory_dw_dr, finite_diff_dw_dr))
-
-    # The rest of main() is not explicitly included in the tutorial, but this shows you how we did
-    # some error calculations
-    # center_diff_dw_dr = []
-    # harminv_freqs_at_r_plus_dr = []
-    #
-    # drs = np.logspace(start=-3, stop=-1, num=10)
-    #
-    # for dr in drs:
-    #     sim.reset_meep()
-    #     w = 1 + dr  # width of waveguide
-    #     b = a + w
-    #     print(f'The current dr is dr={dr}')
-    #     if len(harminv_freqs_at_r_plus_dr) == 0:
-    #         fcen = harminv_freq_at_r
-    #     else:
-    #         fcen = harminv_freqs_at_r_plus_dr[-1]
-    #     df = 0.01
-    #
-    #     sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r + 0.1))]
-    #
-    #     geometry = [mp.Block(center=mp.Vector3(a + (w / 2)),
-    #                          size=mp.Vector3(w, 1e20, 1e20),
-    #                          material=mp.Medium(index=n))]
-    #
-    #     sim = mp.Simulation(cell_size=cell,
-    #                         geometry=geometry,
-    #                         boundary_layers=pml_layers,
-    #                         resolution=resolution,
-    #                         sources=sources,
-    #                         dimensions=dimensions,
-    #                         m=m)
-    #
-    #     h = mp.Harminv(component, mp.Vector3(r + 0.1), fcen, df)
-    #     sim.run(mp.after_sources(h), until_after_sources=200)
-    #
-    #     harminv_freq_at_r_plus_dr = h.modes[0].freq
-    #     harminv_freqs_at_r_plus_dr.append(harminv_freq_at_r_plus_dr)
-    #
-    #     dw_dr = (harminv_freq_at_r_plus_dr - harminv_freq_at_r) / dr
-    #     center_diff_dw_dr.append(dw_dr)
-    #
-    # relative_errors_dw_dr = [abs((dw_dR - perturb_theory_dw_dr) / dw_dR) for dw_dR in center_diff_dw_dr]
-    #
-    # perturb_predicted_freqs_at_r_plus_dr = [dr * perturb_theory_dw_dr + harminv_freq_at_r for dr in drs]
-    # relative_errors_freqs_at_r_plus_dr = [
-    #     abs((perturb_predicted_freqs_at_r_plus_dr[i] - harminv_freqs_at_r_plus_dr[i]) / harminv_freqs_at_r_plus_dr[i])
-    #     for i in range(len(harminv_freqs_at_r_plus_dr))]
-    #
-    # results_string  = '\ncomponent={}\n'.format(component_name)
-    # results_string += 'perturb_theory_dw_dr={}\n'.format(perturb_theory_dw_dr)
-    # results_string += 'drs={}\n'.format(drs)
-    # results_string += 'center_diff_dw_dr={}\n'.format(center_diff_dw_dr)
-    # results_string += 'harminv_freqs_at_r_plus_dr={}\n'.format(harminv_freqs_at_r_plus_dr)
-    # results_string += 'relative_errors_dw_dr={}\n'.format(relative_errors_dw_dr)
-    # results_string += 'relative_errors_freqs_at_r_plus_dr={}'.format(relative_errors_freqs_at_r_plus_dr)
-    #
-    # if mp.am_master():
-    #     f = open('ring_cyl_perturbation_theory.dat', 'a')
-    #     f.write(results_string)
-    #     f.close()
+    print("res: {}\ndr: {}\ndwdR:, {} (pert. theory), {} (finite diff.)".format(resolution, dr, perturb_theory_dw_dr, finite_diff_dw_dr))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-perp', type=bool, default=False, help='controls if in-plane perpendicular fields are excited or not. (default: False, for Ez source)')
     parser.add_argument('-res', type=int, default=100, help='resolution (default: 100 pixels/um)')
+    parser.add_argument('-dr', type=float, default=0.02, help='dr (default: 0.02)')
     args = parser.parse_args()
     main(args)
