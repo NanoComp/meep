@@ -169,6 +169,7 @@ def main(args):
 
     finite_diff_dw_dr = (harminv_freq_at_r_plus_dr - harminv_freq_at_r) / dr
 
+    print("component:, {}".format(component_name))
     print("res:, {}".format(resolution))
     print("dr:, {}".format(dr))
     print("w:, {} (unperturbed), {} (perturbed)".format(harminv_freq_at_r, harminv_freq_at_r_plus_dr))
