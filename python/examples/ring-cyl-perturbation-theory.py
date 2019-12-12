@@ -169,7 +169,10 @@ def main(args):
 
     finite_diff_dw_dr = (harminv_freq_at_r_plus_dr - harminv_freq_at_r) / dr
 
-    print("res: {}\ndr: {}\ndwdR:, {} (pert. theory), {} (finite diff.)".format(resolution, dr, perturb_theory_dw_dr, finite_diff_dw_dr))
+    print("res:, {}".format(resolution))
+    print("dr:, {}".format(dr))
+    print("w:, {} (unperturbed), {} (perturbed)".format(harminv_freq_at_r, harminv_freq_at_r_plus_dr))
+    print("dwdR:, {} (pert. theory), {} (finite diff.)".format(perturb_theory_dw_dr, finite_diff_dw_dr))
 
 
 if __name__ == '__main__':
