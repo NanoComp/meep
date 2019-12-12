@@ -1,5 +1,3 @@
-from __future__ import division
-
 import meep as mp
 import numpy as np
 from statistics import mean
@@ -17,13 +15,11 @@ def main(args):
     dpml = 2                # thickness of PML
     pml_layers = [mp.PML(dpml)]
 
-    resolution = 100
+    resolution = args.res
 
     sr = b + pad + dpml            # radial size (cell is from 0 to sr)
     dimensions = mp.CYLINDRICAL    # coordinate system is (r,phi,z) instead of (x,y,z)
     cell = mp.Vector3(sr, 0, 0)
-
-    m = 4
 
     geometry = [mp.Block(center=mp.Vector3(a + (w / 2)),
                          size=mp.Vector3(w, 1e20, 1e20),
@@ -34,6 +30,8 @@ def main(args):
     fcen = 0.15         # pulse center frequency
     df = 0.1            # pulse width (in frequency)
 
+    m = 5
+
     if args.perpendicular:
         component = mp.Hz
         component_name = 'meep.Hz'
@@ -41,7 +39,10 @@ def main(args):
         component = mp.Ez
         component_name = 'meep.Ez'
 
-    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r+0.1), amplitude=1)]
+    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
+                         component=component,
+                         center=mp.Vector3(r+0.1),
+                         amplitude=1)]
 
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
@@ -52,18 +53,22 @@ def main(args):
                         m=m)
 
     h = mp.Harminv(component, mp.Vector3(r+0.1), fcen, df)
-    sim.run(mp.after_sources(h), until_after_sources=200)
+    sim.run(mp.after_sources(h),
+            until_after_sources=200)
 
-    Harminv_freq_at_R = h.modes[0].freq
+    harminv_freq_at_r = h.modes[0].freq
 
     sim.reset_meep()
 
-    # now running the simulation that will be used with perturbation theory to calculate dw/dR
+    # unperturbed geometry with narrowband source centered at resonant frequency
 
-    fcen = Harminv_freq_at_R
-    df = 0.01
+    fcen = harminv_freq_at_r
+    df = 0.05 * fcen
 
-    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r+0.1), amplitude=1)]
+    sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
+                         component=component,
+                         center=mp.Vector3(r + 0.1),
+                         amplitude=1)]
 
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
@@ -78,67 +83,65 @@ def main(args):
     # now need to calculate the surface integrals that go into dw/dR. Fields parallel and perpendicular to the interface
     # AND at the inner and outer surfaces are treated differently, so each will be calculated separately.
 
-    # section for fields at inner surface
-    npts_inner = 100
-    angles_inner = 2 * np.pi / npts_inner * np.arange(npts_inner)
+    npts = 100
+    angles = 2 * np.pi / npts * np.arange(npts)
     deps_inner = 1 - n ** 2
     deps_inv_inner = 1 - 1/(n**2)
-
-    # section for fields parallel to interface (Ez and Ep)
-    parallel_fields_inner = []
-    for angle in angles_inner:
-        point = mp.Vector3(a, angle)
-        e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
-        e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
-        e_parallel_field = e_z_field + e_p_field
-        # fields have to be multiplied by Δε
-        e_parallel_field = deps_inner * e_parallel_field
-        parallel_fields_inner.append(e_parallel_field)
-
-    # section for fields perpendicular to interface (Er)
-    perpendicular_fields_inner = []
-    for angle in angles_inner:
-        point = mp.Vector3(a, angle)
-        e_r_field = abs(sim.get_field_point(mp.Er, point))**2
-        e_perpendicular_field = e_r_field
-        # fields have to be multiplied by Δ(1/ε) and ε**2
-        e_perpendicular_field = deps_inv_inner * (abs(sim.get_epsilon_point(point, Harminv_freq_at_R))**2) * e_perpendicular_field
-        perpendicular_fields_inner.append(e_perpendicular_field)
-
-    # section for fields at outer surface
-    npts_outer = npts_inner
-    angles_outer = 2 * np.pi / npts_outer * np.arange(npts_outer)
     deps_outer = n ** 2 - 1
-    deps_inv_outer = -1 + 1/(n**2)
+    deps_inv_outer = -1 + 1 / (n ** 2)
 
-    # section for fields parallel to interface (Ez and Ep)
+    parallel_fields_inner = []
+    perpendicular_fields_inner = []
     parallel_fields_outer = []
-    for angle in angles_outer:
-        point = mp.Vector3(b, angle)
+    perpendicular_fields_outer = []
+
+    for angle in angles:
+        # section for fields at inner surface
+        point = mp.Vector3(a, angle)
+
+        # section for fields parallel to interface (Ez and Ep)
         e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
         e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
-        e_parallel_field = e_z_field + e_p_field
-        # fields have to be multiplied by Δε
-        e_parallel_field = deps_outer * e_parallel_field
-        parallel_fields_outer.append(e_parallel_field)
+        parallel_field = e_z_field + e_p_field
+        # fields have to be multiplied by Δε to get integrand
+        parallel_field_integrand = deps_inner * parallel_field
+        parallel_fields_inner.append(parallel_field_integrand)
 
-    # section for fields perpendicular to interface (Er)
-    perpendicular_fields_outer = []
-    for angle in angles_inner:
+        # section for fields perpendicular to interface (Er)
+        e_r_field = abs(sim.get_field_point(mp.Er, point))**2
+        perpendicular_field = e_r_field
+        # fields have to be multiplied by Δ(1/ε) and ε**2 to get integrand
+        perpendicular_field_integrand = deps_inv_inner * (abs(sim.get_epsilon_point(point, harminv_freq_at_r))**2) * perpendicular_field
+        perpendicular_fields_inner.append(perpendicular_field_integrand)
+
+        # section for fields at outer surface
         point = mp.Vector3(b, angle)
+
+        # section for fields parallel to interface (Ez and Ep)
+        e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
+        e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
+        parallel_field = e_z_field + e_p_field
+        # fields have to be multiplied by Δε to get integrand
+        parallel_field_integrand = deps_outer * parallel_field
+        parallel_fields_outer.append(parallel_field_integrand)
+
+        # section for fields perpendicular to interface (Er)
         e_r_field = abs(sim.get_field_point(mp.Er, point))
-        e_perpendicular_field = e_r_field**2
-        # fields have to be multiplied by Δ(1/ε) and ε**2
-        e_perpendicular_field = deps_inv_outer * (abs(sim.get_epsilon_point(point, Harminv_freq_at_R))**2) * e_perpendicular_field
-        perpendicular_fields_outer.append(e_perpendicular_field)
+        perpendicular_field = e_r_field**2
+        # fields have to be multiplied by Δ(1/ε) and ε**2 to get integrand
+        perpendicular_field_integrand = deps_inv_outer * (abs(sim.get_epsilon_point(point, harminv_freq_at_r))**2) * perpendicular_field
+        perpendicular_fields_outer.append(perpendicular_field_integrand)
 
-    numerator_surface_integral = 2 * np.pi * b * (mean([mean(parallel_fields_inner), mean(parallel_fields_outer)]) - mean([mean(perpendicular_fields_inner), mean(perpendicular_fields_outer)]))
-    denominator_surface_integral = sim.electric_energy_in_box(center=mp.Vector3((b + pad/2) / 2), size=mp.Vector3(b + pad/2))
-    perturb_theory_dw_dR = -Harminv_freq_at_R * numerator_surface_integral / (4 * denominator_surface_integral)
+    # numerator_surface_integral = 2 * np.pi * b * (mean([mean(parallel_fields_inner), mean(parallel_fields_outer)]) - mean([mean(perpendicular_fields_inner), mean(perpendicular_fields_outer)]))
+    numerator_surface_integral = (np.sum(parallel_fields_outer)-np.sum(perpendicular_fields_outer))*2*np.pi*b/npts \
+                                 + (np.sum(parallel_fields_inner)-np.sum(perpendicular_fields_inner))*2*np.pi*a/npts
+    denominator_surface_integral = sim.electric_energy_in_box(center=mp.Vector3(), size=mp.Vector3(2*sr))
+    perturb_theory_dw_dr = -harminv_freq_at_r * numerator_surface_integral / (2 * denominator_surface_integral)
 
-    # The rest of main() is not explicitly included in the tutorial, but this shows you how we did some error calculations
-    center_diff_dw_dR = []
-    Harminv_freqs_at_R_plus_dR = []
+    # The rest of main() is not explicitly included in the tutorial, but this shows you how we did
+    # some error calculations
+    center_diff_dw_dr = []
+    harminv_freqs_at_r_plus_dr = []
 
     drs = np.logspace(start=-3, stop=-1, num=10)
 
@@ -147,10 +150,10 @@ def main(args):
         w = 1 + dr  # width of waveguide
         b = a + w
         print(f'The current dr is dr={dr}')
-        if len(Harminv_freqs_at_R_plus_dR) == 0:
-            fcen = Harminv_freq_at_R
+        if len(harminv_freqs_at_r_plus_dr) == 0:
+            fcen = harminv_freq_at_r
         else:
-            fcen = Harminv_freqs_at_R_plus_dR[-1]
+            fcen = harminv_freqs_at_r_plus_dr[-1]
         df = 0.01
 
         sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component, mp.Vector3(r + 0.1))]
@@ -170,26 +173,26 @@ def main(args):
         h = mp.Harminv(component, mp.Vector3(r + 0.1), fcen, df)
         sim.run(mp.after_sources(h), until_after_sources=200)
 
-        Harminv_freq_at_R_plus_dR = h.modes[0].freq
-        Harminv_freqs_at_R_plus_dR.append(Harminv_freq_at_R_plus_dR)
+        harminv_freq_at_r_plus_dr = h.modes[0].freq
+        harminv_freqs_at_r_plus_dr.append(harminv_freq_at_r_plus_dr)
 
-        dw_dR = (Harminv_freq_at_R_plus_dR - Harminv_freq_at_R) / dr
-        center_diff_dw_dR.append(dw_dR)
+        dw_dr = (harminv_freq_at_r_plus_dr - harminv_freq_at_r) / dr
+        center_diff_dw_dr.append(dw_dr)
 
-    relative_errors_dw_dR = [abs((dw_dR - perturb_theory_dw_dR) / dw_dR) for dw_dR in center_diff_dw_dR]
+    relative_errors_dw_dr = [abs((dw_dR - perturb_theory_dw_dr) / dw_dR) for dw_dR in center_diff_dw_dr]
 
-    perturb_predicted_freqs_at_R_plus_dR = [dr * perturb_theory_dw_dR + Harminv_freq_at_R for dr in drs]
-    relative_errors_freqs_at_R_plus_dR = [
-        abs((perturb_predicted_freqs_at_R_plus_dR[i] - Harminv_freqs_at_R_plus_dR[i]) / Harminv_freqs_at_R_plus_dR[i])
-        for i in range(len(Harminv_freqs_at_R_plus_dR))]
+    perturb_predicted_freqs_at_r_plus_dr = [dr * perturb_theory_dw_dr + harminv_freq_at_r for dr in drs]
+    relative_errors_freqs_at_r_plus_dr = [
+        abs((perturb_predicted_freqs_at_r_plus_dr[i] - harminv_freqs_at_r_plus_dr[i]) / harminv_freqs_at_r_plus_dr[i])
+        for i in range(len(harminv_freqs_at_r_plus_dr))]
 
     results_string  = '\ncomponent={}\n'.format(component_name)
-    results_string += 'perturb_theory_dw_dR={}\n'.format(perturb_theory_dw_dR)
+    results_string += 'perturb_theory_dw_dr={}\n'.format(perturb_theory_dw_dr)
     results_string += 'drs={}\n'.format(drs)
-    results_string += 'center_diff_dw_dR={}\n'.format(center_diff_dw_dR)
-    results_string += 'Harminv_freqs_at_R_plus_dR={}\n'.format(Harminv_freqs_at_R_plus_dR)
-    results_string += 'relative_errors_dw_dR={}\n'.format(relative_errors_dw_dR)
-    results_string += 'relative_errors_freqs_at_R_plus_dR={}'.format(relative_errors_freqs_at_R_plus_dR)
+    results_string += 'center_diff_dw_dr={}\n'.format(center_diff_dw_dr)
+    results_string += 'harminv_freqs_at_r_plus_dr={}\n'.format(harminv_freqs_at_r_plus_dr)
+    results_string += 'relative_errors_dw_dr={}\n'.format(relative_errors_dw_dr)
+    results_string += 'relative_errors_freqs_at_r_plus_dr={}'.format(relative_errors_freqs_at_r_plus_dr)
 
     if mp.am_master():
         f = open('ring_cyl_perturbation_theory.dat', 'a')
@@ -199,6 +202,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-perpendicular', type=bool, default=False, help='True for perpendicular field source, False for parallel field source. False default.')
+    parser.add_argument('-perp', type=bool, default=False, help='controls if in-plane perpendicular fields are excited or not. (default: False, for Ez source)')
+    parser.add_argument('-res', type=int, default=100, help='resolution (default: 100 pixels/um)')
     args = parser.parse_args()
     main(args)
