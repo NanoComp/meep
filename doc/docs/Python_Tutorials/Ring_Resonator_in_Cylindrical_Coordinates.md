@@ -168,7 +168,7 @@ quantum mechanics, but can also be beneficial when solving problems in classical
 In [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) we found the 
 resonance modes of a ring resonator in two-dimensional cylindrical coordinates. We will expand this problem using 
 perturbation theory to show how performing one simulation can easily allow us to find the resonance states of ring 
-resonators with slightly different shapes without performing additional simulations. See [ring_cyl_perturbation_theory.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring_cyl_perturbation_theory.py).
+resonators with slightly different shapes without performing additional simulations. See [ring-cyl-perturbation-theory.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring-cyl-perturbation-theory.py).
 
 Parallel Fields
 -------------------
@@ -336,19 +336,6 @@ $$ \omega(R + \mathrm{d}R) \approx \omega(R)+\frac{\mathrm{d} \omega}{\mathrm{d}
 
 </center>
 
-Here we show the results from when we approximated the value of $\omega$ for several values of $\mathrm{d}R \approx \Delta R$ 
-and then compared the estimated value to what Harminv found in each perturbed state.
-
- <center>
-
-![](../images/ring_Ez_perturbation_theory.freqs_error.png)
-
-</center>
-
-It's easy to see here that the relative error in $\omega$ increases following a power rule dependent on $\mathrm{d}R$. 
-The fact that the relative error is less than the relative change in the width of the ring resonator does show the 
-usefulness of perturbation theory in finding perturbed states without running additional simulations.
-
  Perpendicular Fields
 ---------------------
 
@@ -428,11 +415,15 @@ for angle in angles_inner:
 numerator_surface_integral = 2 * np.pi * b * (mean([mean(parallel_fields_inner), mean(parallel_fields_outer)]) - mean([mean(perpendicular_fields_inner), mean(perpendicular_fields_outer)]))
 ``` 
 
-This change yields similar accuracy in using the perturbation value of $\mathrm{d} \omega / \mathrm{d} R$ to predict 
-values of $\omega(R + \mathrm{d}R)$, as we see here:
+Here we show the results from when we approximated the value of $\omega$ for several values of $\mathrm{d}R \approx \Delta R$ 
+and then compared the estimated value to what Harminv found in each perturbed state, looking at both the parallel and the perpendicular fields
 
  <center>
 
-![](../images/ring_Hz_perturbation_theory.freqs_error.png)
+![](../images/ring_cyl_perturbation_theory.freqs_error.png)
 
 </center>
+
+It's easy to see here that the relative error in $\omega$ increases following a power rule dependent on $\mathrm{d}R$. 
+The fact that the relative error is less than the relative change in the width of the ring resonator (even in the case of perependicular fields) shows the 
+usefulness of perturbation theory in finding perturbed states without running additional simulations.
