@@ -32,7 +32,7 @@
 
 (define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub))))
 (set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen))))
+          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
           (component Ez)
           (center src-pt)
           (size 0 (- sy (* 2 dpml))))))
