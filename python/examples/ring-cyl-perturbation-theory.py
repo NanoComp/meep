@@ -82,57 +82,49 @@ def main(args):
     # now need to calculate the surface integrals that go into dw/dR. Fields parallel and perpendicular to the interface
     # AND at the inner and outer surfaces are treated differently, so each will be calculated separately.
 
-    npts = 50
-    angles = 2 * np.pi / npts * np.arange(npts)
+    angle = 0
     deps_inner = 1 - n ** 2
     deps_inv_inner = 1 - 1/(n**2)
     deps_outer = n ** 2 - 1
     deps_inv_outer = -1 + 1 / (n ** 2)
 
-    parallel_fields_inner = []
-    perpendicular_fields_inner = []
-    parallel_fields_outer = []
-    perpendicular_fields_outer = []
+    # section for fields at inner surface
+    point = mp.Vector3(a, angle)
 
-    for angle in angles:
-        # section for fields at inner surface
-        point = mp.Vector3(a, angle)
+    # section for fields parallel to interface (Ez and Ep)
+    e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
+    e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
+    parallel_field = e_z_field + e_p_field
+    # fields have to be multiplied by Δε to get integrand
+    parallel_field_integrand = deps_inner * parallel_field
+    parallel_fields_inner = parallel_field_integrand * 2 * np.pi * a
 
-        # section for fields parallel to interface (Ez and Ep)
-        e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
-        e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
-        parallel_field = e_z_field + e_p_field
-        # fields have to be multiplied by Δε to get integrand
-        parallel_field_integrand = deps_inner * parallel_field
-        parallel_fields_inner.append(parallel_field_integrand)
+    # section for fields perpendicular to interface (Dr)
+    d_r_field = abs(sim.get_field_point(mp.Dr, point))**2
+    perpendicular_field = d_r_field
+    # fields have to be multiplied by Δ(1/ε) to get integrand
+    perpendicular_field_integrand = deps_inv_inner * perpendicular_field
+    perpendicular_fields_inner = perpendicular_field_integrand * 2 * np.pi * a
 
-        # section for fields perpendicular to interface (Dr)
-        d_r_field = abs(sim.get_field_point(mp.Dr, point))**2
-        perpendicular_field = d_r_field
-        # fields have to be multiplied by Δ(1/ε) and ε**2 to get integrand
-        perpendicular_field_integrand = deps_inv_inner * perpendicular_field
-        perpendicular_fields_inner.append(perpendicular_field_integrand)
+    # section for fields at outer surface
+    point = mp.Vector3(b, angle)
 
-        # section for fields at outer surface
-        point = mp.Vector3(b, angle)
+    # section for fields parallel to interface (Ez and Ep)
+    e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
+    e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
+    parallel_field = e_z_field + e_p_field
+    # fields have to be multiplied by Δε to get integrand
+    parallel_field_integrand = deps_outer * parallel_field
+    parallel_fields_outer = parallel_field_integrand * 2 * np.pi * b
 
-        # section for fields parallel to interface (Ez and Ep)
-        e_z_field = abs(sim.get_field_point(mp.Ez, point))**2
-        e_p_field = abs(sim.get_field_point(mp.Ep, point))**2
-        parallel_field = e_z_field + e_p_field
-        # fields have to be multiplied by Δε to get integrand
-        parallel_field_integrand = deps_outer * parallel_field
-        parallel_fields_outer.append(parallel_field_integrand)
+    # section for fields perpendicular to interface (Dr)
+    d_r_field = abs(sim.get_field_point(mp.Dr, point))
+    perpendicular_field = d_r_field**2
+    # fields have to be multiplied by Δ(1/ε) to get integrand
+    perpendicular_field_integrand = deps_inv_outer * perpendicular_field
+    perpendicular_fields_outer = perpendicular_field_integrand * 2 * np.pi * b
 
-        # section for fields perpendicular to interface (Dr)
-        d_r_field = abs(sim.get_field_point(mp.Dr, point))
-        perpendicular_field = d_r_field**2
-        # fields have to be multiplied by Δ(1/ε) and ε**2 to get integrand
-        perpendicular_field_integrand = deps_inv_outer * perpendicular_field
-        perpendicular_fields_outer.append(perpendicular_field_integrand)
-
-    numerator_surface_integral = (np.sum(parallel_fields_outer)-np.sum(perpendicular_fields_outer))*2*np.pi*b/npts \
-                                 + (np.sum(parallel_fields_inner)-np.sum(perpendicular_fields_inner))*2*np.pi*a/npts
+    numerator_surface_integral = parallel_fields_outer - perpendicular_fields_outer + parallel_fields_inner - perpendicular_fields_inner
     denominator_surface_integral = sim.electric_energy_in_box(center=mp.Vector3(), size=mp.Vector3(2*sr))
     perturb_theory_dw_dr = -harminv_freq_at_r * numerator_surface_integral / (2 * denominator_surface_integral)
 
