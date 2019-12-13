@@ -67,7 +67,10 @@ sim.reset_meep()
 sy = gp
 cell_size = mp.Vector3(sx,sy)
 
-sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(y=sy))]
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df, is_integrated=True),
+                     component=mp.Ez,
+                     center=src_pt,
+                     size=mp.Vector3(y=sy))]
 
 geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub))),
             mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh))]
@@ -97,7 +100,10 @@ cell_size = mp.Vector3(sx,sy)
 
 pml_layers = [mp.PML(thickness=dpml)]
 
-sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(y=sy))]
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df, is_integrated=True),
+                     component=mp.Ez,
+                     center=src_pt,
+                     size=mp.Vector3(y=sy))]
 
 geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub)))]
 

@@ -501,8 +501,8 @@ Modeling a finite grating requires specifying the `nperiods` parameter of `add-n
 (set! pml-layers (list (make pml (thickness dpml))))
 
 (set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth df)))
-          (component Ez) (center src-pt) (size 0 (- sy (* 2 dpml))))))
+          (src (make gaussian-src (frequency fcen) (fwidth df) (is-integrated? true)))
+          (component Ez) (center src-pt) (size 0 sy))))
 
 (set! geometry (list (make block (material glass) (size (+ dpml dsub) infinity infinity) (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub)))))))
 
@@ -635,7 +635,7 @@ The simulation script is in [examples/finite_grating.ctl](https://github.com/Nan
 
 (define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub))))
 (set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen))))
+          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
           (component Ez)
           (center src-pt)
           (size 0 sy))))
