@@ -106,11 +106,11 @@ def main(args):
         parallel_field_integrand = deps_inner * parallel_field
         parallel_fields_inner.append(parallel_field_integrand)
 
-        # section for fields perpendicular to interface (Er)
-        e_r_field = abs(sim.get_field_point(mp.Er, point))**2
-        perpendicular_field = e_r_field
+        # section for fields perpendicular to interface (Dr)
+        d_r_field = abs(sim.get_field_point(mp.Dr, point))**2
+        perpendicular_field = d_r_field
         # fields have to be multiplied by Δ(1/ε) and ε**2 to get integrand
-        perpendicular_field_integrand = deps_inv_inner * (abs(sim.get_epsilon_point(point, harminv_freq_at_r))**2) * perpendicular_field
+        perpendicular_field_integrand = deps_inv_inner * perpendicular_field
         perpendicular_fields_inner.append(perpendicular_field_integrand)
 
         # section for fields at outer surface
@@ -124,11 +124,11 @@ def main(args):
         parallel_field_integrand = deps_outer * parallel_field
         parallel_fields_outer.append(parallel_field_integrand)
 
-        # section for fields perpendicular to interface (Er)
-        e_r_field = abs(sim.get_field_point(mp.Er, point))
-        perpendicular_field = e_r_field**2
+        # section for fields perpendicular to interface (Dr)
+        d_r_field = abs(sim.get_field_point(mp.Dr, point))
+        perpendicular_field = d_r_field**2
         # fields have to be multiplied by Δ(1/ε) and ε**2 to get integrand
-        perpendicular_field_integrand = deps_inv_outer * (abs(sim.get_epsilon_point(point, harminv_freq_at_r))**2) * perpendicular_field
+        perpendicular_field_integrand = deps_inv_outer * perpendicular_field
         perpendicular_fields_outer.append(perpendicular_field_integrand)
 
     numerator_surface_integral = (np.sum(parallel_fields_outer)-np.sum(perpendicular_fields_outer))*2*np.pi*b/npts \
