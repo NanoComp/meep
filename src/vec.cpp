@@ -1053,8 +1053,9 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
     }
   }
 
-  double best_split_measure = 1e20;
-  LOOP_OVER_DIRECTIONS(dim, d) {
+  /* just split longest axis */
+  {
+    direction d = longest_axis;
     int first = 0, last = num_direction(d);
     while (first < last) { // bisection search for balanced splitting
       int mid = (first + last) / 2;
@@ -1072,21 +1073,9 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
     std::complex<double> costs = get_split_costs(d, split_point);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
-    double split_measure = max(left_cost * (desired_chunks-1), right_cost);
-    if (split_measure < best_split_measure) {
-      if (d == longest_axis || split_measure < (best_split_measure - (0.3 * best_split_measure))) {
-        // Only use this split_measure if we're on the longest_axis, or if the split_measure is
-        // more than 30% better than the best_split_measure. This is a heuristic to prefer lower
-        // communication costs when the split_measure is somewhat close.
-        // TODO: Use machine learning to get a cost function for the communication instead of hard
-        // coding 0.3
-
-        best_split_measure = split_measure;
-        best_split_point = split_point;
-        best_split_direction = d;
-        left_effort_fraction = left_cost / total_cost;
-      }
-    }
+    best_split_point = split_point;
+    best_split_direction = d;
+    left_effort_fraction = left_cost / total_cost;
   }
 }
 
