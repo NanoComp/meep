@@ -539,7 +539,7 @@ For a single process, the far-field calculation in both runs takes roughly the s
 
 Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the (spatial) Fourier transform of the scattered fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the Fourier-transformed fields at a given frequency ω from the two runs to obtain the scattered fields s(y). The Fourier transform of the scattered fields is then computed in post processing: a(k<sub>y</sub>) = ∫ s(y) exp(ik<sub>y</sub>y) dy, where |a(k<sub>y</sub>)|² is the amplitude of the corresponding Fourier component. For a grating with periodicity Λ, we should expect to see peaks in the diffraction spectra at k<sub>y</sub>=2πm/Λ for m=0, ±1, ±2, ... The total number of diffraction orders is determined by the wavelength as described in [Tutorials/Mode Decomposition/Transmittance Spectra for Planewave at Normal Incidence](Mode_Decomposition.md#transmittance-spectra-for-planewave-at-normal-incidence).
 
-The simulation setup is shown in the schematic below. The binary grating has Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must extend into the PML region). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
+The simulation setup is shown in the schematic below. The binary grating has Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must [extend into the PML region in order to span the entire width of the cell](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml)). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
 
 <center>
 ![](../images/finite_grating_schematic.png)
@@ -660,22 +660,21 @@ else:
 
     plt.subplot(2,1,1)
     plt.plot(y,scattered_amplitude,'bo-')
-    plt.gca().get_yaxis().set_ticks([])
     plt.xlabel("y (μm)")
-    plt.ylabel("field amplitude (a.u.)")
+    plt.ylabel("field amplitude")
 
     plt.subplot(2,1,2)
     plt.plot(ky,np.abs(FT_scattered_field)**2,'ro-')
-    plt.gca().get_yaxis().set_ticks([])
+    plt.gca().ticklabel_format(axis='y',style='sci',scilimits=(0,0))
     plt.xlabel(r'wavevector k$_y$, 2π (μm)$^{-1}$')
-    plt.ylabel("Fourier transform (a.u.)")
+    plt.ylabel("Fourier transform")
     plt.gca().set_xlim([-3, 3])
 
     plt.tight_layout(pad=1.0)
     plt.show()
 ```
 
-Results are shown for a finite grating with 5 and 20 periods.
+Results are shown for two finite gratings with 5 and 20 periods.
 
 <center>
 ![](../images/finite_grating_nperiods5.png)

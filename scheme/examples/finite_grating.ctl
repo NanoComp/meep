@@ -31,11 +31,12 @@
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 
 (define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub))))
-(set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
-          (component Ez)
-          (center src-pt)
-          (size 0 (- sy (* 2 dpml))))))
+(define pw-source (list (make source
+                          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
+                          (component Ez)
+                          (center src-pt)
+                          (size 0 sy))))
+(set! sources pw-source)
 
 (set! geometry (list (make block
                        (material glass)
@@ -59,11 +60,7 @@
 
 (set! k-point (vector3 0))
 
-(set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen))))
-          (component Ez)
-          (center src-pt)
-          (size 0 (- sy (* 2 dpml))))))
+(set! sources pw-source)
 
 (set! geometry (list (make block
                        (material glass)
