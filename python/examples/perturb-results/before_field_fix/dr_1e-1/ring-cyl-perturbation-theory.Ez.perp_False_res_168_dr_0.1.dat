@@ -1,0 +1,5 @@
+component:, meep.Ez
+res:, 168
+dr:, 0.1
+w:, 0.17578394599265096 (unperturbed), 0.16765532783959763 (perturbed)
+dwdR:, -0.08544620705772135 (pert. theory), -0.08128618153053324 (finite diff.)

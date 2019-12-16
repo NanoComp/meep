@@ -1,0 +1,5 @@
+component:, meep.Hz
+res:, 24
+dr:, 0.005
+w:, 0.2082465614878404 (unperturbed), 0.20790172421444852 (perturbed)
+dwdR:, -0.0750016263230163 (pert. theory), -0.06896745467837584 (finite diff.)
