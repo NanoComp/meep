@@ -36,10 +36,10 @@ sy = dpml+dpad+num_cells*gp+dpad+dpml
 cell_size = mp.Vector3(sx,sy)
 
 src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub)
-sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen,is_integrated=True),
                      component=mp.Ez,
                      center=src_pt,
-                     size=mp.Vector3(y=sy-2*dpml))]
+                     size=mp.Vector3(y=sy))]
 
 geometry = [mp.Block(material=glass,
                      size=mp.Vector3(dpml+dsub,mp.inf,mp.inf),

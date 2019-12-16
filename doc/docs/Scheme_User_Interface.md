@@ -64,9 +64,9 @@ Specifies the computational grid resolution in pixels per distance unit. Default
 —
 If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a `vector3`, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. A non-zero `vector3` will produce complex fields. The `k-point` vector is specified in Cartesian coordinates in units of 2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k-points` through its function `reciprocal->cartesian`.
 
-**`special-kz?` [`boolean`]**
+**`kz-2d` [`"complex"`, `"real/imag"`, or `"3d"`]**
 —
-By default, a 2d cell (i.e., `dimensions` is `2`) combined with a `k-point` that has a *non-zero* component in $z$ results in a 3d simulation with complex fields. However, by setting `special-kz?` to `true`, Meep will use a 2d cell and real fields (if the $x$ and $y$ components of `k-point` are zero) which improves performance.
+A 2d cell (i.e., `dimensions` is `2`) combined with a `k-point` that has a *non-zero* component in $z$ would normally result in a 3d simulation with complex fields. However, by default (`kz-2d` is `"complex"`), Meep will use a 2d computational cell in which $k_z$ is incorporated as an additional term in Maxwell's equations, which still results in complex fields but greatly improved performance. Setting `kz_2d` to `"3d"` will instead use a 3d cell that is one pixel thick (with Bloch-periodic boundary conditions), which is considerably more expensive. The third possibility, `kz_2d` is `"real/imag"`, saves an additional factor of two by storing some field components as purely real and some as purely imaginary in a "real" field, but this option requires some care to use. See [2d Cell with Out-of-Plane Wavevector](2d_Cell_Special_kz.md).
 
 **`ensure-periodicity` [`boolean`]**
 —
