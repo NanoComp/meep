@@ -9,7 +9,7 @@ def main(args):
         fcen = 0.21         # pulse center frequency
     else:
         src_cmpt = mp.Ez
-        fcen = 0.17         # pulse center frequency        
+        fcen = 0.17         # pulse center frequency
 
     n = 3.4                 # index of waveguide
     w = 1                   # ring width
@@ -24,7 +24,7 @@ def main(args):
 
     symmetries = [mp.Mirror(mp.X,phase=+1 if args.perpendicular else -1),
                   mp.Mirror(mp.Y,phase=-1 if args.perpendicular else +1)]
-    
+
     geometry = [mp.Cylinder(material=mp.Medium(index=n),
                             radius=r+w,
                             height=mp.inf),
@@ -70,7 +70,7 @@ def main(args):
                mp.Source(mp.GaussianSource(fcen, fwidth=df),
                          component=src_cmpt,
                          center=mp.Vector3(-(r+0.1)),
-                         amplitude=-1)]    
+                         amplitude=-1)]
 
     sim = mp.Simulation(cell_size=cell_size,
                         geometry=geometry,
@@ -81,7 +81,7 @@ def main(args):
 
     sim.run(until_after_sources=100)
 
-    deps = 1 - n**2        
+    deps = 1 - n**2
     deps_inv = 1 - 1/n**2
 
     if args.perpendicular:
