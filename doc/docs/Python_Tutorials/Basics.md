@@ -899,9 +899,11 @@ scatt:, 8.2215435272741395, 8.3429545590438750
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring.py); the notebook is [examples/ring.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/ring.ipynb). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. How this works is shown in this example for a ring resonator, which is simply a waveguide bent into a circle. In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using [cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but this demonstration involves an ordinary 2d simulation.
 
-As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
+The simulation script is in [examples/ring.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring.py). The notebook is [examples/ring.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/ring.ipynb).
+
+As before, some parameters are defined to describe the geometry, so that the structure can be easily changed:
 
 ```py
 n = 3.4                 # index of waveguide
@@ -929,7 +931,7 @@ df = 0.1                 # pulse frequency width
 src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r+0.1))
 ```
 
-Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal processing on the fields at some point with [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
+Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal processing on the fields at some point in the cell with [Harminv](../Python_User_Interface.md#harminv) to identify the frequencies and decay rates of the modes that were excited:
 
 ```py
 sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
@@ -1004,6 +1006,8 @@ harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.1855
 
 which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
+For a demonstration of how to compute the gradient of the resonant frequency with respect to the ring radius, see [Tutorials/Cylindrical Coordinates/Sensitivity Analysis via Perturbation Theory](Cylindrical_Coordinates.md#sensitivity-analysis-via-perturbation-theory).
+
 ### Exploiting Symmetry
 
 In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves both the structure and the sources, we can exploit this mirror symmetry to speed up the computation. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the script is the same except that we specify an additional object for the `Simulation` class:
@@ -1016,9 +1020,9 @@ This tells Meep to exploit a mirror-symmetry plane through the origin perpendicu
 
 Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast.
 
-In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface](../Python_User_Interface.md#symmetry) for more symmetry possibilities.
+In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface/Symmetry](../Python_User_Interface.md#symmetry) for more symmetry possibilities.
 
-In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Cylindrical Coordinates/Modes of a Ring Resonator](Cylindrical_Coordinates.md#modes-of-a-ring-resonator) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 Visualizing 3d Structures
 -------------------------
