@@ -1087,7 +1087,7 @@ Returns the integral of the complex-valued function `func` over the `Volume` spe
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
 
-In cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`max_abs_field_function(cs, func, where=None, center=None, size=None)`**
 —
