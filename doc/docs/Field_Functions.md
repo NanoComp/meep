@@ -4,7 +4,7 @@
 
 As described in [Python User Interface](Python_User_Interface.md), Meep provides several routines to integrate, analyze, and output arbitrary user-specified functions of the field components. See the functions whose names end with `_field_function`. This facility, while powerful, requires a bit more programming than most Meep usage, and is best illustrated by a few examples.
 
-Note: field functions can be applied to time- *as well as* [frequency-domain](Python_User_Interface.md#frequency-domain-solver) fields.
+Note: field functions can be applied to time-domain *and* [frequency-domain](Python_User_Interface.md#frequency-domain-solver) fields.
 
 Every field-function that can be passed to these routines is of the form *f*(**r**,components...), where **r** is a position vector and "components..." are zero or more field components that the function depends on. The set of desired components is user-specified. As an example, suppose we are interested in the arbitrary function:
 

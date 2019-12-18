@@ -878,15 +878,15 @@ Given a `direction` constant, and a `meep::volume*`, returns the flux (the integ
 
 **`(electric-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(magnetic-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(field-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep::volume*`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields-complex?=true`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
@@ -899,6 +899,8 @@ One versatile feature is that you can supply an arbitrary function $f(\mathbf{x}
 Returns the integral of the complex-valued function `func` over the `meep::volume` specified by `where` (defaults to entire cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
+
+Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(max-abs-field-function cs func [where] [fields-var])`**
 —

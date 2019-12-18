@@ -110,15 +110,14 @@ else:
 
     plt.subplot(2,1,1)
     plt.plot(y,scattered_amplitude,'bo-')
-    plt.gca().get_yaxis().set_ticks([])
     plt.xlabel("y (μm)")
-    plt.ylabel("field amplitude (a.u.)")
+    plt.ylabel("field amplitude")
 
     plt.subplot(2,1,2)
     plt.plot(ky,np.abs(FT_scattered_field)**2,'ro-')
-    plt.gca().get_yaxis().set_ticks([])
+    plt.gca().ticklabel_format(axis='y',style='sci',scilimits=(0,0))
     plt.xlabel(r'wavevector k$_y$, 2π (μm)$^{-1}$')
-    plt.ylabel("Fourier transform (a.u.)")
+    plt.ylabel("Fourier transform")
     plt.gca().set_xlim([-3, 3])
 
     plt.tight_layout(pad=1.0)

@@ -592,7 +592,7 @@ For a single process, the far-field calculation in both runs takes roughly the s
 
 Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the (spatial) Fourier transform of the scattered fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the Fourier-transformed fields at a given frequency ω from the two runs to obtain the scattered fields s(y). The Fourier transform of the scattered fields is then computed in post processing: a(k<sub>y</sub>) = ∫ s(y) exp(ik<sub>y</sub>y) dy, where |a(k<sub>y</sub>)|² is the amplitude of the corresponding Fourier component. For a grating with periodicity Λ, we should expect to see peaks in the diffraction spectra at k<sub>y</sub>=2πm/Λ for m=0, ±1, ±2, ... The total number of diffraction orders is determined by the wavelength as described in [Tutorials/Mode Decomposition/Transmittance Spectra for Planewave at Normal Incidence](Mode_Decomposition.md#transmittance-spectra-for-planewave-at-normal-incidence).
 
-The simulation setup is shown in the schematic below. The binary grating has Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must extend into the PML region). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
+The simulation setup is shown in the schematic below. The binary grating has Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must [extend into the PML region in order to span the entire width of the cell](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml)). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
 
 <center>
 ![](../images/finite_grating_schematic.png)
@@ -634,11 +634,12 @@ The simulation script is in [examples/finite_grating.ctl](https://github.com/Nan
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 
 (define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub))))
-(set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
-          (component Ez)
-          (center src-pt)
-          (size 0 sy))))
+(define pw-source (list (make source
+                          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
+                          (component Ez)
+                          (center src-pt)
+                          (size 0 sy))))
+(set! sources pw-source)
 
 (set! geometry (list (make block
                        (material glass)
@@ -662,11 +663,7 @@ The simulation script is in [examples/finite_grating.ctl](https://github.com/Nan
 
 (set! k-point (vector3 0))
 
-(set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen))))
-          (component Ez)
-          (center src-pt)
-          (size 0 (- sy (* 2 dpml))))))
+(set! sources pw-source)
 
 (set! geometry (list (make block
                        (material glass)
@@ -688,7 +685,7 @@ The simulation script is in [examples/finite_grating.ctl](https://github.com/Nan
 (output-dft grating-fields "grating")
 ```
 
-Results from the two HDF5 files are plotted using Matlab/Octave and shown for a finite grating with 5 and 20 periods.
+Results from the two HDF5 files are plotted using Matlab/Octave and shown for two finite gratings with 5 and 20 periods.
 
 ```matlab
 resolution = 50;
@@ -732,18 +729,16 @@ else
 
     subplot(2,1,1);
     plot(y,scattered_amplitude,'bo-');
-    axis("labelx");
     xlabel("y (um)");
-    ylabel("field amplitude (a.u.)");
+    ylabel("field amplitude");
 
     FT_scattered_amplitude = fftshift(fft(scattered_field));
     ky = [-Ny/2:(Ny/2-1)]*resolution/Ny;
     subplot(2,1,2);
     plot(ky,abs(FT_scattered_amplitude).^2,'ro-');
     axis([-3 3]);
-    axis("labelx");
     xlabel("wavevector k_y, 2π (um)^{-1}");
-    ylabel("Fourier transform (a.u.)");
+    ylabel("Fourier transform");
 endif
 ```
 
