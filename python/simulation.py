@@ -2607,7 +2607,7 @@ def display_progress(t0, t, dt):
 
     def _disp(sim):
         t1 = mp.wall_time()
-        if t1 - closure['tlast'] >= dt and mp.cvar.verbosity > 0:
+        if t1 - closure['tlast'] >= dt:
             msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
             val1 = sim.meep_time() - t0
             val2 = val1 / (0.01 * t)
@@ -2618,8 +2618,10 @@ def display_progress(t0, t, dt):
                 sim.progress.value = val1
                 sim.progress.description = "{}% done ".format(int(val2))
 
-            print(msg_fmt.format(val1, t, val2, val3, val4))
+            if mp.cvar.verbosity > 0:
+                print(msg_fmt.format(val1, t, val2, val3, val4))
             closure['tlast'] = t1
+
     return _disp
 
 
