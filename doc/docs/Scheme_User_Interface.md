@@ -878,15 +878,15 @@ Given a `direction` constant, and a `meep::volume*`, returns the flux (the integ
 
 **`(electric-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(magnetic-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(field-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Given a `meep::volume*`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields-complex?=true`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
