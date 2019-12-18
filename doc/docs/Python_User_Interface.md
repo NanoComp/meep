@@ -1061,15 +1061,15 @@ Given a `direction` constant, and a `mp.Volume`, returns the flux (the integral 
 
 **`electric_energy_in_box(box=None, center=None, size=None)`**
 —
-Given a `mp.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Given a `mp.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`magnetic_energy_in_box(box=None, center=None, size=None)`**
 —
-Given a `mp.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Given a `mp.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`field_energy_in_box(box=None, center=None, size=None)`**
 —
-Given a `mp.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates, the integral is multiplied by 2π$R$ where $R$ is the size of the cell in the radial direction.
+Given a `mp.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`modal_volume_in_box(box=None, center=None, size=None)`**
 —
