@@ -27,10 +27,12 @@ def main(args):
 
     geometry = [mp.Cylinder(material=mp.Medium(index=n),
                             radius=r+w,
-                            height=mp.inf),
+                            height=mp.inf,
+                            center=mp.Vector3()),
                 mp.Cylinder(material=mp.vacuum,
                             radius=r,
-                            height=mp.inf)]
+                            height=mp.inf,
+                            center=mp.Vector3())]
 
     # find resonant frequency of unperturbed geometry using broadband source
 
@@ -110,10 +112,12 @@ def main(args):
 
     geometry = [mp.Cylinder(material=mp.Medium(index=n),
                             radius=r+dr+w,
-                            height=mp.inf),
+                            height=mp.inf,
+                            center=mp.Vector3()),
                 mp.Cylinder(material=mp.vacuum,
                             radius=r+dr,
-                            height=mp.inf)]
+                            height=mp.inf,
+                            center=mp.Vector3())]
 
     sim = mp.Simulation(cell_size=cell_size,
                         geometry=geometry,
