@@ -111,7 +111,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py coverage coveralls matplotlib
+      - pip install numpy mpi4py scipy h5py coverage==4.5.4 coveralls matplotlib
   - python: "3.7"
     env:
       - MPICONF="--with-mpi"
