@@ -26,6 +26,14 @@ try:
 except NameError:
     basestring = str
 
+try:
+    from ipywidgets import FloatProgress
+    from IPython.display import display
+    do_progress = True
+except ImportError:
+    do_progress = False
+
+
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
 mp.cvar.master_printf_callback = mp.py_master_printf_wrap
 mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
@@ -1371,6 +1379,10 @@ class Simulation(object):
 
                 step_funcs = list(step_funcs)
                 step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
+
+                if do_progress:
+                    self.progress = FloatProgress(value=t0, min=t0, max=t0 + stop_time, description="0% done ")
+                    display(self.progress)
             else:
                 assert callable(cond[i]), "Stopping condition {} is not an integer or a function".format(cond[i])
 
@@ -1387,6 +1399,10 @@ class Simulation(object):
 
         for func in step_funcs:
             _eval_step_func(self, func, 'finish')
+
+        if do_progress:
+            self.progress.value = t0 + stop_time
+            self.progress.description = "100% done "
 
         if mp.cvar.verbosity > 0:
             print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
@@ -2591,14 +2607,21 @@ def display_progress(t0, t, dt):
 
     def _disp(sim):
         t1 = mp.wall_time()
-        if t1 - closure['tlast'] >= dt and mp.cvar.verbosity > 0:
+        if t1 - closure['tlast'] >= dt:
             msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
             val1 = sim.meep_time() - t0
             val2 = val1 / (0.01 * t)
             val3 = t1 - t_0
             val4 = (val3 * (t / val1) - val3) if val1 != 0 else 0
-            print(msg_fmt.format(val1, t, val2, val3, val4))
+
+            if do_progress:
+                sim.progress.value = val1
+                sim.progress.description = "{}% done ".format(int(val2))
+
+            if mp.cvar.verbosity > 0:
+                print(msg_fmt.format(val1, t, val2, val3, val4))
             closure['tlast'] = t1
+
     return _disp
 
 
