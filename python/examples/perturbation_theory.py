@@ -84,11 +84,11 @@ def main(args):
     denominator_integral = sim.electric_energy_in_box(center=mp.Vector3(0.5*sr), size=mp.Vector3(sr))
     perturb_theory_dw_dR = -frq_unperturbed * numerator_integral / (4 * denominator_integral)
 
+    sim.reset_meep()
+
     # perturbed geometry with narrowband source
 
     dr = 0.01
-
-    sim.reset_meep()
 
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                          component=src_cmpt,
