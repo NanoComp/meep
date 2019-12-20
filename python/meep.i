@@ -1661,8 +1661,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     }
 
     // Return params to default state
-    meep_geom::fragment_stats::resolution = 0;
-    meep_geom::fragment_stats::split_chunks_evenly = false;
+    meep_geom::fragment_stats::reset();
 
     return s;
 }

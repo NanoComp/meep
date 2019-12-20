@@ -67,6 +67,7 @@ struct fragment_stats {
   static int resolution;
   static meep::ndim dims;
   static geometric_object_list geom;
+  static geom_box_tree geom_tree;
   static std::vector<dft_data> dft_data_list;
   static std::vector<meep::volume> pml_1d_vols;
   static std::vector<meep::volume> pml_2d_vols;
@@ -79,6 +80,7 @@ struct fragment_stats {
   static void init_libctl(meep_geom::material_type default_mat, bool ensure_per,
                           meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
                           geometric_object_list *geom_list);
+  static void reset();
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
@@ -116,6 +118,7 @@ private:
   void compute_dft_stats();
   void compute_pml_stats();
   void compute_absorber_stats();
+  void compute_overlaps_from_tree(geom_box_tree t, bool &anisotropic_pixels_already_added);
 };
 
 fragment_stats

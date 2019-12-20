@@ -1638,6 +1638,7 @@ int fragment_stats::maxeval = 0;
 int fragment_stats::resolution = 0;
 meep::ndim fragment_stats::dims = meep::D1;
 geometric_object_list fragment_stats::geom = {};
+geom_box_tree fragment_stats::geom_tree = NULL;
 std::vector<dft_data> fragment_stats::dft_data_list;
 std::vector<meep::volume> fragment_stats::pml_1d_vols;
 std::vector<meep::volume> fragment_stats::pml_2d_vols;
@@ -1705,6 +1706,7 @@ fragment_stats compute_fragment_stats(
   geom_box box = make_box_from_cell(cell_size);
   fragment_stats stats = init_stats(box, tol, maxeval, gv);
   stats.compute();
+  fragment_stats::reset();
   return stats;
 }
 
@@ -1716,16 +1718,27 @@ fragment_stats::fragment_stats(geom_box &bx)
   num_pixels_in_box = get_pixels_in_box(&bx);
 }
 
+void fragment_stats::reset() {
+  resolution = 0;
+  split_chunks_evenly = false;
+  destroy_geom_box_tree(geom_tree);
+  geom_tree = NULL;
+}
+
 void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
                                  vector3 cell_size, vector3 cell_center,
                                  geometric_object_list *geom_) {
   geom_initialize();
   default_material = default_mat;
-  ensure_periodicity = ensure_per;
   geometry_center = cell_center;
-  dimensions = meep::number_of_directions(gv->dim);
   geometry_lattice.size = cell_size;
   geom_fix_object_list(*geom_);
+  geom_box cell_box =  make_box_from_cell(cell_size);
+  dimensions = 3;
+  ensure_periodicity = 0;
+  geom_tree = create_geom_box_tree0(*geom_, cell_box);
+  dimensions = meep::number_of_directions(gv->dim);
+  ensure_periodicity = ensure_per;
 }
 
 bool fragment_stats::has_non_medium_material() {
@@ -1756,48 +1769,68 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
   }
 }
 
+void fragment_stats::compute_overlaps_from_tree(geom_box_tree t, bool &anisotropic_pixels_already_added) {
+  if (!t || !geom_boxes_intersect(&t->b, &box))
+    return;
+
+  if (t->nobjects > 0) {
+    geom_box intersection;
+    geom_box_intersection(&intersection, &t->b, &box);
+
+    for (int i = 0; i < t->nobjects; ++i) {
+      if (geom_boxes_intersect(&intersection, &t->objects[i].box)) {
+        geom_box shifted_box = {vector3_minus(intersection.low, t->objects[i].shiftby),
+                                vector3_minus(intersection.high, t->objects[i].shiftby)};
+        double overlap = box_overlap_with_object(shifted_box, *t->objects[i].o, tol, maxeval);
+
+        if (eps_averaging && !anisotropic_pixels_already_added) {
+          // If the object doesn't overlap the entire box, that implies that
+          // an object interface intercepts the box, which means we treat
+          // the entire box as anisotropic. This method could give some false
+          // positives if there is another object with the same material behind
+          // the current object, but in practice it is probably reasonable to
+          // assume that there is a material interface somwhere in the box so
+          // we won't worry about fancier edge-detection methods for now.
+          if (overlap != 1.0) {
+            anisotropic_pixels_already_added = true;
+            num_anisotropic_eps_pixels += num_pixels_in_box;
+            if (mu_not_1(t->objects[i].o->material)) {
+              num_anisotropic_mu_pixels += num_pixels_in_box;
+            }
+          }
+        }
+
+        if (overlap > 0.0) {
+          // Count contributions from material of object
+          size_t num_pixels_in_intersection_box = get_pixels_in_box(&intersection);
+          size_t pixels = (size_t)ceil(overlap * num_pixels_in_intersection_box);
+          if (pixels > 0) {
+            material_type mat = (material_type)t->objects[i].o->material;
+            update_stats_from_material(mat, pixels, anisotropic_pixels_already_added);
+          }
+          size_t default_material_pixels = num_pixels_in_intersection_box - pixels;
+          if (default_material_pixels > 0) {
+            update_stats_from_material((material_type)default_material, default_material_pixels,
+                                       anisotropic_pixels_already_added);
+          }
+        }
+      }
+    }
+  }
+
+  compute_overlaps_from_tree(t->t1, anisotropic_pixels_already_added);
+  compute_overlaps_from_tree(t->t2, anisotropic_pixels_already_added);
+}
+
 void fragment_stats::compute_stats() {
 
   if (geom.num_items == 0) {
     // If there is no geometry, count the default material for the whole fragment
     update_stats_from_material((material_type)default_material, num_pixels_in_box);
   }
-
-  for (int i = 0; i < geom.num_items; ++i) {
-    geometric_object *go = &geom.items[i];
-    double overlap = box_overlap_with_object(box, *go, tol, maxeval);
-
+  else {
     bool anisotropic_pixels_already_added = false;
-    if (eps_averaging) {
-      // If the object doesn't overlap the entire box, that implies that
-      // an object interface intercepts the box, which means we treat
-      // the entire box as anisotropic. This method could give some false
-      // positives if there is another object with the same material behind
-      // the current object, but in practice it is probably reasonable to
-      // assume that there is a material interface somwhere in the box so
-      // we won't worry about fancier edge-detection methods for now.
-      if (overlap != 1.0) {
-        anisotropic_pixels_already_added = true;
-        num_anisotropic_eps_pixels += num_pixels_in_box;
-        if (mu_not_1(go->material)) {
-          num_anisotropic_mu_pixels += num_pixels_in_box;
-        }
-      }
-    }
-
-    // Count contributions from material of object
-    size_t pixels = (size_t)ceil(overlap * num_pixels_in_box);
-    if (pixels > 0) {
-      material_type mat = (material_type)go->material;
-      update_stats_from_material(mat, pixels, anisotropic_pixels_already_added);
-    }
-
-    // Count contributions from default_material
-    size_t default_material_pixels = num_pixels_in_box - pixels;
-    if (default_material_pixels > 0) {
-      update_stats_from_material((material_type)default_material, default_material_pixels,
-                                 anisotropic_pixels_already_added);
-    }
+    compute_overlaps_from_tree(geom_tree, anisotropic_pixels_already_added);
   }
 }
 
