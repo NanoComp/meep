@@ -165,7 +165,7 @@ For a given mode of the ring resonator, it is often useful to know how sensitive
 
 <center>
 
-$$\Delta\omega = -\frac{\omega}{2} \frac{ \iint d^2 \vec{r} \big[ (\varepsilon_1 - \varepsilon_2) |\vec{E}_{\parallel}(\vec{r})|^2 - \big(\frac{1}{\varepsilon_1} - \frac{1}{\varepsilon_2}\big)|\varepsilon\vec{E}_{\perp}|^2\big] \Delta h}{\int d^3\vec{r} \varepsilon(\vec{r})|\vec{E}(\vec{r})|^2} + O(\Delta h^2)$$
+$$ \Delta\omega = -\frac{\omega}{2} \frac{ \iint d^2 \vec{r} \big[ (\varepsilon_1 - \varepsilon_2) |\vec{E}_{\parallel}(\vec{r})|^2 - \big(\frac{1}{\varepsilon_1} - \frac{1}{\varepsilon_2}\big)|\varepsilon\vec{E}_{\perp}|^2\big] \Delta h}{\int d^3\vec{r} \varepsilon(\vec{r})|\vec{E}(\vec{r})|^2} + O(\Delta h^2) $$
 
 </center>
 
@@ -331,7 +331,7 @@ Finally, as reference, the same calculation can be set up in Cartesian coordinat
 Scattering Cross Section of a Finite Dielectric Cylinder
 --------------------------------------------------------
 
-As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical $rz$ cell are validated by comparing to the same simulation in 3d Cartesian coordinates which tends to be much slower and less accurate at the same grid resolution.
+As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical $(r,z)$ cell are validated by comparing to the same simulation in 3d Cartesian coordinates which tends to be much slower and less accurate at the same grid resolution.
 
 The calculation of the scattering cross section is described in [Tutorial/Basics/Mie Scattering of a Lossless Dielectric Sphere](Basics.md#mie-scattering-of-a-lossless-dielectric-sphere) which is modified for this example. A linearly-polarized planewave is normally incident on a $z$-oriented cylinder which is enclosed by a DFT flux box. Expressed in cylindrical coordinates, an $x$-polarized planewave propagating in the $z$ direction is the sum of two circularly-polarized planewaves of opposite chirality:
 
@@ -339,7 +339,7 @@ The calculation of the scattering cross section is described in [Tutorial/Basics
 $$ \hat{E}_x = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) + e^{-i\phi}(\hat{E}_\rho - i\hat{E}_\phi)\right] $$
 </center>
 
-In practice, this involves performing two separate simulations for $m$=±1. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. However, only one of the two simulations is necessary since the scattered power is the same for $m$=±1 due to the rotational symmetry of the source and structure. Note that a linearly-polarized planewave is *not* $m$=0 which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m$=±1) and therefore is *not* invariant because if it is rotated by 180°, it flips sign.
+In practice, this involves performing two separate simulations for $m$=±1. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. However, only one of the two simulations is necessary since the scattered power is the same for $m$=±1 due to the rotational symmetry of the source and structure. (Note that a linearly-polarized planewave is *not* $m$=0 which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m$=±1) and therefore is *not* invariant because it flips sign if it is rotated by 180°.)
 
 The simulation script is in [examples/cylinder_cross_section.py](https://github.com/NanoComp/meep/blob/master/python/examples/cylinder_cross_section.py).
 
@@ -447,9 +447,9 @@ if mp.am_master():
     plt.savefig("cylinder_cross_section.png")
 ```
 
-There are two things to note. First, the "closed" DFT flux box is represented using just three flux objects: two along $z$ and one in the radial $r$ direction. Second, the integral of the Poynting vector to obtain the flux is over the annular volume in cylindrical coordinates. There is no need for additional post-processing of the flux values.
+Note that the "closed" DFT flux box is comprised of just three flux objects: two along $z$ and one in the radial $r$ direction. The function `get_fluxes` which computes the integral of the Poynting vector is over the annular volume in cylindrical coordinates. There is no need for additional post-processing of the flux values.
 
-As shown below, the results for the cylindrical coordinates agree well with the 3d Cartesian simulation. However, for a single Intel Xeon 4.2GHz processor, the runtime of the 3d simulation is nearly 90 times larger than the cylindrical simulation.
+As shown below, the results for the scattering cross section computed using cylindrical coordinates agree well with the 3d Cartesian simulation. However, there is a large discrepancy in performance: for a single Intel Xeon 4.2GHz processor, the runtime of the cylindrical simulation is nearly 90 times shorter than the 3d simulation.
 
 <center>
 ![](../images/cylinder_cross_section.png)
