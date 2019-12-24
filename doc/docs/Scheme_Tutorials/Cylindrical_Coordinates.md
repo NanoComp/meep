@@ -116,13 +116,13 @@ unix% h5topng -S 2 -Zc dkbluered -C ring-cyl-eps-001200.00.h5 ring-cyl-e
 Note that, because of the `to-appended` command, the `ring-cyl-ez.h5` file is a 160$\times$18 dataset corresponding to an $r \times t$ slice. Repeating this for all three modes results in the images:
 
 <center>
-$E_z$ for ω=0.118 $m$=3 mode:  
+$E_z$ for $\omega$=0.118 $m$=3 mode:
 ![](../images/Ring-cyl-ez-0.118.png)
 
-$E_z$ for ω=0.148 $m$=4 mode:  
+$E_z$ for $\omega$=0.148 $m$=4 mode:
 ![](../images/Ring-cyl-ez-0.148.png)
 
-$E_z$ for ω=0.176 $m$=5 mode:  
+$E_z$ for $\omega$=0.176 $m$=5 mode:
 ![](../images/Ring-cyl-ez-0.176.png)
 </center>
 
