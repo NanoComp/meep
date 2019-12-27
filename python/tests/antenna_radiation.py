@@ -63,8 +63,8 @@ class TestAntennaRadiation(unittest.TestCase):
             E[n,:] = [np.conj(ff[j]) for j in range(3)]
             H[n,:] = [ff[j+3] for j in range(3)]
 
-        Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
-        Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
+        Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
+        Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2])
         Pr = np.sqrt(np.square(Px)+np.square(Py))
         far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
