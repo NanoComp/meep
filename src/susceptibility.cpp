@@ -113,6 +113,7 @@ void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *)malloc(sz);
+  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   d->sz_data = sz;
   return (void *)d;
 }
@@ -385,6 +386,7 @@ void *gyrotropic_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(gyrotropy_data) + sizeof(realnum) * (num - 1);
   gyrotropy_data *d = (gyrotropy_data *)malloc(sz);
+  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   d->sz_data = sz;
   return (void *)d;
 }

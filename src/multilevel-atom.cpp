@@ -135,6 +135,7 @@ void *multilevel_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(multilevel_data) + sizeof(realnum) * (L * L + L + gv.ntot() * L + num * T - 1);
   multilevel_data *d = (multilevel_data *)malloc(sz);
+  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   memset(d, 0, sz);
   d->sz_data = sz;
   return (void *)d;
