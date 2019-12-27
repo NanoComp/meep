@@ -17,7 +17,7 @@ class TestAntennaRadiation(unittest.TestCase):
         resolution = 50
         sxy = 4
         dpml = 1
-        cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
+        cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml)
 
         pml_layers = mp.PML(dpml)
 
@@ -28,7 +28,8 @@ class TestAntennaRadiation(unittest.TestCase):
                             center=mp.Vector3(),
                             component=mp.Ez)
 
-        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
+        symmetries = [mp.Mirror(mp.X),
+                      mp.Mirror(mp.Y)]
 
         sim = mp.Simulation(cell_size=cell,
                             resolution=resolution,

@@ -419,7 +419,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
   for (int i = 0; i < Nfreq; ++i)
     F[i] = 0;
 
-  for (int idx = 0; idx < N; ++idx) {
+  for (size_t idx = 0; idx < N; ++idx) {
     for (int i = 0; i < Nfreq; ++i) {
       for (int k = 0; k < 6; ++k)
         ff_EH[k] = std::complex<realnum>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i), *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));

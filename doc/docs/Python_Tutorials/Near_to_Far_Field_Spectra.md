@@ -31,7 +31,7 @@ resolution = 50  # pixels/um
 
 sxy = 4
 dpml = 1
-cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
+cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml)
 
 pml_layers = [mp.PML(dpml)]
 
