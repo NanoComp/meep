@@ -436,7 +436,11 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     }
   }
 
-  double dV = pow(1/resolution,rank);
+  double dV = 1;
+  LOOP_OVER_DIRECTIONS(where.dim, d) {
+    int dim = int(floor(where.in_direction(d) * resolution));
+    if (dim > 1) dV *= where.in_direction(d) / (dim - 1);
+  }
 
   for (int i = 0; i < Nfreq; ++i)
     F[i] *= dV;
