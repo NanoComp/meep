@@ -278,4 +278,151 @@ dwdR:, -0.08020283464036788 (pert. theory), -0.07980880151594316 (finite diff.)
 ```
 Both results have converged to at least three digits. The relative error at resolution 200 is 0.5%. The error is larger in this case due to the presence of the [discontinuous fields at the dielectric interface](../Subpixel_Smoothing.md). The mode has a $\omega$ of 0.208 and $Q$ of 1200.
 
-Finally, as reference, the same calculation can be set up in Cartesian coordinates as a 2d simulation. The simulation script is in [examples/perturbation-theory-2d.ctl](https://github.com/NanoComp/meep/blob/master/python/examples/perturbation-theory-2d.ctl). The results are comparable to the cylindrical coordinate case (a 1d calculation) but the 2d simulation is much slower and less accurate at the same grid resolution.
+Finally, as reference, the same calculation can be set up in Cartesian coordinates as a 2d simulation. There is one major difference: the mode produced by a point source in 2d is actually the $\cos(m\phi)$ mode, *not* $\exp(im\phi)$, or equivalently it is the superposition of the $\pm m$ modes. This means that computing the numerator integral does not involve just multiplying the field at a single point on the surface by $2\pi r$ &mdash; rather, it is the integral of $\cos^2(m\phi)$ which gives a factor of 1/2. (For non-circular shapes in 2d, the surface integral must be computed numerically.) The simulation script is in [examples/perturbation-theory-2d.ctl](https://github.com/NanoComp/meep/blob/master/python/examples/perturbation-theory-2d.ctl). The results are comparable to the cylindrical coordinate case (a 1d calculation) but the 2d simulation is much slower and less accurate at the same grid resolution.
+
+Scattering Cross Section of a Finite Dielectric Cylinder
+--------------------------------------------------------
+
+As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical $(r,z)$ cell are validated by comparing to the same simulation in 3d Cartesian coordinates which tends to be much slower and less accurate at the same grid resolution.
+
+The calculation of the scattering cross section is described in [Tutorial/Basics/Mie Scattering of a Lossless Dielectric Sphere](Basics.md#mie-scattering-of-a-lossless-dielectric-sphere) which is modified for this example. A linearly-polarized planewave is normally incident on a $z$-oriented cylinder which is enclosed by a DFT flux box. Expressed in cylindrical coordinates, an $x$-polarized planewave propagating in the $z$ direction is the sum of two circularly-polarized planewaves of opposite chirality:
+
+<center>
+$$ \hat{E}_x = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) + e^{-i\phi}(\hat{E}_\rho - i\hat{E}_\phi)\right] $$
+</center>
+
+In practice, this involves performing two separate simulations for $m=\pm 1$. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. However, only one of the two simulations is necessary: the scattered power is the same for $m=\pm 1$ due to the mirror symmetry of the structure. (Note that a linearly-polarized planewave is *not* $m=0$, which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m=\pm 1$) and is *not* rotationally invariant; it flips sign if it is rotated by 180°.)
+
+The simulation script is in [examples/cylinder-cross-section.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/cylinder-cross-section.ctl).
+
+```scm
+(define-param r 0.7) ;; radius of cylinder
+(define-param h 2.3) ;; height of cylinder
+
+(define wvl-min (/ (* 2 pi r) 10))
+(define wvl-max (/ (* 2 pi r) 2))
+
+(define frq-min (/ wvl-max))
+(define frq-max (/ wvl-min))
+(define frq-cen (* 0.5 (+ frq-min frq-max)))
+(define dfrq (- frq-max frq-min))
+(define nfrq 100)
+
+;; at least 8 pixels per smallest wavelength, i.e. (floor (/ 8 wvl-min))
+(set-param! resolution 25)
+
+(define dpml (* 0.5 wvl-max))
+(define dair (* 1.0 wvl-max))
+
+(define boundary-layers (list (make pml (thickness dpml))))
+(set! pml-layers boundary-layers)
+
+(define sr (+ r dair dpml))
+(define sz (+ dpml dair h dair dpml))
+(define cell (make lattice (size sr 0 sz)))
+(set! geometry-lattice cell)
+(set! dimensions CYLINDRICAL)
+(set-param! m -1)
+
+;; (is-integrated? true) necessary for any planewave source extending into PML
+(define circ-src (list (make source
+                         (src (make gaussian-src (frequency frq-cen) (fwidth dfrq) (is-integrated? true)))
+                         (center (* 0.5 sr) 0 (+ (* -0.5 sz) dpml))
+                         (size sr 0 0)
+                         (component Er))
+                       (make source
+                         (src (make gaussian-src (frequency frq-cen) (fwidth dfrq) (is-integrated? true)))
+                         (center (* 0.5 sr) 0 (+ (* -0.5 sz) dpml))
+                         (size sr 0 0)
+                         (component Ep)
+                         (amplitude 0-1i))))
+
+(set! sources circ-src)
+
+(define box-z1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (* 0.5 r) 0 (* -0.5 h)) (size r 0 0))))
+(define box-z2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (* 0.5 r) 0 (* +0.5 h)) (size r 0 0))))
+(define box-r (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center r 0 0) (size 0 0 h))))
+
+(run-sources+ 10)
+
+(display-fluxes box-z1)
+
+(save-flux "box-z1-flux" box-z1)
+(save-flux "box-z2-flux" box-z2)
+(save-flux "box-r-flux" box-r)
+
+(reset-meep)
+
+(define ncyl 2.0)
+(set! geometry (list
+                (make block
+                  (material (make medium (index ncyl)))
+                  (size r 0 h)
+                  (center (* 0.5 r) 0 0))))
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! sources circ-src)
+
+(define box-z1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (* 0.5 r) 0 (* -0.5 h)) (size r 0 0))))
+(define box-z2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (* 0.5 r) 0 (* +0.5 h)) (size r 0 0))))
+(define box-r (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center r 0 0) (size 0 0 h))))
+
+(load-minus-flux "box-z1-flux" box-z1)
+(load-minus-flux "box-z2-flux" box-z2)
+(load-minus-flux "box-r-flux" box-r)
+
+(run-sources+ 100)
+
+(display-fluxes box-z1 box-z2 box-r)
+```
+
+Note that the "closed" DFT flux box is comprised of just three flux objects: two along $z$ and one in the radial $r$ direction. The function `display-fluxes` which computes the integral of the Poynting vector does so over the annular volume in cylindrical coordinates. There is no need for additional post-processing of the flux values.
+
+The following Bash shell script runs the simulation. The script pipes the output to a file and extracts the input and and scattering flux data to separate files.
+
+```
+#!/bin/bash
+
+meep cylinder-cross-section.ctl |tee cyl.out
+
+grep flux1: cyl.out |cut -d, -f2- > input.dat
+grep flux2: cyl.out |cut -d, -f2- > scatt.dat
+```
+
+The scattering cross section is computed from the simulation data and plotted using the following Matlab/Octave script.
+
+```matlab
+input = dlmread('input.dat',',');
+scatt = dlmread('scatt.dat',',');
+
+freqs = input(:,1);
+scatt_flux = scatt(:,2) - scatt(:,3) - scatt(:,4);
+
+r = 0.7;
+
+intensity = input(:,2)/(pi*r^2);
+scatt_cross_section = -scatt_flux./intensity;
+
+loglog(2*pi*r*freqs,scatt_cross_section,'bo-');
+xlabel('(cylinder circumference)/wavelength, 2πr/\lambda');
+ylabel('scattering cross section, \sigma');
+title("Scattering Cross Section of a Lossless Dielectric Cylinder");
+axis tight;
+set(gca, "xminorgrid", "on");
+set(gca, "yminorgrid", "on");
+```
+
+As shown below, the results for the scattering cross section computed using cylindrical coordinates agree well with the 3d Cartesian simulation. However, there is a large discrepancy in performance: for a single Intel Xeon 4.2GHz processor, the runtime of the cylindrical simulation is nearly 90 times shorter than the 3d simulation.
+
+<center>
+![](../images/cylinder_cross_section.png)
+</center>
