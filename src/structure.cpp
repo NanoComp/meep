@@ -228,9 +228,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 double structure::estimated_cost(int process) {
   double proc_cost = 0;
   for (int i = 0; i < num_chunks; i++) {
-    if (chunks[i]->n_proc() == process) {
-      proc_cost += chunks[i]->cost;
-    }
+    if (chunks[i]->n_proc() == process) { proc_cost += chunks[i]->cost; }
   }
   return proc_cost;
 }

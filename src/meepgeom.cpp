@@ -191,9 +191,7 @@ int sym_matrix_positive_definite(symmetric_matrix *V) {
 /***************************************************************/
 static meep::ndim dim = meep::D3;
 void set_dimensions(int dims) {
-  if (dims == CYLINDRICAL) {
-    dim = meep::Dcyl;
-  }
+  if (dims == CYLINDRICAL) { dim = meep::Dcyl; }
   else {
     dim = meep::ndim(dims - 1);
   }
@@ -374,7 +372,9 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = NULL; }
 
   if (meep::am_master()) {
-    int num_print = meep::verbosity > 2 ? geometry.num_items : std::min(geometry.num_items, meep::verbosity > 0 ? 10 : 0);
+    int num_print = meep::verbosity > 2
+                        ? geometry.num_items
+                        : std::min(geometry.num_items, meep::verbosity > 0 ? 10 : 0);
     for (int i = 0; i < geometry.num_items; ++i) {
 
       if (i < num_print) display_geometric_object_info(5, geometry.items[i]);
@@ -1474,9 +1474,8 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 /***************************************************************/
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g, vector3 center,
                                  bool use_anisotropic_averaging, double tol, int maxeval,
-                                 bool _ensure_periodicity,
-                                 material_type _default_material, absorber_list alist,
-                                 material_type_list extra_materials) {
+                                 bool _ensure_periodicity, material_type _default_material,
+                                 absorber_list alist, material_type_list extra_materials) {
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
   geometry_center = center;
@@ -1742,9 +1741,7 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
   switch (mat->which_subclass) {
     case material_data::MEDIUM: {
       medium_struct *med = &mat->medium;
-      if (!anisotropic_pixels_already_added) {
-        count_anisotropic_pixels(med, pixels);
-      }
+      if (!anisotropic_pixels_already_added) { count_anisotropic_pixels(med, pixels); }
       count_nonlinear_pixels(med, pixels);
       count_susceptibility_pixels(med, pixels);
       count_nonzero_conductivity_pixels(med, pixels);
@@ -1779,9 +1776,7 @@ void fragment_stats::compute_stats() {
       if (overlap != 1.0) {
         anisotropic_pixels_already_added = true;
         num_anisotropic_eps_pixels += num_pixels_in_box;
-        if (mu_not_1(go->material)) {
-          num_anisotropic_mu_pixels += num_pixels_in_box;
-        }
+        if (mu_not_1(go->material)) { num_anisotropic_mu_pixels += num_pixels_in_box; }
       }
     }
 

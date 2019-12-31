@@ -1029,7 +1029,7 @@ std::complex<double> grid_volume::get_split_costs(direction d, int split_point) 
 
 static double cost_diff(int desired_chunks, std::complex<double> costs) {
   double left_cost = real(costs), right_cost = imag(costs);
-  return right_cost - left_cost * (desired_chunks-1);
+  return right_cost - left_cost * (desired_chunks - 1);
 }
 
 void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
@@ -1072,7 +1072,7 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
     std::complex<double> costs = get_split_costs(d, split_point);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
-    double split_measure = max(left_cost * (desired_chunks-1), right_cost);
+    double split_measure = max(left_cost * (desired_chunks - 1), right_cost);
     if (split_measure < best_split_measure) {
       if (d == longest_axis || split_measure < (best_split_measure - (0.3 * best_split_measure))) {
         // Only use this split_measure if we're on the longest_axis, or if the split_measure is
@@ -1099,8 +1099,10 @@ std::vector<grid_volume> grid_volume::split_into_n(int n) const {
     double effort_fraction;
     rest_gv.find_best_split(n, best_split_point, best_split_direction, effort_fraction);
     int num_in_split_dir = num_direction(best_split_direction);
-    result.push_back(rest_gv.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir));
-    rest_gv = rest_gv.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
+    result.push_back(
+        rest_gv.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir));
+    rest_gv =
+        rest_gv.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
     --n;
   }
   result.push_back(rest_gv);

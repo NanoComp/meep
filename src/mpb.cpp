@@ -386,7 +386,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       kdir[i] = kcart[i] / kcart_len;
     if (gv.dim == D2) {
       kdir[2] = 0; // beta is fixed
-      kmatch = sqrt(kcart[0]*kcart[0] + kcart[1]*kcart[1]);
+      kmatch = sqrt(kcart[0] * kcart[0] + kcart[1] * kcart[1]);
     }
     else
       kmatch = kcart_len;

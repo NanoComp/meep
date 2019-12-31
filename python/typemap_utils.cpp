@@ -400,9 +400,7 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 
   int length = PyList_Size(po);
   sl->num_items = length;
-  if (length > 0) {
-    sl->items = new susceptibility_struct[length];
-  }
+  if (length > 0) { sl->items = new susceptibility_struct[length]; }
   else {
     sl->items = NULL;
   }

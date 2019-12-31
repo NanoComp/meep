@@ -137,7 +137,7 @@ complex<double> fields::get_field(component c, const vec &loc, bool parallel) co
       for (int argh = 0; argh < 8 && w[argh]; argh++)
         res += w[argh] * get_field(c, ilocs[argh], false);
       if (gv.dim == D2 && loc.in_direction(Z) != 0) // special_kz handling
-        res *= std::polar(1.0, 2*pi*beta * loc.in_direction(Z));
+        res *= std::polar(1.0, 2 * pi * beta * loc.in_direction(Z));
       return parallel ? sum_to_all(res) : res;
   }
 }

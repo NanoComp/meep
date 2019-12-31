@@ -422,14 +422,15 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
   for (size_t idx = 0; idx < N; ++idx) {
     for (int i = 0; i < Nfreq; ++i) {
       for (int k = 0; k < 6; ++k)
-        ff_EH[k] = std::complex<realnum>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i), *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
+        ff_EH[k] = std::complex<realnum>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i),
+                                         *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
       switch (df) {
-      case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
-      case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
-      case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
-      case R:
-      case P:
-      case NO_DIRECTION: abort("invalid flux direction");
+        case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
+        case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
+        case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
+        case R:
+        case P:
+        case NO_DIRECTION: abort("invalid flux direction");
       }
       for (int j = 0; j < 2; ++j)
         F[i] += real(cE[j] * conj(cH[j])) * (1 - 2 * j);

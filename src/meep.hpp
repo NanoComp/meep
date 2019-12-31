@@ -44,7 +44,8 @@ typedef double realnum;
 
 #define MEEP_MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
-extern int verbosity; // if 0, suppress all non-error messages from Meep; 1 is default, 2 is debug output
+extern int
+    verbosity; // if 0, suppress all non-error messages from Meep; 1 is default, 2 is debug output
 
 const double pi = 3.141592653589793238462643383276;
 
@@ -576,7 +577,8 @@ public:
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
   susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
-  double cost;  // The cost of this chunk's grid_volume as computed by split_by_cost and fragment_stats
+  double
+      cost; // The cost of this chunk's grid_volume as computed by split_by_cost and fragment_stats
 
   int refcount; // reference count of objects using this structure_chunk
 
@@ -1662,8 +1664,8 @@ public:
   // call destroy_eigenmode_data() to deallocate it when finished.
   void *get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
-                      double resolution, double eigensolver_tol,
-                      double *kdom = 0, void **user_mdata = 0);
+                      double resolution, double eigensolver_tol, double *kdom = 0,
+                      void **user_mdata = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,

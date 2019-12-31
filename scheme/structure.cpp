@@ -268,7 +268,9 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = NULL; }
 
   if (meep::am_master()) {
-    int num_print = meep::verbosity > 2 ? geometry.num_items : std::min(geometry.num_items, meep::verbosity > 0 ? 10 : 0);
+    int num_print = meep::verbosity > 2
+                        ? geometry.num_items
+                        : std::min(geometry.num_items, meep::verbosity > 0 ? 10 : 0);
     for (int i = 0; i < num_print; ++i) {
       display_geometric_object_info(5, geometry.items[i]);
 
