@@ -95,7 +95,6 @@ if mp.am_master():
     plt.grid(True,which="both",ls="-")
     plt.xlabel('(cylinder circumference)/wavelength, 2πr/λ')
     plt.ylabel('scattering cross section, σ')
-    plt.legend(loc='upper right')
     plt.title('Scattering Cross Section of a Lossless Dielectric Cylinder')
     plt.tight_layout()
     plt.savefig("cylinder_cross_section.png")
