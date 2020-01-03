@@ -1354,6 +1354,12 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
     %}
 }
 
+%extend meep::fields {
+  bool is_periodic(boundary_side side, direction dir) {
+    return $self->boundaries[side][dir] == meep::Periodic;
+  }
+}
+
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
 void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
