@@ -245,8 +245,6 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
   }
 }
 
-#define TWOPI 6.2831853071795864769252867665590057683943388
-
 // cylindrical Green's function constructed by integrating green3d as the source
 // term rotates around the z axis with exp(im*phi) dependence, integrated to a tolerance tol.
 void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
@@ -258,7 +256,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   for (int j = 0; j < 6; ++j)
     EH[j] = 0;
   const int N0 = 8;
-  double dtheta = 2 * TWOPI / N0;
+  double dtheta = 4 * pi / N0;
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
     dtheta *= 0.5; /* delta theta is halved on each N loop iteration */
