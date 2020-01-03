@@ -256,14 +256,17 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   vec x_3d(x.dim == Dcyl ? x.r() : x.x(), x.y(), x.z());
   direction d = component_direction(c0);
   component cx = direction_component(c0, X), cy = direction_component(c0, Y);
+  for (int j = 0; j < 6; ++j) EH[j] = 0;
   const int N0 = 8;
+  double dtheta = 2*TWOPI/N0;
   for (int N = N0; N <= 65536; N *= 2) {
-    std::complex<double> EH_sum[6] = {0,0,0,0,0,0};
-    double dtheta = TWOPI/N;
+    std::complex<double> EH_sum[6];
+    dtheta *= 0.5; /* delta theta is halved on each N loop iteration */
+    for (int j = 0; j < 6; ++j) EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points
     for (int i = (N>N0); i < N; i += 1 + (N>N0)) {
       double phi = i*dtheta, c = cos(phi), s = sin(phi);
       vec x0_phi(x0.r() * c, x0.r() * s, x0.z());
-      std::complex<double> EH_phi[6], f0_exp_imphi = f0 * std::polar(1.0, m*phi);
+      std::complex<double> EH_phi[6], f0_exp_imphi = f0 * std::polar(1.0, m*phi) * dtheta;
       if (d == Z) {
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, c0, f0_exp_imphi);
         for (int j = 0; j < 6; ++j) EH_sum[j] += EH_phi[j];
@@ -283,10 +286,8 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
     }
     double sumdiff = 0, sumabs = 0;
     for (int j = 0; j < 6; ++j) {
-      std::complex<double> old = EH[j];
-      EH[j] = EH_sum[j]*dtheta;
-      sumdiff += abs(EH[j] - old);
-      sumabs += abs(EH[j]);
+      sumdiff += abs(EH[j] - EH_sum[j]);
+      sumabs += abs(EH[j] = EH_sum[j]);
     }
     if (sumdiff <= sumabs * tol) break;
   }
