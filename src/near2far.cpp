@@ -250,38 +250,44 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 // cylindrical Green's function constructed by integrating green3d as the source
 // term rotates around the z axis with exp(im*phi) dependence, integrated to a tolerance tol.
 void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
-             const vec &x0, component c0, std::complex<double> f0,
-             double m, double tol) {
+              const vec &x0, component c0, std::complex<double> f0, double m, double tol) {
   if (x0.dim != Dcyl) abort("wrong dimensionality in greencyl");
   vec x_3d(x.dim == Dcyl ? x.r() : x.x(), x.y(), x.z());
   direction d = component_direction(c0);
   component cx = direction_component(c0, X), cy = direction_component(c0, Y);
-  for (int j = 0; j < 6; ++j) EH[j] = 0;
+  for (int j = 0; j < 6; ++j)
+    EH[j] = 0;
   const int N0 = 8;
-  double dtheta = 2*TWOPI/N0;
+  double dtheta = 2 * TWOPI / N0;
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
     dtheta *= 0.5; /* delta theta is halved on each N loop iteration */
-    for (int j = 0; j < 6; ++j) EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points
-    for (int i = (N>N0); i < N; i += 1 + (N>N0)) {
-      double phi = i*dtheta, c = cos(phi), s = sin(phi);
+    for (int j = 0; j < 6; ++j)
+      EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points
+    for (int i = (N > N0); i < N; i += 1 + (N > N0)) {
+      double phi = i * dtheta, c = cos(phi), s = sin(phi);
       vec x0_phi(x0.r() * c, x0.r() * s, x0.z());
-      std::complex<double> EH_phi[6], f0_exp_imphi = f0 * std::polar(1.0, m*phi) * dtheta;
+      std::complex<double> EH_phi[6], f0_exp_imphi = f0 * std::polar(1.0, m * phi) * dtheta;
       if (d == Z) {
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, c0, f0_exp_imphi);
-        for (int j = 0; j < 6; ++j) EH_sum[j] += EH_phi[j];
+        for (int j = 0; j < 6; ++j)
+          EH_sum[j] += EH_phi[j];
       }
       else if (d == R) {
-        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi*c);
-        for (int j = 0; j < 6; ++j) EH_sum[j] += EH_phi[j];
-        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cy, f0_exp_imphi*s);
-        for (int j = 0; j < 6; ++j) EH_sum[j] += EH_phi[j];
+        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi * c);
+        for (int j = 0; j < 6; ++j)
+          EH_sum[j] += EH_phi[j];
+        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cy, f0_exp_imphi * s);
+        for (int j = 0; j < 6; ++j)
+          EH_sum[j] += EH_phi[j];
       }
       else { /* (d == P) */
-        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi*(-s));
-        for (int j = 0; j < 6; ++j) EH_sum[j] += EH_phi[j];
-        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cy, f0_exp_imphi*c);
-        for (int j = 0; j < 6; ++j) EH_sum[j] += EH_phi[j];
+        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi * (-s));
+        for (int j = 0; j < 6; ++j)
+          EH_sum[j] += EH_phi[j];
+        green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cy, f0_exp_imphi * c);
+        for (int j = 0; j < 6; ++j)
+          EH_sum[j] += EH_phi[j];
       }
     }
     double sumdiff = 0, sumabs = 0;
@@ -294,7 +300,8 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
 }
 
 void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
-  if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl) abort("only 2d or 3d or cylindrical far-field computation is supported");
+  if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
+    abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
   for (int i = 0; i < 6 * Nfreq; ++i)
