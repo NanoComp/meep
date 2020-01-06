@@ -372,6 +372,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
     N *= dims[rank];
     dirs[rank++] = d;
   }
+  if (where.dim == Dcyl) dirs[2] = P; // otherwise Z is listed twice
 
   if (N * Nfreq < 1) return NULL; /* nothing to output */
 
