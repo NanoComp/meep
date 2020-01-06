@@ -361,12 +361,13 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
   double dx[3] = {0, 0, 0};
   direction dirs[3] = {X, Y, Z};
 
+  rank = 0;
+  N = dims[0] = dims[1] = dims[2] = 1;
+
   LOOP_OVER_DIRECTIONS(where.dim, d) {
     dims[rank] = int(floor(where.in_direction(d) * resolution));
-    if (dims[rank] <= 1) {
+    if (dims[rank] <= 1)
       dims[rank] = 1;
-      dx[rank] = 0;
-    }
     else
       dx[rank] = where.in_direction(d) / (dims[rank] - 1);
     N *= dims[rank];
@@ -384,7 +385,6 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
   std::complex<double> *EH1 = new std::complex<double>[6 * Nfreq];
 
   double start = wall_time();
-  size_t total_points = dims[0] * dims[1] * dims[2];
   size_t last_point = 0;
 
   vec x(where.dim);
@@ -396,9 +396,9 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
         x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2 * dx[2]);
         double t;
         if (verbosity > 0 && (t = wall_time()) > start + MEEP_MIN_OUTPUT_TIME) {
-          size_t this_point = (dims[1] * dims[2] * i0) + (dims[2] * i1) + i2 + 1;
+          size_t this_point = (dims[1] * i0 + i1) * dims[2] + i2 + 1;
           master_printf("get_farfields_array working on point %zu of %zu (%d%% done), %g s/point\n",
-                        this_point, total_points, (int)((double)this_point / total_points * 100),
+                        this_point, N, (int)((double)this_point / N * 100),
                         (t - start) / (std::max(1, (int)(this_point - last_point))));
           start = t;
           last_point = this_point;
