@@ -1108,6 +1108,97 @@ class Simulation(object):
         if self.load_structure_file:
             self.load_structure(self.load_structure_file)
 
+    def _is_outer_boundary(self, vol, direction, side):
+
+        if direction == mp.X:
+            cell_size_in_dir = self.cell_size.x
+        elif direction == mp.Y:
+            cell_size_in_dir = self.cell_size.y
+        else:
+            cell_size_in_dir = self.cell_size.z
+
+        half_cell_size = cell_size_in_dir / 2
+        # TODO: Support shifted origins
+
+        def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+            return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+        if side == mp.Low and isclose(vol.get_min_corner().in_direction(direction), -half_cell_size):
+            return True
+        if side == mp.High and isclose(vol.get_max_corner().in_direction(direction), half_cell_size):
+            return True
+
+        return False
+
+    def _get_chunk_communication_area(self, vol):
+
+        result = 0
+
+        def get_num_pixels(vol, direction, side, target_direction, mult_direction=None):
+            result = 0
+            if not self._is_outer_boundary(vol, direction, side):
+                result = vol.in_direction(target_direction)
+                if mult_direction is not None:
+                    result *= vol.in_direction(mult_direction)
+            else:
+                # Check for periodic outer boundary
+                if self.fields.is_periodic(side, direction):
+                    result = vol.in_direction(target_direction)
+                    if mult_direction is not None:
+                        result *= vol.in_direction(mult_direction)
+            return result
+
+        if vol.dim == 1:
+            # 2d
+            yLow = get_num_pixels(vol, mp.X, mp.Low, mp.Y)
+            yHigh = get_num_pixels(vol, mp.X, mp.High, mp.Y)
+            xLow = get_num_pixels(vol, mp.Y, mp.Low, mp.X)
+            xHigh = get_num_pixels(vol, mp.Y, mp.High, mp.X)
+            result = xLow + xHigh + yLow + yHigh
+        else:
+            # 3d
+            yLow = get_num_pixels(vol, mp.X, mp.Low, mp.Y, mp.Z)
+            yHigh = get_num_pixels(vol, mp.X, mp.High, mp.Y, mp.Z)
+            xLow = get_num_pixels(vol, mp.Z, mp.Low, mp.Y, mp.X)
+            xHigh = get_num_pixels(vol, mp.Z, mp.High, mp.Y, mp.X)
+            zLow = get_num_pixels(vol, mp.Y, mp.Low, mp.X, mp.Z)
+            zHigh = get_num_pixels(vol, mp.Y, mp.Low, mp.X, mp.Z)
+            result = yLow + yHigh + xLow + xHigh + zLow + zHigh
+
+        return result * self.resolution
+
+    def _get_chunk_communication_areas(self):
+
+        if self.dimensions == 1 or self.is_cylindrical:
+            warnings.warn("Can currently only get chunk communication area from 2d or 3d simulations",
+                          RuntimeWarning)
+            return
+
+        if self.structure is None:
+            self.init_sim()
+
+        vols = self.structure.get_chunk_volumes()
+        owners = self.structure.get_chunk_owners()
+
+        # Union the chunk volumes that are on the same processor
+        idx = 0
+        result = []
+        for i in range(mp.count_processors()):
+            unioned_vol = vols[idx].surroundings()
+            idx += 1
+            while idx < len(owners) and owners[idx] == i:
+                unioned_vol = unioned_vol | vols[idx].surroundings()
+                idx += 1
+            result.append(self._get_chunk_communication_area(unioned_vol))
+
+        return result
+
+    def get_max_chunk_communication_area(self):
+        return max(self._get_chunk_communication_areas())
+
+    def get_avg_chunk_communication_area(self):
+        return sum(self._get_chunk_communication_areas()) / mp.count_processors()
+
     def get_estimated_costs(self):
         return [self.structure.estimated_cost(i) for i in range(mp.count_processors())]
 

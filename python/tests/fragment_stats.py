@@ -17,6 +17,13 @@ def make_dft_vecs(flx_reg=None, n2f_reg=None, frc_reg=None, fldc=None, flds=None
     return dft_vecs
 
 
+def make_sim(cell, res, pml, dims, create_gv=True, k_point=False):
+    sim = mp.Simulation(cell_size=cell, resolution=res, boundary_layers=pml, dimensions=dims, k_point=k_point)
+    if create_gv:
+        sim._create_grid_volume(False)
+    return sim
+
+
 class TestFragmentStats(unittest.TestCase):
 
     def check_stats(self, fragment, a_eps, a_mu, nonlin, susc, cond):
@@ -310,11 +317,6 @@ class TestFragmentStats(unittest.TestCase):
 
 class TestPMLToVolList(unittest.TestCase):
 
-    def make_sim(self, cell, res, pml, dims):
-        sim = mp.Simulation(cell_size=cell, resolution=res, boundary_layers=pml, dimensions=dims)
-        sim._create_grid_volume(False)
-        return sim
-
     def check1d(self, vol, expected_min, expected_max):
         min_vec = vol.get_min_corner()
         max_vec = vol.get_max_corner()
@@ -348,7 +350,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.assertEqual(expected_max, max_v3)
 
     def test_1d_all_sides(self):
-        sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1)], 1)
+        sim = make_sim(mp.Vector3(z=10), 10, [mp.PML(1)], 1)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
@@ -358,7 +360,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check1d(v1[1], -5, -4)
 
     def test_1d_high_side(self):
-        sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High)], 1)
+        sim = make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High)], 1)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
@@ -367,7 +369,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check1d(v1[0], 4, 5)
 
     def test_1d_two_sides_different_thickness(self):
-        sim = self.make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High), mp.PML(2, side=mp.Low)], 1)
+        sim = make_sim(mp.Vector3(z=10), 10, [mp.PML(1, side=mp.High), mp.PML(2, side=mp.Low)], 1)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
@@ -377,7 +379,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check1d(v1[1], -5, -3)
 
     def test_2d_all_directions_all_sides(self):
-        sim = self.make_sim(mp.Vector3(10, 10), 10, [mp.PML(1)], 2)
+        sim = make_sim(mp.Vector3(10, 10), 10, [mp.PML(1)], 2)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
@@ -403,7 +405,7 @@ class TestPMLToVolList(unittest.TestCase):
             mp.PML(thickness=3, direction=mp.X, side=mp.High),
             mp.PML(thickness=2, direction=mp.X, side=mp.Low)
         ]
-        sim = self.make_sim(mp.Vector3(10, 10), 10, pmls, 2)
+        sim = make_sim(mp.Vector3(10, 10), 10, pmls, 2)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
@@ -429,7 +431,7 @@ class TestPMLToVolList(unittest.TestCase):
             mp.PML(2, mp.X, mp.Low),
             mp.PML(1, mp.X, mp.High),
         ]
-        sim = self.make_sim(mp.Vector3(10, 10), 10, pmls, 2)
+        sim = make_sim(mp.Vector3(10, 10), 10, pmls, 2)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
@@ -446,7 +448,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check2d(v2[1], mp.Vector3(4, 2), mp.Vector3(5, 5))
 
     def test_2d_two_sides(self):
-        sim = self.make_sim(mp.Vector3(10, 10), 10, [mp.PML(1, mp.X)], 2)
+        sim = make_sim(mp.Vector3(10, 10), 10, [mp.PML(1, mp.X)], 2)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v2)
@@ -456,7 +458,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check2d(v1[1], mp.Vector3(4, -5), mp.Vector3(5, 5))
 
     def test_3d_all_directions_all_sides(self):
-        sim = self.make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1)], 3)
+        sim = make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1)], 3)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertEqual(len(v1), 6)
@@ -522,7 +524,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check3d(v3[7], mp.Vector3(4, -5, 4), mp.Vector3(5, -4, 5))
 
     def test_3d_X_direction_only(self):
-        sim = self.make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1, mp.X)], 3)
+        sim = make_sim(mp.Vector3(10, 10, 10), 10, [mp.PML(1, mp.X)], 3)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertEqual(len(v1), 2)
@@ -535,7 +537,7 @@ class TestPMLToVolList(unittest.TestCase):
         self.check3d(v1[1], mp.Vector3(4, -5, -5), mp.Vector3(5, 5, 5))
 
     def test_cylindrical_all_directions_all_sides(self):
-        sim = self.make_sim(mp.Vector3(10, 0, 10), 10, [mp.PML(1)], mp.CYLINDRICAL)
+        sim = make_sim(mp.Vector3(10, 0, 10), 10, [mp.PML(1)], mp.CYLINDRICAL)
         v1, v2, v3 = sim._boundary_layers_to_vol_list(sim.boundary_layers)
 
         self.assertFalse(v3)
@@ -553,6 +555,38 @@ class TestPMLToVolList(unittest.TestCase):
         self.checkcyl(v2[1], mp.Vector3(4, 0, 4), mp.Vector3(5, 0, 5))
         self.checkcyl(v2[2], mp.Vector3(-5, 0, -5), mp.Vector3(-4, 0, -4))
         self.checkcyl(v2[3], mp.Vector3(4, 0, -5), mp.Vector3(5, 0, -4))
+
+
+@unittest.skipIf(mp.count_processors() != 2, "MPI specific test")
+class TestChunkCommunicationArea(unittest.TestCase):
+
+    def test_2d_periodic(self):
+        sim = make_sim(mp.Vector3(10, 6), 10, [mp.PML(1)], 2, k_point=mp.Vector3(1, 1))
+        max_comm = sim.get_max_chunk_communication_area()
+        avg_comm = sim.get_avg_chunk_communication_area()
+        self.assertEqual(max_comm, 220)
+        self.assertEqual(avg_comm, 220)
+
+    def test_3d_periodic(self):
+        sim = make_sim(mp.Vector3(10, 8, 6), 10, [mp.PML(1)], 3, k_point=mp.Vector3(1, 1, 1))
+        max_comm = sim.get_max_chunk_communication_area()
+        avg_comm = sim.get_avg_chunk_communication_area()
+        self.assertEqual(max_comm, 2360)
+        self.assertEqual(avg_comm, 2360)
+
+    def test_2d(self):
+        sim = make_sim(mp.Vector3(10, 6), 10, [mp.PML(1)], 2)
+        max_comm = sim.get_max_chunk_communication_area()
+        avg_comm = sim.get_avg_chunk_communication_area()
+        self.assertEqual(max_comm, 60)
+        self.assertEqual(avg_comm, 60)
+
+    def test_3d(self):
+        sim = make_sim(mp.Vector3(10, 8, 6), 10, [mp.PML(1)], 3)
+        max_comm = sim.get_max_chunk_communication_area()
+        avg_comm = sim.get_avg_chunk_communication_area()
+        self.assertEqual(max_comm, 480)
+        self.assertEqual(avg_comm, 480)
 
 
 if __name__ == '__main__':
