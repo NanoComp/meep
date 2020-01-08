@@ -1743,7 +1743,7 @@ public:
                             int Nfreq);
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            double freq_min, double freq_max, int Nfreq);
+                            double freq_min, double freq_max, int Nfreq, bool use_centered_grid=true);
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */

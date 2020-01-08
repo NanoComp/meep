@@ -1539,22 +1539,21 @@ class Simulation(object):
             if dft.swigobj is None:
                 dft.swigobj = dft.func(*dft.args)
 
-    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None):
+    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None, use_centered_grid=True):
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
-        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freq_min, freq_max, nfreq])
+        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freq_min, freq_max, nfreq, use_centered_grid])
         self.dft_objects.append(dftf)
         return dftf
 
-    def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, nfreq):
+    def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, nfreq, use_centered_grid):
         if self.fields is None:
             self.init_sim()
         try:
             where = self._volume_from_kwargs(where, center, size)
         except ValueError:
             where = self.fields.total_volume()
-
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq)
+        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq, use_centered_grid)
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
