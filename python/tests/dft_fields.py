@@ -37,7 +37,7 @@ class TestDFTFields(unittest.TestCase):
     def test_use_centered_grid(self):
         sim = self.init()
         sim.init_sim()
-        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1, use_centered_grid=False)
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1, yee_grid=True)
         sim.run(until=100)
         
     def test_get_dft_array(self):
