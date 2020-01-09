@@ -957,6 +957,16 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 // typemaps needed for add_dft_fields
 //--------------------------------------------------
+
+%typecheck(SWIG_TYPECHECK_POINTER) const volume where {
+    int py_material = PyObject_IsInstance($input, py_volume_object());
+    $1 = py_material;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) meep::component *components {
+    $1 = PyList_Check($input);
+}
+
 %typemap(in) (meep::component *components, int num_components) {
     if (!PyList_Check($input)) {
         meep::abort("Expected a list");

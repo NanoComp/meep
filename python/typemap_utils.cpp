@@ -82,6 +82,15 @@ static PyObject *py_vector3_object() {
   return vector3_object;
 }
 
+static PyObject *py_volume_object() {
+  static PyObject *volume_object = NULL;
+  if (volume_object == NULL) {
+    PyObject *geom_mod = get_geom_mod();
+    volume_object = PyObject_GetAttrString(PyImport_ImportModule("meep"), "Volume");
+  }
+  return volume_object;
+}
+
 static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
 
   double x = 0, y = 0, z = 0;

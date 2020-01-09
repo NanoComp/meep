@@ -1051,9 +1051,9 @@ Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue o
 —
 Initialize the component `c` fields using the function `func` which has a single argument, a `Vector3` giving a position and returns a complex number for the value of the field at that point.
 
-**`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None)`**
+**`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None, yee_grid=False)`**
 —
-Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire cell). The volume can also be specified via the `center` and `size` arguments.
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire cell). The volume can also be specified via the `center` and `size` arguments. The default routine interpolates the Fourier transformed fields at the center of each voxel within the specified volume. Alternatively, the exact Fourier transformed fields evaluated at each corresponding Yee grid point is available by setting `yee_grid` to `True`.
 
 **`flux_in_box(dir, box=None, center=None, size=None)`**
 —

@@ -672,13 +672,16 @@ void dft_fields::remove() {
 }
 
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
-                                  double freq_min, double freq_max, int Nfreq) {
+                                  double freq_min, double freq_max, int Nfreq, bool use_centered_grid) {
   bool include_dV_and_interp_weights = false;
+  bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
+  std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
   cdouble stored_weight = 1.0;
   dft_chunk *chunks = 0;
   for (int nc = 0; nc < num_components; nc++)
     chunks = add_dft(components[nc], where, freq_min, freq_max, Nfreq,
-                     include_dV_and_interp_weights, stored_weight, chunks);
+                     include_dV_and_interp_weights, stored_weight, chunks,
+                     sqrt_dV_and_interp_weights,extra_weight,use_centered_grid);
 
   return dft_fields(chunks, freq_min, freq_max, Nfreq, where);
 }
