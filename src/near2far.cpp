@@ -256,7 +256,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   for (int j = 0; j < 6; ++j)
     EH[j] = 0;
 
-  /* Perform phi integral.  Since phi integrand is smooth, quadrature qually spaced points
+  /* Perform phi integral.  Since phi integrand is smooth, quadrature with equally spaced points
      should converge exponentially fast with the number N of quadrature points.  We
      repeatedly double N until convergence to tol is achieved, re-using previous points. */
   const int N0 = 4;
