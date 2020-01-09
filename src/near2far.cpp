@@ -256,12 +256,12 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   for (int j = 0; j < 6; ++j)
     EH[j] = 0;
   const int N0 = 8;
-  double dtheta = 4 * pi / N0;
+  double dtheta = 2 / N0; // factor of 2*pi*r is already included in add_dft weight
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
-    dtheta *= 0.5; /* delta theta is halved on each N loop iteration */
+    dtheta *= 0.5; // delta theta is halved because N doubles
     for (int j = 0; j < 6; ++j)
-      EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points
+      EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points (with halved dtheta)
     for (int i = (N > N0); i < N; i += 1 + (N > N0)) {
       double phi = i * dtheta, c = cos(phi), s = sin(phi);
       vec x0_phi(x0.r() * c, x0.r() * s, x0.z());
