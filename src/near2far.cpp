@@ -255,23 +255,31 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   component cx = direction_component(c0, X), cy = direction_component(c0, Y);
   for (int j = 0; j < 6; ++j)
     EH[j] = 0;
+
+  /* Perform phi integral.  Since phi integrand is smooth, quadrature qually spaced points
+     should converge exponentially fast with the number N of quadrature points.  We
+     repeatedly double N until convergence to tol is achieved, re-using previous points. */
   const int N0 = 4;
-  double dtheta = 2 / N0; // factor of 2*pi*r is already included in add_dft weight
+  double dphi = 2 / N0; // factor of 2*pi*r is already included in add_dft weight
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
-    dtheta *= 0.5; // delta theta is halved because N doubles
+    dphi *= 0.5; // delta phi is halved because N doubles
     for (int j = 0; j < 6; ++j)
-      EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points (with halved dtheta)
+      EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points (with halved dphi)
+    /* N-point quadrature points i = 0..N-1.  After the first iteration (N==N0), we
+       only need to sum over odd i, since the even i were summed for the previous N. */
     for (int i = (N > N0); i < N; i += 1 + (N > N0)) {
-      double phi = i * dtheta, c = cos(phi), s = sin(phi);
-      vec x0_phi(x0.r() * c, x0.r() * s, x0.z());
-      std::complex<double> EH_phi[6], f0_exp_imphi = f0 * std::polar(1.0, m * phi) * dtheta;
-      if (d == Z) {
+      double phi = i * dphi, c = cos(phi), s = sin(phi);
+      vec x0_phi(x0.r() * c, x0.r() * s, x0.z()); // source point rotated by phi
+      std::complex<double> EH_phi[6], f0_exp_imphi = f0 * std::polar(1.0, m * phi) * dphi;
+      /* if the source direction is in the r or phi directions, then we must rotate
+        the direction of the source current in the xy plane as well */
+      if (d == Z) { // source currents in z direction don't rotate
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, c0, f0_exp_imphi);
         for (int j = 0; j < 6; ++j)
           EH_sum[j] += EH_phi[j];
       }
-      else if (d == R) {
+      else if (d == R) { // r_hat = c x_hat + s y_hat
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi * c);
         for (int j = 0; j < 6; ++j)
           EH_sum[j] += EH_phi[j];
@@ -279,7 +287,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
         for (int j = 0; j < 6; ++j)
           EH_sum[j] += EH_phi[j];
       }
-      else { /* (d == P) */
+      else { // (d == P):  phi_hat = c y_hat - s x_hat
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi * (-s));
         for (int j = 0; j < 6; ++j)
           EH_sum[j] += EH_phi[j];
@@ -288,12 +296,14 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
           EH_sum[j] += EH_phi[j];
       }
     }
+    // accumulate the new and old sums and check how much the integral has changed in L1 norm
     double sumdiff = 0, sumabs = 0;
     for (int j = 0; j < 6; ++j) {
       sumdiff += abs(EH[j] - EH_sum[j]);
-      sumabs += abs(EH[j] = EH_sum[j]);
+      sumabs += abs(EH_sum[j]);
+      EH[j] = EH_sum[j];
     }
-    if (sumdiff <= sumabs * tol) break;
+    if (sumdiff <= sumabs * tol) break; // doubling N changed sum by less than tol
   }
 }
 
