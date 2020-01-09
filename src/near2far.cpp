@@ -255,7 +255,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   component cx = direction_component(c0, X), cy = direction_component(c0, Y);
   for (int j = 0; j < 6; ++j)
     EH[j] = 0;
-  const int N0 = 8;
+  const int N0 = 4;
   double dtheta = 2 / N0; // factor of 2*pi*r is already included in add_dft weight
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
