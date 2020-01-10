@@ -2,7 +2,7 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature using four different examples. There are three steps involved in this type of calculation. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
+The [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature is demonstrated using four different examples. There are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
@@ -253,7 +253,7 @@ def grating(gp,gh,gdc_list):
 
     sim.run(until_after_sources=500)
 
-    return abs(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(focal_length), size=mp.Vector3(spot_length))['Ez'])**2
+    return abs(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(-0.5*sx+dpml+dsub+gh+focal_length), size=mp.Vector3(spot_length))['Ez'])**2
 ```
 
 In the first of two parts of the calculation, a phasemap of the binary-grating unit cell is generated based on varying the duty cycle from 0.1 to 0.9.

@@ -2,7 +2,7 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's [near-to-far-field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature using four different examples. There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or possibly, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
+The [near-to-far field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature is demonstrated using four different examples. There are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Scheme_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
@@ -301,7 +301,7 @@ The first script takes three geometric input arguments (periodicity, height, and
 
 (run-sources+ 500)
 
-(output-farfields n2f-obj (string-append "numcells-" (number->string num-cells)) (volume (center focal-length 0 0) (size spot-length 0 0)) ff-res)
+(output-farfields n2f-obj (string-append "numcells-" (number->string num-cells)) (volume (center (+ (* -0.5 sx) dpml dsub gh focal-length) 0 0) (size spot-length 0 0)) ff-res)
 ```
 
 Using Octave/Matlab, in the first of two parts of the calculation, a phasemap of the binary-grating unit cell is generated based on varying the duty cycle from 0.1 to 0.9.
