@@ -11,7 +11,7 @@ Modes of a Ring Resonator
 
 In [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator), the modes of a ring resonator were computed by performing a 2d simulation. This example involves simulating the *same* structure while [exploiting](../Exploiting_Symmetry.md) the fact that the system has *continuous* rotational symmetry, by performing the simulation in cylindrical coordinates. The simulation script is in [examples/ring-cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring-cyl.py).
 
-As always, the starting point is to import the `meep` and `argparse` library modules:
+As always, the starting point is to import the `meep` and other library modules:
 
 ```py
 import meep as mp
@@ -326,20 +326,20 @@ dwdR:, -0.08020283464036788 (pert. theory), -0.07980880151594316 (finite diff.)
 ```
 Both results have converged to at least three digits. The relative error at resolution 200 is 0.5%. The error is larger in this case due to the presence of the [discontinuous fields at the dielectric interface](../Subpixel_Smoothing.md). The mode has a $\omega$ of 0.208 and $Q$ of 1200.
 
-Finally, as reference, the same calculation can be set up in Cartesian coordinates as a 2d simulation. There is one major difference: the mode produced by a point source in 2d is actually the $\cos(m\phi)$ mode, *not* $\exp(im\phi)$, or equivalently it is the superposition of the $\pm m$ modes. This means that computing the numerator integral does not involve just multiplying the field at a single point on the surface by $2\pi r$ &mdash; rather, it is the integral of $\cos^2(m\phi)$ which gives a factor of 1/2. (For non-circular shapes in 2d, the surface integral must be computed numerically.) The simulation script is in [examples/perturbation_theory_2d.py](https://github.com/NanoComp/meep/blob/master/python/examples/perturbation_theory_2d.py). The results are comparable to the cylindrical coordinate case (a 1d calculation) but the 2d simulation is much slower and less accurate at the same grid resolution.
+Finally, as reference, the same calculation can be set up in Cartesian coordinates as a 2d simulation. The simulation script is in [examples/perturbation_theory_2d.py](https://github.com/NanoComp/meep/blob/master/python/examples/perturbation_theory_2d.py). There is one major difference in the 2d calculation: the mode produced by a point source in 2d is actually the $\cos(m\phi)$ mode, *not* $\exp(im\phi)$, or equivalently it is the superposition of the $\pm m$ modes. This means that computing the numerator integral does not involve just multiplying the field at a single point on the surface by $2\pi r$ &mdash; rather, it is the integral of $\cos^2(m\phi)$ which gives a factor of 1/2. (For non-circular shapes in 2d, the surface integral must be computed numerically.) The results are comparable to the cylindrical coordinate case (a 1d calculation) but the 2d simulation is much slower and less accurate at the same grid resolution.
 
 Scattering Cross Section of a Finite Dielectric Cylinder
 --------------------------------------------------------
 
-As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical $(r,z)$ cell are validated by comparing to the same simulation in 3d Cartesian coordinates which tends to be much slower and less accurate at the same grid resolution.
+As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical ($r$,$z$) cell are validated by comparing to the same simulation in 3d Cartesian ($x$,$y$,$z$) coordinates which tends to be much slower and less accurate at the same grid resolution.
 
-The calculation of the scattering cross section is described in [Tutorial/Basics/Mie Scattering of a Lossless Dielectric Sphere](Basics.md#mie-scattering-of-a-lossless-dielectric-sphere) which is modified for this example. A linearly-polarized planewave is normally incident on a $z$-oriented cylinder which is enclosed by a DFT flux box. Expressed in cylindrical coordinates, an $x$-polarized planewave propagating in the $z$ direction is the sum of two circularly-polarized planewaves of opposite chirality:
+The calculation of the scattering cross section is described in [Tutorial/Basics/Mie Scattering of a Lossless Dielectric Sphere](Basics.md#mie-scattering-of-a-lossless-dielectric-sphere) which is modified for this example. A linearly-polarized ($x$) planewave is normally incident on a $z$-oriented cylinder which is enclosed by a DFT flux box. Expressed in cylindrical coordinates, an $x$-polarized planewave propagating in the $z$ direction is the sum of two circularly-polarized planewaves of opposite chirality:
 
 <center>
 $$ \hat{E}_x = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) + e^{-i\phi}(\hat{E}_\rho - i\hat{E}_\phi)\right] $$
 </center>
 
-In practice, this involves performing two separate simulations for $m=\pm 1$. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. However, only one of the two simulations is necessary: the scattered power is the same for $m=\pm 1$ due to the mirror symmetry of the structure. (Note that a linearly-polarized planewave is *not* $m=0$, which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m=\pm 1$) and is *not* rotationally invariant; it flips sign if it is rotated by 180°.)
+In practice, this involves performing two separate simulations for $m=\pm 1$. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. However, in the case of a material with isotropic permittivity, only one of the two simulations is necessary: the scattered power is the same for $m=\pm 1$ due to the mirror symmetry of the structure. A chiral material based on an anisotropic permittivity with principle axes not aligned with the coordinates axes breaks the mirror symmetry and thus would require two separate simulations. (Note that a linearly-polarized planewave is *not* $m=0$, which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m=\pm 1$) and is *not* rotationally invariant; it flips sign if it is rotated by 180°.)
 
 The simulation script is in [examples/cylinder_cross_section.py](https://github.com/NanoComp/meep/blob/master/python/examples/cylinder_cross_section.py). The notebook is [examples/cylinder_cross_section.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cylinder_cross_section.ipynb).
 
@@ -446,7 +446,7 @@ if mp.am_master():
     plt.savefig("cylinder_cross_section.png")
 ```
 
-Note that the "closed" DFT flux box is comprised of just three flux objects: two along $z$ and one in the radial $r$ direction. The function `get_fluxes` which computes the integral of the Poynting vector is over the annular volume in cylindrical coordinates. There is no need for additional post-processing of the flux values.
+Note that the "closed" DFT flux box is comprised of just three flux objects: two along $z$ and one in the radial $r$ direction. The function `get_fluxes` which computes the integral of the Poynting vector does so over the annular volume in cylindrical coordinates. There is no need for additional post-processing of the flux values.
 
 As shown below, the results for the scattering cross section computed using cylindrical coordinates agree well with the 3d Cartesian simulation. However, there is a large discrepancy in performance: for a single Intel Xeon 4.2GHz processor, the runtime of the cylindrical simulation is nearly 90 times shorter than the 3d simulation.
 
@@ -457,14 +457,14 @@ As shown below, the results for the scattering cross section computed using cyli
 Focusing Properties of a Binary-Phase Zone Plate
 ------------------------------------------------
 
-It is also possible to compute a [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) in cylindrical coordinates. This is demonstrated in this example for a binary-phase [zone plate](https://en.wikipedia.org/wiki/Zone_plate) which is a rotationally-symmetric diffractive lens used to focus an input planewave. The radius $r_n$ of the $n$th zone can be computed [analytically](http://zoneplate.lbl.gov/theory):
+It is also possible to compute a [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) in cylindrical coordinates. This is demonstrated in this example for a binary-phase [zone plate](https://en.wikipedia.org/wiki/Zone_plate) which is a rotationally-symmetric diffractive lens used to focus a normally-incident planewave to a single spot. Using [scalar theory](http://zoneplate.lbl.gov/theory), the radius of the $n$th zone can be computed as:
 
 <center>
 $$ r_n^2 = n\lambda (f+\frac{n\lambda}{4})$$
 </center>
 
 
-where $f$ is the focal length, $n$ is the refractive index, and $\lambda$ is the operating wavelength. The main design variable is the number of zones. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). The focusing properties of the zone plate is validated by verifying that the energy density of the electric fields is concentrated at the focal length (which lies outside of the cell).
+where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with index of 1.5 (glass), $\lambda = 0.5$ μm, and zone-plate height of 0.5 μm. The focusing properties of the zone plate is validated by verifying that the energy density of the electric fields is concentrated at the focal length $f$ which lies outside of the cell. The planewave is incident from within a glass substrate. The cell is surrounded on all sides by PML.
 
 The simulation script is in [examples/zone_plate.py](https://github.com/NanoComp/meep/blob/master/python/examples/zone_plate.py).
 
@@ -482,7 +482,6 @@ dpad = 2.0                  # padding betweeen zone plate and PML
 zh = 0.5                    # zone-plate height
 zN = 25                     # number of zones (odd zones: π phase shift, even zones: none)
 focal_length = 200          # focal length of zone plate
-
 spot_length = 100           # far-field line length
 ff_npts = 100               # number of far-field points to compute along spot_length
 
@@ -492,6 +491,7 @@ wvl_cen = 0.5
 frq_cen = 1/wvl_cen
 dfrq = 0.2*frq_cen
 
+## radii of zones
 ## ref: eq. 7 of http://zoneplate.lbl.gov/theory
 r = [math.sqrt(n*wvl_cen*(focal_length+n*wvl_cen/4)) for n in range(1,zN+1)]
 
@@ -534,13 +534,13 @@ sim.run(until_after_sources=100)
 
 ff = sim.get_farfields(n2f_obj, ff_npts/spot_length, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
 
-energy_density = np.absolute(ff['Ex'])**2+np.absolute(ff['Ey'])**2+np.absolute(ff['Ez'])**2
+E2 = np.absolute(ff['Ex'])**2+np.absolute(ff['Ey'])**2+np.absolute(ff['Ez'])**2
 
 z = np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,ff_npts)
 
 if mp.am_master():
     plt.figure(dpi=200)
-    plt.semilogy(z,energy_density,'bo-')
+    plt.semilogy(z,E2,'bo-')
     plt.grid(True,axis="y",which="both",ls="-")
     plt.xlabel('z coordinate (μm)')
     plt.ylabel(r'energy density of far-field electric fields, |E|$^2$')
@@ -548,9 +548,9 @@ if mp.am_master():
     plt.savefig("zone_plate_farfields.png")
 ```
 
-Note that `get_farfields` returns the Cartesian rather than the cylindrical fields even though the specified volume is in cylindrical coordinates.
+Note that the input volume for `get_farfields` via `center` and `size` is specified in cylindrical coordinates. These points must therefore lie in the $\phi = 0$ ($rz = xz$) plane. The output fields $E$ and $H$ can be thought of as either cylindrical ($r$,$\phi$,$z$) or Cartesian ($x$,$y$,$z$) coordinates since these are the same in the $\phi = 0$ plane.
 
-The far-field energy-density profile is shown below for three lens designs with zone numbers of 25, 55, and 85. As the number of zones increases, the focal spot which is centered at 200 μm (as expected) becomes narrower. This sharpening of the focus is expected since increasing the number of zones improves the phase coherence of the diffracted beam which in turn enhances focusing.
+The far-field energy-density profile is shown below for three lens designs with $N$ of 25, 55, and 85. As the number of zones increases, the focal spot at 200 μm becomes progressively narrower. The sharpening of the focus is expected since increasing $N$ increases the constructive interference of the diffracted beam which in turn enhances focusing.
 
 <center>
 ![](../images/zone_plate_farfields.png)

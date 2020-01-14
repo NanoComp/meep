@@ -11,7 +11,6 @@ dpad = 2.0                  # padding betweeen zone plate and PML
 zh = 0.5                    # zone-plate height
 zN = 25                     # number of zones (odd zones: π phase shift, even zones: none)
 focal_length = 200          # focal length of zone plate
-
 spot_length = 100           # far-field line length
 ff_npts = 100               # number of far-field points to compute along spot_length
 
@@ -21,6 +20,7 @@ wvl_cen = 0.5
 frq_cen = 1/wvl_cen
 dfrq = 0.2*frq_cen
 
+## radii of zones
 ## ref: eq. 7 of http://zoneplate.lbl.gov/theory
 r = [math.sqrt(n*wvl_cen*(focal_length+n*wvl_cen/4)) for n in range(1,zN+1)]
 
@@ -63,13 +63,13 @@ sim.run(until_after_sources=100)
 
 ff = sim.get_farfields(n2f_obj, ff_npts/spot_length, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
 
-energy_density = np.absolute(ff['Ex'])**2+np.absolute(ff['Ey'])**2+np.absolute(ff['Ez'])**2
+E2 = np.absolute(ff['Ex'])**2+np.absolute(ff['Ey'])**2+np.absolute(ff['Ez'])**2
 
 z = np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,ff_npts)
 
 if mp.am_master():
     plt.figure(dpi=200)
-    plt.semilogy(z,energy_density,'bo-')
+    plt.semilogy(z,E2,'bo-')
     plt.grid(True,axis="y",which="both",ls="-")
     plt.xlabel('z coordinate (μm)')
     plt.ylabel(r'energy density of far-field electric fields, |E|$^2$')
