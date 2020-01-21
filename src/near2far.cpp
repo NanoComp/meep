@@ -20,7 +20,7 @@
    compute the fields on a "far" surface via the homogeneous-medium Green's
    function in 2d or 3d. */
 
-#include <meep.hpp>
+#include "meep_internals.hpp"
 #include <assert.h>
 #include "config.h"
 #include <math.h>
