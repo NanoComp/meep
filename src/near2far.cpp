@@ -247,6 +247,8 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 
 // cylindrical Green's function constructed by integrating green3d as the source
 // term rotates around the z axis with exp(im*phi) dependence, integrated to a tolerance tol.
+// (note: this is the Green's function divided by 2pi*x0.r(), to compensate for a 2piR factor
+//  in the near2far add_dft weight.)
 void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
               const vec &x0, component c0, std::complex<double> f0, double m, double tol) {
   if (x0.dim != Dcyl) abort("wrong dimensionality in greencyl");
