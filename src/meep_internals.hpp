@@ -151,4 +151,12 @@ void step_beta_stride1(realnum *f, component c, const realnum *g, const grid_vol
       step_beta(f, c, g, gv, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd);              \
   } while (0)
 
+// analytical Green's functions from near2far.cpp, which we might want to expose someday
+void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+              const vec &x0, component c0, std::complex<double> f0, double m, double tol);
+
 } // namespace meep
