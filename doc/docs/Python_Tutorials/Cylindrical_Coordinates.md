@@ -457,14 +457,20 @@ As shown below, the results for the scattering cross section computed using cyli
 Focusing Properties of a Binary-Phase Zone Plate
 ------------------------------------------------
 
-It is also possible to compute a [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) in cylindrical coordinates. This is demonstrated in this example for a binary-phase [zone plate](https://en.wikipedia.org/wiki/Zone_plate) which is a rotationally-symmetric diffractive lens used to focus a normally-incident planewave to a single spot. Using [scalar theory](http://zoneplate.lbl.gov/theory), the radius of the $n$th zone can be computed as:
+It is also possible to compute a [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) in cylindrical coordinates. This is demonstrated in this example for a binary-phase [zone plate](https://en.wikipedia.org/wiki/Zone_plate) which is a rotationally-symmetric diffractive lens used to focus a normally-incident planewave to a single spot.
+
+Using [scalar theory](http://zoneplate.lbl.gov/theory), the radius of the $n$<sup>th</sup> zone can be computed as:
 
 <center>
 $$ r_n^2 = n\lambda (f+\frac{n\lambda}{4})$$
 </center>
 
 
-where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with index of 1.5 (glass), $\lambda = 0.5$ μm, and zone-plate height of 0.5 μm. The focusing properties of the zone plate is validated by verifying that the energy density of the electric fields is concentrated at the focal length $f$ which lies outside of the cell. The planewave is incident from within a glass substrate. The cell is surrounded on all sides by PML.
+where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with refractive index of 1.5 (glass), $\lambda$ of 0.5 μm, and height of 0.5 μm. The focusing property of the zone plate is verified by the concentration of the electric-field energy density at the focal length of 0.2 mm (which lies *outside* the cell). The planewave is incident from within a glass substrate and spans the entire length of the cell in the radial direction. The cell is surrounded on all sides by PML. A schematic of the simulation geometry for a design with 25 zones and flat-surface termination is shown below. The near-field line monitor is positioned at the edge of the PML.
+
+<center>
+![](../images/zone_plate_schematic.png)
+</center>
 
 The simulation script is in [examples/zone_plate.py](https://github.com/NanoComp/meep/blob/master/python/examples/zone_plate.py).
 
@@ -483,7 +489,7 @@ zh = 0.5                    # zone-plate height
 zN = 25                     # number of zones (odd zones: π phase shift, even zones: none)
 focal_length = 200          # focal length of zone plate
 spot_length = 100           # far-field line length
-ff_npts = 100               # number of far-field points to compute along spot_length
+ff_res = 10                 # far-field resolution
 
 pml_layers = [mp.PML(thickness=dpml)]
 
@@ -528,30 +534,41 @@ sim = mp.Simulation(cell_size=cell_size,
                     dimensions=mp.CYLINDRICAL,
                     m=-1)
 
-n2f_obj = sim.add_near2far(frq_cen, 0, 1, mp.Near2FarRegion(center=mp.Vector3(0.5*sr,0,0.5*sz-dpml),size=mp.Vector3(sr)))
+## near-field monitor
+n2f_obj = sim.add_near2far(frq_cen, 0, 1, mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)))
 
 sim.run(until_after_sources=100)
 
-ff = sim.get_farfields(n2f_obj, ff_npts/spot_length, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
+ff_r = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(0.5*(sr-dpml),0,-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(sr-dpml))
+ff_z = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
 
-E2 = np.absolute(ff['Ex'])**2+np.absolute(ff['Ey'])**2+np.absolute(ff['Ez'])**2
-
-z = np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,ff_npts)
+E2_r = np.absolute(ff_r['Ex'])**2+np.absolute(ff_r['Ey'])**2+np.absolute(ff_r['Ez'])**2
+E2_z = np.absolute(ff_z['Ex'])**2+np.absolute(ff_z['Ey'])**2+np.absolute(ff_z['Ez'])**2
 
 if mp.am_master():
     plt.figure(dpi=200)
-    plt.semilogy(z,E2,'bo-')
+    plt.subplot(1,2,1)
+    plt.semilogy(np.linspace(0,sr-dpml,len(E2_r)),E2_r,'bo-')
+    plt.xlim(-2,20)
+    plt.xticks([t for t in np.arange(0,25,5)])
     plt.grid(True,axis="y",which="both",ls="-")
-    plt.xlabel('z coordinate (μm)')
-    plt.ylabel(r'energy density of far-field electric fields, |E|$^2$')
+    plt.xlabel(r'$r$ coordinate (μm)')
+    plt.ylabel(r'energy density of far fields, |E|$^2$')
+    plt.subplot(1,2,2)
+    plt.semilogy(np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,len(E2_z)),E2_z,'bo-')
+    plt.grid(True,axis="y",which="both",ls="-")
+    plt.xlabel(r'$z$ coordinate (μm)')
+    plt.ylabel(r'energy density of far fields, |E|$^2$')
+    plt.suptitle(r"binary-phase zone plate with focal length $z$ = {} μm".format(focal_length))
     plt.tight_layout()
     plt.savefig("zone_plate_farfields.png")
 ```
 
-Note that the input volume for `get_farfields` via `center` and `size` is specified in cylindrical coordinates. These points must therefore lie in the $\phi = 0$ ($rz = xz$) plane. The output fields $E$ and $H$ can be thought of as either cylindrical ($r$,$\phi$,$z$) or Cartesian ($x$,$y$,$z$) coordinates since these are the same in the $\phi = 0$ plane.
+Note that the volume specified in `get_farfields` via `center` and `size` is in cylindrical coordinates. These points must therefore lie in the $\phi = 0$ ($rz = xz$) plane. The fields $E$ and $H$ returned by `get_farfields` can be thought of as either cylindrical ($r$,$\phi$,$z$) or Cartesian ($x$,$y$,$z$) coordinates since these are the same in the $\phi = 0$ plane (i.e., $E_r=E_x$ and $E_\phi=E_y$). Also, `get_farfields` tends to gradually *slow down* as the far-field point gets closer to the near-field monitor. This performance degradation is unavoidable and is due to the larger number of $\phi$ integration points required for accurate convergence of the integral involving the Green's function which diverges as the evaluation point approaches the source point.
 
-The far-field energy-density profile is shown below for three lens designs with $N$ of 25, 55, and 85. As the number of zones increases, the focal spot at 200 μm becomes progressively narrower. The sharpening of the focus is expected since increasing $N$ increases the constructive interference of the diffracted beam which in turn enhances focusing.
+The far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions is shown below for three lens designs with $N$ of 25, 50, and 100. As the number of zones increases, the focal spot at 200 μm becomes progressively narrower. This sharpening of the focus is expected since increasing $N$ increases the constructive interference of the diffracted beam which in turn enhances focusing.
 
 <center>
-![](../images/zone_plate_farfields.png)
+![](../images/zone_plate_farfields_r.png)
+![](../images/zone_plate_farfields_z.png)
 </center>

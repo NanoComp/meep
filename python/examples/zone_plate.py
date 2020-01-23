@@ -12,7 +12,7 @@ zh = 0.5                    # zone-plate height
 zN = 25                     # number of zones (odd zones: π phase shift, even zones: none)
 focal_length = 200          # focal length of zone plate
 spot_length = 100           # far-field line length
-ff_npts = 100               # number of far-field points to compute along spot_length
+ff_res = 10                 # far-field resolution
 
 pml_layers = [mp.PML(thickness=dpml)]
 
@@ -57,21 +57,31 @@ sim = mp.Simulation(cell_size=cell_size,
                     dimensions=mp.CYLINDRICAL,
                     m=-1)
 
-n2f_obj = sim.add_near2far(frq_cen, 0, 1, mp.Near2FarRegion(center=mp.Vector3(0.5*sr,0,0.5*sz-dpml),size=mp.Vector3(sr)))
+## near-field monitor
+n2f_obj = sim.add_near2far(frq_cen, 0, 1, mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)))
 
 sim.run(until_after_sources=100)
 
-ff = sim.get_farfields(n2f_obj, ff_npts/spot_length, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
+ff_r = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(0.5*(sr-dpml),0,-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(sr-dpml))
+ff_z = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
 
-E2 = np.absolute(ff['Ex'])**2+np.absolute(ff['Ey'])**2+np.absolute(ff['Ez'])**2
-
-z = np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,ff_npts)
+E2_r = np.absolute(ff_r['Ex'])**2+np.absolute(ff_r['Ey'])**2+np.absolute(ff_r['Ez'])**2
+E2_z = np.absolute(ff_z['Ex'])**2+np.absolute(ff_z['Ey'])**2+np.absolute(ff_z['Ez'])**2
 
 if mp.am_master():
     plt.figure(dpi=200)
-    plt.semilogy(z,E2,'bo-')
+    plt.subplot(1,2,1)
+    plt.semilogy(np.linspace(0,sr-dpml,len(E2_r)),E2_r,'bo-')
+    plt.xlim(-2,20)
+    plt.xticks([t for t in np.arange(0,25,5)])
     plt.grid(True,axis="y",which="both",ls="-")
-    plt.xlabel('z coordinate (μm)')
-    plt.ylabel(r'energy density of far-field electric fields, |E|$^2$')
+    plt.xlabel(r'$r$ coordinate (μm)')
+    plt.ylabel(r'energy density of far fields, |E|$^2$')
+    plt.subplot(1,2,2)
+    plt.semilogy(np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,len(E2_z)),E2_z,'bo-')
+    plt.grid(True,axis="y",which="both",ls="-")
+    plt.xlabel(r'$z$ coordinate (μm)')
+    plt.ylabel(r'energy density of far fields, |E|$^2$')
+    plt.suptitle(r"binary-phase zone plate with focal length $z$ = {} μm".format(focal_length))
     plt.tight_layout()
     plt.savefig("zone_plate_farfields.png")
