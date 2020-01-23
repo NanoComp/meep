@@ -566,9 +566,8 @@ if mp.am_master():
 
 Note that the volume specified in `get_farfields` via `center` and `size` is in cylindrical coordinates. These points must therefore lie in the $\phi = 0$ ($rz = xz$) plane. The fields $E$ and $H$ returned by `get_farfields` can be thought of as either cylindrical ($r$,$\phi$,$z$) or Cartesian ($x$,$y$,$z$) coordinates since these are the same in the $\phi = 0$ plane (i.e., $E_r=E_x$ and $E_\phi=E_y$). Also, `get_farfields` tends to gradually *slow down* as the far-field point gets closer to the near-field monitor. This performance degradation is unavoidable and is due to the larger number of $\phi$ integration points required for accurate convergence of the integral involving the Green's function which diverges as the evaluation point approaches the source point.
 
-The far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions is shown below for three lens designs with $N$ of 25, 50, and 100. As the number of zones increases, the focal spot at 200 μm becomes progressively narrower. This sharpening of the focus is expected since increasing $N$ increases the constructive interference of the diffracted beam which in turn enhances focusing.
+Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. As the number of zones increases, the focal spot (full width at half maximum) at $z = 200$ μm becomes progressively narrower. The focus becomes shaper with increasing $N$ due to the enhanced constructive interference of the diffracted beam.
 
 <center>
-![](../images/zone_plate_farfields_r.png)
-![](../images/zone_plate_farfields_z.png)
+![](../images/zone_plate_farfield.png)
 </center>
