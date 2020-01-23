@@ -111,7 +111,7 @@ def grating(gp,gh,gdc_list):
 
     sim.run(until_after_sources=500)
     
-    return abs(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(focal_length), size=mp.Vector3(spot_length))['Ez'])**2
+    return abs(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(-0.5*sx+dpml+dsub+gh+focal_length), size=mp.Vector3(spot_length))['Ez'])**2
 
 
 gp = 0.3                       # grating periodicity
