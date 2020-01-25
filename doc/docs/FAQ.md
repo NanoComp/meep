@@ -150,7 +150,7 @@ Note: in this example, the beam waist is at the source position (i.e., top cente
 
 ### How do I create a circularly-polarized planewave source in cylindrical coordinates?
 
-A circularly-polarized planewave in [cylindrical coordinates](Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude`=1 and a constant E<sub>p</sub> (φ) current source with `amplitude`=0+1i as well as `m`=1.
+A circularly-polarized planewave in [cylindrical coordinates](Python_Tutorials/Cylindrical_Coordinates.md) corresponds to E=($\hat{r}$+i$\hat{φ}$)exp(iφ). This can be created using a constant E<sub>r</sub> (radial) current source with `amplitude`=1 and a constant E<sub>p</sub> (φ) current source with `amplitude`=0+1i as well as `m`=1.
 
 ### How do I model a moving point charge?
 
