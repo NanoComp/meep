@@ -559,14 +559,14 @@ if mp.am_master():
     plt.grid(True,axis="y",which="both",ls="-")
     plt.xlabel(r'$z$ coordinate (μm)')
     plt.ylabel(r'energy density of far fields, |E|$^2$')
-    plt.suptitle(r"binary-phase zone plate with focal length $z$ = {} μm".format(focal_length))
+    plt.suptitle(r"Binary-Phase Zone Plate with Focal Length $z$ = {} μm".format(focal_length))
     plt.tight_layout()
     plt.savefig("zone_plate_farfields.png")
 ```
 
 Note that the volume specified in `get_farfields` via `center` and `size` is in cylindrical coordinates. These points must therefore lie in the $\phi = 0$ ($rz = xz$) plane. The fields $E$ and $H$ returned by `get_farfields` can be thought of as either cylindrical ($r$,$\phi$,$z$) or Cartesian ($x$,$y$,$z$) coordinates since these are the same in the $\phi = 0$ plane (i.e., $E_r=E_x$ and $E_\phi=E_y$). Also, `get_farfields` tends to gradually *slow down* as the far-field point gets closer to the near-field monitor. This performance degradation is unavoidable and is due to the larger number of $\phi$ integration points required for accurate convergence of the integral involving the Green's function which diverges as the evaluation point approaches the source point.
 
-Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. As the number of zones increases, the focal spot (full width at half maximum) at $z = 200$ μm becomes progressively narrower. The focus becomes shaper with increasing $N$ due to the enhanced constructive interference of the diffracted beam.
+Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. The focus becomes sharper with increasing $N$ due to the enhanced constructive interference of the diffracted beam. As the number of zones $N$ increases, the size of the focal spot (full width at half maximum) at $z = 200$ μm decreases as $1/\sqrt{N}$ (see eq. 17 of the [reference](http://zoneplate.lbl.gov/theory)). This means that doubling the resolution (halving the spot width) requires quadrupling the number of zones.
 
 <center>
 ![](../images/zone_plate_farfield.png)

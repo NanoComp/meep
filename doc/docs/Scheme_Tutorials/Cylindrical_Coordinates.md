@@ -426,3 +426,124 @@ As shown below, the results for the scattering cross section computed using cyli
 <center>
 ![](../images/cylinder_cross_section.png)
 </center>
+
+Focusing Properties of a Binary-Phase Zone Plate
+------------------------------------------------
+
+It is also possible to compute a [near-to-far field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) in cylindrical coordinates. This is demonstrated in this example for a binary-phase [zone plate](https://en.wikipedia.org/wiki/Zone_plate) which is a rotationally-symmetric diffractive lens used to focus a normally-incident planewave to a single spot.
+
+Using [scalar theory](http://zoneplate.lbl.gov/theory), the radius of the $n$<sup>th</sup> zone can be computed as:
+
+<center>
+$$ r_n^2 = n\lambda (f+\frac{n\lambda}{4})$$
+</center>
+
+
+where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with refractive index of 1.5 (glass), $\lambda$ of 0.5 μm, and height of 0.5 μm. The focusing property of the zone plate is verified by the concentration of the electric-field energy density at the focal length of 0.2 mm (which lies *outside* the cell). The planewave is incident from within a glass substrate and spans the entire length of the cell in the radial direction. The cell is surrounded on all sides by PML. A schematic of the simulation geometry for a design with 25 zones and flat-surface termination is shown below. The near-field line monitor is positioned at the edge of the PML.
+
+<center>
+![](../images/zone_plate_schematic.png)
+</center>
+
+The simulation script is in [examples/zone-plate.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/zone-plate.ctl).
+
+```scm
+(set-param! resolution 25)       ;; pixels/um
+
+(define-param dpml 1.0)          ;; PML thickness
+(define-param dsub 2.0)          ;; substrate thickness
+(define-param dpad 2.0)          ;; padding between zone plate and PML
+(define-param zh 0.5)            ;; zone-plate height
+(define-param zN 25)             ;; number of zones (odd zones: pi phase shift, even zones: none)
+(define-param focal-length 200)  ;; focal length of zone plate
+(define-param spot-length 100)   ;; far-field line length
+(define-param ff-res 10)         ;; far-field resolution (points/um)
+
+(set! pml-layers (list (make pml (thickness dpml))))
+
+(define-param wvl-cen 0.5)
+(define frq-cen (/ wvl-cen))
+(define dfrq (* 0.2 frq-cen))
+
+(define r (map (lambda (n)
+                 (sqrt (* n wvl-cen (+ focal-length (/ (* n wvl-cen) 4)))))
+                 (arith-sequence 1 1 zN)))
+
+(define sr (+ (list-ref r (- zN 1)) dpad dpml))
+(define sz (+ dpml dsub zh dpad dpml))
+(define cell (make lattice (size sr 0 sz)))
+(set! geometry-lattice cell)
+(set! dimensions CYLINDRICAL)
+(set-param! m -1)
+
+(set! sources (list (make source
+                      (src (make gaussian-src (frequency frq-cen) (fwidth dfrq) (is-integrated? true)))
+                      (center (* 0.5 sr) 0 (+ (* -0.5 sz) dpml))
+                      (size sr 0 0)
+                      (component Er))
+                    (make source
+                      (src (make gaussian-src (frequency frq-cen) (fwidth dfrq) (is-integrated? true)))
+                      (center (* 0.5 sr) 0 (+ (* -0.5 sz) dpml))
+                      (size sr 0 0)
+                      (component Ep)
+                      (amplitude 0-1i))))
+
+(define glass (make medium (index 1.5)))
+
+(set! geometry (list (make block
+                       (material glass)
+                       (size sr 0 (+ dpml dsub))
+                       (center (* 0.5 sr) 0 (+ (* -0.5 sz) (* 0.5 (+ dpml dsub)))))))
+
+(set! geometry (append geometry
+                       (map (lambda (n)
+                              (make block
+                                (material (if (= (modulo n 2) 0) glass vacuum))
+                                (size (list-ref r n) 0 zh)
+                                (center (* 0.5 (list-ref r n)) 0 (+ (* -0.5 sz) dpml dsub (* 0.5 zh)))))
+                            (reverse (arith-sequence 0 1 zN)))))
+
+(define n2f-obj (add-near2far frq-cen 0 1
+                         (make near2far-region (center (* 0.5 (- sr dpml)) 0 (- (* 0.5 sz) dpml)) (size (- sr dpml) 0 0))))
+
+(run-sources+ 100)
+
+(output-farfields n2f-obj "r" (volume (center (* 0.5 (- sr dpml)) 0 (+ (* -0.5 sz) dpml dsub zh focal-length)) (size (- sr dpml) 0 0)) ff-res)
+(output-farfields n2f-obj "z" (volume (center 0 0 (+ (* -0.5 sz) dpml dsub zh focal-length)) (size 0 0 spot-length)) ff-res)
+```
+
+Note that the volume specified in `output-farfields` via `center` and `size` is in cylindrical coordinates. These points must therefore lie in the $\phi = 0$ ($rz = xz$) plane. The fields $E$ and $H$ returned by `output-farfields` can be thought of as either cylindrical ($r$,$\phi$,$z$) or Cartesian ($x$,$y$,$z$) coordinates since these are the same in the $\phi = 0$ plane (i.e., $E_r=E_x$ and $E_\phi=E_y$). Also, `output-farfields` tends to gradually *slow down* as the far-field point gets closer to the near-field monitor. This performance degradation is unavoidable and is due to the larger number of $\phi$ integration points required for accurate convergence of the integral involving the Green's function which diverges as the evaluation point approaches the source point.
+
+The energy density of the far fields is computed from the simulation data and plotted using the following Matlab/Octave script.
+
+```matlab
+focal_length = 200;
+spot_length = 100;
+sr = 53.3891;
+dpml = 1.0;
+
+subplot(1,2,1);
+load "zone-plate-r.h5";
+E2_r = abs(ex_r+1j*ex_i).^2 + abs(ey_r+1j*ey_i).^2 + abs(ez_r+1j*ez_i).^2;
+r = linspace(0,sr-dpml,length(E2_r));
+semilogy(r,E2_r,'bo-');
+xlim([-2 20]);
+xlabel('r coordinate (um)');
+ylabel('energy density of far fields, |E|^2');
+set (gca, "yminorgrid", "on");
+
+subplot(1,2,2);
+load "zone-plate-z.h5";
+E2_z = abs(ex_r+1j*ex_i).^2 + abs(ey_r+1j*ey_i).^2 + abs(ez_r+1j*ez_i).^2;
+z = linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,length(E2_z));
+semilogy(z,E2_z,'bo-');
+xlabel('z coordinate (um)');
+ylabel('energy density of far fields, |E|^2');
+set (gca, "yminorgrid", "on");
+```
+
+Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. The focus becomes sharper with increasing $N$ due to the enhanced constructive interference of the diffracted beam. As the number of zones $N$ increases, the size of the focal spot (full width at half maximum) at $z = 200$ μm decreases as $1/\sqrt{N}$ (see eq. 17 of the [reference](http://zoneplate.lbl.gov/theory)). This means that doubling the resolution (halving the spot width) requires quadrupling the number of zones.
+
+<center>
+![](../images/zone_plate_farfield.png)
+</center>
