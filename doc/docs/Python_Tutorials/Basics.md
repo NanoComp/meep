@@ -258,7 +258,7 @@ Transmittance Spectrum of a Waveguide Bend
 
 We have computed the field patterns for light propagating around a waveguide bend. While this can be visually informative, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend ([transmittance](https://en.wikipedia.org/wiki/Transmittance)), how much is reflected ([reflectance](https://en.wikipedia.org/wiki/Reflectance)), and how much is radiated away (scattered loss). How can we do this?
 
-The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
+The basic principles are described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
 The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py). The notebook is [examples/bend-flux.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/bend-flux.ipynb).
 
@@ -312,7 +312,7 @@ sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
 
 Notice how we're using our parameters like `wvg_ycen` and `w`: if we change the dimensions, everything will shift automatically.
 
-Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`FluxRegion`](../Python_User_Interface.md#fluxregion). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `FluxRegion` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
+Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`FluxRegion`](../Python_User_Interface.md#fluxregion). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `FluxRegion` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
 
 ```py
 sim = mp.Simulation(cell_size=cell,
@@ -336,7 +336,7 @@ We compute the fluxes through a line segment twice the width of the waveguide, l
 
 The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
-As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
+As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
 
 ```py    
 pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
@@ -899,7 +899,7 @@ scatt:, 8.2215435272741395 (meep), 8.3429545590438750 (theory)
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. How this works is shown in this example for a ring resonator, which is simply a waveguide bent into a circle. In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using [cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but this demonstration involves an ordinary 2d simulation.
+As described in [Introduction/Resonant Modes](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. How this works is shown in this example for a ring resonator, which is simply a waveguide bent into a circle. In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using [cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but this demonstration involves an ordinary 2d simulation.
 
 The simulation script is in [examples/ring.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring.py). The notebook is [examples/ring.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/ring.ipynb).
 
@@ -1006,7 +1006,7 @@ harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.1855
 
 which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
-For a demonstration of how to compute the gradient of the resonant frequency with respect to the ring radius, see [Tutorials/Cylindrical Coordinates/Sensitivity Analysis via Perturbation Theory](Cylindrical_Coordinates.md#sensitivity-analysis-via-perturbation-theory).
+For a demonstration of how to compute the gradient of the resonant frequency with respect to the ring radius, see [Tutorial/Cylindrical Coordinates/Sensitivity Analysis via Perturbation Theory](Cylindrical_Coordinates.md#sensitivity-analysis-via-perturbation-theory).
 
 ### Exploiting Symmetry
 
@@ -1064,4 +1064,4 @@ mlab.show()
 ![](../images/prism_epsilon.png)
 </center>
 
-Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
+Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [`output_epsilon`](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.

@@ -1138,7 +1138,7 @@ This can be called in a step function, and is useful for changing the geometry o
 
 ### Flux Spectra
 
-Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These are attributes of the `Simulation` class. The most important function is:
+Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These are attributes of the `Simulation` class. The most important function is:
 
 **`add_flux(fcen, df, nfreq, FluxRegions...)`**
 —
@@ -1166,7 +1166,7 @@ Given a flux object, returns a list of the frequencies that it is computing the 
 —
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_flux(filename, flux)`**
 —
@@ -1299,7 +1299,7 @@ Given an energy object, returns a list of the frequencies that it is computing t
 —
 Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
 
-As described in [Tutorial/Basics](Python_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_energy(filename, energy)`**
 —
@@ -1325,7 +1325,7 @@ See also [Tutorial/Optical Forces](Python_Tutorials/Optical_Forces.md).
 
 Most commonly, you will want to **normalize** the force spectrum in some way, just as for flux spectra. Most simply, you could divide two different force spectra to compute the ratio of forces on two objects. Often, you will divide a force spectrum by a flux spectrum, to divide the force $F$ by the incident power $P$ on an object, in order to compute the useful dimensionless ratio $Fc$/$P$ where $c=1$ in Meep units. For example, it is a simple exercise to show that the force $F$ on a perfectly reflecting mirror with normal-incident power $P$ satisfies $Fc$/$P=2$, and for a perfectly absorbing (black) surface $Fc$/$P=1$.
 
-The usage is similar to the flux spectra: you define a set of `ForceRegion` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add_force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display_forces` to display the force spectra at the end. There are also `save_force`, `load_force`, and `load_minus_force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+The usage is similar to the [flux spectra](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend): you define a set of `ForceRegion` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add_force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display_forces` to display the force spectra at the end. There are also `save_force`, `load_force`, and `load_minus_force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
 **`ForceRegion`**
 
@@ -1381,7 +1381,7 @@ Given a force object, returns a list of the frequencies that it is computing the
 —
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Python_Tutorials/Basics.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the force from the scattered fields often requires saving the Fourier-transformed fields from a "normalization" run and then loading them into another run to be subtracted. This can be done via:
 
 **`save_force(filename, force)`**
 —
@@ -1475,7 +1475,7 @@ Note that far fields have the same units and scaling as the *Fourier transforms*
 [compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
 `OMP_NUM_THREADS` environment variable to specify multiple threads.)
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`save_near2far(filename, near2far)`**
 —
@@ -1595,7 +1595,7 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 
 This module provides basic visualization functionality for the simulation domain. The spirit of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output.
 
-**`Simulation.plot2D(ax=None, output_plane=None, fields=None, labels=False, eps_parameters=None, boundary_parameters=None, source_parameters=None, monitor_parameters=None, field_parameters=None)`**
+**`Simulation.plot2D(ax=None, output_plane=None, fields=None, labels=False, eps_parameters=None, boundary_parameters=None, source_parameters=None, monitor_parameters=None, field_parameters=None, omega=None)`**
 —
 Plots a 2D cross section of the simulation domain using `matplotlib`. The plot includes the geometry, boundary layers, sources, and monitors. Fields can also be superimposed on a 2D slice. Requires [matplotlib](https://matplotlib.org). Calling this function would look something like:
 
@@ -1650,6 +1650,7 @@ plt.savefig('sim_domain.png')
     - `cmap='RdBu'`: color map for field pixels
     - `alpha=0.6`: transparency of fields
     - `post_process=np.real`: post processing function to apply to fields (must be a function object) 
+* `omega`: for materials with a [frequency-dependent permittivity](Materials.md#material-dispersion) $\varepsilon(\omega)$, specifies the frequency $\omega$ (in Meep units) of the real part of the permittivity to use in the plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
 **`Simulation.plot3D()`**
 — Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.

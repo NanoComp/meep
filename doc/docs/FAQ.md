@@ -310,7 +310,7 @@ Yes. Meep supports [gyrotropic media](Materials.md#gyrotropic-media) which invol
 
 ### When outputting the permittivity function to a file, I don't see any dispersive materials
 
-Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is written to an HDF5 file. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the frequency-independent `epsilon` value. Alternatively, the complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
+Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is written to an HDF5 file using `output_epsilon`/`output_mu`. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the frequency-independent `epsilon` value. Alternatively, the complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
@@ -469,7 +469,7 @@ To output the data to an HDF5 file, you can use the [`in_volume`](Python_User_In
 
 ### How do I compute the absorbed power in a local subregion of the cell?
 
-To compute the absorbed power anywhere in the cell, you can use [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem): place a *closed* surface of [`dft`](Python_User_Interface.md#flux-spectra) flux monitors surrounding the subregion and specify the `weight` parameter of each [`FluxRegion`](Python_User_Interface.md#fluxregion) accordingly (i.e., ±1) in order to capture all incoming power. For a 2d example, see [Tutorials/Radiation Pattern of an Antenna](Python_Tutorials/Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna). There is also a 3d example for calculating the [light-extraction efficiency of an organic light-emitting diode (OLED)](http://www.simpetus.com/projects.html#meep_oled).
+To compute the absorbed power anywhere in the cell, you can use [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem): place a *closed* surface of [`dft`](Python_User_Interface.md#flux-spectra) flux monitors surrounding the subregion and specify the `weight` parameter of each [`FluxRegion`](Python_User_Interface.md#fluxregion) accordingly (i.e., ±1) in order to capture all incoming power. For a 2d example, see [Tutorial/Radiation Pattern of an Antenna](Python_Tutorials/Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna). There is also a 3d example for calculating the [light-extraction efficiency of an organic light-emitting diode (OLED)](http://www.simpetus.com/projects.html#meep_oled).
 
 ### What happens if I specify an output volume that extends beyond a cell with periodic boundaries?
 
