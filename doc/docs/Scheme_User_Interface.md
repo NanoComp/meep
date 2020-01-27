@@ -948,7 +948,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of [`flux-region`](#flux-region) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). The most important function is:
+Given a bunch of [`flux-region`](#flux-region) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**
 —
@@ -976,7 +976,7 @@ Given a flux object, returns a list of the frequencies that it is computing the 
 —
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-flux filename flux)`**
 —
@@ -1031,7 +1031,7 @@ Very similar to flux spectra, you can also compute **energy density spectra**: t
 
 $$ \frac{1}{2}ε|\mathbf{E}|^2 + \frac{1}{2}μ|\mathbf{H}|^2 $$
 
-The usage is similar to the flux spectra: you define a set of `energy-region` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add-energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-electric-energy`, `display-magnetic-energy`, or `display-total-energy` to display the energy density spectra at the end. There are also `save-energy`, `load-energy`, and `load-minus-energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+The usage is similar to the [flux spectra](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend): you define a set of `energy-region` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add-energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-electric-energy`, `display-magnetic-energy`, or `display-total-energy` to display the energy density spectra at the end. There are also `save-energy`, `load-energy`, and `load-minus-energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
 **`energy-region`**
 
@@ -1077,7 +1077,7 @@ Given an energy object, returns a list of the frequencies that it is computing t
 —
 Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-energy filename energy)`**
 —
@@ -1103,7 +1103,7 @@ See also [Tutorial/Optical Forces](Scheme_Tutorials/Optical_Forces.md).
 
 Most commonly, you will want to **normalize** the force spectrum in some way, just as for flux spectra. Most simply, you could divide two different force spectra to compute the ratio of forces on two objects. Often, you will divide a force spectrum by a flux spectrum, to divide the force $F$ by the incident power $P$ on an object, in order to compute the useful dimensionless ratio $Fc$/$P$ where $c=1$ in Meep units. For example, it is a simple exercise to show that the force $F$ on a perfectly reflecting mirror with normal-incident power $P$ satisfies $Fc$/$P=2$, and for a perfectly absorbing (black) surface $Fc$/$P=1$.
 
-The usage is similar to the flux spectra: you define a set of `force-region` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add-force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-forces` to display the force spectra at the end. There are also `save-force`, `load-force`, and `load-minus-force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+The usage is similar to the [flux spectra](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend): you define a set of `force-region` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add-force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-forces` to display the force spectra at the end. There are also `save-force`, `load-force`, and `load-minus-force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
 **`force-region`**
 
@@ -1155,7 +1155,7 @@ Given a force object, returns a list of the frequencies that it is computing the
 —
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the force from scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the force from the scattered fields often requires saving the Fourier-transformed fields from a "normalization" run and then loading them into another run to be subtracted. This can be done via:
 
 **`(save-force filename force)`**
 —
@@ -1225,7 +1225,7 @@ Note that far fields have the same units and scaling as the *Fourier transforms*
 [compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
 `OMP_NUM_THREADS` environment variable to specify multiple threads.)
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-near2far filename near2far)`**
 —

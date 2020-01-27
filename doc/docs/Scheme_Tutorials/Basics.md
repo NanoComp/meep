@@ -235,7 +235,7 @@ Transmittance Spectrum of a Waveguide Bend
 
 We have computed the field patterns for light propagating around a waveguide bend. While this can be visually informative, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend ([transmittance](https://en.wikipedia.org/wiki/Transmittance)), how much is reflected ([reflectance](https://en.wikipedia.org/wiki/Reflectance)), and how much is radiated away (scattered loss). How can we do this?
 
-The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
+The basic principles are described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
 The simulation script is in [examples/bend-flux.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/bend-flux.ctl).
 
@@ -312,7 +312,7 @@ Notice how we're using our parameters like `wvg-ycen` and `w`: if we change the 
 (set-param! resolution 10)
 ```
 
-Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`flux-region`](../Scheme_User_Interface.md#flux-region). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `flux-region` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
+Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`flux-region`](../Scheme_User_Interface.md#flux-region). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `flux-region` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
 
 ```scm
 (define-param nfreq 100) ; number of frequencies at which to compute flux             
@@ -333,7 +333,7 @@ We compute the fluxes through a line segment twice the width of the waveguide, l
 
 The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
-As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this in Meep by saving the Fourier-transformed fields from the normalization run (`no-bend?=true`), and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save-flux` (after the normalization run) and `load-minus-flux` (before the other runs). We can call them as follows:
+As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this in Meep by saving the Fourier-transformed fields from the normalization run (`no-bend?=true`), and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save-flux` (after the normalization run) and `load-minus-flux` (before the other runs). We can call them as follows:
 
 ```scm
 (if (not no-bend?) (load-minus-flux "refl-flux" refl))
@@ -886,7 +886,7 @@ scatt:, 8.2215436693775636
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently [by using cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction/Resonant Modes](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently [by using cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -993,6 +993,8 @@ harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.1855
 
 which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
+For a demonstration of how to compute the gradient of the resonant frequency with respect to the ring radius, see [Tutorial/Cylindrical Coordinates/Sensitivity Analysis via Perturbation Theory](Cylindrical_Coordinates.md#sensitivity-analysis-via-perturbation-theory).
+
 ### Exploiting Symmetry
 
 In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves *both* the structure *and* the sources, we can **exploit this mirror symmetry to speed up the computation**. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the input file is the same except that we add a single line, right after we specify the `sources`:
@@ -1012,7 +1014,7 @@ In this case, we actually have a lot more symmetry that we could potentially exp
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on a 1d or 2d cell in which the structures and fields can be visualized using [h5topng](https://github.com/NanoComp/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
+The previous examples were based on a 1d or 2d cell in which the structures and fields can be visualized using [h5topng](https://github.com/NanoComp/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [`output-epsilon`](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
 
 ```scm
 (set-param! resolution 50)
