@@ -18,6 +18,7 @@ EOF
 
 [ -z "$1" ] && echo "(use -h for help)"
 
+test=false
 installdeps=true
 
 while [ ! -z "$1" ]; do
@@ -35,6 +36,13 @@ while [ ! -z "$1" ]; do
         -n)         # do not check for distribution dependencies
             installdeps=false
             ;;
+        -S)         # source directory (default: <installdir>/src)
+            SRCDIR="$2"
+            shift
+            ;;
+        -t)         # basic test
+            test=true
+            ;;
         *)
             echo "'$1' ?"
             help "$0"
@@ -45,16 +53,17 @@ done
 
 
 # detect wether DESTDIR is ending with src/
-[ -z ${DESTDIR} ] && DESTDIR=$(pwd)
-[ ${DESTDIR##*/} = src ] && DESTDIR=$(cd $(pwd)/..; pwd)
-SRCDIR=${DESTDIR}/src
+[ -z "${DESTDIR}" ] && DESTDIR=$(pwd)
+[ "${DESTDIR##*/}" = src ] && DESTDIR=$(cd $(pwd)/..; pwd)
+[ -z "$SRCDIR" ] && SRCDIR=${DESTDIR}/src
 
 cat << EOF
 
 This sript will download or update sources, compile and install MEEP.
-Please ensure the following final paths fit your needs:
+Please ensure the following final paths fit your needs
+Or use help '$0 -h' to change them:
     '${DESTDIR}/bin/meep'
-    '${DESTDIR}/lib/...'
+    '${DESTDIR}/lib(64)/...'
     '${DESTDIR}/share/...'
     '${DESTDIR}/...'
     '${SRCDIR}/<sources>'
@@ -62,6 +71,28 @@ Please ensure the following final paths fit your needs:
 Press return to continue
 EOF
 read junk
+
+if $ubuntu; then
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
+fi
+
+if $centos; then
+    export CC=/usr/lib64/openmpi/bin/mpicc
+    export CXX=/usr/lib64/openmpi/bin/mpicxx
+    export PATH=${PATH}:/usr/lib64/openmpi/bin
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib64:/usr/lib64/openmpi/lib"
+    LDFLAGS="-L${DESTDIR}/lib64 -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
+    export PYTHONPATH=${DESTDIR}/lib/python3.6/site-packages
+    export PYTHONPATH=${PYTHONPATH}:/usr/local/lib64/python3.6/site-packages
+    export PYTHONPATH=${PYTHONPATH}:/usr/local/lib64/python3.6/site-packages/mpi4py
+    export LD_LIBRARY_PATH=${DESTDIR}/lib64:/usr/lib64/openmpi/lib:/usr/local/lib64/python3.6/site-packages/mpi4py/lib-pmpi:/usr/local/lib64/python3.6/site-packages/mpi4py
+    export LD_PRELOAD=/usr/lib64/openmpi/lib/libmpi.so
+fi
+
+if ! $test; then
 
 if ! lsb_release; then
     echo "Minimum requirements:"
@@ -116,8 +147,11 @@ gitclone ()
 
 autogensh ()
 {
-    sh autogen.sh PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" RPATH_FLAGS="${RPATH_FLAGS}" LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" \
-        --disable-static --enable-shared --prefix="${DESTDIR}" \
+    LIB64="${DESTDIR}/lib"
+    $centos && LIB64="${DESTDIR}/lib64"
+    LLP="${LD_LIBRARY_PATH}:${LIB64}"
+    sh autogen.sh PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" RPATH_FLAGS="${RPATH_FLAGS}" LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" LD_LIBRARY_PATH=${LLP} \
+        --disable-static --enable-shared --prefix="${DESTDIR}" --libdir=${LIB64} \
         --with-libctl=${DESTDIR}/share/libctl \
         "$@"
 }
@@ -152,12 +186,7 @@ if $installdeps && $ubuntu; then
     sudo -H pip3 install --no-cache-dir mpi4py
     export HDF5_MPI="ON"
     sudo -H pip3 install --no-binary=h5py h5py
-    sudo -H pip3 install matplotlib>3.0.0
-
-    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
-
+    sudo -H pip3 install matplotlib\>3.0.0
 fi
 
 if $installdeps && $centos; then
@@ -191,6 +220,12 @@ if $installdeps && $centos; then
         wget
 
     sudo yum -y install    \
+        python3            \
+        python3-devel      \
+        python36-numpy      \
+        python36-scipy
+
+    sudo yum -y install    \
         openblas-devel     \
         fftw3-devel        \
         libpng-devel       \
@@ -213,10 +248,7 @@ if $installdeps && $centos; then
         guile-devel        \
         swig
 
-    export PATH=${PATH}:/usr/lib64/openmpi/bin
-    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib64/openmpi/lib"
-    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
+    sudo -E pip3 install mpi4py
 fi
 
 CPPFLAGS=${CFLAGS}
@@ -263,3 +295,34 @@ autogensh --with-mpi --with-openmp PYTHON=python3
 make -j && $SUDO make install
 
 # all done
+
+if $centos; then
+     cd ${DESTDIR}/lib/python3.6/site-packages/meep/
+     for i in ../../../../lib64/python3.6/site-packages/meep/*meep*; do
+        ln -sf $i
+     done
+fi
+
+fi # ! $test
+
+########
+# test
+
+test=/tmp/test-meep.py
+
+echo "export PYTHONPATH=${PYTHONPATH}"
+echo "export PATH=${PATH}"
+echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
+echo "export LD_PRELOAD=${LD_PRELOAD}"
+cat << EOF > $test
+import meep as mp
+cell = mp.Vector3(16,8,0)
+exit()
+EOF
+
+set -x
+cat $test
+python3 $test
+set +x
+
+########
