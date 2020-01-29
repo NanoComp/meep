@@ -104,14 +104,10 @@ if $centos; then
     eval $(showenv)
 fi
 
-if ! lsb_release > /dev/null; then
-    echo "Minimum requirements:"
-    echo "    Ubuntu:"
-    echo "        sudo apt-get -y install lsb-release sudo git"
-    echo "    CentOS:"
-    echo "        sudo yum -y install redhat-lsb-core sudo git"
-    echo ""
-    exit 1
+
+if [ ! -r /etc/os-release ]; then
+    echo "Error: cannot read /etc/os-release"
+    false
 fi
 
 set -e
@@ -119,23 +115,24 @@ set -e
 ubuntu=false
 centos=false
 
-distrib=$(lsb_release -r -s)
+. /etc/os-release
+distrib="${ID}${VERSION_ID}"
 case "$distrib" in
-    18.04) # ubuntu 18.04 bionic
+    ubuntu18.04) # ubuntu 18.04 bionic
         libpng=libpng-dev
         libpython=libpython3-dev
         ubuntu=true
         ;;
-    16.04) # ubuntu 16.04 xenial
+    ubuntu16.04) # ubuntu 16.04 xenial
         libpng=libpng16-dev
         libpython=libpython3.5-dev
         ubuntu=true
         ;;
-    7.*) # CentOS 7.x
+    centos7) # CentOS 7.x
         centos=true
         ;;
     *)
-        echo "unsupported distribution '$(lsb_release -a)', edit and fix!"
+        echo "Error: unsupported distribution '${distrib}'"
         false
         ;;
 esac
@@ -145,6 +142,7 @@ if $installdeps && $ubuntu; then
     sudo apt-get update
 
     sudo apt-get -y install     \
+        git                     \
         build-essential         \
         gfortran                \
         libblas-dev             \
@@ -178,6 +176,7 @@ if $installdeps && $centos; then
     sudo yum -y --enablerepo=extras install epel-release
 
     sudo yum -y install   \
+        git               \
         bison             \
         byacc             \
         cscope            \
