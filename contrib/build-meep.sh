@@ -299,6 +299,7 @@ test=/tmp/test-meep.py
 cat << EOF > $test
 import meep as mp
 cell = mp.Vector3(16,8,0)
+print(cell)
 exit()
 EOF
 
