@@ -54,13 +54,13 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
   const fields *f = eps_data->f;
 
-  eps_inv->m00 = f->get_chi1inv(Ex, X, p, omega);
-  eps_inv->m11 = f->get_chi1inv(Ey, Y, p, omega);
-  eps_inv->m22 = f->get_chi1inv(Ez, Z, p, omega);
+  eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
+  eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
+  eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
 
-  ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p, omega), 0);
-  ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p, omega), 0);
-  ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p, omega), 0);
+  ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
+  ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
+  ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
   /*
   master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
   master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
@@ -400,7 +400,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   // which we automatically pick if kmatch == 0.
   if (match_frequency && kmatch == 0) {
     vec cen = eig_vol.center();
-    kmatch = omega_src * sqrt(get_eps(cen, omega_src) * get_mu(cen, omega_src));
+    kmatch = omega_src * sqrt(real(get_eps(cen, omega_src)) * real(get_mu(cen, omega_src)));
     if (d == NO_DIRECTION) {
       for (int i = 0; i < 3; ++i)
         k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis

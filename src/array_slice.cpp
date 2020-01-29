@@ -323,7 +323,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
         fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
       }
       else if (cS[i] == Dielectric) {
-        double tr = 0.0;
+        complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninveps; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, omega) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], omega) +
@@ -332,10 +332,10 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           omega));
           if (tr == 0.0) tr += 4.0; // default inveps == 1
         }
-        fields[i] = (4 * data->ninveps) / tr;
+        fields[i] = (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
-        double tr = 0.0;
+        complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninvmu; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, omega) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], omega) +
@@ -344,7 +344,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           omega));
           if (tr == 0.0) tr += 4.0; // default invmu == 1
         }
-        fields[i] = (4 * data->ninvmu) / tr;
+        fields[i] = (4.0 * data->ninvmu) / tr;
       }
       else {
         double f[2];

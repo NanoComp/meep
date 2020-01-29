@@ -26,7 +26,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
 
         sim.init_sim()
         v3 = mp.py_v3_to_vec(sim.dimensions, mp.Vector3(0,0,0), sim.is_cylindrical)
-        chi1inv = np.zeros((3,3),dtype=np.float64)
+        chi1inv = np.zeros((3,3),dtype=np.complex128)
         for i, com in enumerate([mp.Ex,mp.Ey,mp.Ez]):
             for k, dir in enumerate([mp.X,mp.Y,mp.Z]):
                 chi1inv[i,k] = sim.structure.get_chi1inv(com,dir,v3,omega)
