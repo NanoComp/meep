@@ -39,8 +39,6 @@ class TestDispersiveEigenmode(unittest.TestCase):
     def verify_output_and_slice(self,material,omega):
         # Since the slice routines average the diagonals, we need to do that too:
         chi1 = material.epsilon(omega).astype(np.complex128)
-        if np.any(np.imag(chi1) != 0):
-            chi1 = np.square(np.real(np.sqrt(chi1)))
         chi1inv = np.linalg.inv(chi1)
         chi1inv = np.diag(chi1inv)
         N = chi1inv.size
@@ -63,7 +61,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         n_h5 = 0
         mp.all_wait()
         with h5py.File(filename, 'r') as f:
-            n_h5 = np.sqrt(np.mean(f['eps'][()]))
+            n_h5 = np.sqrt(np.max(mp.complexarray(f['eps.r'][()],f['eps.i'][()])))
         self.assertAlmostEqual(n,n_h5, places=4)
     
     # ----------------------------------------- #

@@ -330,7 +330,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[1 + 2 * k], omega) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k] + ieos[1 + 2 * k],
                                           omega));
-          if (tr == 0.0) tr += 4.0; // default inveps == 1
+          if (abs(tr) == 0.0) tr += 4.0; // default inveps == 1
         }
         fields[i] = (4.0 * data->ninveps) / tr;
       }
@@ -342,7 +342,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[1 + 2 * k], omega) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k] + imos[1 + 2 * k],
                                           omega));
-          if (tr == 0.0) tr += 4.0; // default invmu == 1
+          if (abs(tr) == 0.0) tr += 4.0; // default invmu == 1
         }
         fields[i] = (4.0 * data->ninvmu) / tr;
       }

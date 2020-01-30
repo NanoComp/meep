@@ -388,7 +388,7 @@ void fields::output_hdf5(component c, const volume &where, h5file *file, bool ap
   if (coordinate_mismatch(gv.dim, c)) return;
 
   char dataname[256];
-  bool has_imag = !is_real && c != Dielectric && c != Permeability;
+  bool has_imag = omega != 0 || (!is_real && c != Dielectric && c != Permeability);
 
   bool delete_file;
   if ((delete_file = !file)) file = open_h5file(component_name(c), h5file::WRITE, prefix, true);
