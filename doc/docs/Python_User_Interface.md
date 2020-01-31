@@ -1045,7 +1045,7 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 
 **`get_epsilon_point(pt, omega=0)`**
 —
-Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue of the permittivity tensor at that location and frequency.
+Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue of the permittivity tensor at that location and frequency. If `omega` is non-zero, the result is complex valued; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`initialize_field(c, func)`**
 —
@@ -1777,13 +1777,13 @@ The most common step function is an output function, which outputs some field co
 Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), when they are outputted they are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d.
 
 <a name="output_epsilon"></a>
-**`output_epsilon()`**
+**`output_epsilon(omega=0)`**
 —
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
+Given a frequency `omega`, output ε (relative permittivity); for an anisotropic ε tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
-**`output_mu()`**
+**`output_mu(omega=0)`**
 —
-Output the relative permeability function μ. Note that this only outputs the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
+Given a frequency `omega`, output μ (relative permeability); for an anisotropic μ tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`Simulation.output_dft(dft_fields, fname)`**
 —

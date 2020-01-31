@@ -26,7 +26,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
 
         sim.init_sim()
         v3 = mp.py_v3_to_vec(sim.dimensions, mp.Vector3(0,0,0), sim.is_cylindrical)
-        chi1inv = np.zeros((3,3),dtype=np.float64)
+        chi1inv = np.zeros((3,3),dtype=np.complex128)
         for i, com in enumerate([mp.Ex,mp.Ey,mp.Ez]):
             for k, dir in enumerate([mp.X,mp.Y,mp.Z]):
                 chi1inv[i,k] = sim.structure.get_chi1inv(com,dir,v3,omega)
@@ -39,8 +39,6 @@ class TestDispersiveEigenmode(unittest.TestCase):
     def verify_output_and_slice(self,material,omega):
         # Since the slice routines average the diagonals, we need to do that too:
         chi1 = material.epsilon(omega).astype(np.complex128)
-        if np.any(np.imag(chi1) != 0):
-            chi1 = np.square(np.real(np.sqrt(chi1)))
         chi1inv = np.linalg.inv(chi1)
         chi1inv = np.diag(chi1inv)
         N = chi1inv.size
@@ -63,7 +61,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         n_h5 = 0
         mp.all_wait()
         with h5py.File(filename, 'r') as f:
-            n_h5 = np.sqrt(np.mean(f['eps'][()]))
+            n_h5 = np.sqrt(np.max(mp.complexarray(f['eps.r'][()],f['eps.i'][()])))
         self.assertAlmostEqual(n,n_h5, places=4)
     
     # ----------------------------------------- #

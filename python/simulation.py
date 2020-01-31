@@ -2010,7 +2010,7 @@ class Simulation(object):
         dims = [s for s in dim_sizes if s != 0]
 
         if cmplx is None:
-            cmplx = component < mp.Dielectric and not self.fields.is_real
+            cmplx = omega != 0 or (component < mp.Dielectric and not self.fields.is_real)
 
         if arr is not None:
             if cmplx and not np.iscomplexobj(arr):
