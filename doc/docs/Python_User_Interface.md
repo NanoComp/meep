@@ -1779,11 +1779,11 @@ Note that although the various field components are stored at different places i
 <a name="output_epsilon"></a>
 **`output_epsilon(omega=0)`**
 —
-Given a frequency `omega`, output the average of the diagonal entries of the ε (relative permittivity) tensor. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
+Given a frequency `omega`, output ε (relative permittivity); for an anisotropic ε tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`output_mu(omega=0)`**
 —
-Given a frequency `omega`, output the average of the diagonal entries of the μ (relative permeability) tensor. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
+Given a frequency `omega`, output μ (relative permeability); for an anisotropic μ tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`Simulation.output_dft(dft_fields, fname)`**
 —
