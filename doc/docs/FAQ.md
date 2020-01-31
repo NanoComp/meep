@@ -308,9 +308,9 @@ Yes. A [materials library](https://github.com/NanoComp/meep/blob/master/python/m
 
 Yes. Meep supports [gyrotropic media](Materials.md#gyrotropic-media) which involve tensor ε (or μ) with imaginary off-diagonal components and no absorption due to an [external magnetic field](https://en.wikipedia.org/wiki/Magneto-optic_effect).
 
-### When outputting the permittivity function to a file, I don't see any dispersive materials
+### When outputting the permittivity function to a file, I don't see any tensors
 
-Only the real, frequency-independent (i.e. non dispersive) part of ε/μ is written to an HDF5 file using `output_epsilon`/`output_mu`. As an example, many of the dispersive materials in the [materials library](Materials.md#materials-library) which have a broadband, complex, refractive index will appear as ε=1 in the output file. Thus, in order to verify the material geometry during debugging using visualization tools, etc., you may have to artificially adjust the frequency-independent `epsilon` value. Alternatively, the complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
+Only the average of the diagonal entries of ε/μ are written to an HDF5 file using `output_epsilon`/`output_mu`. The complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
