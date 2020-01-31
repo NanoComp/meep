@@ -310,7 +310,7 @@ Yes. Meep supports [gyrotropic media](Materials.md#gyrotropic-media) which invol
 
 ### When outputting the permittivity function to a file, I don't see any tensors
 
-Only the average of the diagonal entries of ε/μ are written to an HDF5 file using `output_epsilon`/`output_mu`. The complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
+Only the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of eigenvalues of the ε/μ tensor are written to an HDF5 file using `output_epsilon`/`output_mu`. The complex ε and μ tensor can be obtained at the frequency `f` as a 3x3 Numpy array via the functions `epsilon(f)` and `mu(f)` of the [`Medium`](Python_User_Interface.md#medium) class.
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
