@@ -884,7 +884,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)user_kpoint_func;
   (void)user_kpoint_data;
   (void)kdom;
-  (void)double *cscale;
+  (void)cscale;
   (void)d;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
