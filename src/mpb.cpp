@@ -757,7 +757,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        direction d) {
+                                        double *cscale, direction d) {
   double freq_min = flux.freq_min;
   double dfreq = flux.dfreq;
   int num_freqs = flux.Nfreq;
@@ -810,9 +810,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       cdouble cminus = 0.5 * (mode_flux[0] - mode_flux[1]);
       cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
       if (normfac == 0.0) normfac = 1.0;
-      double cscale = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
-      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * cscale;
-      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * cscale;
+      double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
+      if (cscale) cscale[nb * num_freqs + nf] = real(csc); // return real part of coefficient scalar for adjoint calculations
+      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * csc;
+      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * csc;
       destroy_eigenmode_data((void *)mode_data, false);
     }
   }
@@ -869,7 +870,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        direction d) {
+                                        double *cscale,direction d) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -883,6 +884,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)user_kpoint_func;
   (void)user_kpoint_data;
   (void)kdom;
+  (void)double *cscale;
   (void)d;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
@@ -917,10 +919,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         int num_bands, int parity, double eig_resolution,
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints, vec *kdom) {
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom, double *cscale) {
   get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                              eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
-                             kpoints, kdom, flux.normal_direction);
+                             kpoints, kdom, cscale, flux.normal_direction);
 }
 
 } // namespace meep

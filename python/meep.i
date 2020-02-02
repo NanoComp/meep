@@ -492,14 +492,14 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int *bands, int num_bands, int parity, double eig_resolution,
                                                    double eigensolver_tol, std::complex<double> *coeffs,
                                                    double *vgrp, meep::kpoint_func user_kpoint_func,
-                                                   void *user_kpoint_data, meep::direction d) {
+                                                   void *user_kpoint_data, double *cscale, meep::direction d) {
 
     size_t num_kpoints = num_bands * flux.Nfreq;
     meep::vec *kpoints = new meep::vec[num_kpoints];
     meep::vec *kdom = new meep::vec[num_kpoints];
 
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, d);
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, cscale, d);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -950,6 +950,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (double *)array_data($input);
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* cscale {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* cscale {
+    $1 = (double *)array_data($input);
+}
+
 //--------------------------------------------------
 // end typemaps for get_eigenmode_coefficients
 //--------------------------------------------------
@@ -1378,7 +1386,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                                   meep::direction d);
+                                                   double *cscale, meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions);
 
