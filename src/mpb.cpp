@@ -811,7 +811,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
       if (normfac == 0.0) normfac = 1.0;
       double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
-      if (cscale) cscale[nb * num_freqs + nf] = real(csc); // return real part of coefficient scalar for adjoint calculations
+      if (cscale) cscale[nb * num_freqs + nf] = csc; // return real part of coefficient scalar for adjoint calculations
       coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * csc;
       coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * csc;
       destroy_eigenmode_data((void *)mode_data, false);
