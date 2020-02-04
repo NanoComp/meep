@@ -465,7 +465,7 @@ Using [scalar theory](http://zoneplate.lbl.gov/theory), the radius of the $n$<su
 $$ r_n^2 = n\lambda (f+\frac{n\lambda}{4})$$
 </center>
 
-where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with refractive index of 1.5 (glass), $\lambda$ of 0.5 μm, and height of 0.5 μm. The focusing property of the zone plate is verified by the concentration of the electric-field energy density at the focal length of 0.2 mm (which lies *outside* the cell). The planewave is incident from within a glass substrate and spans the entire length of the cell in the radial direction. The cell is surrounded on all sides by PML. A schematic of the simulation geometry for a design with 25 zones and flat-surface termination is shown below. The near-field line monitor is positioned at the edge of the PML.
+where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with refractive index of 1.5 (glass), $\lambda$ of 0.5 μm, and height of 0.5 μm. The focusing property of the zone plate is verified by the concentration of the electric-field energy density at the focal length of 0.2 mm (which lies *outside* the cell). The planewave is incident from within a glass substrate and spans the entire length of the cell in the radial direction. The cell is surrounded on all sides by PML. A schematic of the simulation geometry for a design with 25 zones and flat-surface termination is shown below. The near-field monitor is positioned at the edge of the PML and captures *all* the scattered fields.
 
 <center>
 ![](../images/zone_plate_schematic.png)
@@ -534,7 +534,9 @@ sim = mp.Simulation(cell_size=cell_size,
                     m=-1)
 
 ## near-field monitor
-n2f_obj = sim.add_near2far(frq_cen, 0, 1, mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)))
+n2f_obj = sim.add_near2far(frq_cen, 0, 1,
+                           mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)),
+                           mp.Near2FarRegion(center=mp.Vector3(sr-dpml,0,0.5*sz-0.5*(dsub+zh+dpad)),size=mp.Vector3(z=dsub+zh+dpad)))
 
 sim.run(until_after_sources=100)
 
