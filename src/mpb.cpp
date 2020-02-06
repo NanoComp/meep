@@ -808,7 +808,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
       cdouble cplus = 0.5 * (mode_flux[0] + mode_flux[1]);
       cdouble cminus = 0.5 * (mode_flux[0] - mode_flux[1]);
-      cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
+      /* MPB modes are normalized to unit power above, but we need to re-normalize here to have
+         unit power as integrated on Meep's Yee grid and not on MPB's grid.  Thus, normfac differs
+         from a constant factor only because of discretization effects. */
+      cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]);
       if (normfac == 0.0) normfac = 1.0;
       double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
       if (cscale) cscale[nb * num_freqs + nf] = csc; // return real part of coefficient scalar for adjoint calculations
