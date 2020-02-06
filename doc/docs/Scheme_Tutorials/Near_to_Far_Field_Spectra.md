@@ -50,16 +50,16 @@ The simulation script is in [examples/antenna-radiation.ctl](https://github.com/
 
 (define nearfield-box
   (add-near2far fcen 0 1
-		(make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
+		(make near2far-region (center 0 (* +0.5 sxy)) (size sxy 0) (weight +1))
 		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-		(make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
+		(make near2far-region (center (* +0.5 sxy) 0) (size 0 sxy) (weight +1))
 		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (define flux-box
   (add-flux fcen 0 1
-	    (make flux-region (center 0 (* 0.5 sxy)) (size sxy 0))
+	    (make flux-region (center 0 (* +0.5 sxy)) (size sxy 0) (weight +1))
 	    (make flux-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-	    (make flux-region (center (* 0.5 sxy) 0) (size 0 sxy))
+	    (make flux-region (center (* +0.5 sxy) 0) (size 0 sxy) (weight +1))
 	    (make flux-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
@@ -754,7 +754,7 @@ The scattered field amplitude profile (the top figure in each of the two sets of
 
 The sharpness of the peaks directly corresponds to how [collimated](https://en.wikipedia.org/wiki/Collimated_beam) the diffracted beams are, and in the limit of infinitely many periods the resulting delta-function peaks correspond to diffracted planewaves. (The squared amplitude of each peak is proportional to the power in the corresponding diffraction order.) One can also obtain the collimation of the beams more directly by using Meep's `near2far` feature to compute the far-field diffracted waves — this approach is more straightforward, but potentially much more expensive than looking at the Fourier transform of the near field, because one may need a large number of far-field points to resolve the full diffracted beams. In general, [there is a tradeoff in computational science](https://icerm.brown.edu/video_archive/?play=1626) between doing direct "numerical experiments" that are conceptually straightforward but often expensive, versus more indirect and tricky calculations that don't directly correspond to laboratory experiments but which can sometimes be vastly more efficient at extracting physical information.
 
-In 3d, the procedure is very similar, but a little more effort is required to disentangle the two polarizations relative to the plane of incidence [the (z,**k**) plane for each Fourier component **k**]. For propagation in the $z$ direction, you would Fourier transform both $E_x$ and $E_y$ of the scattered field as a function of **k** $= (k_x, k_y)$.  For each **k**, you decompose the corresponding **E** $= (E_x, E_y)$ into the amplitude parallel to **k** [which gives the *p* polarization amplitude if you multiply by csc(θ), where cos(θ)=|**k**|/(nω/c), n is the refractive index of the ambient medium, and ω is the angular frequency] and perpendicular to **k** [which equals the *s* polarization amplitude].  Then square these amplitudes to get something proportional to power as above.  (Note that this analysis is the same even if the incident wave is at an oblique angle, although the **k** locations of the diffraction peaks will change.)
+In 3d, the procedure is very similar, but a little more effort is required to disentangle the two polarizations relative to the plane of incidence [the (z,**k**) plane for each Fourier component **k**]. For propagation in the $z$ direction, you would Fourier transform both $E_x$ and $E_y$ of the scattered field as a function of **k** $= (k_x, k_y)$.  For each **k**, you decompose the corresponding **E** $= (E_x, E_y)$ into the amplitude parallel to **k** [which gives the *p* polarization amplitude if you multiply by sec(θ), where sin(θ)=|**k**|/(nω/c), n is the refractive index of the ambient medium, and ω is the angular frequency; θ is the outgoing angle, where θ=0 is normal] and perpendicular to **k** [which equals the *s* polarization amplitude].  Then square these amplitudes to get something proportional to power as above.  (Note that this analysis is the same even if the incident wave is at an oblique angle, although the **k** locations of the diffraction peaks will change.) Simulating large finite gratings is usually unnecessary since the accuracy improvements are negligible. For example, a 3d simulation of a finite grating with e.g. 100 periods by 100 periods which is computationally expensive would only provide a tiny correction of ~1% (on par with fabrication errors) compared to the infinite structure involving a single unit cell. A finite grating with a small number of periods (e.g., 5 or 10) exhibits weak diffractive effects and is therefore not considered a diffractive grating.
 
 Far-Field Profile of a Cavity
 -----------------------------

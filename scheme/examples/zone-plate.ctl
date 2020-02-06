@@ -54,7 +54,8 @@
                             (reverse (arith-sequence 0 1 zN)))))
 
 (define n2f-obj (add-near2far frq-cen 0 1
-                         (make near2far-region (center (* 0.5 (- sr dpml)) 0 (- (* 0.5 sz) dpml)) (size (- sr dpml) 0 0))))
+                              (make near2far-region (center (* 0.5 (- sr dpml)) 0 (- (* 0.5 sz) dpml)) (size (- sr dpml) 0 0))
+                              (make near2far-region (center (- sr dpml) 0 (- (* 0.5 sz) (* 0.5 (+ dsub zh dpad)))) (size 0 0 (+ dsub zh dpad)))))
 
 (run-sources+ 100)
 
