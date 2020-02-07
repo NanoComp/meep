@@ -306,6 +306,24 @@ class LorentzianSusceptibility(Susceptibility):
         else:
             return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
 
+class IIR_Susceptibility(Susceptibility):
+    def __init__(self, num, den, **kwargs):
+        super(IIR_Susceptibility, self).__init__(**kwargs)
+        self.num = num
+        self.den = den
+    
+    def eval_susceptibility(self,freq):
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+
+        freq = np.squeeze(freq)
+        eval_num = np.zeros(freq.shape,dtype=np.complex128)
+        eval_den = np.zeros(freq.shape,dtype=np.complex128)
+        N = len(self.num)
+        D = len(self.den)
+        for k in range(N): eval_num += pow(1j*freq,N-k)*self.num[k]
+        for k in range(D): eval_den += pow(1j*freq,D-k)*self.den[k]
+
+        return sigma * eval_num[:,np.newaxis,np.newaxis] / eval_den[:,np.newaxis,np.newaxis]
 
 class DrudeSusceptibility(Susceptibility):
 

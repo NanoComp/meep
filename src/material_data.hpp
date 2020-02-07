@@ -69,6 +69,9 @@ typedef struct susceptibility_struct {
   bool is_file;
   std::vector<transition> transitions;
   std::vector<double> initial_populations;
+  // IIR filter
+  bool iir;
+  std::vector<double> numS, denS;
 } susceptibility;
 
 struct susceptibility_list {

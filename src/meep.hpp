@@ -371,6 +371,58 @@ protected:
   realnum *sigmat; // 5*T transition-specific sigma-diagonal factors
 };
 
+/* a IIR susceptibility
+   Susceptibility modeled by a general rational function (ratios of p(w)/q(w)).
+   The user provides the numerator and denominator coefficients in the continuous (s)
+   domain. One of the conversion routines is used to transform to the discrete (z)
+   domain.  */
+ 
+class iir_susceptibility : public susceptibility {
+public:
+  iir_susceptibility(std::vector<double> vec_numS, std::vector<double> vec_denS, double dt);
+  iir_susceptibility(const iir_susceptibility &from);
+
+  virtual susceptibility *clone() const { return new iir_susceptibility(*this); }
+
+  virtual ~iir_susceptibility();
+  
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        void *P_internal_data) const;
+
+  virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
+                          void *P_internal_data) const;
+
+  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
+
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+                                  const grid_volume &gv, void *data) const;
+
+  virtual void *copy_internal_data(void *data) const;
+
+  virtual int num_cinternal_notowned_needed(component c, void *P_internal_data) const;
+
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, int n,
+                                          void *P_internal_data) const;
+
+  virtual void dump_params(h5file *h5f, size_t *start);
+  virtual int get_num_params() { return 4; }
+
+  virtual std::complex<double> chi1(double freq, double sigma = 1);
+
+protected:
+int N, D, N_z, D_z;
+realnum T, *numS, *denS, *numZ, *denZ;
+
+
+};
+// tustins method (aka trapezoidal rule) to convert from s domain to z domain.
+void polynomial_transform(double *r, int N, double alpha, double beta, double delta, double gamma);
+void backward_difference(realnum* vec_numS, int N, realnum* vec_denS, int D, realnum* vec_numZ, int N_z, realnum* vec_denZ, int D_z, realnum T);
+void tustins_method(realnum* vec_numS, int N, realnum* vec_denS, int D, realnum* vec_numZ, int N_z, realnum* vec_denZ, int D_z, realnum T);
+realnum factorial(int i);
+realnum comb(int n, int k);
+
 class grace;
 
 // h5file.cpp: HDF5 file I/O.  Most users, if they use this

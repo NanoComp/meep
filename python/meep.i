@@ -1187,6 +1187,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+//--------------------------------------------------
+// IIR transfer function typemaps
+//--------------------------------------------------
+%apply (double *INPLACE_ARRAY1, int DIM1) {(double *r, int N)};
+%apply (double *INPLACE_ARRAY1, int DIM1) {(double *vec_numS, int N), (double *vec_denS, int D), (double *vec_numZ, int N_z), (double *vec_denZ, int D_z)};
+
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
 
@@ -1422,6 +1428,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         GyrotropicDrudeSusceptibility,
         GyrotropicLorentzianSusceptibility,
         GyrotropicSaturatedSusceptibility,
+        IIR_Susceptibility,
         Lattice,
         LorentzianSusceptibility,
         Matrix,

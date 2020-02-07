@@ -35,6 +35,10 @@ using namespace std;
 
 namespace meep {
 
+// ---------------------------------------------------------- //
+// Base susceptibility class
+// ---------------------------------------------------------- //
+
 int susceptibility::cur_id = 0;
 
 susceptibility *susceptibility::clone() const {
@@ -94,6 +98,10 @@ bool susceptibility::needs_W_notowned(component c, realnum *W[NUM_FIELD_COMPONEN
   }
   return false;
 }
+
+// ---------------------------------------------------------- //
+// Lorentzian susceptibility
+// ---------------------------------------------------------- //
 
 typedef struct {
   size_t sz_data;
@@ -314,6 +322,10 @@ void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   *start += num_params;
 }
 
+// ---------------------------------------------------------- //
+// Noisy lorentzian
+// ---------------------------------------------------------- //
+
 void noisy_lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                                                realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
                                                const grid_volume &gv, void *P_internal_data) const {
@@ -346,6 +358,10 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
+
+// ---------------------------------------------------------- //
+// Gyrotropic susceptibility
+// ---------------------------------------------------------- //
 
 gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
                                                      double alpha, gyrotropy_model model)

@@ -345,6 +345,9 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
   s->saturated_gyrotropy = false;
   s->transitions.resize(0);
   s->initial_populations.resize(0);
+  s->iir = false;
+  s->numS.resize(0);
+  s->denS.resize(0);
 
   if (PyObject_HasAttrString(po, "frequency")) {
     if (!get_attr_dbl(po, &s->frequency, "frequency")) { return 0; }
@@ -397,6 +400,33 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
   if (class_name.find(std::string("Drude")) != std::string::npos) { s->drude = true; }
   else {
     s->drude = false;
+  }
+
+  // ---------- IIR filter sus. typemaps --------------------//
+  if (PyObject_HasAttrString(po, "num")) {
+    s->iir = true;
+
+    // numerator python list to C++ vector
+    PyObject *py_pop = PyObject_GetAttrString(po, "num");
+    if (!py_pop) { return 0; }
+    int length = PyList_Size(py_pop);
+    s->numS.resize(length);
+
+    for (int i = 0; i < length; ++i) {
+      s->numS[i] = PyFloat_AsDouble(PyList_GetItem(py_pop, i));
+    }
+
+    // denominator python list to C++ vector
+    py_pop = PyObject_GetAttrString(po, "den");
+    if (!py_pop) { return 0; }
+    length = PyList_Size(py_pop);
+    s->denS.resize(length);
+
+    for (int i = 0; i < length; ++i) {
+      s->denS[i] = PyFloat_AsDouble(PyList_GetItem(py_pop, i));
+    }
+    Py_DECREF(py_pop); 
+
   }
 
   s->is_file = false;
