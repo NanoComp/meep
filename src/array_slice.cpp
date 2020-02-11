@@ -294,7 +294,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 
   for (int i = 0; i < num_components; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
-    if (cS[i] == Dielectric || cS[i] == Permeability)
+    if (cS[i] == Dielectric || cS[i] == Permeability || cS[i] == NO_COMPONENT)
       ph[i] = 1.0;
     else {
       fc->gv.yee2cent_offsets(cS[i], off[2 * i], off[2 * i + 1]);
