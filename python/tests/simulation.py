@@ -139,10 +139,6 @@ class TestSimulation(unittest.TestCase):
         fname = os.path.join(temp_dir, 'simulation-ez-000100.00.h5')
         self.assertTrue(os.path.exists(fname))
 
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(fname)
-
     def test_after_sources_and_time(self):
         sim = self.init_simple_simulation()
 
@@ -162,10 +158,6 @@ class TestSimulation(unittest.TestCase):
 
         fname = os.path.join(temp_dir, 'test_prefix-simulation-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fname))
-
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(fname)
 
     def test_extra_materials(self):
         sim = self.init_simple_simulation()
@@ -193,18 +185,17 @@ class TestSimulation(unittest.TestCase):
         sim.filename_prefix = 'test_in_volume'
         vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
         sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
-
-    def test_in_point(self):
-        sim = self.init_simple_simulation(filename_prefix='test_in_point')
-        fn = sim.filename_prefix + '-ez-000200.00.h5'
-        ## sim.use_output_directory(temp_dir)
-        pt = mp.Vector3()
-        sim.run(mp.at_end(mp.in_point(pt, mp.output_efield_z)), until=200)
+        fn = os.path.join(temp_dir, 'test_in_volume-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fn))
 
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(fn)
+    def test_in_point(self):
+        sim = self.init_simple_simulation()
+        sim.use_output_directory(temp_dir)
+        sim.filename_prefix = 'test_in_point'
+        pt = mp.Vector3()
+        sim.run(mp.at_end(mp.in_point(pt, mp.output_efield_z)), until=200)
+        fn = os.path.join(temp_dir, 'test_in_point-ez-000200.00.h5')
+        self.assertTrue(os.path.exists(fn))
 
     def test_epsilon_input_file(self):
         sim = self.init_simple_simulation()
@@ -359,12 +350,6 @@ class TestSimulation(unittest.TestCase):
 
         for ref_pt, pt in zip(ref_field_points, field_points):
             self.assertAlmostEqual(ref_pt, pt)
-
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(dump_fn)
-            if dump_chunk_fname:
-                os.remove(dump_chunk_fname)
 
     def test_load_dump_structure(self):
         self._load_dump_structure()
