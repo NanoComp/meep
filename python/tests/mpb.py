@@ -15,8 +15,6 @@ from scipy.optimize import ridder
 import meep as mp
 from meep import mpb
 from utils import compare_arrays
-import tempfile
-import os
 
 class TestModeSolver(unittest.TestCase):
 

@@ -378,7 +378,7 @@ class TestSimulation(unittest.TestCase):
         energy_arr = sim.get_tot_pwr()
         efield_arr = sim.get_efield()
 
-        fname_fmt = temp_dir + "/test_get_array_output-{}-000020.00.h5"
+        fname_fmt = os.path.join(temp_dir, 'test_get_array_output-{}-000020.00.h5')
 
         with h5py.File(fname_fmt.format('eps'), 'r') as f:
             eps = f['eps'][()]

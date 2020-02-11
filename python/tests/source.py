@@ -149,7 +149,6 @@ class TestAmpFileFunc(unittest.TestCase):
         cen = mp.Vector3(0.1, 0.2)
         sz = mp.Vector3(0.3, 0.2)
 
-        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
         amp_file = os.path.join(data_dir, 'amp_func_file')
         amp_file += ':amp_data'
 
