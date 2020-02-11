@@ -7,7 +7,7 @@ import meep as mp
 
 class TestCavityFarfield(unittest.TestCase):
 
-    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
     def run_test(self, nfreqs):
         eps = 13

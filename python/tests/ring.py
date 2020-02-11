@@ -4,7 +4,8 @@ from __future__ import division
 
 import unittest
 import meep as mp
-
+import tempfile
+import os
 
 class TestRing(unittest.TestCase):
 
@@ -34,6 +35,7 @@ class TestRing(unittest.TestCase):
                                  symmetries=[mp.Mirror(mp.Y)],
                                  boundary_layers=[mp.PML(dpml)])
 
+        self.sim.use_output_directory(temp_dir)
         self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
 
     def test_harminv(self):
@@ -61,4 +63,11 @@ class TestRing(unittest.TestCase):
         self.assertAlmostEqual(fp, -0.08185972142450348)
 
 if __name__ == '__main__':
+    if mp.am_master():
+        temp_dir = tempfile.mkdtemp()
+    else:
+        temp_dir = None
+    temp_dir = mp.comm.bcast(temp_dir, root=0)
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

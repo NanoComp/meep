@@ -5,7 +5,8 @@ import math
 import unittest
 
 import meep as mp
-
+import tempfile
+import os
 
 class TestPwSource(unittest.TestCase):
 
@@ -52,6 +53,7 @@ class TestPwSource(unittest.TestCase):
             boundary_layers=pml_layers,
             resolution=resolution
         )
+        self.sim.use_output_directory(temp_dir)
         self.s = s
 
     def test_pw_source(self):
@@ -67,4 +69,11 @@ class TestPwSource(unittest.TestCase):
         self.assertAlmostEqual(cmath.exp(1j * self.k.dot(v1 - v2)), 0.7654030066070924 - 0.6435512702783076j)
 
 if __name__ == '__main__':
+    if mp.am_master():
+        temp_dir = tempfile.mkdtemp()
+    else:
+        temp_dir = None
+    temp_dir = mp.comm.bcast(temp_dir, root=0)
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)
