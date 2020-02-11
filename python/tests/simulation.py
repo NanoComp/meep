@@ -634,7 +634,8 @@ if __name__ == '__main__':
         temp_dir = tempfile.mkdtemp()
     else:
         temp_dir = None
-    temp_dir = mp.comm.bcast(temp_dir, root=0)
+    if mp.count_processors() > 1:
+        temp_dir = mp.comm.bcast(temp_dir, root=0)
     unittest.main()
     if mp.am_master():
         os.removedirs(temp_dir)
