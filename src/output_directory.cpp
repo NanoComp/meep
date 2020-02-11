@@ -30,18 +30,9 @@ using namespace std;
 
 namespace meep {
 
-const char symlink_name[] = "latest_output";
-
 void structure::set_output_directory(const char *name) {
-  char buf[300];
-  outdir = name;
+  outdir = name; /* fixme: make a copy */
   if (verbosity > 0) master_printf("Using output directory %s/\n", name);
-  if (readlink(symlink_name, buf, 300) > 0) {
-    // Link already exists.
-    unlink(symlink_name);
-  }
-  symlink(name, symlink_name);
-  outdir = name;
 }
 
 void fields::set_output_directory(const char *name) {
