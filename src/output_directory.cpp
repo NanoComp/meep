@@ -137,6 +137,17 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   return outdirname;
 }
 
+/* similar to above, but creates a temporary directory */
+const char *make_output_directory() {
+  static char outdirname[] = "meepXXXXXX";
+  if (am_master()) {
+    if (!mkdtemp(outdirname))
+      abort("failed to create temporary output directory");
+  }
+  broadcast(0, outdirname, strlen(outdirname)+1);
+  return outdirname;
+}
+
 void trash_output_directory(const char *dirname) {
   if (am_master()) mkdir(dirname, 00777);
 }
