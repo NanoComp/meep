@@ -18,7 +18,7 @@ class TestBendFlux(unittest.TestCase):
         wvg_ycen = -0.5 * (sy - w - (2 * pad))
         wvg_xcen = 0.5 * (sx - w - (2 * pad))
         height = 100
-        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
         gdsii_file = os.path.join(data_dir, 'bend-flux.gds')
 
         if no_bend:

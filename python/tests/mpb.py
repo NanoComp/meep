@@ -20,8 +20,8 @@ import os
 
 class TestModeSolver(unittest.TestCase):
 
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    examples_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'examples')
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+    examples_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
     sys.path.insert(0, examples_dir)
 
     def setUp(self):

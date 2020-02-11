@@ -10,7 +10,7 @@ from meep.geom import Cylinder, Vector3
 from meep.source import EigenModeSource, ContinuousSource, GaussianSource
 
 
-data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
 
 class TestEigenModeSource(unittest.TestCase):

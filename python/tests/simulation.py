@@ -200,7 +200,7 @@ class TestSimulation(unittest.TestCase):
     def test_epsilon_input_file(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
-        eps_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tests')
+        eps_input_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tests'))
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
         sim.epsilon_input_file = eps_input_path
 
@@ -219,7 +219,7 @@ class TestSimulation(unittest.TestCase):
     def test_numpy_epsilon(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
-        eps_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tests')
+        eps_input_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tests'))
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
 
         with h5py.File(eps_input_path, 'r') as f:
@@ -378,7 +378,7 @@ class TestSimulation(unittest.TestCase):
         energy_arr = sim.get_tot_pwr()
         efield_arr = sim.get_efield()
 
-        fname_fmt = os.path.abspath(temp_dir) + "/test_get_array_output-{}-000020.00.h5"
+        fname_fmt = temp_dir + "/test_get_array_output-{}-000020.00.h5"
 
         with h5py.File(fname_fmt.format('eps'), 'r') as f:
             eps = f['eps'][()]
