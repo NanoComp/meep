@@ -4,7 +4,6 @@ from __future__ import division
 
 import unittest
 import meep as mp
-import tempfile
 import os
 
 class TestRing(unittest.TestCase):
@@ -63,12 +62,7 @@ class TestRing(unittest.TestCase):
         self.assertAlmostEqual(fp, -0.08185972142450348)
 
 if __name__ == '__main__':
-    if mp.am_master():
-        temp_dir = tempfile.mkdtemp()
-    else:
-        temp_dir = None
-    if mp.count_processors() > 1:
-        temp_dir = mp.comm.bcast(temp_dir, root=0)
+    temp_dir = mp.make_output_directory()
     unittest.main()
     if mp.am_master():
         os.removedirs(temp_dir)

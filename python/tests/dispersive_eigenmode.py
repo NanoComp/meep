@@ -13,7 +13,6 @@ import meep as mp
 import numpy as np
 from meep import mpb
 import h5py
-import tempfile
 import os
 
 class TestDispersiveEigenmode(unittest.TestCase):
@@ -148,12 +147,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
 
 if __name__ == '__main__':
-    if mp.am_master():
-        temp_dir = tempfile.mkdtemp()
-    else:
-        temp_dir = None
-    if mp.count_processors() > 1:
-        temp_dir = mp.comm.bcast(temp_dir, root=0)
+    temp_dir = mp.make_output_directory()
     unittest.main()
     if mp.am_master():
         os.removedirs(temp_dir)

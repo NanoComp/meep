@@ -191,7 +191,7 @@ Assuming you've set your `LDFLAGS` etcetera, the configure script should find al
 make check
 ```
 
-Note: several of the unit tests generate output files which are written to disk. The C++ test suite in `meep/tests` outputs its files in the same subdirectory. The Python test suite in `meep/python/tests` outputs its files to a temporary system directory.
+Note: several of the unit tests generate output files which are written to disk. The C++ test suite in `meep/tests` outputs its files in the same subdirectory. The Python test suite in `meep/python/tests` outputs its files to a temporary system directory (i.e., /tmp, etc.).
 
 The configure script accepts several flags to modify its behavior.
 

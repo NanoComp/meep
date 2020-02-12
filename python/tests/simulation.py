@@ -6,7 +6,6 @@ import warnings
 import h5py
 import numpy as np
 import meep as mp
-import tempfile
 
 try:
     unicode
@@ -628,12 +627,7 @@ class TestSimulation(unittest.TestCase):
             self.assertAlmostEqual(pt2, expected)
 
 if __name__ == '__main__':
-    if mp.am_master():
-        temp_dir = tempfile.mkdtemp()
-    else:
-        temp_dir = None
-    if mp.count_processors() > 1:
-        temp_dir = mp.comm.bcast(temp_dir, root=0)
+    temp_dir = mp.make_output_directory()
     unittest.main()
     if mp.am_master():
         os.removedirs(temp_dir)

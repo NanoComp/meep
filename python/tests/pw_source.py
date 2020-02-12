@@ -5,7 +5,6 @@ import math
 import unittest
 
 import meep as mp
-import tempfile
 import os
 
 class TestPwSource(unittest.TestCase):
@@ -69,12 +68,7 @@ class TestPwSource(unittest.TestCase):
         self.assertAlmostEqual(cmath.exp(1j * self.k.dot(v1 - v2)), 0.7654030066070924 - 0.6435512702783076j)
 
 if __name__ == '__main__':
-    if mp.am_master():
-        temp_dir = tempfile.mkdtemp()
-    else:
-        temp_dir = None
-    if mp.count_processors() > 1:
-        temp_dir = mp.comm.bcast(temp_dir, root=0)
+    temp_dir = mp.make_output_directory()
     unittest.main()
     if mp.am_master():
         os.removedirs(temp_dir)
