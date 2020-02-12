@@ -128,14 +128,31 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   return outdirname;
 }
 
-/* similar to above, but creates a temporary directory */
-const char *make_output_directory() {
-  static char outdirname[] = "meepXXXXXX";
-  if (am_master()) {
-    if (!mkdtemp(outdirname))
+/* similar to above, but creates a temporary directory in /tmp
+   (note that the caller should delete[] the return value, but
+    it's not a big deal if they forget and leak memory since
+    this function is not called many times in a typical run) */
+char *make_output_directory() {
+  char *outdirname = NULL; // set to tmpdir/meepXXXXXX
+  static const char meeptemplate[] = "/meepXXXXXX";
+  const char *tmpdir;
+
+  // standard name of Unix temporary directory, cribbed from libuv
+  if (NULL != (tmpdir = getenv("TMPDIR"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TMP"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TEMP"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TEMPDIR"))) goto got_tmpdir;
+  tmpdir = "/tmp";
+got_tmpdir:
+
+  size_t len = strlen(tmpdir) + strlen(meeptemplate) + 1;
+  outdirname = new char[len];
+  strcat(strcpy(outdirname, tmpdir), meeptemplate);
+
+  if (am_master() && !mkdtemp(outdirname)) {
       abort("failed to create temporary output directory");
   }
-  broadcast(0, outdirname, strlen(outdirname)+1);
+  broadcast(0, outdirname, len);
   return outdirname;
 }
 

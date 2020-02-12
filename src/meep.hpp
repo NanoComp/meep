@@ -1931,7 +1931,7 @@ private:
 // directory, unless the source file hasn't changed.
 
 const char *make_output_directory(const char *exename, const char *jobname = NULL);
-const char *make_output_directory(); // make temporary directory
+char *make_output_directory(); // make temporary directory
 void trash_output_directory(const char *dirname);
 FILE *create_output_file(const char *dirname, const char *fname);
 
