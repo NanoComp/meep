@@ -150,7 +150,7 @@ got_tmpdir:
   strcat(strcpy(outdirname, tmpdir), meeptemplate);
 
   if (am_master() && !mkdtemp(outdirname)) {
-      abort("failed to create temporary output directory");
+      abort("failed to create temporary output directory \"%s\"", outdirname);
   }
   broadcast(0, outdirname, len);
   return outdirname;
