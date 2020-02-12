@@ -7,6 +7,8 @@ import re
 import sys
 import time
 import unittest
+import tempfile
+import os
 
 import h5py
 import numpy as np
@@ -23,21 +25,12 @@ class TestModeSolver(unittest.TestCase):
     sys.path.insert(0, examples_dir)
 
     def setUp(self):
-        """Store the test name and register a function to clean up all the
-        generated h5 files."""
-
         self.start = time.time()
 
-        self.filename_prefix = self.id().split('.')[-1]
+        self.filename_prefix = os.path.join(temp_dir, self.id().split('.')[-1])
         print()
         print(self.filename_prefix)
         print('=' * 24)
-
-        def rm_h5():
-            for f in glob.glob("{}*.h5".format(self.filename_prefix)):
-                os.remove(f)
-
-        self.addCleanup(rm_h5)
 
     def tearDown(self):
         end = time.time() - self.start
@@ -1418,4 +1411,12 @@ class TestModeSolver(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    if mp.am_master():
+        temp_dir = tempfile.mkdtemp()
+    else:
+        temp_dir = None
+    if mp.count_processors() > 1:
+        temp_dir = mp.comm.bcast(temp_dir, root=0)
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

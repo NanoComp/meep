@@ -311,8 +311,6 @@ class TestSimulation(unittest.TestCase):
                              symmetries=symmetries,
                              sources=[sources])
 
-        sim1.use_output_directory(temp_dir)
-
         sample_point = mp.Vector3(0.12, -0.29)
         ref_field_points = []
 
@@ -321,12 +319,12 @@ class TestSimulation(unittest.TestCase):
             ref_field_points.append(p.real)
 
         sim1.run(mp.at_every(5, get_ref_field_point), until=50)
-        dump_fn = 'test_load_dump_structure.h5'
+        dump_fn = os.path.join(temp_dir, 'test_load_dump_structure.h5')
         dump_chunk_fname = None
         chunk_layout = None
         sim1.dump_structure(dump_fn)
         if chunk_file:
-            dump_chunk_fname = 'test_load_dump_structure_chunks.h5'
+            dump_chunk_fname = os.path.join(temp_dir, 'test_load_dump_structure_chunks.h5')
             sim1.dump_chunk_layout(dump_chunk_fname)
             chunk_layout = dump_chunk_fname
         if chunk_sim:
