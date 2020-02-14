@@ -30,18 +30,9 @@ using namespace std;
 
 namespace meep {
 
-const char symlink_name[] = "latest_output";
-
 void structure::set_output_directory(const char *name) {
-  char buf[300];
-  outdir = name;
+  outdir = name; /* fixme: make a copy */
   if (verbosity > 0) master_printf("Using output directory %s/\n", name);
-  if (readlink(symlink_name, buf, 300) > 0) {
-    // Link already exists.
-    unlink(symlink_name);
-  }
-  symlink(name, symlink_name);
-  outdir = name;
 }
 
 void fields::set_output_directory(const char *name) {
@@ -134,6 +125,34 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   snprintf(outsrcname, buflen, "%s/%s", outdirname, sourcename);
   cp(sourcename, outsrcname);
 
+  return outdirname;
+}
+
+/* similar to above, but creates a temporary directory in /tmp
+   (note that the caller should delete[] the return value, but
+    it's not a big deal if they forget and leak memory since
+    this function is not called many times in a typical run) */
+char *make_output_directory() {
+  char *outdirname = NULL; // set to tmpdir/meepXXXXXX
+  static const char meeptemplate[] = "/meepXXXXXX";
+  const char *tmpdir;
+
+  // standard name of Unix temporary directory, cribbed from libuv
+  if (NULL != (tmpdir = getenv("TMPDIR"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TMP"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TEMP"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TEMPDIR"))) goto got_tmpdir;
+  tmpdir = "/tmp";
+got_tmpdir:
+
+  size_t len = strlen(tmpdir) + strlen(meeptemplate) + 1;
+  outdirname = new char[len];
+  strcat(strcpy(outdirname, tmpdir), meeptemplate);
+
+  if (am_master() && !mkdtemp(outdirname)) {
+      abort("failed to create temporary output directory \"%s\"", outdirname);
+  }
+  broadcast(0, outdirname, len);
   return outdirname;
 }
 
