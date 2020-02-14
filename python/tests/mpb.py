@@ -7,6 +7,7 @@ import re
 import sys
 import time
 import unittest
+import os
 
 import h5py
 import numpy as np
@@ -16,29 +17,19 @@ import meep as mp
 from meep import mpb
 from utils import compare_arrays
 
-
 class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
-    examples_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
+    examples_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
     sys.path.insert(0, examples_dir)
 
     def setUp(self):
-        """Store the test name and register a function to clean up all the
-        generated h5 files."""
-
         self.start = time.time()
 
-        self.filename_prefix = self.id().split('.')[-1]
+        self.filename_prefix = os.path.join(temp_dir, self.id().split('.')[-1])
         print()
         print(self.filename_prefix)
         print('=' * 24)
-
-        def rm_h5():
-            for f in glob.glob("{}*.h5".format(self.filename_prefix)):
-                os.remove(f)
-
-        self.addCleanup(rm_h5)
 
     def tearDown(self):
         end = time.time() - self.start
@@ -1419,4 +1410,7 @@ class TestModeSolver(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    temp_dir = mp.make_output_directory()
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

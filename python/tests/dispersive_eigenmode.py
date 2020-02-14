@@ -13,6 +13,8 @@ import meep as mp
 import numpy as np
 from meep import mpb
 import h5py
+import os
+
 class TestDispersiveEigenmode(unittest.TestCase):
     # ----------------------------------------- #
     # ----------- Helper Functions ------------ #
@@ -49,6 +51,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
                             resolution=20,
                             eps_averaging=False
                             )
+        sim.use_output_directory(temp_dir)
         sim.init_sim()
         
         # Check to make sure the get_slice routine is working with omega
@@ -56,7 +59,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.assertAlmostEqual(n,n_slice, places=4)
 
         # Check to make sure h5 output is working with omega
-        filename = 'dispersive_eigenmode-eps-000000.00.h5'
+        filename = os.path.join(temp_dir, 'dispersive_eigenmode-eps-000000.00.h5')
         mp.output_epsilon(sim,omega=omega)
         n_h5 = 0
         mp.all_wait()
@@ -144,4 +147,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
 
 if __name__ == '__main__':
+    temp_dir = mp.make_output_directory()
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

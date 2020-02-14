@@ -1,6 +1,6 @@
 import unittest
 import meep as mp
-
+import os
 
 class TestChunks(unittest.TestCase):
 
@@ -22,6 +22,8 @@ class TestChunks(unittest.TestCase):
                             sources=sources,
                             resolution=resolution,
                             split_chunks_evenly=False)
+
+        sim.use_output_directory(temp_dir)
 
         top = mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy-dpml), size=mp.Vector3(sxy-2*dpml,0), weight=+1.0)
         bot = mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy+dpml), size=mp.Vector3(sxy-2*dpml,0), weight=-1.0)
@@ -45,6 +47,8 @@ class TestChunks(unittest.TestCase):
                             resolution=resolution,
                             chunk_layout=sim1)
 
+        sim.use_output_directory(temp_dir)
+
         tot_flux = sim.add_flux(fcen, 0, 1, top, bot, rgt, lft)
 
         sim.load_minus_flux('tot_flux', tot_flux)
@@ -55,4 +59,7 @@ class TestChunks(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    temp_dir = mp.make_output_directory()
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

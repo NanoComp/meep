@@ -1,7 +1,7 @@
 import unittest
 import meep as mp
 import numpy as np
-
+import os
 
 class TestHoleyWvgCavity(unittest.TestCase):
 
@@ -45,6 +45,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
         self.sim.symmetries = [mp.Mirror(mp.Y, phase=-1),
                                mp.Mirror(mp.X, phase=-1)]
 
+        self.sim.use_output_directory(temp_dir)
         h = mp.Harminv(mp.Hz, mp.Vector3(), self.fcen, self.df)
         self.sim.run(mp.at_beginning(mp.output_epsilon),
                      mp.after_sources(h),
@@ -138,4 +139,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    temp_dir = mp.make_output_directory()
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

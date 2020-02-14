@@ -12,6 +12,7 @@ from subprocess import call
 
 import meep as mp
 import numpy as np
+import os
 
 # Make sure we have matplotlib installed
 import matplotlib
@@ -62,7 +63,7 @@ def setup_sim(zDim=0):
                         component=mp.Ez,
                         size=mp.Vector3(0,2,2),
                         center=mp.Vector3(0,1))]
-        
+
     # Add plane sources
     sources += [mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
@@ -161,11 +162,11 @@ class TestVisualization(unittest.TestCase):
             until=5)
         
         # Test outputs
-        Animate.to_mp4(5,'test_2D.mp4') # Check mp4 output
-        Animate.to_gif(150,'test_2D.gif') # Check gif output
+        Animate.to_mp4(5,os.path.join(temp_dir, 'test_2D.mp4')) # Check mp4 output
+        Animate.to_gif(150,os.path.join(temp_dir, 'test_2D.gif')) # Check gif output
         Animate.to_jshtml(10) # Check jshtml output
-        Animate_norm.to_mp4(5,'test_2D_norm.mp4') # Check mp4 output
-        Animate_norm.to_gif(150,'test_2D_norm.gif') # Check gif output
+        Animate_norm.to_mp4(5,os.path.join(temp_dir, 'test_2D_norm.mp4')) # Check mp4 output
+        Animate_norm.to_gif(150,os.path.join(temp_dir, 'test_2D_norm.gif')) # Check gif output
         Animate_norm.to_jshtml(10) # Check jshtml output
 
         # ------------------------- #
@@ -183,11 +184,11 @@ class TestVisualization(unittest.TestCase):
             until=5)
         
         # Test outputs
-        Animate_xy.to_mp4(5,'test_3D_xy.mp4') # Check mp4 output
-        Animate_xy.to_gif(150,'test_3D_xy.gif') # Check gif output
+        Animate_xy.to_mp4(5,os.path.join(temp_dir, 'test_3D_xy.mp4')) # Check mp4 output
+        Animate_xy.to_gif(150,os.path.join(temp_dir, 'test_3D_xy.gif')) # Check gif output
         Animate_xy.to_jshtml(10) # Check jshtml output
-        Animate_xz.to_mp4(5,'test_3D_xz.mp4') # Check mp4 output
-        Animate_xz.to_gif(150,'test_3D_xz.gif') # Check gif output
+        Animate_xz.to_mp4(5,os.path.join(temp_dir, 'test_3D_xz.mp4')) # Check mp4 output
+        Animate_xz.to_gif(150,os.path.join(temp_dir, 'test_3D_xz.gif')) # Check gif output
         Animate_xz.to_jshtml(10) # Check jshtml output
     '''
     Travis does not play well with Mayavi
@@ -197,5 +198,8 @@ class TestVisualization(unittest.TestCase):
     '''
 
 if __name__ == '__main__':
+    temp_dir = mp.make_output_directory()
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)
     

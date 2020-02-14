@@ -2,11 +2,10 @@ from __future__ import division
 
 import unittest
 import meep as mp
-
+import os
 
 def dummy_eps(vec):
     return 1.0
-
 
 class TestCylEllipsoid(unittest.TestCase):
 
@@ -34,6 +33,8 @@ class TestCylEllipsoid(unittest.TestCase):
                                  sources=[sources],
                                  symmetries=symmetries,
                                  resolution=100)
+
+        self.sim.use_output_directory(temp_dir)
 
         def print_stuff(sim_obj):
             v = mp.Vector3(4.13, 3.75, 0)
@@ -69,4 +70,7 @@ class TestCylEllipsoid(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    temp_dir = mp.make_output_directory()
     unittest.main()
+    if mp.am_master():
+        os.removedirs(temp_dir)

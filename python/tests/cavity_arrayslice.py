@@ -9,7 +9,7 @@ import numpy as np
 
 class TestCavityArraySlice(unittest.TestCase):
 
-    data_dir = os.path.abspath(os.path.realpath(os.path.join(__file__, '..', 'data')))
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
     expected_1d = np.load(os.path.join(data_dir, 'cavity_arrayslice_1d.npy'))
     expected_2d = np.load(os.path.join(data_dir, 'cavity_arrayslice_2d.npy'))
 
