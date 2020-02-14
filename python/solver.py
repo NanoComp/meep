@@ -341,7 +341,9 @@ class ModeSolver(object):
         return np.reshape(arr, dims)
 
     def get_poynting(self, which_band):
-        e = self.get_efield(which_band, False).ravel()
+        e = self.get_efield(which_band, False)
+        dims = e.shape
+        e = e.ravel()
         h = self.get_hfield(which_band, False).ravel()
         # Reshape into rows of vector3s
         e = e.reshape((int(e.shape[0] / 3), 3))
@@ -361,7 +363,8 @@ class ModeSolver(object):
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
-        return MPBArray(res, self.get_lattice, self.current_k)
+        arr = np.reshape(res, dims)
+        return MPBArray(arr, self.get_lattice(), self.current_k)
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
@@ -383,8 +386,8 @@ class ModeSolver(object):
     def get_hfield(self, which_band, bloch_phase=True):
         return self._get_field('h', which_band, bloch_phase)
 
-    def get_charge_density(self, which_band):
-        self.get_efield(which_band)
+    def get_charge_density(self, which_band, bloch_phase=True):
+        self.get_efield(which_band, bloch_phase)
         self.mode_solver.compute_field_divergence()
 
     def _get_field(self, f, band, bloch_phase):
@@ -756,7 +759,7 @@ class ModeSolver(object):
         return self.mode_solver.compute_field_energy()
 
     def compute_field_divergence(self):
-        mode_solver.compute_field_divergence()
+        return self.mode_solver.compute_field_divergence()
 
     def compute_energy_in_objects(self, objs):
         return self.mode_solver.compute_energy_in_objects(objs)
