@@ -8,6 +8,9 @@
 (define-param rot-angle 20)
 (set! rot-angle (deg->rad rot-angle))
 
+; width of waveguide
+(define-param w 1.0)
+
 (set! geometry (list (make block
                        (center 0 0 0)
                        (size infinity 1 infinity)
@@ -30,7 +33,7 @@
                    (make eigenmode-source
                      (src (if compute-flux? (make gaussian-src (frequency fsrc) (fwidth (* 0.2 fsrc))) (make continuous-src (frequency fsrc))))
                      (center 0 0 0)
-                     (size 0 14 0)
+                     (size 0 (* 3 w) 0)
                      (direction (if (= rot-angle 0) AUTOMATIC NO-DIRECTION))
                      (eig-kpoint kpoint)
                      (eig-band bnum)
@@ -39,7 +42,7 @@
                    (make source
                      (src (if compute-flux? (make gaussian-src (frequency fsrc) (fwidth (* 0.2 fsrc))) (make continuous-src (frequency fsrc))))
                      (center 0 0 0)
-                     (size 0 2 0)
+                     (size 0 (* 3 w) 0)
                      (component Ez)))))
 
 (if (= rot-angle 0)
