@@ -451,7 +451,7 @@ int main(int argc, char **argv) {
       }
 #endif /* HAVE_HDF5 */
 
-  if (am_master()) rmdir(temp_dir);
+  if (am_master()) delete_directory(temp_dir);
 
   return 0;
 }

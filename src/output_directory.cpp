@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
+#include <ftw.h>
 
 #include "meep.hpp"
 
@@ -158,6 +159,16 @@ got_tmpdir:
 
 void trash_output_directory(const char *dirname) {
   if (am_master()) mkdir(dirname, 00777);
+}
+
+static int rmpath(const char *path, const struct stat *s, int t, struct FTW *ftw) {
+  (void) s; (void) t; (void) ftw; // unused
+  return remove(path);
+}
+
+// equivalent to rm -rf path
+void delete_directory(const char *path) {
+  nftw(path, rmpath, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
 }
 
 } // namespace meep
