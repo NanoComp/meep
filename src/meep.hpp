@@ -1933,6 +1933,7 @@ private:
 const char *make_output_directory(const char *exename, const char *jobname = NULL);
 char *make_output_directory(); // make temporary directory
 void trash_output_directory(const char *dirname);
+void delete_directory(const char *path);
 FILE *create_output_file(const char *dirname, const char *fname);
 
 // The following allows you to hit ctrl-C to tell your calculation to stop

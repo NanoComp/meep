@@ -92,15 +92,13 @@ int approx_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
+int test_metal(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 17.0;
 
   grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&s);
@@ -128,15 +126,13 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   return 1;
 }
 
-int test_periodic(double eps(const vec &), int splitting, const char *mydirname) {
+int test_periodic(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 17.0;
 
   grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&s);
@@ -166,12 +162,11 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   return 1;
 }
 
-int test_pml(double eps(const vec &), const char *mydirname) {
+int test_pml(double eps(const vec &)) {
   double a = 10.0;
 
   grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
   structure s(gv, eps, pml(0.401));
-  s.set_output_directory(mydirname);
 
   master_printf("Testing pml quality...\n");
   fields f(&s);
@@ -200,14 +195,12 @@ int test_pml(double eps(const vec &), const char *mydirname) {
   return 1;
 }
 
-int test_pml_splitting(double eps(const vec &), int splitting, const char *mydirname) {
+int test_pml_splitting(double eps(const vec &), int splitting) {
   double a = 10.0;
 
   grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
   structure s1(gv, eps, pml(0.3));
   structure s(gv, eps, pml(0.3), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Testing pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -235,20 +228,18 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *mydir
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
-  const char *mydirname = "three_d-out";
-  trash_output_directory(mydirname);
   master_printf("Testing 3D...\n");
 
-  if (!test_pml(one, mydirname)) abort("error in test_pml vacuum\n");
+  if (!test_pml(one)) abort("error in test_pml vacuum\n");
 
   for (int s = 2; s < 7; s++)
-    if (!test_periodic(targets, s, mydirname)) abort("error in test_periodic targets\n");
+    if (!test_periodic(targets, s)) abort("error in test_periodic targets\n");
 
   for (int s = 2; s < 8; s++)
-    if (!test_metal(one, s, mydirname)) abort("error in test_metal vacuum\n");
+    if (!test_metal(one, s)) abort("error in test_metal vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml_splitting(one, s, mydirname)) abort("error in test_pml_splitting vacuum\n");
+    if (!test_pml_splitting(one, s)) abort("error in test_pml_splitting vacuum\n");
 
   return 0;
 }

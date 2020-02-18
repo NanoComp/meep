@@ -11,8 +11,10 @@ pml_layers = [mp.PML(thickness=2)]
 # rotation angle (in degrees) of waveguide, counter clockwise (CCW) around z-axis
 rot_angle = np.radians(20)
 
+w = 1.0 # width of waveguide
+
 geometry = [mp.Block(center=mp.Vector3(),
-                     size=mp.Vector3(mp.inf,1,mp.inf),
+                     size=mp.Vector3(mp.inf,w,mp.inf),
                      e1=mp.Vector3(1).rotate(mp.Vector3(z=1), rot_angle),
                      e2=mp.Vector3(y=1).rotate(mp.Vector3(z=1), rot_angle),
                      material=mp.Medium(epsilon=12))]
@@ -30,7 +32,7 @@ eig_src = True # eigenmode (True) or constant-amplitude (False) source
 if eig_src:
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc) if compute_flux else mp.ContinuousSource(fsrc),
                                   center=mp.Vector3(),
-                                  size=mp.Vector3(y=14),
+                                  size=mp.Vector3(y=3*w),
                                   direction=mp.NO_DIRECTION,
                                   eig_kpoint=kpoint,
                                   eig_band=bnum,
@@ -39,7 +41,7 @@ if eig_src:
 else:
     sources = [mp.Source(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc) if compute_flux else mp.ContinuousSource(fsrc),
                          center=mp.Vector3(),
-                         size=mp.Vector3(y=2),
+                         size=mp.Vector3(y=3*w),
                          component=mp.Ez)]
 
 sim = mp.Simulation(cell_size=cell_size,
