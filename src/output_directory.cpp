@@ -168,7 +168,8 @@ static int rmpath(const char *path, const struct stat *s, int t, struct FTW *ftw
 
 // equivalent to rm -rf path
 void delete_directory(const char *path) {
-  nftw(path, rmpath, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
+  if (am_master())
+    nftw(path, rmpath, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
 }
 
 } // namespace meep
