@@ -1,5 +1,31 @@
 # Meep Release Notes
 
+## Meep 1.13.0
+
+2/19/2020
+
+* Optional parameter `omega` for `output-epsilon` and similar functions,
+  allowing the complex ε and μ at a given frequency to be outputted (#1112, following #919).
+
+* `near2far` computation now supports cylindrical coordinates (#1090).
+
+* Experimental support for slanted prisms (requires libctl 4.5)
+  via `sidewall_angle` parameter to prism objects (#1129).
+
+* New `yee_grid=False` optional argument to `add_dft_fields`; by passing `True`
+  one can compute the fields on the original Yee grid (#1095).
+
+* New function `meep::make_output_directory()` to make a temporary
+  directory (in `TMPDIR` or similar) and `meep::delete_directory(path)`
+  to perform recursive deletion (like `rm -rf`).  These are now
+  used in tests to avoid writing to the source directory (#1121, #1122 and #1126).
+
+* Jupyter notebooks now show a graphical progress bar during simulations (#1078).
+
+* `kz-2d` option in Scheme, mirroring Python `kz_2d` (#1062).
+
+* Various bugfixes, documentation supplements, and other minor improvements.
+
 ## Meep 1.12.0
 
 11/12/19
