@@ -608,7 +608,7 @@ The vertices that make up the prism. They must lie in a plane that's perpendicul
 
 **`height` [`number`]**
 —
-The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
+The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height. No default value.
 
 **`axis` [`Vector3`]**
 —
@@ -1580,9 +1580,9 @@ mp.GDSII_layers('python/examples/coupler.gds')
 Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 ```
 
-**`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
+**`mp.get_GDSII_prisms(material, gdsii_filename, layer, zmin, zmax)`**
 —
-Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename`.
+Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename` with `zmin` and `zmax`.
 
 **`mp.GDSII_vol(fname, layer, zmin, zmax)`**
 —
