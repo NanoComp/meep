@@ -1,6 +1,6 @@
 import unittest
 import meep as mp
-import os
+import shutil
 
 def f(r, ex, hz, eps):
     return (r.x * r.norm() + ex) - (eps * hz)
@@ -14,6 +14,13 @@ class TestFieldFunctions(unittest.TestCase):
 
     cs = [mp.Ex, mp.Hz, mp.Dielectric]
     vol = mp.Volume(size=mp.Vector3(1), center=mp.Vector3())
+
+    def setUp(self):
+      self.temp_dir = mp.make_output_directory()
+
+    def tearDown(self):
+        if mp.am_master():
+            shutil.rmtree(self.temp_dir,ignore_errors=True)
 
     def init(self):
         resolution = 20
@@ -69,7 +76,7 @@ class TestFieldFunctions(unittest.TestCase):
 
     def test_integrate_field_function(self):
         sim = self.init()
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.run(until=200)
 
         res1 = sim.integrate_field_function(self.cs, f)
@@ -99,7 +106,4 @@ class TestFieldFunctions(unittest.TestCase):
         self.assertAlmostEqual(res, 0.27593732304637586)
 
 if __name__ == '__main__':
-    temp_dir = mp.make_output_directory()
     unittest.main()
-    if mp.am_master():
-        os.removedirs(temp_dir)

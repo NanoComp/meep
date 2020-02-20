@@ -2,7 +2,7 @@ from __future__ import division
 
 import unittest
 import meep as mp
-import os
+import shutil
 
 def dummy_eps(vec):
     return 1.0
@@ -11,6 +11,13 @@ class TestCylEllipsoid(unittest.TestCase):
 
     ref_Ez = -8.29555720049629e-5
     ref_Hz = -4.5623185899766e-5
+
+    def setUp(self):
+      self.temp_dir = mp.make_output_directory()
+
+    def tearDown(self):
+        if mp.am_master():
+            shutil.rmtree(self.temp_dir,ignore_errors=True)
 
     def init(self):
 
@@ -34,7 +41,7 @@ class TestCylEllipsoid(unittest.TestCase):
                                  symmetries=symmetries,
                                  resolution=100)
 
-        self.sim.use_output_directory(temp_dir)
+        self.sim.use_output_directory(self.temp_dir)
 
         def print_stuff(sim_obj):
             v = mp.Vector3(4.13, 3.75, 0)
@@ -70,7 +77,4 @@ class TestCylEllipsoid(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    temp_dir = mp.make_output_directory()
     unittest.main()
-    if mp.am_master():
-        os.removedirs(temp_dir)

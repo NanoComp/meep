@@ -1582,11 +1582,11 @@ Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 
 **`mp.get_GDSII_prisms(material, gdsii_filename, layer, zmin, zmax)`**
 —
-Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename` with `zmin` and `zmax`.
+Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename` with `zmin` and `zmax` (default 0).
 
 **`mp.GDSII_vol(fname, layer, zmin, zmax)`**
 —
-Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with `zmin` and `zmax`. This function is useful for creating a `FluxRegion` from a GDSII file as follows
+Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with `zmin` and `zmax` (default 0). This function is useful for creating a `FluxRegion` from a GDSII file as follows
 
 ```python
 fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))

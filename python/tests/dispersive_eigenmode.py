@@ -14,6 +14,7 @@ import numpy as np
 from meep import mpb
 import h5py
 import os
+import shutil
 
 class TestDispersiveEigenmode(unittest.TestCase):
     # ----------------------------------------- #
@@ -37,7 +38,14 @@ class TestDispersiveEigenmode(unittest.TestCase):
         n_actual = np.real(np.sqrt(material.epsilon(omega).astype(np.complex128)))
         
         np.testing.assert_allclose(n,n_actual)
-    
+
+    def setUp(self):
+      self.temp_dir = mp.make_output_directory()
+
+    def tearDown(self):
+        if mp.am_master():
+            shutil.rmtree(self.temp_dir,ignore_errors=True)
+
     def verify_output_and_slice(self,material,omega):
         # Since the slice routines average the diagonals, we need to do that too:
         chi1 = material.epsilon(omega).astype(np.complex128)
@@ -51,7 +59,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
                             resolution=20,
                             eps_averaging=False
                             )
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.init_sim()
         
         # Check to make sure the get_slice routine is working with omega
@@ -59,7 +67,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.assertAlmostEqual(n,n_slice, places=4)
 
         # Check to make sure h5 output is working with omega
-        filename = os.path.join(temp_dir, 'dispersive_eigenmode-eps-000000.00.h5')
+        filename = os.path.join(self.temp_dir, 'dispersive_eigenmode-eps-000000.00.h5')
         mp.output_epsilon(sim,omega=omega)
         n_h5 = 0
         mp.all_wait()
@@ -147,7 +155,4 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
 
 if __name__ == '__main__':
-    temp_dir = mp.make_output_directory()
     unittest.main()
-    if mp.am_master():
-        os.removedirs(temp_dir)

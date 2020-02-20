@@ -7,7 +7,7 @@ import re
 import sys
 import time
 import unittest
-import os
+import shutil
 
 import h5py
 import numpy as np
@@ -26,7 +26,8 @@ class TestModeSolver(unittest.TestCase):
     def setUp(self):
         self.start = time.time()
 
-        self.filename_prefix = os.path.join(temp_dir, self.id().split('.')[-1])
+        self.temp_dir = mp.make_output_directory()
+        self.filename_prefix = os.path.join(self.temp_dir, self.id().split('.')[-1])
         print()
         print(self.filename_prefix)
         print('=' * 24)
@@ -34,6 +35,9 @@ class TestModeSolver(unittest.TestCase):
     def tearDown(self):
         end = time.time() - self.start
         print("{}: {:.2f}s".format(self.filename_prefix, end))
+
+        if mp.am_master():
+            shutil.rmtree(self.temp_dir,ignore_errors=True)
 
     def init_solver(self, geom=True):
         num_bands = 8
@@ -1410,7 +1414,4 @@ class TestModeSolver(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    temp_dir = mp.make_output_directory()
     unittest.main()
-    if mp.am_master():
-        os.removedirs(temp_dir)
