@@ -22,6 +22,7 @@ class TestSimulation(unittest.TestCase):
         self.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
+        mp.all_wait()
         if mp.am_master():
             shutil.rmtree(self.temp_dir,ignore_errors=True)
 

@@ -57,6 +57,7 @@ class TestPwSource(unittest.TestCase):
         self.s = s
 
     def tearDown(self):
+        mp.all_wait()
         if mp.am_master():
             shutil.rmtree(self.temp_dir,ignore_errors=True)
 

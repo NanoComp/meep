@@ -36,6 +36,7 @@ class TestModeSolver(unittest.TestCase):
         end = time.time() - self.start
         print("{}: {:.2f}s".format(self.filename_prefix, end))
 
+        mp.all_wait()
         if mp.am_master():
             shutil.rmtree(self.temp_dir,ignore_errors=True)
 
