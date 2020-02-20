@@ -3,8 +3,16 @@ import h5py
 import numpy as np
 import meep as mp
 import os
+import shutil
 
 class TestDFTFields(unittest.TestCase):
+
+    def setUp(self):
+      self.temp_dir = mp.make_output_directory()
+
+    def tearDown(self):
+        if mp.am_master():
+            shutil.rmtree(self.temp_dir,ignore_errors=True)
 
     def init(self):
         resolution = 10
@@ -62,13 +70,13 @@ class TestDFTFields(unittest.TestCase):
         np.testing.assert_equal(thin_x_array.ndim, 1)
         np.testing.assert_equal(thin_y_array.ndim, 1)
 
-        sim.output_dft(thin_x_flux, os.path.join(temp_dir, 'thin-x-flux'))
-        sim.output_dft(thin_y_flux, os.path.join(temp_dir, 'thin-y-flux'))
+        sim.output_dft(thin_x_flux, os.path.join(self.temp_dir, 'thin-x-flux'))
+        sim.output_dft(thin_y_flux, os.path.join(self.temp_dir, 'thin-y-flux'))
 
-        with h5py.File(os.path.join(temp_dir, 'thin-x-flux.h5'), 'r') as thin_x:
+        with h5py.File(os.path.join(self.temp_dir, 'thin-x-flux.h5'), 'r') as thin_x:
             thin_x_h5 = mp.complexarray(thin_x['ez_0.r'][()], thin_x['ez_0.i'][()])
 
-        with h5py.File(os.path.join(temp_dir, 'thin-y-flux.h5'), 'r') as thin_y:
+        with h5py.File(os.path.join(self.temp_dir, 'thin-y-flux.h5'), 'r') as thin_y:
             thin_y_h5 = mp.complexarray(thin_y['ez_0.r'][()], thin_y['ez_0.i'][()])
 
         np.testing.assert_allclose(thin_x_array, thin_x_h5)
@@ -78,10 +86,10 @@ class TestDFTFields(unittest.TestCase):
         fields_arr = sim.get_dft_array(dft_fields, mp.Ez, 0)
         flux_arr = sim.get_dft_array(dft_flux, mp.Ez, 0)
 
-        sim.output_dft(dft_fields, os.path.join(temp_dir, 'dft-fields'))
-        sim.output_dft(dft_flux, os.path.join(temp_dir, 'dft-flux'))
+        sim.output_dft(dft_fields, os.path.join(self.temp_dir, 'dft-fields'))
+        sim.output_dft(dft_flux, os.path.join(self.temp_dir, 'dft-flux'))
 
-        with h5py.File(os.path.join(temp_dir, 'dft-fields.h5'), 'r') as fields, h5py.File(os.path.join(temp_dir, 'dft-flux.h5'), 'r') as flux:
+        with h5py.File(os.path.join(self.temp_dir, 'dft-fields.h5'), 'r') as fields, h5py.File(os.path.join(self.temp_dir, 'dft-flux.h5'), 'r') as flux:
             exp_fields = mp.complexarray(fields['ez_0.r'][()], fields['ez_0.i'][()])
             exp_flux = mp.complexarray(flux['ez_0.r'][()], flux['ez_0.i'][()])
 
@@ -89,7 +97,4 @@ class TestDFTFields(unittest.TestCase):
         np.testing.assert_allclose(exp_flux, flux_arr)
 
 if __name__ == '__main__':
-    temp_dir = mp.make_output_directory()
     unittest.main()
-    if mp.am_master():
-        os.removedirs(temp_dir)
