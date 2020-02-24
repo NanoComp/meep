@@ -451,6 +451,8 @@ int main(int argc, char **argv) {
       }
 #endif /* HAVE_HDF5 */
 
+  all_wait();
+  sync();
   delete_directory(temp_dir);
 
   return 0;
