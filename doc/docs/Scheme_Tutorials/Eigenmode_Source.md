@@ -89,7 +89,9 @@ For the multi-mode case, a constant-amplitude current source excites a superposi
 
 Note that in `eigenmode-source`, the `direction` property must be set to `NO-DIRECTION` for a non-zero `eig-kpoint` which specifies the waveguide axis.
 
-Additionally, we can demonstrate the eigenmode source for a rotated waveguide. The results are shown in the two figures below for the single- and multi-mode case. There is one subtlety: for mode **A** in the multi-mode case, the `bnum` parameter is set to 3 rather than 2. This is because a non-zero rotation angle breaks the symmetry in the y-direction which therefore precludes the use of `EVEN-Y` in `eig-parity`. Without any parity specified for the y-direction, the second band corresponds to *odd* modes. This is why we must select the third band which contains even modes. An oblique waveguide also leads to a breakdown in the [PML](../Perfectly_Matched_Layer.md). A simple workaround for mitigating the PML artifacts is to increase its length which is why the `thickness` has been doubled from 1 to 2.
+Additionally, we can demonstrate the eigenmode source for a rotated waveguide. The results are shown in the two figures below for the single- and multi-mode case. There is one subtlety: for mode **A** in the multi-mode case, the `bnum` parameter is set to 3 rather than 2. This is because a non-zero rotation angle breaks the symmetry in the y-direction which therefore precludes the use of `EVEN-Y` in `eig-parity`. Without any parity specified for the y-direction, the second band corresponds to *odd* modes. This is why we must select the third band which contains even modes.
+
+Note that an oblique waveguide leads to a breakdown in the [PML](../Perfectly_Matched_Layer.md#breakdown-of-pml-in-inhomogeneous-media). A simple workaround for mitigating the PML reflection artifacts is to increase its length which is why the `thickness` has been doubled from 1 to 2.
 
 <center>
 ![](../images/oblique_source_singlemode.png)
@@ -101,7 +103,13 @@ There are numerical dispersion artifacts due to the FDTD spatial and temporal di
 ![](../images/oblique_source_multimode.png)
 </center>
 
-Finally, we demonstrate that the total power in a waveguide with *arbitrary* orientation — computed using two equivalent methods via `get_fluxes` and [mode decomposition](../Mode_Decomposition.md) — can be computed by a single flux plane oriented along the y direction: thanks to [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the flux through any plane crossing a lossless waveguide is the same, regardless of whether the plane is oriented perpendicular to the waveguide. Furthermore, the eigenmode source is normalized in such a way as to produce the same power regardless of the waveguide orientation — in consequence, the flux values for mode **A** of the single-mode case for rotation angles of 0°, 20°, and 40° are 1111.280794, 1109.565028, and 1108.759159, within 0.2% (discretization error) of one another.
+We demonstrate that the total power in a waveguide with *arbitrary* orientation — computed using two equivalent methods via `get_fluxes` and [mode decomposition](../Mode_Decomposition.md) — can be computed by a single flux plane oriented along the y direction: thanks to [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the flux through any plane crossing a lossless waveguide is the same, regardless of whether the plane is oriented perpendicular to the waveguide. Furthermore, the eigenmode source is normalized in such a way as to produce the same power regardless of the waveguide orientation — in consequence, the flux values for mode **A** of the single-mode case for rotation angles of 0°, 20°, and 40° are 1111.280794, 1109.565028, and 1108.759159, within 0.2% (discretization error) of one another.
+
+Finally, we demonstrate that as long as the line source intersects the waveguide and `eig-kpoint` is *not* nearly parallel to the direction of the line source, the mode can be properly launched. As shown in the field profiles below for the single-mode waveguide, there does not seem to be any noticeable distortion in the launched mode as the waveguide approaches glancing incidence to the source plane up to 80° where the total power in the forward-propagating mode is 97%. Note that the line source spans the entire length of the cell extending into the PML region (not shown). In this example, the maximum rotation angle is ~84° where the total power drops to 59% and the backward-propagating fields are clearly visible. Due to discretization errors, increasing the size of the cell will *not* improve results beyond 84°. This is because the convergence properties of the eigenmode solver MPB worsen as `eig-kpoint`, which changes *one* of its lattice vectors, becomes parallel with the direction of the line source.
+
+<center>
+![](../images/waveguide_rotation_glancing.png)
+</center>
 
 Planewaves in Homogeneous Media
 -------------------------------
