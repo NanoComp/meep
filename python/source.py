@@ -2,7 +2,8 @@ from __future__ import division
 
 import meep as mp
 from meep.geom import Vector3, check_nonnegative
-
+from scipy import signal
+import numpy as np
 
 def check_positive(prop, val):
     if val > 0:
@@ -80,6 +81,64 @@ class CustomSource(SourceTime):
         self.swigobj = mp.custom_src_time(src_func, start_time, end_time, center_frequency)
         self.swigobj.is_integrated = self.is_integrated
 
+class FilteredSource(CustomSource):
+    def __init__(self,center_frequency,frequencies,frequency_response,num_taps,dt,time_src):
+        self.center_frequency=center_frequency
+        self.frequencies=frequencies
+        self.frequency_response=frequency_response
+        self.num_taps=500
+        self.dt=dt
+        self.time_src=time_src
+        self.current_time = None
+
+        f = self.func()
+
+        # initialize super
+        super(FilteredSource, self).__init__(src_func=f,center_frequency=self.center_frequency)
+
+        # calculate equivalent sample rate
+        self.fs = 1/self.dt
+
+        # estimate impulse response from frequency response
+        self.estimate_impulse_response()
+
+    def filter(self,t):
+        # shift feedforward memory
+        np.roll(self.memory, -1)
+        if self.current_time is None or self.current_time != t:
+            self.current_time = t
+            self.memory[0] = self.time_src.swigobj.dipole(t)
+            # calculate filter response
+            self.current_y = np.dot(self.memory,self.taps)
+        return self.current_y
+    
+    def estimate_impulse_response(self):
+        # calculate band edges from target frequencies
+        w = self.frequencies/(self.fs/2) * np.pi
+        D = self.frequency_response
+        self.taps = self.lstsqrs(self.num_taps,w,D)
+
+        # allocate filter memory taps
+        self.memory = np.zeros(self.taps.shape,dtype=np.complex128)
+    
+    def func(self):
+        def _f(t): 
+            return self.filter(t)
+        return _f
+    
+    def lstsqrs(self,num_taps,freqs,h_desired):
+        n_freqs = freqs.size
+        vandermonde = np.zeros((n_freqs,num_taps),dtype=np.complex128)
+        for iom, om in enumerate(freqs):
+            for it in range(num_taps):
+                vandermonde[iom,it] = np.exp(-1j*it*om)
+        
+        
+        a = np.matmul(np.linalg.pinv(vandermonde), h_desired)
+        _, h_hat = signal.freqz(a,worN=freqs)
+        l2_error = np.sqrt(np.sum(np.abs(h_hat - h_desired)**2))
+    
+        return a
 
 class EigenModeSource(Source):
 

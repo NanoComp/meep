@@ -1555,6 +1555,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     from .source import (
         ContinuousSource,
         CustomSource,
+        FilteredSource,
         EigenModeSource,
         GaussianSource,
         Source,
