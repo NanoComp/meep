@@ -54,11 +54,13 @@ class TestPwSource(unittest.TestCase):
         self.sim.use_output_directory(self.temp_dir)
         self.s = s
 
-    def setUpClass(self):
-        self.temp_dir = mp.make_output_directory()
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
 
-    def tearDownClass(self):
-        mp.delete_directory(self.temp_dir)
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def test_pw_source(self):
         self.sim.run(mp.at_end(mp.output_efield_z), until=400)

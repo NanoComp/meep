@@ -14,11 +14,13 @@ class TestFieldFunctions(unittest.TestCase):
     cs = [mp.Ex, mp.Hz, mp.Dielectric]
     vol = mp.Volume(size=mp.Vector3(1), center=mp.Vector3())
 
-    def setUpClass(self):
-        self.temp_dir = mp.make_output_directory()
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
 
-    def tearDownClass(self):
-        mp.delete_directory(self.temp_dir)
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def init(self):
         resolution = 20

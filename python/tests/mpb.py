@@ -30,15 +30,17 @@ class TestModeSolver(unittest.TestCase):
         print(self.filename_prefix)
         print('=' * 24)
 
-    def setUpClass(self):
-        self.temp_dir = mp.make_output_directory()
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
         end = time.time() - self.start
         print("{}: {:.2f}s".format(self.filename_prefix, end))
 
-    def tearDownClass(self):
-        mp.delete_directory(self.temp_dir)
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def init_solver(self, geom=True):
         num_bands = 8

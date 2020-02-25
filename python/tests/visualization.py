@@ -115,11 +115,14 @@ def view_sim():
     plt.tight_layout()
     plt.show()
 class TestVisualization(unittest.TestCase):
-    def setUpClass(self):
-        self.temp_dir = mp.make_output_directory()
 
-    def tearDownClass(self):
-        mp.delete_directory(self.temp_dir)
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def test_plot2D(self):
         # Check plotting of geometry with several sources, monitors, and PMLs

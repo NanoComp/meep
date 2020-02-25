@@ -38,11 +38,13 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
         np.testing.assert_allclose(n,n_actual)
 
-    def setUpClass(self):
-        self.temp_dir = mp.make_output_directory()
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
 
-    def tearDownClass(self):
-        mp.delete_directory(self.temp_dir)
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def verify_output_and_slice(self,material,omega):
         # Since the slice routines average the diagonals, we need to do that too:
