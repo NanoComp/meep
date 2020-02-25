@@ -5,7 +5,6 @@ import math
 import unittest
 
 import meep as mp
-import shutil
 
 class TestPwSource(unittest.TestCase):
 
@@ -57,9 +56,7 @@ class TestPwSource(unittest.TestCase):
         self.s = s
 
     def tearDown(self):
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def test_pw_source(self):
         self.sim.run(mp.at_end(mp.output_efield_z), until=400)

@@ -1,6 +1,5 @@
 import unittest
 import meep as mp
-import shutil
 
 def f(r, ex, hz, eps):
     return (r.x * r.norm() + ex) - (eps * hz)
@@ -16,12 +15,10 @@ class TestFieldFunctions(unittest.TestCase):
     vol = mp.Volume(size=mp.Vector3(1), center=mp.Vector3())
 
     def setUp(self):
-      self.temp_dir = mp.make_output_directory()
+        self.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def init(self):
         resolution = 20

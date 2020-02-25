@@ -2,7 +2,6 @@ from __future__ import division
 
 import unittest
 import meep as mp
-import shutil
 
 def dummy_eps(vec):
     return 1.0
@@ -13,12 +12,10 @@ class TestCylEllipsoid(unittest.TestCase):
     ref_Hz = -4.5623185899766e-5
 
     def setUp(self):
-      self.temp_dir = mp.make_output_directory()
+        self.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def init(self):
 

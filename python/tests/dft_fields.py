@@ -3,17 +3,14 @@ import h5py
 import numpy as np
 import meep as mp
 import os
-import shutil
 
 class TestDFTFields(unittest.TestCase):
 
     def setUp(self):
-      self.temp_dir = mp.make_output_directory()
+        self.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def init(self):
         resolution = 10

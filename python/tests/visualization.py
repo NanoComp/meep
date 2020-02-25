@@ -13,7 +13,6 @@ from subprocess import call
 import meep as mp
 import numpy as np
 import os
-import shutil
 
 # Make sure we have matplotlib installed
 import matplotlib
@@ -117,12 +116,10 @@ def view_sim():
     plt.show()
 class TestVisualization(unittest.TestCase):
     def setUp(self):
-      self.temp_dir = mp.make_output_directory()
+        self.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def test_plot2D(self):
         # Check plotting of geometry with several sources, monitors, and PMLs

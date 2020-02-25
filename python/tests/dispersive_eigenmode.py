@@ -14,7 +14,6 @@ import numpy as np
 from meep import mpb
 import h5py
 import os
-import shutil
 
 class TestDispersiveEigenmode(unittest.TestCase):
     # ----------------------------------------- #
@@ -40,12 +39,10 @@ class TestDispersiveEigenmode(unittest.TestCase):
         np.testing.assert_allclose(n,n_actual)
 
     def setUp(self):
-      self.temp_dir = mp.make_output_directory()
+        self.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def verify_output_and_slice(self,material,omega):
         # Since the slice routines average the diagonals, we need to do that too:

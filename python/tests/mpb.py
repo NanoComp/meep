@@ -7,7 +7,6 @@ import re
 import sys
 import time
 import unittest
-import shutil
 
 import h5py
 import numpy as np
@@ -35,10 +34,7 @@ class TestModeSolver(unittest.TestCase):
     def tearDown(self):
         end = time.time() - self.start
         print("{}: {:.2f}s".format(self.filename_prefix, end))
-
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(self.temp_dir,ignore_errors=True)
+        mp.delete_directory(self.temp_dir)
 
     def init_solver(self, geom=True):
         num_bands = 8
