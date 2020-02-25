@@ -116,7 +116,7 @@ Finally, we demonstrate that as long as the line source intersects the waveguide
 ![](../images/waveguide_rotation_glancing_small.png)
 </center>
 
-Increasing the size of the cell improves results at the expense of a larger simulation. The field profiles shown below are for a cell where the length has been doubled to 20 μm. The waveguide power at 84° increases from 59% to 80%. However, as the waveguide mode approaches glancing incidence, sensitivity to discretization errors increases because the mode varies rapidly with frequency on a glancing-angle cross-section. For waveguide angles much beyond 45° you probably want to simply change the orientation of the line source by 90°.
+Increasing the size of the cell improves results at the expense of a larger simulation. The field profiles shown below are for a cell where the length has been doubled to 20 μm. The waveguide power at 84° increases from 59% to 80%. However, as the waveguide mode approaches glancing incidence, sensitivity to discretization errors increases because the mode varies rapidly with frequency on a glancing-angle cross-section, and you will eventually need to increase the resolution as well as the cell size. For waveguide angles much beyond 45° you probably want to simply change the orientation of the line source by 90°.
 
 <center>
 ![](../images/waveguide_rotation_glancing.png)
