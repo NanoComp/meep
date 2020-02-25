@@ -103,13 +103,11 @@ class FilteredSource(CustomSource):
         self.estimate_impulse_response()
 
     def filter(self,t):
-        # shift feedforward memory
-        np.roll(self.memory, -1)
         if self.current_time is None or self.current_time != t:
-            self.current_time = t
-            self.memory[0] = self.time_src.swigobj.dipole(t)
-            # calculate filter response
-            self.current_y = np.dot(self.memory,self.taps)
+            self.current_time = t # increase current time (we went through all the current components)
+            np.roll(self.memory, -1) # shift feedforward memory
+            self.memory[0] = self.time_src.swigobj.dipole(t) # update current memory slot
+            self.current_y = np.dot(self.memory,self.taps) # calculate filter response as inner product of taps and memory
         return self.current_y
     
     def estimate_impulse_response(self):
@@ -133,11 +131,9 @@ class FilteredSource(CustomSource):
             for it in range(num_taps):
                 vandermonde[iom,it] = np.exp(-1j*it*om)
         
-        
         a = np.matmul(np.linalg.pinv(vandermonde), h_desired)
         _, h_hat = signal.freqz(a,worN=freqs)
-        l2_error = np.sqrt(np.sum(np.abs(h_hat - h_desired)**2))
-    
+        self.l2_error = np.sqrt(np.sum(np.abs(h_hat - h_desired)**2))
         return a
 
 class EigenModeSource(Source):
