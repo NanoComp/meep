@@ -37,9 +37,10 @@ class TestHoleyWvgCavity(unittest.TestCase):
                                  boundary_layers=[mp.PML(self.dpml)],
                                  resolution=20)
 
+    def setUpClass(self):
         self.temp_dir = mp.make_output_directory()
 
-    def tearDown(self):
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def test_resonant_modes(self):

@@ -18,9 +18,11 @@ class TestSimulation(unittest.TestCase):
 
     def setUp(self):
         print("Running {}".format(self._testMethodName))
+
+    def setUpClass(self):
         self.temp_dir = mp.make_output_directory()
 
-    def tearDown(self):
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def test_interpolate_numbers(self):

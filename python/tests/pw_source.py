@@ -51,11 +51,13 @@ class TestPwSource(unittest.TestCase):
             boundary_layers=pml_layers,
             resolution=resolution
         )
-        self.temp_dir = mp.make_output_directory()
         self.sim.use_output_directory(self.temp_dir)
         self.s = s
 
-    def tearDown(self):
+    def setUpClass(self):
+        self.temp_dir = mp.make_output_directory()
+
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def test_pw_source(self):

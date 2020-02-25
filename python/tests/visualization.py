@@ -115,10 +115,10 @@ def view_sim():
     plt.tight_layout()
     plt.show()
 class TestVisualization(unittest.TestCase):
-    def setUp(self):
+    def setUpClass(self):
         self.temp_dir = mp.make_output_directory()
 
-    def tearDown(self):
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def test_plot2D(self):

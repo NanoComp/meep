@@ -38,10 +38,10 @@ class TestDispersiveEigenmode(unittest.TestCase):
         
         np.testing.assert_allclose(n,n_actual)
 
-    def setUp(self):
+    def setUpClass(self):
         self.temp_dir = mp.make_output_directory()
 
-    def tearDown(self):
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def verify_output_and_slice(self,material,omega):

@@ -11,10 +11,10 @@ class TestCylEllipsoid(unittest.TestCase):
     ref_Ez = -8.29555720049629e-5
     ref_Hz = -4.5623185899766e-5
 
-    def setUp(self):
+    def setUpClass(self):
         self.temp_dir = mp.make_output_directory()
 
-    def tearDown(self):
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def init(self):

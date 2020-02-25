@@ -3,10 +3,10 @@ import meep as mp
 
 class TestChunks(unittest.TestCase):
 
-    def setUp(self):
+    def setUpClass(self):
         self.temp_dir = mp.make_output_directory()
 
-    def tearDown(self):
+    def tearDownClass(self):
         mp.delete_directory(self.temp_dir)
 
     def test_chunks(self):
