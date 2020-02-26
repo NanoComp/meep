@@ -123,6 +123,10 @@ print(mp.__version__)
 
 This will show something like `1.11.0-1-g415bc8eb` where the first three digits (`1.11.0`) refer to a stable tarball release, the following digit is the number of commits after this stable release, and the eight characters following the `g` in the final string refer to the commit hash.
 
+### Non-Networked Systems
+
+To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), you will need to obtain the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) or [nightly build](https://anaconda.org/simpetus/pymeep/files).
+
 Installation on Linux
 -------------------------
 
