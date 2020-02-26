@@ -4,6 +4,7 @@ import meep as mp
 from meep.geom import Vector3, check_nonnegative
 from scipy import signal
 import numpy as np
+from scipy.interpolate import interp1d
 
 def check_positive(prop, val):
     if val > 0:
@@ -86,8 +87,8 @@ class FilteredSource(CustomSource):
         self.center_frequency=center_frequency
         self.frequencies=frequencies
         self.frequency_response=frequency_response
-        self.num_taps=500
-        self.dt=dt
+        self.num_taps=num_taps
+        self.dt=dt/2 # the "effective" dt needs double resolution for staggered yee grid
         self.time_src=time_src
         self.current_time = None
 
@@ -103,18 +104,26 @@ class FilteredSource(CustomSource):
         self.estimate_impulse_response()
 
     def filter(self,t):
+        idx = int(np.round(t/self.dt))
+        if idx >= self.num_taps:
+            return 0
+        else:
+            return self.taps[idx]
+        
+        
+        '''print(idx)
         if self.current_time is None or self.current_time != t:
             self.current_time = t # increase current time (we went through all the current components)
             np.roll(self.memory, -1) # shift feedforward memory
             self.memory[0] = self.time_src.swigobj.dipole(t) # update current memory slot
             self.current_y = np.dot(self.memory,self.taps) # calculate filter response as inner product of taps and memory
-        return self.current_y
+        return self.current_y'''
     
     def estimate_impulse_response(self):
         # calculate band edges from target frequencies
         w = self.frequencies/(self.fs/2) * np.pi
         D = self.frequency_response
-        self.taps = self.lstsqrs(self.num_taps,w,D)
+        self.taps = self.spline_fit(self.num_taps,w,D)
 
         # allocate filter memory taps
         self.memory = np.zeros(self.taps.shape,dtype=np.complex128)
@@ -124,16 +133,71 @@ class FilteredSource(CustomSource):
             return self.filter(t)
         return _f
     
+    def spline_fit(self,num_taps,freqs,h_desired):
+        num_taps = 2000
+        # fit real part
+        real_x = np.concatenate(([0],freqs,[np.pi]))
+        real_y = np.concatenate(([0],np.real(h_desired),[0]))
+        fr = interp1d(real_x, real_y, kind='cubic')
+
+        # fit imaginary part
+        imag_x = np.concatenate(([0],freqs,[np.pi]))
+        imag_y = np.concatenate(([0],np.imag(h_desired),[0]))
+        fi = interp1d(imag_x, imag_y, kind='cubic')
+
+        # formulate hermitian filter response with specified number of taps
+        freqs_filter = numpy.fft.fftfreq#np.linspace(-np.pi,np.pi,num_taps)
+        zero_freq = np.argmin(np.abs(freqs_filter))+1
+        print(freqs_filter[zero_freq])
+
+        filter_pos = fr(freqs_filter[zero_freq:]) + 1j*fi(freqs_filter[zero_freq:])
+        filter_neg = np.flipud(np.conjugate(filter_pos))
+
+        if num_taps %2 == 0: #even
+            filter_both = np.concatenate((filter_pos,filter_neg))
+        else:
+            filter_both = np.concatenate((filter_pos,filter_neg[:-1]))
+
+        from matplotlib import pyplot as plt
+        plt.figure()
+        #plt.plot(freqs_filter,np.abs(filter_both))
+        plt.plot(freqs_filter[zero_freq:],fr(freqs_filter[zero_freq:]))
+        plt.plot(freqs,np.real(h_desired),'o')
+        plt.show()
+
+        print(num_taps)
+        print(filter_both.size)
+        quit()
+
+        # ifft to get sampled impulse response
+
+        return
     def lstsqrs(self,num_taps,freqs,h_desired):
         n_freqs = freqs.size
-        vandermonde = np.zeros((n_freqs,num_taps),dtype=np.complex128)
+        vandermonde_left = np.zeros((n_freqs,num_taps),dtype=np.complex128)
+        vandermonde_right = np.zeros((n_freqs,num_taps),dtype=np.complex128)
         for iom, om in enumerate(freqs):
             for it in range(num_taps):
-                vandermonde[iom,it] = np.exp(-1j*it*om)
+                vandermonde_left[iom,it] = np.exp(-1j*it*om)
+                vandermonde_right[iom,it] = np.exp(1j*it*om)
+        vandermonde = np.vstack((vandermonde_left,vandermonde_right))
+        h_desired_full = np.hstack((h_desired,np.conj(h_desired)))
         
-        a = np.matmul(np.linalg.pinv(vandermonde), h_desired)
+        a = np.matmul(np.linalg.pinv(vandermonde), h_desired_full)
         _, h_hat = signal.freqz(a,worN=freqs)
+
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.plot(freqs,np.abs(h_desired))
+        plt.plot(freqs,np.abs(h_hat),'--')
+        plt.show()
+        quit()
+        
         self.l2_error = np.sqrt(np.sum(np.abs(h_hat - h_desired)**2))
+        print(self.l2_error)
+
+        # account for dtft scaling
+        a = a*self.dt*np.sqrt(2)
         return a
 
 class EigenModeSource(Source):
