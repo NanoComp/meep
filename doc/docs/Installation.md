@@ -125,7 +125,7 @@ This will show something like `1.11.0-1-g415bc8eb` where the first three digits 
 
 ### Non-Networked Systems
 
-To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), using the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) or [nightly build](https://anaconda.org/simpetus/pymeep/files) will *not* work without the dependencies. A possible workaround is [Conda-Pack](https://github.com/NanoComp/meep/issues/1060).
+To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), using the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) or [nightly build](https://anaconda.org/simpetus/pymeep/files) will *not* work without the dependencies. A possible workaround is [Conda-Pack](https://github.com/conda/conda-pack).
 
 Installation on Linux
 -------------------------
