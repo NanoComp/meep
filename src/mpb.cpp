@@ -75,11 +75,10 @@ static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps
       o[1] = o_copy[2];
       o[2] = o_copy[0];
       p = vec(p.y(), p.z(), p.x());
-      //operation on f ?
+      //TODO: operation on f ?
     }
   }
 
-  // need to find out what eps_inv is doing exactly, but I believe all the necessary changes are made above this
   eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
   eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
   eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
@@ -281,7 +280,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
                             void **user_mdata) {
-  return get_eigenmode_coordcycle(omega_src, d, where, eig_vol, band_num, &_kpoint, match_frequency, parity, resolution,
+  return get_eigenmode_coordcycle(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency, parity, resolution,
                                   eigensolver_tol, kdom, user_mdata, 0);
 }
 
@@ -453,6 +452,7 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
       kmatch = kcart_len;
   }
   else {
+    // TODO: rotate
     kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
     kdir[d - X] = 1;                     // kdir = unit vector in d direction
   }
@@ -468,14 +468,17 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
       if (gv.dim == D2) k[2] = beta;
     }
     else {
+      // TODO: rotate
       k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
       if (eig_vol.in_direction(d) > 0 &&
           fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
         k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
+      // end rotate to do
     }
     if (verbosity > 1) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
+  // TODO: rotate
   set_maxwell_data_parity(mdata, parity);
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
@@ -562,6 +565,7 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
           if (gv.dim == D2) k[2] = beta;
         }
         else {
+          // TODO: rotate
           k[d - X] = kmatch * R[d - X][d - X];
         }
         update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
@@ -703,6 +707,7 @@ double get_group_velocity(void *vedata) {
 
 vec get_k(void *vedata) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
+  // TODO: rotate
   return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
 }
 
