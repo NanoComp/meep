@@ -51,6 +51,9 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
 
 static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
                          void *eps_data_, int coordcycle = 0) {
+  if (coordcycle != 0 && coordcycle != 1 && coordcycle != 2) {
+    abort("unsupported coordcycle value");
+  }
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   double *s_temp = eps_data->s;
   double *o_temp = eps_data->o;
@@ -282,6 +285,14 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
                             void **user_mdata) {
+  return get_eigenmode_coordcycle(omega_src, d, where, eig_vol, band_num, &_kpoint, match_frequency, parity, resolution,
+                                  eigensolver_tol, kdom, user_mdata, 0);
+}
+
+void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volume where, const volume eig_vol,
+                            int band_num, const vec &_kpoint, bool match_frequency, int parity,
+                            double resolution, double eigensolver_tol, double *kdom,
+                            void **user_mdata, int coordcycle) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -325,15 +336,42 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
 
   switch (gv.dim) {
     case D3:
-      o[0] = eig_vol.in_direction_min(X);
-      o[1] = eig_vol.in_direction_min(Y);
-      o[2] = eig_vol.in_direction_min(Z);
-      s[0] = eig_vol.in_direction(X);
-      s[1] = eig_vol.in_direction(Y);
-      s[2] = eig_vol.in_direction(Z);
-      kcart[0] = kpoint.in_direction(X);
-      kcart[1] = kpoint.in_direction(Y);
-      kcart[2] = kpoint.in_direction(Z);
+      switch (coordcycle) {
+        case 0:
+          o[0] = eig_vol.in_direction_min(X);
+          o[1] = eig_vol.in_direction_min(Y);
+          o[2] = eig_vol.in_direction_min(Z);
+          s[0] = eig_vol.in_direction(X);
+          s[1] = eig_vol.in_direction(Y);
+          s[2] = eig_vol.in_direction(Z);
+          kcart[0] = kpoint.in_direction(X);
+          kcart[1] = kpoint.in_direction(Y);
+          kcart[2] = kpoint.in_direction(Z);
+          break;
+        case 1:
+          o[0] = eig_vol.in_direction_min(Y);
+          o[1] = eig_vol.in_direction_min(Z);
+          o[2] = eig_vol.in_direction_min(X);
+          s[0] = eig_vol.in_direction(Y);
+          s[1] = eig_vol.in_direction(Z);
+          s[2] = eig_vol.in_direction(X);
+          kcart[0] = kpoint.in_direction(Y);
+          kcart[1] = kpoint.in_direction(Z);
+          kcart[2] = kpoint.in_direction(X);
+          break;
+        case 2:
+          o[0] = eig_vol.in_direction_min(Z);
+          o[1] = eig_vol.in_direction_min(X);
+          o[2] = eig_vol.in_direction_min(Y);
+          s[0] = eig_vol.in_direction(Z);
+          s[1] = eig_vol.in_direction(X);
+          s[2] = eig_vol.in_direction(Y);
+          kcart[0] = kpoint.in_direction(Z);
+          kcart[1] = kpoint.in_direction(X);
+          kcart[2] = kpoint.in_direction(Y);
+          break;
+        default: abort("unsupported coordcycle value");
+      }
       break;
     case D2:
       o[0] = eig_vol.in_direction_min(X);
