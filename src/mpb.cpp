@@ -45,15 +45,42 @@ typedef struct {
 
 static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
                          void *eps_data_) {
+  int coordcycle = 0;
+  return meep_mpb_eps_coordcycle(eps, eps_inv, r, eps_data_, coordcycle);
+}
+
+static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                         void *eps_data_, int coordcycle = 0) {
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
-  const double *s = eps_data->s;
-  const double *o = eps_data->o;
+  double *s_temp = eps_data->s;
+  double *o_temp = eps_data->o;
   double omega = eps_data->omega;
   vec p(eps_data->dim == D3 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2])
                             : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
-  const fields *f = eps_data->f;
+  fields *f_temp = eps_data->f;
 
+  if (eps_date->dim == D3 && coordcycle) {
+    int i;
+    for (i = 0; i < coordcycle; i++) {
+      double s_copy[3] = *s_temp;
+      double o_copy[3] = *o_temp;
+      s_temp[0] = s_copy[1];
+      s_temp[1] = s_copy[2];
+      s_temp[2] = s_copy[0];
+      o_temp[0] = o_copy[1];
+      o_temp[1] = o_copy[2];
+      o_temp[2] = o_copy[0];
+      p = vec(p.y(), p.z(), p.x());
+      //operation on f ?
+    }
+  }
+
+  const double *s = s_temp;
+  const double *o = o_temp;
+  const fields *f = f_temp;
+
+  // need to find out what eps_inv is doing exactly, but I believe all the necessary changes are made above this
   eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
   eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
   eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
