@@ -1266,12 +1266,14 @@ public:
 // dft.cpp (normally created with fields::add_dft_fields)
 class dft_fields {
 public:
+  // TODO: change here
   dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
+  // TODO: change here
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *chunks;
@@ -1731,27 +1733,36 @@ public:
   double max_abs(derived_component c, const volume &where);
 
   // dft.cpp
+  // TODO: change here
   dft_chunk *add_dft(component c, const volume &where, double freq_min, double freq_max, int Nfreq,
                      bool include_dV_and_interp_weights = true,
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
                      int vc = 0);
+  // TODO: change here
   dft_chunk *add_dft_pt(component c, const vec &where, double freq_min, double freq_max, int Nfreq);
+  // TODO: change here
   dft_chunk *add_dft(const volume_list *where, double freq_min, double freq_max, int Nfreq,
                      bool include_dV = true);
   void update_dfts();
+  // TODO: change here
   dft_flux add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
                         bool use_symmetry = true);
+  // TODO: change here
   dft_flux add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
                         int Nfreq, bool use_symmetry = true);
+  // TODO: change here
   dft_flux add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
+  // TODO: change here
   dft_flux add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);
 
   // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
+  // TODO: change here
   dft_flux add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
                             int Nfreq);
 
+  // TODO: change here
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             double freq_min, double freq_max, int Nfreq, bool use_centered_grid=true);
 
@@ -1799,12 +1810,15 @@ public:
   void get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                              std::complex<double> overlaps[2]);
 
+  // TODO: change here
   dft_energy add_dft_energy(const volume_list *where, double freq_min, double freq_max, int Nfreq);
 
   // stress.cpp
+  // TODO: change here
   dft_force add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq);
 
   // near2far.cpp
+  // TODO: change here
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int Nperiods = 1);
   // monitor.cpp
