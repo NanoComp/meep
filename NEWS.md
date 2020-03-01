@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.13.1
+
+2/25/2020
+
+* Avoid writing to source directory in remaining tests (#1132).
+
 ## Meep 1.13.0
 
 2/19/2020

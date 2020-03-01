@@ -1,5 +1,4 @@
 import os
-import shutil
 import sys
 import unittest
 import warnings
@@ -19,6 +18,14 @@ class TestSimulation(unittest.TestCase):
 
     def setUp(self):
         print("Running {}".format(self._testMethodName))
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def test_interpolate_numbers(self):
 
@@ -120,22 +127,18 @@ class TestSimulation(unittest.TestCase):
 
     def test_use_output_directory_default(self):
         sim = self.init_simple_simulation()
-        output_dir = os.path.join(temp_dir, 'simulation-out')
+        output_dir = os.path.join(self.temp_dir, 'simulation-out')
         sim.use_output_directory(output_dir)
         sim.run(mp.at_end(mp.output_efield_z), until=200)
 
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
 
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(output_dir)
-
     def test_at_time(self):
         sim = self.init_simple_simulation()
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.run(mp.at_time(100, mp.output_efield_z), until=200)
 
-        fname = os.path.join(temp_dir, 'simulation-ez-000100.00.h5')
+        fname = os.path.join(self.temp_dir, 'simulation-ez-000100.00.h5')
         self.assertTrue(os.path.exists(fname))
 
     def test_after_sources_and_time(self):
@@ -152,10 +155,10 @@ class TestSimulation(unittest.TestCase):
 
     def test_with_prefix(self):
         sim = self.init_simple_simulation()
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.run(mp.with_prefix('test_prefix-', mp.at_end(mp.output_efield_z)), until=200)
 
-        fname = os.path.join(temp_dir, 'test_prefix-simulation-ez-000200.00.h5')
+        fname = os.path.join(self.temp_dir, 'test_prefix-simulation-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fname))
 
     def test_extra_materials(self):
@@ -180,20 +183,20 @@ class TestSimulation(unittest.TestCase):
 
     def test_in_volume(self):
         sim = self.init_simple_simulation()
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.filename_prefix = 'test_in_volume'
         vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
         sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
-        fn = os.path.join(temp_dir, 'test_in_volume-ez-000200.00.h5')
+        fn = os.path.join(self.temp_dir, 'test_in_volume-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fn))
 
     def test_in_point(self):
         sim = self.init_simple_simulation()
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.filename_prefix = 'test_in_point'
         pt = mp.Vector3()
         sim.run(mp.at_end(mp.in_point(pt, mp.output_efield_z)), until=200)
-        fn = os.path.join(temp_dir, 'test_in_point-ez-000200.00.h5')
+        fn = os.path.join(self.temp_dir, 'test_in_point-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fn))
 
     def test_epsilon_input_file(self):
@@ -318,12 +321,12 @@ class TestSimulation(unittest.TestCase):
             ref_field_points.append(p.real)
 
         sim1.run(mp.at_every(5, get_ref_field_point), until=50)
-        dump_fn = os.path.join(temp_dir, 'test_load_dump_structure.h5')
+        dump_fn = os.path.join(self.temp_dir, 'test_load_dump_structure.h5')
         dump_chunk_fname = None
         chunk_layout = None
         sim1.dump_structure(dump_fn)
         if chunk_file:
-            dump_chunk_fname = os.path.join(temp_dir, 'test_load_dump_structure_chunks.h5')
+            dump_chunk_fname = os.path.join(self.temp_dir, 'test_load_dump_structure_chunks.h5')
             sim1.dump_chunk_layout(dump_chunk_fname)
             chunk_layout = dump_chunk_fname
         if chunk_sim:
@@ -359,7 +362,7 @@ class TestSimulation(unittest.TestCase):
 
     def test_get_array_output(self):
         sim = self.init_simple_simulation()
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.symmetries = []
         sim.geometry = [mp.Cylinder(0.2, material=mp.Medium(index=3))]
         sim.filename_prefix = 'test_get_array_output'
@@ -375,7 +378,7 @@ class TestSimulation(unittest.TestCase):
         energy_arr = sim.get_tot_pwr()
         efield_arr = sim.get_efield()
 
-        fname_fmt = os.path.join(temp_dir, 'test_get_array_output-{}-000020.00.h5')
+        fname_fmt = os.path.join(self.temp_dir, 'test_get_array_output-{}-000020.00.h5')
 
         with h5py.File(fname_fmt.format('eps'), 'r') as f:
             eps = f['eps'][()]
@@ -420,7 +423,7 @@ class TestSimulation(unittest.TestCase):
             resolution=resolution
         )
 
-        sim.use_output_directory(temp_dir)
+        sim.use_output_directory(self.temp_dir)
         sim.run(mp.synchronized_magnetic(mp.output_bfield_y), until=10)
 
     def test_harminv_warnings(self):
@@ -627,7 +630,4 @@ class TestSimulation(unittest.TestCase):
             self.assertAlmostEqual(pt2, expected)
 
 if __name__ == '__main__':
-    temp_dir = mp.make_output_directory()
     unittest.main()
-    if mp.am_master():
-        os.removedirs(temp_dir)
