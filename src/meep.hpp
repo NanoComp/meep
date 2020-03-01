@@ -1009,6 +1009,7 @@ public:
   void operator-=(const dft_chunk &chunk);
 
   // the frequencies to loop_in_chunks
+  // TODO: change here
   double omega_min, domega;
   int Nomega;
 
@@ -1103,6 +1104,7 @@ public:
 
   void remove();
 
+  // TODO: change here
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *E, *H;
@@ -1115,6 +1117,7 @@ public:
 // dft.cpp (normally created with fields::add_dft_energy)
 class dft_energy {
 public:
+  // TODO: change here
   dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin, double fmax,
              int Nf, const volume &where_);
   dft_energy(const dft_energy &f);
@@ -1140,6 +1143,7 @@ public:
 
   void remove();
 
+  // TODO: change here
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *E, *H, *D, *B;
@@ -1149,6 +1153,7 @@ public:
 // stress.cpp (normally created with fields::add_dft_force)
 class dft_force {
 public:
+  // TODO: change here
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin, double fmax,
             int Nf, const volume &where_);
   dft_force(const dft_force &f);
@@ -1167,6 +1172,7 @@ public:
 
   void remove();
 
+  // TODO: change here
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *offdiag1, *offdiag2, *diag;
@@ -1178,6 +1184,7 @@ class dft_near2far {
 public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
+  // TODO: change here
   dft_near2far(dft_chunk *F, double fmin, double fmax, int Nf, double eps, double mu,
                const volume &where_, const direction periodic_d_[2], const int periodic_n_[2],
                const double periodic_k_[2], const double period_[2]);
@@ -1215,6 +1222,7 @@ public:
 
   void remove();
 
+  // TODO: change here
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *F;
@@ -1233,6 +1241,7 @@ public:
    store the Fourier transform per point or per current. */
 class dft_ldos {
 public:
+  // TODO: change here
   dft_ldos(double freq_min, double freq_max, int Nfreq);
   ~dft_ldos() {
     delete[] Fdft;
@@ -1249,6 +1258,7 @@ private:
   std::complex<realnum> *Jdft; // Nomega array of J(t) DFT values
   double Jsum;                 // sum of |J| over all points
 public:
+  // TODO: change here
   double omega_min, domega;
   int Nomega;
 };
