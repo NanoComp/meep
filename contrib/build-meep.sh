@@ -7,11 +7,13 @@ help ()
 {
     cat << EOF
 
-$1: Download MEEP sources and dependencies, compile, and install
+$1: Download MEEP sources and dependencies, build, and install
 
 Usage: $1 [options]
 EOF
     sed -ne 's,[ \t]*\(-[^ \t]*\))[^#]*#[ \t]*\(.*\),    \1 \2,p' "$1"
+    echo ""
+    echo "After installation, environment file 'meep-env.sh' is created in destination path."
     echo ""
     exit 1
 }
@@ -40,7 +42,19 @@ autogensh ()
         "$@"
 }
 
-compile=true
+showenv()
+{
+    echo export PATH+=:${DESTDIR}/bin
+    echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib
+    echo export PYTHONPATH+=:${DESTDIR}/lib/${python}/site-packages
+    if $centos; then
+        echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib64
+        echo export PYTHONPATH+=:/usr/local/lib64/${python}/site-packages
+        echo export LD_PRELOAD+=:/usr/lib64/openmpi/lib/libmpi.so
+    fi
+}
+
+buildinstall=true
 installdeps=true
 bashrc=false
 unset DESTDIR
@@ -65,11 +79,13 @@ while [ ! -z "$1" ]; do
             installdeps=false
             ;;
         -c)         # skip build+install
-            compile=false
+            buildinstall=false
             ;;
-        -Du1804)    # build a raw ubuntu-18.04 docker image
+        -Du1604)    # build 'meep-ubuntu:16.04' docker image
+            docker=ubuntu:16.04;;
+        -Du1804)    # build 'meep-ubuntu:18.04' docker image
             docker=ubuntu:18.04;;
-        -Dcentos7)  # build a raw centos-7 docker image
+        -Dcentos7)  # build 'meep-centos:7' docker image
             docker=centos:7;;
         --bashrc)
             bashrc=true;; # undocumented internal to store env in ~/.bashrc
@@ -134,14 +150,17 @@ case "$distrib" in
     ubuntu18.04) # ubuntu 18.04 bionic
         libpng=libpng-dev
         libpython=libpython3-dev
+        python=python3.6
         ubuntu=true
         ;;
     ubuntu16.04) # ubuntu 16.04 xenial
         libpng=libpng16-dev
         libpython=libpython3.5-dev
+        python=python3.5
         ubuntu=true
         ;;
     centos7) # CentOS 7.x
+        python=python3.6
         centos=true
         ;;
     *)
@@ -149,7 +168,10 @@ case "$distrib" in
         false
         ;;
 esac
-echo "-- ubuntu:$ubuntu centos:$centos"
+
+# these are passed to configure on demand with: 'autogensh ... CC=${CC} CXX=${CXX}'
+export CC=mpicc
+export CXX=mpicxx
 
 if $ubuntu; then
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
@@ -157,22 +179,11 @@ if $ubuntu; then
     CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
 fi
 
-showenv()
-{
-    echo export PATH+=:${DESTDIR}/bin
-    echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib
-    echo export PYTHONPATH+=:${DESTDIR}/lib/python3.6/site-packages
-    if $centos; then
-        echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib64
-        echo export PYTHONPATH+=:/usr/local/lib64/python3.6/site-packages
-        echo export LD_PRELOAD+=:/usr/lib64/openmpi/lib/libmpi.so
-    fi
-}
-
 if $centos; then
+    # mpicc is not in PATH
     export CC=/usr/lib64/openmpi/bin/mpicc
     export CXX=/usr/lib64/openmpi/bin/mpicxx
-    export PATH=${PATH}:/usr/lib64/openmpi/bin
+
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib64:/usr/lib64/openmpi/lib"
     LDFLAGS="-L${DESTDIR}/lib64 -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
     CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
@@ -207,7 +218,7 @@ if $installdeps && $ubuntu; then
         python3-pip             \
         ffmpeg                  \
 
-    [ "$distrib" = 16.04 ] && sudo -H pip3 install --upgrade pip
+    [ "$distrib" = ubuntu16.04 ] && sudo -H pip3 install --upgrade pip
     sudo -H pip3 install --no-cache-dir mpi4py
     export HDF5_MPI="ON"
     sudo -H pip3 install --no-binary=h5py h5py
@@ -282,57 +293,57 @@ PKG_CONFIG_PATH=${DESDTIR}/pkgconfig
 export PKG_CONFIG_PATH
 export PATH=${DESTDIR}/bin:${PATH}
 
-if $compile; then
+if $buildinstall; then
 
-mkdir -p ${SRCDIR}
+    mkdir -p ${SRCDIR}
 
-cd ${SRCDIR}
-gitclone https://github.com/NanoComp/harminv.git
-cd harminv/
-autogensh
-make -j && $SUDO make install
+    cd ${SRCDIR}
+    gitclone https://github.com/NanoComp/harminv.git
+    cd harminv/
+    autogensh
+    make -j && $SUDO make install
 
-cd ${SRCDIR}
-gitclone https://github.com/NanoComp/libctl.git
-cd libctl/
-autogensh
-make -j && $SUDO make install
+    cd ${SRCDIR}
+    gitclone https://github.com/NanoComp/libctl.git
+    cd libctl/
+    autogensh
+    make -j && $SUDO make install
 
-cd ${SRCDIR}
-gitclone https://github.com/NanoComp/h5utils.git
-cd h5utils/
-autogensh CC=mpicc
-make -j && $SUDO make install
+    cd ${SRCDIR}
+    gitclone https://github.com/NanoComp/h5utils.git
+    cd h5utils/
+    autogensh CC=${CC}
+    make -j && $SUDO make install
 
-cd ${SRCDIR}
-gitclone https://github.com/NanoComp/mpb.git
-cd mpb/
-autogensh CC=mpicc --with-hermitian-eps
-make -j && $SUDO make install
+    cd ${SRCDIR}
+    gitclone https://github.com/NanoComp/mpb.git
+    cd mpb/
+    autogensh CC=${CC} --with-hermitian-eps
+    make -j && $SUDO make install
 
-cd ${SRCDIR}
-gitclone https://github.com/HomerReid/libGDSII.git
-cd libGDSII/
-autogensh
-make -j && $SUDO make install
+    cd ${SRCDIR}
+    gitclone https://github.com/HomerReid/libGDSII.git
+    cd libGDSII/
+    autogensh
+    make -j && $SUDO make install
 
-cd ${SRCDIR}
-#gitclone https://github.com/NanoComp/meep.git 
-gitclone https://github.com/d-a-v/meep.git fixCentos7Installer
-cd meep/
-autogensh --with-mpi --with-openmp PYTHON=python3
-make -j && $SUDO make install
+    cd ${SRCDIR}
+    #gitclone https://github.com/NanoComp/meep.git
+    gitclone https://github.com/d-a-v/meep.git fixCentos7Installer
+    cd meep/
+    autogensh --with-mpi --with-openmp PYTHON=python3
+    make -j && $SUDO make install
 
-# all done
+    # all done
 
-if $centos; then
-     cd ${DESTDIR}/lib/python3.6/site-packages/meep/
-     for i in ../../../../lib64/python3.6/site-packages/meep/*meep*; do
-        ln -sf $i
-     done
-fi
+    if $centos; then
+         cd ${DESTDIR}/lib/${python}/site-packages/meep/
+         for i in ../../../../lib64/${python}/site-packages/meep/*meep*; do
+            ln -sf $i
+         done
+    fi
 
-fi # install
+fi # buildinstall
 
 ########
 # test
@@ -345,7 +356,6 @@ cell = mp.Vector3(16,8,0)
 print(cell)
 exit()
 EOF
-
 
 echo "------------ ENV (commands)"
 showenv
