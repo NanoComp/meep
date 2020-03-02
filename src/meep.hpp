@@ -1010,8 +1010,8 @@ public:
 
   // the frequencies to loop_in_chunks
   // TODO: change here
-  double omega_min, domega;
   int Nomega;
+  double omegas[Nomega];
 
   component c; // component to DFT (possibly transformed by symmetry)
 
@@ -1083,10 +1083,9 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 class dft_flux {
 public:
   // TODO: change here
-  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_, double fmin,
-           double fmax, int Nf, const volume &where_, direction normal_direction_,
-           bool use_symmetry_);
-  dft_flux(const dft_flux &f);
+  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_, double *fs,
+           int Nf, const volume &where_, direction normal_direction_, bool use_symmetry_);
+  dft_flux(const dft_flux  &f);
 
   double *flux();
 
@@ -1106,8 +1105,8 @@ public:
   void remove();
 
   // TODO: change here
-  double freq_min, dfreq;
   int Nfreq;
+  double freqs[Nfreq];
   dft_chunk *E, *H;
   component cE, cH;
   volume where;
@@ -1119,8 +1118,8 @@ public:
 class dft_energy {
 public:
   // TODO: change here
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin, double fmax,
-             int Nf, const volume &where_);
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double *fs, int Nf,
+             const volume &where_);
   dft_energy(const dft_energy &f);
 
   double *electric();
@@ -1145,8 +1144,8 @@ public:
   void remove();
 
   // TODO: change here
-  double freq_min, dfreq;
   int Nfreq;
+  double freqs[Nfreq];
   dft_chunk *E, *H, *D, *B;
   volume where;
 };
@@ -1155,8 +1154,8 @@ public:
 class dft_force {
 public:
   // TODO: change here
-  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin, double fmax,
-            int Nf, const volume &where_);
+  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double *fs, int Nf,
+            const volume &where_);
   dft_force(const dft_force &f);
 
   double *force();
@@ -1174,8 +1173,8 @@ public:
   void remove();
 
   // TODO: change here
-  double freq_min, dfreq;
   int Nfreq;
+  double freqs[Nfreq];
   dft_chunk *offdiag1, *offdiag2, *diag;
   volume where;
 };
@@ -1186,8 +1185,8 @@ public:
   /* fourier tranforms of tangential E and H field components in a
      medium with the given scalar eps and mu */
   // TODO: change here
-  dft_near2far(dft_chunk *F, double fmin, double fmax, int Nf, double eps, double mu,
-               const volume &where_, const direction periodic_d_[2], const int periodic_n_[2],
+  dft_near2far(dft_chunk *F, double *fs, int Nf, double eps, double mu, const volume &where_,
+               const direction periodic_d_[2], const int periodic_n_[2],
                const double periodic_k_[2], const double period_[2]);
   dft_near2far(const dft_near2far &f);
 
@@ -1224,8 +1223,8 @@ public:
   void remove();
 
   // TODO: change here
-  double freq_min, dfreq;
   int Nfreq;
+  double freqs[Nfreq];
   dft_chunk *F;
   double eps, mu;
   volume where;
@@ -1243,7 +1242,7 @@ public:
 class dft_ldos {
 public:
   // TODO: change here
-  dft_ldos(double freq_min, double freq_max, int Nfreq);
+  dft_ldos(double *freqs, int Nfreq);
   ~dft_ldos() {
     delete[] Fdft;
     delete[] Jdft;
@@ -1260,23 +1259,23 @@ private:
   double Jsum;                 // sum of |J| over all points
 public:
   // TODO: change here
-  double omega_min, domega;
   int Nomega;
+  double omegas[Nomega];
 };
 
 // dft.cpp (normally created with fields::add_dft_fields)
 class dft_fields {
 public:
   // TODO: change here
-  dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
+  dft_fields(dft_chunk *chunks, double *freqs, int Nfreq, const volume &where);
 
   void scale_dfts(std::complex<double> scale);
 
   void remove();
 
   // TODO: change here
-  double freq_min, dfreq;
   int Nfreq;
+  double freqs[Nfreq];
   dft_chunk *chunks;
   volume where;
 };
@@ -1735,37 +1734,35 @@ public:
 
   // dft.cpp
   // TODO: change here
-  dft_chunk *add_dft(component c, const volume &where, double freq_min, double freq_max, int Nfreq,
+  dft_chunk *add_dft(component c, const volume &where, double *freqs, int Nfreq,
                      bool include_dV_and_interp_weights = true,
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
                      int vc = 0);
   // TODO: change here
-  dft_chunk *add_dft_pt(component c, const vec &where, double freq_min, double freq_max, int Nfreq);
+  dft_chunk *add_dft_pt(component c, const vec &where, double *freqs, int Nfreq);
   // TODO: change here
-  dft_chunk *add_dft(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                     bool include_dV = true);
+  dft_chunk *add_dft(const volume_list *where, double *freqs, int Nfreq, bool include_dV = true);
   void update_dfts();
   // TODO: change here
-  dft_flux add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
+  dft_flux add_dft_flux(const volume_list *where, double *freqs, int Nfreq,
                         bool use_symmetry = true);
   // TODO: change here
-  dft_flux add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
-                        int Nfreq, bool use_symmetry = true);
+  dft_flux add_dft_flux(direction d, const volume &where, double *freqs, int Nfreq,
+                        bool use_symmetry = true);
   // TODO: change here
-  dft_flux add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
+  dft_flux add_dft_flux_box(const volume &where, double *freqs, int Nfreq);
   // TODO: change here
-  dft_flux add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);
+  dft_flux add_dft_flux_plane(const volume &where, double *freqs, int Nfreq);
 
   // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
   // TODO: change here
-  dft_flux add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
-                            int Nfreq);
+  dft_flux add_mode_monitor(direction d, const volume &where, double *freqs, int Nfreq);
 
   // TODO: change here
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            double freq_min, double freq_max, int Nfreq, bool use_centered_grid=true);
+                            double *freqs, int Nfreq, bool use_centered_grid=true);
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */
@@ -1812,16 +1809,16 @@ public:
                              std::complex<double> overlaps[2]);
 
   // TODO: change here
-  dft_energy add_dft_energy(const volume_list *where, double freq_min, double freq_max, int Nfreq);
+  dft_energy add_dft_energy(const volume_list *where, double *freqs, int Nfreq);
 
   // stress.cpp
   // TODO: change here
-  dft_force add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq);
+  dft_force add_dft_force(const volume_list *where, double *freqs, int Nfreq);
 
   // near2far.cpp
   // TODO: change here
-  dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                int Nfreq, int Nperiods = 1);
+  dft_near2far add_dft_near2far(const volume_list *where, double *freqs, int Nfreq,
+                                int Nperiods = 1);
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double omega = 0,
                                    bool parallel = true) const;
