@@ -42,6 +42,7 @@ autogensh ()
 
 compile=true
 installdeps=true
+bashrc=false
 unset DESTDIR
 
 while [ ! -z "$1" ]; do
@@ -66,6 +67,12 @@ while [ ! -z "$1" ]; do
         -c)         # skip build+install
             compile=false
             ;;
+        -Du1804)    # build a raw ubuntu-18.04 docker image
+            docker=ubuntu:18.04;;
+        -Dcentos7)  # build a raw centos-7 docker image
+            docker=centos:7;;
+        --bashrc)
+            bashrc=true;; # undocumented internal to store env in ~/.bashrc
         *)
             echo "'$1' ?"
             help "$0"
@@ -74,36 +81,42 @@ while [ ! -z "$1" ]; do
     shift
 done
 
-
 [ -z "${DESTDIR}" ] && { echo "-d option is missing" ; help "$0"; }
+
+if [ ! -z "${docker}" ]; then
+    ddir="docker-${docker}"
+    mkdir ${ddir}
+    cp "$0" ${ddir}/
+    cd ${ddir}
+    case ${docker} in
+        *ubuntu*)
+            echo "FROM ${docker}" > Dockerfile
+            echo "RUN apt-get update && apt-get -y install apt-utils sudo" >> Dockerfile
+            echo "ADD \"$0\" \"$0\"" >> Dockerfile
+            echo "RUN mkdir -p ${DESTDIR}; ./\"$0\" -d ${DESTDIR} --bashrc" >> Dockerfile
+            echo "CMD /bin/bash" >> Dockerfile
+            exec docker build -t "meep-${docker}" .
+            ;;
+
+        *centos*)
+            echo "FROM ${docker}" > Dockerfile
+            echo "RUN yum -y install sudo" >> Dockerfile
+            echo "ADD \"$0\" \"$0\"" >> Dockerfile
+            echo "RUN mkdir -p ${DESTDIR}; ./\"$0\" -d ${DESTDIR} --bashrc" >> Dockerfile
+            echo "CMD /bin/bash" >> Dockerfile
+            exec docker build -t "meep-${docker}" .
+            exit 1;;
+
+        *)
+            echo "can't build a docker file for '${docker}'"
+            help "$0"
+            exit 1;;
+    esac
+fi
+
 # detect wether DESTDIR is ending with src/
 [ "${DESTDIR##*/}" = src ] && DESTDIR=$(cd $(pwd)/..; pwd)
 [ -z "$SRCDIR" ] && SRCDIR=${DESTDIR}/src
-
-if $ubuntu; then
-    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
-fi
-
-if $centos; then
-    export CC=/usr/lib64/openmpi/bin/mpicc
-    export CXX=/usr/lib64/openmpi/bin/mpicxx
-    export PATH=${PATH}:/usr/lib64/openmpi/bin
-    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib64:/usr/lib64/openmpi/lib"
-    LDFLAGS="-L${DESTDIR}/lib64 -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
-
-    showenv()
-    {
-        echo export PYTHONPATH+=:${DESTDIR}/lib/python3.6/site-packages
-        echo export PYTHONPATH+=:/usr/local/lib64/python3.6/site-packages
-        echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib64
-        echo export LD_PRELOAD+=:/usr/lib64/openmpi/lib/libmpi.so
-    }
-    eval $(showenv)
-fi
-
 
 if [ ! -r /etc/os-release ]; then
     echo "Error: cannot read /etc/os-release"
@@ -136,6 +149,36 @@ case "$distrib" in
         false
         ;;
 esac
+echo "-- ubuntu:$ubuntu centos:$centos"
+
+if $ubuntu; then
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
+fi
+
+showenv()
+{
+    echo export PATH+=:${DESTDIR}/bin
+    echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib
+    echo export PYTHONPATH+=:${DESTDIR}/lib/python3.6/site-packages
+    if $centos; then
+        echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib64
+        echo export PYTHONPATH+=:/usr/local/lib64/python3.6/site-packages
+        echo export LD_PRELOAD+=:/usr/lib64/openmpi/lib/libmpi.so
+    fi
+}
+
+if $centos; then
+    export CC=/usr/lib64/openmpi/bin/mpicc
+    export CXX=/usr/lib64/openmpi/bin/mpicxx
+    export PATH=${PATH}:/usr/lib64/openmpi/bin
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib64:/usr/lib64/openmpi/lib"
+    LDFLAGS="-L${DESTDIR}/lib64 -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
+fi
+
+eval $(showenv)
 
 if $installdeps && $ubuntu; then
 
@@ -205,7 +248,7 @@ if $installdeps && $centos; then
     sudo yum -y install    \
         python3            \
         python3-devel      \
-        python36-numpy      \
+        python36-numpy     \
         python36-scipy
 
     sudo yum -y install    \
@@ -306,6 +349,8 @@ EOF
 
 echo "------------ ENV (commands)"
 showenv
+showenv > ${DESTDIR}/meep-env.sh
+$bashrc && { showenv >> ~/.bashrc; }
 echo "------------ ENV (result)"
 echo export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
 echo export PYTHONPATH=${PYTHONPATH}
