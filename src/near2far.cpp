@@ -29,11 +29,13 @@ using namespace std;
 
 namespace meep {
 
+// TODO: change here
 dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, double eps_, double mu_,
                            const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
     : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
+  // TODO: change here
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
@@ -45,6 +47,7 @@ dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, doub
   }
 }
 
+// TODO: change here
 dft_near2far::dft_near2far(const dft_near2far &f)
     : freq_min(f.freq_min), dfreq(f.dfreq), Nfreq(f.Nfreq), F(f.F), eps(f.eps), mu(f.mu),
       where(f.where) {
@@ -329,6 +332,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 #endif
     for (int i = 0; i < Nfreq; ++i) {
       std::complex<double> EH6[6];
+      // TODO: change here???
       double freq = freq_min + i * dfreq;
       size_t idx_dft = 0;
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
@@ -523,6 +527,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
+// TODO: change here
 dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                       int Nfreq, int Nperiods) {
   dft_chunk *F = 0; /* E and H chunks*/
@@ -598,12 +603,14 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
         double s = j == 0 ? 1 : -1; /* sign of n x c */
         if (is_electric(c)) s = -s;
 
+        // TODO: change here
         F = add_dft(c, w->v, freq_min, freq_max, Nfreq, true, s * w->weight, F, false, 1.0, false,
                     c0);
       }
     }
   }
 
+  // TODO: change here
   return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere, periodic_d, periodic_n,
                       periodic_k, period);
 }

@@ -1082,6 +1082,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
 public:
+  // TODO: change here
   dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_, double fmin,
            double fmax, int Nf, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
