@@ -6,7 +6,6 @@ import unittest
 
 import meep as mp
 
-
 class TestPwSource(unittest.TestCase):
 
     def setUp(self):
@@ -52,7 +51,16 @@ class TestPwSource(unittest.TestCase):
             boundary_layers=pml_layers,
             resolution=resolution
         )
+        self.sim.use_output_directory(self.temp_dir)
         self.s = s
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def test_pw_source(self):
         self.sim.run(mp.at_end(mp.output_efield_z), until=400)

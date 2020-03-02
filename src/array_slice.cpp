@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -294,7 +294,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 
   for (int i = 0; i < num_components; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
-    if (cS[i] == Dielectric || cS[i] == Permeability)
+    if (cS[i] == Dielectric || cS[i] == Permeability || cS[i] == NO_COMPONENT)
       ph[i] = 1.0;
     else {
       fc->gv.yee2cent_offsets(cS[i], off[2 * i], off[2 * i + 1]);
@@ -323,28 +323,28 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
         fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
       }
       else if (cS[i] == Dielectric) {
-        double tr = 0.0;
+        complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninveps; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, omega) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], omega) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[1 + 2 * k], omega) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k] + ieos[1 + 2 * k],
                                           omega));
-          if (tr == 0.0) tr += 4.0; // default inveps == 1
+          if (abs(tr) == 0.0) tr += 4.0; // default inveps == 1
         }
-        fields[i] = (4 * data->ninveps) / tr;
+        fields[i] = (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
-        double tr = 0.0;
+        complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninvmu; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, omega) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], omega) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[1 + 2 * k], omega) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k] + imos[1 + 2 * k],
                                           omega));
-          if (tr == 0.0) tr += 4.0; // default invmu == 1
+          if (abs(tr) == 0.0) tr += 4.0; // default invmu == 1
         }
-        fields[i] = (4 * data->ninvmu) / tr;
+        fields[i] = (4.0 * data->ninvmu) / tr;
       }
       else {
         double f[2];

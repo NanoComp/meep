@@ -12,6 +12,7 @@ from subprocess import call
 
 import meep as mp
 import numpy as np
+import os
 
 # Make sure we have matplotlib installed
 import matplotlib
@@ -62,7 +63,7 @@ def setup_sim(zDim=0):
                         component=mp.Ez,
                         size=mp.Vector3(0,2,2),
                         center=mp.Vector3(0,1))]
-        
+
     # Add plane sources
     sources += [mp.Source(mp.ContinuousSource(frequency=0.15),
                         component=mp.Ez,
@@ -114,7 +115,15 @@ def view_sim():
     plt.tight_layout()
     plt.show()
 class TestVisualization(unittest.TestCase):
-    
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
+
     def test_plot2D(self):
         # Check plotting of geometry with several sources, monitors, and PMLs
         f = plt.figure()
@@ -142,7 +151,7 @@ class TestVisualization(unittest.TestCase):
         if mp.am_master():
             hash_figure(f)
             #self.assertAlmostEqual(hash_figure(f),68926258)
-    
+
     @unittest.skipIf(call(['which', 'ffmpeg']) != 0, "ffmpeg is not installed")
     def test_animation_output(self):
         # ------------------------- #
@@ -150,7 +159,7 @@ class TestVisualization(unittest.TestCase):
         # ------------------------- #
 
         sim = setup_sim() # generate 2D simulation
-        
+
         Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=False, normalize=False) # Check without normalization
         Animate_norm = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True) # Check with normalization
 
@@ -159,20 +168,20 @@ class TestVisualization(unittest.TestCase):
             mp.at_every(1,Animate),
             mp.at_every(1,Animate_norm),
             until=5)
-        
+
         # Test outputs
-        Animate.to_mp4(5,'test_2D.mp4') # Check mp4 output
-        Animate.to_gif(150,'test_2D.gif') # Check gif output
+        Animate.to_mp4(5,os.path.join(self.temp_dir, 'test_2D.mp4')) # Check mp4 output
+        Animate.to_gif(150,os.path.join(self.temp_dir, 'test_2D.gif')) # Check gif output
         Animate.to_jshtml(10) # Check jshtml output
-        Animate_norm.to_mp4(5,'test_2D_norm.mp4') # Check mp4 output
-        Animate_norm.to_gif(150,'test_2D_norm.gif') # Check gif output
+        Animate_norm.to_mp4(5,os.path.join(self.temp_dir, 'test_2D_norm.mp4')) # Check mp4 output
+        Animate_norm.to_gif(150,os.path.join(self.temp_dir, 'test_2D_norm.gif')) # Check gif output
         Animate_norm.to_jshtml(10) # Check jshtml output
 
         # ------------------------- #
         # Check over 3D domain
         # ------------------------- #
         sim = setup_sim(5) # generate 2D simulation
-        
+
         Animate_xy = mp.Animate2D(sim,fields=mp.Ey, realtime=False, normalize=True) # Check without normalization
         Animate_xz = mp.Animate2D(sim,mp.Ey,realtime=False,normalize=True) # Check with normalization
 
@@ -181,13 +190,13 @@ class TestVisualization(unittest.TestCase):
             mp.at_every(1,mp.in_volume(mp.Volume(center=mp.Vector3(),size=mp.Vector3(sim.cell_size.x,sim.cell_size.y)),Animate_xy)),
             mp.at_every(1,mp.in_volume(mp.Volume(center=mp.Vector3(),size=mp.Vector3(sim.cell_size.x,0,sim.cell_size.z)),Animate_xz)),
             until=5)
-        
+
         # Test outputs
-        Animate_xy.to_mp4(5,'test_3D_xy.mp4') # Check mp4 output
-        Animate_xy.to_gif(150,'test_3D_xy.gif') # Check gif output
+        Animate_xy.to_mp4(5,os.path.join(self.temp_dir, 'test_3D_xy.mp4')) # Check mp4 output
+        Animate_xy.to_gif(150,os.path.join(self.temp_dir, 'test_3D_xy.gif')) # Check gif output
         Animate_xy.to_jshtml(10) # Check jshtml output
-        Animate_xz.to_mp4(5,'test_3D_xz.mp4') # Check mp4 output
-        Animate_xz.to_gif(150,'test_3D_xz.gif') # Check gif output
+        Animate_xz.to_mp4(5,os.path.join(self.temp_dir, 'test_3D_xz.mp4')) # Check mp4 output
+        Animate_xz.to_gif(150,os.path.join(self.temp_dir, 'test_3D_xz.gif')) # Check gif output
         Animate_xz.to_jshtml(10) # Check jshtml output
     '''
     Travis does not play well with Mayavi

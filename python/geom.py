@@ -493,7 +493,7 @@ class Ellipsoid(Block):
 
 class Prism(GeometricObject):
 
-    def __init__(self, vertices, height, axis=Vector3(z=1), center=None, **kwargs):
+    def __init__(self, vertices, height, axis=Vector3(z=1), center=None, sidewall_angle=0, **kwargs):
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
         original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
         if center is not None and len(vertices):
@@ -506,6 +506,7 @@ class Prism(GeometricObject):
         self.vertices = vertices
         self.height = height
         self.axis = axis
+        self.sidewall_angle = sidewall_angle
 
         super(Prism, self).__init__(center=center, **kwargs)
 

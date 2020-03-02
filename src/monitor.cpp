@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -163,7 +163,7 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
     return 0.0;
 }
 
-double fields::get_chi1inv(component c, direction d, const ivec &origloc, double omega,
+complex<double> fields::get_chi1inv(component c, direction d, const ivec &origloc, double omega,
                            bool parallel) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
@@ -172,30 +172,31 @@ double fields::get_chi1inv(component c, direction d, const ivec &origloc, double
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
-        double val =
+        complex<double> val =
             chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), omega) *
-            (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
+          complex<double>(ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1,0);
         return parallel ? sum_to_all(val) : val;
       }
   return d == component_direction(c) ? 1.0 : 0; // default to vacuum outside computational cell
 }
 
-double fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
+complex<double> fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc, double omega) const {
   return s->get_chi1inv(c, d, iloc, omega);
 }
 
-double fields::get_chi1inv(component c, direction d, const vec &loc, double omega,
+complex<double> fields::get_chi1inv(component c, direction d, const vec &loc, double omega,
                            bool parallel) const {
   ivec ilocs[8];
-  double w[8], res = 0.0;
+  double w[8];
+  complex<double> res(0.0,0.0);
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
     res += w[argh] * get_chi1inv(c, d, ilocs[argh], omega, false);
   return parallel ? sum_to_all(res) : res;
 }
 
-double fields::get_eps(const vec &loc, double omega) const {
-  double tr = 0;
+complex<double> fields::get_eps(const vec &loc, double omega) const {
+  complex<double> tr(0.0,0.0);
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -203,11 +204,11 @@ double fields::get_eps(const vec &loc, double omega) const {
       ++nc;
     }
   }
-  return nc / sum_to_all(tr);
+  return complex<double>(nc,0) / sum_to_all(tr);
 }
 
-double fields::get_mu(const vec &loc, double omega) const {
-  double tr = 0;
+complex<double> fields::get_mu(const vec &loc, double omega) const {
+  complex<double> tr(0.0,0.0);
   int nc = 0;
   FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -215,19 +216,19 @@ double fields::get_mu(const vec &loc, double omega) const {
       ++nc;
     }
   }
-  return nc / sum_to_all(tr);
+  return complex<double>(nc,0) / sum_to_all(tr);
 }
 
-double structure::get_chi1inv(component c, direction d, const ivec &origloc, double omega,
+complex<double> structure::get_chi1inv(component c, direction d, const ivec &origloc, double omega,
                               bool parallel) const {
   ivec iloc = origloc;
   for (int sn = 0; sn < S.multiplicity(); sn++)
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
-        double val =
+        complex<double> val =
             chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), omega) *
-            (ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1);
+            complex<double>((ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1),0);
         return parallel ? sum_to_all(val) : val;
       }
   return 0.0;
@@ -254,8 +255,8 @@ void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]
   Vinv[2 + 3 * 2] = 1.0 / det * (V[0 + 3 * 0] * V[1 + 3 * 1] - V[0 + 3 * 1] * V[1 + 3 * 0]);
 }
 
-double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
-  double res = 0.0;
+complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, double omega) const {
+  complex<double> res(0.0,0.0);
   if (is_mine()) {
     if (omega == 0)
       return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
@@ -335,13 +336,7 @@ double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, dou
           double conductivityCur = conductivity[cc][dd][idx];
           eps = std::complex<double>(1.0, (conductivityCur / omega)) * eps;
         }
-
-        // assign to eps tensor
-        if (eps.imag() == 0)
-          chi1_tensor[com_it + 3 * dir_int] = eps.real();
-        else
-          chi1_tensor[com_it + 3 * dir_int] =
-              std::sqrt(eps).real() * std::sqrt(eps).real(); // hack for metals
+        chi1_tensor[com_it + 3 * dir_int] = eps;
       }
     }
 
@@ -350,28 +345,29 @@ double structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx, dou
     // ----------------------------------------------------------------- //
 
     matrix_invert(chi1_inv_tensor, chi1_tensor); // We have the inverse, so let's invert it.
-    res = chi1_inv_tensor[component_index(c) + 3 * d].real();
+    res = chi1_inv_tensor[component_index(c) + 3 * d];
   }
   return res;
 }
 
-double structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
+complex<double> structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
                                     double omega) const {
   return get_chi1inv_at_pt(c, d, gv.index(c, iloc), omega);
 }
 
-double structure::get_chi1inv(component c, direction d, const vec &loc, double omega,
+complex<double> structure::get_chi1inv(component c, direction d, const vec &loc, double omega,
                               bool parallel) const {
   ivec ilocs[8];
-  double w[8], res = 0.0;
+  double w[8];
+  complex<double> res(0.0,0.0);
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
     res += w[argh] * get_chi1inv(c, d, ilocs[argh], omega, false);
   return parallel ? sum_to_all(res) : res;
 }
 
-double structure::get_eps(const vec &loc, double omega) const {
-  double tr = 0;
+complex<double> structure::get_eps(const vec &loc, double omega) const {
+  complex<double> tr(0.0,0.0);
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -379,11 +375,11 @@ double structure::get_eps(const vec &loc, double omega) const {
       ++nc;
     }
   }
-  return nc / sum_to_all(tr);
+  return complex<double>(nc,0) / sum_to_all(tr);
 }
 
-double structure::get_mu(const vec &loc, double omega) const {
-  double tr = 0;
+complex<double> structure::get_mu(const vec &loc, double omega) const {
+  complex<double> tr(0.0,0.0);
   int nc = 0;
   FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -391,7 +387,7 @@ double structure::get_mu(const vec &loc, double omega) const {
       ++nc;
     }
   }
-  return nc / sum_to_all(tr);
+  return complex<double>(nc,0) / sum_to_all(tr);
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {

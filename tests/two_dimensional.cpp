@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -70,15 +70,13 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
+int test_metal(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 17.0;
 
   grid_volume gv = voltwo(3.0, 2.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   s.add_susceptibility(one, E_stuff, lorentzian_susceptibility(0.3, 0.1));
   s1.add_susceptibility(one, E_stuff, lorentzian_susceptibility(0.3, 0.1));
@@ -111,15 +109,13 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   return 1;
 }
 
-int test_periodic(double eps(const vec &), int splitting, const char *mydirname) {
+int test_periodic(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 17.0;
 
   grid_volume gv = voltwo(3.0, 2.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&s);
@@ -151,15 +147,13 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   return 1;
 }
 
-int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirname) {
+int test_periodic_tm(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 17.0;
 
   grid_volume gv = voltwo(3.0, 2.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Periodic 2D TM test using %d chunks...\n", splitting);
   fields f(&s);
@@ -189,14 +183,12 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
   return 1;
 }
 
-int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
+int test_pml(double eps(const vec &), int splitting) {
   double a = 10.0;
 
   grid_volume gv = voltwo(3.0, 2.0, a);
   structure s1(gv, eps, pml(1.0, X) + pml(1.0, Y, High));
   structure s(gv, eps, pml(1.0, X) + pml(1.0, Y, High), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Testing pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -238,14 +230,12 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   return 1;
 }
 
-int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
+int test_pml_tm(double eps(const vec &), int splitting) {
   double a = 10.0;
 
   grid_volume gv = voltwo(3.0, 3.0, a);
   structure s1(gv, eps, pml(1.0));
   structure s(gv, eps, pml(1.0), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Testing TM pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -285,14 +275,12 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
   return 1;
 }
 
-int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
+int test_pml_te(double eps(const vec &), int splitting) {
   double a = 10.0;
 
   grid_volume gv = voltwo(3.0, 3.0, a);
   structure s1(gv, eps, pml(1.0));
   structure s(gv, eps, pml(1.0), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Testing TE pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -337,34 +325,32 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
-  const char *mydirname = "two_dimensional-out";
-  trash_output_directory(mydirname);
   master_printf("Testing 2D...\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml(one, s, mydirname)) abort("error in test_pml vacuum\n");
+    if (!test_pml(one, s)) abort("error in test_pml vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml_tm(one, s, mydirname)) abort("error in test_pml_tm vacuum\n");
+    if (!test_pml_tm(one, s)) abort("error in test_pml_tm vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml_te(one, s, mydirname)) abort("error in test_pml_te vacuum\n");
+    if (!test_pml_te(one, s)) abort("error in test_pml_te vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_metal(one, s, mydirname)) abort("error in test_metal vacuum\n");
-  // if (!test_metal(one, 200, mydirname)) abort("error in test_metal vacuum\n");
+    if (!test_metal(one, s)) abort("error in test_metal vacuum\n");
+  // if (!test_metal(one, 200)) abort("error in test_metal vacuum\n");
 
   for (int s = 2; s < 5; s++)
-    if (!test_metal(targets, s, mydirname)) abort("error in test_metal targets\n");
-  // if (!test_metal(targets, 60, mydirname)) abort("error in test_metal targets\n");
+    if (!test_metal(targets, s)) abort("error in test_metal targets\n");
+  // if (!test_metal(targets, 60)) abort("error in test_metal targets\n");
 
   for (int s = 2; s < 5; s++)
-    if (!test_periodic(targets, s, mydirname)) abort("error in test_periodic targets\n");
-  // if (!test_periodic(one, 200, mydirname))
+    if (!test_periodic(targets, s)) abort("error in test_periodic targets\n");
+  // if (!test_periodic(one, 200))
   //  abort("error in test_periodic targets\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_periodic_tm(one, s, mydirname)) abort("error in test_periodic_tm vacuum\n");
+    if (!test_periodic_tm(one, s)) abort("error in test_periodic_tm vacuum\n");
 
   return 0;
 }

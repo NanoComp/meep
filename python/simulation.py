@@ -39,7 +39,7 @@ mp.cvar.master_printf_callback = mp.py_master_printf_wrap
 mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
 mp.set_mpb_printf_callback(mp.py_master_printf_wrap)
 
-EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom'])
+EigCoeffsResult = namedtuple('EigCoeffsResult', ['alpha', 'vgrp', 'kpoints', 'kdom', 'cscale'])
 FluxData = namedtuple('FluxData', ['E', 'H'])
 ForceData = namedtuple('ForceData', ['offdiag1', 'offdiag2', 'diag'])
 NearToFarData = namedtuple('NearToFarData', ['F'])
@@ -2010,7 +2010,7 @@ class Simulation(object):
         dims = [s for s in dim_sizes if s != 0]
 
         if cmplx is None:
-            cmplx = component < mp.Dielectric and not self.fields.is_real
+            cmplx = omega != 0 or (component < mp.Dielectric and not self.fields.is_real)
 
         if arr is not None:
             if cmplx and not np.iscomplexobj(arr):
@@ -2106,6 +2106,7 @@ class Simulation(object):
         num_bands = len(bands)
         coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
         vgrp = np.zeros(num_bands * flux.Nfreq)
+        cscale = np.zeros(num_bands * flux.Nfreq)
 
         kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
             self.fields,
@@ -2118,10 +2119,11 @@ class Simulation(object):
             coeffs,
             vgrp,
             kpoint_func,
+            cscale,
             direction
         )
 
-        return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom)
+        return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom, cscale)
 
     def get_eigenmode(self, freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12):

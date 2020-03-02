@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -173,7 +173,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
 
     for (int i = 0; i < data->num_fields; ++i) {
       if (cS[i] == Dielectric) {
-        double tr = 0.0;
+        complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninveps; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, omega) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], omega) +
@@ -182,10 +182,10 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
                                           omega));
           if (tr == 0.0) tr += 4.0; // default inveps == 1
         }
-        fields[i] = (4 * data->ninveps) / tr;
+        fields[i] = (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
-        double tr = 0.0;
+        complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninvmu; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, omega) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], omega) +
@@ -194,7 +194,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
                                           omega));
           if (tr == 0.0) tr += 4.0; // default invmu == 1
         }
-        fields[i] = (4 * data->ninvmu) / tr;
+        fields[i] = (4.0 * data->ninvmu) / tr;
       }
       else {
         double f[2];
@@ -388,7 +388,7 @@ void fields::output_hdf5(component c, const volume &where, h5file *file, bool ap
   if (coordinate_mismatch(gv.dim, c)) return;
 
   char dataname[256];
-  bool has_imag = !is_real && c != Dielectric && c != Permeability;
+  bool has_imag = omega != 0 || (!is_real && c != Dielectric && c != Permeability);
 
   bool delete_file;
   if ((delete_file = !file)) file = open_h5file(component_name(c), h5file::WRITE, prefix, true);

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -62,15 +62,13 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_simple_periodic(double eps(const vec &), int splitting, const char *mydirname) {
+int test_simple_periodic(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 170.0;
 
   grid_volume gv = volone(6.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Trying splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -115,13 +113,11 @@ complex<double> checkers(const vec &pt) {
   return 1.0;
 }
 
-int test_pattern(double eps(const vec &), int splitting, const char *mydirname) {
+int test_pattern(double eps(const vec &), int splitting) {
   double a = 10.0;
   grid_volume gv = volone(6.0, a);
   structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   master_printf("Trying test pattern with %d chunks...\n", splitting);
   fields f(&s);
@@ -152,13 +148,13 @@ int test_pattern(double eps(const vec &), int splitting, const char *mydirname) 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
-  const char *mydirname = "one_dimensional-out";
   master_printf("Testing one dimension under different splittings...\n");
 
   for (int s = 2; s < 7; s++)
-    if (!test_pattern(one, s, mydirname)) abort("error in test_pattern\n");
+    if (!test_pattern(one, s)) abort("error in test_pattern\n");
 
   for (int s = 2; s < 7; s++)
-    if (!test_simple_periodic(one, s, mydirname)) abort("error in test_simple_periodic\n");
+    if (!test_simple_periodic(one, s)) abort("error in test_simple_periodic\n");
+
   return 0;
 }

@@ -58,7 +58,9 @@ sim = mp.Simulation(cell_size=cell_size,
                     m=-1)
 
 ## near-field monitor
-n2f_obj = sim.add_near2far(frq_cen, 0, 1, mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)))
+n2f_obj = sim.add_near2far(frq_cen, 0, 1,
+                           mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)),
+                           mp.Near2FarRegion(center=mp.Vector3(sr-dpml,0,0.5*sz-0.5*(dsub+zh+dpad)),size=mp.Vector3(z=dsub+zh+dpad)))
 
 sim.run(until_after_sources=100)
 

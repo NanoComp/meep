@@ -13,6 +13,8 @@ import meep as mp
 import numpy as np
 from meep import mpb
 import h5py
+import os
+
 class TestDispersiveEigenmode(unittest.TestCase):
     # ----------------------------------------- #
     # ----------- Helper Functions ------------ #
@@ -26,7 +28,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
 
         sim.init_sim()
         v3 = mp.py_v3_to_vec(sim.dimensions, mp.Vector3(0,0,0), sim.is_cylindrical)
-        chi1inv = np.zeros((3,3),dtype=np.float64)
+        chi1inv = np.zeros((3,3),dtype=np.complex128)
         for i, com in enumerate([mp.Ex,mp.Ey,mp.Ez]):
             for k, dir in enumerate([mp.X,mp.Y,mp.Z]):
                 chi1inv[i,k] = sim.structure.get_chi1inv(com,dir,v3,omega)
@@ -35,12 +37,18 @@ class TestDispersiveEigenmode(unittest.TestCase):
         n_actual = np.real(np.sqrt(material.epsilon(omega).astype(np.complex128)))
         
         np.testing.assert_allclose(n,n_actual)
-    
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
+
     def verify_output_and_slice(self,material,omega):
         # Since the slice routines average the diagonals, we need to do that too:
         chi1 = material.epsilon(omega).astype(np.complex128)
-        if np.any(np.imag(chi1) != 0):
-            chi1 = np.square(np.real(np.sqrt(chi1)))
         chi1inv = np.linalg.inv(chi1)
         chi1inv = np.diag(chi1inv)
         N = chi1inv.size
@@ -51,6 +59,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
                             resolution=20,
                             eps_averaging=False
                             )
+        sim.use_output_directory(self.temp_dir)
         sim.init_sim()
         
         # Check to make sure the get_slice routine is working with omega
@@ -58,12 +67,12 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.assertAlmostEqual(n,n_slice, places=4)
 
         # Check to make sure h5 output is working with omega
-        filename = 'dispersive_eigenmode-eps-000000.00.h5'
+        filename = os.path.join(self.temp_dir, 'dispersive_eigenmode-eps-000000.00.h5')
         mp.output_epsilon(sim,omega=omega)
         n_h5 = 0
         mp.all_wait()
         with h5py.File(filename, 'r') as f:
-            n_h5 = np.sqrt(np.mean(f['eps'][()]))
+            n_h5 = np.sqrt(np.max(mp.complexarray(f['eps.r'][()],f['eps.i'][()])))
         self.assertAlmostEqual(n,n_h5, places=4)
     
     # ----------------------------------------- #

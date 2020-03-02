@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -608,9 +608,9 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  double get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
-  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
-  double get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {
+  std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double omega = 0) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
+  std::complex<double> get_inveps(component c, direction d, const ivec &iloc, double omega = 0) const {
     return get_chi1inv(c, d, iloc, omega);
   }
   double max_eps() const;
@@ -773,18 +773,18 @@ public:
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
-  double get_chi1inv(component, direction, const ivec &origloc, double omega = 0,
-                     bool parallel = true) const;
-  double get_chi1inv(component, direction, const vec &loc, double omega = 0,
-                     bool parallel = true) const;
-  double get_inveps(component c, direction d, const ivec &origloc, double omega = 0) const {
+  std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double omega = 0,
+                                   bool parallel = true) const;
+  std::complex<double> get_chi1inv(component, direction, const vec &loc, double omega = 0,
+                                   bool parallel = true) const;
+  std::complex<double> get_inveps(component c, direction d, const ivec &origloc, double omega = 0) const {
     return get_chi1inv(c, d, origloc, omega);
   }
-  double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
+  std::complex<double> get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
     return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc, double omega = 0) const;
-  double get_mu(const vec &loc, double omega = 0) const;
+  std::complex<double> get_eps(const vec &loc, double omega = 0) const;
+  std::complex<double> get_mu(const vec &loc, double omega = 0) const;
   double max_eps() const;
   double estimated_cost(int process = my_rank());
 
@@ -1346,7 +1346,7 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double omega = 0) const;
 
   void backup_component(component c);
   void average_with_backup(component c);
@@ -1677,12 +1677,12 @@ public:
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                  vec *kpoints, vec *kdom, direction d);
+                                  vec *kpoints, vec *kdom, double *cscale, direction d);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func = 0, void *user_kpoint_data = 0,
-                                  vec *kpoints = 0, vec *kdom = 0);
+                                  vec *kpoints = 0, vec *kdom = 0, double *cscale = 0);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
@@ -1798,13 +1798,13 @@ public:
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int Nperiods = 1);
   // monitor.cpp
-  double get_chi1inv(component, direction, const vec &loc, double omega = 0,
-                     bool parallel = true) const;
-  double get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
+  std::complex<double> get_chi1inv(component, direction, const vec &loc, double omega = 0,
+                                   bool parallel = true) const;
+  std::complex<double> get_inveps(component c, direction d, const vec &loc, double omega = 0) const {
     return get_chi1inv(c, d, loc, omega);
   }
-  double get_eps(const vec &loc, double omega = 0) const;
-  double get_mu(const vec &loc, double omega = 0) const;
+  std::complex<double> get_eps(const vec &loc, double omega = 0) const;
+  std::complex<double> get_mu(const vec &loc, double omega = 0) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
@@ -1884,8 +1884,8 @@ private:
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
-  double get_chi1inv(component, direction, const ivec &iloc, double omega = 0,
-                     bool parallel = true) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double omega = 0,
+                                   bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp
@@ -1931,7 +1931,9 @@ private:
 // directory, unless the source file hasn't changed.
 
 const char *make_output_directory(const char *exename, const char *jobname = NULL);
+char *make_output_directory(); // make temporary directory
 void trash_output_directory(const char *dirname);
+void delete_directory(const char *path);
 FILE *create_output_file(const char *dirname, const char *fname);
 
 // The following allows you to hit ctrl-C to tell your calculation to stop

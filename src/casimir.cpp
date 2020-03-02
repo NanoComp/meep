@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -282,7 +282,7 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
     data.z0 = data.kz = 0;                // innocuous values: ignore this dir
   }
 
-  coefficient *= (ft == E_stuff ? get_eps(where.center()) : get_mu(where.center()));
+  coefficient *= (ft == E_stuff ? real(get_eps(where.center())) : real(get_mu(where.center())));
 
   data.sum = 0.0;
   data.dV = 1.0;

@@ -608,7 +608,7 @@ The vertices that make up the prism. They must lie in a plane that's perpendicul
 
 **`height` [`number`]**
 —
-The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height.
+The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height. No default value.
 
 **`axis` [`Vector3`]**
 —
@@ -1045,7 +1045,7 @@ Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, re
 
 **`get_epsilon_point(pt, omega=0)`**
 —
-Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue of the permittivity tensor at that location and frequency.
+Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue of the permittivity tensor at that location and frequency. If `omega` is non-zero, the result is complex valued; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`initialize_field(c, func)`**
 —
@@ -1219,6 +1219,7 @@ Given a flux object and list of band indices, return a `namedtuple` with the fol
 + `vgrp`: the group velocity as a NumPy array.
 + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
 + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
++ `cscale`: a NumPy array of each mode's scaling coefficient. Useful for adjoint calculations.
 
 The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenmodeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
@@ -1579,13 +1580,13 @@ mp.GDSII_layers('python/examples/coupler.gds')
 Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 ```
 
-**`mp.get_GDSII_prisms(material, gdsii_filename, layer)`**
+**`mp.get_GDSII_prisms(material, gdsii_filename, layer, zmin, zmax)`**
 —
-Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename`.
+Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename` with `zmin` and `zmax` (default 0).
 
 **`mp.GDSII_vol(fname, layer, zmin, zmax)`**
 —
-Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with `zmin` and `zmax`. This function is useful for creating a `FluxRegion` from a GDSII file as follows
+Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with `zmin` and `zmax` (default 0). This function is useful for creating a `FluxRegion` from a GDSII file as follows
 
 ```python
 fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
@@ -1777,13 +1778,13 @@ The most common step function is an output function, which outputs some field co
 Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), when they are outputted they are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d.
 
 <a name="output_epsilon"></a>
-**`output_epsilon()`**
+**`output_epsilon(omega=0)`**
 —
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
+Given a frequency `omega`, output ε (relative permittivity); for an anisotropic ε tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
-**`output_mu()`**
+**`output_mu(omega=0)`**
 —
-Output the relative permeability function μ. Note that this only outputs the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
+Given a frequency `omega`, output μ (relative permeability); for an anisotropic μ tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If `omega` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`Simulation.output_dft(dft_fields, fname)`**
 —
@@ -1851,7 +1852,7 @@ with the following input parameters:
 
 + `omega`: optional frequency point over which the average eigenvalue of the dielectric and permeability tensors are evaluated (defaults to 0).
 
-For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent with the fields (real or complex). The routines `get_epsilon()` and `get_mu()` accept the optional omega parameter (defaults to 0).
+For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent with the fields (real or complex). The routines `get_epsilon()` and `get_mu()` accept the optional `omega` parameter (defaults to 0).
 
 **Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`, etc. use as default `size=meep.Simulation.fields.total_volume()` which for simulations involving Bloch-periodic boundaries (via `k_point`) will result in arrays that have slightly *different* dimensions than e.g. `get_array(center=meep.Vector3(), size=cell_size, component=meep.Dielectric`, etc. (i.e., the slice spans the entire cell volume `cell_size`). Neither of these approaches is "wrong", they are just slightly different methods of fetching the boundaries. The key point is that if you pass the same value for the `size` parameter, or use the default, the slicing routines always give you the same-size array for all components. You should *not* try to predict the exact size of these arrays; rather, you should simply rely on Meep's output.
 

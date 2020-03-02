@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -540,8 +540,8 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
     if (nd == NO_DIRECTION) abort("unknown dft_near2far normal");
     direction fd[2];
 
-    double weps = get_eps(w->v.center());
-    double wmu = get_mu(w->v.center());
+    double weps = real(get_eps(w->v.center()));
+    double wmu = real(get_mu(w->v.center()));
     if (w != where && !(approxeq(eps, weps) && approxeq(mu, wmu)))
       abort("dft_near2far requires surfaces in a homogeneous medium");
     eps = weps;

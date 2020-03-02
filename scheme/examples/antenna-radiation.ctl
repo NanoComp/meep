@@ -27,16 +27,16 @@
 
 (define nearfield-box
   (add-near2far fcen 0 1
-		(make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
+		(make near2far-region (center 0 (* +0.5 sxy)) (size sxy 0) (weight +1))
 		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-		(make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
+		(make near2far-region (center (* +0.5 sxy) 0) (size 0 sxy) (weight +1))
 		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (define flux-box
   (add-flux fcen 0 1
-	    (make flux-region (center 0 (* 0.5 sxy)) (size sxy 0))
+	    (make flux-region (center 0 (* +0.5 sxy)) (size sxy 0) (weight +1))
 	    (make flux-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-	    (make flux-region (center (* 0.5 sxy) 0) (size 0 sxy))
+	    (make flux-region (center (* +0.5 sxy) 0) (size 0 sxy) (weight +1))
 	    (make flux-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))

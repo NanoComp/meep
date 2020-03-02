@@ -3,15 +3,21 @@ from __future__ import division
 import unittest
 import meep as mp
 
-
 def dummy_eps(vec):
     return 1.0
-
 
 class TestCylEllipsoid(unittest.TestCase):
 
     ref_Ez = -8.29555720049629e-5
     ref_Hz = -4.5623185899766e-5
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def init(self):
 
@@ -34,6 +40,8 @@ class TestCylEllipsoid(unittest.TestCase):
                                  sources=[sources],
                                  symmetries=symmetries,
                                  resolution=100)
+
+        self.sim.use_output_directory(self.temp_dir)
 
         def print_stuff(sim_obj):
             v = mp.Vector3(4.13, 3.75, 0)

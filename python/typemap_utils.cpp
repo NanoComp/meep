@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -764,10 +764,11 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
 
 static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
   material_type material;
-  double height;
+  double height, sidewall_angle;
   vector3 axis, center;
 
   if (!get_attr_material(py_prism, &material) || !get_attr_dbl(py_prism, &height, "height") ||
+      !get_attr_dbl(py_prism, &sidewall_angle, "sidewall_angle") ||
       !get_attr_v3(py_prism, &center, "center") || !get_attr_v3(py_prism, &axis, "axis")) {
 
     return 0;
@@ -788,7 +789,12 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
     vertices[i] = v3;
   }
 
+#if defined(LIBCTL_MAJOR_VERSION) && (LIBCTL_MAJOR_VERSION > 4 || (LIBCTL_MAJOR_VERSION == 4 && LIBCTL_MINOR_VERSION >= 5))
+  *p = make_slanted_prism(material, vertices, num_vertices, height, axis, sidewall_angle);
+#else
+  if (sidewall_angle != 0) { meep::abort("slanted prisms require libctl 4.5 or later\n"); }
   *p = make_prism(material, vertices, num_vertices, height, axis);
+#endif
   p->center = center;
 
   delete[] vertices;

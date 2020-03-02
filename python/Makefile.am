@@ -65,6 +65,7 @@ TESTS =                                   \
     $(TEST_DIR)/n2f_periodic.py           \
     $(TEST_DIR)/oblique_source.py         \
     $(TEST_DIR)/physical.py               \
+    $(TEST_DIR)/prism.py                  \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/refl_angular.py           \
     $(TEST_DIR)/ring.py                   \

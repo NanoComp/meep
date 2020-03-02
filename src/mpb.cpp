@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,13 +54,13 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
   const fields *f = eps_data->f;
 
-  eps_inv->m00 = f->get_chi1inv(Ex, X, p, omega);
-  eps_inv->m11 = f->get_chi1inv(Ey, Y, p, omega);
-  eps_inv->m22 = f->get_chi1inv(Ez, Z, p, omega);
+  eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
+  eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
+  eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
 
-  ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p, omega), 0);
-  ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p, omega), 0);
-  ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p, omega), 0);
+  ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
+  ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
+  ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
   /*
   master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
   master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
@@ -400,7 +400,7 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   // which we automatically pick if kmatch == 0.
   if (match_frequency && kmatch == 0) {
     vec cen = eig_vol.center();
-    kmatch = omega_src * sqrt(get_eps(cen, omega_src) * get_mu(cen, omega_src));
+    kmatch = omega_src * sqrt(real(get_eps(cen, omega_src)) * real(get_mu(cen, omega_src)));
     if (d == NO_DIRECTION) {
       for (int i = 0; i < 3; ++i)
         k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
@@ -757,7 +757,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        direction d) {
+                                        double *cscale, direction d) {
   double freq_min = flux.freq_min;
   double dfreq = flux.dfreq;
   int num_freqs = flux.Nfreq;
@@ -808,11 +808,15 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
       cdouble cplus = 0.5 * (mode_flux[0] + mode_flux[1]);
       cdouble cminus = 0.5 * (mode_flux[0] - mode_flux[1]);
-      cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]); // = vgrp * flux_volume(flux)
+      /* MPB modes are normalized to unit power above, but we need to re-normalize here to have
+         unit power as integrated on Meep's Yee grid and not on MPB's grid.  Thus, normfac differs
+         from a constant factor only because of discretization effects. */
+      cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]);
       if (normfac == 0.0) normfac = 1.0;
-      double cscale = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
-      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * cscale;
-      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * cscale;
+      double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
+      if (cscale) cscale[nb * num_freqs + nf] = csc; // return real part of coefficient scalar for adjoint calculations
+      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * csc;
+      coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * csc;
       destroy_eigenmode_data((void *)mode_data, false);
     }
   }
@@ -869,7 +873,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        direction d) {
+                                        double *cscale,direction d) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -883,6 +887,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)user_kpoint_func;
   (void)user_kpoint_data;
   (void)kdom;
+  (void)cscale;
   (void)d;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
@@ -917,10 +922,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         int num_bands, int parity, double eig_resolution,
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints, vec *kdom) {
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom, double *cscale) {
   get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                              eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
-                             kpoints, kdom, flux.normal_direction);
+                             kpoints, kdom, cscale, flux.normal_direction);
 }
 
 } // namespace meep

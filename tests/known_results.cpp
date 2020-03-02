@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -151,8 +151,6 @@ double polariton_energy(const grid_volume &gv, double eps(const vec &)) {
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
-  const char *mydirname = "known_results-out";
-  trash_output_directory(mydirname);
   master_printf("Testing with some known results...\n");
   const double a = 10.0;
 
