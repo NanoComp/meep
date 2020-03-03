@@ -1088,7 +1088,7 @@ public:
   dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_, double fmin,
            double fmax, int Nf, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
-  dft_flux(const dft_flux  &f);
+  dft_flux(const dft_flux &f);
 
   double *flux();
 
