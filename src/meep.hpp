@@ -1161,8 +1161,8 @@ public:
   // TODO: add dft_force constructor
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double *fs, int Nf,
             const volume &where_);
-  dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin,
-                       double fmax, int Nf, const volume &where_)
+  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin, double fmax,
+            int Nf, const volume &where_)
   dft_force(const dft_force &f);
 
   double *force();
