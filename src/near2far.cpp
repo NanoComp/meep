@@ -29,16 +29,15 @@ using namespace std;
 
 namespace meep {
 
-// TODO: change here
-dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, double eps_, double mu_,
+// TODO: overload dft_near2far constructor
+dft_near2far::dft_near2far(dft_chunk *F_, double *fs, int Nf, double eps_, double mu_,
                            const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
     : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
-  // TODO: change here
-  if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
-  freq_min = fmin;
-  dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
+  // TODO: initialize freqs with fs if Nf >= 1
+  if (Nf < 1) abort("Nf must be at least 1");
+  freqs = fs;
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = periodic_d_[i];
     periodic_n[i] = periodic_n_[i];
@@ -47,10 +46,30 @@ dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, doub
   }
 }
 
-// TODO: change here
+dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, double eps_, double mu_,
+                           const volume &where_, const direction periodic_d_[2],
+                           const int periodic_n_[2], const double periodic_k_[2],
+                           const double period_[2])
+    : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
+  // TODO: create fs array with which to initalize freqs
+  if (Nf < 1) abort("Nf must be at least 1");
+  double dfreq = (fmax - fmin) / (Nf - 1);
+  double fs[Nf];
+  for (int i = 0; i < Nf; i++) {
+    fs[i] = fmin + dfreq * i;
+  }
+  freqs = fs;
+  for (int i = 0; i < 2; ++i) {
+    periodic_d[i] = periodic_d_[i];
+    periodic_n[i] = periodic_n_[i];
+    periodic_k[i] = periodic_k_[i];
+    period[i] = period_[i];
+  }
+}
+
+// TODO: change here for updated properties of dft_near2far
 dft_near2far::dft_near2far(const dft_near2far &f)
-    : freq_min(f.freq_min), dfreq(f.dfreq), Nfreq(f.Nfreq), F(f.F), eps(f.eps), mu(f.mu),
-      where(f.where) {
+    : freqs(f.freqs), Nfreq(f.Nfreq), F(f.F), eps(f.eps), mu(f.mu), where(f.where) {
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = f.periodic_d[i];
     periodic_n[i] = f.periodic_n[i];
@@ -332,8 +351,8 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 #endif
     for (int i = 0; i < Nfreq; ++i) {
       std::complex<double> EH6[6];
-      // TODO: change here???
-      double freq = freq_min + i * dfreq;
+      // TODO: replace freq_min + dfreq * i with freqs[i]
+      double freq = freqs[i];
       size_t idx_dft = 0;
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
         IVEC_LOOP_LOC(f->fc->gv, x0);
@@ -527,9 +546,9 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
-// TODO: change here
-dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                      int Nfreq, int Nperiods) {
+// TODO: overload fields::add_dft_near2far
+dft_near2far fields::add_dft_near2far(const volume_list *where, double *freqs, int Nfreq,
+                                      int Nperiods) {
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
   volume everywhere = where->v;
@@ -603,16 +622,27 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min,
         double s = j == 0 ? 1 : -1; /* sign of n x c */
         if (is_electric(c)) s = -s;
 
-        // TODO: change here
-        F = add_dft(c, w->v, freq_min, freq_max, Nfreq, true, s * w->weight, F, false, 1.0, false,
-                    c0);
+        // TODO: replace freq_min and freq_max with freqs
+        F = add_dft(c, w->v, freqs, Nfreq, true, s * w->weight, F, false, 1.0, false, c0);
       }
     }
   }
 
-  // TODO: change here
-  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere, periodic_d, periodic_n,
-                      periodic_k, period);
+  // TODO: replace freq_min and freq_max with freqs
+  return dft_near2far(F, freqs, Nfreq, eps, mu, everywhere, periodic_d, periodic_n, periodic_k,
+                      period);
+
+}
+
+dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
+                                      int Nfreq, int Nperiods) {
+  if (Nfreq < 1) abort("Nfreq must be at least 1");
+  double dfreq = (freq_max - freq_min) / (Nfreq - 1);
+  double freqs[Nfreq];
+  for (int i = 0; i < Nfreq; i++) {
+    freqs[i] = freq_min + dfreq * i;
+  }
+  return add_dft_near2far(where, freqs, Nfreq, Nperiods);
 }
 
 } // namespace meep

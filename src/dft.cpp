@@ -169,8 +169,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, double *freqs, int 
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   data.Nomega = Nfreq;
   double omegas[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) { omegas[i] = freqs[i] * 2 * pi; }
+  for (int i = 0; i < Nfreq; i++) { omegas[i] = freqs[i] * 2 * pi; }
   data.omegas = omegas;
   data.stored_weight = stored_weight;
   data.extra_weight = extra_weight;
@@ -194,8 +193,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, double freq_min, do
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
   return add_dft(c, where, freqs, Nfreq, include_dV_and_interp_weights, stored_weight, chunk_next,
@@ -398,8 +396,7 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
   if (Nf < 1) abort("Nf must be at least 1");
   double dfreqs = (fmax - fmin) / (Nf - 1);
   double fs[Nf];
-  int i;
-  for (i = 0; i < Nf; i++) {
+  for (int i = 0; i < Nf; i++) {
     fs[i] = fmin + dfreqs * i;
   }
   freqs = fs;
@@ -521,8 +518,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_, double freq_min, double
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreqs = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_flux(where_, freqs, Nfreq, use_symmetry);
@@ -543,8 +539,7 @@ dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B
   if (Nf < 1) abort("Nf must be at least 1");
   dfreq = (fmax - fmin) / (Nf - 1);
   double fs[Nf];
-  int i;
-  for (i = 0; i < Nf; i++) {
+  for (int i = 0; i < Nf; i++) {
     fs[i] = fmin + dfreqs * i;
   }
   freqs = fs;
@@ -637,8 +632,7 @@ dft_energy fields::add_dft_energy(const volume_list *where_, double freq_min, do
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   dfreq = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_energy(where_, freqs, Nfreq);
@@ -738,8 +732,7 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, double freq_min,
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   dfreq = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_flux(d, where, freqs, Nfreq, use_symmetry);
@@ -756,8 +749,7 @@ dft_flux fields::add_mode_monitor(direction d, const volume &where, double freq_
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   dfreq = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_flux(d, where, freqs, Nfreq, /*use_symmetry=*/false);
@@ -789,8 +781,7 @@ dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double f
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   dfreq = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_flux_box(where, freqs, Nfreq);
@@ -807,8 +798,7 @@ dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   dfreq = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_flux(NO_DIRECTION, where, freqs, Nfreq);
@@ -830,8 +820,7 @@ dft_fields::dft_fields(dft_chunk *chunks_, double freq_min_, double freq_max_, i
   Nfreq = Nfreq_;
   double dfreqs = (freq_max_ - freq_min_) / (Nfreq_ - 1);
   double freqs_[Nfreq_];
-  int i;
-  for (i = 0; i < Nfreq_; i++) {
+  for (int i = 0; i < Nfreq_; i++) {
     freqs_[i] = freq_min_ + dfreqs * i;
   }
   freqs = freqs_;
@@ -869,8 +858,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
                                   double freq_min, double freq_max, int Nfreq, bool use_centered_grid) {
   dfreq = (fmax - fmin) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = fmin + dfreqs * i;
   }
   return add_dft_fields(components, num_components, volume where, freqs, Nfreq, use_centered_grid);

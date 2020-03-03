@@ -42,8 +42,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
   if (Nf < 1) abort("Nf must be at least 1");
   double dfreq = (fmax - fmin) / (Nf - 1);
   double fs[Nf];
-  int i;
-  for (i = 0; i < Nf; i++) {
+  for (int i = 0; i < Nf; i++) {
     fs[i] = fmin + dfreq * i;
   }
   Nfreq = Nf;
@@ -202,8 +201,7 @@ dft_force fields::add_dft_force(const volume_list *where_, double freq_min, doub
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
   double freqs[Nfreq];
-  int i;
-  for (i = 0; i < Nfreq; i++) {
+  for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
   return add_dft_force(where_, freqs, Nfreq);
