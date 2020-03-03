@@ -83,122 +83,110 @@ class CustomSource(SourceTime):
         self.swigobj.is_integrated = self.is_integrated
 
 class FilteredSource(CustomSource):
-    def __init__(self,center_frequency,frequencies,frequency_response,num_taps,dt,time_src):
+    def __init__(self,center_frequency,frequencies,frequency_response,time_src,min_err=1e-6):
         self.center_frequency=center_frequency
         self.frequencies=frequencies
-        self.frequency_response=frequency_response
-        self.num_taps=num_taps
-        self.dt=dt/2 # the "effective" dt needs double resolution for staggered yee grid
+
+        signal_fourier_transform = np.array([time_src.fourier_transform(f) for f in self.frequencies])
+        self.frequency_response= signal_fourier_transform * frequency_response
         self.time_src=time_src
         self.current_time = None
+        self.min_err = min_err
 
         f = self.func()
 
         # initialize super
-        super(FilteredSource, self).__init__(src_func=f,center_frequency=self.center_frequency)
-
-        # calculate equivalent sample rate
-        self.fs = 1/self.dt
+        super(FilteredSource, self).__init__(src_func=f,center_frequency=self.center_frequency,is_integrated=time_src.is_integrated)
 
         # estimate impulse response from frequency response
         self.estimate_impulse_response()
-
-    def filter(self,t):
-        idx = int(np.round(t/self.dt))
-        if idx >= self.num_taps:
-            return 0
-        else:
-            return self.taps[idx]
         
-        
-        '''print(idx)
-        if self.current_time is None or self.current_time != t:
-            self.current_time = t # increase current time (we went through all the current components)
-            np.roll(self.memory, -1) # shift feedforward memory
-            self.memory[0] = self.time_src.swigobj.dipole(t) # update current memory slot
-            self.current_y = np.dot(self.memory,self.taps) # calculate filter response as inner product of taps and memory
-        return self.current_y'''
-    
-    def estimate_impulse_response(self):
-        # calculate band edges from target frequencies
-        w = self.frequencies/(self.fs/2) * np.pi
-        D = self.frequency_response
-        self.taps = self.spline_fit(self.num_taps,w,D)
 
-        # allocate filter memory taps
-        self.memory = np.zeros(self.taps.shape,dtype=np.complex128)
+    def __call__(self,t):
+        # simple RBF with gaussian kernel reduces to inner product at time step
+        return np.dot(self.gauss_t(t,self.frequencies,self.gaus_widths),self.nodes)
     
     def func(self):
         def _f(t): 
-            return self.filter(t)
+            return self(t)
         return _f
     
-    def spline_fit(self,num_taps,freqs,h_desired):
-        num_taps = 2000
-        # fit real part
-        real_x = np.concatenate(([0],freqs,[np.pi]))
-        real_y = np.concatenate(([0],np.real(h_desired),[0]))
-        fr = interp1d(real_x, real_y, kind='cubic')
+    def estimate_impulse_response(self):
+        '''
+        find gaussian weighting coefficients.
 
-        # fit imaginary part
-        imag_x = np.concatenate(([0],freqs,[np.pi]))
-        imag_y = np.concatenate(([0],np.imag(h_desired),[0]))
-        fi = interp1d(imag_x, imag_y, kind='cubic')
-
-        # formulate hermitian filter response with specified number of taps
-        freqs_filter = numpy.fft.fftfreq#np.linspace(-np.pi,np.pi,num_taps)
-        zero_freq = np.argmin(np.abs(freqs_filter))+1
-        print(freqs_filter[zero_freq])
-
-        filter_pos = fr(freqs_filter[zero_freq:]) + 1j*fi(freqs_filter[zero_freq:])
-        filter_neg = np.flipud(np.conjugate(filter_pos))
-
-        if num_taps %2 == 0: #even
-            filter_both = np.concatenate((filter_pos,filter_neg))
-        else:
-            filter_both = np.concatenate((filter_pos,filter_neg[:-1]))
+        TODO use optimizer to find optimal gaussian widths
+        '''
+        # Use vandermonde matrix to calculate weights of each gaussian.
+        # Each gaussian is centered at each frequency point
+        h = self.frequency_response
+        def rbf_l2(fwidth):
+            vandermonde = np.zeros((self.frequencies.size,self.frequencies.size),dtype=np.complex128)
+            for ri, rf in enumerate(self.frequencies):
+                for ci, cf in enumerate(self.frequencies):
+                    vandermonde[ri,ci] = self.gauss_f(rf,cf,fwidth)
+            
+            nodes = np.matmul(np.linalg.pinv(vandermonde),h)
+            h_hat = np.matmul(vandermonde,nodes)
+            l2_err = np.sum(np.abs(h-h_hat)**2)
+            return nodes, l2_err
+        
+        df = self.frequencies[2] - self.frequencies[1]
+        err_high = True
+        fwidth = 1/self.time_src.width
+        
+        # Iterate through smaller and smaller widths until error is small enough or width is distance between frequency points
+        while err_high:
+            nodes, l2_err = rbf_l2(fwidth)
+            if l2_err < self.min_err or fwidth < df:
+                err_high = False
+            else:
+                fwidth = 0.5 * fwidth
+        self.gaus_widths = fwidth
+        self.nodes = nodes
 
         from matplotlib import pyplot as plt
-        plt.figure()
-        #plt.plot(freqs_filter,np.abs(filter_both))
-        plt.plot(freqs_filter[zero_freq:],fr(freqs_filter[zero_freq:]))
-        plt.plot(freqs,np.real(h_desired),'o')
-        plt.show()
 
-        print(num_taps)
-        print(filter_both.size)
-        quit()
+        temp = self.gauss_f(self.frequencies[:,np.newaxis],self.frequencies,fwidth)
+        i_hat = np.inner(self.nodes,temp)
 
-        # ifft to get sampled impulse response
+        '''plt.figure()
+        plt.subplot(2,1,1)
+        plt.title('')
+        plt.semilogy(self.frequencies,np.abs(h),label='Desired response')
+        plt.semilogy(self.frequencies,np.abs(i_hat),'--',label='Fit response')
+        plt.legend()
+        plt.ylabel('Magnitude')
+        plt.grid(True)
 
-        return
-    def lstsqrs(self,num_taps,freqs,h_desired):
-        n_freqs = freqs.size
-        vandermonde_left = np.zeros((n_freqs,num_taps),dtype=np.complex128)
-        vandermonde_right = np.zeros((n_freqs,num_taps),dtype=np.complex128)
-        for iom, om in enumerate(freqs):
-            for it in range(num_taps):
-                vandermonde_left[iom,it] = np.exp(-1j*it*om)
-                vandermonde_right[iom,it] = np.exp(1j*it*om)
-        vandermonde = np.vstack((vandermonde_left,vandermonde_right))
-        h_desired_full = np.hstack((h_desired,np.conj(h_desired)))
-        
-        a = np.matmul(np.linalg.pinv(vandermonde), h_desired_full)
-        _, h_hat = signal.freqz(a,worN=freqs)
+        plt.subplot(2,1,2)
+        plt.plot(self.frequencies,np.unwrap(np.angle(self.frequency_response)),label='Desired response')
+        plt.plot(self.frequencies,np.unwrap(np.angle(i_hat)),'--',label='Fit response')
+        plt.legend()
+        plt.ylabel('Phase')
+        plt.xlabel('Frequency')
+        plt.grid(True)
 
-        import matplotlib.pyplot as plt
-        plt.figure()
-        plt.plot(freqs,np.abs(h_desired))
-        plt.plot(freqs,np.abs(h_hat),'--')
-        plt.show()
-        quit()
-        
-        self.l2_error = np.sqrt(np.sum(np.abs(h_hat - h_desired)**2))
-        print(self.l2_error)
-
-        # account for dtft scaling
-        a = a*self.dt*np.sqrt(2)
-        return a
+        plt.savefig('fit_results.png')
+        plt.show()'''
+    
+    def gauss_t(self,t,f0,fwidth):
+        s = 5
+        w = 1.0 / fwidth
+        t0 = w * s
+        tt = (t - t0)
+        amp = 1.0 / (-1j*2*np.pi*f0)
+        return amp * np.exp(-tt * tt / (2 * w * w))*np.exp(-1j*2 * np.pi * f0 * tt) #/ np.sqrt(2*np.pi)
+    
+    def gauss_f(self,f,f0,fwidth):
+        s = 5
+        w = 1.0 / fwidth
+        t0 = w * s
+        omega = 2.0 * np.pi * f
+        omega0 = 2.0 * np.pi * f0
+        delta = (omega - omega0) * w
+        amp = self.center_frequency/f0#/np.sqrt(omega0)#1j / (omega0)
+        return amp * w * np.exp(1j*omega*t0) * np.exp(-0.5 * delta * delta)
 
 class EigenModeSource(Source):
 

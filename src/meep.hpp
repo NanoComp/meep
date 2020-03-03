@@ -928,12 +928,6 @@ public:
       : func(func), data(data), freq(f), start_time(float(st)), end_time(float(et)) {}
   virtual ~custom_src_time() {}
 
-  virtual std::complex<double> current(double time, double dt) const {
-    if (is_integrated)
-      return src_time::current(time, dt);
-    else
-      return dipole(time);
-  }
   virtual std::complex<double> dipole(double time) const {
     float rtime = float(time);
     if (rtime >= start_time && rtime <= end_time)
