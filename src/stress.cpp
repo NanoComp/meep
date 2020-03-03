@@ -65,6 +65,8 @@ dft_force::dft_force(const dft_force &f) : where(f.where) {
 }
 
 void dft_force::remove() {
+  // TODO: add freqs to remove?
+  delete[] freqs;
   while (offdiag1) {
     dft_chunk *nxt = offdiag1->next_in_dft;
     delete offdiag1;

@@ -35,7 +35,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   int vc;
   // TODO: change dft_chunk_data properties
   int Nomega;
-  double omegas[Nomega];
+  double *omegas = new double[Nomega];
   complex<double> stored_weight, extra_weight;
   double dt_factor;
   bool include_dV_and_interp_weights;
@@ -106,6 +106,8 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 dft_chunk::~dft_chunk() {
   delete[] dft;
   delete[] dft_phase;
+  // TODO: add omegas to destructor?
+  delete[] omegas;
 
   // delete from fields_chunk list
   dft_chunk *cur = fc->dft_chunks;
@@ -119,6 +121,8 @@ dft_chunk::~dft_chunk() {
 }
 
 void dft_flux::remove() {
+  // TODO: add freqs to remove?
+  delete[] freqs;
   while (E) {
     dft_chunk *nxt = E->next_in_dft;
     delete E;
@@ -678,6 +682,8 @@ void dft_energy::scale_dfts(complex<double> scale) {
 }
 
 void dft_energy::remove() {
+  // TODO: add freqs to remove?
+  delete[] freqs;
   while (E) {
     dft_chunk *nxt = E->next_in_dft;
     delete E;
@@ -829,6 +835,8 @@ dft_fields::dft_fields(dft_chunk *chunks_, double freq_min_, double freq_max_, i
 void dft_fields::scale_dfts(cdouble scale) { chunks->scale_dft(scale); }
 
 void dft_fields::remove() {
+  // TODO: add freqs to remove?
+  delete[] freqs;
   while (chunks) {
     dft_chunk *nxt = chunks->next_in_dft;
     delete chunks;

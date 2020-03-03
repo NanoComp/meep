@@ -79,6 +79,8 @@ dft_near2far::dft_near2far(const dft_near2far &f)
 }
 
 void dft_near2far::remove() {
+  // TODO: add freqs to remove?
+  delete[] freqs;
   while (F) {
     dft_chunk *nxt = F->next_in_dft;
     delete F;

@@ -1011,7 +1011,7 @@ public:
   // the frequencies to loop_in_chunks
   // TODO: change dft_chunk properties
   int Nomega;
-  double omegas[Nomega];
+  double *omegas = new double[Nomega];
 
   component c; // component to DFT (possibly transformed by symmetry)
 
@@ -1109,7 +1109,7 @@ public:
 
   // TODO: change dft_flux properties
   int Nfreq;
-  double freqs[Nfreq];
+  double *freqs = new double[Nfreq];
   dft_chunk *E, *H;
   component cE, cH;
   volume where;
@@ -1150,7 +1150,7 @@ public:
 
   // TODO: change dft_energy properties
   int Nfreq;
-  double freqs[Nfreq];
+  double *freqs = new double[Nfreq];
   dft_chunk *E, *H, *D, *B;
   volume where;
 };
@@ -1162,7 +1162,7 @@ public:
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double *fs, int Nf,
             const volume &where_);
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin, double fmax,
-            int Nf, const volume &where_)
+            int Nf, const volume &where_);
   dft_force(const dft_force &f);
 
   double *force();
@@ -1181,7 +1181,7 @@ public:
 
   // TODO: change dft_force properties
   int Nfreq;
-  double freqs[Nfreq];
+  double *freqs = new double[Nfreq];
   dft_chunk *offdiag1, *offdiag2, *diag;
   volume where;
 };
@@ -1234,7 +1234,7 @@ public:
 
   // TODO: change dft_near2far properties
   int Nfreq;
-  double freqs[Nfreq];
+  double *freqs = new double[Nfreq];
   dft_chunk *F;
   double eps, mu;
   volume where;
@@ -1257,6 +1257,7 @@ public:
   ~dft_ldos() {
     delete[] Fdft;
     delete[] Jdft;
+    delete[] omegas;
   }
 
   void update(fields &f);          // to be called after each timestep
@@ -1271,7 +1272,7 @@ private:
 public:
   // TODO: change dft_ldos properties
   int Nomega;
-  double omegas[Nomega];
+  double *omegas = new double[Nomega];
 };
 
 // dft.cpp (normally created with fields::add_dft_fields)
@@ -1287,7 +1288,7 @@ public:
 
   // TODO: change dft_fields properties
   int Nfreq;
-  double freqs[Nfreq];
+  double *freqs = new double[Nfreq];
   dft_chunk *chunks;
   volume where;
 };
