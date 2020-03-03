@@ -23,14 +23,31 @@
 using namespace std;
 
 namespace meep {
-// TODO: change here
+// TODO: overload dft_force constructor
+dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double *fs,
+                     int Nf, const volume &where_)
+    : where(where_) {
+  if (Nf < 1) abort("Nf must be at least 1");
+  freqs = fs;
+  Nfreq = Nf;
+  offdiag1 = offdiag1_;
+  offdiag2 = offdiag2_;
+  diag = diag_;
+}
+
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin,
                      double fmax, int Nf, const volume &where_)
     : where(where_) {
   // TODO: change here
-  if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
-  freq_min = fmin;
+  if (Nf < 1) abort("Nf must be at least 1");
+  double dfreq = (fmax - fmin) / (Nf - 1);
+  double fs[Nf];
+  int i;
+  for (i = 0; i < Nf; i++) {
+    fs[i] = fmin + dfreq * i;
+  }
   Nfreq = Nf;
+  freqs = fs;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   offdiag1 = offdiag1_;
   offdiag2 = offdiag2_;
@@ -40,9 +57,8 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
 
 dft_force::dft_force(const dft_force &f) : where(f.where) {
   // TODO: change here
-  freq_min = f.freq_min;
   Nfreq = f.Nfreq;
-  dfreq = f.dfreq;
+  freqs = f.freqs;
   offdiag1 = f.offdiag1;
   offdiag2 = f.offdiag2;
   diag = f.diag;
@@ -134,9 +150,8 @@ void dft_force::scale_dfts(complex<double> scale) {
 /* note that the components where->c indicate the direction of the
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
-// TODO: change here
-dft_force fields::add_dft_force(const volume_list *where_, double freq_min, double freq_max,
-                                int Nfreq) {
+// TODO: overload fields::add_dft_force
+dft_force fields::add_dft_force(const volume_list *where_, double *freqs, int Nfreq) {
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
 
   volume_list *where = S.reduce(where_);
@@ -152,34 +167,46 @@ dft_force fields::add_dft_force(const volume_list *where_, double freq_min, doub
 
     if (fd != nd) { // off-diagaonal stress-tensor terms
       // TODO: change here
-      offdiag1 = add_dft(direction_component(Ex, fd), where->v, freq_min, freq_max, Nfreq, true,
+      offdiag1 = add_dft(direction_component(Ex, fd), where->v, freqs, Nfreq, true,
                          where->weight, offdiag1);
       // TODO: change here
-      offdiag2 = add_dft(direction_component(Ex, nd), where->v, freq_min, freq_max, Nfreq, false,
+      offdiag2 = add_dft(direction_component(Ex, nd), where->v, freqs, Nfreq, false,
                          1.0, offdiag2);
       // TODO: change here
-      offdiag1 = add_dft(direction_component(Hx, fd), where->v, freq_min, freq_max, Nfreq, true,
+      offdiag1 = add_dft(direction_component(Hx, fd), where->v, freqs, Nfreq, true,
                          where->weight, offdiag1);
       // TODO: change here
-      offdiag2 = add_dft(direction_component(Hx, nd), where->v, freq_min, freq_max, Nfreq, false,
+      offdiag2 = add_dft(direction_component(Hx, nd), where->v, freqs, Nfreq, false,
                          1.0, offdiag2);
     }
     else // diagonal stress-tensor terms
       LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
         complex<double> weight1 = where->weight * (d == fd ? +0.5 : -0.5);
         // TODO: change here
-        diag = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq, true, 1.0,
-                       diag, true, weight1, false);
+        diag = add_dft(direction_component(Ex, d), where->v, freqs, Nfreq, true, 1.0, diag, true,
+                       weight1, false);
         // TODO: change here
-        diag = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq, true, 1.0,
-                       diag, true, weight1, false);
+        diag = add_dft(direction_component(Hx, d), where->v, freqs, Nfreq, true, 1.0, diag, true,
+                       weight1, false);
       }
     everywhere = everywhere | where->v;
   }
 
   delete where_save;
   // TODO: change here
-  return dft_force(offdiag1, offdiag2, diag, freq_min, freq_max, Nfreq, everywhere);
+  return dft_force(offdiag1, offdiag2, diag, freqs, Nfreq, everywhere);
+}
+
+dft_force fields::add_dft_force(const volume_list *where_, double freq_min, double freq_max,
+                                int Nfreq) {
+  if (Nfreq < 1) abort("Nfreq must be at least 1");
+  double dfreq = (freq_max - freq_min) / (Nfreq - 1);
+  double freqs[Nfreq];
+  int i;
+  for (i = 0; i < Nfreq; i++) {
+    freqs[i] = freq_min + dfreq * i;
+  }
+  return add_dft_force(where_, freqs, Nfreq);
 }
 
 } // namespace meep
