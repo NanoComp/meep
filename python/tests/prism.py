@@ -8,7 +8,7 @@ import meep as mp
 class TestPrism(unittest.TestCase):
 
   def nonconvex_marching_squares(self,idx,npts):
-    resolution = 15
+    resolution = 25
 
     cell = mp.Vector3(10,10)
 
@@ -16,8 +16,9 @@ class TestPrism(unittest.TestCase):
     vertices_file = os.path.join(data_dir, 'nonconvex_prism_vertices{}.npz'.format(idx))
     vertices_obj = np.load(vertices_file)
 
-    ## prism verticies precomputed from analytic blob shape using
+    ## prism verticies precomputed from analytic "blob" shape using
     ## marching squares algorithm of skimage.measure.find_contours
+    ## ref: https://github.com/NanoComp/meep/pull/1142
     vertices_data = vertices_obj["N{}".format(npts)]
     vertices = [mp.Vector3(v[0],v[1],0) for v in vertices_data]
 
@@ -85,7 +86,7 @@ class TestPrism(unittest.TestCase):
     return abs((prism_eps-cyl_eps)/cyl_eps)
 
 
-  def convex_circle(self,npts,r):
+  def convex_circle(self,npts,r,sym):
     resolution = 50
 
     cell = mp.Vector3(3,3)
@@ -100,6 +101,7 @@ class TestPrism(unittest.TestCase):
 
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
+                        symmetries=[mp.Mirror(direction=mp.X),mp.Mirror(direction=mp.Y)] if sym else [],
                         resolution=resolution)
 
     sim.init_sim()
@@ -115,6 +117,7 @@ class TestPrism(unittest.TestCase):
 
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
+                        symmetries=[mp.Mirror(direction=mp.X),mp.Mirror(direction=mp.Y)] if sym else [],
                         resolution=resolution)
 
     sim.init_sim()
@@ -130,21 +133,21 @@ class TestPrism(unittest.TestCase):
     print("Testing Non-Convex Prism #1 using marching squares algorithm...")
     d1_a = self.nonconvex_marching_squares(1,208)
     d1_b = self.nonconvex_marching_squares(1,448)
-    d1_ref = self.nonconvex_marching_squares(1,904)
+    d1_ref = 458.27922623563074 ## self.nonconvex_marching_squares(1,904)
 
     self.assertLess(abs((d1_b-d1_ref)/d1_ref),abs((d1_a-d1_ref)/d1_ref))
 
     print("Testing Non-Convex Prism #2 using marching squares algorithm...")
     d2_a = self.nonconvex_marching_squares(2,128)
     d2_b = self.nonconvex_marching_squares(2,256)
-    d2_ref = self.nonconvex_marching_squares(2,516)
+    d2_ref = 506.79940504342534 ## self.nonconvex_marching_squares(2,516)
 
     self.assertLess(abs((d2_b-d2_ref)/d2_ref),abs((d2_a-d2_ref)/d2_ref))
 
     print("Testing Non-Convex Prism #3 using marching squares algorithm...")
     d3_a = self.nonconvex_marching_squares(3,164)
     d3_b = self.nonconvex_marching_squares(3,336)
-    d3_ref = self.nonconvex_marching_squares(3,672)
+    d3_ref = 640.0738356076143 ## self.nonconvex_marching_squares(3,672)
 
     self.assertLess(abs((d3_b-d3_ref)/d3_ref),abs((d3_a-d3_ref)/d3_ref))
 
@@ -156,23 +159,47 @@ class TestPrism(unittest.TestCase):
     self.assertLess(d[1],d[0])
     self.assertLess(d[2],d[1])
 
-    print("Testing Convex Prism #1 using circle formula...")
+    print("Testing Convex Prism #1 using circle formula (without symmetry)...")
     r = 1.0458710786934182
-    d = [self.convex_circle(51,r),
-         self.convex_circle(101,r),
-         self.convex_circle(201,r)]
+    d_nosym = [self.convex_circle(51,r,False),
+               self.convex_circle(101,r,False),
+               self.convex_circle(201,r,False)]
 
-    self.assertLess(d[1],d[0])
-    self.assertLess(d[2],d[1])
+    self.assertLess(d_nosym[1],d_nosym[0])
+    self.assertLess(d_nosym[2],d_nosym[1])
 
-    print("Testing Convex Prism #2 using circle formula...")
+    print("Testing Convex Prism #1 using circle formula (with symmetry)...")
+    d_sym = [self.convex_circle(51,r,True),
+             self.convex_circle(101,r,True),
+             self.convex_circle(201,r,True)]
+
+    self.assertLess(d_sym[1],d_sym[0])
+    self.assertLess(d_sym[2],d_sym[1])
+
+    self.assertAlmostEqual(d_nosym[0],d_sym[0],places=3)
+    self.assertAlmostEqual(d_nosym[1],d_sym[1],places=3)
+    self.assertAlmostEqual(d_nosym[2],d_sym[2],places=3)
+
+    print("Testing Convex Prism #2 using circle formula (without symmetry)...")
     r = 1.2896871096581341
-    d = [self.convex_circle(31,r),
-         self.convex_circle(61,r),
-         self.convex_circle(121,r)]
+    d_nosym = [self.convex_circle(31,r,False),
+               self.convex_circle(61,r,False),
+               self.convex_circle(121,r,False)]
 
-    self.assertLess(d[1],d[0])
-    self.assertLess(d[2],d[1])
+    self.assertLess(d_nosym[1],d_nosym[0])
+    self.assertLess(d_nosym[2],d_nosym[1])
+
+    print("Testing Convex Prism #2 using circle formula (with symmetry)...")
+    d_sym = [self.convex_circle(31,r,True),
+             self.convex_circle(61,r,True),
+             self.convex_circle(121,r,True)]
+
+    self.assertLess(d_sym[1],d_sym[0])
+    self.assertLess(d_sym[2],d_sym[1])
+
+    self.assertAlmostEqual(d_nosym[0],d_sym[0],places=3)
+    self.assertAlmostEqual(d_nosym[1],d_sym[1],places=3)
+    self.assertAlmostEqual(d_nosym[2],d_sym[2],places=3)
 
 if __name__ == '__main__':
   unittest.main()
