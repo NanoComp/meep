@@ -804,7 +804,14 @@ dft_flux fields::add_dft_flux_plane(const volume &where, double *freqs, int Nfre
 
 dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double freq_max,
                                     int Nfreq) {
-  return add_dft_flux(NO_DIRECTION, where, freq_min, freq_max, Nfreq);
+  if (Nfreq < 1) abort("Nfreq must be at least 1");
+  dfreq = (fmax - fmin) / (Nfreq - 1);
+  double freqs[Nfreq];
+  int i;
+  for (i = 0; i < Nfreq; i++) {
+    freqs[i] = fmin + dfreqs * i;
+  }
+  return add_dft_flux(NO_DIRECTION, where, freqs, Nfreq);
 }
 
 // TODO: overload dft_fields constructor
