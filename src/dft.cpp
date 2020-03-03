@@ -33,7 +33,7 @@ namespace meep {
 struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   component c;
   int vc;
-  // TODO: change here
+  // TODO: change dft_chunk_data properties
   int Nomega;
   double omegas[Nomega];
   complex<double> stored_weight, extra_weight;
@@ -85,7 +85,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   sn = sn_;
   vc = data->vc;
 
-  // TODO: change here
+  // TODO: change dft_chunk properties
   Nomega = data->Nomega;
   omegas = data->omegas;
   dft_phase = new complex<realnum>[Nomega];
@@ -146,7 +146,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
                     shift_phase * S.phase_shift(c, sn), shift, S, sn, chunkloop_data);
 }
 
-// TODO: change here
+// TODO: overload fields::add_dft
 dft_chunk *fields::add_dft(component c, const volume &where, double *freqs, int Nfreq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
@@ -165,7 +165,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, double *freqs, int 
   dft_chunk_data data;
   data.c = c;
   data.vc = vc;
-  // TODO: change here
+  // TODO: change how freqs becomes omegas
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   data.Nomega = Nfreq;
   double omegas[Nfreq];
@@ -184,6 +184,22 @@ dft_chunk *fields::add_dft(component c, const volume &where, double *freqs, int 
   loop_in_chunks(add_dft_chunkloop, (void *)&data, where, use_centered_grid ? Centered : c);
 
   return data.dft_chunks;
+}
+
+dft_chunk *fields::add_dft(component c, const volume &where, double freq_min, double freq_max,
+                           int Nfreq, bool include_dV_and_interp_weights,
+                           complex<double> stored_weight, dft_chunk *chunk_next,
+                           bool sqrt_dV_and_interp_weights, complex<double> extra_weight,
+                           bool use_centered_grid, int vc) {
+  if (Nfreq < 1) abort("Nfreq must be at least 1");
+  double dfreq = (freq_max - freq_min) / (Nfreq - 1);
+  double freqs[Nfreq];
+  int i;
+  for (i = 0; i < Nfreq; i++) {
+    freqs[i] = freq_min + dfreq * i;
+  }
+  return add_dft(c, where, freqs, Nfreq, include_dV_and_interp_weights, stored_weight, chunk_next,
+                 sqrt_dV_and_interp_weights, extra_weight, use_centered_grid, vc);
 }
 
 // TODO: change here
