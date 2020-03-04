@@ -23,7 +23,6 @@ meep_wrap.o: meep_wrap.cxx $(srcdir)/meep-ctl-swig.hpp $(CTLHDRS)
 
 if WITH_LIBCTL
 if MAINTAINER_MODE
-SWIG ?= swig
 meep_wrap.cxx: meep.i meep_op_renames.i meep_enum_renames.i meep_renames.i ctl-io.i meep-ctl-swig.hpp meep_swig_bug_workaround.i $(LIBHDRS)
 	$(SWIG) -I$(top_srcdir)/src -c++ -guile -o $@ $(srcdir)/meep.i
 	patch -p0 $@ < $(srcdir)/meep_wrap.patch

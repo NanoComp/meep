@@ -511,9 +511,20 @@ AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to no
 
 # checks for python
 ##############################################################################
+
 AC_ARG_WITH(python,
 	[AC_HELP_STRING([--without-python], [compile without Python interface])],
         with_python=$withval,with_python=yes)
+
+AC_CHECK_PROG(SWIG, swig, swig, echo)
+if test "$USE_MAINTAINER_MODE" = yes && test "x$SWIG" = xecho; then
+  AC_MSG_ERROR([SWIG not found; configure --without-python --without-scheme or use a release tarball])
+fi
+if test "$USE_MAINTAINER_MODE" = yes && test "x$with_python" = "xyes"; then
+  if ($SWIG -version | grep "SWIG Version 4" > /dev/null 2>&1); then
+    AC_MSG_ERROR([SWIG version 4 is not supported for Python; configure --without-python or use a release tarball])
+  fi
+fi
 
 if test "x$with_python" = xno; then
   have_python=no
