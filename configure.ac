@@ -517,7 +517,7 @@ AC_ARG_WITH(python,
         with_python=$withval,with_python=yes)
 
 AC_CHECK_PROG(SWIG, swig, swig, echo)
-if test "$USE_MAINTAINER_MODE" = yes && test "x$SWIG" = xecho; then
+if test "$USE_MAINTAINER_MODE" = yes && (test "x$with_python" = "xyes" || test "x$with_scheme" = "xyes") && test "x$SWIG" = xecho; then
   AC_MSG_ERROR([SWIG not found; configure --without-python --without-scheme or use a release tarball])
 fi
 if test "$USE_MAINTAINER_MODE" = yes && test "x$with_python" = "xyes"; then
