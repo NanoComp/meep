@@ -1011,7 +1011,7 @@ public:
   // the frequencies to loop_in_chunks
   // TODO: change dft_chunk properties
   int Nomega;
-  double *omegas = new double[Nomega];
+  double *omegas;
 
   component c; // component to DFT (possibly transformed by symmetry)
 
@@ -1109,7 +1109,7 @@ public:
 
   // TODO: change dft_flux properties
   int Nfreq;
-  double *freqs = new double[Nfreq];
+  double *freqs;
   dft_chunk *E, *H;
   component cE, cH;
   volume where;
@@ -1150,7 +1150,7 @@ public:
 
   // TODO: change dft_energy properties
   int Nfreq;
-  double *freqs = new double[Nfreq];
+  double *freqs;
   dft_chunk *E, *H, *D, *B;
   volume where;
 };
@@ -1181,7 +1181,7 @@ public:
 
   // TODO: change dft_force properties
   int Nfreq;
-  double *freqs = new double[Nfreq];
+  double *freqs;
   dft_chunk *offdiag1, *offdiag2, *diag;
   volume where;
 };
@@ -1234,7 +1234,7 @@ public:
 
   // TODO: change dft_near2far properties
   int Nfreq;
-  double *freqs = new double[Nfreq];
+  double *freqs;
   dft_chunk *F;
   double eps, mu;
   volume where;
@@ -1243,6 +1243,7 @@ public:
   double periodic_k[2], period[2];
 };
 
+// dft_ldos.cpp
 /* Class to compute local-density-of-states spectra: the power spectrum
    P(omega) of the work done by the sources.  Specialized to handle only
    the case where all sources have the same time dependence, which greatly
@@ -1272,7 +1273,7 @@ private:
 public:
   // TODO: change dft_ldos properties
   int Nomega;
-  double *omegas = new double[Nomega];
+  double *omegas;
 };
 
 // dft.cpp (normally created with fields::add_dft_fields)
@@ -1288,7 +1289,7 @@ public:
 
   // TODO: change dft_fields properties
   int Nfreq;
-  double *freqs = new double[Nfreq];
+  double *freqs;
   dft_chunk *chunks;
   volume where;
 };

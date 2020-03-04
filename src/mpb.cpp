@@ -758,9 +758,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
                                         double *cscale, direction d) {
-  double freq_min = flux.freq_min;
-  double dfreq = flux.dfreq;
   int num_freqs = flux.Nfreq;
+  double *freqs = flux.freqs;
   bool match_frequency = true;
 
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
@@ -779,7 +778,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       /*- call mpb to compute the eigenmode --------------------------*/
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
-      double freq = freq_min + nf * dfreq;
+      double freq = freqs[nf];
       double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
       am_now_working_on(MPBTime);

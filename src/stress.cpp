@@ -40,12 +40,12 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
     : where(where_) {
   // TODO: change here
   if (Nf < 1) abort("Nf must be at least 1");
+  Nfreq = Nf;
   double dfreq = (fmax - fmin) / (Nf - 1);
   double fs[Nf];
   for (int i = 0; i < Nf; i++) {
     fs[i] = fmin + dfreq * i;
   }
-  Nfreq = Nf;
   freqs = fs;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   offdiag1 = offdiag1_;
