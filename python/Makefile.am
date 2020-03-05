@@ -137,7 +137,6 @@ endif
 ##################################################
 if MAINTAINER_MODE
 
-SWIG ?= swig
 SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
 MEEP_SWIG_SRC = meep.i numpy.i vec.i
 
