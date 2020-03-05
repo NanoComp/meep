@@ -6,6 +6,7 @@ from scipy import signal
 import numpy as np
 from scipy.special import erf
 
+
 def check_positive(prop, val):
     if val > 0:
         return val
