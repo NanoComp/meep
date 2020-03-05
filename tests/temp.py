@@ -10,10 +10,10 @@ import meep_adjoint as mpa
 
 freq_min = 1/1.7
 freq_max = 1/1.4
-nfreq = 200
+nfreq = 300
 freqs = np.linspace(freq_min,freq_max,nfreq)
 resolution = 10
-run_time = 4000
+run_time = 400
 
 # --------------------------- #
 # Run normal simulation
@@ -66,7 +66,7 @@ desired_fields = h * fields
 # Run filtered simulation
 # --------------------------- #
 
-filtered_src = mp.FilteredSource(fcen,freqs,h,gauss_src)
+filtered_src = mp.FilteredSource(fcen,freqs,h,dt,run_time,gauss_src)
 
 sources = [mp.EigenModeSource(filtered_src,
                      eig_band=1,
@@ -87,11 +87,11 @@ for f in range(nfreq):
 # --------------------------- #
 # Compare results
 # --------------------------- #
-print(np.abs(fields_filtered/desired_fields), np.angle(fields_filtered/desired_fields))
+print(np.abs(fields_filtered/fields), np.angle(fields_filtered/fields))
 
 plt.figure()
 plt.subplot(2,1,1)
-plt.semilogy(freqs,np.abs(desired_fields),label='Frequency Domain')
+plt.semilogy(freqs,np.abs(fields),label='Frequency Domain')
 plt.semilogy(freqs,np.abs(fields_filtered),'-.',label='Time Domain')
 #plt.plot(freqs,np.abs(fields),'--',label='Gaussian Src')
 #plt.plot(freqs,np.abs(h),'--',label='Window')
@@ -101,7 +101,7 @@ plt.ylabel('Magnitude')
 plt.legend()
 
 plt.subplot(2,1,2)
-plt.plot(freqs,np.unwrap(np.angle(desired_fields)),label='Frequency Domain')
+plt.plot(freqs,np.unwrap(np.angle(fields)),label='Frequency Domain')
 plt.plot(freqs,np.unwrap(np.angle(fields_filtered)),'-.',label='Time Domain')
 #plt.plot(freqs,np.unwrap(np.angle(fields)),'--',label='Gaussian Src')
 #plt.plot(freqs,np.unwrap(np.angle(h)),'--',label='Window')
@@ -111,6 +111,6 @@ plt.ylabel('Angle')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig('filtered.png')
+plt.savefig('filtered_{}.png'.format(resolution))
 
 plt.show()
