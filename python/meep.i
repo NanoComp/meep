@@ -818,7 +818,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
     }
 
-    delete $1;
+    delete[] $1;
 }
 
 // Typemap suite for material_type
