@@ -1668,6 +1668,7 @@ class Simulation(object):
 
     # TODO: make add_near2far_uneven, wrap add_near2far around it, change parameters of _add_near2far
     def add_near2far_uneven(self, freqs, nfreq, *near2fars, **kwargs):
+        freqs.sort()
         nperiods = kwargs.get('nperiods', 1)
         n2f = DftNear2Far(self._add_near2far, [freqs, nfreq, nperiods, near2fars])
         self.dft_objects.append(n2f)
@@ -1684,6 +1685,7 @@ class Simulation(object):
 
     # TODO: make add_energy_uneven, wrap add_energy around it, change parameters of _add_energy
     def add_energy_uneven(self, freqs, nfreq, *energys):
+        freqs.sort()
         en = DftEnergy(self._add_energy, [freqs, nfreq, energys])
         self.dft_objects.append(en)
         return en
@@ -1785,6 +1787,7 @@ class Simulation(object):
 
     # TODO: make add_force_uneven, wrap add_force around it, change parameters of _add_force
     def add_force_uneven(self, freqs, nfreq, *forces):
+        freqs.sort()
         force = DftForce(self._add_force, [freqs, nfreq, forces])
         self.dft_objects.append(force)
         return force
@@ -1833,6 +1836,7 @@ class Simulation(object):
 
     # TODO: make add_flux_uneven, wrap add_flux around it, change parameters of _add_flux
     def add_flux_uneven(self, freqs, nfreq, *fluxes):
+        freqs.sort()
         flux = DftFlux(self._add_flux, [freqs, nfreq, fluxes])
         self.dft_objects.append(flux)
         return flux
@@ -1848,6 +1852,7 @@ class Simulation(object):
 
     # TODO: make add_mode_monitor_uneven, wrap add_mode_monitor around it, change parameters of _add_mode_monitor
     def add_mode_monitor_uneven(self, freqs, nfreq, *fluxes):
+        freqs.sort()
         flux = DftFlux(self._add_mode_monitor, [freqs, nfreq, fluxes])
         self.dft_objects.append(flux)
         return flux
@@ -2980,6 +2985,7 @@ def dft_ldos_uneven(freqs=None, nfreq=None, ldos=None):
     if ldos is None:
         if freqs is None or nfreq is None:
             raise ValueError("Either freqs and nfreq or an Ldos is required for dft_ldos_uneven")
+        freqs.sort()
         ldos = mp._dft_ldos(freqs, nfreq)
 
     def _ldos(sim, todo):
