@@ -316,12 +316,8 @@ class DftObj(object):
         return self.swigobj_attr('remove')
 
     @property
-    def freq_min(self):
-        return self.swigobj_attr('freq_min')
-
-    @property
-    def dfreq(self):
-        return self.swigobj_attr('dfreq')
+    def freqs(self):
+        return self.swigobj_attr('freqs')
 
     @property
     def Nfreq(self):
@@ -721,8 +717,8 @@ class Simulation(object):
 
         dft_freqs = []
         for dftf in self.dft_objects:
-            dft_freqs.append(dftf.freq_min)
-            dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
+            dft_freqs.append(dftf.freqs[0])
+            dft_freqs.append(dftf.freqs[-1])
 
         warn_src = ('Note: your sources include frequencies outside the range of validity of the ' +
                     'material models. This is fine as long as you eventually only look at outputs ' +
@@ -1630,22 +1626,32 @@ class Simulation(object):
             if dft.swigobj is None:
                 dft.swigobj = dft.func(*dft.args)
 
-    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None, yee_grid=False):
+    # TODO: overload add_dft_fields, _add_dft_fields
+    def add_dft_fields(self, components, freq_min=None, freq_max=None, freqs=None, nfreq, where=None, center=None, size=None, yee_grid=False):
+        if freqs is None:
+            if freq_min is None or freq_max is None:
+                raise ValueError("Either freqs or freq_min and freq_max is required for add_dft_fields")
+            else:
+                freqs = np.linspace(start=freq_min, end=freq_max, num=nfreq)
+        else:
+            freqs.sort()
+            freq_min = freqs[0]
+            freq_max = freqs[-1]
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
         use_centered_grid = not yee_grid
-        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freq_min, freq_max, nfreq, use_centered_grid])
+        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freqs, nfreq, use_centered_grid])
         self.dft_objects.append(dftf)
         return dftf
 
-    def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, nfreq, use_centered_grid):
+    def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, freqs, nfreq, use_centered_grid):
         if self.fields is None:
             self.init_sim()
         try:
             where = self._volume_from_kwargs(where, center, size)
         except ValueError:
             where = self.fields.total_volume()
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, nfreq, use_centered_grid)
+        return self.fields.add_dft_fields(components, where, freq_min, freq_max, freqs, nfreq, use_centered_grid)
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
@@ -1664,6 +1670,7 @@ class Simulation(object):
         mp._get_dft_data(dft_chunk, arr)
         return arr
 
+    # TODO: overload add_near2far, _add_near2far
     def add_near2far(self, fcen, df, nfreq, *near2fars, **kwargs):
         nperiods = kwargs.get('nperiods', 1)
         n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, nperiods, near2fars])
@@ -1675,6 +1682,7 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars, nperiods)
 
+    # TODO: overload add_energy, _add_energy
     def add_energy(self, fcen, df, nfreq, *energys):
         en = DftEnergy(self._add_energy, [fcen, df, nfreq, energys])
         self.dft_objects.append(en)
@@ -1685,6 +1693,7 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_energy, fcen, df, nfreq, energys)
 
+    # TODO: check if this needs to be changed
     def _display_energy(self, name, func, energys):
         if energys:
             freqs = get_energy_freqs(energys[0])
@@ -1770,6 +1779,7 @@ class Simulation(object):
         self.load_near2far_data(n2f, n2fdata)
         n2f.scale_dfts(complex(-1.0))
 
+    # TODO: overload add_force, _add_force
     def add_force(self, fcen, df, nfreq, *forces):
         force = DftForce(self._add_force, [fcen, df, nfreq, forces])
         self.dft_objects.append(force)
@@ -1780,6 +1790,7 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
 
+    # TODO: check if display_forces needs to be changed
     def display_forces(self, *forces):
         force_freqs = get_force_freqs(forces[0])
         display_csv(self, 'force', zip(force_freqs, *[get_forces(f) for f in forces]))
@@ -1812,6 +1823,7 @@ class Simulation(object):
         self.load_force_data(force, fdata)
         force.scale_dfts(complex(-1.0))
 
+    # TODO: overload add_flux, _add_flux
     def add_flux(self, fcen, df, nfreq, *fluxes):
         flux = DftFlux(self._add_flux, [fcen, df, nfreq, fluxes])
         self.dft_objects.append(flux)
@@ -1822,6 +1834,7 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
+    # TODO: overload add_mode_monitor, _add_mode_monitor
     def add_mode_monitor(self, fcen, df, nfreq, *fluxes):
         flux = DftFlux(self._add_mode_monitor, [fcen, df, nfreq, fluxes])
         self.dft_objects.append(flux)
@@ -1841,6 +1854,7 @@ class Simulation(object):
 
         return self.fields.add_mode_monitor(d, v.swigobj, fcen - df / 2, fcen + df / 2, nfreq)
 
+    # TODO: overload add_eigenmode
     def add_eigenmode(self, fcen, df, nfreq, *fluxes):
         warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
         return self.add_mode_monitor(fcen, df, nfreq, *fluxes)
@@ -2945,6 +2959,7 @@ def Ldos(fcen, df, nfreq):
     return mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
 
+# TODO: overload dft_ldos
 def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
     if ldos is None:
         if fcen is None or df is None or nfreq is None:
@@ -2999,6 +3014,7 @@ def get_near2far_freqs(f):
 
 
 def scale_energy_fields(s, ef):
+    # TODO: check if this is a typo
     df.scale_dfts(s)
 
 
