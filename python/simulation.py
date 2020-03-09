@@ -1626,17 +1626,9 @@ class Simulation(object):
             if dft.swigobj is None:
                 dft.swigobj = dft.func(*dft.args)
 
-    # TODO: overload add_dft_fields, _add_dft_fields
-    def add_dft_fields(self, components, freq_min=None, freq_max=None, freqs=None, nfreq, where=None, center=None, size=None, yee_grid=False):
-        if freqs is None:
-            if freq_min is None or freq_max is None:
-                raise ValueError("Either freqs or freq_min and freq_max is required for add_dft_fields")
-            else:
-                freqs = np.linspace(start=freq_min, end=freq_max, num=nfreq)
-        else:
-            freqs.sort()
-            freq_min = freqs[0]
-            freq_max = freqs[-1]
+    # TODO: make add_dft_fields_uneven, wrap add_dft_fields around it, change parameters of _add_dft_fields
+    def add_dft_fields_uneven(self, components, freqs, nfreq, where=None, center=None, size=None, yee_grid=False):
+        freqs.sort()
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
         use_centered_grid = not yee_grid
@@ -1644,14 +1636,18 @@ class Simulation(object):
         self.dft_objects.append(dftf)
         return dftf
 
-    def _add_dft_fields(self, components, where, center, size, freq_min, freq_max, freqs, nfreq, use_centered_grid):
+    def add_dft_fields(self, components, freq_min, freq_max, nfreq, where=None, center=None, size=None, yee_grid=False):
+        freqs = np.linspace(start=freq_min, end=freq_max, num=nfreq).tolist()
+        return self.add_dft_fields_uneven(components, freqs, nfreq, where, center, size, yee_grid)
+
+    def _add_dft_fields(self, components, where, center, size, freqs, nfreq, use_centered_grid):
         if self.fields is None:
             self.init_sim()
         try:
             where = self._volume_from_kwargs(where, center, size)
         except ValueError:
             where = self.fields.total_volume()
-        return self.fields.add_dft_fields(components, where, freq_min, freq_max, freqs, nfreq, use_centered_grid)
+        return self.fields.add_dft_fields(components, where, freqs, nfreq, use_centered_grid)
 
     def output_dft(self, dft_fields, fname):
         if self.fields is None:
@@ -1670,28 +1666,36 @@ class Simulation(object):
         mp._get_dft_data(dft_chunk, arr)
         return arr
 
-    # TODO: overload add_near2far, _add_near2far
-    def add_near2far(self, fcen, df, nfreq, *near2fars, **kwargs):
+    # TODO: make add_near2far_uneven, wrap add_near2far around it, change parameters of _add_near2far
+    def add_near2far_uneven(self, freqs, nfreq, *near2fars, **kwargs):
         nperiods = kwargs.get('nperiods', 1)
-        n2f = DftNear2Far(self._add_near2far, [fcen, df, nfreq, nperiods, near2fars])
+        n2f = DftNear2Far(self._add_near2far, [freqs, nfreq, nperiods, near2fars])
         self.dft_objects.append(n2f)
         return n2f
 
-    def _add_near2far(self, fcen, df, nfreq, nperiods, near2fars):
+    def add_near2far(self, fcen, df, nfreq, *near2fars, **kwargs):
+        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        return self.add_near2far_uneven(freqs, nfreq, *near2fars, **kwargs)
+
+    def _add_near2far(self, freqs, nfreq, nperiods, near2fars):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars, nperiods)
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, freqs, nfreq, near2fars, nperiods)
 
-    # TODO: overload add_energy, _add_energy
-    def add_energy(self, fcen, df, nfreq, *energys):
-        en = DftEnergy(self._add_energy, [fcen, df, nfreq, energys])
+    # TODO: make add_energy_uneven, wrap add_energy around it, change parameters of _add_energy
+    def add_energy_uneven(self, freqs, nfreq, *energys):
+        en = DftEnergy(self._add_energy, [freqs, nfreq, energys])
         self.dft_objects.append(en)
         return en
 
-    def _add_energy(self, fcen, df, nfreq, energys):
+    def add_energy(self, fcen, df, nfreq, *energys):
+        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        return self.add_energy_uneven(freqs, nfreq, *energys)
+
+    def _add_energy(self, freqs, nfreq, energys):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_energy, fcen, df, nfreq, energys)
+        return self._add_fluxish_stuff(self.fields.add_dft_energy, freqs, nfreq, energys)
 
     # TODO: check if this needs to be changed
     def _display_energy(self, name, func, energys):
@@ -1779,16 +1783,20 @@ class Simulation(object):
         self.load_near2far_data(n2f, n2fdata)
         n2f.scale_dfts(complex(-1.0))
 
-    # TODO: overload add_force, _add_force
-    def add_force(self, fcen, df, nfreq, *forces):
-        force = DftForce(self._add_force, [fcen, df, nfreq, forces])
+    # TODO: make add_force_uneven, wrap add_force around it, change parameters of _add_force
+    def add_force_uneven(self, freqs, nfreq, *forces):
+        force = DftForce(self._add_force, [freqs, nfreq, forces])
         self.dft_objects.append(force)
         return force
 
-    def _add_force(self, fcen, df, nfreq, forces):
+    def add_force(self, fcen, df, nfreq, *forces):
+        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        return self.add_force_uneven(freqs, nfreq, *forces)
+
+    def _add_force(self, freqs, nfreq, forces):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
+        return self._add_fluxish_stuff(self.fields.add_dft_force, freqs, nfreq, forces)
 
     # TODO: check if display_forces needs to be changed
     def display_forces(self, *forces):
@@ -1823,24 +1831,32 @@ class Simulation(object):
         self.load_force_data(force, fdata)
         force.scale_dfts(complex(-1.0))
 
-    # TODO: overload add_flux, _add_flux
-    def add_flux(self, fcen, df, nfreq, *fluxes):
-        flux = DftFlux(self._add_flux, [fcen, df, nfreq, fluxes])
+    # TODO: make add_flux_uneven, wrap add_flux around it, change parameters of _add_flux
+    def add_flux_uneven(self, freqs, nfreq, *fluxes):
+        flux = DftFlux(self._add_flux, [freqs, nfreq, fluxes])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_flux(self, fcen, df, nfreq, fluxes):
+    def add_flux(self, fcen, df, nfreq, *fluxes):
+        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        return self.add_flux_uneven(freqs, nfreq, *fluxes)
+
+    def _add_flux(self, freqs, nfreq, fluxes):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
+        return self._add_fluxish_stuff(self.fields.add_dft_flux, freqs, nfreq, fluxes)
 
-    # TODO: overload add_mode_monitor, _add_mode_monitor
-    def add_mode_monitor(self, fcen, df, nfreq, *fluxes):
-        flux = DftFlux(self._add_mode_monitor, [fcen, df, nfreq, fluxes])
+    # TODO: make add_mode_monitor_uneven, wrap add_mode_monitor around it, change parameters of _add_mode_monitor
+    def add_mode_monitor_uneven(self, freqs, nfreq, *fluxes):
+        flux = DftFlux(self._add_mode_monitor, [freqs, nfreq, fluxes])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, fcen, df, nfreq, fluxes):
+    def add_mode_monitor(self, fcen, df, nfreq, *fluxes):
+        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        return self.add_mode_monitor_uneven(freqs, nfreq, *fluxes)
+
+    def _add_mode_monitor(self, freqs, nfreq, fluxes):
         if self.fields is None:
             self.init_sim()
 
@@ -1852,9 +1868,8 @@ class Simulation(object):
         d0 = region.direction
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
-        return self.fields.add_mode_monitor(d, v.swigobj, fcen - df / 2, fcen + df / 2, nfreq)
+        return self.fields.add_mode_monitor(d, v.swigobj, freqs, nfreq)
 
-    # TODO: overload add_eigenmode
     def add_eigenmode(self, fcen, df, nfreq, *fluxes):
         warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
         return self.add_mode_monitor(fcen, df, nfreq, *fluxes)
@@ -1950,7 +1965,8 @@ class Simulation(object):
         self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
-    def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist, *args):
+    # TODO: change parameters of _add_fluxish_stuff
+    def _add_fluxish_stuff(self, add_dft_stuff, freqs, nfreq, stufflist, *args):
         vol_list = None
 
         for s in stufflist:
@@ -1963,7 +1979,7 @@ class Simulation(object):
                         is_cylindrical=self.is_cylindrical).swigobj
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
-        stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq, *args)
+        stuff = add_dft_stuff(vol_list, freqs, nfreq, *args)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -2959,12 +2975,12 @@ def Ldos(fcen, df, nfreq):
     return mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
 
 
-# TODO: overload dft_ldos
-def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
+# TODO: make dft_ldos_uneven, wrap dft_ldos wrap around it
+def dft_ldos_uneven(freqs=None, nfreq=None, ldos=None):
     if ldos is None:
-        if fcen is None or df is None or nfreq is None:
-            raise ValueError("Either fcen, df, and nfreq, or an Ldos is required for dft_ldos")
-        ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+        if freqs is None or nfreq is None:
+            raise ValueError("Either freqs and nfreq or an Ldos is required for dft_ldos_uneven")
+        ldos = mp._dft_ldos(freqs, nfreq)
 
     def _ldos(sim, todo):
         if todo == 'step':
@@ -2977,12 +2993,21 @@ def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
     return _ldos
 
 
+def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
+    if ldos is None:
+        if fcen is None or df is None or nfreq is None:
+            raise ValueError("Either fcen, df, and nfreq, or an Ldos is required for dft_ldos")
+        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        return dft_ldos_uneven(freqs, nfreq, ldos)
+
+
 def scale_flux_fields(s, flux):
     flux.scale_dfts(s)
 
 
+# TODO: change this
 def get_flux_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return f.freqs
 
 
 def get_fluxes(f):
@@ -2993,12 +3018,14 @@ def scale_force_fields(s, force):
     force.scale_dfts(s)
 
 
+# TODO: change this
 def get_eigenmode_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return f.freqs
 
 
+# TODO: change this
 def get_force_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return f.freqs
 
 
 def get_forces(f):
@@ -3009,17 +3036,19 @@ def scale_near2far_fields(s, n2f):
     n2f.scale_dfts(s)
 
 
+# TODO: change this
 def get_near2far_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return f.freqs
 
 
 def scale_energy_fields(s, ef):
     # TODO: check if this is a typo
-    df.scale_dfts(s)
+    ef.scale_dfts(s)
 
 
+# TODO: change this
 def get_energy_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return f.freqs
 
 
 def get_electric_energy(f):
