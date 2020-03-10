@@ -1360,12 +1360,10 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
             stop = start + (self.domega / (2 * math.pi)) * self.Nomega
             return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
 
-        __swig_getmethods__["freq_min"] = get_omega_min
+        __swig_getmethods__["freqs"] = get_omegas
         __swig_getmethods__["nfreq"] = get_Nomega
-        __swig_getmethods__["dfreq"] = get_domega
-        if _newclass: freq_min = property(get_omega_min)
+        if _newclass: freqs = property(get_omegas)
         if _newclass: nfreq = property(get_Nomega)
-        if _newclass: dfreq = property(get_domega)
     %}
 }
 
