@@ -55,37 +55,43 @@ static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps
     abort("unsupported coordcycle value");
   }
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
-  double *s = eps_data->s;
-  double *o = eps_data->o;
+  const double *s = eps_data->s;
+  const double *o = eps_data->o;
   double omega = eps_data->omega;
   vec p(eps_data->dim == D3 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2])
                             : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
-  fields *f = eps_data->f;
+  const fields *f = eps_data->f;
 
-  if (eps_date->dim == D3 && coordcycle) {
-    int i;
-    for (i = 0; i < coordcycle; i++) {
-      double s_copy[3] = *s;
-      double o_copy[3] = *s;
-      s[0] = s_copy[1];
-      s[1] = s_copy[2];
-      s[2] = s_copy[0];
-      o[0] = o_copy[1];
-      o[1] = o_copy[2];
-      o[2] = o_copy[0];
-      p = vec(p.y(), p.z(), p.x());
-      //TODO: operation on f ?
-    }
+  // operations only need to happen in chi1inv
+  switch(coordcycle) {
+    case 0:
+      eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
+      eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
+      eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
+      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
+      break;
+    case 1:
+      eps_inv->m00 = real(f->get_chi1inv(Ex, Y, p, omega));
+      eps_inv->m11 = real(f->get_chi1inv(Ey, Z, p, omega));
+      eps_inv->m22 = real(f->get_chi1inv(Ez, X, p, omega));
+      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, X, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, X, p, omega)), 0);
+      break;
+    case 2:
+      eps_inv->m00 = real(f->get_chi1inv(Ex, Z, p, omega));
+      eps_inv->m11 = real(f->get_chi1inv(Ey, X, p, omega));
+      eps_inv->m22 = real(f->get_chi1inv(Ez, Y, p, omega));
+      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, X, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Y, p, omega)), 0);
+      break;
+    default: abort("unsupported coordcycle value");
   }
 
-  eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
-  eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
-  eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
-
-  ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
-  ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
-  ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
   /*
   master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
   master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
@@ -329,6 +335,7 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
   if (!eig_vol.contains(where))
     abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
 
+  // TODO: change here
   switch (gv.dim) {
     case D3:
       switch (coordcycle) {
