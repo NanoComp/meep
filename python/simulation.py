@@ -1675,7 +1675,7 @@ class Simulation(object):
         return n2f
 
     def add_near2far(self, fcen, df, nfreq, *near2fars, **kwargs):
-        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        freqs = np.linspace(fcen - df / 2, fcen + df / 2, nfreq).tolist()
         return self.add_near2far_uneven(freqs, nfreq, *near2fars, **kwargs)
 
     def _add_near2far(self, freqs, nfreq, nperiods, near2fars):
@@ -1691,7 +1691,7 @@ class Simulation(object):
         return en
 
     def add_energy(self, fcen, df, nfreq, *energys):
-        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        freqs = np.linspace(fcen - df / 2, fcen + df / 2, nfreq).tolist()
         return self.add_energy_uneven(freqs, nfreq, *energys)
 
     def _add_energy(self, freqs, nfreq, energys):
@@ -1793,7 +1793,7 @@ class Simulation(object):
         return force
 
     def add_force(self, fcen, df, nfreq, *forces):
-        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        freqs = np.linspace(fcen - df / 2, fcen + df / 2, nfreq).tolist()
         return self.add_force_uneven(freqs, nfreq, *forces)
 
     def _add_force(self, freqs, nfreq, forces):
@@ -1842,7 +1842,7 @@ class Simulation(object):
         return flux
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
-        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        freqs = np.linspace(fcen - df / 2, fcen + df / 2, nfreq).tolist()
         return self.add_flux_uneven(freqs, nfreq, *fluxes)
 
     def _add_flux(self, freqs, nfreq, fluxes):
@@ -1858,7 +1858,7 @@ class Simulation(object):
         return flux
 
     def add_mode_monitor(self, fcen, df, nfreq, *fluxes):
-        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        freqs = np.linspace(fcen - df / 2, fcen + df / 2, nfreq).tolist()
         return self.add_mode_monitor_uneven(freqs, nfreq, *fluxes)
 
     def _add_mode_monitor(self, freqs, nfreq, fluxes):
@@ -3003,7 +3003,7 @@ def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
     if ldos is None:
         if fcen is None or df is None or nfreq is None:
             raise ValueError("Either fcen, df, and nfreq, or an Ldos is required for dft_ldos")
-        freqs = np.linspace(fcen - df * (nfreq - 1) / 2, fcen + df * (nfreq - 1) / 2, nfreq).tolist()
+        freqs = np.linspace(fcen - df / 2, fcen + df / 2, nfreq).tolist()
         return dft_ldos_uneven(freqs, nfreq, ldos)
 
 
