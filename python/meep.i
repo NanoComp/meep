@@ -1346,11 +1346,8 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 // Make omega members of meep::dft_ldos available as 'freq' in python
 %extend meep::dft_ldos {
 
-    double get_omega_min() {
-        return $self->omega_min;
-    }
-    double get_domega() {
-        return $self->domega;
+    double* get_omegas() {
+        return $self->omegas;
     }
     int get_Nomega() {
         return $self->Nomega;
