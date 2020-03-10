@@ -51,9 +51,6 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
 
 static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
                          void *eps_data_, int coordcycle = 0) {
-  if (coordcycle != 0 && coordcycle != 1 && coordcycle != 2) {
-    abort("unsupported coordcycle value");
-  }
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   const double *s = eps_data->s;
   const double *o = eps_data->o;
