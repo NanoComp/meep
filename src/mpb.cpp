@@ -43,12 +43,6 @@ typedef struct {
   const fields *f;
 } meep_mpb_eps_data;
 
-static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
-                         void *eps_data_) {
-  int coordcycle = 0;
-  return meep_mpb_eps_coordcycle(eps, eps_inv, r, eps_data_, coordcycle);
-}
-
 static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
                          void *eps_data_, int coordcycle = 0) {
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
@@ -60,7 +54,7 @@ static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
   const fields *f = eps_data->f;
 
-  // operations only need to happen in chi1inv
+  // TODO: rotate meep -> mpb
   switch(coordcycle) {
     case 0:
       eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
@@ -71,20 +65,20 @@ static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps
       ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
       break;
     case 1:
-      eps_inv->m00 = real(f->get_chi1inv(Ex, Y, p, omega));
-      eps_inv->m11 = real(f->get_chi1inv(Ey, Z, p, omega));
-      eps_inv->m22 = real(f->get_chi1inv(Ez, X, p, omega));
-      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
-      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, X, p, omega)), 0);
-      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, X, p, omega)), 0);
+      eps_inv->m00 = real(f->get_chi1inv(Ey, Y, p, omega));
+      eps_inv->m11 = real(f->get_chi1inv(Ez, Z, p, omega));
+      eps_inv->m22 = real(f->get_chi1inv(Ex, X, p, omega));
+      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ey, X, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ez, X, p, omega)), 0);
       break;
     case 2:
-      eps_inv->m00 = real(f->get_chi1inv(Ex, Z, p, omega));
-      eps_inv->m11 = real(f->get_chi1inv(Ey, X, p, omega));
-      eps_inv->m22 = real(f->get_chi1inv(Ez, Y, p, omega));
-      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, X, p, omega)), 0);
-      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
-      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Y, p, omega)), 0);
+      eps_inv->m00 = real(f->get_chi1inv(Ez, Z, p, omega));
+      eps_inv->m11 = real(f->get_chi1inv(Ex, X, p, omega));
+      eps_inv->m22 = real(f->get_chi1inv(Ey, Y, p, omega));
+      ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ez, X, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ez, Y, p, omega)), 0);
+      ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
       break;
     default: abort("unsupported coordcycle value");
   }
@@ -98,6 +92,12 @@ static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps
   master_printf("m23(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m12);
   */
   maxwell_sym_matrix_invert(eps, eps_inv);
+}
+
+static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                         void *eps_data_) {
+  int coordcycle = 0;
+  return meep_mpb_eps_coordcycle(eps, eps_inv, r, eps_data_, coordcycle);
 }
 
 /**************************************************************/
@@ -279,14 +279,7 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
 /* field components at arbitrary points in space.               */
 /* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
-void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
-                            int band_num, const vec &_kpoint, bool match_frequency, int parity,
-                            double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata) {
-  return get_eigenmode_coordcycle(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency, parity, resolution,
-                                  eigensolver_tol, kdom, user_mdata, 0);
-}
-
+// TODO: create get_eigenmode_coordcycle and wrap get_eigenmode around it
 void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
@@ -332,9 +325,9 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
   if (!eig_vol.contains(where))
     abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
 
-  // TODO: change here
   switch (gv.dim) {
     case D3:
+      // TODO: rotate  meep -> mpb
       switch (coordcycle) {
         case 0:
           o[0] = eig_vol.in_direction_min(X);
@@ -456,9 +449,22 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
       kmatch = kcart_len;
   }
   else {
-    // TODO: rotate
-    kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
-    kdir[d - X] = 1;                     // kdir = unit vector in d direction
+    // TODO: rotate meep -> mpb
+    switch(coordcycle) {
+      case 0:
+        kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
+        kdir[d - X] = 1;                     // kdir = unit vector in d direction
+        break;
+      case 1:
+        kmatch = G[((d + 1) % 3) - X][((d + 1) % 3) - X] * k[((d + 1) % 3) - X];
+        kdir[((d + 1) % 3) - X] = 1;
+        break;
+      case 2:
+        kmatch = G[((d + 2) % 3) - X][((d + 2) % 3) - X] * k[((d + 2) % 3) - X];
+        kdir[((d + 2) % 3) - X] = 1;
+        break;
+      default: abort("unsupported coordcycle value");
+    }
   }
 
   // if match_frequency is true, we need at least a crude guess for kmatch;
@@ -472,18 +478,46 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
       if (gv.dim == D2) k[2] = beta;
     }
     else {
-      // TODO: rotate
-      k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
-      if (eig_vol.in_direction(d) > 0 &&
-          fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
-        k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
-      // end rotate to do
+      // TODO: rotate meep -> mpb
+      switch(coordcycle) {
+        case 0:
+          k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
+          if (eig_vol.in_direction(d) > 0 &&
+            fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
+          k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
+          break;
+        case 1:
+          k[((d + 1) % 3) - X] = kmatch * R[((d + 1) % 3) - X][((d + 1) % 3) - X];
+          if (eig_vol.in_direction(((d + 1) % 3)) > 0 &&
+            fabs(k[((d + 1) % 3) - X]) > 0.4)
+          k[((d + 1) % 3) - X] = k[((d + 1) % 3) - X] > 0 ? 0.4 : -0.4;
+          break;
+        case 2:
+          k[((d + 2) % 3) - X] = kmatch * R[((d + 2) % 3) - X][((d + 2) % 3) - X];
+          if (eig_vol.in_direction(((d + 2) % 3)) > 0 &&
+            fabs(k[((d + 2) % 3) - X]) > 0.4)
+          k[((d + 2) % 3) - X] = k[((d + 2) % 3) - X] > 0 ? 0.4 : -0.4;
+          break;
+        default: abort("unsupported coordcycle value");
+      }
+
     }
     if (verbosity > 1) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
   // TODO: rotate
-  set_maxwell_data_parity(mdata, parity);
+  switch(coordcycle) {
+    case 0:
+      set_maxwell_data_parity(mdata, parity);
+      break;
+    case 1:
+      set_maxwell_data_parity(mdata, (parity + 1) % 3);
+      break;
+    case 2:
+      set_maxwell_data_parity(mdata, (parity + 2) % 3);
+      break;
+    default: abort("unsupported coordcycle value");
+  }
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
   if (k[0] == 0 && k[1] == 0 && k[2] == 0) {
@@ -569,8 +603,19 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
           if (gv.dim == D2) k[2] = beta;
         }
         else {
-          // TODO: rotate
-          k[d - X] = kmatch * R[d - X][d - X];
+          // TODO: rotate unsure which direction, currently meep -> mpb
+          switch(coordcycle) {
+            case 0:
+              k[d - X] = kmatch * R[d - X][d - X];
+              break;
+            case 1:
+              k[((d + 1) % 3) - X] = kmatch * R[((d + 1) % 3) - X][((d + 1) % 3) - X];
+              break;
+            case 2:
+              k[((d + 2) % 3) - X] = kmatch * R[((d + 2) % 3) - X][((d + 2) % 3) - X];
+              break;
+            default: abort("unsupported coordcycle value");
+          }
         }
         update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       }
@@ -696,6 +741,14 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
   return (void *)edata;
 }
 
+void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
+                            int band_num, const vec &_kpoint, bool match_frequency, int parity,
+                            double resolution, double eigensolver_tol, double *kdom,
+                            void **user_mdata) {
+  return get_eigenmode_coordcycle(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency, parity, resolution,
+                                  eigensolver_tol, kdom, user_mdata, 0);
+}
+
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
   destroy_evectmatrix(edata->H);
@@ -709,10 +762,25 @@ double get_group_velocity(void *vedata) {
   return edata->group_velocity;
 }
 
-vec get_k(void *vedata) {
+vec get_k_coordcycle(void *vedata, int coordcycle = 0) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
-  // TODO: rotate
-  return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
+  // TODO: rotate mpb -> meep
+  switch(coordcycle) {
+    case 0:
+      return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
+      break;
+    case 1:
+      return vec(edata->Gk[2], edata->Gk[0], edata->Gk[1]);
+      break;
+    case 2:
+      return vec(edata->Gk[1], edata->Gk[2], edata->Gk[0]);
+      break;
+    default: abort("unsupported coordcycle value");
+  }
+}
+
+vec get_k(void *vedata) {
+  return get_k_coordcycle(vedata, 0);
 }
 
 /***************************************************************/
