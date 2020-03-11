@@ -332,8 +332,8 @@ class DftFlux(DftObj):
 
     def __init__(self, func, args):
         super(DftFlux, self).__init__(func, args)
-        self.nfreqs = args[2]
-        self.regions = args[3]
+        self.nfreqs = args[1]
+        self.regions = args[2]
         self.num_components = 4
 
     @property
