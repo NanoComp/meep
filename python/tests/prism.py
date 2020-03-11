@@ -133,13 +133,11 @@ class TestPrism(unittest.TestCase):
     gdsii_file = os.path.join(data_dir, 'spiral.gds')
 
     resolution = 25
-    cell_size = mp.Vector3(10,16)
-    geometry_center = mp.Vector3(1.5,7.3)
+    cell_size = mp.Vector3(12,16)
     geometry = mp.get_GDSII_prisms(mp.Medium(index=3.5), gdsii_file, 0, 0, mp.inf)
 
     sim = mp.Simulation(cell_size=cell_size,
                         geometry=geometry,
-                        geometry_center=geometry_center,
                         resolution=resolution)
 
     sim.init_sim()
@@ -224,7 +222,7 @@ class TestPrism(unittest.TestCase):
 
     print("Testing Non-Convex Prism from GDSII file...")
     d = self.spiral_gds()
-    d_ref = 423.2359686656507
+    d_ref = 455.01744881372224
     self.assertAlmostEqual(d,d_ref,places=5)
 
 if __name__ == '__main__':
