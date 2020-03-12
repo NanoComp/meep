@@ -505,16 +505,16 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
     if (verbosity > 1) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
-  // TODO: rotate
+  // TODO: rotate, not sure how to do this on parity
   switch(coordcycle) {
     case 0:
       set_maxwell_data_parity(mdata, parity);
       break;
     case 1:
-      set_maxwell_data_parity(mdata, (parity + 1) % 3);
+      set_maxwell_data_parity(mdata, parity);
       break;
     case 2:
-      set_maxwell_data_parity(mdata, (parity + 2) % 3);
+      set_maxwell_data_parity(mdata, parity);
       break;
     default: abort("unsupported coordcycle value");
   }
