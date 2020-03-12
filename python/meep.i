@@ -966,6 +966,24 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // typemaps needed for add_dft_fields
 //--------------------------------------------------
 
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* freqs {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* freqs {
+    $1 = (double *)array_data($input);
+}
+
+/*
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* fs {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* fs {
+    $1 = (double *)array_data($input);
+}
+*/
+
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
     $1 = py_material;
