@@ -4,7 +4,8 @@ import meep as mp
 from meep.geom import Vector3, check_nonnegative
 from scipy import signal
 import numpy as np
-from scipy.interpolate import Rbf, PchipInterpolator
+from scipy.special import erf
+
 
 def check_positive(prop, val):
     if val > 0:
