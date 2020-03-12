@@ -456,12 +456,12 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
         kdir[d - X] = 1;                     // kdir = unit vector in d direction
         break;
       case 1:
-        kmatch = G[((d + (direction)1) % (direction)3) - X][((d + (direction)1) % (direction)3) - X] * k[((d + (direction)1) % (direction)3) - X];
-        kdir[((d + (direction)1) % (direction)3) - X] = 1;
+        kmatch = G[d - Y][d - Y] * k[d - Y];
+        kdir[d - Y] = 1;
         break;
       case 2:
-        kmatch = G[((d + (direction)2) % (direction)3) - X][((d + (direction)2) % (direction)3) - X] * k[((d + (direction)2) % (direction)3) - X];
-        kdir[((d + (direction)2) % (direction)3) - X] = 1;
+        kmatch = G[d - Z][d - Z] * k[d - Z];
+        kdir[d - Z] = 1;
         break;
       default: abort("unsupported coordcycle value");
     }
@@ -487,16 +487,16 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
           k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
           break;
         case 1:
-          k[((d + (direction)1) % (direction)3) - X] = kmatch * R[((d + (direction)1) % (direction)3) - X][((d + (direction)1) % (direction)3) - X];
-          if (eig_vol.in_direction(((d + (direction)1) % (direction)3)) > 0 &&
-            fabs(k[((d + (direction)1) % (direction)3) - X]) > 0.4)
-          k[((d + (direction)1) % (direction)3) - X] = k[((d + (direction)1) % (direction)3) - X] > 0 ? 0.4 : -0.4;
+          k[d - Y] = kmatch * R[d - Y][d - Y];
+          if (eig_vol.in_direction(d) > 0 &&
+            fabs(k[d - Y]) > 0.4)
+          k[d - Y] = k[d - Y] > 0 ? 0.4 : -0.4;
           break;
         case 2:
-          k[((d + (direction)2) % (direction)3) - X] = kmatch * R[((d + (direction)2) % (direction)3) - X][((d + (direction)2) % (direction)3) - X];
-          if (eig_vol.in_direction(((d + (direction)2) % (direction)3)) > 0 &&
-            fabs(k[((d + (direction)2) % (direction)3) - X]) > 0.4)
-          k[((d + (direction)2) % (direction)3) - X] = k[((d + (direction)2) % (direction)3) - X] > 0 ? 0.4 : -0.4;
+          k[d - Z] = kmatch * R[d - Z][d - Z];
+          if (eig_vol.in_direction(d) > 0 &&
+            fabs(k[d - Z]) > 0.4)
+          k[d - Z] = k[d - Z] > 0 ? 0.4 : -0.4;
           break;
         default: abort("unsupported coordcycle value");
       }
@@ -609,10 +609,10 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
               k[d - X] = kmatch * R[d - X][d - X];
               break;
             case 1:
-              k[((d + (direction)1) % (direction)3) - X] = kmatch * R[((d + (direction)1) % (direction)3) - X][((d + (direction)1) % (direction)3) - X];
+              k[d - Y] = kmatch * R[d - Y][d - Y];
               break;
             case 2:
-              k[((d + (direction)2) % (direction)3) - X] = kmatch * R[((d + (direction)2) % (direction)3) - X][((d + (direction)2) % (direction)3) - X];
+              k[d - Z] = kmatch * R[d - Z][d - Z];
               break;
             default: abort("unsupported coordcycle value");
           }
