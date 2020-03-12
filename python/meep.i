@@ -974,6 +974,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (double *)array_data($input);
 }
 
+%typecheck(SWIG_TYPECHECK_INTEGER) int Nfreqs {
+    $1 = PyInteger_Check($input);
+}
+
+%typemap(in) int Nfreqs {
+  int py_nfreqs = PyInteger_Check($input);
+  $1 = py_nfreqs;
+}
+
+%apply (double *IN_ARRAY1, int DIM1) {(double *freqs, int Nfreqs)};
+
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
     $1 = py_material;
