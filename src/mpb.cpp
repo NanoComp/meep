@@ -762,7 +762,7 @@ double get_group_velocity(void *vedata) {
   return edata->group_velocity;
 }
 
-vec get_k_coordcycle(void *vedata, int coordcycle = 0) {
+vec get_k_coordcycle(void *vedata, int coordcycle) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
   // TODO: rotate mpb -> meep
   switch(coordcycle) {
