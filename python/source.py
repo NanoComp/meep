@@ -67,6 +67,7 @@ class GaussianSource(SourceTime):
         self.swigobj = mp.gaussian_src_time(self.frequency, self.width, self.start_time,
                                             self.start_time + 2 * self.width * self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
+        self.peak_time = 0.5 * (self.start_time + self.start_time + 2 * self.width * self.cutoff)
 
     def fourier_transform(self, freq):
         return self.swigobj.fourier_transform(freq)
@@ -83,38 +84,56 @@ class CustomSource(SourceTime):
         self.swigobj.is_integrated = self.is_integrated
 
 class FilteredSource(CustomSource):
-    def __init__(self,center_frequency,frequencies,frequency_response,dt,T,time_src,min_err=1e-6):
-        self.center_frequency=center_frequency
+    def __init__(self,center_frequency,frequencies,frequency_response,dt,T,time_src):
+        dt = dt/2 # divide by two to compensate for staggered E,H time interval
+        self.dt = dt
         self.frequencies=frequencies
-        self.time_src=time_src
-        self.min_err = min_err
+        self.N = np.round(T/dt)
+        f = self.func()
 
         # calculate dtft of input signal
-        signal_t = np.array([time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)])
-        signal_dtft = np.zeros((frequencies.shape),dtype=np.complex128)
-        for n, st in enumerate(signal_t):
-            for fi, f in enumerate(frequencies):
-                signal_dtft[fi] += np.exp(1j*2*np.pi*f*n*dt)*st
+        signal_t = np.array([time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+        signal_dtft = np.exp(1j*2*np.pi*frequencies[:,np.newaxis]*np.arange(0,signal_t.size)[np.newaxis,:]*dt)@signal_t # vectorize dtft for speed        
 
         # multiply sampled dft of input signal with filter transfer function
-        H = signal_dtft #* frequency_response
+        H = signal_dtft * frequency_response
 
-        # fit final frequency response to rbf
-        H_rbf = Rbf(frequencies, H, function='gaussian')
-        f_rbf = np.arange(0,1/dt,1/T)
+        # estimate the impulse response using a sinc function RBN
+        self.nodes, self.err = self.estimate_impulse_response(H)
 
-        # estimate impulse response of final frequency response using ifft
-        h = np.flipud(np.fft.ifft(H_rbf(f_rbf))) # flip signal becuase fft convention is backwards of meeps
-        t_h = np.arange(0,T,dt)
-
-        # fit impulse response to function to make implementation easy
-        h_rbf = PchipInterpolator(t_h, h)  # we don't need a ton of extra accuracy at this point -- just speed
-
-        def f_temp(t):
-            return np.asscalar(h_rbf(t))
-        
         # initialize super
-        super(FilteredSource, self).__init__(src_func=f_temp,center_frequency=self.center_frequency,is_integrated=time_src.is_integrated)
+        super(FilteredSource, self).__init__(src_func=f,center_frequency=center_frequency,is_integrated=False)
+
+    def sinc(self,f,f0):
+        omega = 2*np.pi*f
+        omega0 = 2*np.pi*f0
+        num = np.where(f == f0, self.N, (1-np.exp(1j*(self.N+1)*(omega-omega0)*self.dt)))
+        den = np.where(f == f0, 1, (1-np.exp(1j*(omega-omega0)*self.dt)))
+        return num/den
+
+    def rect(self,n,f0):
+        omega0 = 2*np.pi*f0
+        #return np.exp(-1j*omega0*(n-self.N/2)*self.dt)
+        return np.where(n < 0 or n > self.N,0,np.exp(-1j*omega0*(n)*self.dt))
+    
+    def __call__(self,t):
+        n = int(np.round((t)/self.dt))
+        vec = self.rect(n,self.frequencies)
+        return np.dot(vec,self.nodes)
+    
+    def func(self):
+        def _f(t): 
+            return self(t)
+        return _f
+    
+    def estimate_impulse_response(self,H):
+        # Use vandermonde matrix to calculate weights of each gaussian.
+        # Each sinc is centered at each frequency point
+        vandermonde = self.sinc(self.frequencies[:,np.newaxis],self.frequencies[np.newaxis,:])
+        nodes = np.matmul(np.linalg.pinv(vandermonde),H)
+        H_hat = np.matmul(vandermonde,nodes)
+        l2_err = np.sum(np.abs(H-H_hat)**2/np.abs(H)**2)
+        return nodes, l2_err
 
 class EigenModeSource(Source):
 
