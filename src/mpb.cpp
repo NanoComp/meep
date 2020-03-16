@@ -261,8 +261,8 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
 /* field components at arbitrary points in space.               */
 /* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
-//#define EVEN_X_PARITY (1<<4)
-//#define ODD_X_PARITY (1<<5)
+#define EVEN_X_PARITY (1<<4)
+#define ODD_X_PARITY (1<<5)
 
 // TODO: create get_eigenmode_coordcycle and wrap get_eigenmode around it
 void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volume where, const volume eig_vol,
@@ -442,9 +442,17 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
       set_maxwell_data_parity(mdata, parity);
       break;
     case 1:
+      // Rotating x,y,z parity to y,z,x involves rotating the bits 2 bits to the left
+      unsigned int num_sig_bits = 6;
+      unsigned int rotation = 2;
+      parity = ((parity >> rotation)|(parity << (num_sig_bits - rotation))) % 64;
       set_maxwell_data_parity(mdata, parity);
       break;
     case 2:
+      // Rotating x,y,z parity to z,x,y involves rotating the bits 4 bits to the left
+      unsigned int num_sig_bits = 6;
+      unsigned int rotation = 4;
+      parity = ((parity >> rotation)|(parity << (num_sig_bits - rotation))) % 64;
       set_maxwell_data_parity(mdata, parity);
       break;
     default: abort("unsupported coordcycle value");
