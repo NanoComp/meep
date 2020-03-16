@@ -436,22 +436,22 @@ void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volu
     if (verbosity > 1) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
-  // TODO: rotate, not sure how to do this on parity
+  // TODO: rotate meep -> mpb
+  unsigned int num_sig_bits = 6;
+  unsigned int rotation;
   switch(coordcycle) {
     case 0:
       set_maxwell_data_parity(mdata, parity);
       break;
     case 1:
       // Rotating x,y,z parity to y,z,x involves rotating the bits 2 bits to the left
-      unsigned int num_sig_bits = 6;
-      unsigned int rotation = 2;
+      rotation = 2;
       parity = ((parity >> rotation)|(parity << (num_sig_bits - rotation))) % 64;
       set_maxwell_data_parity(mdata, parity);
       break;
     case 2:
       // Rotating x,y,z parity to z,x,y involves rotating the bits 4 bits to the left
-      unsigned int num_sig_bits = 6;
-      unsigned int rotation = 4;
+      rotation = 4;
       parity = ((parity >> rotation)|(parity << (num_sig_bits - rotation))) % 64;
       set_maxwell_data_parity(mdata, parity);
       break;
