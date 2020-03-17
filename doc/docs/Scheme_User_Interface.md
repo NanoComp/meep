@@ -19,7 +19,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 
 **`geometry-center` [ `vector3` class ]**
 —
-Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
+Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner). Setting `geometry-center` to `c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
 
 **`sources` [ list of `source` class ]**
 —
@@ -74,7 +74,7 @@ If `true` (the default) *and* if the boundary conditions are periodic (`k-point`
 
 **`eps-averaging?` [`boolean`]**
 —
-If `true` (the default), then subpixel averaging is used when initializing the dielectric function. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). The input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `true` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function.  For simulations involving a [material function](#material-function), `eps-averaging?` is `false` (the default) and must be enabled in which case the input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
 
 **`force-complex-fields?` [`boolean`]**
 —
@@ -102,7 +102,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 
 **`extra-materials` [ list of `material-type` class ]**
 —
-By default, Meep turns off support for material dispersion (via susceptibilities or conductivity) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
+By default, Meep turns off support for material dispersion (via susceptibilities or conductivity) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your [material function](#material-function) only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -247,9 +247,9 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 
 A perfectly-conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor`.
 
-**`material-function`**
+#### material function
 
-This material type allows you to specify the material as an arbitrary function of position. It has one property:
+This `material-function` type allows you to specify the material as an arbitrary function of position. It has one property:
 
 **`material-func` [`function`]**
 —
