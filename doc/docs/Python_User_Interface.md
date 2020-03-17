@@ -59,7 +59,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 
 **`geometry_center` [ `Vector3` class ]**
 —
-Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).   Passing `geometry_center=c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
+Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).  Passing `geometry_center=c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
 
 **`sources` [ list of `Source` class ]**
 —
@@ -83,11 +83,11 @@ Holds the default material that is used for points not in any object of the geom
 
 **`material_function` [ function ]**
 —
-A Python function that takes a `Vector3` and returns a `Medium`. See also [Medium](#medium). Defaults to `None`.
+A Python function that takes a `Vector3` and returns a `Medium`. See also [Material Function](#material-function). Defaults to `None`.
 
 **`epsilon_func` [ function ]**
 —
-A Python function that takes a `Vector3` and returns the dielectric constant at that point. See also [Medium](#medium). Defaults to `None`.
+A Python function that takes a `Vector3` and returns the dielectric constant at that point. See also [Material Function](#material-function). Defaults to `None`.
 
 **`epsilon_input_file` [`string`]**
 —
@@ -123,12 +123,11 @@ If `True` (the default) *and* if the boundary conditions are periodic (`k_point`
 
 **`eps_averaging` [`boolean`]**
 —
-If `True` (the default), then subpixel averaging is used when initializing the dielectric function. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). The input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
 
 **`force_complex_fields` [`boolean`]**
 —
 By default, Meep runs its simulations with purely real fields whenever possible. It uses complex fields which require twice the memory and computation if the `k_point` is non-zero or if `m` is non-zero. However, by setting `force_complex_fields` to `True`, Meep will always use complex fields.
-
 
 **`force_all_components` [`boolean`]**
 —
@@ -312,9 +311,9 @@ Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified f
 —
 Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
-**material functions**
+#### Material Function
 
-Any function that accepts a `Medium` instance can also accept a user-defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
+Any function that accepts a `Medium` instance can also accept a user-defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
 
 Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
 
