@@ -132,7 +132,7 @@ As a final example, the Python interface routine [`get_array_metadata`](Python_U
 
 ```scm
 (define (f r eps) (vector3-x r))
-(output-real-field-function "x" Dielectric f)
+(output-real-field-function "x" (list Dielectric) f)
 ```
 
 For more information, see [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).

@@ -23,16 +23,26 @@ using namespace std;
 namespace meep {
 
 dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
-  if (Nfreq <= 1) {
-    omega_min = (freq_min + freq_max) * pi;
-    domega = 0;
-    Nomega = 1;
-  }
-  else {
-    omega_min = freq_min * 2 * pi;
-    domega = (freq_max - freq_min) * 2 * pi / (Nfreq - 1);
-    Nomega = Nfreq;
-  }
+  omega = new double[Nfreq];
+  double domega = Nfreq <= 1 ? 0.0 : 2 * pi * (freq_max - freq_min) / (Nfreq - 1);
+  if (Nfreq <= 1)
+    omega[0] = (freq_min + freq_max) * pi;
+  else
+    for (int i = 0; i < Nfreq; ++i)
+      omega[i] = 2*pi*freq_min + i*domega;
+  Nomega = Nfreq;
+  Fdft = new complex<realnum>[Nomega];
+  Jdft = new complex<realnum>[Nomega];
+  for (int i = 0; i < Nomega; ++i)
+    Fdft[i] = Jdft[i] = 0.0;
+  Jsum = 1.0;
+}
+
+dft_ldos::dft_ldos(const double *freq, int Nfreq) {
+  omega = new double[Nfreq];
+  for (int i = 0; i < Nfreq; ++i)
+    omega[i] = 2 * pi * freq[i];
+  Nomega = Nfreq;
   Fdft = new complex<realnum>[Nomega];
   Jdft = new complex<realnum>[Nomega];
   for (int i = 0; i < Nomega; ++i)
@@ -130,8 +140,8 @@ void dft_ldos::update(fields &f) {
       }
     }
   for (int i = 0; i < Nomega; ++i) {
-    complex<double> Ephase = polar(1.0, (omega_min + i * domega) * f.time()) * scale;
-    complex<double> Hphase = polar(1.0, (omega_min + i * domega) * (f.time() - f.dt / 2)) * scale;
+    complex<double> Ephase = polar(1.0, omega[i] * f.time()) * scale;
+    complex<double> Hphase = polar(1.0, omega[i] * f.time() - f.dt / 2) * scale;
     Fdft[i] += Ephase * EJ + Hphase * HJ;
 
     // NOTE: take only 1st time dependence: assumes all sources have same J(t)

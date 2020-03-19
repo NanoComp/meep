@@ -59,7 +59,6 @@ int check_cyl(double sr, double sz, double a) {
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
     F0[i] = EH[EHcomp[c]] * 2.0*pi*x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
     double d = abs(F0[i] - F[i]);
-    double f = abs(F[i]);
     double f0 = abs(F0[i]);
     diff += d * d;
     dot0 += f0 * f0;

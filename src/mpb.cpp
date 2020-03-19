@@ -758,8 +758,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
                                         double *cscale, direction d) {
-  double freq_min = flux.freq_min;
-  double dfreq = flux.dfreq;
   int num_freqs = flux.Nfreq;
   bool match_frequency = true;
 
@@ -779,12 +777,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       /*- call mpb to compute the eigenmode --------------------------*/
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
-      double freq = freq_min + nf * dfreq;
       double kdom[3];
-      if (user_kpoint_func) kpoint = user_kpoint_func(freq, band_num, user_kpoint_data);
+      if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
       am_now_working_on(MPBTime);
       void *mode_data =
-          get_eigenmode(freq, d, flux.where, eig_vol, band_num, kpoint, match_frequency, parity,
+          get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency, parity,
                         eig_resolution, eigensolver_tol, kdom, (void **)&mdata);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
