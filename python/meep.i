@@ -809,6 +809,26 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete[] $1;
 }
 
+%typemap(out) double* freq {
+    int size = arg1->Nfreq;
+    $result = PyList_New(size);
+    for(int i = 0; i < size; i++) {
+        PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
+    }
+
+//    delete[] $1;
+}
+
+%typemap(out) double* omega {
+    int size = arg1->Nomega;
+    $result = PyList_New(size);
+    for(int i = 0; i < size; i++) {
+        PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
+    }
+
+//    delete[] $1;
+}
+
 // Typemap suite for dft_force
 
 %typemap(out) double* force {
@@ -1342,6 +1362,25 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
                     double kdom[3]);
 #endif // HAVE_MPB
+
+// Make omega members of meep::dft_ldos available as 'freq' in python
+%extend meep::dft_ldos {
+
+    int get_Nomega() {
+        return $self->Nomega;
+    }
+    %pythoncode %{
+        def freqs(self):
+            import math
+            import numpy as np
+            start = self.omega[0] / (2 * math.pi)
+            stop = self.omega[-1] / (2 * math.pi)
+            return np.linspace(start, stop, num=self.Nomega, endpoint=True).tolist()
+
+        __swig_getmethods__["nfreq"] = get_Nomega
+        if _newclass: nfreq = property(get_Nomega)
+    %}
+}
 
 %extend meep::fields {
   bool is_periodic(boundary_side side, direction dir) {

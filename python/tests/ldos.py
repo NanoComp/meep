@@ -44,9 +44,8 @@ class TestLDOS(unittest.TestCase):
 
         self.assertAlmostEqual(self.sim.ldos_data[0], 1.011459560620368)
         freqs = ldos.freqs()
-        self.assertEqual(ldos.freq_min, freqs[0] * 2 * math.pi)
+        self.assertEqual(ldos.omega[0], freqs[0] * 2 * math.pi)
         self.assertEqual(ldos.nfreq, 1)
-        self.assertEqual(ldos.dfreq, 0)
 
     def test_invalid_dft_ldos(self):
         with self.assertRaises(ValueError):
