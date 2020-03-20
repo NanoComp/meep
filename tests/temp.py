@@ -10,10 +10,10 @@ import meep_adjoint as mpa
 
 freq_min = 1/1.7
 freq_max = 1/1.4
-nfreq = 300
+nfreq = 100
 freqs = np.linspace(freq_min,freq_max,nfreq)
 resolution = 10
-run_time = 400
+run_time = 500
 
 # --------------------------- #
 # Run normal simulation
@@ -38,7 +38,7 @@ sim = mp.Simulation(cell_size=cell,
                     resolution=resolution)
 mon = sim.add_dft_fields([mp.Ez],freq_min,freq_max,nfreq,center=[0,0],size=[0,1])
 
-sim.run(until=run_time)
+sim.run(until_after_sources=run_time)
 
 fields = np.zeros((nfreq,),dtype=np.complex128)
 # just store one spatial point for each freq
@@ -54,19 +54,14 @@ taps = signal.firwin(num_taps,[freq_min/(fs/2), freq_max/(fs/2)], pass_zero='ban
 
 w,h = signal.freqz(taps,worN=freqs_scipy)
 
-'''plt.figure()
-plt.plot(w,np.abs(h))
-plt.show()
-quit()'''
-
 # frequency domain calculation
 desired_fields = h * fields
 
 # --------------------------- #
 # Run filtered simulation
 # --------------------------- #
-
-filtered_src = mp.FilteredSource(fcen,freqs,h,dt,run_time,gauss_src)
+T = 1200
+filtered_src = mp.FilteredSource(fcen,freqs,h,dt,T,gauss_src)
 
 sources = [mp.EigenModeSource(filtered_src,
                      eig_band=1,
@@ -77,7 +72,7 @@ sim.reset_meep()
 sim.change_sources(sources)
 
 mon = sim.add_dft_fields([mp.Ez],freq_min,freq_max,nfreq,center=[0,0],size=[0,1])
-sim.run(until=run_time)
+sim.run(until_after_sources=run_time)
 
 fields_filtered = np.zeros((nfreq,),dtype=np.complex128)
 # just store one spatial point for each freq
@@ -87,24 +82,19 @@ for f in range(nfreq):
 # --------------------------- #
 # Compare results
 # --------------------------- #
-print(np.abs(fields_filtered/fields), np.angle(fields_filtered/fields))
 
 plt.figure()
 plt.subplot(2,1,1)
-plt.semilogy(freqs,np.abs(fields),label='Frequency Domain')
+plt.semilogy(freqs,np.abs(desired_fields),label='Frequency Domain')
 plt.semilogy(freqs,np.abs(fields_filtered),'-.',label='Time Domain')
-#plt.plot(freqs,np.abs(fields),'--',label='Gaussian Src')
-#plt.plot(freqs,np.abs(h),'--',label='Window')
 plt.grid()
 plt.xlabel('Frequency')
 plt.ylabel('Magnitude')
 plt.legend()
 
 plt.subplot(2,1,2)
-plt.plot(freqs,np.unwrap(np.angle(fields)),label='Frequency Domain')
+plt.plot(freqs,np.unwrap(np.angle(desired_fields)),label='Frequency Domain')
 plt.plot(freqs,np.unwrap(np.angle(fields_filtered)),'-.',label='Time Domain')
-#plt.plot(freqs,np.unwrap(np.angle(fields)),'--',label='Gaussian Src')
-#plt.plot(freqs,np.unwrap(np.angle(h)),'--',label='Window')
 plt.grid()
 plt.xlabel('Frequency')
 plt.ylabel('Angle')

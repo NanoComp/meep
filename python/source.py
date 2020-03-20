@@ -103,23 +103,56 @@ class FilteredSource(CustomSource):
         self.nodes, self.err = self.estimate_impulse_response(H)
 
         # initialize super
-        super(FilteredSource, self).__init__(src_func=f,center_frequency=center_frequency,is_integrated=False)
+        super(FilteredSource, self).__init__(end_time=T,src_func=f,center_frequency=center_frequency,is_integrated=False)
 
+    def cos_window_td(self,a,n,f0):
+        omega0 = 2*np.pi*f0
+        cos_sum = np.sum([(-1)**k * a[k] * np.cos(2*np.pi*n*k/self.N )for k in range(len(a))])
+        return np.where(n < 0 or n > self.N,0,
+            np.exp(-1j*omega0*n*self.dt) * (cos_sum)
+            )
+
+    def cos_window_fd(self,a,f,f0):
+        omega = 2*np.pi*f
+        omega0 = 2*np.pi*f0
+        df = 1/(self.N*self.dt)
+        cos_sum = np.zeros((f*f0).shape,dtype=np.complex128)#a[0]*self.sinc(f,f0)
+        for k in range(len(a)):
+            cos_sum += (-1)**k * a[k]/2 * self.sinc(f,f0-k*df) + (-1)**k * a[k]/2 * self.sinc(f,f0+k*df)
+        return cos_sum
+    
     def sinc(self,f,f0):
         omega = 2*np.pi*f
         omega0 = 2*np.pi*f0
-        num = np.where(f == f0, self.N, (1-np.exp(1j*(self.N+1)*(omega-omega0)*self.dt)))
-        den = np.where(f == f0, 1, (1-np.exp(1j*(omega-omega0)*self.dt)))
+        num = np.where(omega == omega0, self.N, (1-np.exp(1j*(self.N+1)*(omega-omega0)*self.dt)))
+        den = np.where(omega == omega0, 1, (1-np.exp(1j*(omega-omega0)*self.dt)))
         return num/den
 
-    def rect(self,n,f0):
+    def rect(self,t,f0):
+        n = int(np.round((t)/self.dt))
         omega0 = 2*np.pi*f0
-        #return np.exp(-1j*omega0*(n-self.N/2)*self.dt)
         return np.where(n < 0 or n > self.N,0,np.exp(-1j*omega0*(n)*self.dt))
+
+    def hann(self,t,f0):
+        n = int(np.round((t)/self.dt))
+        a = [0.5, 0.5]
+        return self.cos_window_td(a,n,f0)
+
+    def hann_dtft(self,f,f0):
+        a = [0.5, 0.5]
+        return self.cos_window_fd(a,f,f0)
+
+    def nuttall(self,t,f0):
+        n = int(np.round((t)/self.dt))
+        a = [0.355768, 0.4873960, 0.144232, 0.012604]
+        return self.cos_window_td(a,n,f0)
+
+    def nutall_dtft(self,f,f0):
+        a = [0.355768, 0.4873960, 0.144232, 0.012604]
+        return self.cos_window_fd(a,f,f0)
     
     def __call__(self,t):
-        n = int(np.round((t)/self.dt))
-        vec = self.rect(n,self.frequencies)
+        vec = self.nuttall(t,self.frequencies)
         return np.dot(vec,self.nodes)
     
     def func(self):
@@ -130,7 +163,7 @@ class FilteredSource(CustomSource):
     def estimate_impulse_response(self,H):
         # Use vandermonde matrix to calculate weights of each gaussian.
         # Each sinc is centered at each frequency point
-        vandermonde = self.sinc(self.frequencies[:,np.newaxis],self.frequencies[np.newaxis,:])
+        vandermonde = self.nutall_dtft(self.frequencies[:,np.newaxis],self.frequencies[np.newaxis,:])
         nodes = np.matmul(np.linalg.pinv(vandermonde),H)
         H_hat = np.matmul(vandermonde,nodes)
         l2_err = np.sum(np.abs(H-H_hat)**2/np.abs(H)**2)
