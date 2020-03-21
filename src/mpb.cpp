@@ -758,7 +758,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
                                         double *cscale, direction d) {
-  int num_freqs = flux.Nfreq;
+  int num_freqs = flux.freq.size();
   bool match_frequency = true;
 
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)

@@ -33,14 +33,8 @@ dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, doub
                            const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
-    : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
-  freq = new double[Nf];
-  double dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
-  if (Nf <= 1)
-    freq[0] = (fmin + fmax) * 0.5;
-  else
-    for (int i = 0; i < Nf; ++i)
-      freq[i] = fmin + i*dfreq;
+    : F(F_), eps(eps_), mu(mu_), where(where_) {
+  freq = meep::linspace(fmin, fmax, Nf);
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = periodic_d_[i];
     periodic_n[i] = periodic_n_[i];
@@ -49,14 +43,13 @@ dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, doub
   }
 }
 
-dft_near2far::dft_near2far(dft_chunk *F_, const double *freq_, int Nf, double eps_, double mu_,
+dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double> freq_, double eps_, double mu_,
                            const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
-    : Nfreq(Nf), F(F_), eps(eps_), mu(mu_), where(where_) {
-  freq = new double[Nf];
-  for (int i = 0; i < Nf; ++i)
-    freq[i] = freq_[i];
+    : F(F_), eps(eps_), mu(mu_), where(where_) {
+  for (int i = 0; i < freq_.size(); ++i)
+    freq.push_back(freq_[i]);
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = periodic_d_[i];
     periodic_n[i] = periodic_n_[i];
@@ -67,10 +60,8 @@ dft_near2far::dft_near2far(dft_chunk *F_, const double *freq_, int Nf, double ep
 
 dft_near2far::dft_near2far(const dft_near2far &f)
     : F(f.F), eps(f.eps), mu(f.mu), where(f.where) {
-  Nfreq = f.Nfreq;
-  freq = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
-    freq[i] = f.freq[i];
+  for (int i = 0; i < f.freq.size(); ++i)
+    freq.push_back(f.freq[i]);
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = f.periodic_d[i];
     periodic_n[i] = f.periodic_n[i];
@@ -338,11 +329,12 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
     abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
+  const int Nfreq = freq.size();
   for (int i = 0; i < 6 * Nfreq; ++i)
     EH[i] = 0.0;
 
   for (dft_chunk *f = F; f; f = f->next_in_dft) {
-    assert(Nfreq == f->Nomega);
+    assert(Nfreq == f->omega.size());
 
     component c0 = component(f->vc); /* equivalent source component */
 
@@ -382,6 +374,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 
 std::complex<double> *dft_near2far::farfield(const vec &x) {
   std::complex<double> *EH, *EH_local;
+  const int Nfreq = freq.size();
   EH_local = new std::complex<double>[6 * Nfreq];
   farfield_lowlevel(EH_local, x);
   EH = new std::complex<double>[6 * Nfreq];
@@ -410,6 +403,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
   }
   if (where.dim == Dcyl) dirs[2] = P; // otherwise Z is listed twice
 
+  const int Nfreq = freq.size();
   if (N * Nfreq < 1) return NULL; /* nothing to output */
 
   /* 6 x 2 x N x Nfreq array of fields in row-major order */
@@ -472,6 +466,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
   if (!EH) return; /* nothing to output */
 
+  const int Nfreq = freq.size();
   /* frequencies are the last dimension */
   if (Nfreq > 1) dims[rank++] = Nfreq;
 
@@ -504,6 +499,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
   realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
 
+  const int Nfreq = freq.size();
   double *F = new double[Nfreq];
   std::complex<realnum> ff_EH[6];
   std::complex<realnum> cE[2], cH[2];
@@ -547,91 +543,11 @@ static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fab
 
 dft_near2far fields::add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                       int Nfreq, int Nperiods) {
-  dft_chunk *F = 0; /* E and H chunks*/
-  double eps = 0, mu = 0;
-  volume everywhere = where->v;
-
-  direction periodic_d[2] = {NO_DIRECTION, NO_DIRECTION};
-  int periodic_n[2] = {0, 0};
-  double periodic_k[2] = {0, 0}, period[2] = {0, 0};
-
-  for (const volume_list *w = where; w; w = w->next) {
-    everywhere = everywhere | where->v;
-    direction nd = component_direction(w->c);
-    if (nd == NO_DIRECTION) nd = normal_direction(w->v);
-    if (nd == NO_DIRECTION) abort("unknown dft_near2far normal");
-    direction fd[2];
-
-    double weps = real(get_eps(w->v.center()));
-    double wmu = real(get_mu(w->v.center()));
-    if (w != where && !(approxeq(eps, weps) && approxeq(mu, wmu)))
-      abort("dft_near2far requires surfaces in a homogeneous medium");
-    eps = weps;
-    mu = wmu;
-
-    /* two transverse directions to normal (in cyclic order to get
-       correct sign s below) */
-    switch (nd) {
-      case X:
-        fd[0] = Y;
-        fd[1] = Z;
-        break;
-      case Y:
-        fd[0] = Z;
-        fd[1] = X;
-        break;
-      case R:
-        fd[0] = P;
-        fd[1] = Z;
-        break;
-      case P:
-        fd[0] = Z;
-        fd[1] = R;
-        break;
-      case Z:
-        if (gv.dim == Dcyl)
-          fd[0] = R, fd[1] = P;
-        else
-          fd[0] = X, fd[1] = Y;
-        break;
-      default: abort("invalid normal direction in dft_near2far!");
-    }
-
-    if (Nperiods > 1) {
-      for (int i = 0; i < 2; ++i) {
-        double user_width = user_volume.num_direction(fd[i]) / a;
-        if (has_direction(v.dim, fd[i]) && boundaries[High][fd[i]] == Periodic &&
-            boundaries[Low][fd[i]] == Periodic &&
-            float(w->v.in_direction(fd[i])) >= float(user_width)) {
-          periodic_d[i] = fd[i];
-          periodic_n[i] = Nperiods;
-          period[i] = user_width;
-          periodic_k[i] = 2 * pi * real(k[fd[i]]) * period[i];
-        }
-      }
-    }
-
-    for (int i = 0; i < 2; ++i) {   /* E or H */
-      for (int j = 0; j < 2; ++j) { /* first or second component */
-        component c = direction_component(i == 0 ? Ex : Hx, fd[j]);
-
-        /* find equivalent source component c0 and sign s */
-        component c0 = direction_component(i == 0 ? Hx : Ex, fd[1 - j]);
-        double s = j == 0 ? 1 : -1; /* sign of n x c */
-        if (is_electric(c)) s = -s;
-
-        F = add_dft(c, w->v, freq_min, freq_max, Nfreq, true, s * w->weight, F, false, 1.0, false,
-                    c0);
-      }
-    }
-  }
-
-  return dft_near2far(F, freq_min, freq_max, Nfreq, eps, mu, everywhere, periodic_d, periodic_n,
-                      periodic_k, period);
+  return add_dft_near2far(where, linspace(freq_min, freq_max, Nfreq), Nperiods);
 }
 
-dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq,
-                                      int Nfreq, int Nperiods) {
+dft_near2far fields::add_dft_near2far(const volume_list *where, const std::vector<double> freq,
+                                      int Nperiods) {
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
   volume everywhere = where->v;
@@ -705,12 +621,12 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
         double s = j == 0 ? 1 : -1; /* sign of n x c */
         if (is_electric(c)) s = -s;
 
-        F = add_dft(c, w->v, freq, Nfreq, true, s * w->weight, F, false, 1.0, false, c0);
+        F = add_dft(c, w->v, freq, true, s * w->weight, F, false, 1.0, false, c0);
       }
     }
   }
 
-  return dft_near2far(F, freq, Nfreq, eps, mu, everywhere, periodic_d, periodic_n,
+  return dft_near2far(F, freq, eps, mu, everywhere, periodic_d, periodic_n,
                       periodic_k, period);
 }
 
