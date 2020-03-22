@@ -721,11 +721,13 @@ dft_flux fields::add_dft_flux_plane(const volume &where, const std::vector<doubl
 
 dft_fields::dft_fields(dft_chunk *chunks_, double freq_min, double freq_max, int Nf, const volume &where_)
     : where(where_) {
+  chunks = chunks_;
   freq = meep::linspace(freq_min, freq_max, Nf);
 }
 
 dft_fields::dft_fields(dft_chunk *chunks_, const std::vector<double> freq_, const volume &where_)
     : where(where_) {
+  chunks = chunks_;
   for (int i = 0; i < freq_.size(); ++i)
     freq.push_back(freq_[i]);
 }
