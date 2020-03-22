@@ -126,4 +126,4 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     boundary_layers=[mp.PML(dpml)])
 ```
 
-Since the adaptive numerical integration tends to be much slower than the analytic approach, the values for the parameters `subpixel_tol` and `subpixel_maxeval` can be lowered to speed up the quadrature at the expense of reduced accuracy.
+Since the adaptive numerical integration tends to be *much* slower than the analytic approach, the values for its convergence parameters `subpixel_tol` (tolerance) and `subpixel_maxeval` (maximum number of function evaluations) can be increased/lowered to speed up the quadrature at the expense of reduced accuracy.
