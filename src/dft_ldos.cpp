@@ -23,13 +23,13 @@ using namespace std;
 namespace meep {
 
 // TODO: overload dft_ldos constructor
-dft_ldos::dft_ldos(double *freqs, int Nfreq) {
+dft_ldos::dft_ldos(std::vector<double> freqs, int Nfreq) {
   if (Nfreq < 1) { abort("Nfreq must be at least 1"); }
   else {
     Nomega = Nfreq;
-    double om[Nomega];
+    std::vector<double> om;
     for (int i = 0; i < Nfreq; i++) { om[i] = freqs[i] * 2 * pi; }
-    omegas = om;
+    omegas.assign(om.begin(), om.end());
   }
   Fdft = new complex<realnum>[Nomega];
   Jdft = new complex<realnum>[Nomega];
@@ -44,9 +44,9 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
   else {
     double dfreq = (freq_max - freq_min) / (Nfreq - 1);
     Nomega = Nfreq;
-    double om[Nomega];
+    std::vector<double> om;
     for (int i = 0; i < Nfreq; i++) { om[i] = (freq_min + dfreq * i) * 2 * pi; }
-    omegas = om;
+    omegas.assign(om.begin(), om.end());
   }
   Fdft = new complex<realnum>[Nomega];
   Jdft = new complex<realnum>[Nomega];
