@@ -751,7 +751,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
 /* similarly, if kpoints is non-null it should point to a      */
 /* caller-allocated array of size num_bands*num_freqs, which on*/
 /* return will be populated by the k-vectors for the modes.    */
-/***************************************************************/
+/****************omegas.assign(om.begin(), om.end());***********************************************/
 void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands,
                                         int num_bands, int parity, double eig_resolution,
                                         double eigensolver_tol, std::complex<double> *coeffs,
@@ -759,7 +759,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
                                         double *cscale, direction d) {
   int num_freqs = flux.Nfreq;
-  double *freqs = flux.freqs;
+  std::vector<double> freqs(flux.freqs);
   bool match_frequency = true;
 
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
