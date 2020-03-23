@@ -24,11 +24,11 @@ using namespace std;
 
 namespace meep {
 // TODO: overload dft_force constructor
-dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double *fs,
-                     int Nf, const volume &where_)
+dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
+                     std::vector<double> fs, int Nf, const volume &where_)
     : where(where_) {
   if (Nf < 1) abort("Nf must be at least 1");
-  freqs = fs;
+  freqs.assign(fs.begin(), fs.end());
   Nfreq = Nf;
   offdiag1 = offdiag1_;
   offdiag2 = offdiag2_;
@@ -42,11 +42,9 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
   if (Nf < 1) abort("Nf must be at least 1");
   Nfreq = Nf;
   double dfreq = (fmax - fmin) / (Nf - 1);
-  double fs[Nf];
   for (int i = 0; i < Nf; i++) {
-    fs[i] = fmin + dfreq * i;
+    freqs[i] = fmin + dfreq * i;
   }
-  freqs = fs;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
   offdiag1 = offdiag1_;
   offdiag2 = offdiag2_;
@@ -57,7 +55,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
 dft_force::dft_force(const dft_force &f) : where(f.where) {
   // TODO: change here
   Nfreq = f.Nfreq;
-  freqs = f.freqs;
+  freqs.assign(f.freqs.begin(), f.freqs.end());
   offdiag1 = f.offdiag1;
   offdiag2 = f.offdiag2;
   diag = f.diag;
@@ -66,7 +64,7 @@ dft_force::dft_force(const dft_force &f) : where(f.where) {
 
 void dft_force::remove() {
   // TODO: add freqs to remove?
-  delete[] freqs;
+  // delete[] freqs;
   while (offdiag1) {
     dft_chunk *nxt = offdiag1->next_in_dft;
     delete offdiag1;
@@ -152,7 +150,7 @@ void dft_force::scale_dfts(complex<double> scale) {
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
 // TODO: overload fields::add_dft_force
-dft_force fields::add_dft_force(const volume_list *where_, double *freqs, int Nfreq) {
+dft_force fields::add_dft_force(const volume_list *where_, std::vector<double> freqs, int Nfreq) {
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
 
   volume_list *where = S.reduce(where_);
@@ -202,7 +200,7 @@ dft_force fields::add_dft_force(const volume_list *where_, double freq_min, doub
                                 int Nfreq) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
