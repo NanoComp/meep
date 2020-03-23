@@ -35,7 +35,8 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   int vc;
   // TODO: change dft_chunk_data properties
   int Nomega;
-  double *omegas = new double[Nomega];
+  std::vector<double> omegas;
+  omegas.reserve(Nomega);
   complex<double> stored_weight, extra_weight;
   double dt_factor;
   bool include_dV_and_interp_weights;
@@ -87,7 +88,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 
   // TODO: change dft_chunk properties
   Nomega = data->Nomega;
-  omegas = data->omegas = new double [Nomega];
+  omegas.assign(data->omegas.begin(), data->omegas.end());
   dft_phase = new complex<realnum>[Nomega];
 
   N = 1;
@@ -107,7 +108,7 @@ dft_chunk::~dft_chunk() {
   delete[] dft;
   delete[] dft_phase;
   // TODO: add omegas to destructor?
-  delete[] omegas;
+  //delete[] omegas;
 
   // delete from fields_chunk list
   dft_chunk *cur = fc->dft_chunks;
@@ -122,7 +123,7 @@ dft_chunk::~dft_chunk() {
 
 void dft_flux::remove() {
   // TODO: add freqs to remove?
-  delete[] freqs;
+  // freqs.clear();
   while (E) {
     dft_chunk *nxt = E->next_in_dft;
     delete E;
@@ -151,7 +152,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
 }
 
 // TODO: overload fields::add_dft
-dft_chunk *fields::add_dft(component c, const volume &where, double *freqs, int Nfreq,
+dft_chunk *fields::add_dft(component c, const volume &where, std::vector<double> freqs, int Nfreq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
                            complex<double> extra_weight, bool use_centered_grid, int vc) {
@@ -172,9 +173,9 @@ dft_chunk *fields::add_dft(component c, const volume &where, double *freqs, int 
   // TODO: change how freqs becomes omegas
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   data.Nomega = Nfreq;
-  double omegas[Nfreq];
+  std::vector<double> omegas;
   for (int i = 0; i < Nfreq; i++) { omegas[i] = freqs[i] * 2 * pi; }
-  data.omegas = omegas;
+  data.omegas.assign(omegas.begin(), omegas.end());
   data.stored_weight = stored_weight;
   data.extra_weight = extra_weight;
   data.dt_factor = dt / sqrt(2.0 * pi);
@@ -196,7 +197,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, double freq_min, do
                            bool use_centered_grid, int vc) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -205,7 +206,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, double freq_min, do
 }
 
 // TODO: overload add_dft
-dft_chunk *fields::add_dft(const volume_list *where, double *freqs, int Nfreq,
+dft_chunk *fields::add_dft(const volume_list *where, std::vector<double> freqs, int Nfreq,
                            bool include_dV_and_interp_weights) {
   dft_chunk *chunks = 0;
   while (where) {
@@ -233,7 +234,7 @@ dft_chunk *fields::add_dft(const volume_list *where, double freq_min, double fre
 }
 
 // TODO: overload add_dft_pt
-dft_chunk *fields::add_dft_pt(component c, const vec &where, double *freqs, int Nfreq) {
+dft_chunk *fields::add_dft_pt(component c, const vec &where, std::vector<double> freqs, int Nfreq) {
   // TODO: change here
   return add_dft(c, where, freqs, Nfreq, false);
 }
@@ -383,13 +384,13 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char 
 
 // TODO: overload dft_flux constructor
 dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
-                   double *fs, int Nf, const volume &where_, direction normal_direction_,
+                   std::vector<double> fs, int Nf, const volume &where_, direction normal_direction_,
                    bool use_symmetry_)
     : Nfreq(Nf), E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
       use_symmetry(use_symmetry_) {
     // TODO: change here
   if (Nf < 1) abort("Nf must be at least 1");
-  freqs = fs;
+  freqs.assign(fs.begin(), fs.end());
 }
 
 dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
@@ -399,17 +400,17 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
       use_symmetry(use_symmetry_) {
   if (Nf < 1) abort("Nf must be at least 1");
   double dfreqs = (fmax - fmin) / (Nf - 1);
-  double fs[Nf];
+  std::vector<double> fs;
   for (int i = 0; i < Nf; i++) {
     fs[i] = fmin + dfreqs * i;
   }
-  freqs = fs;
+  freqs.assign(fs.begin(), fs.end());
 }
 
 dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
   // TODO: change here
   Nfreq = f.Nfreq;
-  freqs = f.freqs;
+  freqs.assign(f.freqs.begin(), f.freqs.end());
   E = f.E;
   H = f.H;
   cE = f.cE;
@@ -463,7 +464,7 @@ void dft_flux::scale_dfts(complex<double> scale) {
 }
 
 // TODO: overload fields::add_dft_flux
-dft_flux fields::add_dft_flux(const volume_list *where_, double *freqs, int Nfreq,
+dft_flux fields::add_dft_flux(const volume_list *where_, std::vector<double> freqs, int Nfreq,
                               bool use_symmetry) {
   if (!where_) // handle empty list of volumes
     // TODO: change here
@@ -521,7 +522,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_, double freq_min, double
                               int Nfreq, bool use_symmetry) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -529,12 +530,12 @@ dft_flux fields::add_dft_flux(const volume_list *where_, double freq_min, double
 }
 
 // TODO: overload dft_energy constructor
-dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double *fs,
-                       int Nf, const volume &where_)
+dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
+                       std::vector<double> fs, int Nf, const volume &where_)
     : Nfreq(Nf), E(E_), H(H_), D(D_), B(B_), where(where_) {
   // TODO: change here
   if (Nf < 1) abort("Nf must be at least 1");
-  freqs = fs;
+  freqs.assign(fs.begin(), fs.end());
 }
 
 dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin,
@@ -542,18 +543,18 @@ dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B
     : Nfreq(Nf), E(E_), H(H_), D(D_), B(B_), where(where_) {
   if (Nf < 1) abort("Nf must be at least 1");
   double dfreq = (fmax - fmin) / (Nf - 1);
-  double fs[Nf];
+  std::vector<double> fs;
   for (int i = 0; i < Nf; i++) {
     fs[i] = fmin + dfreq * i;
   }
-  freqs = fs;
+  freqs.assign(fs.begin(), fs.end());
 }
 
 // TODO: change here
 dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
   // TODO: change here
   Nfreq = f.Nfreq;
-  freqs = f.freqs;
+  freqs.assign(f.freqs.begin(), f.freqs.end());
   E = f.E;
   H = f.H;
   D = f.D;
@@ -602,7 +603,7 @@ double *dft_energy::total() {
 }
 
 // TODO: overload fields::add_dft_energy
-dft_energy fields::add_dft_energy(const volume_list *where_, double *freqs, int Nfreq) {
+dft_energy fields::add_dft_energy(const volume_list *where_, std::vector<double> freqs, int Nfreq) {
 
   if (!where_) // handle empty list of volumes
     // TODO: change here
@@ -635,7 +636,7 @@ dft_energy fields::add_dft_energy(const volume_list *where_, double freq_min, do
                                   int Nfreq) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -683,7 +684,7 @@ void dft_energy::scale_dfts(complex<double> scale) {
 
 void dft_energy::remove() {
   // TODO: add freqs to remove?
-  delete[] freqs;
+  //delete[] freqs;
   while (E) {
     dft_chunk *nxt = E->next_in_dft;
     delete E;
@@ -723,8 +724,8 @@ direction fields::normal_direction(const volume &where) const {
 }
 
 // TODO: overload fields::add_dft_flux
-dft_flux fields::add_dft_flux(direction d, const volume &where, double *freqs, int Nfreq,
-                              bool use_symmetry) {
+dft_flux fields::add_dft_flux(direction d, const volume &where, std::vector<double> freqs,
+                              int Nfreq, bool use_symmetry) {
   if (d == NO_DIRECTION) d = normal_direction(where);
   volume_list vl(where, direction_component(Sx, d));
   // TODO: change here
@@ -737,7 +738,7 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, double freq_min,
                               int Nfreq, bool use_symmetry) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs];
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -745,7 +746,8 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, double freq_min,
 }
 
 // TODO: overload fields::add_mode_monitor
-dft_flux fields::add_mode_monitor(direction d, const volume &where, double *freqs, int Nfreq) {
+dft_flux fields::add_mode_monitor(direction d, const volume &where, std::vector<double> freqs,
+                                  int Nfreq) {
   // TODO: change here
   return add_dft_flux(d, where, freqs, Nfreq, /*use_symmetry=*/false);
 }
@@ -754,7 +756,7 @@ dft_flux fields::add_mode_monitor(direction d, const volume &where, double freq_
                                   double freq_max, int Nfreq) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -762,7 +764,7 @@ dft_flux fields::add_mode_monitor(direction d, const volume &where, double freq_
 }
 
 // TODO: overload fields::add_dft_flux_box
-dft_flux fields::add_dft_flux_box(const volume &where, double *freqs, int Nfreq) {
+dft_flux fields::add_dft_flux_box(const volume &where, std::vector<double> freqs, int Nfreq) {
   volume_list *faces = 0;
   LOOP_OVER_DIRECTIONS(where.dim, d) {
     if (where.in_direction(d) > 0) {
@@ -786,7 +788,7 @@ dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double f
                                   int Nfreq) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -794,7 +796,7 @@ dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double f
 }
 
 // TODO: overload fields::add_dft_flux_plane
-dft_flux fields::add_dft_flux_plane(const volume &where, double *freqs, int Nfreq) {
+dft_flux fields::add_dft_flux_plane(const volume &where, std::vector<double> freqs, int Nfreq) {
   // TODO: change here
   return add_dft_flux(NO_DIRECTION, where, freqs, Nfreq);
 }
@@ -803,7 +805,7 @@ dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double
                                     int Nfreq) {
   if (Nfreq < 1) abort("Nfreq must be at least 1");
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
@@ -811,12 +813,13 @@ dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double
 }
 
 // TODO: overload dft_fields constructor
-dft_fields::dft_fields(dft_chunk *chunks_, double *freqs_, int Nfreq_, const volume &where_)
+dft_fields::dft_fields(dft_chunk *chunks_, std::vector<double> freqs_, int Nfreq_,
+                       const volume &where_)
     : where(where_) {
   chunks = chunks_;
   // TODO: change here
   Nfreq = Nfreq_;
-  freqs = freqs_;
+  freqs.assgin(freqs_.begin(), freqs_.end());
 }
 
 dft_fields::dft_fields(dft_chunk *chunks_, double freq_min_, double freq_max_, int Nfreq_,
@@ -825,18 +828,18 @@ dft_fields::dft_fields(dft_chunk *chunks_, double freq_min_, double freq_max_, i
   chunks = chunks_;
   Nfreq = Nfreq_;
   double dfreqs = (freq_max_ - freq_min_) / (Nfreq_ - 1);
-  double freqs_[Nfreq_];
+  std::vector<double> freqs_;
   for (int i = 0; i < Nfreq_; i++) {
     freqs_[i] = freq_min_ + dfreqs * i;
   }
-  freqs = freqs_;
+  freqs.assign(freqs_.begin(), freqs_.end());
 }
 
 void dft_fields::scale_dfts(cdouble scale) { chunks->scale_dft(scale); }
 
 void dft_fields::remove() {
   // TODO: add freqs to remove?
-  delete[] freqs;
+  // delete[] freqs;
   while (chunks) {
     dft_chunk *nxt = chunks->next_in_dft;
     delete chunks;
@@ -846,7 +849,7 @@ void dft_fields::remove() {
 
 // TODO: overload fields::add_dft_fields
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
-                                  double *freqs, int Nfreq, bool use_centered_grid) {
+                                  std::vector<double> freqs, int Nfreq, bool use_centered_grid) {
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
@@ -866,7 +869,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
                                   double freq_min, double freq_max, int Nfreq,
                                   bool use_centered_grid) {
   double dfreq = (freq_max - freq_min) / (Nfreq - 1);
-  double freqs[Nfreq];
+  std::vector<double> freqs;
   for (int i = 0; i < Nfreq; i++) {
     freqs[i] = freq_min + dfreq * i;
   }
