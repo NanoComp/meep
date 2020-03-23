@@ -965,25 +965,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 // typemaps needed for add_dft_fields
 //--------------------------------------------------
-/*
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* freqs {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* freqs {
-    $1 = (double *)array_data($input);
-}
-
-%typecheck(SWIG_TYPECHECK_INTEGER) int Nfreqs {
-    $1 = PyInteger_Check($input);
-}
-
-%typemap(in) int Nfreqs {
-  int py_nfreqs = PyInteger_Check($input);
-  $1 = py_nfreqs;
-}
-*/
-%apply (double *IN_ARRAY1, int DIM1) {(double *freqs, int Nfreqs)};
 
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
@@ -1365,8 +1346,11 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 // Make omega members of meep::dft_ldos available as 'freq' in python
 %extend meep::dft_ldos {
 
-    double* get_omegas() {
-        return $self->omegas;
+    double get_omega_min() {
+        return $self->omega_min;
+    }
+    double get_domega() {
+        return $self->domega;
     }
     int get_Nomega() {
         return $self->Nomega;
@@ -1379,10 +1363,12 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
             stop = start + (self.domega / (2 * math.pi)) * self.Nomega
             return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
 
-        __swig_getmethods__["freqs"] = get_omegas
+        __swig_getmethods__["freq_min"] = get_omega_min
         __swig_getmethods__["nfreq"] = get_Nomega
-        if _newclass: freqs = property(get_omegas)
+        __swig_getmethods__["dfreq"] = get_domega
+        if _newclass: freq_min = property(get_omega_min)
         if _newclass: nfreq = property(get_Nomega)
+        if _newclass: dfreq = property(get_domega)
     %}
 }
 
