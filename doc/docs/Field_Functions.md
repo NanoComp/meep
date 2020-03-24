@@ -128,7 +128,7 @@ meep.Simulation.run(meep.synchronized_magnetic(meep.at_every(1,my_weird_output))
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
 
-As a final example, the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme) can be used to obtain the coordinates of the Yee grid. As long as the field arguments are on the *same* grid (e.g., $E_x$ and $D_x$, $E_y$ and $D_y$, etc.), the integral is computed over the exact Yee grid coordinates rather than being interpolated to the center of each grid point if fields from *different* grids are used (consistent with the Meep paradigm of [pervasive interpolation](Introduction.md#the-illusion-of-continuity)).
+As a final example, the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme) can be used to obtain the coordinates of the Yee grid. As long as the field arguments are on the *same* grid (e.g., $E_x$ and $D_x$, $E_y$ and $D_y$, etc.), the integral is computed over the exact Yee grid coordinates rather than being interpolated to the center of each grid point if fields from *different* grids are used (consistent with Meep's paradigm of [pervasive interpolation](Introduction.md#the-illusion-of-continuity)).
 
 **Python**
 ```py
