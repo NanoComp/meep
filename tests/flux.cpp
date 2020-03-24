@@ -180,10 +180,10 @@ int flux_2d(const double xmax, const double ymax, double eps(const vec &)) {
      around the source...should be positive and equal */
   volume box1(vec(xmax / 6 - 0.4, ymax / 6 - 0.2), vec(xmax / 6 + 0.6, ymax / 6 + 0.8));
   volume box2(vec(xmax / 6 - 0.9, ymax / 6 - 0.7), vec(xmax / 6 + 1.1, ymax / 6 + 1.3));
-  double fmin = 0.23, fmax = 0.27;
   int Nfreq = 10;
-  dft_flux flux1 = f.add_dft_flux_box(box1, fmin, fmax, Nfreq);
-  dft_flux flux2 = f.add_dft_flux_box(box2, fmin, fmax, Nfreq);
+  const std::vector<double> freq = {0.230, 0.232, 0.238, 0.241, 0.248, 0.254, 0.256, 0.265, 0.269, 0.270};
+  dft_flux flux1 = f.add_dft_flux_box(box1, freq);
+  dft_flux flux2 = f.add_dft_flux_box(box2, freq);
 
   const double ttot = 130;
 

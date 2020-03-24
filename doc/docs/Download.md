@@ -22,7 +22,7 @@ To receive notifications when new versions are released, subscribe to the **meep
 Precompiled Packages for Ubuntu
 -------------------------------
 
-Precompiled packages of Meep version 1.3 (September 2017) are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
 
 ```sh
 sudo apt-get install meep h5utils

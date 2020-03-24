@@ -128,8 +128,18 @@ meep.Simulation.run(meep.synchronized_magnetic(meep.at_every(1,my_weird_output))
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
 
-As a final example, the Scheme function `integrate-field-function` can be used to obtain the coordinates of the Yee grid. As long as the field arguments are on the *same* grid (e.g., $E_x$ and $D_x$, etc.), the integral is computed over the exact Yee grid coordinates (rather than being interpolated to the center of each grid point if fields from *different* grids are used in line with Meep's [pervasive interpolation](Introduction.md#the-illusion-of-continuity)):
+As a final example, the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme) can be used to obtain the coordinates of the Yee grid. As long as the field arguments are on the *same* grid (e.g., $E_x$ and $D_x$, $E_y$ and $D_y$, etc.), the integral is computed over the exact Yee grid coordinates rather than being interpolated to the center of each grid point if fields from *different* grids are used (consistent with the Meep paradigm of [pervasive interpolation](Introduction.md#the-illusion-of-continuity)).
 
+**Python**
+```py
+def f(r,fc):
+    print("({:.5f}, {:.5f}, {:.5f})".format(r.x,r.y,r.z))
+    return 0
+
+meep.Simulation.integrate_field_function([mp.Ex],f)
+```
+
+**Scheme**
 ```scm
 (define (f r fc)
   (begin
@@ -138,6 +148,6 @@ As a final example, the Scheme function `integrate-field-function` can be used t
 (integrate-field-function (list Ex) f)
 ```
 
-This function prints the $(x,y,z)$ Yee grid coordinates of all $E_x$ fields. It returns a value of 0 which is never used. In contrast, the output functions `output-field-function` and `output-real-field-function` interpolate *all* fields onto the center of each grid point.
+This function prints the $(x,y,z)$ Yee grid coordinates of all $E_x$ fields and returns a value of 0 which is never used. In contrast, the output functions `output_field_function` (Python) or `output-field-function` (Scheme) (as well as `output-real-field-function`) interpolate *all* fields onto the center of each grid point.
 
 For more information, see [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).
