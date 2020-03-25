@@ -41,7 +41,7 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The source repository is on [GitHub](https://github.com/NanoComp/meep). Gzipped tarballs of stable versions are in [Releases](https://github.com/NanoComp/meep/releases). The release history is in [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
+The [source repository](https://github.com/NanoComp/meep) is hosted on GitHub. Gzipped tarballs of stable versions are in [Releases](https://github.com/NanoComp/meep/releases). The release history is in [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------

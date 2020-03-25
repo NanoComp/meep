@@ -7,9 +7,7 @@
 GitHub Source Repository
 ------------------------
 
-The source repository is available via [GitHub](https://github.com/NanoComp/meep).
-
-The current stable release can be obtained from:
+The [source repository](https://github.com/NanoComp/meep) is hosted on GitHub along with gzipped tarballs of stable releases:
 
 -   <https://github.com/NanoComp/meep/releases>
 
@@ -22,7 +20,7 @@ To receive notifications when new versions are released, subscribe to the **meep
 Precompiled Packages for Ubuntu
 -------------------------------
 
-Precompiled packages of Meep version 1.3 (September 2017) are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
 
 ```sh
 sudo apt-get install meep h5utils

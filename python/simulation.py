@@ -316,16 +316,8 @@ class DftObj(object):
         return self.swigobj_attr('remove')
 
     @property
-    def freq_min(self):
-        return self.swigobj_attr('freq_min')
-
-    @property
-    def dfreq(self):
-        return self.swigobj_attr('dfreq')
-
-    @property
-    def Nfreq(self):
-        return self.swigobj_attr('Nfreq')
+    def freq(self):
+        return self.swigobj_attr('freq')
 
     @property
     def where(self):
@@ -364,6 +356,9 @@ class DftFlux(DftObj):
     def normal_direction(self):
         return self.swigobj_attr('normal_direction')
 
+    @property
+    def freq(self):
+        return self.swigobj_attr('freq')
 
 class DftForce(DftObj):
 
@@ -389,6 +384,9 @@ class DftForce(DftObj):
     def diag(self):
         return self.swigobj_attr('diag')
 
+    @property
+    def freq(self):
+        return self.swigobj_attr('freq')
 
 class DftNear2Far(DftObj):
 
@@ -422,6 +420,9 @@ class DftNear2Far(DftObj):
     def flux(self, direction, where, resolution):
         return self.swigobj_attr('flux')(direction, where.swigobj, resolution)
 
+    @property
+    def freq(self):
+        return self.swigobj_attr('freq')
 
 class DftEnergy(DftObj):
 
@@ -443,6 +444,9 @@ class DftEnergy(DftObj):
     def total(self):
         return self.swigobj_attr('total')
 
+    @property
+    def freq(self):
+        return self.swigobj_attr('freq')
 
 class DftFields(DftObj):
 
@@ -714,15 +718,14 @@ class Simulation(object):
     def _check_material_frequencies(self):
 
         min_freq, max_freq = self._get_valid_material_frequencies()
-
         source_freqs = [(s.src.frequency, 0 if s.src.width == 0 else 1 / s.src.width)
                         for s in self.sources
                         if hasattr(s.src, 'frequency')]
 
         dft_freqs = []
         for dftf in self.dft_objects:
-            dft_freqs.append(dftf.freq_min)
-            dft_freqs.append(dftf.freq_min + dftf.Nfreq * dftf.dfreq)
+            dft_freqs.append(dftf.freq[0])
+            dft_freqs.append(dftf.freq[-1])
 
         warn_src = ('Note: your sources include frequencies outside the range of validity of the ' +
                     'material models. This is fine as long as you eventually only look at outputs ' +
@@ -2104,9 +2107,9 @@ class Simulation(object):
             direction = flux.normal_direction
 
         num_bands = len(bands)
-        coeffs = np.zeros(2 * num_bands * flux.Nfreq, dtype=np.complex128)
-        vgrp = np.zeros(num_bands * flux.Nfreq)
-        cscale = np.zeros(num_bands * flux.Nfreq)
+        coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
+        vgrp = np.zeros(num_bands * flux.freq.size())
+        cscale = np.zeros(num_bands * flux.freq.size())
 
         kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
             self.fields,
@@ -2123,7 +2126,7 @@ class Simulation(object):
             direction
         )
 
-        return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.Nfreq, 2)), vgrp, kpoints, kdom, cscale)
+        return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.freq.size(), 2)), vgrp, kpoints, kdom, cscale)
 
     def get_eigenmode(self, freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12):
@@ -2958,7 +2961,7 @@ def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
             sim.ldos_data = mp._dft_ldos_ldos(ldos)
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
-            display_csv(sim, 'ldos', zip(ldos.freqs(), sim.ldos_data))
+            display_csv(sim, 'ldos', zip(ldos.freq, sim.ldos_data))
     return _ldos
 
 
@@ -2967,7 +2970,7 @@ def scale_flux_fields(s, flux):
 
 
 def get_flux_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_fluxes(f):
@@ -2979,11 +2982,11 @@ def scale_force_fields(s, force):
 
 
 def get_eigenmode_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_force_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_forces(f):
@@ -2995,7 +2998,7 @@ def scale_near2far_fields(s, n2f):
 
 
 def get_near2far_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def scale_energy_fields(s, ef):
@@ -3003,7 +3006,7 @@ def scale_energy_fields(s, ef):
 
 
 def get_energy_freqs(f):
-    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_electric_energy(f):

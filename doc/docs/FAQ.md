@@ -15,11 +15,11 @@ Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-sou
 
 ### Who are the developers of Meep?
 
-Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep).
+Meep was originally developed as part of graduate research at MIT. The project has been under continuous development for nearly 20 years. It is currently maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep).
 
 ### Where can I ask questions regarding Meep?
 
-There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A useful place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings (6500+) since 2006 spanning a variety of topics. Bug reports and new feature requests should be filed as a [GitHub issue](https://github.com/NanoComp/meep/issues).
+There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A useful place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings (6500+) since 2006 spanning a variety of topics. Bug reports and new feature requests should be filed as a [GitHub issue](https://github.com/NanoComp/meep/issues). However, do not use issues as a general help desk if you do not understand something (use the mailing list instead).
 
 ### How can I contribute to the Meep project?
 
@@ -31,7 +31,7 @@ Yes. The technical details of Meep's inner workings are described in the peer-re
 
 ### Where can I find a list of projects which have used Meep?
 
-For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [technical reference](https://scholar.google.com/scholar?cites=17712807607104508775) and also the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259).
+For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see [simpetus.com/projects.html](http://www.simpetus.com/projects.html).
 
 ### Can I access Meep in the public cloud?
 
@@ -54,7 +54,7 @@ Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft
 
 ### Are there precompiled binary packages for Ubuntu?
 
-Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
+Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
 
 ### Guile is installed, but configure complains that it can't find `guile`
 
@@ -180,7 +180,7 @@ The field from a point source is singular &mdash; it blows up as you approach th
 
 ### Is a narrow-bandwidth Gaussian pulse considered the same as a continuous-wave (CW) source?
 
-No. A narrow-bandwidth Gaussian is still a Gaussian: it goes to zero at both the beginning and end of its time profile unlike a continuous-wave (CW) source which oscillates indefinitely (but has a [finite turn-on](#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response)). Assuming you have linear materials, you should get the same results if you use a narrow- or broad-band pulse and look at a single frequency component of the Fourier transform via e.g. [`dft_fields`](Python_User_Interface.md#field-computations). The latter has the advantage that it requires a shorter simulation for the fields to die away due to the [Fourier Uncertainty Principle](https://en.wikipedia.org/wiki/Fourier_transform#Uncertainty_principle). Note also that an almost *zero*-bandwidth Gaussian will produce high-frequency spectral components due to its abrupt turn on and off which are poorly absorbed by PML.
+No. A narrow-bandwidth Gaussian is still a Gaussian: it goes to zero at both the beginning and end of its time profile unlike a continuous-wave (CW) source which oscillates indefinitely (but has a [finite turn-on](#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response)). Assuming you have linear materials, you should get the same results if you use a narrow- or broad-band pulse and look at a single frequency component of the Fourier transform via e.g. [`dft_fields`](Python_User_Interface.md#field-computations). The latter has the advantage that it requires a shorter simulation for the fields to decay away due to the [Fourier Uncertainty Principle](https://en.wikipedia.org/wiki/Fourier_transform#Uncertainty_principle). Note also that an almost *zero*-bandwidth Gaussian will produce high-frequency spectral components due to its abrupt turn on and off which are poorly absorbed by PML.
 
 ### How do I create a chirped pulse?
 
@@ -424,7 +424,7 @@ Usage: Other
 
 ### Is there a Python interface?
 
-Yes. An official [Python interface](Python_User_Interface.md) was released in [version 1.4](https://github.com/NanoComp/meep/releases) and replaces the [Scheme interface](Scheme_User_Interface.md) which is no longer being supported. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which predates and is **incompatible** with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
+Yes. An official [Python interface](Python_User_Interface.md) was released in [version 1.4](https://github.com/NanoComp/meep/releases/tag/v1.4.0) and replaces the [Scheme interface](Scheme_User_Interface.md) which is no longer being supported. An unofficial [Python interface](https://www.fzu.cz/~dominecf/meep/), which predates and is **incompatible** with the official version, has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University, and maintained by [Filip Dominec](https://github.com/FilipDominec/python-meep-utils). Unfortunately, this interface has several shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
 ### What is a good rule of thumb for the grid resolution?
 
