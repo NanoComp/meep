@@ -79,7 +79,6 @@ typedef struct {
   size_t n;
   fields *f;
   complex<double> iomega;
-  int iters;
 } fieldop_data;
 
 static void fieldop(const realnum *xr, realnum *yr, void *data_) {
@@ -94,7 +93,26 @@ static void fieldop(const realnum *xr, realnum *yr, void *data_) {
   complex<realnum> iomega = complex<realnum>(real(data->iomega), imag(data->iomega));
   for (size_t i = 0; i < n; ++i)
     y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
-  data->iters++;
+}
+
+// Rayleigh-quotient estimate <x,Ax>/<x,x>  for eigenfrequency given approximate eigenvector x (length n),
+// overwriting x with Ax and b with x/|x|.
+static complex<double> rayleighquotient(complex<realnum> *b, complex<realnum> *x, size_t n, void *data) {
+    memcpy(b, x, n * sizeof(complex<realnum>));
+    fieldop(reinterpret_cast<realnum *>(b), reinterpret_cast<realnum *>(x), data);
+    complex<double> bdotx(0,0);
+    double bnorm2 = 0;
+    for (size_t i = 0; i < n; ++i) {
+      complex<realnum> bi = b[i];
+      bnorm2 += real(bi)*real(bi) + imag(bi)*imag(bi);
+      complex<realnum> bx = conj(bi) * x[i];
+      bdotx += complex<double>(real(bx), imag(bx));
+    }
+    double bnorminv = 1/sqrt(bnorm2);
+    for (size_t i = 0; i < n; ++i) {
+      b[i] *= bnorminv; // normalize b for subsequent shift-and-invert iterations
+    }
+    return (bdotx / bnorm2) / complex<realnum>(0, -2*pi);
 }
 
 /* Solve for the CW (constant frequency) field response at the given
@@ -106,11 +124,17 @@ static void fieldop(const realnum *xr, realnum *yr, void *data_) {
    The parameter L determines the order of the iterative algorithm
    that is used.  L should always be positive and should normally be
    >= 2.  Larger values of L will often lead to faster convergence, at
-   the expense of more memory and more work per iteration. */
-bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L) {
+   the expense of more memory and more work per iteration.
+
+   If the optional argument eigfreq is non-NULL, then the solver is used for a
+   shift-and-invert power iteration to find the closest eigenfrequency and
+   eigenvector to frequency: the solver is iterated up to eigiters times,
+   or until the estimated eigenfreq stops changing by <= eigtol (relative). */
+bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L, complex<double> *eigfreq, double eigtol, int eigiters) {
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
   if (L < 1) abort("solve_cw called with L = %d < 1", L);
   int tsave = t; // save time (gets incremented by iterations)
+  int iters;
 
   set_solve_cw_omega(2 * pi * frequency);
 
@@ -135,7 +159,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
       }
     }
 
-  size_t nwork = (size_t)bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
+  iters = maxiters;
+  size_t nwork = (size_t)bicgstabL(L, N, 0, 0, 0, 0, tol, &iters, 0, true);
   realnum *work = new realnum[nwork + 2 * N];
   complex<realnum> *x = reinterpret_cast<complex<realnum> *>(work + nwork);
   complex<realnum> *b = reinterpret_cast<complex<realnum> *>(work + nwork + N);
@@ -169,14 +194,37 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
   data.f = this;
   data.n = N / 2;
   data.iomega = ((1.0 - exp(complex<double>(0., -1.) * (2 * pi * frequency) * dt)) * (1.0 / dt));
-  data.iters = 0;
+  iters = maxiters;
 
   int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
-                            reinterpret_cast<realnum *>(b), tol, &maxiters, work, verbosity == 0);
+                            reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
 
   if (verbosity > 0) {
-    master_printf("Finished solve_cw after %d steps and %d CG iters.\n", data.iters, maxiters);
+    master_printf("Finished solve_cw after %d CG iters (~ %d timesteps).\n", iters, iters * 2*L);
     if (ierr) master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
+  }
+
+  // do additional shift-and-invert iterations to find eigenfrequency
+  if (eigfreq) {
+    *eigfreq = rayleighquotient(b, x, data.n, &data) + frequency;
+    if (verbosity > 0) {
+      master_printf("Initial eigen-frequency estimate = %g%+gi\n", real(*eigfreq), imag(*eigfreq));
+    }
+    for (int eigiter = 0; eigiter < eigiters; ++eigiter) {
+        iters = maxiters;
+        int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
+                                  reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
+        complex<double> newfreq = rayleighquotient(b, x, data.n, &data) + frequency;
+        complex<double> dfreq = newfreq - *eigfreq;
+         if (verbosity > 0) {
+          master_printf("Eigensolver step %d: %d CG iters, freq = %g%+gi (change = %g%+gi).\n",
+                        eigiter+1, iters, real(newfreq), imag(newfreq), real(dfreq), imag(dfreq));
+          if (ierr) master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
+        }
+        *eigfreq = newfreq;
+        if (abs(dfreq) <= eigtol * abs(newfreq)) break; // converged
+    }
+    memcpy(x, b, N * sizeof(realnum));
   }
 
   array_to_fields(x, *this);
@@ -192,7 +240,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
 }
 
 /* as solve_cw, but infers frequency from sources */
-bool fields::solve_cw(double tol, int maxiters, int L) {
+bool fields::solve_cw(double tol, int maxiters, int L, complex<double> *eigfreq, double eigtol, int eigiters) {
   complex<double> freq = 0.0;
   for (src_time *s = sources; s; s = s->next) {
     complex<double> sf = s->frequency();
@@ -201,7 +249,7 @@ bool fields::solve_cw(double tol, int maxiters, int L) {
     if (sf != 0.0) freq = sf;
   }
   if (freq == 0.0) abort("must pass frequency to solve_cw if sources do not specify one");
-  return solve_cw(tol, maxiters, freq, L);
+  return solve_cw(tol, maxiters, freq, L, eigfreq, eigtol, eigiters);
 }
 
 } // namespace meep

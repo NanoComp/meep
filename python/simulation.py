@@ -1939,6 +1939,19 @@ class Simulation(object):
         self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
+    def solve_eigfreq(self, tol=1e-9, maxiters=10000, L=2, guessfreq=None, eigtol=None, eigiters=20):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using solve_cw')
+        if eigtol is None:
+            eigtol = tol * 10
+        self._evaluate_dft_objects()
+        eigfreq = np.array(0, dtype=np.complex128)
+        if guessfreq is None:
+            self.fields.solve_cw(tol, maxiters, L, eigfreq, eigtol, eigiters)
+        else:
+            self.fields.solve_cw(tol, maxiters, guessfreq, L, eigfreq, eigtol, eigiters)
+        return eigfreq.item()
+
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist, *args):
         vol_list = None
 
