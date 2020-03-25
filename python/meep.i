@@ -925,6 +925,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
+// typemap for solve_cw:
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* eigfreq {
+    $1 = is_array($input);
+}
+
+%typemap(in) std::complex<double>* eigfreq {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+
 //--------------------------------------------------
 // typemaps needed for get_eigenmode_coefficients
 //--------------------------------------------------
