@@ -487,7 +487,7 @@ class TestSimulation(unittest.TestCase):
             assert_two(v2)
             v3 = mp.vec(three)
             assert_three(v3)
-            assert_raises(four, NotImplementedError)
+            assert_raises(four, (NotImplementedError,TypeError))
 
         check_iterable([1], [1, 2], [1, 2, 3], [1, 2, 3, 4])
         check_iterable((1,), (1, 2), (1, 2, 3), (1, 2, 3, 4))
