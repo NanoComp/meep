@@ -1,4 +1,3 @@
-import math
 import unittest
 
 import meep as mp
@@ -43,7 +42,7 @@ class TestLDOS(unittest.TestCase):
         )
 
         self.assertAlmostEqual(self.sim.ldos_data[0], 1.011459560620368)
-        self.assertEqual(ldos.freq.size(), 1)
+        self.assertEqual(len(mp.get_ldos_freqs(ldos)), 1)
 
     def test_invalid_dft_ldos(self):
         with self.assertRaises(ValueError):

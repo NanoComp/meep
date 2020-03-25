@@ -2961,12 +2961,16 @@ def dft_ldos(fcen=None, df=None, nfreq=None, ldos=None):
             sim.ldos_data = mp._dft_ldos_ldos(ldos)
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
-            display_csv(sim, 'ldos', zip(ldos.freq, sim.ldos_data))
+            display_csv(sim, 'ldos', zip(mp.get_ldos_freqs(ldos), sim.ldos_data))
     return _ldos
 
 
 def scale_flux_fields(s, flux):
     flux.scale_dfts(s)
+
+
+def get_ldos_freqs(l):
+    return [l.freq[i] for i in range(l.freq.size())]
 
 
 def get_flux_freqs(f):
