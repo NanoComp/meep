@@ -48,8 +48,7 @@ dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double> freq_, doubl
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
     : F(F_), eps(eps_), mu(mu_), where(where_) {
-  for (int i = 0; i < freq_.size(); ++i)
-    freq.push_back(freq_[i]);
+  freq = freq_;
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = periodic_d_[i];
     periodic_n[i] = periodic_n_[i];
@@ -60,8 +59,7 @@ dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double> freq_, doubl
 
 dft_near2far::dft_near2far(const dft_near2far &f)
     : F(f.F), eps(f.eps), mu(f.mu), where(f.where) {
-  for (int i = 0; i < f.freq.size(); ++i)
-    freq.push_back(f.freq[i]);
+  freq = f.freq;
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = f.periodic_d[i];
     periodic_n[i] = f.periodic_n[i];

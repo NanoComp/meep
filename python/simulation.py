@@ -2970,7 +2970,7 @@ def scale_flux_fields(s, flux):
 
 
 def get_flux_freqs(f):
-    return f.freq
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_fluxes(f):
@@ -2982,11 +2982,11 @@ def scale_force_fields(s, force):
 
 
 def get_eigenmode_freqs(f):
-    return f.freq
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_force_freqs(f):
-    return f.freq
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_forces(f):
@@ -2998,7 +2998,7 @@ def scale_near2far_fields(s, n2f):
 
 
 def get_near2far_freqs(f):
-    return f.freq
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def scale_energy_fields(s, ef):
@@ -3006,7 +3006,7 @@ def scale_energy_fields(s, ef):
 
 
 def get_energy_freqs(f):
-    return f.freq
+    return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_electric_energy(f):

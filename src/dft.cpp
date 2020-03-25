@@ -96,8 +96,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   vc = data->vc;
 
   const int Nomega = data->omega.size();
-  for (int i = 0; i < Nomega; ++i)
-    omega.push_back(data->omega[i]);
+  omega = data->omega;
   dft_phase = new complex<realnum>[Nomega];
 
   N = 1;
@@ -377,13 +376,11 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
                    direction normal_direction_, bool use_symmetry_)
     : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
       use_symmetry(use_symmetry_) {
-  for (int i = 0; i < freq_.size(); ++i)
-    freq.push_back(freq_[i]);
+  freq = freq_;
 }
 
 dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
-  for (int i = 0; i < f.freq.size(); ++i)
-    freq.push_back(f.freq[i]);
+  freq = f.freq;
   E = f.E;
   H = f.H;
   cE = f.cE;
@@ -502,13 +499,11 @@ dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B
 dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
                        const std::vector<double> freq_, const volume &where_)
     : E(E_), H(H_), D(D_), B(B_), where(where_) {
-  for (int i = 0; i < freq_.size(); ++i)
-    freq.push_back(freq_[i]);
+  freq = freq_;
 }
 
 dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
-  for (int i = 0; i < f.freq.size(); ++i)
-    freq.push_back(f.freq[i]);
+  freq = f.freq;
   E = f.E;
   H = f.H;
   D = f.D;
@@ -728,8 +723,7 @@ dft_fields::dft_fields(dft_chunk *chunks_, double freq_min, double freq_max, int
 dft_fields::dft_fields(dft_chunk *chunks_, const std::vector<double> freq_, const volume &where_)
     : where(where_) {
   chunks = chunks_;
-  for (int i = 0; i < freq_.size(); ++i)
-    freq.push_back(freq_[i]);
+  freq = freq_;
 }
 
 void dft_fields::scale_dfts(cdouble scale) { chunks->scale_dft(scale); }

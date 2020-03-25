@@ -33,8 +33,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
 
 dft_ldos::dft_ldos(const std::vector<double> freq_) {
   const int Nfreq = freq_.size();
-  for (int i = 0; i < Nfreq; ++i)
-    freq.push_back(freq_[i]);
+  freq = freq_;
   Fdft = new complex<realnum>[Nfreq];
   Jdft = new complex<realnum>[Nfreq];
   for (int i = 0; i < Nfreq; ++i)
