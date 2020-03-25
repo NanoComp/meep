@@ -184,7 +184,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const std::vector<d
   dft_chunk_data data;
   data.c = c;
   data.vc = vc;
-  for (int i = 0; i < freq.size(); ++i)
+  for (size_t i = 0; i < freq.size(); ++i)
     data.omega.push_back(2*pi*freq[i]);
   data.stored_weight = stored_weight;
   data.extra_weight = extra_weight;
