@@ -148,7 +148,9 @@ class TestPrism(unittest.TestCase):
 
     return prism_eps
 
-  def test_prism(self):
+  # lots of tests, turned off by default since they run too long;
+  # rename to test_something to run these tests.
+  def bigtest_prism(self):
     print("Testing Non-Convex Prism #1 using marching squares algorithm...")
     d1_a = self.nonconvex_marching_squares(1,208)
     d1_b = self.nonconvex_marching_squares(1,448)
@@ -224,6 +226,14 @@ class TestPrism(unittest.TestCase):
     d = self.spiral_gds()
     d_ref = 455.01744881372224
     self.assertAlmostEqual(d,d_ref,places=5)
+
+  def test_prism(self):
+    print("Testing Non-Convex Prism #3 using marching squares algorithm...")
+    d3_a = self.nonconvex_marching_squares(3,164)
+    d3_b = self.nonconvex_marching_squares(3,336)
+    d3_ref = 640.0738356076143 ## self.nonconvex_marching_squares(3,672)
+    self.assertLess(abs((d3_b-d3_ref)/d3_ref),abs((d3_a-d3_ref)/d3_ref))
+    self.assertLess(abs((d3_b-d3_ref)/d3_ref), 0.02)
 
 if __name__ == '__main__':
   unittest.main()
