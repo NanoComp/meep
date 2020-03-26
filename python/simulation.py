@@ -35,7 +35,7 @@ except ImportError:
 
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
-mp.cvar.master_printf_callback = mp.py_master_printf_wrap
+mp.set_meep_printf_callback(mp.py_master_printf_wrap)
 mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
 mp.set_mpb_printf_callback(mp.py_master_printf_wrap)
 

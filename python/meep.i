@@ -37,7 +37,6 @@
 namespace meep {
     size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
     typedef std::complex<double> (*amplitude_function)(const vec &);
-    void (*master_printf_callback)(const char *s);
 }
 
 #ifdef HAVE_MPB
@@ -568,9 +567,6 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 double py_pml_profile(double u, void *f);
 
 %constant void py_master_printf_wrap(const char *s);
-namespace meep {
-    void (*master_printf_callback)(const char *s);
-}
 void set_ctl_printf_callback(void (*callback)(const char *s));
 void set_mpb_printf_callback(void (*callback)(const char *s));
 
