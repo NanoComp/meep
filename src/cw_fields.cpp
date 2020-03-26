@@ -95,24 +95,28 @@ static void fieldop(const realnum *xr, realnum *yr, void *data_) {
     y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
 }
 
-// Rayleigh-quotient estimate <x,Ax>/<x,x>  for eigenfrequency given approximate eigenvector x (length n),
+// Rayleigh-quotient estimate <x,Ax>/<x,x> for eigenfrequency given approximate eigenvector x (length n),
 // overwriting x with Ax and b with x/|x|.
-static complex<double> rayleighquotient(complex<realnum> *b, complex<realnum> *x, size_t n, void *data) {
-    memcpy(b, x, n * sizeof(complex<realnum>));
-    fieldop(reinterpret_cast<realnum *>(b), reinterpret_cast<realnum *>(x), data);
-    complex<double> bdotx(0,0);
-    double bnorm2 = 0;
-    for (size_t i = 0; i < n; ++i) {
-      complex<realnum> bi = b[i];
-      bnorm2 += real(bi)*real(bi) + imag(bi)*imag(bi);
-      complex<realnum> bx = conj(bi) * x[i];
-      bdotx += complex<double>(real(bx), imag(bx));
-    }
-    double bnorminv = 1/sqrt(bnorm2);
-    for (size_t i = 0; i < n; ++i) {
-      b[i] *= bnorminv; // normalize b for subsequent shift-and-invert iterations
-    }
-    return (bdotx / bnorm2) / complex<realnum>(0, -2*pi);
+static complex<double> estimate_eigfreq(complex<realnum> *b, complex<realnum> *x, size_t n, fieldop_data *data) {
+  memcpy(b, x, n * sizeof(complex<realnum>));
+  fieldop(reinterpret_cast<realnum *>(b), reinterpret_cast<realnum *>(x), (void *) data);
+  complex<double> bdotx(0,0);
+  double bnorm2 = 0;
+  for (size_t i = 0; i < n; ++i) {
+    complex<realnum> bi = b[i];
+    bnorm2 += real(bi)*real(bi) + imag(bi)*imag(bi);
+    complex<realnum> bx = conj(bi) * x[i];
+    bdotx += complex<double>(real(bx), imag(bx));
+  }
+  double bnorminv = 1/sqrt(bnorm2);
+  for (size_t i = 0; i < n; ++i) {
+    b[i] *= bnorminv; // normalize b for subsequent shift-and-invert iterations
+  }
+  complex<double> iomega = data->iomega - bdotx/bnorm2; // unshifted eigenvalue
+  // now, invert: iomega = (1 - exp(-i * (2 * pi * frequency) * dt)) / dt)
+  // to get frequency = log(1 - iomega * dt) / (-2 pi i * dt)
+  double dt = data->f->dt;
+  return log(1.0 - iomega*dt) / complex<double>(0, -2*pi*dt);
 }
 
 /* Solve for the CW (constant frequency) field response at the given
@@ -206,7 +210,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
 
   // do additional shift-and-invert iterations to find eigenfrequency
   if (eigfreq) {
-    *eigfreq = rayleighquotient(b, x, data.n, &data) + frequency;
+    *eigfreq = estimate_eigfreq(b, x, data.n, &data);
     if (verbosity > 0) {
       master_printf("Initial eigen-frequency estimate = %g%+gi\n", real(*eigfreq), imag(*eigfreq));
     }
@@ -214,7 +218,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
         iters = maxiters;
         int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
                                   reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
-        complex<double> newfreq = rayleighquotient(b, x, data.n, &data) + frequency;
+        complex<double> newfreq = estimate_eigfreq(b, x, data.n, &data);
         complex<double> dfreq = newfreq - *eigfreq;
          if (verbosity > 0) {
           master_printf("Eigensolver step %d: %d CG iters, freq = %g%+gi (change = %g%+gi).\n",
