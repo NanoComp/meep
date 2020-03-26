@@ -108,6 +108,8 @@ static complex<double> estimate_eigfreq(complex<realnum> *b, complex<realnum> *x
     complex<realnum> bx = conj(bi) * x[i];
     bdotx += complex<double>(real(bx), imag(bx));
   }
+  bnorm2 = sum_to_all(bnorm2);
+  bdotx = sum_to_all(bdotx);
   double bnorminv = 1/sqrt(bnorm2);
   for (size_t i = 0; i < n; ++i) {
     b[i] *= bnorminv; // normalize b for subsequent shift-and-invert iterations
