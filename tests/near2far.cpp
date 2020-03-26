@@ -127,7 +127,8 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
   if (c1 != NO_COMPONENT) master_printf("   (and %s SOURCE)\n", component_name(c1));
 
   // HACK: to speed up tests, we assume c0 and c1 have these symmetries
-  symmetry S = evenz ? mirror(Z, gv) - mirror(X, gv) : mirror(X, gv) - mirror(Z, gv);
+  symmetry S = dim == D3 ? (evenz ? mirror(Z, gv) - mirror(X, gv) : mirror(X, gv) - mirror(Z, gv)) :
+                           (evenz ? -mirror(X, gv) : mirror(X, gv)); // 2d
 
   structure s(gv, two, pml(dpml), S);
   fields f(&s);
