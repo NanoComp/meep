@@ -32,11 +32,11 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
 }
 
 dft_ldos::dft_ldos(const std::vector<double> freq_) {
-  const int Nfreq = freq_.size();
+  const size_t Nfreq = freq_.size();
   freq = freq_;
   Fdft = new complex<realnum>[Nfreq];
   Jdft = new complex<realnum>[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
 }
@@ -56,9 +56,9 @@ double *dft_ldos::ldos() const {
                  * -0.5                   // power = -1/2 Re[E* J]
                  / (Jsum_all * Jsum_all); // normalize to unit-integral current
 
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   double *sum = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i) /* 4/pi * work done by unit dipole */
+  for (size_t i = 0; i < Nfreq; ++i) /* 4/pi * work done by unit dipole */
     sum[i] = scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
   double *out = new double[Nfreq];
   sum_to_all(sum, out, Nfreq);
@@ -67,14 +67,14 @@ double *dft_ldos::ldos() const {
 }
 
 complex<double> *dft_ldos::F() const {
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   complex<double> *out = new complex<double>[Nfreq];
   sum_to_all(Fdft, out, Nfreq);
   return out;
 }
 
 complex<double> *dft_ldos::J() const {
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   complex<double> *out = new complex<double>[Nfreq];
   sum_to_all(Jdft, out, Nfreq);
   return out;

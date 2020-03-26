@@ -327,8 +327,8 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
     abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
-  const int Nfreq = freq.size();
-  for (int i = 0; i < 6 * Nfreq; ++i)
+  const size_t Nfreq = freq.size();
+  for (size_t i = 0; i < 6 * Nfreq; ++i)
     EH[i] = 0.0;
 
   for (dft_chunk *f = F; f; f = f->next_in_dft) {
@@ -340,7 +340,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < Nfreq; ++i) {
+    for (size_t i = 0; i < Nfreq; ++i) {
       std::complex<double> EH6[6];
       size_t idx_dft = 0;
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
@@ -372,7 +372,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
 
 std::complex<double> *dft_near2far::farfield(const vec &x) {
   std::complex<double> *EH, *EH_local;
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   EH_local = new std::complex<double>[6 * Nfreq];
   farfield_lowlevel(EH_local, x);
   EH = new std::complex<double>[6 * Nfreq];
@@ -401,7 +401,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
   }
   if (where.dim == Dcyl) dirs[2] = P; // otherwise Z is listed twice
 
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   if (N * Nfreq < 1) return NULL; /* nothing to output */
 
   /* 6 x 2 x N x Nfreq array of fields in row-major order */
@@ -433,7 +433,7 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
         farfield_lowlevel(EH1, x);
         if (verbosity > 1) all_wait(); // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
-        for (int i = 0; i < Nfreq; ++i)
+        for (size_t i = 0; i < Nfreq; ++i)
           for (int k = 0; k < 6; ++k) {
             EH_[((k * 2 + 0) * N + idx) * Nfreq + i] = real(EH1[i * 6 + k]);
             EH_[((k * 2 + 1) * N + idx) * Nfreq + i] = imag(EH1[i * 6 + k]);
@@ -464,7 +464,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
   if (!EH) return; /* nothing to output */
 
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   /* frequencies are the last dimension */
   if (Nfreq > 1) dims[rank++] = Nfreq;
 
@@ -497,16 +497,16 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
   realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
 
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];
   std::complex<realnum> ff_EH[6];
   std::complex<realnum> cE[2], cH[2];
 
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
 
   for (size_t idx = 0; idx < N; ++idx) {
-    for (int i = 0; i < Nfreq; ++i) {
+    for (size_t i = 0; i < Nfreq; ++i) {
       for (int k = 0; k < 6; ++k)
         ff_EH[k] = std::complex<realnum>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i),
                                          *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
@@ -529,7 +529,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     if (dim > 1) dV *= where.in_direction(d) / (dim - 1);
   }
 
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] *= dV;
 
   delete[] EH;

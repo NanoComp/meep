@@ -390,17 +390,17 @@ dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
 }
 
 double *dft_flux::flux() {
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
   for (dft_chunk *curE = E, *curH = H; curE && curH;
        curE = curE->next_in_dft, curH = curH->next_in_dft)
     for (size_t k = 0; k < curE->N; ++k)
-      for (int i = 0; i < Nfreq; ++i)
+      for (size_t i = 0; i < Nfreq; ++i)
         F[i] += real(curE->dft[k * Nfreq + i] * conj(curH->dft[k * Nfreq + i]));
   double *Fsum = new double[Nfreq];
-  sum_to_all(F, Fsum, Nfreq);
+  sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
   return Fsum;
 }
@@ -511,43 +511,43 @@ dft_energy::dft_energy(const dft_energy &f) : where(f.where) {
 }
 
 double *dft_energy::electric() {
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
   for (dft_chunk *curE = E, *curD = D; curE && curD;
        curE = curE->next_in_dft, curD = curD->next_in_dft)
     for (size_t k = 0; k < curE->N; ++k)
-      for (int i = 0; i < Nfreq; ++i)
+      for (size_t i = 0; i < Nfreq; ++i)
         F[i] += 0.5 * real(conj(curE->dft[k * Nfreq + i]) * curD->dft[k * Nfreq + i]);
   double *Fsum = new double[Nfreq];
-  sum_to_all(F, Fsum, Nfreq);
+  sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
   return Fsum;
 }
 
 double *dft_energy::magnetic() {
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
   for (dft_chunk *curH = H, *curB = B; curH && curB;
        curH = curH->next_in_dft, curB = curB->next_in_dft)
     for (size_t k = 0; k < curH->N; ++k)
-      for (int i = 0; i < Nfreq; ++i)
+      for (size_t i = 0; i < Nfreq; ++i)
         F[i] += 0.5 * real(conj(curH->dft[k * Nfreq + i]) * curB->dft[k * Nfreq + i]);
   double *Fsum = new double[Nfreq];
-  sum_to_all(F, Fsum, Nfreq);
+  sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
   return Fsum;
 }
 
 double *dft_energy::total() {
-  const int Nfreq = freq.size();
+  const size_t Nfreq = freq.size();
   double *Fe = electric();
   double *Fm = magnetic();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] = Fe[i] + Fm[i];
   delete[] Fe;
   delete[] Fm;
