@@ -1454,6 +1454,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         get_fluxes,
         get_force_freqs,
         get_forces,
+        get_ldos_freqs,
         get_magnetic_energy,
         get_near2far_freqs,
         get_total_energy,

@@ -1417,9 +1417,9 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 —
 Create an LDOS object with frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points. This can be passed to the `dft_ldos` step function below, and has the properties `freq_min`, `nfreq` and `dfreq`.
 
-**`freqs()`**
+**`get_ldos_freqs(ldos)`**
 —
-Method of `Ldos` that returns a list of the frequencies that this `Ldos` instance is computing the spectrum for.
+Given an LDOS object, returns a list of the frequencies that it is computing the spectrum for.
 
 **`dft_ldos(fcen=None, df=None, nfreq=None, ldos=None)`**
 —
