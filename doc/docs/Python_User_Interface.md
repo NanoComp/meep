@@ -1565,6 +1565,37 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 **Note:** The convergence of the iterative solver can sometimes encounter difficulties. For example, increasing the diameter of a ring resonator relative to the wavelength increases the [condition number](https://en.wikipedia.org/wiki/Condition_number), which worsens the convergence of iterative solvers. The general way to improve this is to implement a more sophisticated iterative solver that employs [preconditioners](https://en.wikipedia.org/wiki/Preconditioner). Preconditioning wave equations (Helmholtz-like equations) is notoriously difficult to do well, but some possible strategies are discussed in [Issue #548](https://github.com/NanoComp/meep/issues/548). In the meantime, a simpler way improving convergence (at the expense of computational cost) is to increase the $L$ parameter and the number of iterations.
 
+### Frequency-Domain Eigensolver
+
+Building on the frequency-domain solver above, Meep also includes a frequency-domain *eigen*solver that
+computes resonant frequencies and modes in the frequency domain.  The usage is very similar to `solve_cw`:
+
+```py
+sim = mp.Simulation(...)
+sim.init_sim()
+eigfreq = sim.solve_eigfreq(tol, maxiters, guessfreq, cwtol, cwmaxiters, L)
+```
+
+The `solve_eig` routine performs repeated calls to `solve_cw` in a way that converges to the resonant mode
+whose frequency is *closest* to the source frequency.  The complex resonant-mode frequency is returned, and
+the mode Q can be computed from `eigfreq.real / (-2*eigfreq.imag)`.  Upon return, the fields should be
+the corresponding resonant mode (with an arbitrary scaling).
+
+The resonant mode is converged to a relative error of roughly `tol`, which defaults to `1e-7`.   A
+maximum of `maxiters` (defaults to `100`) calls to `solve_cw` are performed.  The tolerance
+for each `solve_cw` call is `cwtol` (defaults to `tol*1e-3`) and the maximum iterations is
+`cwmaxiters` (10<sup>4</sup>, by default); the `L` parameter (defaults to `10`) is also passed
+through to `solve_cw`.
+
+The closer the input frequency is to the resonant-mode frequency, the faster `solve_eig` should
+converge.   Instead of using the source frequency, you can instead pass a `guessfreq` argument
+to `solve_eigfreq` specifying an input frequency (which may even be complex).
+
+Technically, `solve_eig` is using a [shift-and-invert power iteration](https://en.wikipedia.org/wiki/Inverse_iteration)
+to compute the resonant mode, as reviewed in the [eigensolver math](Eigensolver_Math.md) section.
+
+As for `solve_cw` above, you are required to set `force_complex_fields=True` to use `solve_eigfreq`.
+
 ### GDSII Support
 
 This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii).
@@ -1649,7 +1680,7 @@ plt.savefig('sim_domain.png')
     - `interpolation='spline36'`: interpolation function used to upsample field pixels
     - `cmap='RdBu'`: color map for field pixels
     - `alpha=0.6`: transparency of fields
-    - `post_process=np.real`: post processing function to apply to fields (must be a function object) 
+    - `post_process=np.real`: post processing function to apply to fields (must be a function object)
 * `omega`: for materials with a [frequency-dependent permittivity](Materials.md#material-dispersion) $\varepsilon(\omega)$, specifies the frequency $\omega$ (in Meep units) of the real part of the permittivity to use in the plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
 **`Simulation.plot3D()`**
