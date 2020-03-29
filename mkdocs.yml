@@ -84,5 +84,5 @@ pages:
     - 'Developer Information': 'C++_Developer_Information.md'
     - 'Chunks and Symmetry': 'Chunks_and_Symmetry.md'
     - 'Tutorial/Basics': 'C++_Tutorial.md'
-- 'Other Infromation':
+- 'Other Information':
     - 'Eigensolver': 'Eigensolver_Math.md'

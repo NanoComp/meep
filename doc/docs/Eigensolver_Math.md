@@ -57,7 +57,7 @@ In the case of lossless media (Hermitian positive-definite $1+\hat{\chi}$) with 
 Correcting for time discretization
 ----------------------------------
 
-Meep does not compute $\frac{\partial}{\partial t}$ exactly, of course---it uses a finite-difference approximation $\hat{D}$: $$\left.\frac{\partial\Phi}{\partial t}\right|_{\Delta t/2}\approx\hat{D}\Phi=\frac{\Phi(\Delta t)-\Phi(0)}{\Delta t}.$$ So, whereas a time-harmonic field $\Phi(t)=e^{-i\omega t}\Phi(0)$ would have $\frac{\partial\Phi}{\partial t}=-i\omega\Phi$, we instead have $$\hat{D}\Phi=\underbrace{\frac{e^{-i\omega\Delta t}-1}{\Delta t}}_{-i\hat{\omega}}\Phi.$$ Note that $-i\hat{\omega}=-i\omega+O(\Delta t)$, so that the two agree for $\Delta t\to0$.
+Meep does not compute $\frac{\partial}{\partial t}$ exactly, of course—it uses a finite-difference approximation $\hat{D}$: $$\left.\frac{\partial\Phi}{\partial t}\right|_{\Delta t/2}\approx\hat{D}\Phi=\frac{\Phi(\Delta t)-\Phi(0)}{\Delta t}.$$ So, whereas a time-harmonic field $\Phi(t)=e^{-i\omega t}\Phi(0)$ would have $\frac{\partial\Phi}{\partial t}=-i\omega\Phi$, we instead have $$\hat{D}\Phi=\underbrace{\frac{e^{-i\omega\Delta t}-1}{\Delta t}}_{-i\hat{\omega}}\Phi.$$ Note that $-i\hat{\omega}=-i\omega+O(\Delta t)$, so that the two agree for $\Delta t\to0$.
 
 In all of the analyses above, we simply replace $\omega$ with $\hat{\omega}$ (for $\omega$, $\omega_{0}$, and $\omega_{n}$), and everything carries through in the same way. At the end of an eigenvalue calculation, we compute $\omega$ from $\hat{\omega}$ using the formula $$\omega=\frac{\log(1-i\hat{\omega}\Delta t)}{-i\Delta t}.$$
 
