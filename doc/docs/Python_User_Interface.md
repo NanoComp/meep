@@ -1592,7 +1592,7 @@ converge.   Instead of using the source frequency, you can instead pass a `guess
 to `solve_eigfreq` specifying an input frequency (which may even be complex).
 
 Technically, `solve_eig` is using a [shift-and-invert power iteration](https://en.wikipedia.org/wiki/Inverse_iteration)
-to compute the resonant mode, as reviewed in the [eigensolver math](../Eigensolver_Math.md) section.
+to compute the resonant mode, as reviewed in the [eigensolver math](Eigensolver_Math.md) section.
 
 As for `solve_cw` above, you are required to set `force_complex_fields=True` to use `solve_eigfreq`.
 
