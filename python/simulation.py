@@ -44,7 +44,6 @@ FluxData = namedtuple('FluxData', ['E', 'H'])
 ForceData = namedtuple('ForceData', ['offdiag1', 'offdiag2', 'diag'])
 NearToFarData = namedtuple('NearToFarData', ['F'])
 
-
 def get_num_args(func):
     if isinstance(func, Harminv):
         return 2
@@ -1635,15 +1634,15 @@ class Simulation(object):
 
     def add_dft_fields(self, *args, **kwargs):
         components = args[0]
-        if isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)) and isinstance(args[3],(int,float)):
+        if isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)) and isinstance(args[3],int):
             freq_min = args[1]
             freq_max = args[2]
             nfreq = args[3]
             freq = [0.5*(freq_min+freq_max)] if nfreq == 1 else np.linspace(freq_min,freq_max,nfreq)
-        elif isinstance(args[1],np.ndarray):
+        elif isinstance(args[1],(np.ndarray,list)):
             freq = args[1]
         else:
-            raise TypeError("add_dft_fields only accepts freq_min,freq_max,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("add_dft_fields only accepts freq_min,freq_max,nfreq (3 numbers) or freq (array/list)")
         where = kwargs.get('where', None)
         center = kwargs.get('center', None)
         size = kwargs.get('size', None)
@@ -1682,7 +1681,7 @@ class Simulation(object):
         return arr
 
     def add_near2far(self, *args, **kwargs):
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
             fcen = args[0]
             df = args[1]
             nfreq = args[2]
@@ -1692,7 +1691,7 @@ class Simulation(object):
             freq = args[0]
             near2fars = args[1:]
         else:
-            raise TypeError("add_near2far only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("add_near2far only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
         nperiods = kwargs.get('nperiods', 1)
         n2f = DftNear2Far(self._add_near2far, [freq, nperiods, near2fars])
         self.dft_objects.append(n2f)
@@ -1704,7 +1703,7 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars, nperiods)
 
     def add_energy(self, *args):
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
             fcen = args[0]
             df = args[1]
             nfreq = args[2]
@@ -1714,7 +1713,7 @@ class Simulation(object):
             freq = args[0]
             energys = args[1:]
         else:
-            raise TypeError("add_energy only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("add_energy only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
         en = DftEnergy(self._add_energy, [freq, energys])
         self.dft_objects.append(en)
         return en
@@ -1810,7 +1809,7 @@ class Simulation(object):
         n2f.scale_dfts(complex(-1.0))
 
     def add_force(self, *args):
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
             fcen = args[0]
             df = args[1]
             nfreq = args[2]
@@ -1820,7 +1819,7 @@ class Simulation(object):
             freq = args[0]
             forces = args[1:]
         else:
-            raise TypeError("add_forces only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("add_forces only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
         force = DftForce(self._add_force, [freq, forces])
         self.dft_objects.append(force)
         return force
@@ -1863,7 +1862,7 @@ class Simulation(object):
         force.scale_dfts(complex(-1.0))
 
     def add_flux(self, *args):
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
             fcen = args[0]
             df = args[1]
             nfreq = args[2]
@@ -1873,7 +1872,7 @@ class Simulation(object):
             freq = args[0]
             fluxes = args[1:]
         else:
-            raise TypeError("add_flux only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("add_flux only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
         flux = DftFlux(self._add_flux, [freq, fluxes])
         self.dft_objects.append(flux)
         return flux
@@ -1884,7 +1883,7 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
 
     def add_mode_monitor(self, *args):
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
             fcen = args[0]
             df = args[1]
             nfreq = args[2]
@@ -1894,7 +1893,7 @@ class Simulation(object):
             freq = args[0]
             fluxes = args[1:]
         else:
-            raise TypeError("add_mode_monitor only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("add_mode_monitor only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
         flux = DftFlux(self._add_mode_monitor, [freq, fluxes])
         self.dft_objects.append(flux)
         return flux
@@ -3027,7 +3026,7 @@ def output_sfield_p(sim):
 
 
 def Ldos(*args):
-    if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+    if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
         fcen = args[0]
         df = args[1]
         nfreq = args[2]
@@ -3035,7 +3034,7 @@ def Ldos(*args):
     elif isinstance(args[0],np.ndarray):
         freq = args[0]
     else:
-        raise TypeError("Ldos only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+        raise TypeError("Ldos only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
 
     return mp._dft_ldos(freq)
 
@@ -3045,7 +3044,7 @@ def dft_ldos(*args, **kwargs):
     if len(args) < 3 and ldos is None:
         raise ValueError("dft_ldos accepts either fcen,df,nfreq (3 numbers) or an ldos object (keyword argument)")
     if ldos is None:
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)):
+        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
             fcen = args[0]
             df = args[1]
             nfreq = args[2]
@@ -3053,7 +3052,7 @@ def dft_ldos(*args, **kwargs):
         elif isinstance(args[0],np.ndarray):
             freq = args[0]
         else:
-            raise TypeError("dft_ldos only accepts fcen,df,nfreq (3 numbers) or freq (numpy array)")
+            raise TypeError("dft_ldos only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
         ldos = mp._dft_ldos(freq)
 
     def _ldos(sim, todo):

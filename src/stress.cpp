@@ -46,8 +46,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
 
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
                      const double *freq_, size_t Nfreq, const volume &where_)
-    : where(where_) {
-  freq.resize(Nfreq);
+    : where(where_), freq(Nfreq) {
   for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
   offdiag1 = offdiag1_;

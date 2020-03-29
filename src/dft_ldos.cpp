@@ -41,10 +41,8 @@ dft_ldos::dft_ldos(const std::vector<double> freq_) {
   Jsum = 1.0;
 }
 
-dft_ldos::dft_ldos(const double *freq_, size_t Nfreq_) {
-  const size_t Nfreq = Nfreq_;
-  freq.resize(Nfreq_);
-  for (size_t i = 0; i < Nfreq_; ++i)
+dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
+  for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
   Fdft = new complex<realnum>[Nfreq];
   Jdft = new complex<realnum>[Nfreq];
