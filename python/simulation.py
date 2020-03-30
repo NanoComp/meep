@@ -44,6 +44,20 @@ FluxData = namedtuple('FluxData', ['E', 'H'])
 ForceData = namedtuple('ForceData', ['offdiag1', 'offdiag2', 'diag'])
 NearToFarData = namedtuple('NearToFarData', ['F'])
 
+def fix_dft_args(args, i):
+    if len(args) > i+2 and isinstance(args[i],(int,float)) and isinstance(args[i+1],(int,float)) and isinstance(args[i+2],int):
+        fcen = args[i]
+        df = args[i+1]
+        nfreq = args[i+2]
+        freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
+        if i == 1 and df >= fcen:
+            warnings.warn("add_dft_fields: df >= fcen ({} >= {}). input arguments are (fcen,df) rather than (freq_min,freq_max)".format(df,fcen), RuntimeWarning)
+        return args[:i] + (freq,) + args[i+3:]
+    elif not isinstance(args[i], (np.ndarray, list)):
+        raise TypeError("add_dft functions only accept freq_min,freq_max,nfreq (3 numbers) or freq (array/list)")
+    else:
+        return args
+
 def get_num_args(func):
     if isinstance(func, Harminv):
         return 2
@@ -1634,15 +1648,8 @@ class Simulation(object):
 
     def add_dft_fields(self, *args, **kwargs):
         components = args[0]
-        if len(args) == 4 and isinstance(args[1],(int,float)) and isinstance(args[2],(int,float)) and isinstance(args[3],int):
-            fcen = args[1]
-            df = args[2]
-            nfreq = args[3]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-        elif len(args) == 2 and isinstance(args[1],(np.ndarray,list)):
-            freq = args[1]
-        else:
-            raise TypeError("add_dft_fields only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+        args = fix_dft_args(args, 1)
+        freq = args[1]
         where = kwargs.get('where', None)
         center = kwargs.get('center', None)
         size = kwargs.get('size', None)
@@ -1681,17 +1688,9 @@ class Simulation(object):
         return arr
 
     def add_near2far(self, *args, **kwargs):
-        if len(args) > 3 and isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-            fcen = args[0]
-            df = args[1]
-            nfreq = args[2]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-            near2fars = args[3:]
-        elif len(args) > 1 and isinstance(args[0],np.ndarray):
-            freq = args[0]
-            near2fars = args[1:]
-        else:
-            raise TypeError("add_near2far only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+        args = fix_dft_args(args, 0)
+        freq = args[0]
+        near2fars = args[1:]
         nperiods = kwargs.get('nperiods', 1)
         n2f = DftNear2Far(self._add_near2far, [freq, nperiods, near2fars])
         self.dft_objects.append(n2f)
@@ -1703,17 +1702,9 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars, nperiods)
 
     def add_energy(self, *args):
-        if isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-            fcen = args[0]
-            df = args[1]
-            nfreq = args[2]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-            energys = args[3:]
-        elif isinstance(args[0],np.ndarray):
-            freq = args[0]
-            energys = args[1:]
-        else:
-            raise TypeError("add_energy only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+        args = fix_dft_args(args, 0)
+        freq = args[0]
+        energys = args[1:]
         en = DftEnergy(self._add_energy, [freq, energys])
         self.dft_objects.append(en)
         return en
@@ -1809,17 +1800,9 @@ class Simulation(object):
         n2f.scale_dfts(complex(-1.0))
 
     def add_force(self, *args):
-        if len(args) > 3 and isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-            fcen = args[0]
-            df = args[1]
-            nfreq = args[2]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-            forces = args[3:]
-        elif len(args) > 1 and isinstance(args[0],np.ndarray):
-            freq = args[0]
-            forces = args[1:]
-        else:
-            raise TypeError("add_forces only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+        args = fix_dft_args(args, 0)
+        freq = args[0]
+        forces = args[1:]
         force = DftForce(self._add_force, [freq, forces])
         self.dft_objects.append(force)
         return force
@@ -1862,17 +1845,9 @@ class Simulation(object):
         force.scale_dfts(complex(-1.0))
 
     def add_flux(self, *args):
-        if len(args) > 3 and isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-            fcen = args[0]
-            df = args[1]
-            nfreq = args[2]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-            fluxes = args[3:]
-        elif len(args) > 1 and isinstance(args[0],np.ndarray):
-            freq = args[0]
-            fluxes = args[1:]
-        else:
-            raise TypeError("add_flux only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+        args = fix_dft_args(args, 0)
+        freq = args[0]
+        fluxes = args[1:]
         flux = DftFlux(self._add_flux, [freq, fluxes])
         self.dft_objects.append(flux)
         return flux
@@ -1883,17 +1858,9 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
 
     def add_mode_monitor(self, *args):
-        if len(args) > 3 and isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-            fcen = args[0]
-            df = args[1]
-            nfreq = args[2]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-            fluxes = args[3:]
-        elif len(args) > 1 and isinstance(args[0],np.ndarray):
-            freq = args[0]
-            fluxes = args[1:]
-        else:
-            raise TypeError("add_mode_monitor only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+        args = fix_dft_args(args, 0)
+        freq = args[0]
+        fluxes = args[1:]
         flux = DftFlux(self._add_mode_monitor, [freq, fluxes])
         self.dft_objects.append(flux)
         return flux
@@ -3026,15 +2993,8 @@ def output_sfield_p(sim):
 
 
 def Ldos(*args):
-    if len(args) == 3 and isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-        fcen = args[0]
-        df = args[1]
-        nfreq = args[2]
-        freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-    elif len(args) == 1 and isinstance(args[0],np.ndarray):
-        freq = args[0]
-    else:
-        raise TypeError("Ldos only accepts fcen,df,nfreq (3 numbers) or freq (array/list)")
+    args = fix_dft_args(args, 0)
+    freq = args[0]
 
     return mp._dft_ldos(freq)
 
@@ -3042,18 +3002,12 @@ def Ldos(*args):
 def dft_ldos(*args, **kwargs):
     ldos = kwargs.get('ldos', None)
     if ldos is None:
-        if len(args) == 3 and isinstance(args[0],(int,float)) and isinstance(args[1],(int,float)) and isinstance(args[2],int):
-            fcen = args[0]
-            df = args[1]
-            nfreq = args[2]
-            freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-        elif len(args) == 1 and isinstance(args[0],(np.ndarray,list)):
-            freq = args[0]
-        elif len(args) == 1:
-            raise ValueError("dft_ldos accepts either fcen,df,nfreq (3 numbers) or freq (array/list) or an ldos object (keyword argument)")            
+        args = fix_dft_args(args, 0)
+        freq = args[0]
+        if isinstance(freq, (np.ndarray,list)):
+            ldos = mp._dft_ldos(freq)
         else:
-            raise TypeError("dft_ldos only accepts fcen,df,nfreq (3 numbers) or freq (array/list) or an ldos object (keyword argument)")
-        ldos = mp._dft_ldos(freq)
+            raise TypeError("dft_ldos only accepts freq_min,freq_max,nfreq (3 numbers) or freq (array/list) or ldos (keyword argument)")
 
     def _ldos(sim, todo):
         if todo == 'step':

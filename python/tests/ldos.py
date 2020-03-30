@@ -45,7 +45,7 @@ class TestLDOS(unittest.TestCase):
         self.assertEqual(len(mp.get_ldos_freqs(ldos)), 1)
 
     def test_invalid_dft_ldos(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.sim.run(mp.dft_ldos(mp.Ldos(self.fcen, 0, 1)), until=200)
 
 
