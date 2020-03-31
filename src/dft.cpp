@@ -36,7 +36,7 @@ std::vector<double> linspace(double freq_min, double freq_max, size_t Nfreq) {
   if (Nfreq <= 1)
     freq[0] = (freq_min + freq_max) * 0.5;
   else
-    for (int i = 0; i < Nfreq; ++i)
+    for (size_t i = 0; i < Nfreq; ++i)
       freq[i] = freq_min + i*dfreq;
 
   return freq;
@@ -361,8 +361,8 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
 dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
                    const double *freq_, size_t Nfreq, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
-    : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
-      use_symmetry(use_symmetry_), freq(Nfreq) {
+    : freq(Nfreq), E(E_), H(H_), cE(cE_), cH(cH_), where(where_),
+      normal_direction(normal_direction_), use_symmetry(use_symmetry_) {
   for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
 }
@@ -487,7 +487,7 @@ dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B
 
 dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
                        const double *freq_, size_t Nfreq, const volume &where_)
-    : E(E_), H(H_), D(D_), B(B_), where(where_), freq(Nfreq) {
+    : freq(Nfreq), E(E_), H(H_), D(D_), B(B_), where(where_) {
   for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
 }
@@ -704,7 +704,7 @@ dft_fields::dft_fields(dft_chunk *chunks_, const std::vector<double> freq_, cons
 }
 
 dft_fields::dft_fields(dft_chunk *chunks_, const double *freq_, size_t Nfreq, const volume &where_)
-    : where(where_), freq(Nfreq) {
+    : freq(Nfreq), where(where_) {
   chunks = chunks_;
   for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
