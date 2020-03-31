@@ -142,7 +142,7 @@ matrix:
           - *common_deps
           - libhdf5-openmpi-dev
     install:
-      - pip install numpy mpi4py scipy matplotlib
+      - pip install numpy mpi4py scipy matplotlib ipython
       - pip install --no-binary=h5py h5py
 
 
