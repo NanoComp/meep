@@ -1474,6 +1474,7 @@ class Simulation(object):
         if not isinstance(cond, list):
             cond = [cond]
 
+        self.progress = False
         for i in range(len(cond)):
             if isinstance(cond[i], numbers.Number):
                 stop_time = cond[i]
@@ -1507,7 +1508,7 @@ class Simulation(object):
         for func in step_funcs:
             _eval_step_func(self, func, 'finish')
 
-        if do_progress:
+        if do_progress and self.progress:
             self.progress.value = t0 + stop_time
             self.progress.description = "100% done "
 
