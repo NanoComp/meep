@@ -142,7 +142,7 @@ while sim.round_time() < source_end_time:
 # compute modal volume from frequency-domain fields
 sys.stdout.write("\n**\n** Frequency-domain modal volumes:\n**\n\n")
 for nf in range(0,3):
-    freq=dft_cell.freq_min + nf*dft_cell.dfreq
+    freq=dft_cell.freq[nf]
     fdmv=get_modal_volume(sim, dft_cell=dft_cell, nf=nf)
     sys.stdout.write(Highlight1)
     sys.stdout.write("f%i (%.3e):   mv(metadata)=%.4e" % (nf, freq, fdmv));
