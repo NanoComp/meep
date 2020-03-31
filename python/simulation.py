@@ -54,7 +54,7 @@ def fix_dft_args(args, i):
             warnings.warn("add_dft_fields: df >= fcen ({} >= {}). input arguments are (fcen,df) rather than (freq_min,freq_max)".format(df,fcen), RuntimeWarning)
         return args[:i] + (freq,) + args[i+3:]
     elif not isinstance(args[i], (np.ndarray, list)):
-        raise TypeError("add_dft functions only accept freq_min,freq_max,nfreq (3 numbers) or freq (array/list)")
+        raise TypeError("add_dft functions only accept fcen,df,nfreq (3 numbers) or freq (array/list)")
     else:
         return args
 
