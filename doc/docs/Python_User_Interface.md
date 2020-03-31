@@ -547,7 +547,7 @@ In a 2d calculation, only the intersections of the objects with the $xy$ plane a
 
 #### Geometry Utilities
 
-See the (MPB documentation)[https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities] for utility functions to help manipulate geometric objects.
+See the [MPB documentation](https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities) for utility functions to help manipulate geometric objects.
 
 ### Sphere
 
@@ -1050,9 +1050,9 @@ Given a frequency `omega` and a `Vector3` `pt`, returns the average eigenvalue o
 —
 Initialize the component `c` fields using the function `func` which has a single argument, a `Vector3` giving a position and returns a complex number for the value of the field at that point.
 
-**`add_dft_fields(cs, freq_min, freq_max, nfreq, where=None, center=None, size=None, yee_grid=False)`**
+**`add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False)`**
 —
-Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq_min` to `freq_max` over the `Volume` specified by `where` (default to the entire cell). The volume can also be specified via the `center` and `size` arguments. The default routine interpolates the Fourier transformed fields at the center of each voxel within the specified volume. Alternatively, the exact Fourier transformed fields evaluated at each corresponding Yee grid point is available by setting `yee_grid` to `True`.
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies over the `Volume` specified by `where` (default to the entire cell). The volume can also be specified via the `center` and `size` arguments. The default routine interpolates the Fourier transformed fields at the center of each voxel within the specified volume. Alternatively, the exact Fourier transformed fields evaluated at each corresponding Yee grid point is available by setting `yee_grid` to `True`.
 
 **`flux_in_box(dir, box=None, center=None, size=None)`**
 —
@@ -1139,9 +1139,9 @@ This can be called in a step function, and is useful for changing the geometry o
 
 Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These are attributes of the `Simulation` class. The most important function is:
 
-**`add_flux(fcen, df, nfreq, FluxRegions...)`**
+**`add_flux(fcen, df, nfreq, freq, FluxRegions...)`**
 —
-Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *flux object*, which you can pass to the functions below to get the flux spectrum, etcetera.
+Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return a *flux object*, which you can pass to the functions below to get the flux spectrum, etcetera.
 
 As described in the tutorial, you normally use `add_flux` via statements like:
 
@@ -1153,7 +1153,7 @@ Once you have called `add_flux`, the Fourier transforms of the fields are accumu
 
 **`display_fluxes(fluxes...)`**
 —
-Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
+Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
 You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `meep.display_csv("flux", meep.get_flux_freqs(f1), meep.get_fluxes(f1), meep.get_fluxes(f2), meep.get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
@@ -1214,7 +1214,7 @@ Given a structure, Meep can decompose the Fourier-transformed fields into a supe
 —
 Given a flux object and list of band indices, return a `namedtuple` with the following fields:
 
-+ `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.Nfreq`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
++ `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
 + `vgrp`: the group velocity as a NumPy array.
 + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
 + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
@@ -1226,7 +1226,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 
 **Note:** for planewaves in homogeneous media, the `kpoints` may *not* necessarily be equivalent to the actual wavevector of the mode. This quantity is given by `kdom`.
 
-**`add_mode_monitor(fcen, df, nfreq, ModeRegions...)`**
+**`add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...)`**
 —
 Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 
@@ -1271,9 +1271,9 @@ The size of the energy region along each of the coordinate axes. Default is (0,0
 —
 A weight factor to multiply the energy density by when it is computed. Default is 1.0.
 
-**`Simulation.add_energy(fcen, df, nfreq, EnergyRegions...)`**
+**`Simulation.add_energy(fcen, df, nfreq, freq, EnergyRegions...)`**
 —
-Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
+Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
 
 As for energy regions, you normally use `add_energy` via statements like:
 
@@ -1287,7 +1287,7 @@ Once you have called `add_energy`, the Fourier transforms of the fields are accu
 
 **`display_electric_energy(energy...)`, `display_magnetic_energy(energy...)`, `display_total_energy(energy...)` **
 —
-Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric_energy1:", "magnetic_energy1:," "total_energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric_energy1:", "magnetic_energy1:," "total_energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
 
 You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `display_electric_energy(e1, e2, e3)` is actually equivalent to `meep.display_csv("electric_energy", meep.get_energy_freqs(e1), meep.get_electric_energy(e1), meep.get_electric_energy(e2), meep.get_electric_energy(e3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
@@ -1353,9 +1353,9 @@ A `meep.Volume` can be used to specify the force region instead of a center and 
 
 In most circumstances, you should define a set of `ForceRegion`s whose union is a closed surface lying in vacuum and enclosing the object that is experiencing the force.
 
-**`Simulation.add_force(fcen, df, nfreq, ForceRegions...)`**
+**`Simulation.add_force(fcen, df, nfreq, freq, ForceRegions...)`**
 —
-Add a bunch of `ForceRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
+Add a bunch of `ForceRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return a `force`object, which you can pass to the functions below to get the force spectrum, etcetera.
 
 As for force regions, you normally use `add_force` via statements like:
 
@@ -1369,7 +1369,7 @@ Once you have called `add_force`, the Fourier transforms of the fields are accum
 
 **`display_forces(forces...)`**
 —
-Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the force spectra.
+Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the force spectra.
 
 You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `meep.display_csv("force", meep.get_force_freqs(f1), meep.get_forces(f1), meep.get_forces(f2), meep.get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
@@ -1413,17 +1413,17 @@ As `load_force_data`, but negates the Fourier-transformed fields after they are 
 
 Meep can also calculate the LDOS (local density of states) spectrum, as described in [Tutorial/Local Density of States](Python_Tutorials/Local_Density_of_States.md). To do this, you simply pass the following step function to your `run` command:
 
-**`Ldos(fcen, df, nfreq)`**
+**`Ldos(fcen, df, nfreq, freq)`**
 —
-Create an LDOS object with frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points. This can be passed to the `dft_ldos` step function below, and has the properties `freq_min`, `nfreq` and `dfreq`.
+Create an LDOS object with either frequency bandwidth `df` centered at `fcen`, at `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. This can be passed to the `dft_ldos` step function below, and has the properties `freq_min`, `nfreq` and `dfreq`.
 
 **`get_ldos_freqs(ldos)`**
 —
 Given an LDOS object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`dft_ldos(fcen=None, df=None, nfreq=None, ldos=None)`**
+**`dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`**
 —
-Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in a frequency bandwidth `df` centered at `fcen`, at `nfreq` frequency points. One can also pass in an `ldos` created with `DftLdos` as `dft_ldos(ldos=my_ldos)`.
+Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at `fcen`, at `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. One can also pass in an `ldos` created with `DftLdos` as `dft_ldos(ldos=my_ldos)`.
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `ldos_data` variable of the `Simulation` object after the `run` is complete.
 
@@ -1443,9 +1443,9 @@ Note: in order for the far-field results to be accurate, the [far region must be
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
-**`add_near2far(fcen, df, nfreq, Near2FarRegions..., nperiods=1)`**
+**`add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1)`**
 —
-Add a bunch of `Near2FarRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally-spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a `near2far` object, which you can pass to the functions below to get the far fields.
+Add a bunch of `Near2FarRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass to the functions below to get the far fields.
 
 Each `Near2FarRegion` is identical to `FluxRegion` except for the name: in 3d, these give a set of planes (**important:** all these "near surfaces" must lie in a single *homogeneous* material with *isotropic* ε and μ &mdash; and they should *not* lie in the PML regions) surrounding the source(s) of outgoing radiation that you want to capture and convert to a far field. Ideally, these should form a closed surface, but in practice it is sufficient for the `Near2FarRegion`s to capture all of the radiation in the direction of the far-field points. **Important:** as for flux computations, each `Near2FarRegion` should be assigned a `weight` of &#177;1 indicating the direction of the outward normal relative to the +coordinate direction. So, for example, if you have six regions defining the six faces of a cube, i.e. the faces in the +x, -x, +y, -y, +z, and -z directions, then they should have weights +1, -1, +1, -1, +1, and -1 respectively. Note that, neglecting discretization errors, all near-field surfaces that enclose the same outgoing fields are equivalent and will yield the same far fields with a discretization-induced difference that vanishes with increasing resolution etc.
 
@@ -1467,7 +1467,7 @@ Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume
 
 **`get_farfields(near2far, resolution, where=None, center=None, size=None)`**
 —
-Like `output_farfields` but returns a dictionary of numpy arrays instead of writing to a file. The dictionary keys are `Ex`, `Ey`, `Ez`, `Hx`, `Hy`, `Hz`. Each array has the same shape as described in `output_farfields`.
+Like `output_farfields` but returns a dictionary of NumPy arrays instead of writing to a file. The dictionary keys are `Ex`, `Ey`, `Ez`, `Hx`, `Hy`, `Hz`. Each array has the same shape as described in `output_farfields`.
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
@@ -1567,8 +1567,7 @@ After `solve_cw` completes, it should be as if you had just run the simulation f
 
 ### Frequency-Domain Eigensolver
 
-Building on the frequency-domain solver above, Meep also includes a frequency-domain *eigen*solver that
-computes resonant frequencies and modes in the frequency domain.  The usage is very similar to `solve_cw`:
+Building on the frequency-domain solver above, Meep also includes a frequency-domain eigensolver that computes resonant frequencies and modes in the frequency domain.  The usage is very similar to `solve_cw`:
 
 ```py
 sim = mp.Simulation(...)
@@ -1576,23 +1575,13 @@ sim.init_sim()
 eigfreq = sim.solve_eigfreq(tol, maxiters, guessfreq, cwtol, cwmaxiters, L)
 ```
 
-The `solve_eig` routine performs repeated calls to `solve_cw` in a way that converges to the resonant mode
-whose frequency is *closest* to the source frequency.  The complex resonant-mode frequency is returned, and
-the mode Q can be computed from `eigfreq.real / (-2*eigfreq.imag)`.  Upon return, the fields should be
-the corresponding resonant mode (with an arbitrary scaling).
+The `solve_eig` routine performs repeated calls to `solve_cw` in a way that converges to the resonant mode whose frequency is *closest* to the source frequency.  The complex resonant-mode frequency is returned, and the mode Q can be computed from `eigfreq.real / (-2*eigfreq.imag)`.  Upon return, the fields should be the corresponding resonant mode (with an arbitrary scaling).
 
-The resonant mode is converged to a relative error of roughly `tol`, which defaults to `1e-7`.   A
-maximum of `maxiters` (defaults to `100`) calls to `solve_cw` are performed.  The tolerance
-for each `solve_cw` call is `cwtol` (defaults to `tol*1e-3`) and the maximum iterations is
-`cwmaxiters` (10<sup>4</sup>, by default); the `L` parameter (defaults to `10`) is also passed
-through to `solve_cw`.
+The resonant mode is converged to a relative error of roughly `tol`, which defaults to `1e-7`. A maximum of `maxiters` (defaults to `100`) calls to `solve_cw` are performed.  The tolerance for each `solve_cw` call is `cwtol` (defaults to `tol*1e-3`) and the maximum iterations is `cwmaxiters` (10<sup>4</sup>, by default); the `L` parameter (defaults to `10`) is also passed through to `solve_cw`.
 
-The closer the input frequency is to the resonant-mode frequency, the faster `solve_eig` should
-converge.   Instead of using the source frequency, you can instead pass a `guessfreq` argument
-to `solve_eigfreq` specifying an input frequency (which may even be complex).
+The closer the input frequency is to the resonant-mode frequency, the faster `solve_eig` should converge. Instead of using the source frequency, you can instead pass a `guessfreq` argument to `solve_eigfreq` specifying an input frequency (which may even be complex).
 
-Technically, `solve_eig` is using a [shift-and-invert power iteration](https://en.wikipedia.org/wiki/Inverse_iteration)
-to compute the resonant mode, as reviewed in the [eigensolver math](Eigensolver_Math.md) section.
+Technically, `solve_eig` is using a [shift-and-invert power iteration](https://en.wikipedia.org/wiki/Inverse_iteration) to compute the resonant mode, as reviewed in [Frequency-Domain Eigensolver](Eigensolver_Math.md).
 
 As for `solve_cw` above, you are required to set `force_complex_fields=True` to use `solve_eigfreq`.
 

@@ -114,7 +114,7 @@ sim = mp.Simulation(cell_size=cell, geometry=geometry,
 # mv_box is the region within which we compute modal volume
 mv_box_size = mp.Vector3(L_inner, L_inner, mp.inf)
 mv_box      = mp.Volume(center=origin, size=mv_box_size)
-dft_cell    = sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez], fcen-df, fcen+df, 3, where=mv_box)
+dft_cell    = sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez], fcen, 2*df, 3, where=mv_box)
 
 # Timestep until the sources are finished, pausing at fixed intervals to 
 # compare the modal volume within mv_box as computed from time-domain fields 

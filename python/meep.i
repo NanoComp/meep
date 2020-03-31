@@ -973,6 +973,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // typemaps needed for add_dft_fields
 //--------------------------------------------------
 
+%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)}
+
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
     $1 = py_material;
