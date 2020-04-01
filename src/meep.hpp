@@ -1679,6 +1679,11 @@ public:
   // that can be passed to eigenmode_amplitude() to get
   // values of field components at arbitrary points in space.
   // call destroy_eigenmode_data() to deallocate it when finished.
+  void *get_eigenmode_coordcycle(double omega_src, direction d, const volume where, const volume eig_vol,
+                      int band_num, const vec &kpoint, bool match_frequency, int parity,
+                      double resolution, double eigensolver_tol, double *kdom = 0,
+                      void **user_mdata = 0, int coordcycle = 0);
+
   void *get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, double *kdom = 0,
@@ -2081,6 +2086,7 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata = true);
 std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c);
 double get_group_velocity(void *vedata);
+vec get_k_coordcycle(void *vedata, int coordcycle = 0);
 vec get_k(void *vedata);
 
 realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, int nx, int ny,

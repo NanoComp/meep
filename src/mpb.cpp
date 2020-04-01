@@ -43,8 +43,11 @@ typedef struct {
   const fields *f;
 } meep_mpb_eps_data;
 
-static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
-                         void *eps_data_) {
+static void meep_mpb_eps_coordcycle(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                         void *eps_data_, int coordcycle = 0) {
+  if (coordcycle != 0 && coordcycle != 1 && coordcycle != 2) {
+    abort("unsupported coordcycle value");
+  }
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   const double *s = eps_data->s;
   const double *o = eps_data->o;
@@ -54,13 +57,14 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
   const fields *f = eps_data->f;
 
-  eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, omega));
-  eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, omega));
-  eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, omega));
+  // TODO: rotate meep -> mpb
+  eps_inv->m00 = real(f->get_chi1inv((component)((Ex - Ex + coordcycle) % 3), (direction)((X - X + coordcycle) % 3), p, omega));
+  eps_inv->m11 = real(f->get_chi1inv((component)((Ey - Ex + coordcycle) % 3), (direction)((Y - X + coordcycle) % 3), p, omega));
+  eps_inv->m22 = real(f->get_chi1inv((component)((Ez - Ex + coordcycle) % 3), (direction)((Z - X + coordcycle) % 3), p, omega));
+  ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv((component)((Ex - Ex + coordcycle) % 3), (direction)((Y - X + coordcycle) % 3), p, omega)), 0);
+  ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv((component)((Ex - Ex + coordcycle) % 3), (direction)((Z - X + coordcycle) % 3), p, omega)), 0);
+  ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv((component)((Ey - Ex + coordcycle) % 3), (direction)((Z - X + coordcycle) % 3), p, omega)), 0);
 
-  ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Y, p, omega)), 0);
-  ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Z, p, omega)), 0);
-  ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, omega)), 0);
   /*
   master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
   master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
@@ -70,6 +74,12 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   master_printf("m23(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m12);
   */
   maxwell_sym_matrix_invert(eps, eps_inv);
+}
+
+static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                         void *eps_data_) {
+  int coordcycle = 0;
+  return meep_mpb_eps_coordcycle(eps, eps_inv, r, eps_data_, coordcycle);
 }
 
 /**************************************************************/
@@ -251,13 +261,20 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
 /* field components at arbitrary points in space.               */
 /* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
-void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
+#define EVEN_X_PARITY (1<<4)
+#define ODD_X_PARITY (1<<5)
+
+// TODO: create get_eigenmode_coordcycle and wrap get_eigenmode around it
+void *fields::get_eigenmode_coordcycle(double omega_src, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata) {
+                            void **user_mdata, int coordcycle) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
+  if (coordcycle != 0 && coordcycle != 1 && coordcycle != 2) {
+    abort("unsupported coordcycle value");
+  }
 
   // if the mode region extends over the full computational grid and we are bloch-periodic
   // in any direction, set the corresponding component of the eigenmode initial-guess
@@ -298,15 +315,16 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
 
   switch (gv.dim) {
     case D3:
-      o[0] = eig_vol.in_direction_min(X);
-      o[1] = eig_vol.in_direction_min(Y);
-      o[2] = eig_vol.in_direction_min(Z);
-      s[0] = eig_vol.in_direction(X);
-      s[1] = eig_vol.in_direction(Y);
-      s[2] = eig_vol.in_direction(Z);
-      kcart[0] = kpoint.in_direction(X);
-      kcart[1] = kpoint.in_direction(Y);
-      kcart[2] = kpoint.in_direction(Z);
+      // TODO: rotate  meep -> mpb
+      o[0] = eig_vol.in_direction_min((direction)((X - X + coordcycle) % 3));
+      o[1] = eig_vol.in_direction_min((direction)((Y - X + coordcycle) % 3));
+      o[2] = eig_vol.in_direction_min((direction)((Z - X + coordcycle) % 3));
+      s[0] = eig_vol.in_direction((direction)((X - X + coordcycle) % 3));
+      s[1] = eig_vol.in_direction((direction)((Y - X + coordcycle) % 3));
+      s[2] = eig_vol.in_direction((direction)((Z - X + coordcycle) % 3));
+      kcart[0] = kpoint.in_direction((direction)((X - X + coordcycle) % 3));
+      kcart[1] = kpoint.in_direction((direction)((Y - X + coordcycle) % 3));
+      kcart[2] = kpoint.in_direction((direction)((Z - X + coordcycle) % 3));
       break;
     case D2:
       o[0] = eig_vol.in_direction_min(X);
@@ -392,8 +410,9 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       kmatch = kcart_len;
   }
   else {
-    kmatch = G[d - X][d - X] * k[d - X]; // k[d] in cartesian
-    kdir[d - X] = 1;                     // kdir = unit vector in d direction
+    // TODO: rotate meep -> mpb
+    kmatch = G[(d - X + coordcycle) % 3][(d - X + coordcycle) % 3] * k[(d - X + coordcycle) % 3]; // k[d] in cartesian
+    kdir[(d - X + coordcycle) % 3] = 1;                                                           // kdir = unit vector in d direction
   }
 
   // if match_frequency is true, we need at least a crude guess for kmatch;
@@ -407,15 +426,37 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
       if (gv.dim == D2) k[2] = beta;
     }
     else {
-      k[d - X] = kmatch * R[d - X][d - X]; // convert to reciprocal basis
-      if (eig_vol.in_direction(d) > 0 &&
-          fabs(k[d - X]) > 0.4) // ensure k is well inside the Brillouin zone
-        k[d - X] = k[d - X] > 0 ? 0.4 : -0.4;
+      // TODO: rotate meep -> mpb
+      k[(d - X + coordcycle) % 3] = kmatch * R[(d - X + coordcycle) % 3][(d - X + coordcycle) % 3]; // convert to reciprocal basis
+          if (eig_vol.in_direction((direction)((d - X + coordcycle) % 3)) > 0 &&
+            fabs(k[(d - X + coordcycle) % 3]) > 0.4) // ensure k is well inside the Brillouin zone
+          k[(d - X + coordcycle) % 3] = k[(d - X + coordcycle) % 3] > 0 ? 0.4 : -0.4;
+
     }
     if (verbosity > 1) master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
   }
 
-  set_maxwell_data_parity(mdata, parity);
+  // TODO: rotate meep -> mpb
+  unsigned int num_sig_bits = 6;
+  unsigned int rotation;
+  switch(coordcycle) {
+    case 0:
+      set_maxwell_data_parity(mdata, parity);
+      break;
+    case 1:
+      // Rotating x,y,z parity to y,z,x involves rotating the bits 2 bits to the left
+      rotation = 2;
+      parity = ((parity >> rotation)|(parity << (num_sig_bits - rotation))) % 64;
+      set_maxwell_data_parity(mdata, parity);
+      break;
+    case 2:
+      // Rotating x,y,z parity to z,x,y involves rotating the bits 4 bits to the left
+      rotation = 4;
+      parity = ((parity >> rotation)|(parity << (num_sig_bits - rotation))) % 64;
+      set_maxwell_data_parity(mdata, parity);
+      break;
+    default: abort("unsupported coordcycle value");
+  }
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
   if (k[0] == 0 && k[1] == 0 && k[2] == 0) {
@@ -501,7 +542,8 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
           if (gv.dim == D2) k[2] = beta;
         }
         else {
-          k[d - X] = kmatch * R[d - X][d - X];
+          // TODO: rotate unsure which direction, currently meep -> mpb
+          k[(d - X + coordcycle) % 3] = kmatch * R[(d - X + coordcycle) % 3][(d - X + coordcycle) % 3];
         }
         update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       }
@@ -627,6 +669,14 @@ void *fields::get_eigenmode(double omega_src, direction d, const volume where, c
   return (void *)edata;
 }
 
+void *fields::get_eigenmode(double omega_src, direction d, const volume where, const volume eig_vol,
+                            int band_num, const vec &_kpoint, bool match_frequency, int parity,
+                            double resolution, double eigensolver_tol, double *kdom,
+                            void **user_mdata) {
+  return get_eigenmode_coordcycle(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency, parity, resolution,
+                                  eigensolver_tol, kdom, user_mdata, 0);
+}
+
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
   destroy_evectmatrix(edata->H);
@@ -640,9 +690,25 @@ double get_group_velocity(void *vedata) {
   return edata->group_velocity;
 }
 
-vec get_k(void *vedata) {
+vec get_k_coordcycle(void *vedata, int coordcycle) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
-  return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
+  // TODO: rotate mpb -> meep
+  switch(coordcycle) {
+    case 0:
+      return vec(edata->Gk[0], edata->Gk[1], edata->Gk[2]);
+      break;
+    case 1:
+      return vec(edata->Gk[2], edata->Gk[0], edata->Gk[1]);
+      break;
+    case 2:
+      return vec(edata->Gk[1], edata->Gk[2], edata->Gk[0]);
+      break;
+    default: abort("unsupported coordcycle value");
+  }
+}
+
+vec get_k(void *vedata) {
+  return get_k_coordcycle(vedata, 0);
 }
 
 /***************************************************************/
