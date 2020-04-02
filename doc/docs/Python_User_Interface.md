@@ -155,7 +155,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 
 **`extra_materials` [ list of `Medium` class ]**
 —
-By default, Meep turns off support for material dispersion (via susceptibilities or conductivity) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material_function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra_materials`. `extra_materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material_function` here.
+By default, Meep turns off support for material dispersion ([susceptibilities](#susceptibility) or [conductivity](Materials.md#conductivity-and-complex)) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material_function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra_materials`. `extra_materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material_function` here.
 
 **`load_structure` [`string`]**
 —
@@ -285,11 +285,11 @@ The frequency-independent magnetic conductivity $\sigma_B$. Default is 0. You ca
 
 **`chi2` [`number`]**
 —
-The nonlinear ([Pockels](https://en.wikipedia.org/wiki/Pockels_effect)) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`chi3` [`number`]**
 —
-The nonlinear ([Kerr](https://en.wikipedia.org/wiki/Kerr_effect)) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`E_susceptibilities` [ list of `Susceptibility` class ]**
 —
@@ -816,9 +816,9 @@ By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the s
 —
 The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, with respect to the `center` of the source region.  (In particular, it does not matter if your simulation as a whole has that symmetry, only the cross section where you are introducing the source.) If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
-**`eig_resolution` [`integer`, defaults to same as Meep resolution ]**
+**`eig_resolution` [`integer`, defaults to `2*resolution` ]**
 —
-The spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels.
+The spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels.
 
 **`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]**
 —
@@ -1220,7 +1220,7 @@ Given a flux object and list of band indices, return a `namedtuple` with the fol
 + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
 + `cscale`: a NumPy array of each mode's scaling coefficient. Useful for adjoint calculations.
 
-The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenmodeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
+The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenmodeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`. (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.) If `direction` is set to `mp.NO_DIRECTION`, then `kpoint_func` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Python_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the flux plane).
 
@@ -1415,7 +1415,7 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 
 **`Ldos(fcen, df, nfreq, freq)`**
 —
-Create an LDOS object with either frequency bandwidth `df` centered at `fcen`, at `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. This can be passed to the `dft_ldos` step function below, and has the properties `freq_min`, `nfreq` and `dfreq`.
+Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. This can be passed to the `dft_ldos` step function below as a keyword argument.
 
 **`get_ldos_freqs(ldos)`**
 —
@@ -1423,7 +1423,7 @@ Given an LDOS object, returns a list of the frequencies that it is computing the
 
 **`dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`**
 —
-Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at `fcen`, at `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. One can also pass in an `ldos` created with `DftLdos` as `dft_ldos(ldos=my_ldos)`.
+Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at `fcen` and `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. One can also pass in an `Ldos` object as `dft_ldos(ldos=my_Ldos)`.
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `ldos_data` variable of the `Simulation` object after the `run` is complete.
 
