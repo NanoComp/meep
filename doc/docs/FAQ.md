@@ -31,7 +31,7 @@ Yes. The technical details of Meep's inner workings are described in the peer-re
 
 ### Where can I find a list of projects which have used Meep?
 
-For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see [simpetus.com/projects.html](http://www.simpetus.com/projects.html).
+For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
 
 ### Can I access Meep in the public cloud?
 
@@ -113,7 +113,7 @@ There are two possible explanations: (1) the simulation run time may be too shor
 
 ### How do I model the solar radiation spectrum?
 
-For simulations involving [solar radiation](https://en.wikipedia.org/wiki/Sunlight#Surface_illumination), including the [air mass](https://en.wikipedia.org/wiki/Air_mass_(solar_energy)), the [reflectance/transmittance spectra](Introduction.md#transmittancereflectance-spectra) is computed as normal. Since typical solar-cell problems are linear, the reflected or transmitted power can then be obtained by simply multiplying the reflectance or transmittance by the solar spectrum.
+For simulations involving [solar radiation](https://en.wikipedia.org/wiki/Sunlight#Surface_illumination), the [reflectance/transmittance spectra](Introduction.md#transmittancereflectance-spectra) is computed using the [standard procedure involving two separate calculations](Introduction.md#transmittancereflectance-spectra). Since typical solar-cell problems are linear, the reflected/transmitted power can then be obtained by simply multiplying the reflectance/transmittance by the [solar spectrum](https://en.wikipedia.org/wiki/Air_mass_(solar_energy)). The accuracy of these types of calculations involving a weighted input/output spectrum can be improved using a coarse, unequally spaced frequency grid (by passing it as an array/list to [`add_flux`](Python_User_Interface.md#flux-spectra)) as described in the notebook [Solar-weighted Gaussian Quadrature](https://nbviewer.jupyter.org/urls/math.mit.edu/~stevenj/Solar-Quadrature.ipynb?flush_cache=true). This method involves precomputing the frequency points and weights given the air mass spectrum.
 
 ### Are complex fields physical?
 
