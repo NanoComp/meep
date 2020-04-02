@@ -7,15 +7,11 @@
 GitHub Source Repository
 ------------------------
 
-The [source repository](https://github.com/NanoComp/meep) is hosted on GitHub along with gzipped tarballs of stable releases:
+The [source repository](https://github.com/NanoComp/meep) is hosted on GitHub along with gzipped tarballs of [official (stable) releases](https://github.com/NanoComp/meep/releases).
 
--   <https://github.com/NanoComp/meep/releases>
+Refer to [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md) for a list of the latest changes, and be sure to read [Installation](Installation.md) for how to compile and install it.
 
-Refer to [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md) for a list of the latest changes, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
-
-To receive notifications when new versions are released, subscribe to the **meep-announce** mailing list:
-
--   [meep-announce mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce)
+To receive notifications when new versions are released, subscribe to the [meep-announce](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce) mailing list.
 
 Precompiled Packages for Ubuntu
 -------------------------------
