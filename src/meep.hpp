@@ -2035,13 +2035,6 @@ void trash_output_directory(const char *dirname);
 void delete_directory(const char *path);
 FILE *create_output_file(const char *dirname, const char *fname);
 
-// The following allows you to hit ctrl-C to tell your calculation to stop
-// and clean up.
-void deal_with_ctrl_c(int stop_now = 2);
-// When a ctrl_c is called, the following variable (which starts with a
-// zero value) is incremented.
-extern int interrupt;
-
 int do_harminv(std::complex<double> *data, int n, double dt, double fmin, double fmax, int maxbands,
                std::complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL,
                double spectral_density = 1.1, double Q_thresh = 50, double rel_err_thresh = 1e20,
