@@ -890,10 +890,10 @@ class TestModeSolver(unittest.TestCase):
         for e, r in zip(expected_z_parities, z_parities):
             self.assertAlmostEqual(e, r, places=3)
 
-        omega = 1 / 1.55
+        frequency = 1 / 1.55
 
-        kvals = ms.find_k(mp.NO_PARITY, omega, 1, ms.num_bands, mp.Vector3(1), 1e-3,
-                          omega * 3.45, omega * 0.1, omega * 4, mpb.output_poynting_x,
+        kvals = ms.find_k(mp.NO_PARITY, frequency, 1, ms.num_bands, mp.Vector3(1), 1e-3,
+                          frequency * 3.45, frequency * 0.1, frequency * 4, mpb.output_poynting_x,
                           mpb.display_yparities, mpb.display_group_velocities)
 
         expected_kvals = [
