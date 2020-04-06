@@ -303,7 +303,7 @@ def plot_volume(sim,ax,volume,output_plane=None,plotting_parameters=None,label=N
             return ax
     return ax
 
-def plot_eps(sim,ax,output_plane=None,eps_parameters=None,omega=0):
+def plot_eps(sim,ax,output_plane=None,eps_parameters=None,frequency=0):
     if sim.structure is None:
         sim.init_sim()
 
@@ -342,7 +342,7 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None,omega=0):
     else:
         raise ValueError("A 2D plane has not been specified...")
 
-    eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric, omega=omega)))
+    eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric, frequency=frequency)))
     if mp.am_master():
         ax.imshow(eps_data, extent=extent, **eps_parameters)
         ax.set_xlabel(xlabel)
@@ -514,7 +514,7 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
 def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
             eps_parameters=None,boundary_parameters=None,
             source_parameters=None,monitor_parameters=None,
-            field_parameters=None, omega=None):
+            field_parameters=None, frequency=None):
 
     # Initialize the simulation
     if sim.structure is None:
@@ -524,21 +524,21 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
         from matplotlib import pyplot as plt
         ax = plt.gca()
     # Determine a frequency to plot all epsilon
-    if omega is None:
+    if frequency is None:
         try:
             # Continuous sources
-            omega = sim.sources[0].frequency
+            frequency = sim.sources[0].frequency
         except:
             try:
                 # Gaussian sources
-                omega = sim.sources[0].src.frequency
+                frequency = sim.sources[0].src.frequency
             except:
                 try:
                     # Custom sources
-                    omega = sim.sources[0].src.center_frequency
+                    frequency = sim.sources[0].src.center_frequency
                 except:
                     # No sources
-                    omega = 0
+                    frequency = 0
 
     # validate the output plane to ensure proper 2D coordinates
     from meep.simulation import Volume
@@ -546,7 +546,7 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
     output_plane = Volume(center=sim_center,size=sim_size)
 
     # Plot geometry
-    ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,omega=omega)
+    ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,frequency=frequency)
 
     # Plot boundaries
     ax = plot_boundaries(sim,ax,output_plane=output_plane,boundary_parameters=boundary_parameters)

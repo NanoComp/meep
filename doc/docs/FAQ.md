@@ -407,7 +407,7 @@ Note: a simple approach to reduce the cost of the DTFT computation is to reduce 
 
 ### Does Meep support shared-memory parallelism?
 
-You can always run the MPI parallel Meep on a shared-memory machine, and some MPI implementations take special advantage of shared memory communications. Meep currently also provides limited support for [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) via OpenMP on a single, shared-memory, multi-core machine to speed up *multi-frequency* [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) calculations involving `get_farfields` or `output_farfields`.
+Yes. Meep provides limited support for [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) via OpenMP on a single, shared-memory, multi-core machine to speed up *multi-frequency* [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) calculations involving `get_farfields` or `output_farfields`. Also, you can always run the MPI parallel Meep on a shared-memory machine, and some MPI implementations take special advantage of shared memory communications.
 
 ### Why does the time-stepping rate fluctuate erratically for jobs running on a shared-memory system?
 

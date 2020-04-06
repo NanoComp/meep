@@ -1427,9 +1427,12 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt, omega = 0):
+    def get_epsilon_point(self, pt, frequency=0, omega=0):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        return self.fields.get_eps(v3,omega)
+        if omega != 0:
+            frequency = omega
+            warnings.warn("get_epsilon_point: omega has been deprecated; use frequency instead", RuntimeWarning)
+        return self.fields.get_eps(v3,frequency)
 
     def get_filename_prefix(self):
         if isinstance(self.filename_prefix, str):
@@ -2006,7 +2009,7 @@ class Simulation(object):
 
         return stuff
 
-    def output_component(self, c, h5file=None, omega=0):
+    def output_component(self, c, h5file=None, frequency=0, omega=0):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
@@ -2014,7 +2017,11 @@ class Simulation(object):
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
-        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(), omega)
+        if omega != 0:
+            frequency = omega
+            warnings.warn("output_component: omega has been deprecated; use frequency instead", RuntimeWarning)
+
+        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(), frequency)
 
         if h5file is None:
             nm = self.fields.h5file_name(mp.component_name(c), self.get_filename_prefix(), True)
@@ -2044,7 +2051,7 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, omega = 0):
+    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, frequency=0, omega=0):
         if component is None:
             raise ValueError("component is required")
         if isinstance(component, mp.Volume) or isinstance(component, mp.volume):
@@ -2061,8 +2068,12 @@ class Simulation(object):
 
         dims = [s for s in dim_sizes if s != 0]
 
+        if omega != 0:
+            frequency = omega
+            warnings.warn("get_array: omega has been deprecated; use frequency instead", RuntimeWarning)
+
         if cmplx is None:
-            cmplx = omega != 0 or (component < mp.Dielectric and not self.fields.is_real)
+            cmplx = frequency != 0 or (component < mp.Dielectric and not self.fields.is_real)
 
         if arr is not None:
             if cmplx and not np.iscomplexobj(arr):
@@ -2079,9 +2090,9 @@ class Simulation(object):
             arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
         if np.iscomplexobj(arr):
-            self.fields.get_complex_array_slice(v, component, arr, omega)
+            self.fields.get_complex_array_slice(v, component, arr, frequency)
         else:
-            self.fields.get_array_slice(v, component, arr, omega)
+            self.fields.get_array_slice(v, component, arr, frequency)
 
         return arr
 
@@ -2177,7 +2188,7 @@ class Simulation(object):
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.freq.size(), 2)), vgrp, kpoints, kdom, cscale)
 
-    def get_eigenmode(self, freq, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
+    def get_eigenmode(self, frequency, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12):
 
         if self.fields is None:
@@ -2191,11 +2202,11 @@ class Simulation(object):
 
         swig_kpoint = mp.vec(kpoint.x, kpoint.y, kpoint.z)
         kdom = np.zeros(3)
-        emdata = mp._get_eigenmode(self.fields, freq, direction, where, eig_vol, band_num, swig_kpoint,
+        emdata = mp._get_eigenmode(self.fields, frequency, direction, where, eig_vol, band_num, swig_kpoint,
                                    match_frequency, parity, resolution, eigensolver_tol, kdom)
         Gk = mp._get_eigenmode_Gk(emdata)
 
-        return EigenmodeData(emdata.band_num, emdata.omega, emdata.group_velocity, Gk,
+        return EigenmodeData(emdata.band_num, emdata.frequency, emdata.group_velocity, Gk,
                              emdata, mp.Vector3(kdom[0], kdom[1], kdom[2]))
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
@@ -2290,8 +2301,11 @@ class Simulation(object):
         if self.fields:
             self.fields.print_times()
 
-    def get_epsilon(self,omega=0):
-        return self.get_array(component=mp.Dielectric,omega=omega)
+    def get_epsilon(self,frequency=0,omega=0):
+        if omega != 0:
+            frequency = omega
+            warnings.warn("get_epsilon: omega has been deprecated; use frequency instead", RuntimeWarning)
+        return self.get_array(component=mp.Dielectric,frequency=frequency)
 
     def get_mu(self):
         return self.get_array(component=mp.Permeability)
@@ -2827,13 +2841,21 @@ def output_png(compnt, options, rm_h5=True):
 
 
 def output_epsilon(sim,*step_func_args,**kwargs):
+    frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
-    sim.output_component(mp.Dielectric,omega=omega)
+    if omega != 0:
+        frequency = omega
+        warnings.warn("output_epsilon: omega has been deprecated; use frequency instead", RuntimeWarning)
+    sim.output_component(mp.Dielectric,frequency=frequency)
 
 
 def output_mu(sim,*step_func_args,**kwargs):
+    frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
-    sim.output_component(mp.Permeability,omega=omega)
+    if omega != 0:
+        frequency = omega
+        warnings.warn("output_mu: omega has been deprecated; use frequency instead", RuntimeWarning)
+    sim.output_component(mp.Permeability,frequency=frequency)
 
 
 def output_hpwr(sim):

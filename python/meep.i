@@ -53,7 +53,7 @@ namespace meep {
         vec center;
         amplitude_function amp_func;
         int band_num;
-        double omega;
+        double frequency;
         double group_velocity;
     };
 }
@@ -519,12 +519,12 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 }
 
 #ifdef HAVE_MPB
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
                                      double kdom[3]) {
 
-    void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
+    void *data = f->get_eigenmode(frequency, d, where, eig_vol, band_num, _kpoint, match_frequency,
                                   parity, resolution, eigensolver_tol, kdom);
     return (meep::eigenmode_data *)data;
 }
@@ -538,11 +538,11 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
 }
 
 #else
-void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
                     double kdom[3]) {
-    (void) f; (void) omega_src; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
+    (void) f; (void) frequency; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
     (void) match_frequency; (void) parity; (void) resolution; (void) eigensolver_tol;
     (void) kdom;
     meep::abort("Must compile Meep with MPB for get_eigenmode");
@@ -1328,12 +1328,12 @@ struct eigenmode_data {
     vec center;
     amplitude_function amp_func;
     int band_num;
-    double omega;
+    double frequency;
     double group_velocity;
 };
 }
 
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
                                      double kdom[3]);
@@ -1346,7 +1346,7 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 }
 
 #else
-void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
                     double kdom[3]);

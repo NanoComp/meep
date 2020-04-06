@@ -55,7 +55,7 @@ class TestModeCoeffs(unittest.TestCase):
         mode_flux = sim.add_flux(fcen, df, nf, mp.FluxRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
 
         # sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(-0.5*sx+dpml,0), 1e-10))
-        sim.run(until_after_sources=200)
+        sim.run(until_after_sources=100)
 
         ##################################################
         # If the number of analysis frequencies is >1, we
