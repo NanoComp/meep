@@ -37,12 +37,9 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         self.EigenMode_kwargs = kwargs
         return
     
-    def register_monitors(self,fcen,df,nf):
-        self.fcen=fcen
-        self.df=df
-        self.nf=nf
-
-        self.monitor = self.sim.add_mode_monitor(self.fcen,self.df,self.nf,mp.FluxRegion(center=self.volume.center,size=self.volume.size))
+    def register_monitors(self,frequencies):
+        self.frequencies = np.asarray(frequencies)
+        self.monitor = self.sim.add_mode_monitor(frequencies,mp.FluxRegion(center=self.volume.center,size=self.volume.size))
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
     
@@ -69,7 +66,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         # -------------------------------------- #
         # Get scaling factor 
         # -------------------------------------- #
-        # combine source for multi-output objective functions (i.e. multiple frequencies)
+        # leverage linearity and combine source for multiple frequencies
         if dJ.ndim == 2:
             dJ = np.sum(dJ,axis=1)
         
@@ -81,8 +78,8 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         else:
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
         da_dE = 0.5*(dV * self.cscale)
-        scale = da_dE * dJ * 1j * 2 * np.pi * self.freqs / np.array([self.time_src.fourier_transform(f) for f in self.freqs]) # final scale factor
-        if self.freqs.size == 1:
+        scale = da_dE * dJ * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
+        if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             src = self.time_src
             amp = scale
@@ -90,7 +87,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             # TODO: In theory we should be able drive the source without normalizing out the time profile.
             # But for some reason, there is a frequency dependent scaling discrepency. It works now for 
             # multiple monitors and multiple sources, but we should figure out why this is.
-            src = FilteredSource(self.time_src.frequency,self.freqs,scale,dt,self.time_src) # generate source from braodband response
+            src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src) # generate source from broadband response
             amp = 1
         # generate source object
         self.source = mp.EigenModeSource(src,
@@ -112,9 +109,6 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],**self.EigenMode_kwargs)
         self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling   
         self.cscale = ob.cscale # pull scaling factor
-
-        # record all freqs of interest
-        self.freqs = np.atleast_1d(mp.get_eigenmode_freqs(self.monitor))
 
         return self.eval
     def get_evaluation(self):

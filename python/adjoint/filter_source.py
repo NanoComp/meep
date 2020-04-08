@@ -32,7 +32,7 @@ class FilteredSource(CustomSource):
         H = signal_dtft * frequency_response
 
         # estimate the impulse response using a sinc function RBN
-        self.nodes, self.err = self.estimate_impulse_response(H)  
+        self.nodes, self.err = self.estimate_impulse_response(H)
 
         # initialize super
         super(FilteredSource, self).__init__(src_func=f,center_frequency=center_frequency,is_integrated=False,end_time=self.T)

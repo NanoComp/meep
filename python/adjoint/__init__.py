@@ -8,8 +8,10 @@ import meep as mp
 
 from .objective import EigenmodeCoefficient
 
-from .basis import (Basis, BilinearInterpolationBasis)
+from .basis import BilinearInterpolationBasis
 
-from .optimization_problem import OptimizationProblem
+from .optimization_problem import (OptimizationProblem, Grid)
 
-from .filter_source import (FilteredSource)
+from .filter_source import FilteredSource
+
+from .filters import (smoothing_filter, projection_filter)

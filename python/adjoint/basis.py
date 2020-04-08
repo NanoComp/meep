@@ -58,28 +58,28 @@ class BilinearInterpolationBasis(Basis):
         super(BilinearInterpolationBasis, self).__init__(**kwargs)
 
         # Generate interpolation grid
-        if symmetry is None:
+        if symmetry is None or len(symmetry) == 0:
             self.symmetry = []
         else:
             self.symmetry = symmetry
         
-        if mp.Y in set(self.symmetry): # symmetry across x axis
+        if mp.X in set(self.symmetry): # symmetry across x axis
             self.rho_x = np.linspace(self.volume.center.x,self.volume.center.x + self.volume.size.x/2,Nx)
-            self.mirror_Y = True
-        else:
-            self.rho_x = np.linspace(self.volume.center.x - self.volume.size.x/2,self.volume.center.x + self.volume.size.x/2,Nx)
-            self.mirror_Y = False
-        
-        if mp.X in set(self.symmetry): # symmetry across y axis
-            self.rho_y = np.linspace(self.volume.center.y,self.volume.center.y + self.volume.size.y/2,Ny)
             self.mirror_X = True
         else:
-            self.rho_y = np.linspace(self.volume.center.y - self.volume.size.y/2,self.volume.center.y + self.volume.size.y/2,Ny)
+            self.rho_x = np.linspace(self.volume.center.x - self.volume.size.x/2,self.volume.center.x + self.volume.size.x/2,Nx)
             self.mirror_X = False
+        
+        if mp.Y in set(self.symmetry): # symmetry across y axis
+            self.rho_y = np.linspace(self.volume.center.y,self.volume.center.y + self.volume.size.y/2,Ny)
+            self.mirror_Y = True
+        else:
+            self.rho_y = np.linspace(self.volume.center.y - self.volume.size.y/2,self.volume.center.y + self.volume.size.y/2,Ny)
+            self.mirror_Y = False
 
     def __call__(self, p):
-        x = 2*self.volume.center.x - p.x if self.mirror_Y and p.x < self.volume.center.x else p.x
-        y = 2*self.volume.center.y - p.y if self.mirror_X and p.y < self.volume.center.y else p.y
+        x = 2*self.volume.center.x - p.x if self.mirror_X and p.x < self.volume.center.x else p.x
+        y = 2*self.volume.center.y - p.y if self.mirror_Y and p.y < self.volume.center.y else p.y
 
         weights, interp_idx = self.get_bilinear_row(x,y,self.rho_x,self.rho_y) # ignore z coordinate
         return np.dot( self.rho_vector[interp_idx], weights )                  
@@ -91,13 +91,15 @@ class BilinearInterpolationBasis(Basis):
         x_grid = design_grid.x
         y_grid = design_grid.y
         z_grid = design_grid.z
+
         # take care of symmetries
-        if self.mirror_Y:
+        if self.mirror_X:
             dJ_deps = dJ_deps[int(dg_Nx/2):,:,:,:]
             x_grid = x_grid[int(dg_Nx/2):]
-        if self.mirror_X:
+        if self.mirror_Y:
             dJ_deps = dJ_deps[:,int(dg_Ny/2):,:,:]
-            y_grid = y_grid[int(dg_Nx/2):]
+            y_grid = y_grid[int(dg_Ny/2):]
+
         dg_Nx, dg_Ny, Nz, Nf = dJ_deps.shape # recalculate
         Nx, Ny = self.rho_x.size, self.rho_y.size # get important interpolator dimensions
 
@@ -107,7 +109,7 @@ class BilinearInterpolationBasis(Basis):
         dJ_dp = np.zeros((Nx * Ny,Nf))
         for fi in range(Nf):
             for zi in range(Nz):
-                dJ_dp[:,fi] += dJ_deps[:,:,zi,fi].reshape(dg_Nx * dg_Ny,order='C') * A
+                dJ_dp[:,fi] += dJ_deps[:,:,zi,fi].reshape(dg_Nx * dg_Ny,order='C') @ A
         return dJ_dp
     
     def get_bilinear_coefficients(self,x,x1,x2,y,y1,y2):
