@@ -1,5 +1,12 @@
 #include "meep-ctl.hpp"
 
+/* hack to tell meepgeom.hpp, which includes ctlgeom.h,
+   to use the ctlgeom.h object definitions and not the
+   ctl-io.h definitions */
+#undef CXX_CTL_IO
+#undef CTL_IO_H
+#include "meepgeom.hpp"
+
 using namespace meep;
 using namespace std;
 
@@ -196,5 +203,38 @@ ctlio::number_list std_vector_double_to_scm(std::vector<double> *v) {
   res.items = new number[res.num_items];
   for (int i = 0; i < res.num_items; ++i)
     res.items[i] = (*v)[i];
+  return res;
+}
+/***************************************************************************/
+
+ctlio::integer_list GDSII_layers(const char *fname) {
+  std::vector<int> layers = meep_geom::get_GDSII_layers(fname);
+  ctlio::integer_list res;
+  res.num_items = int(layers.size());
+  res.items = new integer[res.num_items];
+  for (int i = 0; i < res.num_items; ++i) {
+    res.items[i] = layers[i];
+  }
+  return res;
+}
+
+volume GDSII_vol(const char *fname, int layer, double zmin, double zmax) {
+  return meep_geom::get_GDSII_volume(fname, layer, zmin, zmax);
+}
+
+ctlio::simple_prism_list get_GDSII_prisms(const char *GDSIIFile, int Layer, double zmin, double zmax) {
+  geometric_object_list go = meep_geom::get_GDSII_prisms(NULL, GDSIIFile, Layer, zmin, zmax);
+  ctlio::simple_prism_list res;
+  res.num_items = go.num_items;
+  res.items = new ctlio::simple_prism[res.num_items];
+  for (int i = 0; i < res.num_items; ++i) {
+    prism *p = go.items[i].subclass.prism_data;
+    res.items[i].vertices.num_items = p->vertices.num_items;
+    res.items[i].vertices.items = p->vertices.items;
+    res.items[i].height = p->height;
+    res.items[i].axis = p->axis;
+    free(p);
+  }
+  delete[] go.items;
   return res;
 }

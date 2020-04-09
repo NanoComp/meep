@@ -1106,6 +1106,18 @@
 (define (output-png+h5 c options) (output-png-rm? false c options))
 
 ; ****************************************************************
+; GDSII import functions
+
+(export-type (make-list-type 'integer))
+
+(define-class simple-prism no-parent
+  (define-property vertices no-default (make-list-type 'vector3))
+  (define-property height no-default 'number)
+  (define-property axis no-default 'vector3))
+(export-type (make-list-type 'simple-prism))
+
+
+; ****************************************************************
 ; harminv functions for extracting bands, etcetera
 
  ; for do-harminv
