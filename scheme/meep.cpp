@@ -222,17 +222,22 @@ volume GDSII_vol(const char *fname, int layer, double zmin, double zmax) {
   return meep_geom::get_GDSII_volume(fname, layer, zmin, zmax);
 }
 
-ctlio::simple_prism_list get_GDSII_prisms(const char *GDSIIFile, int Layer, double zmin, double zmax) {
+/* We have to jump through some hoops here because the geometric_object data type used
+   in meepgeom (from libctlgeom) is different from the generated ctlio::geometric_object.
+   So we take the list of prisms from meep_geom::get_GDSII_prisms and return a simple
+   Scheme list of triples (vertices height axis).  meep.scm then defines a higher-level
+   function get-GDSII-prisms that constructs the actual prism objects again */
+SCM get_GDSII_prism_data(const char *GDSIIFile, int Layer, double zmin, double zmax) {
   geometric_object_list go = meep_geom::get_GDSII_prisms(NULL, GDSIIFile, Layer, zmin, zmax);
-  ctlio::simple_prism_list res;
-  res.num_items = go.num_items;
-  res.items = new ctlio::simple_prism[res.num_items];
-  for (int i = 0; i < res.num_items; ++i) {
+  SCM res = SCM_EOL;
+  for (int i = go.num_items - 1; i >= 0; --i) {
     prism *p = go.items[i].subclass.prism_data;
-    res.items[i].vertices.num_items = p->vertices.num_items;
-    res.items[i].vertices.items = p->vertices.items;
-    res.items[i].height = p->height;
-    res.items[i].axis = p->axis;
+    res = scm_cons(scm_list_3(ctl_convert_list_to_scm(make_vector3_list(p->vertices.num_items, p->vertices.items)),
+                              ctl_convert_number_to_scm(p->height),
+                              ctl_convert_vector3_to_scm(p->axis)),
+                   res);
+    free(p->vertices.items);
+    // fixme: free the rest of the prism data
     free(p);
   }
   delete[] go.items;
