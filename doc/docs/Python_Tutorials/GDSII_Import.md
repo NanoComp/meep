@@ -2,13 +2,12 @@
 # GDSII Import
 ---
 
-This tutorial demonstrates how to set up a simulation based on importing a [GDSII](https://en.wikipedia.org/wiki/GDSII) file. The example involves computing the [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters) of a [two-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) using a silicon directional coupler. These component devices are used in [photonic integrated circuits](https://en.wikipedia.org/wiki/Photonic_integrated_circuit) to split or combine an input signal. For more information on directional couplers, see Section 4.1 of [Silicon Photonics Design](https://www.amazon.com/Silicon-Photonics-Design-Devices-Systems/dp/1107085454) by Chrostowski and Hochberg.
+This tutorial demonstrates how to set up a simulation based on importing a [GDSII](https://en.wikipedia.org/wiki/GDSII) file. There two examples: (1) computing the [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters) of a [two-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) using a silicon directional coupler and (2) finding the modes of a ring resonator. These two component devices are used in [photonic integrated circuits](https://en.wikipedia.org/wiki/Photonic_integrated_circuit) to split/combine and filter an input signal. For more information on directional couplers and ring resonators, see Section 4.1 of [Silicon Photonics Design](https://www.amazon.com/Silicon-Photonics-Design-Devices-Systems/dp/1107085454) by Chrostowski and Hochberg.
 
 [TOC]
 
----
-## Directional Coupler and Geometry Objects from GDSII File
----
+S-Parameters of a Directional Coupler
+-------------------------------------
 
 The directional coupler as well as the source and mode monitor geometries are described by the GDSII file [examples/coupler.gds](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical strip waveguides which are positioned close together via an adiabatic taper such that their modes couple evanescently. There is a source (labelled "Source") and four mode monitors (labelled "Port 1", etc.). The input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance (labelled "d") which maximizes power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section (the taper profile is described by a hyperbolic tangent (tanh) function).
 
@@ -27,10 +26,6 @@ The GDSII file is adapted from the [SiEPIC EBeam PDK](https://github.com/lukasc-
 + the straight waveguide sections are perfectly linear
 
 Note that rather than being specified as part of the GDSII file, the volume regions of the source and flux monitors could have been specified in the simulation script.
-
----
-## Simulation Script
----
 
 The simulation script is in [examples/coupler.py](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.py). The notebook is [examples/coupler.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/coupler.ipynb).
 
@@ -166,10 +161,6 @@ done
 grep trans: directional_coupler.out |cut -d , -f2- > directional_coupler.dat;
 ```
 
----
-## Transmittance Results and Field Profiles
----
-
 The transmittance results are plotted in the figure below. When the two waveguide branches are sufficiently separated (`d` > 0.2 μm), practically all of the input power remains in the top branch and is transferred to Port 3. A small amount of the input power is lost due to scattering into radiative modes within the light cone in the tapered sections where the translational symmetry of the waveguide is broken. This is why the power in Port 3 never reaches exactly 100%. For separation distances of less than approximately 0.2 μm, evanescent coupling of the modes from the top to the lower branch begins to transfer some of the input power to Port 4. For `d` of 0.13 μm, the input signal is split evenly into Ports 3 and 4. For `d` of 0.06 μm, the input power is transferred completely to Port 4. Finally, for `d` of less than 0.06 μm, the evanescent coupling becomes rapidly ineffective and the signal again remains mostly in Port 3. Note that there is never any power in Port 2 given its location relative to the input from Port 1.
 
 <center>
@@ -212,3 +203,131 @@ if mp.am_master():
 </center>
 
 The field profiles confirm that for `d` of 0.06 μm (Figure 1), the input signal in Port 1 of the top branch is almost completely transferred to Port 4 of the bottom branch. For `d` of 0.13 μm (Figure 2), the input signal is split evenly between the two branches. Finally, for `d` of 0.30 μm (Figure 3), there is no longer any evanescent coupling and the signal remains completely in the top branch. The waveguide regions with no fields in Ports 3 and 4 are PML.
+
+Modes of a Ring Resonator
+-------------------------
+
+The next example involves creating the ring resonator geometry using [gdspy](https://gdspy.readthedocs.io/en/stable/) and then finding its modes using [harminv](Python_User_Interface.md#harminv). The geometry, source and monitor are included in one GDSII file as separate layers.
+
+```py
+import numpy as np
+import gdspy
+from matplotlib import pyplot as plt
+import importlib
+import meep as mp
+
+# core and cladding materials
+Si   = mp.Medium(index=3.4)
+SiO2 = mp.Medium(index=1.4)
+
+# layer numbers for GDS file
+RING_LAYER       = 0
+SOURCE0_LAYER    = 1
+SOURCE1_LAYER    = 2
+MONITOR_LAYER    = 3
+SIMULATION_LAYER = 4
+
+resolution = 50         # pixels/μm
+dpml       = 1          # thickness of PML
+zmin       = 0          # minimum z value of simulation domain (0 for 2D)
+zmax       = 0          # maximum z value of simulation domain (0 for 2D)
+
+def create_ring_gds(radius=5,waveguideWidth=0.5):
+    # Reload the library each time to prevent gds library name clashes
+    importlib.reload(gdspy)
+
+    # Draw the ring
+    ringCell = gdspy.Cell("ring_r{}_w{}".format(radius,waveguideWidth))
+
+    ringCell.add(gdspy.Round((0,0),
+                             inner_radius=radius-waveguideWidth/2,
+                             radius=radius+waveguideWidth/2,
+                             layer=RING_LAYER))
+
+    # Draw the first source
+    ringCell.add(gdspy.Rectangle((radius-waveguideWidth,0),
+                                 (radius+waveguideWidth+0.1,0),
+                                 SOURCE0_LAYER))
+
+    # Draw the second source
+    ringCell.add(gdspy.Rectangle((-radius+waveguideWidth,0),
+                                 (-radius-waveguideWidth,0),
+                                 SOURCE1_LAYER))
+
+    # Draw the monitor location
+    ringCell.add(gdspy.Rectangle((radius-waveguideWidth,0),
+                                 (radius+waveguideWidth,0),
+                                 MONITOR_LAYER))
+
+    # Draw the simulation domain
+    pad = 2  # padding between waveguide and edge of PML
+    ringCell.add(gdspy.Rectangle((-radius-waveguideWidth/2-pad,-radius-waveguideWidth/2-pad),
+                                 (radius+waveguideWidth/2+pad,radius+waveguideWidth/2+pad),
+                                 SIMULATION_LAYER))
+
+    filename = "ring_r{}_w{}.gds".format(radius,waveguideWidth)
+    gdspy.write_gds(filename, unit=1.0e-6, precision=1.0e-9)
+
+    return filename
+
+def run_sim(filename,wavelengthCenter=1.55,bandwidth=0.05):
+    # Read in the ring structure
+    geometry = mp.get_GDSII_prisms(Si,filename,RING_LAYER,-100,100)
+
+    cell = mp.GDSII_vol(filename,SIMULATION_LAYER,zmin,zmax)
+
+    src_vol0 = mp.GDSII_vol(filename,SOURCE0_LAYER,zmin,zmax)
+    src_vol1 = mp.GDSII_vol(filename,SOURCE1_LAYER,zmin,zmax)
+
+    mon_vol = mp.GDSII_vol(filename,MONITOR_LAYER,zmin,zmax)
+
+    # pulse center frequency
+    fcen = 1/wavelengthCenter
+    # pulse frequency width
+    df = bandwidth*fcen
+
+    src = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
+                     component=mp.Hz,
+                     center=src_vol0.center,
+                     size=src_vol0.size),
+           mp.Source(mp.GaussianSource(fcen, fwidth=df),
+                     component=mp.Hz,
+                     center=src_vol1.center,
+                     size=src_vol1.size,
+                     amplitude=-1)]
+
+    sim = mp.Simulation(cell_size=cell.size,
+                        geometry=geometry,
+                        sources=src,
+                        resolution=resolution,
+                        boundary_layers=[mp.PML(dpml)],
+                        default_material=SiO2)
+
+    h = mp.Harminv(mp.Hz,mon_vol.center,fcen,df)
+
+    sim.run(mp.after_sources(h),
+            until_after_sources=100)
+
+    sim.plot2D(fields=mp.Hz)
+    plt.savefig('ring_resonator_gds_Hz.png')
+
+    freq = np.array([1/m.freq for m in h.modes])
+    Q = np.array([m.Q for m in h.modes])
+
+    sim.reset_meep()
+
+    return freq, Q
+
+
+if __name__ == '__main__':
+    filename = create_ring_gds(radius=2.0,waveguideWidth=0.5)
+    freq, Q = run_sim(filename)
+    print("freq: {}".format(freq))
+    print("Q: {}".format(Q))
+```
+
+For this ring geometry, `harminv` finds a mode with frequency `0.6463719` and Q of `112239` which has the following field profile. The red lines indicate the sources.
+
+<center>
+![](../images/ring_resonator_gds_Hz.png)
+</center>
