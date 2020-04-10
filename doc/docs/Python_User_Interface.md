@@ -782,6 +782,9 @@ The location of the center of the current source in the cell. No default.
 —
 The size of the current distribution along each direction of the cell. Default is `(0,0,0)`: a point-dipole source.
 
+**`volume` [`Volume`]**
+—A `meep.Volume` can be used to specify the source region instead of a `center` and a `size`.
+
 **`amplitude` [`complex`]**
 —
 An overall complex amplitude multiplying the current source. Default is 1.0.
@@ -958,7 +961,7 @@ Properties:
 —A weight factor to multiply the flux by when it is computed. Default is 1.0.
 
 **`volume` [`Volume`]**
-—A `meep.Volume` can be used to specify the flux region instead of a center and a size.
+—A `meep.Volume` can be used to specify the flux region instead of a `center` and a `size`.
 
 Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
 
@@ -1349,7 +1352,7 @@ A weight factor to multiply the force by when it is computed. Default is 1.0.
 
 **`volume` [`Volume`]**
 —
-A `meep.Volume` can be used to specify the force region instead of a center and a size.
+A `meep.Volume` can be used to specify the force region instead of a `center` and a `size`.
 
 In most circumstances, you should define a set of `ForceRegion`s whose union is a closed surface lying in vacuum and enclosing the object that is experiencing the force.
 

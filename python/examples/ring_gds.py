@@ -20,45 +20,45 @@ dpml       = 1          # thickness of PML
 zmin       = 0          # minimum z value of simulation domain (0 for 2D)
 zmax       = 0          # maximum z value of simulation domain (0 for 2D)
 
-def create_ring_gds(radius=5,waveguideWidth=0.5):
+def create_ring_gds(radius,width):
     # Reload the library each time to prevent gds library name clashes
     importlib.reload(gdspy)
 
-    # Draw the ring
-    ringCell = gdspy.Cell("ring_r{}_w{}".format(radius,waveguideWidth))
+    ringCell = gdspy.Cell("ring_resonator_r{}_w{}".format(radius,width))
 
+    # Draw the ring
     ringCell.add(gdspy.Round((0,0),
-                             inner_radius=radius-waveguideWidth/2,
-                             radius=radius+waveguideWidth/2,
+                             inner_radius=radius-width/2,
+                             radius=radius+width/2,
                              layer=RING_LAYER))
 
     # Draw the first source
-    ringCell.add(gdspy.Rectangle((radius-waveguideWidth,0),
-                                 (radius+waveguideWidth+0.1,0),
+    ringCell.add(gdspy.Rectangle((radius-width,0),
+                                 (radius+width,0),
                                  SOURCE0_LAYER))
 
     # Draw the second source
-    ringCell.add(gdspy.Rectangle((-radius+waveguideWidth,0),
-                                 (-radius-waveguideWidth,0),
+    ringCell.add(gdspy.Rectangle((-radius-width,0),
+                                 (-radius+width,0),
                                  SOURCE1_LAYER))
 
     # Draw the monitor location
-    ringCell.add(gdspy.Rectangle((radius-waveguideWidth,0),
-                                 (radius+waveguideWidth,0),
+    ringCell.add(gdspy.Rectangle((radius-width/2,0),
+                                 (radius+width/2,0),
                                  MONITOR_LAYER))
 
     # Draw the simulation domain
     pad = 2  # padding between waveguide and edge of PML
-    ringCell.add(gdspy.Rectangle((-radius-waveguideWidth/2-pad,-radius-waveguideWidth/2-pad),
-                                 (radius+waveguideWidth/2+pad,radius+waveguideWidth/2+pad),
+    ringCell.add(gdspy.Rectangle((-radius-width/2-pad,-radius-width/2-pad),
+                                 (radius+width/2+pad,radius+width/2+pad),
                                  SIMULATION_LAYER))
 
-    filename = "ring_r{}_w{}.gds".format(radius,waveguideWidth)
+    filename = "ring_r{}_w{}.gds".format(radius,width)
     gdspy.write_gds(filename, unit=1.0e-6, precision=1.0e-9)
 
     return filename
 
-def run_sim(filename,wavelengthCenter=1.55,bandwidth=0.05):
+def find_modes(filename,wvl=1.55,bw=0.05):
     # Read in the ring structure
     geometry = mp.get_GDSII_prisms(Si,filename,RING_LAYER,-100,100)
 
@@ -69,19 +69,15 @@ def run_sim(filename,wavelengthCenter=1.55,bandwidth=0.05):
 
     mon_vol = mp.GDSII_vol(filename,MONITOR_LAYER,zmin,zmax)
 
-    # pulse center frequency
-    fcen = 1/wavelengthCenter
-    # pulse frequency width
-    df = bandwidth*fcen
+    fcen = 1/wvl
+    df = bw*fcen
 
     src = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
                      component=mp.Hz,
-                     center=src_vol0.center,
-                     size=src_vol0.size),
+                     volume=src_vol0),
            mp.Source(mp.GaussianSource(fcen, fwidth=df),
                      component=mp.Hz,
-                     center=src_vol1.center,
-                     size=src_vol1.size,
+                     volume=src_vol1,
                      amplitude=-1)]
 
     sim = mp.Simulation(cell_size=cell.size,
@@ -96,20 +92,21 @@ def run_sim(filename,wavelengthCenter=1.55,bandwidth=0.05):
     sim.run(mp.after_sources(h),
             until_after_sources=100)
 
+    plt.figure()
     sim.plot2D(fields=mp.Hz)
-    plt.savefig('ring_resonator_gds_Hz.png')
+    plt.savefig('ring_resonator_Hz.png')
 
-    freq = np.array([1/m.freq for m in h.modes])
+    wvl = np.array([1/m.freq for m in h.modes])
     Q = np.array([m.Q for m in h.modes])
 
     sim.reset_meep()
 
-    return freq, Q
+    return wvl, Q
 
 
 if __name__ == '__main__':
-    filename = create_ring_gds(radius=2.0,waveguideWidth=0.5)
-    freq, Q = run_sim(filename)
-    print("freq: {}".format(freq))
-    print("Q: {}".format(Q))
-    
+    filename = create_ring_gds(2.0,0.5)
+    wvls, Qs = find_modes(filename,1.55,0.05)
+    if mp.am_master():
+        for w, Q in zip(wvls,Qs):
+            print("mode: {}, {}".format(w,Q))
