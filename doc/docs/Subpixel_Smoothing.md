@@ -2,13 +2,13 @@
 # Subpixel Smoothing
 ---
 
-Meep uses a second-order accurate finite-difference scheme for discretizing [Maxwell's equations](Introduction.md#maxwells-equations). This means that the results from Meep converge to the "exact" result from the non-discretized system quadratically with the resolution Δx. However, this second-order error O(Δx<sup>2</sup>) is generally spoiled to first-order error O(Δx) if the discretization involves a *discontinuous* material boundary (similar to [Gibbs phenomenon](https://en.wikipedia.org/wiki/Gibbs_phenomenon) in signal processing). Moreover, directly discretizing a discontinuity in ε or μ leads to "stairstepped" interfaces that can only be varied in discrete jumps of one pixel. Meep solves both of these problems by smoothing ε and μ: before discretizing, discontinuities are smoothed into continuous transitions over a distance of one pixel Δx, using a second-order accurate averaging procedure which is summarized [below](#smoothed-permittivity-tensor-via-perturbation-theory). This feature enables the discretized solution to converge as quickly as possible to the exact solution as the `resolution` increases.
+Meep uses a [second-order accurate finite-difference scheme](https://en.wikipedia.org/wiki/Finite_difference_method#Accuracy_and_order) for discretizing [Maxwell's equations](Introduction.md#maxwells-equations). This means that the results from Meep converge to the "exact" result from the non-discretized (i.e., continuous) system quadratically with the resolution Δx. However, this second-order error O(Δx<sup>2</sup>) is generally spoiled to first-order error O(Δx) if the discretization involves a *discontinuous* material boundary (similar to [Gibbs phenomenon](https://en.wikipedia.org/wiki/Gibbs_phenomenon) in signal processing). Moreover, directly discretizing a discontinuity in ε or μ leads to "stairstepped" interfaces that can only be varied in discrete jumps of one pixel. Meep solves both of these problems by smoothing ε and μ: before discretizing, discontinuities are smoothed into continuous transitions over a distance of one pixel Δx, using a second-order accurate averaging procedure summarized [below](#smoothed-permittivity-tensor-via-perturbation-theory). This subpixel smoothing enables the discretized solution to converge as quickly as possible to the exact solution as the `resolution` increases.
 
 <center>
 ![](images/subpixel_smoothing.png)
 </center>
 
-The subpixel smoothing has four limitations: (1) it only applies to frequency-independent, lossless dielectrics (i.e., silicon at λ=1.55 μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials), (2) it can be efficiently applied to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.) but *not* to a user-defined `material_function` (for an explanation, see this [FAQ](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function)) which must be [manually enabled](#enabling-averaging-for-material-function), (3) objects with sharp corners or edges are associated with field singularities which introduce an unavoidable error intermediate between first- and second-order, and (4) the fields directly *on* the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as resonant frequencies, and for overall integrals of fields and energies to which the interface contributes only O(Δx) of the integration domain.
+The subpixel smoothing has four limitations: (1) it only applies to frequency-independent, lossless dielectrics (i.e., silicon at λ=1.55 μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials), (2) it can be efficiently applied to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.) but [*not* to a user-defined `material_function`](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function) which is [disabled by default](#enabling-averaging-for-material-function), (3) objects with sharp corners or edges are associated with field singularities which introduce an unavoidable error intermediate between first- and second-order, and (4) the fields directly *on* the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as [resonant frequencies](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes), and for overall integrals of fields and energies to which the interface contributes only O(Δx) of the integration domain.
 
 [TOC]
 
@@ -28,7 +28,7 @@ where $\textbf{P}$ is the projection matrix $P_{ij}=n_{i}n_{j}$ onto the normal 
 Continuously-Varying Shapes and Results
 ---------------------------------------
 
-A key feature of Meep's subpixel smoothing, particularly relevant for shape optimization (i.e., [Applied Physics Letters, Vol. 104, 091121, 2014](https://aip.scitation.org/doi/abs/10.1063/1.4867892) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi14_tandem.pdf))), is that continuously varying the `geometry` yields continuously-varying results. This is demonstrated for a [ring resonator](Python_Tutorials/Basics.md#modes-of-a-ring-resonator): as the radius increases, the frequency of a resonant H<sub>z</sub>-polarized mode decreases. (Note: unlike the ring-resonator example in [Tutorial/Basics](Python_Tutorials/Basics.md#modes-of-a-ring-resonator) involving E<sub>z</sub>-polarized modes where the fields are always parallel to the interface, this example involves discontinuous fields. Also, the ring geometry contains no sharp corners/edges.) The simulation script is shown below. The resolution is 10 pixels/μm. The inner ring radius is varied from 1.8 to 2.0 μm in gradations of 0.005 μm.
+A key feature of Meep's subpixel smoothing, particularly relevant for shape optimization (i.e., [Applied Physics Letters, Vol. 104, 091121, 2014](https://aip.scitation.org/doi/abs/10.1063/1.4867892) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi14_tandem.pdf))), is that continuously varying the `geometry` yields continuously-varying results. This is demonstrated for a ring resonator: as the radius increases, the frequency of a resonant $H_z$-polarized mode decreases. Note: unlike the example in [Tutorial/Basics/Modes of a Ring Resonator](Python_Tutorials/Basics.md#modes-of-a-ring-resonator) involving $E_z$-polarized modes where the electric fields are always continuous (i.e., parallel to the interface), this example involves discontinuous fields. Also, the ring geometry contains no sharp corners/edges which tend to produce field singularities that degrade the error. The simulation script is shown below. The inner ring radius is varied from 1.8 to 2.0 μm in gradations of 0.005 μm. The ring width is constant (1 μm). The resolution is 10 pixels/μm. The gradations are therefore well below subpixel dimensions.
 
 ```py
 import meep as mp
@@ -60,9 +60,14 @@ for rad in np.arange(1.800,2.001,0.005):
     symmetries = [mp.Mirror(mp.X,phase=+1),
                   mp.Mirror(mp.Y,phase=-1)]
 
-    geometry = [mp.Cylinder(radius=rad+w,
-                            material=mp.Medium(index=n)),
-                mp.Cylinder(radius=rad)]
+    geometry = [mp.Cylinder(material=mp.Medium(index=n),
+                            radius=rad+w,
+                            height=mp.inf,
+                            center=mp.Vector3()),
+                mp.Cylinder(material=mp.vacuum,
+                            radius=rad,
+                            height=mp.inf,
+                            center=mp.Vector3())]
     
     sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                         geometry=geometry,
@@ -78,7 +83,7 @@ for rad in np.arange(1.800,2.001,0.005):
     sim.reset_meep()
 ```
 
-A plot of the resonant frequency versus the ring radius is shown below for subpixel smoothing (red) and no smoothing (blue). Included for reference is the high-resolution result (black) computed using *no smoothing* at a resolution of 60 pixels/μm. The no-smoothing result shows "staircasing" effects which are artifacts of the discretization. The subpixel-smoothing result varies continuously with the ring radius similar to the high-resolution result which is at a resolution six times larger. The inset shows the scalar H<sub>z</sub> field profile of the resonant mode for a structure with inner radius of 1.9 μm.
+A plot of the resonant frequency versus the ring radius is shown below for subpixel smoothing (red) and no smoothing (blue). Included for reference is the "exact" (black) computed using *no smoothing* at a resolution of 60 pixels/μm. The no-smoothing result shows "staircasing" effects which are artifacts of the discretization. The subpixel-smoothing result varies continuously with the ring radius similar to the high-resolution result which is at a resolution six times larger. The inset shows the scalar $H_z$ field profile of the resonant mode for a structure with inner radius of 1.9 μm.
 
 This particular resonant mode has a [quality (Q) factor](https://en.wikipedia.org/wiki/Q_factor) of ~10<sup>7</sup> at a frequency of 0.25 and radius of 2.0 μm. This means that roughly 4x10<sup>7</sup> optical periods are required to accurately resolve the field decay due to the Fourier uncertainty relation. Instead, [`Harminv`](Python_User_Interface.md#harminv) can resolve the Q using just ~1000 periods. This is nearly a four orders of magnitude reduction in the run time.
 
@@ -86,7 +91,7 @@ This particular resonant mode has a [quality (Q) factor](https://en.wikipedia.or
 ![](images/ring_vary_radius.png)
 </center>
 
-To compare the convergence rate of the discretization error, the following plot shows the error in the resonant mode frequency (relative to the high-resolution result at a resolution of 300 pixels/μm) as a function of the grid resolution for a ring geometry with a fixed radius of 2.0 μm. The no smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel smoothing results have roughly second-order convergence.
+To compare the convergence rate of the discretization error, the following plot shows the error in the resonant frequency (relative to the "exact" result at a resolution of 300 pixels/μm) as a function of the grid resolution for a ring geometry with a fixed radius of 2.0 μm. The no-smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel-smoothing results have roughly second-order convergence.
 
 <center>
 ![](images/ring_subpixel_smoothing_rate.png)
@@ -121,4 +126,4 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     boundary_layers=[mp.PML(dpml)])
 ```
 
-Since the adaptive numerical integration tends to be much slower than the analytic approach, the values for the parameters `subpixel_tol` and `subpixel_maxeval` can be lowered to speed up the quadrature at the expense of reduced accuracy.
+Since the adaptive numerical integration tends to be *much* slower than the analytic approach, the values for its convergence parameters `subpixel_tol` (tolerance) and `subpixel_maxeval` (maximum number of function evaluations) can be increased/lowered to speed up the quadrature at the expense of reduced accuracy.

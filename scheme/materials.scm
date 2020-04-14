@@ -260,6 +260,11 @@
 (define Ag-gam4 (* 0.916 eV-um-scale))
 (define Ag-sig4 (/ (* Ag-f4 (sqr Ag-plasma-frq)) (sqr Ag-frq4)))
 
+(define Ag-f5 5.646)
+(define Ag-frq5 (* 20.29 eV-um-scale)) ; 0.061 um
+(define Ag-gam5 (* 2.419 eV-um-scale))
+(define Ag-sig5 (/ (* Ag-f5 (sqr Ag-plasma-frq)) (sqr Ag-frq5)))
+
 (define Ag (make medium (epsilon 1.0)
   (E-susceptibilities
      (make drude-susceptibility
@@ -271,7 +276,9 @@
      (make lorentzian-susceptibility
        (frequency Ag-frq3) (gamma Ag-gam3) (sigma Ag-sig3))
      (make lorentzian-susceptibility
-       (frequency Ag-frq4) (gamma Ag-gam4) (sigma Ag-sig4)))))
+       (frequency Ag-frq4) (gamma Ag-gam4) (sigma Ag-sig4))
+     (make lorentzian-susceptibility
+       (frequency Ag-frq5) (gamma Ag-gam5) (sigma Ag-sig5)))))
 
 ;------------------------------------------------------------------
 ; gold (Au)
@@ -303,6 +310,11 @@
 (define Au-gam4 (* 2.494 eV-um-scale))
 (define Au-sig4 (/ (* Au-f4 (sqr Au-plasma-frq)) (sqr Au-frq4)))
 
+(define Au-f5 4.384)
+(define Au-frq5 (* 13.32 eV-um-scale)) ; 0.093 um
+(define Au-gam5 (* 2.214 eV-um-scale))
+(define Au-sig5 (/ (* Au-f5 (sqr Au-plasma-frq)) (sqr Au-frq5)))
+
 (define Au (make medium (epsilon 1.0)
   (E-susceptibilities
      (make drude-susceptibility
@@ -314,7 +326,9 @@
      (make lorentzian-susceptibility
        (frequency Au-frq3) (gamma Au-gam3) (sigma Au-sig3))
      (make lorentzian-susceptibility
-       (frequency Au-frq4) (gamma Au-gam4) (sigma Au-sig4)))))
+       (frequency Au-frq4) (gamma Au-gam4) (sigma Au-sig4))
+     (make lorentzian-susceptibility
+       (frequency Au-frq5) (gamma Au-gam5) (sigma Au-sig5)))))
 
 ;------------------------------------------------------------------
 ; copper (Cu)

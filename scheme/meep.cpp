@@ -60,14 +60,15 @@ kpoint_list do_get_eigenmode_coefficients(fields *f, dft_flux flux, const volume
                                           std::complex<double> *coeffs, double *vgrp,
                                           double eig_resolution, double eigensolver_tol,
                                           meep::kpoint_func user_kpoint_func,
-                                          void *user_kpoint_data) {
-  size_t num_kpoints = num_bands * flux.Nfreq;
+                                          void *user_kpoint_data, int dir) {
+  size_t num_kpoints = num_bands * flux.freq.size();
   meep::vec *kpoints = new meep::vec[num_kpoints];
   meep::vec *kdom = new meep::vec[num_kpoints];
+  double *cscale = 0; // Not needed until adjoint calculation is implemented in scheme
 
   f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                                 eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
-                                kpoints, kdom);
+                                kpoints, kdom, cscale, dir < 0 ? flux.normal_direction : direction(dir));
 
   kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -90,63 +91,63 @@ volume_list *make_volume_list(const volume &v, int c, complex<double> weight, vo
 
 ctlio::number_list dft_flux_flux(dft_flux *f) {
   ctlio::number_list res;
-  res.num_items = f->Nfreq;
+  res.num_items = f->freq.size();
   res.items = f->flux();
   return res;
 }
 
 ctlio::number_list dft_energy_electric(dft_energy *f) {
   ctlio::number_list res;
-  res.num_items = f->Nfreq;
+  res.num_items = f->freq.size();
   res.items = f->electric();
   return res;
 }
 
 ctlio::number_list dft_energy_magnetic(dft_energy *f) {
   ctlio::number_list res;
-  res.num_items = f->Nfreq;
+  res.num_items = f->freq.size();
   res.items = f->magnetic();
   return res;
 }
 
 ctlio::number_list dft_energy_total(dft_energy *f) {
   ctlio::number_list res;
-  res.num_items = f->Nfreq;
+  res.num_items = f->freq.size();
   res.items = f->total();
   return res;
 }
 
 ctlio::number_list dft_force_force(dft_force *f) {
   ctlio::number_list res;
-  res.num_items = f->Nfreq;
+  res.num_items = f->freq.size();
   res.items = f->force();
   return res;
 }
 
 ctlio::number_list dft_ldos_ldos(dft_ldos *f) {
   ctlio::number_list res;
-  res.num_items = f->Nomega;
+  res.num_items = f->freq.size();
   res.items = f->ldos();
   return res;
 }
 
 ctlio::cnumber_list dft_ldos_F(dft_ldos *f) {
   ctlio::cnumber_list res;
-  res.num_items = f->Nomega;
+  res.num_items = f->freq.size();
   res.items = (cnumber *)f->F();
   return res;
 }
 
 ctlio::cnumber_list dft_ldos_J(dft_ldos *f) {
   ctlio::cnumber_list res;
-  res.num_items = f->Nomega;
+  res.num_items = f->freq.size();
   res.items = (cnumber *)f->J();
   return res;
 }
 
 ctlio::cnumber_list dft_near2far_farfield(dft_near2far *f, const vec &x) {
   ctlio::cnumber_list res;
-  res.num_items = f->Nfreq * 6;
+  res.num_items = f->freq.size() * 6;
   res.items = (cnumber *)f->farfield(x);
   return res;
 }
@@ -154,7 +155,7 @@ ctlio::cnumber_list dft_near2far_farfield(dft_near2far *f, const vec &x) {
 ctlio::number_list dft_near2far_flux(dft_near2far *f, direction df, const volume &where,
                                      double resolution) {
   ctlio::number_list res;
-  res.num_items = f->Nfreq;
+  res.num_items = f->freq.size();
   res.items = f->flux(df, where, resolution);
   return res;
 }

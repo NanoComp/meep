@@ -49,7 +49,7 @@ class TestCavityFarfield(unittest.TestCase):
                             resolution=resolution)
 
         nearfield = sim.add_near2far(
-            fcen, 0, nfreqs,
+            fcen, 0.1, nfreqs,
             mp.Near2FarRegion(mp.Vector3(0, 0.5 * w + d1), size=mp.Vector3(2 * dpml - sx)),
             mp.Near2FarRegion(mp.Vector3(-0.5 * sx + dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1), weight=-1.0),
             mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1))

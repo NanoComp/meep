@@ -89,7 +89,8 @@ void Run(bool Pulse, double resolution, cdouble **field_array = 0, int *array_ra
     f.output_dft(dftFields, "dft-fields");
 
     *field_array = f.get_dft_array(dftFlux, Ez, 0, array_rank, array_dims);
-  } else {
+  }
+  else {
     f.add_point_source(Ez, continuous_src_time(fcen, df), x0);
     f.solve_cw(1e-8, 10000, 10);
     h5file *file = f.open_h5file("cw-fields", h5file::WRITE, 0, false);
@@ -227,7 +228,8 @@ int main(int argc, char *argv[]) {
       sscanf(argv[narg + 1], "%le", &resolution);
       master_printf("Setting resolution=%e.\n", resolution);
       narg++;
-    } else if (!strcasecmp(argv[narg], "--verbose"))
+    }
+    else if (!strcasecmp(argv[narg], "--verbose"))
       verbose = true;
     else
       abort("unknown argument %s", argv[narg]);

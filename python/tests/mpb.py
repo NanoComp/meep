@@ -16,33 +16,31 @@ import meep as mp
 from meep import mpb
 from utils import compare_arrays
 
-
 class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
-    examples_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
+    examples_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
     sys.path.insert(0, examples_dir)
 
     def setUp(self):
-        """Store the test name and register a function to clean up all the
-        generated h5 files."""
-
         self.start = time.time()
 
-        self.filename_prefix = self.id().split('.')[-1]
+        self.filename_prefix = os.path.join(self.temp_dir, self.id().split('.')[-1])
         print()
         print(self.filename_prefix)
         print('=' * 24)
 
-        def rm_h5():
-            for f in glob.glob("{}*.h5".format(self.filename_prefix)):
-                os.remove(f)
-
-        self.addCleanup(rm_h5)
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
 
     def tearDown(self):
         end = time.time() - self.start
         print("{}: {:.2f}s".format(self.filename_prefix, end))
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def init_solver(self, geom=True):
         num_bands = 8
@@ -892,10 +890,10 @@ class TestModeSolver(unittest.TestCase):
         for e, r in zip(expected_z_parities, z_parities):
             self.assertAlmostEqual(e, r, places=3)
 
-        omega = 1 / 1.55
+        frequency = 1 / 1.55
 
-        kvals = ms.find_k(mp.NO_PARITY, omega, 1, ms.num_bands, mp.Vector3(1), 1e-3,
-                          omega * 3.45, omega * 0.1, omega * 4, mpb.output_poynting_x,
+        kvals = ms.find_k(mp.NO_PARITY, frequency, 1, ms.num_bands, mp.Vector3(1), 1e-3,
+                          frequency * 3.45, frequency * 0.1, frequency * 4, mpb.output_poynting_x,
                           mpb.display_yparities, mpb.display_group_velocities)
 
         expected_kvals = [

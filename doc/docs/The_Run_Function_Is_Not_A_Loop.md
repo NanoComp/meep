@@ -2,7 +2,7 @@
 The Run Function Is Not A Loop
 ---
 
-In Meep, there are functions `run` (Python) or `run-until` (Scheme) and similar that run the simulation, and take arguments allowing custom actions to be performed on every time step, or on some subset of the time steps.  Many users misunderstand this, however, and make the same mistake: they think the `run` function is a "looping" construct of some kind, and that you can just put any code you want into it and it will get executed for every time step.  This mistake and how to correct it are described in this article.
+In Meep, there are functions `run` (Python) or `run-until` (Scheme) and similar that time step the fields, and take arguments allowing custom actions to be performed on every time step, or on some subset of the time steps.  Many users misunderstand this, however, and make the same mistake: they think the `run` function is a "looping" construct of some kind, and that you can just put any code you want into it and it will get executed for every time step.  This mistake and how to correct it are described in this article.
 
 [TOC]
 
@@ -90,9 +90,9 @@ sim.run(meep.output_efield_z, my_hello, until=200)
 (run-until 200 output-efield-z my-hello)
 ```
 
-Notice two things. First, `my_hello` (Python) or `my-hello` (Scheme) is a function of one argument (Python) or no arguments (Scheme), which means that it is just called at every time step. Another, more complicated, possibility is described in the [Python User Interface](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface](Scheme_User_Interface.md#writing-your-own-step-functions). Second, when we call `run` (Python) or `run-until` (Scheme), we just pass the *name* of the function `my_hello` (Python) or `my-hello` (Scheme), and not the *result* of calling the function `my_hello(...)` (Python) or `(my-hello)` (Scheme).
+Notice two things. First, `my_hello` (Python) or `my-hello` (Scheme) is a function of one argument (Python) or no arguments (Scheme), which means that it is just called at every time step. Another, more complicated, possibility is described in the [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions). Second, when we call `run` (Python) or `run-until` (Scheme), we just pass the *name* of the function `my_hello` (Python) or `my-hello` (Scheme), and not the *result* of calling the function `my_hello(...)` (Python) or `(my-hello)` (Scheme).
 
-A second possibility in Scheme is that we could use Python or Scheme's `lambda` construct to define our function in-line. The `lambda` syntax in Python or Scheme allows you to define anonymous functions without assigning them a name via `def` (Python) or `define` (Scheme), and to stick the function definition right into another expression. It works like this:
+A second possibility in Scheme is that we could use Python or Scheme's `lambda` construct to define our function in-line. The `lambda` syntax in Python or Scheme allows you to define [anonymous functions](https://en.wikipedia.org/wiki/Anonymous_function) without assigning them a name via `def` (Python) or `define` (Scheme), and to stick the function definition right into another expression. It works like this:
 
 **Python**
 ```py

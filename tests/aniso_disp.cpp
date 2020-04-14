@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,11 +60,13 @@ public:
       chi1inv_row[0] = 0.432818;
       chi1inv_row[1] = -0.076724;
       chi1inv_row[2] = -0.014964;
-    } else if (component_direction(c) == Y) {
+    }
+    else if (component_direction(c) == Y) {
       chi1inv_row[0] = -0.076724;
       chi1inv_row[1] = 0.600041;
       chi1inv_row[2] = -0.260249;
-    } else {
+    }
+    else {
       chi1inv_row[0] = -0.014964;
       chi1inv_row[1] = -0.260249;
       chi1inv_row[2] = 0.395003;
@@ -76,11 +78,13 @@ public:
       sigrow[0] = 2.92724;
       sigrow[1] = 0.45948;
       sigrow[2] = 0.70117;
-    } else if (component_direction(c) == Y) {
+    }
+    else if (component_direction(c) == Y) {
       sigrow[0] = 0.45948;
       sigrow[1] = 2.89689;
       sigrow[2] = 0.45083;
-    } else {
+    }
+    else {
       sigrow[0] = 0.70117;
       sigrow[1] = 0.45083;
       sigrow[2] = 2.17378;
@@ -93,7 +97,7 @@ int main(int argc, char **argv) {
   bool ok = true;
   // we can only use one process for this 1-pixel simulation
   if (0 == divide_parallel_processes(count_processors())) {
-    quiet = true;
+    verbosity = 0;
     const double res = 200;
     grid_volume gv = vol3d(0, 0, 0, res);
     gv.center_origin();

@@ -4,7 +4,7 @@
 
 The main effort in installing Meep lies in installing the various dependency packages. This requires some understanding of how to install software on Unix systems.
 
-It is also possible to install Meep on Windows systems. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) as an app and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
+It is also possible to install Meep on Windows systems. For Windows 10, you can install the [Ubuntu 16.04](https://www.microsoft.com/en-us/p/ubuntu-1604-lts/9pjn388hp8c9) or [18.04](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) terminal as an app (via the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) framework) and then follow the instructions for [obtaining the Conda packages](Installation.md#conda-packages) (recommended) or [building from source](Build_From_Source.md#building-from-source). For Windows 8 and older versions, you can use the free Unix-compatibility environment [Cygwin](http://www.cygwin.org/) following these [instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
 For those installing Meep on a supercomputer, a note of caution: most supercomputers have multiple compilers installed, and different versions of libraries compiled with different compilers. Meep is written in C++, and it is almost impossible to mix C++ code compiled by different compilers &mdash; pick one set of compilers by one vendor and stick with it consistently.
 
@@ -91,15 +91,9 @@ If you are not the system administrator of your machine, and/or want to install 
 
 ### Python
 
-If you have Python on your system, then the Meep compilation scripts
-automatically build and install the `meep` Python module, which works
-with both the serial and parallel (MPI) versions of Meep.
+If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+.
 
-By default, Meep's Python module is installed for the program `python`
-on your system.  If you want to install using a different Python
-program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the
-Meep `configure` script.   An Anaconda (`conda`) package for Meep
-is also available on some systems.
+By default, Meep's Python module is installed for the program `python` on your system.  If you want to install using a different Python program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the Meep `configure` script. An Anaconda (`conda`) [package for Meep](Installation.md#conda-packages) is also available on some systems.
 
 Optional Dependencies
 ---------------------
@@ -197,6 +191,8 @@ Assuming you've set your `LDFLAGS` etcetera, the configure script should find al
 make check
 ```
 
+Note: several of the unit tests generate output files which are written to disk. The C++ test suite in `meep/tests` outputs its files in the same subdirectory. The Python test suite in `meep/python/tests` outputs its files to a temporary system directory (i.e., /tmp, etc.).
+
 The configure script accepts several flags to modify its behavior.
 
 **`--prefix=dir`**
@@ -238,15 +234,40 @@ Install Meep without support for the HDF5 libraries (this means you won't be abl
 
 **`--enable-portable-binary`**
 —
-By default, Meep's `configure` script picks compiler flags to optimize Meep as much as possible for the machine you are compiling on. If you wish to run the *same compiled executable* on other machines, however, you need to tell it not to pick compiler flags that use features specific to your current processor. In this case you should pass `--enable-portable-binary` to `configure`. (This option is mainly useful for people creating binary packages for Debian, Fedora, etcetera.)
+By default, Meep's `configure` script picks compiler flags to optimize Meep as much as possible for the machine you are compiling on. If you wish to run the *same compiled executable* on other machines, however, you need to tell it not to pick compiler flags that use features specific to your current processor. In this case you should pass `--enable-portable-binary` to `configure`. (This option is mainly useful for building binary packages for Debian, Fedora, etcetera.)
 
 **`--with-gcc-arch=arch`, `--without-gcc-arch`**
 —
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
+**`--with-openmp`**
+—
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
+
+### Separating Build and Source Paths
+
+Meep supports ["VPATH" builds](https://www.gnu.org/software/automake/manual/html_node/VPATH-Builds.html), where you compile in a separate directory from the source directory.  This is helpful if you want to keep the source directory in a pristine state, or if you want to build multiple binaries simultaneously from the same source tree.   Just create a build directory and execute the `configure` script by supplying its path, for example
+
+```sh
+mkdir meepbuild
+cd meepbuild
+/path/to/meep/configure ...options...
+make
+```
+
 ### Building From Source
 
-The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. (There is a separate [script](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep.sh) if you only want the Scheme interface.) The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+
+The entire build and install procedure can also be performed using an automated script:
+
+```sh
+mkdir -p /where/to/install/meep
+cd /where/to/install/meep
+wget https://raw.githubusercontent.com/NanoComp/meep/master/contrib/build-meep.sh
+chmod +x build-meep.sh
+./build-meep.sh
+```
 
 #### Ubuntu 16.04 and 18.04
 
@@ -284,8 +305,8 @@ sudo apt-get -y install     \
     libpython3.5-dev        \
     python3-numpy           \
     python3-scipy           \
-    python3-matplotlib      \
     python3-pip             \
+    ffmpeg                  \
 
 mkdir -p ~/install
 
@@ -325,12 +346,12 @@ sudo pip3 install --upgrade pip
 pip3 install --user --no-cache-dir mpi4py
 export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
+pip3 install --user matplotlib>3.0.0
 
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
-    CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+sh autogen.sh --enable-shared --with-mpi --with-openmp PYTHON=python3 LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
 
@@ -394,7 +415,8 @@ sudo yum -y install    \
     zlib-devel         \
     openssl-devel      \
     sqlite-devel       \
-    bzip2-devel
+    bzip2-devel        \
+    ffmpeg
 
 mkdir -p ~/install
 
@@ -491,7 +513,7 @@ sudo /usr/local/bin/python3 setup.py install
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-mpi PYTHON=python3 MPICC=/usr/local/bin/mpicc MPICXX=/usr/local/bin/mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+sh autogen.sh --enable-shared --with-mpi --with-openmp PYTHON=python3 MPICC=/usr/local/bin/mpicc MPICXX=/usr/local/bin/mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make -j
 sudo make install
 ```

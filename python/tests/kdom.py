@@ -40,7 +40,7 @@ class TestKdom(unittest.TestCase):
     sim.init_sim()
 
     EigenmodeData = sim.get_eigenmode(fcen, mp.X, mp.Volume(center=mp.Vector3(0.3*sx,0,0), size=mp.Vector3(0,sy,0)),
-                                      num_band, k, parity=eig_parity, verbose=True)
+                                      num_band, k, parity=eig_parity)
     kdom = EigenmodeData.kdom
     
     self.assertAlmostEqual(k.y,kdom.y,places=15)

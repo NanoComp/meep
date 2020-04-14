@@ -1,12 +1,10 @@
 import os
-import shutil
 import sys
 import unittest
 import warnings
 import h5py
 import numpy as np
 import meep as mp
-
 
 try:
     unicode
@@ -20,6 +18,14 @@ class TestSimulation(unittest.TestCase):
 
     def setUp(self):
         print("Running {}".format(self._testMethodName))
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
 
     def test_interpolate_numbers(self):
 
@@ -121,38 +127,19 @@ class TestSimulation(unittest.TestCase):
 
     def test_use_output_directory_default(self):
         sim = self.init_simple_simulation()
-        sim.use_output_directory()
+        output_dir = os.path.join(self.temp_dir, 'simulation-out')
+        sim.use_output_directory(output_dir)
         sim.run(mp.at_end(mp.output_efield_z), until=200)
 
-        output_dir = 'simulation-out'
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
-
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(output_dir)
-
-    def test_use_output_directory_custom(self):
-        sim = self.init_simple_simulation()
-        sim.use_output_directory('custom_dir')
-        sim.run(mp.at_end(mp.output_efield_z), until=200)
-
-        output_dir = 'custom_dir'
-        self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
-
-        mp.all_wait()
-        if mp.am_master():
-            shutil.rmtree(output_dir)
 
     def test_at_time(self):
         sim = self.init_simple_simulation()
+        sim.use_output_directory(self.temp_dir)
         sim.run(mp.at_time(100, mp.output_efield_z), until=200)
 
-        fname = 'simulation-ez-000100.00.h5'
+        fname = os.path.join(self.temp_dir, 'simulation-ez-000100.00.h5')
         self.assertTrue(os.path.exists(fname))
-
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(fname)
 
     def test_after_sources_and_time(self):
         sim = self.init_simple_simulation()
@@ -168,14 +155,11 @@ class TestSimulation(unittest.TestCase):
 
     def test_with_prefix(self):
         sim = self.init_simple_simulation()
+        sim.use_output_directory(self.temp_dir)
         sim.run(mp.with_prefix('test_prefix-', mp.at_end(mp.output_efield_z)), until=200)
 
-        fname = 'test_prefix-simulation-ez-000200.00.h5'
+        fname = os.path.join(self.temp_dir, 'test_prefix-simulation-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fname))
-
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(fname)
 
     def test_extra_materials(self):
         sim = self.init_simple_simulation()
@@ -199,26 +183,26 @@ class TestSimulation(unittest.TestCase):
 
     def test_in_volume(self):
         sim = self.init_simple_simulation()
+        sim.use_output_directory(self.temp_dir)
         sim.filename_prefix = 'test_in_volume'
         vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
         sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
-
-    def test_in_point(self):
-        sim = self.init_simple_simulation(filename_prefix='test_in_point')
-        fn = sim.filename_prefix + '-ez-000200.00.h5'
-        pt = mp.Vector3()
-        sim.run(mp.at_end(mp.in_point(pt, mp.output_efield_z)), until=200)
+        fn = os.path.join(self.temp_dir, 'test_in_volume-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fn))
 
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(fn)
+    def test_in_point(self):
+        sim = self.init_simple_simulation()
+        sim.use_output_directory(self.temp_dir)
+        sim.filename_prefix = 'test_in_point'
+        pt = mp.Vector3()
+        sim.run(mp.at_end(mp.in_point(pt, mp.output_efield_z)), until=200)
+        fn = os.path.join(self.temp_dir, 'test_in_point-ez-000200.00.h5')
+        self.assertTrue(os.path.exists(fn))
 
     def test_epsilon_input_file(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
-        eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
-                                     '..', '..', 'tests')
+        eps_input_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tests'))
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
         sim.epsilon_input_file = eps_input_path
 
@@ -237,8 +221,7 @@ class TestSimulation(unittest.TestCase):
     def test_numpy_epsilon(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
-        eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
-                                     '..', '..', 'tests')
+        eps_input_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tests'))
         eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
 
         with h5py.File(eps_input_path, 'r') as f:
@@ -324,11 +307,11 @@ class TestSimulation(unittest.TestCase):
         symmetries = [mp.Mirror(mp.Y)]
 
         sim1 = mp.Simulation(resolution=resolution,
-                            cell_size=cell,
-                            boundary_layers=pml_layers,
-                            geometry=geometry,
-                            symmetries=symmetries,
-                            sources=[sources])
+                             cell_size=cell,
+                             boundary_layers=pml_layers,
+                             geometry=geometry,
+                             symmetries=symmetries,
+                             sources=[sources])
 
         sample_point = mp.Vector3(0.12, -0.29)
         ref_field_points = []
@@ -338,12 +321,12 @@ class TestSimulation(unittest.TestCase):
             ref_field_points.append(p.real)
 
         sim1.run(mp.at_every(5, get_ref_field_point), until=50)
-        dump_fn = 'test_load_dump_structure.h5'
+        dump_fn = os.path.join(self.temp_dir, 'test_load_dump_structure.h5')
         dump_chunk_fname = None
         chunk_layout = None
         sim1.dump_structure(dump_fn)
         if chunk_file:
-            dump_chunk_fname = 'test_load_dump_structure_chunks.h5'
+            dump_chunk_fname = os.path.join(self.temp_dir, 'test_load_dump_structure_chunks.h5')
             sim1.dump_chunk_layout(dump_chunk_fname)
             chunk_layout = dump_chunk_fname
         if chunk_sim:
@@ -368,12 +351,6 @@ class TestSimulation(unittest.TestCase):
         for ref_pt, pt in zip(ref_field_points, field_points):
             self.assertAlmostEqual(ref_pt, pt)
 
-        mp.all_wait()
-        if mp.am_master():
-            os.remove(dump_fn)
-            if dump_chunk_fname:
-                os.remove(dump_chunk_fname)
-
     def test_load_dump_structure(self):
         self._load_dump_structure()
 
@@ -385,6 +362,7 @@ class TestSimulation(unittest.TestCase):
 
     def test_get_array_output(self):
         sim = self.init_simple_simulation()
+        sim.use_output_directory(self.temp_dir)
         sim.symmetries = []
         sim.geometry = [mp.Cylinder(0.2, material=mp.Medium(index=3))]
         sim.filename_prefix = 'test_get_array_output'
@@ -400,7 +378,7 @@ class TestSimulation(unittest.TestCase):
         energy_arr = sim.get_tot_pwr()
         efield_arr = sim.get_efield()
 
-        fname_fmt = "test_get_array_output-{}-000020.00.h5"
+        fname_fmt = os.path.join(self.temp_dir, 'test_get_array_output-{}-000020.00.h5')
 
         with h5py.File(fname_fmt.format('eps'), 'r') as f:
             eps = f['eps'][()]
@@ -445,6 +423,7 @@ class TestSimulation(unittest.TestCase):
             resolution=resolution
         )
 
+        sim.use_output_directory(self.temp_dir)
         sim.run(mp.synchronized_magnetic(mp.output_bfield_y), until=10)
 
     def test_harminv_warnings(self):
@@ -508,7 +487,7 @@ class TestSimulation(unittest.TestCase):
             assert_two(v2)
             v3 = mp.vec(three)
             assert_three(v3)
-            assert_raises(four, NotImplementedError)
+            assert_raises(four, (NotImplementedError,TypeError))
 
         check_iterable([1], [1, 2], [1, 2, 3], [1, 2, 3, 4])
         check_iterable((1,), (1, 2), (1, 2, 3), (1, 2, 3, 4))
@@ -625,6 +604,30 @@ class TestSimulation(unittest.TestCase):
         _check(mp.Medium(), True, mp.Medium(mu_diag=mp.Vector3(1, 1, 1.1)))
         _check(mp.Medium(), False)
         _check(mat_func, False)
+
+    def test_iterable_as_v3(self):
+        t0 = ()
+        t1 = (1,)
+        t2 = (1, 2)
+        t3 = (1, 2, 3)
+        l0 = []
+        l1 = [1]
+        l2 = [1, 2]
+        l3 = [1, 2, 3]
+        v0 = mp.Vector3()
+        v1 = mp.Vector3(1)
+        v2 = mp.Vector3(1, 2)
+        v3 = mp.Vector3(1, 2, 3)
+
+        sim = self.init_simple_simulation()
+        sim.run(until=1)
+
+        for t, l, v3 in zip([t0, t1, t2, t3], [l0, l1, l2, l3], [v0, v1, v2, v3]):
+            pt1 = sim.get_field_point(mp.Ez, t)
+            pt2 = sim.get_field_point(mp.Ez, l)
+            expected = sim.get_field_point(mp.Ez, v3)
+            self.assertAlmostEqual(pt1, expected)
+            self.assertAlmostEqual(pt2, expected)
 
 if __name__ == '__main__':
     unittest.main()

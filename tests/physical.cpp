@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ void attempt(const char *name, int allright) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  // quiet = true;
+  // verbosity = 0;
   master_printf("Trying out some physical tests...\n");
 
   attempt("radiating source should decay spatially as 1/sqrt(r) in 2D.", radiating_2D(8.0));

@@ -17,7 +17,7 @@ class TestAntennaRadiation(unittest.TestCase):
         resolution = 50
         sxy = 4
         dpml = 1
-        cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
+        cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml)
 
         pml_layers = mp.PML(dpml)
 
@@ -28,7 +28,8 @@ class TestAntennaRadiation(unittest.TestCase):
                             center=mp.Vector3(),
                             component=mp.Ez)
 
-        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
+        symmetries = [mp.Mirror(mp.X),
+                      mp.Mirror(mp.Y)]
 
         sim = mp.Simulation(cell_size=cell,
                             resolution=resolution,
@@ -63,8 +64,8 @@ class TestAntennaRadiation(unittest.TestCase):
             E[n,:] = [np.conj(ff[j]) for j in range(3)]
             H[n,:] = [ff[j+3] for j in range(3)]
 
-        Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
-        Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
+        Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
+        Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2])
         Pr = np.sqrt(np.square(Px)+np.square(Py))
         far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 

@@ -7,7 +7,7 @@ For linear calculations in electromagnetism, most quantities of interest are nat
 Kerr Nonlinearities
 -------------------
 
-Meep supports instantaneous Kerr nonlinearities characterized by a susceptibility $\chi^{(3)}$, corresponding to a constitutive relation (in Meep's units):
+Meep supports instantaneous [Kerr nonlinearities](https://en.wikipedia.org/wiki/Kerr_effect) characterized by a susceptibility $\chi^{(3)}$, corresponding to a constitutive relation (in Meep's units):
 
 $$\mathbf{D} = \left( \varepsilon + \chi^{(3)} \cdot |\mathbf{E}|^2 \right) \mathbf{E}$$
 

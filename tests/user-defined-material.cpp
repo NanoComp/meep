@@ -165,7 +165,8 @@ int main(int argc, char *argv[]) {
     if (argv[narg] && !strcmp(argv[narg], "--eps_ref_file")) {
       if (narg + 1 == argc) abort("no option specified for --eps_ref_file");
       eps_ref_file = argv[++narg];
-    } else if (argv[narg] && !strcmp(argv[narg], "--without_susceptibility"))
+    }
+    else if (argv[narg] && !strcmp(argv[narg], "--without_susceptibility"))
       with_susceptibility = false;
     else
       abort("unrecognized command-line option %s", argv[narg]);
@@ -195,10 +196,9 @@ int main(int argc, char *argv[]) {
   vector3 center = {0, 0, 0};
   bool use_anisotropic_averaging = true;
   bool ensure_periodicity = true;
-  bool verbose = false;
   meep_geom::set_materials_from_geometry(&the_structure, g, center, use_anisotropic_averaging,
                                          DEFAULT_SUBPIXEL_TOL, DEFAULT_SUBPIXEL_MAXEVAL,
-                                         ensure_periodicity, verbose, my_material);
+                                         ensure_periodicity, my_material);
 
   fields f(&the_structure);
 

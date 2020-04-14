@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 #include <meep.hpp>
 using namespace meep;
 using std::complex;
-
-const char *mydirname = "symmetry-out";
 
 double one(const vec &) { return 1.0; }
 vec the_center;
@@ -57,7 +55,8 @@ int compare(double a, double b, const char *n) {
     master_printf("%s = %g differs by %g from %g\n", n, a, a - b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
-  } else {
+  }
+  else {
     return 1;
   }
 }
@@ -568,8 +567,6 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   const symmetry S = mirror(Y, gv);
   structure s(gv, eps, no_pml(), S);
   structure s1(gv, eps);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
   master_printf("Testing Y periodic with mirror symmetry...\n");
 
   fields f1(&s1);
@@ -828,8 +825,6 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
 
   structure s(gv, eps, pml(1.0), S);
   structure s1(gv, eps, pml(1.0), identity());
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
   master_printf("Testing X twofold rotational symmetry with PML...\n");
 
   fields f1(&s1);
@@ -919,8 +914,7 @@ double nonlinear_ex(const grid_volume &gv, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
-  trash_output_directory(mydirname);
+  verbosity = 0;
   master_printf("Testing with various kinds of symmetry...\n");
 
   if (!test_1d_periodic_mirror(one)) abort("error in test_1d_periodic_mirror vacuum\n");

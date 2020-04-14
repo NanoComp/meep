@@ -67,4 +67,4 @@
 
 (run-sources+ 500)
 
-(output-farfields n2f-obj (string-append "numcells-" (number->string num-cells)) (volume (center focal-length 0 0) (size spot-length 0 0)) ff-res)
+(output-farfields n2f-obj (string-append "numcells-" (number->string num-cells)) (volume (center (+ (* -0.5 sx) dpml dsub gh focal-length) 0 0) (size spot-length 0 0)) ff-res)

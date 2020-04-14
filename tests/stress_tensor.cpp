@@ -18,7 +18,7 @@ double two_waveguides(const vec &p) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   grid_volume gv = vol3d(sx + 2 * dpml, sy + 2 * dpml, 0, res);
   gv.center_origin();
   const symmetry S = mirror(X, gv) - mirror(Y, gv);
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   double freqs_re[8], freqs_im[8];
 
   master_printf("done with timestepping, running harminv...\n");
-  int num = do_harminv(vals, iT2, f.dt, 0.19, 0.25, 8, 
+  int num = do_harminv(vals, iT2, f.dt, 0.19, 0.25, 8,
   		       amps, freqs_re, freqs_im);
   master_printf("harminv found %d modes\n",num);
   for (int i=0;i<num;i++)

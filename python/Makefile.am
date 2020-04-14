@@ -18,12 +18,14 @@ endif # WITH_MPI
 
 if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/binary_grating.py
+  DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/dispersive_eigenmode.py
   KDOM_TEST = $(TEST_DIR)/kdom.py
   MODE_COEFFS_TEST = $(TEST_DIR)/mode_coeffs.py
   MODE_DECOMPOSITION_TEST = $(TEST_DIR)/mode_decomposition.py
   WVG_SRC_TEST = $(TEST_DIR)/wvg_src.py
 else
   BINARY_GRATING_TEST =
+  DISPERSIVE_EIGENMODE_TEST =
   KDOM_TEST =
   MODE_COEFFS_TEST =
   MODE_DECOMPOSITION_TEST =
@@ -41,8 +43,10 @@ TESTS =                                   \
     $(TEST_DIR)/cavity_farfield.py        \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
+    ${DISPERSIVE_EIGENMODE_TEST}          \
     $(TEST_DIR)/dft_energy.py             \
     $(TEST_DIR)/dft_fields.py             \
+    $(TEST_DIR)/eigfreq.py                \
     $(TEST_DIR)/faraday_rotation.py       \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
@@ -54,6 +58,7 @@ TESTS =                                   \
     $(KDOM_TEST)                          \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
+    $(TEST_DIR)/medium_evaluations.py     \
     $(MPBPYTEST)                          \
     $(MODE_COEFFS_TEST)                   \
     $(MODE_DECOMPOSITION_TEST)            \
@@ -61,13 +66,16 @@ TESTS =                                   \
     $(TEST_DIR)/n2f_periodic.py           \
     $(TEST_DIR)/oblique_source.py         \
     $(TEST_DIR)/physical.py               \
+    $(TEST_DIR)/prism.py                  \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/refl_angular.py           \
     $(TEST_DIR)/ring.py                   \
     $(TEST_DIR)/ring_cyl.py               \
     $(TEST_DIR)/simulation.py             \
+    $(TEST_DIR)/special_kz.py             \
     $(TEST_DIR)/source.py                 \
     $(TEST_DIR)/user_defined_material.py  \
+    $(TEST_DIR)/visualization.py          \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
@@ -130,7 +138,6 @@ endif
 ##################################################
 if MAINTAINER_MODE
 
-SWIG ?= swig
 SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
 MEEP_SWIG_SRC = meep.i numpy.i vec.i
 
@@ -144,12 +151,12 @@ HPPFILES=                                    \
  $(top_srcdir)/src/material_data.hpp
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
-	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
+	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
 mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
-	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
+	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/mpb.i
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
 endif # WITH_MPB
@@ -187,6 +194,7 @@ HL_IFACE =                  \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
+    $(srcdir)/visualization.py  \
     $(srcdir)/materials.py
 
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
@@ -224,3 +232,5 @@ clean-local:
 
 distclean-local:
 	rm -f *.h5
+	rm -f *.mp4
+	rm -f *.gif

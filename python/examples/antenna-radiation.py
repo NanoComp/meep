@@ -9,7 +9,7 @@ resolution = 50  # pixels/um
 
 sxy = 4
 dpml = 1
-cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml,0)
+cell = mp.Vector3(sxy+2*dpml,sxy+2*dpml)
 
 pml_layers = [mp.PML(dpml)]
 
@@ -37,16 +37,16 @@ sim = mp.Simulation(cell_size=cell,
                     boundary_layers=pml_layers)
 
 nearfield_box = sim.add_near2far(fcen, 0, 1,
-                                 mp.Near2FarRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
-                                 mp.Near2FarRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
-                                 mp.Near2FarRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
-                                 mp.Near2FarRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
+                                 mp.Near2FarRegion(center=mp.Vector3(0,+0.5*sxy), size=mp.Vector3(sxy,0), weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(0,-0.5*sxy), size=mp.Vector3(sxy,0), weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(+0.5*sxy,0), size=mp.Vector3(0,sxy), weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(-0.5*sxy,0), size=mp.Vector3(0,sxy), weight=-1))
 
 flux_box = sim.add_flux(fcen, 0, 1,
-                        mp.FluxRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
-                        mp.FluxRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
-                        mp.FluxRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
-                        mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
+                        mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy), size=mp.Vector3(sxy,0), weight=+1),
+                        mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy), size=mp.Vector3(sxy,0), weight=-1),
+                        mp.FluxRegion(center=mp.Vector3(+0.5*sxy,0), size=mp.Vector3(0,sxy), weight=+1),
+                        mp.FluxRegion(center=mp.Vector3(-0.5*sxy,0), size=mp.Vector3(0,sxy), weight=-1))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
 
@@ -71,8 +71,8 @@ for n in range(npts):
     E[n,:] = [np.conj(ff[j]) for j in range(3)]
     H[n,:] = [ff[j+3] for j in range(3)]
 
-Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
-Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
+Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
+Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2])
 Pr = np.sqrt(np.square(Px)+np.square(Py))
 
 far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)

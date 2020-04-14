@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ struct fragment_stats {
   static std::vector<meep::volume> pml_3d_vols;
   static std::vector<meep::volume> absorber_vols;
   static bool split_chunks_evenly;
+  static bool eps_averaging;
 
   static bool has_non_medium_material();
   static void init_libctl(meep_geom::material_type default_mat, bool ensure_per,
@@ -99,7 +100,14 @@ struct fragment_stats {
 
   fragment_stats() {}
   fragment_stats(geom_box &bx);
-  void update_stats_from_material(material_type mat, size_t pixels);
+
+  void compute();
+  double cost() const;
+  void print_stats() const;
+
+private:
+  void update_stats_from_material(material_type mat, size_t pixels,
+                                  bool anisotropic_pixels_already_added = false);
   void compute_stats();
   void count_anisotropic_pixels(medium_struct *med, size_t pixels);
   void count_nonlinear_pixels(medium_struct *med, size_t pixels);
@@ -108,9 +116,6 @@ struct fragment_stats {
   void compute_dft_stats();
   void compute_pml_stats();
   void compute_absorber_stats();
-  void compute();
-  double cost() const;
-  void print_stats() const;
 };
 
 fragment_stats
@@ -119,7 +124,7 @@ compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv, vector
                        std::vector<dft_data> dft_data_list, std::vector<meep::volume> pml_1d_vols,
                        std::vector<meep::volume> pml_2d_vols, std::vector<meep::volume> pml_3d_vols,
                        std::vector<meep::volume> absorber_vols, double tol, int maxeval,
-                       bool ensure_per);
+                       bool ensure_per, bool eps_averaging);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */
@@ -161,7 +166,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  bool use_anisotropic_averaging = true,
                                  double tol = DEFAULT_SUBPIXEL_TOL,
                                  int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
-                                 bool ensure_periodicity = false, bool verbose = false,
+                                 bool ensure_periodicity = false,
                                  material_type _default_material = vacuum, absorber_list alist = 0,
                                  material_type_list extra_materials = material_type_list());
 

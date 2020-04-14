@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-We'll go through several examples using the Scheme interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
+We'll go through several examples using the Scheme interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are mainly 1d or 2d simulations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d simulations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields, this tutorial uses the [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md) package. You could also use any other package (i.e., [Octave](https://www.gnu.org/software/octave/) or [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html)) that supports reading HDF5 files.
 
@@ -235,7 +235,7 @@ Transmittance Spectrum of a Waveguide Bend
 
 We have computed the field patterns for light propagating around a waveguide bend. While this can be visually informative, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend ([transmittance](https://en.wikipedia.org/wiki/Transmittance)), how much is reflected ([reflectance](https://en.wikipedia.org/wiki/Reflectance)), and how much is radiated away (scattered loss). How can we do this?
 
-The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
+The basic principles are described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
 The simulation script is in [examples/bend-flux.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/bend-flux.ctl).
 
@@ -312,7 +312,7 @@ Notice how we're using our parameters like `wvg-ycen` and `w`: if we change the 
 (set-param! resolution 10)
 ```
 
-Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`flux-region`](../Scheme_User_Interface.md#flux-region). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `flux-region` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
+Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`flux-region`](../Scheme_User_Interface.md#flux-region). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `flux-region` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
 
 ```scm
 (define-param nfreq 100) ; number of frequencies at which to compute flux             
@@ -333,7 +333,7 @@ We compute the fluxes through a line segment twice the width of the waveguide, l
 
 The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
-As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this in Meep by saving the Fourier-transformed fields from the normalization run (`no-bend?=true`), and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save-flux` (after the normalization run) and `load-minus-flux` (before the other runs). We can call them as follows:
+As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this in Meep by saving the Fourier-transformed fields from the normalization run (`no-bend?=true`), and loading them, *negated*, *before* the other runs. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands, `save-flux` (after the normalization run) and `load-minus-flux` (before the other runs). We can call them as follows:
 
 ```scm
 (if (not no-bend?) (load-minus-flux "refl-flux" refl))
@@ -465,7 +465,7 @@ The simulation script is [examples/refl-angular.ctl](https://github.com/NanoComp
 
 The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the minimum frequency of the source, this is *not* the same as the specified angle of the incident planewave, but rather sin<sup>-1</sup>(k<sub>x</sub>/ω).
 
-The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+The following Bash shell script runs the simulation for the angular range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
 ```sh
 #!/bin/bash
@@ -550,10 +550,343 @@ title("reflectance (analytic)");
 
 <center>![](../images/reflectance_angular_spectrum.png)</center>
 
+Mie Scattering of a Lossless Dielectric Sphere
+----------------------------------------------
+
+A common reference calculation in computational electromagnetics for which an analytical solution is known is [Mie scattering](https://en.wikipedia.org/wiki/Mie_scattering) which involves computing the [scattering efficiency](http://www.thermopedia.com/content/956/) of a single, homogeneous sphere given an incident planewave. The scattered power of any object (absorbing or non) can be computed by surrounding it with a *closed* [DFT flux](../Scheme_User_Interface.md#flux-spectra) box (its size and orientation are irrelevant because of Poynting's theorem) and performing two simulations: (1) a normalization run involving an empty cell to save the incident fields from the source and (2) the scattering run with the object but first subtracting the incident fields in order to obtain just the scattered fields. This approach has already been described in [Transmittance Spectrum of a Waveguide Bend](#transmittance-spectrum-of-a-waveguide-bend).
+
+The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `(is-integrated? true)` must be specified in the source object definition. A `k-point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module.
+
+A schematic of the 2d cross section at $z = 0$ of the 3d cell is shown below.
+
+<center>![](../images/mie_scattering_schematic.png)</center>
+
+The simulation script is in [examples/mie-scattering.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/mie-scattering.ctl). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
+
+```scm
+(define-param r 1.0) ;; radius of sphere
+
+(define wvl-min (/ (* 2 pi r) 10))
+(define wvl-max (/ (* 2 pi r) 2))
+
+(define frq-min (/ wvl-max))
+(define frq-max (/ wvl-min))
+(define frq-cen (* 0.5 (+ frq-min frq-max)))
+(define dfrq (- frq-max frq-min))
+(define nfrq 100)
+
+;; at least 8 pixels per smallest wavelength, i.e. (floor (/ 8 wvl-min))
+(set-param! resolution 25)
+
+(define dpml (* 0.5 wvl-max))
+(define dair (* 0.5 wvl-max))
+
+(define boundary-layers (list (make pml (thickness dpml))))
+(set! pml-layers boundary-layers)
+
+(define symm (list (make mirror-sym (direction Y))
+                   (make mirror-sym (direction Z) (phase -1))))
+(set! symmetries symm)
+
+(define s (* 2 (+ dpml dair r)))
+(define cell (make lattice (size s s s)))
+(set! geometry-lattice cell)
+
+;; (is-integrated? true) necessary for any planewave source extending into PML
+(define pw-src (make source
+                 (src (make gaussian-src (frequency frq-cen) (fwidth dfrq) (is-integrated? true)))
+                 (center (+ (* -0.5 s) dpml) 0 0)
+                 (size 0 s s)
+                 (component Ez)))
+(set! sources (list pw-src))
+
+(set! k-point (vector3 0))
+
+(define box-x1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (- r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-x2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (+ r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-y1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (- r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-y2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (+ r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-z1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (- r)) (size (* 2 r) (* 2 r) 0))))
+(define box-z2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (+ r)) (size (* 2 r) (* 2 r) 0))))
+
+(run-sources+ 10)
+
+(display-fluxes box-x1)
+
+(save-flux "box-x1-flux" box-x1)
+(save-flux "box-x2-flux" box-x2)
+(save-flux "box-y1-flux" box-y1)
+(save-flux "box-y2-flux" box-y2)
+(save-flux "box-z1-flux" box-z1)
+(save-flux "box-z2-flux" box-z2)
+
+(reset-meep)
+
+(define nsphere 2.0)
+(set! geometry (list
+                (make sphere
+                  (material (make medium (index nsphere)))
+                  (radius r)
+                  (center 0))))
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! symmetries symm)
+
+(set! sources (list pw-src))
+
+(set! k-point (vector3 0))
+
+(define box-x1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (- r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-x2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center (+ r) 0 0) (size 0 (* 2 r) (* 2 r)))))
+(define box-y1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (- r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-y2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 (+ r) 0) (size (* 2 r) 0 (* 2 r)))))
+(define box-z1 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (- r)) (size (* 2 r) (* 2 r) 0))))
+(define box-z2 (add-flux frq-cen dfrq nfrq
+                         (make flux-region (center 0 0 (+ r)) (size (* 2 r) (* 2 r) 0))))
+
+(load-minus-flux "box-x1-flux" box-x1)
+(load-minus-flux "box-x2-flux" box-x2)
+(load-minus-flux "box-y1-flux" box-y1)
+(load-minus-flux "box-y2-flux" box-y2)
+(load-minus-flux "box-z1-flux" box-z1)
+(load-minus-flux "box-z2-flux" box-z2)
+
+(run-sources+ 100)
+
+(display-fluxes box-x1 box-x2 box-y1 box-y2 box-z1 box-z2)
+```
+
+The following Bash shell script runs the parallel simulation. The script pipes the output to a file and extracts the input and scattering flux data to separate files.
+```sh
+#!/bin/bash
+
+mpirun -n 3 meep mie-scattering.ctl |tee mie.out
+
+grep flux1: mie.out |cut -d, -f2- > input.dat
+grep flux2: mie.out |cut -d, -f2- > scatt.dat
+```
+
+The scattering efficiency is computed from the simulation data and plotted using the following Matlab/Octave script.
+```matlab
+input = dlmread('input.dat',',');
+scatt = dlmread('scatt.dat',',');
+
+r = 1.0;
+
+freqs = input(:,1);
+scatt_flux = scatt(:,2) - scatt(:,3) + scatt(:,4) - scatt(:,5) + scatt(:,6) - scatt(:,7);
+intensity = input(:,2)/(2*r)^2;
+scatt_cross_section = scatt_flux./intensity;
+scatt_eff_meep = scatt_cross_section*-1/(pi*r^2);
+
+loglog(2*pi*r*freqs,scatt_eff_meep,'bo-');
+xlabel('(sphere circumference)/wavelength, 2πr/\lambda');
+ylabel('scattering efficiency, \sigma/\pir^2');
+title("Mie Scattering of a Lossless Dielectric Sphere");
+set(gca, "xminorgrid", "on");
+set(gca, "yminorgrid", "on");
+set(gca, "xlim", [1 10]);
+```
+
+The incident intensity (`intensity`) is the flux in one of the six monitor planes (the one closest to and facing the planewave source propagating in the $x$ direction) divided by its area. This is why the six sides of the flux box are defined separately. (Otherwise, the entire box could have been defined as a single flux object with different weights ±1 for each side.) The scattered power is multiplied by -1 since it is the *outgoing* power (a positive quantity) rather than the incoming power as defined by the orientation of the flux box. Note that because of the linear $E_z$ polarization of the source, the flux through the $y$ and $z$ planes will *not* be the same. A circularly-polarized source would have produced equal flux in these two monitor planes. The runtime of the scattering run is chosen to be sufficiently long to ensure that the Fourier-transformed fields have [converged](../FAQ.md#checking-convergence).
+
+Results are shown below. Overall, the Meep results agree well with the analytic theory.
+
+<center>![](../images/mie_scattering.png)</center>
+
+Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section ($\sigma_{abs}$) to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load-minus-flux` calls. The extinction cross section ($\sigma_{ext}$) is simply the sum of the scattering and absorption cross sections: $\sigma_{scat}+\sigma_{abs}$.
+
+
+### Differential/Radar Cross Section
+
+As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-dielectric-sphere) which involved computing the *scattering* cross section ($\sigma_{scat}$), we will compute the *differential* cross section (DCS, $\sigma_{diff}$) which is proportional to the [radar cross section](https://en.wikipedia.org/wiki/Radar_cross-section). Computing $\sigma_{diff}$ in a given direction involves three steps: (1) solve for the [near fields](../Scheme_User_Interface.md#near-to-far-field-spectra) on a closed box surrounding the object, (2) from the near fields, compute the far fields at a single point a large distance away (i.e., $R$ ≫  object diameter), and (3) calculate the Poynting flux of the far fields in the outward direction: $F = \hat{r}\cdot\Re[E^* \times H]$. The differential cross section in that direction is $R^2F$ divided by the incident intensity. The radar cross section (RCS) is simply $\sigma_{diff}$ in the "backwards" direction (i.e., backscattering) multiplied by 4π.
+
+The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
+
+<center>
+
+$$ \sigma_{scatt} = \int_0^{2\pi} d\phi \int_0^{\pi} \sigma_{diff}(\phi,\theta)\sin(\theta)d\theta $$
+
+</center>
+
+(In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of 4π.)
+
+In this demonstration, we will verify this expression for the lossless dielectric sphere at a single wavelength by comparing with the analytic theory via PyMieScatt.
+
+The simulation script is in [examples/differential-cross-section.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/differential-cross-section.ctl).
+
+```scm
+(define-param r 1.0) ;; radius of sphere
+
+(define-param frq-cen 1.0)
+
+(set-param! resolution 20) ;; pixels/um
+
+(define dpml 0.5)
+(define dair 1.5) ;; at least 0.5/frq_cen padding between source and near-field monitor
+
+(define boundary-layers (list (make pml (thickness dpml))))
+(set! pml-layers boundary-layers)
+
+(define s (* 2 (+ dpml dair r)))
+(define cell (make lattice (size s s s)))
+(set! geometry-lattice cell)
+
+;; circularly-polarized source with propagation axis along x
+;; (is-integrated? true) necessary for any planewave source extending into PML
+(define circ-pol-src (list
+                      (make source
+                       (src (make gaussian-src (frequency frq-cen) (fwidth (* 0.2 frq-cen)) (is-integrated? true)))
+                       (center (+ (* -0.5 s) dpml) 0 0)
+                       (size 0 s s)
+                       (component Ez))
+                      (make source
+                       (src (make gaussian-src (frequency frq-cen) (fwidth (* 0.2 frq-cen)) (is-integrated? true)))
+                       (center (+ (* -0.5 s) dpml) 0 0)
+                       (size 0 s s)
+                       (component Ey)
+                       (amplitude 0+1i))))
+
+(set! sources circ-pol-src)
+
+(set! k-point (vector3 0))
+
+(define box-flux (add-flux frq-cen 0 1
+                  (make flux-region (center (- (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)))))
+
+(define nearfield-box (add-near2far frq-cen 0 1
+                       (make near2far-region (center (- (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight +1))
+                       (make near2far-region (center (+ (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 (- (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight +1))
+                       (make near2far-region (center 0 (+ (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 0 (- (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight +1))
+                       (make near2far-region (center 0 0 (+ (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight -1))))
+
+(run-sources+ 10)
+
+(display-fluxes box-flux)
+
+(save-near2far "nearfield-box-n2f" nearfield-box)
+
+(reset-meep)
+
+(define nsphere 2.0)
+(set! geometry (list
+                (make sphere
+                  (material (make medium (index nsphere)))
+                  (radius r)
+                  (center 0))))
+
+(set! geometry-lattice cell)
+
+(set! pml-layers boundary-layers)
+
+(set! sources circ-pol-src)
+
+(set! k-point (vector3 0))
+
+(define nearfield-box (add-near2far frq-cen 0 1
+                       (make near2far-region (center (- (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight +1))
+                       (make near2far-region (center (+ (* 2 r)) 0 0) (size 0 (* 4 r) (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 (- (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight +1))
+                       (make near2far-region (center 0 (+ (* 2 r)) 0) (size (* 4 r) 0 (* 4 r)) (weight -1))
+                       (make near2far-region (center 0 0 (- (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight +1))
+                       (make near2far-region (center 0 0 (+ (* 2 r))) (size (* 4 r) (* 4 r) 0) (weight -1))))
+
+(load-minus-near2far "nearfield-box-n2f" nearfield-box)
+
+(run-sources+ 100)
+
+(define-param npts 100)           ;; number of points in [0,pi) range of polar angles to sample far fields along semi-circle
+
+(define-param ff-r (* 10000 r))
+
+(map (lambda (n)
+       (let ((ff (get-farfield nearfield-box (vector3* ff-r (vector3 (cos (* pi (/ n npts))) 0 (sin (* pi (/ n npts))))))))
+        (print "farfield:, " n ", " (* pi (/ n npts)))
+        (map (lambda (m)
+              (print ", " (list-ref ff m)))
+         (arith-sequence 0 1 6))
+        (print "\n")))
+ (arith-sequence 0 1 npts))
+```
+
+The script is similar to the previous Mie scattering example with the main difference being the replacement of the `add-flux` with `add-near2far` objects. Instead of a linearly-polarized planewave, the source is circularly-polarized so that $\sigma_{diff}$ is invariant with the rotation angle $\phi$ around the axis of the incident direction (i.e., $x$). This way, the far fields need only be sampled with the polar angle $\theta$. A circularly-polarized planewave can be generated by overlapping two linearly-polarized planewaves ($E_y$ and $E_z$) which are 90° out of phase via specifying an `amplitude` of `0+1i` for one of the two sources. Note, however, that there is no need to use complex fields (by specifying `(set! force-complex-fields true)`) which would double the floating-point memory consumption since only the real part of the source amplitude is used by default. The circularly-polarized source breaks the mirror symmetry which increases the size of the simulation. The size of the near-field monitor box surrounding the sphere is doubled so that it lies *entirely within* the homogeneous air region (a requirement of the `near2far` feature). After the near fields have been obtained for λ = 1 μm, the far fields are computed for 100 points along a semi-circle with radius 10,000X that of the dielectric sphere. (Note: any such large radius would give the same $\sigma_{scat}$ to within discretization error). Finally, the scattered cross section is computed by numerically integrating the expression from above using the radial Poynting flux values.
+
+The following Bash shell script runs the parallel simulation. The script pipes the output to a file and extracts the input and far-field data to separate files.
+
+```
+#!/bin/bash
+
+mpirun -n 3 meep differential-cross-section.ctl |tee dcs.out
+
+grep flux1: dcs.out |cut -d, -f2- > input.dat
+grep farfield: dcs.out |cut -d, -f2- > farfields.dat
+```
+
+The differential and scattering cross section are computed from the simulation data using the following Matlab/Octave script.
+
+```matlab
+
+f = dlmread('input.dat');
+d = dlmread('farfields.dat');
+
+Ex = conj(d(:,3));
+Ey = conj(d(:,4));
+Ez = conj(d(:,5));
+
+Hx = d(:,6);
+Hy = d(:,7);
+Hz = d(:,8);
+
+Px = real(Ey.*Hz-Ez.*Hy);
+Py = real(Ez.*Hx-Ex.*Hz);
+Pz = real(Ex.*Hy-Ey.*Hx);
+Pr = sqrt(Px.^2+Py.^2+Pz.^2);
+
+r = 1.0;
+ff_r = 10000*r;
+
+npts = size(d,1);
+angles = pi/npts * [0:npts-1];
+
+intensity = f(:,2)/(4*r)^2;
+diff_cross_section = ff_r^2 * Pr / intensity;
+scatt_cross_section_meep = 2*pi * (diff_cross_section' * sin(angles)') * pi/npts;
+
+disp(sprintf("scatt:, %0.16f",scatt_cross_section_meep));
+```
+
+The Meep results agree well with the analytic theory of `8.3429545590438750`.
+
+For `resolution` of 20, the error between the simulated and analytic result is 2.2%.
+```
+scatt:, 8.1554468258454094
+```
+
+For `resolution` of 25, the error decreases (as expected) to 1.5%.
+```
+scatt:, 8.2215436693775636
+```
+
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction/Resonant Modes](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a **ring resonator**, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently [by using cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -660,6 +993,8 @@ harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.1855
 
 which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
+For a demonstration of how to compute the gradient of the resonant frequency with respect to the ring radius, see [Tutorial/Cylindrical Coordinates/Sensitivity Analysis via Perturbation Theory](Cylindrical_Coordinates.md#sensitivity-analysis-via-perturbation-theory).
+
 ### Exploiting Symmetry
 
 In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves *both* the structure *and* the sources, we can **exploit this mirror symmetry to speed up the computation**. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the input file is the same except that we add a single line, right after we specify the `sources`:
@@ -674,12 +1009,12 @@ Everything else about your simulation is the same: you can still get the fields 
 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See [User Interface](../Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
 
-In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Cylindrical Coordinates/Modes of a Ring Resonator](Cylindrical_Coordinates.md#modes-of-a-ring-resonator) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on a 1d or 2d cell in which the structures and fields can be visualized using [h5topng](https://github.com/NanoComp/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [output-epsilon](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
+The previous examples were based on a 1d or 2d cell in which the structures and fields can be visualized using [h5topng](https://github.com/NanoComp/h5utils/blob/master/doc/h5topng-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example, which includes a simulation script and shell commands, involves a sphere with index 3.5 perforated by a conical hole. There are no other simulation parameters specified. The permittivity data is written to an HDF5 file using [`output-epsilon`](../Scheme_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) using [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md). VTK data can be visualized using Mayavi or Paraview via the `IsoSurface` module.
 
 ```scm
 (set-param! resolution 50)

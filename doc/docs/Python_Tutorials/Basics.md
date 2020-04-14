@@ -2,7 +2,7 @@
 # Python Tutorial
 ---
 
-We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are 1d or 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
+We'll go through several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are mainly 1d or 2d simulations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d simulations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
 
 [TOC]
 
@@ -26,7 +26,7 @@ For our first example, let's examine the field pattern excited by a localized [C
 
 ### A Straight Waveguide
 
-The simulation script is in [examples/straight-waveguide.py](https://github.com/NanoComp/meep/blob/master/python/examples/straight-waveguide.py). The notebook is [examples/straight-waveguide.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/straight-waveguide.ipynb)
+The simulation script is in [examples/straight-waveguide.py](https://github.com/NanoComp/meep/blob/master/python/examples/straight-waveguide.py). The notebook is [examples/straight-waveguide.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/straight-waveguide.ipynb).
 
 The first thing to do always is to load the Meep library:
 
@@ -258,9 +258,9 @@ Transmittance Spectrum of a Waveguide Bend
 
 We have computed the field patterns for light propagating around a waveguide bend. While this can be visually informative, the results are not quantitatively satisfying. We'd like to know exactly how much power makes it around the bend ([transmittance](https://en.wikipedia.org/wiki/Transmittance)), how much is reflected ([reflectance](https://en.wikipedia.org/wiki/Reflectance)), and how much is radiated away (scattered loss). How can we do this?
 
-The basic principles are described in [Introduction](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
+The basic principles are described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra). The computation involves keeping track of the fields and their Fourier transform in a certain region, and from this computing the flux of electromagnetic energy as a function of ω. Moreover, we'll get an entire spectrum of the transmittance in a single run, by Fourier-transforming the response to a short pulse. However, in order to normalize the transmitted flux by the incident power to obtain the transmittance, we'll have to do *two* runs, one with and one without the bend (i.e., a straight waveguide).
 
-The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py). The notebook is [examples/bend-flux.ipynb](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.ipynb)
+The simulation script is in [examples/bend-flux.py](https://github.com/NanoComp/meep/blob/master/python/examples/bend-flux.py). The notebook is [examples/bend-flux.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/bend-flux.ipynb).
 
 ```py
 import meep as mp
@@ -299,7 +299,7 @@ geometry = [mp.Block(size=mp.Vector3(mp.inf,w,mp.inf),
                      material=mp.Medium(epsilon=12))]
 ```
 
-The source is a `GaussianSource` instead of a `ContinuousSrc`, parameterized by a center frequency and a frequency width (the width of the Gaussian spectrum).
+The source is a `GaussianSource` instead of a `ContinuousSource`, parameterized by a center frequency and a frequency width (the width of the Gaussian spectrum).
 
 ```py
 fcen = 0.15  # pulse center frequency
@@ -312,7 +312,7 @@ sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
 
 Notice how we're using our parameters like `wvg_ycen` and `w`: if we change the dimensions, everything will shift automatically.
 
-Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`FluxRegion`](../Python_User_Interface.md#fluxregion). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `FluxRegion` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
+Finally, we have to specify where we want Meep to compute the flux spectra, and at what frequencies. This must be done *after* specifying the `Simulation` object which contains the geometry, sources, resolution, etcetera, because all of the field parameters are initialized when flux planes are created. As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), the flux is the integral of the Poynting vector over the specified [`FluxRegion`](../Python_User_Interface.md#fluxregion). It only integrates one component of the Poynting vector and the `direction` property specifies which component. In this example, since the `FluxRegion` is a line, the `direction` is its normal by default which therefore does not need to be explicitly defined.
 
 ```py
 sim = mp.Simulation(cell_size=cell,
@@ -336,7 +336,7 @@ We compute the fluxes through a line segment twice the width of the waveguide, l
 
 The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from `fcen-df/2` to `fcen+df/2`. That is, we only compute fluxes for frequencies within our pulse bandwidth. This is important because, far outside the pulse bandwidth, the spectral power is so low that numerical errors make the computed fluxes useless.
 
-As described in [Introduction](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
+As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
 
 ```py    
 pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
@@ -431,11 +431,11 @@ We turn to a similar but slightly different example for which there exists an an
 
 A 1d cell must be used since a higher-dimensional cell will introduce [artificial modes due to band folding](../FAQ.md#why-are-there-strange-peaks-in-my-reflectancetransmittance-spectrum-when-modeling-planar-or-periodic-structures). We will use a Gaussian source spanning visible wavelengths of 0.4 to 0.8 μm. Unlike a [continuous-wave](../Python_User_Interface.md#continuoussource) (CW) source, a pulsed source turns off. This enables a termination condition of when there are no fields remaining in the cell (due to absorption by the PMLs) via the [run function](../Python_User_Interface.md#run-functions) `stop_when_fields_decayed`, similar to the previous example.
 
-Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via `k_point`, and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/NanoComp/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the minimum frequency of the pulse which excludes the 2π factor). Note that a fixed wavevector only applies to a single frequency. Any broadband source is therefore incident at a specified angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via [`k_point`](../FAQ.md#how-does-k_point-define-the-phase-relation-between-adjacent-unit-cells), and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/NanoComp/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index n: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency ω (the minimum frequency of the pulse which excludes the 2π factor). Note that a fixed wavevector only applies to a single frequency. Any broadband source is therefore incident at a specified angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is $xz$. The source angle θ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the +$z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the E<sub>x</sub> and H<sub>y</sub> field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are allowed and are complex (the fields are real, by default). A current source with E<sub>x</sub> polarization lies in the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an E<sub>y</sub> source. This example involves just the $\mathcal{P}$-polarization.
 
-The simulation script is [examples/refl-angular.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular.py). The notebook is [examples/refl-angular.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/refl-angular.ipynb)
+The simulation script is [examples/refl-angular.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular.py). The notebook is [examples/refl-angular.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/refl-angular.ipynb).
 
 ```py
 import meep as mp
@@ -522,7 +522,7 @@ if __name__ == '__main__':
 
 The simulation script above computes and prints to standard output the reflectance at each frequency. Also included in the output is the wavevector component $k_x$ and the corresponding angle for the ($k_x$, ω) pair. For those frequencies not equal to the minimum frequency of the source, this is *not* the same as the specified angle of the incident planewave, but rather sin<sup>-1</sup>(k<sub>x</sub>/ω).
 
-Note that there are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planewave. The following Bash shell script runs the simulation for the wavelength range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
+Note that there are two argument parameters which can be passed to the script at runtime: the resolution of the grid and the angle of the incident planewave. The following Bash shell script runs the simulation for the angular range of 0$^\circ$ to 80$^\circ$ in increments of 5$^\circ$. For each run, the script pipes the output to one file and extracts the reflectance data to a different file.
 
 ```sh
 #!/bin/bash
@@ -615,12 +615,295 @@ plt.show()
 
 <center>![](../images/reflectance_angular_spectrum.png)</center>
 
+Mie Scattering of a Lossless Dielectric Sphere
+----------------------------------------------
+
+A common reference calculation in computational electromagnetics for which an analytical solution is known is [Mie scattering](https://en.wikipedia.org/wiki/Mie_scattering) which involves computing the [scattering efficiency](http://www.thermopedia.com/content/956/) of a single, homogeneous sphere given an incident planewave. The scattered power of any object (absorbing or non) can be computed by surrounding it with a *closed* [DFT flux](../Python_User_Interface.md#flux-spectra) box (its size and orientation are irrelevant because of Poynting's theorem) and performing two simulations: (1) a normalization run involving an empty cell to save the incident fields from the source and (2) the scattering run with the object but first subtracting the incident fields in order to obtain just the scattered fields. This approach has already been described in [Transmittance Spectrum of a Waveguide Bend](#transmittance-spectrum-of-a-waveguide-bend).
+
+The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `is_integrated=True` must be specified in the source object definition. A `k_point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module (which you will have to install in order to run the script below).
+
+A schematic of the 2d cross section at $z = 0$ of the 3d cell is shown below.
+
+<center>![](../images/mie_scattering_schematic.png)</center>
+
+The simulation script is in [examples/mie_scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie_scattering.py). The notebook is [examples/mie_scattering.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/mie_scattering.ipynb). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
+
+```py
+import meep as mp
+import numpy as np
+import matplotlib.pyplot as plt
+import PyMieScatt as ps
+
+r = 1.0  # radius of sphere
+
+wvl_min = 2*np.pi*r/10
+wvl_max = 2*np.pi*r/2
+
+frq_min = 1/wvl_max
+frq_max = 1/wvl_min
+frq_cen = 0.5*(frq_min+frq_max)
+dfrq = frq_max-frq_min
+nfrq = 100
+
+## at least 8 pixels per smallest wavelength, i.e. np.floor(8/wvl_min)
+resolution = 25
+
+dpml = 0.5*wvl_max
+dair = 0.5*wvl_max
+
+pml_layers = [mp.PML(thickness=dpml)]
+
+symmetries = [mp.Mirror(mp.Y),
+              mp.Mirror(mp.Z,phase=-1)]
+
+s = 2*(dpml+dair+r)
+cell_size = mp.Vector3(s,s,s)
+
+# is_integrated=True necessary for any planewave source extending into PML
+sources = [mp.Source(mp.GaussianSource(frq_cen,fwidth=dfrq,is_integrated=True),
+                     center=mp.Vector3(-0.5*s+dpml),
+                     size=mp.Vector3(0,s,s),
+                     component=mp.Ez)]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3(),
+                    symmetries=symmetries)
+
+box_x1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r,2*r)))
+box_x2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r,2*r)))
+box_y1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0,2*r)))
+box_y2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0,2*r)))
+box_z1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=-r),size=mp.Vector3(2*r,2*r,0)))
+box_z2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=+r),size=mp.Vector3(2*r,2*r,0)))
+
+sim.run(until_after_sources=10)
+
+freqs = mp.get_flux_freqs(box_x1)
+box_x1_data = sim.get_flux_data(box_x1)
+box_x2_data = sim.get_flux_data(box_x2)
+box_y1_data = sim.get_flux_data(box_y1)
+box_y2_data = sim.get_flux_data(box_y2)
+box_z1_data = sim.get_flux_data(box_z1)
+box_z2_data = sim.get_flux_data(box_z2)
+
+box_x1_flux0 = mp.get_fluxes(box_x1)
+
+sim.reset_meep()
+
+n_sphere = 2.0
+geometry = [mp.Sphere(material=mp.Medium(index=n_sphere),
+                      center=mp.Vector3(),
+                      radius=r)]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3(),
+                    symmetries=symmetries,
+                    geometry=geometry)
+
+box_x1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r,2*r)))
+box_x2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r,2*r)))
+box_y1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0,2*r)))
+box_y2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0,2*r)))
+box_z1 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=-r),size=mp.Vector3(2*r,2*r,0)))
+box_z2 = sim.add_flux(frq_cen, dfrq, nfrq, mp.FluxRegion(center=mp.Vector3(z=+r),size=mp.Vector3(2*r,2*r,0)))
+
+sim.load_minus_flux_data(box_x1, box_x1_data)
+sim.load_minus_flux_data(box_x2, box_x2_data)
+sim.load_minus_flux_data(box_y1, box_y1_data)
+sim.load_minus_flux_data(box_y2, box_y2_data)
+sim.load_minus_flux_data(box_z1, box_z1_data)
+sim.load_minus_flux_data(box_z2, box_z2_data)
+
+sim.run(until_after_sources=100)
+
+box_x1_flux = mp.get_fluxes(box_x1)
+box_x2_flux = mp.get_fluxes(box_x2)
+box_y1_flux = mp.get_fluxes(box_y1)
+box_y2_flux = mp.get_fluxes(box_y2)
+box_z1_flux = mp.get_fluxes(box_z1)
+box_z2_flux = mp.get_fluxes(box_z2)
+
+scatt_flux = np.asarray(box_x1_flux)-np.asarray(box_x2_flux)+np.asarray(box_y1_flux)-np.asarray(box_y2_flux)+np.asarray(box_z1_flux)-np.asarray(box_z2_flux)
+intensity = np.asarray(box_x1_flux0)/(2*r)**2
+scatt_cross_section = np.divide(scatt_flux,intensity)
+scatt_eff_meep = scatt_cross_section*-1/(np.pi*r**2)
+scatt_eff_theory = [ps.MieQ(n_sphere,1000/f,2*r*1000,asDict=True)['Qsca'] for f in freqs]
+
+if mp.am_master():
+    plt.figure(dpi=150)
+    plt.loglog(2*np.pi*r*np.asarray(freqs),scatt_eff_meep,'bo-',label='Meep')
+    plt.loglog(2*np.pi*r*np.asarray(freqs),scatt_eff_theory,'ro-',label='theory')
+    plt.grid(True,which="both",ls="-")
+    plt.xlabel('(sphere circumference)/wavelength, 2πr/λ')
+    plt.ylabel('scattering efficiency, σ/πr$^{2}$')
+    plt.legend(loc='upper right')
+    plt.title('Mie Scattering of a Lossless Dielectric Sphere')
+    plt.tight_layout()
+    plt.savefig("mie_scattering.png")
+```
+
+The incident intensity (`intensity`) is the flux in one of the six monitor planes (the one closest to and facing the planewave source propagating in the $x$ direction) divided by its area. This is why the six sides of the flux box are defined separately. (Otherwise, the entire box could have been defined as a single flux object with different weights ±1 for each side.) The scattered power is multiplied by -1 since it is the *outgoing* power (a positive quantity) rather than the incoming power as defined by the orientation of the flux box. Note that because of the linear $E_z$ polarization of the source, the flux through the $y$ and $z$ planes will *not* be the same. A circularly-polarized source would have produced equal flux in these two monitor planes. The runtime of the scattering run is chosen to be sufficiently long to ensure that the Fourier-transformed fields have [converged](../FAQ.md#checking-convergence).
+
+Results are shown below. Overall, the Meep results agree well with the analytic theory.
+
+<center>![](../images/mie_scattering.png)</center>
+
+Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section ($\sigma_{abs}$) to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load_minus_flux_data` calls. The extinction cross section ($\sigma_{ext}$) is simply the sum of the scattering and absorption cross sections: $\sigma_{scat}+\sigma_{abs}$.
+
+### Differential/Radar Cross Section
+
+As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-dielectric-sphere) which involved computing the *scattering* cross section ($\sigma_{scat}$), we will compute the *differential* cross section (DCS, $\sigma_{diff}$) which is proportional to the [radar cross section](https://en.wikipedia.org/wiki/Radar_cross-section). Computing $\sigma_{diff}$ in a given direction involves three steps: (1) solve for the [near fields](../Python_User_Interface.md#near-to-far-field-spectra) on a closed box surrounding the object, (2) from the near fields, compute the far fields at a single point a large distance away (i.e., $R$ ≫  object diameter), and (3) calculate the Poynting flux of the far fields in the outward direction: $F = \hat{r}\cdot\Re[E^* \times H]$. The differential cross section in that direction is $R^2F$ divided by the incident intensity. The radar cross section (RCS) is simply $\sigma_{diff}$ in the "backwards" direction (i.e., backscattering) multiplied by 4π.
+
+The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
+
+<center>
+
+$$ \sigma_{scatt} = \int_0^{2\pi} d\phi \int_0^{\pi} \sigma_{diff}(\phi,\theta)\sin(\theta)d\theta $$
+
+</center>
+
+(In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of 4π.)
+
+In this demonstration, we will verify this expression for the lossless dielectric sphere at a single wavelength by comparing with the analytic theory via PyMieScatt.
+
+The simulation script is in [examples/differential_cross_section.py](https://github.com/NanoComp/meep/blob/master/python/examples/differential_cross_section.py). The notebook is [examples/differential_cross_section.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/differential_cross_section.ipynb).
+
+```py
+import meep as mp
+import numpy as np
+import matplotlib.pyplot as plt
+import PyMieScatt as ps
+
+r = 1.0  # radius of sphere
+
+frq_cen = 1.0
+
+resolution = 20 # pixels/um
+
+dpml = 0.5
+dair = 1.5 # at least 0.5/frq_cen padding between source and near-field monitor
+
+pml_layers = [mp.PML(thickness=dpml)]
+
+s = 2*(dpml+dair+r)
+cell_size = mp.Vector3(s,s,s)
+
+# circularly-polarized source with propagation axis along x
+# is_integrated=True necessary for any planewave source extending into PML
+sources = [mp.Source(mp.GaussianSource(frq_cen,fwidth=0.2*frq_cen,is_integrated=True),
+                     center=mp.Vector3(-0.5*s+dpml),
+                     size=mp.Vector3(0,s,s),
+                     component=mp.Ez),
+           mp.Source(mp.GaussianSource(frq_cen,fwidth=0.2*frq_cen,is_integrated=True),
+                     center=mp.Vector3(-0.5*s+dpml),
+                     size=mp.Vector3(0,s,s),
+                     component=mp.Ey,
+                     amplitude=1j)]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3())
+
+box_flux = sim.add_flux(frq_cen, 0, 1,
+                        mp.FluxRegion(center=mp.Vector3(x=-2*r),size=mp.Vector3(0,4*r,4*r)))
+
+nearfield_box = sim.add_near2far(frq_cen, 0, 1,
+                                 mp.Near2FarRegion(center=mp.Vector3(x=-2*r),size=mp.Vector3(0,4*r,4*r),weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(x=+2*r),size=mp.Vector3(0,4*r,4*r),weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(y=-2*r),size=mp.Vector3(4*r,0,4*r),weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(y=+2*r),size=mp.Vector3(4*r,0,4*r),weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(z=-2*r),size=mp.Vector3(4*r,4*r,0),weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(z=+2*r),size=mp.Vector3(4*r,4*r,0),weight=-1))
+
+sim.run(until_after_sources=10)
+
+input_flux = mp.get_fluxes(box_flux)[0]
+nearfield_box_data = sim.get_near2far_data(nearfield_box)
+
+sim.reset_meep()
+
+n_sphere = 2.0
+geometry = [mp.Sphere(material=mp.Medium(index=n_sphere),
+                      center=mp.Vector3(),
+                      radius=r)]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3(),
+                    geometry=geometry)
+
+nearfield_box = sim.add_near2far(frq_cen, 0, 1,
+                                 mp.Near2FarRegion(center=mp.Vector3(x=-2*r),size=mp.Vector3(0,4*r,4*r),weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(x=+2*r),size=mp.Vector3(0,4*r,4*r),weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(y=-2*r),size=mp.Vector3(4*r,0,4*r),weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(y=+2*r),size=mp.Vector3(4*r,0,4*r),weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(z=-2*r),size=mp.Vector3(4*r,4*r,0),weight=+1),
+                                 mp.Near2FarRegion(center=mp.Vector3(z=+2*r),size=mp.Vector3(4*r,4*r,0),weight=-1))
+
+sim.load_minus_near2far_data(nearfield_box, nearfield_box_data)
+
+sim.run(until_after_sources=100)
+
+npts = 100     # number of points in [0,pi) range of polar angles to sample far fields along semi-circle
+angles = np.pi/npts*np.arange(npts)
+
+ff_r = 10000*r # radius of far-field semi-circle
+
+E = np.zeros((npts,3),dtype=np.complex128)
+H = np.zeros((npts,3),dtype=np.complex128)
+for n in range(npts):
+    ff = sim.get_farfield(nearfield_box, ff_r*mp.Vector3(np.cos(angles[n]),0,np.sin(angles[n])))
+    E[n,:] = [np.conj(ff[j]) for j in range(3)]
+    H[n,:] = [ff[j+3] for j in range(3)]
+
+# compute Poynting flux Pr in the radial direction.  At large r, 
+# all of the flux is radial so we can simply compute the magnitude of the Poynting vector.
+Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
+Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
+Pz = np.real(np.multiply(E[:,0],H[:,1])-np.multiply(E[:,1],H[:,0]))
+Pr = np.sqrt(np.square(Px)+np.square(Py)+np.square(Pz))
+
+intensity = input_flux/(4*r)**2
+diff_cross_section = ff_r**2 * Pr / intensity
+scatt_cross_section_meep = 2*np.pi * np.sum(diff_cross_section * np.sin(angles)) * np.pi/npts # trapezoidal rule integration
+scatt_cross_section_theory = ps.MieQ(n_sphere,1000/frq_cen,2*r*1000,asDict=True,asCrossSection=True)['Csca']*1e-6 # units of um^2
+
+if mp.am_master():
+    print("scatt:, {:.16f} (meep), {:.16f} (theory)".format(scatt_cross_section_meep,scatt_cross_section_theory))
+```
+
+The script is similar to the previous Mie scattering example with the main difference being the replacement of the `add_flux` with `add_near2far` objects. Instead of a linearly-polarized planewave, the source is circularly-polarized so that $\sigma_{diff}$ is invariant with the rotation angle $\phi$ around the axis of the incident direction (i.e., $x$). This way, the far fields need only be sampled with the polar angle $\theta$. A circularly-polarized planewave can be generated by overlapping two linearly-polarized planewaves ($E_y$ and $E_z$) which are 90° out of phase via specifying `amplitude=1j` for one of the two sources. Note, however, that there is no need to use complex fields (by specifying `force_complex_fields=True` in the `Simulation` object) which would double the floating-point memory consumption since only the real part of the source amplitude is used by default. The circularly-polarized source breaks the mirror symmetry which increases the size of the simulation. The size of the near-field monitor box surrounding the sphere is doubled so that it lies *entirely within* the homogeneous air region (a requirement of the `near2far` feature). After the near fields have been obtained for λ = 1 μm, the far fields are computed for 100 points along a semi-circle with radius 10,000X that of the dielectric sphere. (Note: any such large radius would give the same $\sigma_{scat}$ to within discretization error). Finally, the scattered cross section is computed by numerically integrating the expression from above using the radial Poynting flux values.
+
+The Meep results agree well with the analytic theory.
+
+For `resolution = 20`, the error between the simulated and analytic result is 2.2%.
+```
+scatt:, 8.1554468215885674 (meep), 8.3429545590438750 (theory)
+```
+
+For `resolution = 25`, the error decreases (as expected) to 1.5%.
+```
+scatt:, 8.2215435272741395 (meep), 8.3429545590438750 (theory)
+```
+
 Modes of a Ring Resonator
 -------------------------
 
-As described in [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. We will show how this works for a ring resonator, which is simply a waveguide bent into a circle. This script can be also found in [examples/ring.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring.py); the notebook is [examples/ring.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/ring.ipynb). In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using cylindrical coordinates, but for illustration here we'll just use an ordinary 2d simulation.
+As described in [Introduction/Resonant Modes](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some cavity structure. You might want to read that again to recall the basic simulation strategy. How this works is shown in this example for a ring resonator, which is simply a waveguide bent into a circle. In fact, since this structure has cylindrical symmetry, we can simulate it much more efficiently by using [cylindrical coordinates](Cylindrical_Coordinates.md#modes-of-a-ring-resonator), but this demonstration involves an ordinary 2d simulation.
 
-As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
+The simulation script is in [examples/ring.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring.py). The notebook is [examples/ring.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/ring.ipynb).
+
+As before, some parameters are defined to describe the geometry, so that the structure can be easily changed:
 
 ```py
 n = 3.4                 # index of waveguide
@@ -648,7 +931,7 @@ df = 0.1                 # pulse frequency width
 src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r+0.1))
 ```
 
-Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal processing on the fields at some point with [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) to identify the frequencies and decay rates of the modes that were excited:
+Finally, we are ready to run the simulation. The basic idea is to run until the sources are finished, and then to run for some additional period of time. In that additional period, we'll perform some signal processing on the fields at some point in the cell with [Harminv](../Python_User_Interface.md#harminv) to identify the frequencies and decay rates of the modes that were excited:
 
 ```py
 sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
@@ -723,6 +1006,8 @@ harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.1855
 
 which differs by about 10<sup>-6</sup> from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in ω gives a larger relative error in the small imaginary frequency.
 
+For a demonstration of how to compute the gradient of the resonant frequency with respect to the ring radius, see [Tutorial/Cylindrical Coordinates/Sensitivity Analysis via Perturbation Theory](Cylindrical_Coordinates.md#sensitivity-analysis-via-perturbation-theory).
+
 ### Exploiting Symmetry
 
 In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves both the structure and the sources, we can exploit this mirror symmetry to speed up the computation. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the script is the same except that we specify an additional object for the `Simulation` class:
@@ -735,14 +1020,14 @@ This tells Meep to exploit a mirror-symmetry plane through the origin perpendicu
 
 Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast.
 
-In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface](../Python_User_Interface.md#symmetry) for more symmetry possibilities.
+In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See [User Interface/Symmetry](../Python_User_Interface.md#symmetry) for more symmetry possibilities.
 
-In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Cylindrical Coordinates/Modes of a Ring Resonator](Cylindrical_Coordinates.md#modes-of-a-ring-resonator) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 Visualizing 3d Structures
 -------------------------
 
-The previous examples were based on a 1d or 2d cell in which the structure and fields can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface.md#prism) with index 3.5 perforated by a [conical](../Python_User_Interface.md#cone) hole. There are no other simulation parameters specified. The permittivity data is visualized using an isosurface plot via the [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d) module. A snapshot of this plot is shown below. For visualization of the vector fields in 3d, you can use the [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d) module.
+The previous examples were based on a 1d or 2d cell in which the structure and fields can be visualized using the plotting routines in Matplotlib. In order to visualize 3d structures, you can use [Mayavi](https://docs.enthought.com/mayavi/mayavi/). The following example involves a hexagonal [prism](../Python_User_Interface.md#prism) with index 3.5 perforated by a [conical](../Python_User_Interface.md#cone) hole. There are no other simulation parameters specified. The permittivity data is visualized using an isosurface plot via the [contour3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.contour3d) module. (This functionality is automated by the [`plot3D`](../Python_User_Interface.md#data-visualization) routine.) A snapshot of this plot is shown below. For visualization of the vector fields in 3d, you can use the [quiver3d](http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html#mayavi.mlab.quiver3d) module.
 
 ```py
 import meep as mp
@@ -779,4 +1064,4 @@ mlab.show()
 ![](../images/prism_epsilon.png)
 </center>
 
-Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [output_epsilon](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
+Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [`output_epsilon`](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.

@@ -2,7 +2,7 @@
 # Near to Far Field Spectra
 ---
 
-We demonstrate Meep's [near-to-far-field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature using three different examples. There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, we run the simulation using a pulsed source (or possibly, the frequency-domain solver) to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields to an HDF5 file.
+The [near-to-far field transformation](../Scheme_User_Interface.md#near-to-far-field-spectra) feature is demonstrated using four different examples. There are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Scheme_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the far fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
@@ -50,16 +50,16 @@ The simulation script is in [examples/antenna-radiation.ctl](https://github.com/
 
 (define nearfield-box
   (add-near2far fcen 0 1
-		(make near2far-region (center 0 (* 0.5 sxy)) (size sxy 0))
+		(make near2far-region (center 0 (* +0.5 sxy)) (size sxy 0) (weight +1))
 		(make near2far-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-		(make near2far-region (center (* 0.5 sxy) 0) (size 0 sxy))
+		(make near2far-region (center (* +0.5 sxy) 0) (size 0 sxy) (weight +1))
 		(make near2far-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (define flux-box
   (add-flux fcen 0 1
-	    (make flux-region (center 0 (* 0.5 sxy)) (size sxy 0))
+	    (make flux-region (center 0 (* +0.5 sxy)) (size sxy 0) (weight +1))
 	    (make flux-region (center 0 (* -0.5 sxy)) (size sxy 0) (weight -1))
-	    (make flux-region (center (* 0.5 sxy) 0) (size 0 sxy))
+	    (make flux-region (center (* +0.5 sxy) 0) (size 0 sxy) (weight +1))
 	    (make flux-region (center (* -0.5 sxy) 0) (size 0 sxy) (weight -1))))
 
 (run-sources+ (stop-when-fields-decayed 50 src-cmpt (vector3 0 0) 1e-8))
@@ -144,7 +144,7 @@ set(gca, 'xtick', [0 0.5 1.0]);
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
 
-This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an E<sub>z</sub>-polarized planewave at normal incidence.
+This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition/Phase Map of a Subwavelength Binary Grating](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an E<sub>z</sub>-polarized planewave at normal incidence.
 
 There are two simulation scripts: [examples/metasurface_lens_phasemap.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/metasurface_lens_phasemap.ctl) and [examples/metasurface_lens_farfield.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/metasurface_lens_farfield.ctl).
 
@@ -301,7 +301,7 @@ The first script takes three geometric input arguments (periodicity, height, and
 
 (run-sources+ 500)
 
-(output-farfields n2f-obj (string-append "numcells-" (number->string num-cells)) (volume (center focal-length 0 0) (size spot-length 0 0)) ff-res)
+(output-farfields n2f-obj (string-append "numcells-" (number->string num-cells)) (volume (center (+ (* -0.5 sx) dpml dsub gh focal-length) 0 0) (size spot-length 0 0)) ff-res)
 ```
 
 Using Octave/Matlab, in the first of two parts of the calculation, a phasemap of the binary-grating unit cell is generated based on varying the duty cycle from 0.1 to 0.9.
@@ -402,7 +402,7 @@ The far-field energy-density profile is shown below for the three lens designs. 
 Diffraction Spectrum of a Finite Binary Grating
 -----------------------------------------------
 
-In this example, we compute the diffraction spectrum of a binary phase [grating](https://en.wikipedia.org/wiki/Diffraction_grating) with finite length. To compute the diffraction spectrum of the infinite periodic structure requires [mode decomposition](../Mode_Decomposition.md); for a demonstration, see [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) which also describes the grating geometry used in this example (i.e., periodicity of 10 μm, height of 0.5 μm, duty cycle of 0.5, and index 1.5 in air). Note that an infinite periodic structure actually has *no* spatial separation of the diffracted orders; they are all present at every far-field point. The focus of this tutorial is to demonstrate `add-near2far`'s support for periodic boundaries.
+In this example, we compute the diffraction spectrum of a binary phase [grating](https://en.wikipedia.org/wiki/Diffraction_grating) with finite length. To compute the diffraction spectrum of the infinite periodic structure requires [mode decomposition](../Mode_Decomposition.md); for a demonstration, see [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) which also describes the grating geometry used in this example (i.e., periodicity of 10 μm, height of 0.5 μm, duty cycle of 0.5, and index 1.5 in air). Note that an infinite periodic structure actually has *no* spatial separation of the diffracted orders; they are all present at every far-field point. The focus of this tutorial is to demonstrate `add-near2far`'s support for periodic boundaries.
 
 The simulation script is in [examples/binary_grating_n2f.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/binary_grating_n2f.ctl).
 
@@ -501,8 +501,8 @@ Modeling a finite grating requires specifying the `nperiods` parameter of `add-n
 (set! pml-layers (list (make pml (thickness dpml))))
 
 (set! sources (list (make source
-          (src (make gaussian-src (frequency fcen) (fwidth df)))
-          (component Ez) (center src-pt) (size 0 (- sy (* 2 dpml))))))
+          (src (make gaussian-src (frequency fcen) (fwidth df) (is-integrated? true)))
+          (component Ez) (center src-pt) (size 0 sy))))
 
 (set! geometry (list (make block (material glass) (size (+ dpml dsub) infinity infinity) (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub)))))))
 
@@ -584,9 +584,177 @@ eval(sprintf("title(\"f.-f. spectra @ %0.1f um\")",wvl_slice));
 ![](../images/grating_diffraction_spectra_n2f.png)
 </center>
 
-For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with finite angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which, along with the diffraction efficiency, can be computed analytically using scalar theory as described in [Tutorials/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). As an additional validation of the simulation results, the ratio of any two diffraction peaks p<sub>i</sub></sub>/p<sub>j</sub> (i,j = 1,3,5,...) is consistent with that of the diffraction efficiencies: j<sup>2</sup>/i<sup>2</sup>.
+For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with finite angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which, along with the diffraction efficiency, can be computed analytically using scalar theory as described in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). As an additional validation of the simulation results, the ratio of any two diffraction peaks p<sub>a</sub>/p<sub>b</sub> (a,b = 1,3,5,...) is consistent with that of its diffraction efficiencies: b<sup>2</sup>/a<sup>2</sup>.
 
-Finally, we verify that the error in `add-near2far` &mdash; defined as the L<sub>2</sub>-norm of the difference of the two far-field datasets from the unit-cell and super-cell calculations normalized by `nperiods` &mdash; is O(1/`nperiods`) by comparing results for three values of `nperiods`: 5, 10, and 20. The error values, which are displayed in the output in the line prefixed by `error:`, are: `0.0001195599054639075`, `5.981324591508146e-05`, and `2.989829913961854e-05`. The pairwise ratios of these errors is nearly 2 as expected (i.e., doubling `nperiods` results in a halving of the error).
+We verify that the error in `add-near2far` &mdash; defined as the L<sub>2</sub>-norm of the difference of the two far-field datasets from the unit- and super-cell calculations normalized by `nperiods` &mdash; is O(1/`nperiods`) by comparing results for three values of `nperiods`: 5, 10, and 20. The error values, which are displayed in the output in the line prefixed by `error:`, are: `0.0001195599054639075`, `5.981324591508146e-05`, and `2.989829913961854e-05`. The pairwise ratios of these errors is nearly 2 as expected (i.e., doubling `nperiods` results in halving the error).
+
+For a single process, the far-field calculation in both runs takes roughly the same amount of time. The wall-clock time is indicated by the `getting farfields` category of the `Field time usage` statistics displayed as part of the output after time stepping is complete. Time-stepping a supercell, however, which for `nperiods=20` is more than 41 times larger than the unit cell (because of the PML termination) results in a total wall-clock time that is more than 40% larger. The slowdown is also due to the requirement of computing 41 times as many Fourier-transformed near fields. Thus, in the case of the unit-cell simulation, the reduced accuracy is a tradeoff for shorter runtime and less storage. In this example which involves multiple output wavelengths, the time for the far-field calculation can be reduced further on a single, shared-memory, multi-core machine via [multithreading](https://en.wikipedia.org/wiki/Thread_(computing)#Multithreading) by compiling Meep with OpenMP and specifying the environment variable `OMP_NUM_THREADS` to be an integer greater than one prior to execution.
+
+Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the (spatial) Fourier transform of the scattered fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the Fourier-transformed fields at a given frequency ω from the two runs to obtain the scattered fields s(y). The Fourier transform of the scattered fields is then computed in post processing: a(k<sub>y</sub>) = ∫ s(y) exp(ik<sub>y</sub>y) dy, where |a(k<sub>y</sub>)|² is the amplitude of the corresponding Fourier component. For a grating with periodicity Λ, we should expect to see peaks in the diffraction spectra at k<sub>y</sub>=2πm/Λ for m=0, ±1, ±2, ... The total number of diffraction orders is determined by the wavelength as described in [Tutorial/Mode Decomposition/Transmittance Spectra for Planewave at Normal Incidence](Mode_Decomposition.md#transmittance-spectra-for-planewave-at-normal-incidence).
+
+The simulation setup is shown in the schematic below. The binary grating has Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must [extend into the PML region in order to span the entire width of the cell](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml)). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
+
+<center>
+![](../images/finite_grating_schematic.png)
+</center>
+
+The simulation script is in [examples/finite_grating.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/finite_grating.ctl).
+
+```scm
+;; true:  plot the scattered fields in the air region adjacent to the grating
+;; false: plot the diffraction spectra based on a 1d cross section of the scattered fields
+(define-param field-profile? true)
+
+(set-param! resolution 50)                   ; pixels/μm
+
+(define-param dpml 1.0)                      ; PML thickness
+(define-param dsub 2.0)                      ; substrate thickness
+(define-param dpad 1.0)                      ; flat-surface padding
+(define-param dair                           ; air region thickness adjacent to grating
+  (if field-profile? 10 dpad))
+(define-param gp 1.0)                        ; grating periodicity
+(define-param gh 0.5)                        ; grating height
+(define-param gdc 0.5)                       ; grating duty cycle
+(define-param num-cells 5)                   ; number of grating unit cells
+
+(define-param wvl 0.5)                       ; center wavelength
+(define fcen (/ wvl))                        ; center frequency
+
+(set! k-point (vector3 0))
+
+(define glass (make medium (index 1.5)))
+
+(set! pml-layers (list (make pml (thickness dpml))))
+
+(set! symmetries (list (make mirror-sym (direction Y))))
+
+(define sx (+ dpml dsub gh dair dpml))
+(define sy (+ dpml dpad (* num-cells gp) dpad dpml))
+
+(set! geometry-lattice (make lattice (size sx sy no-size)))
+
+(define src-pt (vector3 (+ (* -0.5 sx) dpml (* 0.5 dsub))))
+(define pw-source (list (make source
+                          (src (make gaussian-src (frequency fcen) (fwidth (* 0.2 fcen)) (is-integrated? true)))
+                          (component Ez)
+                          (center src-pt)
+                          (size 0 sy))))
+(set! sources pw-source)
+
+(set! geometry (list (make block
+                       (material glass)
+                       (size (+ dpml dsub) infinity infinity)
+                       (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub)))))))
+
+(define mon-pt (vector3 (- (* 0.5 sx) dpml (* 0.5 dair))))
+(define flat-fields (add-dft-fields (list Ez) fcen fcen 1 (volume (center mon-pt) (size (if field-profile? dair 0) (- sy (* 2 dpml))))))
+
+(run-sources+ 100)
+
+(output-dft flat-fields "flat")
+
+(reset-meep)
+
+(set! pml-layers (list (make pml (thickness dpml))))
+
+(set! symmetries (list (make mirror-sym (direction Y))))
+
+(set! geometry-lattice (make lattice (size sx sy no-size)))
+
+(set! k-point (vector3 0))
+
+(set! sources pw-source)
+
+(set! geometry (list (make block
+                       (material glass)
+                       (size (+ dpml dsub) infinity infinity)
+                       (center (+ (* -0.5 sx) (* 0.5 (+ dpml dsub)))))))
+
+(set! geometry (append geometry
+                       (map (lambda (n)
+                              (make block
+                                (material glass)
+                                (size gh (* gdc gp) infinity)
+                                (center (+ (* -0.5 sx) dpml dsub (* 0.5 gh)) (+ (* -0.5 sy) dpml dpad (* (+ n 0.5) gp)) 0)))
+                            (arith-sequence 0 1 num-cells))))
+
+(define grating-fields (add-dft-fields (list Ez) fcen fcen 1 (volume (center mon-pt) (size (if field-profile? dair 0) (- sy (* 2 dpml))))))
+
+(run-sources+ 100)
+
+(output-dft grating-fields "grating")
+```
+
+Results from the two HDF5 files are plotted using Matlab/Octave and shown for two finite gratings with 5 and 20 periods.
+
+```matlab
+resolution = 50;
+dpml = 1.0;
+dsub = 2.0;
+dpad = 1.0;
+dair = 10;
+gp = 1.0;
+gh = 0.5;
+num_cells = 5;
+sx = dpml+dsub+gh+dair+dpml;
+sy = dpml+dpad+num_cells*gp+dpad+dpml;
+
+load "flat.h5";
+flat_dft = ez_0_r+1j*ez_0_i;
+load "grating.h5";
+grating_dft = ez_0_r+1j*ez_0_i;
+scattered_field = grating_dft-flat_dft;
+scattered_amplitude = abs(scattered_field).^2;
+
+field_profile = true;
+
+if field_profile
+   ### plot the scattered fields in the air region adjacent to the grating
+   Nx = size(scattered_amplitude,2);
+   Ny = size(scattered_amplitude,1);
+   x = linspace(0.5*sx-dpml-dair,0.5*sx-dpml,Nx);
+   y = linspace(-0.5*sy+dpml,0.5*sy-dpml,Ny);
+   pcolor(x,y,scattered_amplitude);
+   xlabel('x (um)');
+   ylabel('y (um)');
+   colormap("hot");
+   shading interp;
+   colorbar;
+   caxis([0 max(max(scattered_amplitude))]);
+   axis("equal","tight");
+else
+    ### plot diffraction spectra based on a 1d cross section of the scattered fields
+    Ny = length(scattered_amplitude);
+    y = linspace(-0.5*sy+dpml,0.5*sy-dpml,Ny);
+
+    subplot(2,1,1);
+    plot(y,scattered_amplitude,'bo-');
+    xlabel("y (um)");
+    ylabel("field amplitude");
+
+    FT_scattered_amplitude = fftshift(fft(scattered_field));
+    ky = [-Ny/2:(Ny/2-1)]*resolution/Ny;
+    subplot(2,1,2);
+    plot(ky,abs(FT_scattered_amplitude).^2,'ro-');
+    axis([-3 3]);
+    xlabel("wavevector k_y, 2π (um)^{-1}");
+    ylabel("Fourier transform");
+endif
+```
+
+<center>
+![](../images/finite_grating_nperiods5.png)
+</center>
+
+<center>
+![](../images/finite_grating_nperiods20.png)
+</center>
+
+The scattered field amplitude profile (the top figure in each of the two sets of results) shows that the fields decay to zero away from the grating (which is positioned at the left edge of the figure in the region indicated by the bright spots). The middle figure is the field amplitude along a 1d slice above the grating (marked by the dotted green line in the top figure). Note the decaying fields at the edges due to the flat-surface termination. The bottom figure is the Fourier transform of the fields from the 1d slice. As expected, there are only three diffraction orders present at k<sub>y</sub>=2πm/Λ for m=0, ±1, ±2. These peaks are becoming sharper as the number of grating periods increases.
+
+The sharpness of the peaks directly corresponds to how [collimated](https://en.wikipedia.org/wiki/Collimated_beam) the diffracted beams are, and in the limit of infinitely many periods the resulting delta-function peaks correspond to diffracted planewaves. (The squared amplitude of each peak is proportional to the power in the corresponding diffraction order.) One can also obtain the collimation of the beams more directly by using Meep's `near2far` feature to compute the far-field diffracted waves — this approach is more straightforward, but potentially much more expensive than looking at the Fourier transform of the near field, because one may need a large number of far-field points to resolve the full diffracted beams. In general, [there is a tradeoff in computational science](https://icerm.brown.edu/video_archive/?play=1626) between doing direct "numerical experiments" that are conceptually straightforward but often expensive, versus more indirect and tricky calculations that don't directly correspond to laboratory experiments but which can sometimes be vastly more efficient at extracting physical information.
+
+In 3d, the procedure is very similar, but a little more effort is required to disentangle the two polarizations relative to the plane of incidence [the (z,**k**) plane for each Fourier component **k**]. For propagation in the $z$ direction, you would Fourier transform both $E_x$ and $E_y$ of the scattered field as a function of **k** $= (k_x, k_y)$.  For each **k**, you decompose the corresponding **E** $= (E_x, E_y)$ into the amplitude parallel to **k** [which gives the *p* polarization amplitude if you multiply by sec(θ), where sin(θ)=|**k**|/(nω/c), n is the refractive index of the ambient medium, and ω is the angular frequency; θ is the outgoing angle, where θ=0 is normal] and perpendicular to **k** [which equals the *s* polarization amplitude].  Then square these amplitudes to get something proportional to power as above.  (Note that this analysis is the same even if the incident wave is at an oblique angle, although the **k** locations of the diffraction peaks will change.) Simulating large finite gratings is usually unnecessary since the accuracy improvements are negligible. For example, a 3d simulation of a finite grating with e.g. 100 periods by 100 periods which is computationally expensive would only provide a tiny correction of ~1% (on par with fabrication errors) compared to the infinite structure involving a single unit cell. A finite grating with a small number of periods (e.g., 5 or 10) exhibits weak diffractive effects and is therefore not considered a diffractive grating.
 
 Far-Field Profile of a Cavity
 -----------------------------

@@ -153,9 +153,9 @@ class Vector3(object):
 class Medium(object):
 
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(0j, 0j, 0j),
+                 epsilon_offdiag=Vector3(),
                  mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(0j, 0j, 0j),
+                 mu_offdiag=Vector3(),
                  E_susceptibilities=[],
                  H_susceptibilities=[],
                  E_chi2_diag=Vector3(),
@@ -163,7 +163,9 @@ class Medium(object):
                  H_chi2_diag=Vector3(),
                  H_chi3_diag=Vector3(),
                  D_conductivity_diag=Vector3(),
+                 D_conductivity_offdiag=Vector3(),
                  B_conductivity_diag=Vector3(),
+                 B_conductivity_offdiag=Vector3(),
                  epsilon=None,
                  index=None,
                  mu=None,
@@ -175,7 +177,7 @@ class Medium(object):
                  E_chi3=None,
                  H_chi2=None,
                  H_chi3=None,
-                 valid_freq_range=None):
+                 valid_freq_range=FreqRange(min=-mp.inf, max=mp.inf)):
 
         if epsilon:
             epsilon_diag = Vector3(epsilon, epsilon, epsilon)
@@ -200,18 +202,20 @@ class Medium(object):
         if H_chi3:
             H_chi3_diag = Vector3(H_chi3, H_chi3, H_chi3)
 
-        self.epsilon_diag = epsilon_diag
-        self.epsilon_offdiag = epsilon_offdiag
-        self.mu_diag = mu_diag
-        self.mu_offdiag = mu_offdiag
+        self.epsilon_diag = Vector3(*epsilon_diag)
+        self.epsilon_offdiag = Vector3(*epsilon_offdiag)
+        self.mu_diag = Vector3(*mu_diag)
+        self.mu_offdiag = Vector3(*mu_offdiag)
         self.E_susceptibilities = E_susceptibilities
         self.H_susceptibilities = H_susceptibilities
-        self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else E_chi2_diag
-        self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else E_chi3_diag
-        self.H_chi2_diag = H_chi2_diag
-        self.H_chi3_diag = H_chi3_diag
-        self.D_conductivity_diag = D_conductivity_diag
-        self.B_conductivity_diag = B_conductivity_diag
+        self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else Vector3(*E_chi2_diag)
+        self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else Vector3(*E_chi3_diag)
+        self.H_chi2_diag = Vector3(*H_chi2_diag)
+        self.H_chi3_diag = Vector3(*H_chi3_diag)
+        self.D_conductivity_diag = Vector3(*D_conductivity_diag)
+        self.D_conductivity_offdiag = Vector3(*D_conductivity_offdiag)
+        self.B_conductivity_diag = Vector3(*B_conductivity_diag)
+        self.B_conductivity_offdiag = Vector3(*D_conductivity_offdiag)
         self.valid_freq_range = valid_freq_range
 
     def transform(self, m):
@@ -235,17 +239,54 @@ class Medium(object):
         for s in self.H_susceptibilities:
             s.transform(m)
 
+    def rotate(self, axis, theta):
+        T = get_rotation_matrix(axis,theta)
+        self.transform(T)
+
+    def epsilon(self,freq):
+        return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
+
+    def mu(self,freq):
+        return self._get_epsmu(self.mu_diag, self.mu_offdiag, self.H_susceptibilities, self.B_conductivity_diag, self.B_conductivity_offdiag, freq)
+
+    def _get_epsmu(self, diag, offdiag, susceptibilities, conductivity_diag, conductivity_offdiag, freq):
+        # Clean the input
+        if np.isscalar(freq):
+            freqs = np.array(freq)[np.newaxis, np.newaxis, np.newaxis]
+        else:
+            freqs = np.squeeze(freq)
+            freqs = freqs[:, np.newaxis, np.newaxis]
+
+        # Check for values outside of allowed ranges
+        if np.min(np.squeeze(freqs)) < self.valid_freq_range.min:
+            raise ValueError('User specified frequency {} is below the Medium\'s limit, {}.'.format(np.min(np.squeeze(freqs)),self.valid_freq_range.min))
+        if np.max(np.squeeze(freqs)) > self.valid_freq_range.max:
+            raise ValueError('User specified frequency {} is above the Medium\'s limit, {}.'.format(np.max(np.squeeze(freqs)),self.valid_freq_range.max))
+
+        # Initialize with instantaneous dielectric tensor
+        epsmu = np.expand_dims(Matrix(diag=diag,offdiag=offdiag),axis=0)
+
+        # Iterate through susceptibilities
+        for i_sus in range(len(susceptibilities)):
+            epsmu = epsmu + susceptibilities[i_sus].eval_susceptibility(freqs)
+
+        # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
+        conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
+        if np.count_nonzero(conductivity) > 0:
+            epsmu = (1 + 1j/freqs * conductivity) * epsmu
+
+        # Convert list matrix to 3D numpy array size [freqs,3,3]
+        return np.squeeze(epsmu)
+
 
 class Susceptibility(object):
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
-        self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
-        self.sigma_offdiag = sigma_offdiag
+        self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else Vector3(*sigma_diag)
+        self.sigma_offdiag = Vector3(*sigma_offdiag)
 
     def transform(self, m):
-        sigma = Matrix(mp.Vector3(self.sigma_diag.x, self.sigma_offdiag.x, self.sigma_offdiag.y),
-                       mp.Vector3(self.sigma_offdiag.x, self.sigma_diag.y, self.sigma_offdiag.z),
-                       mp.Vector3(self.sigma_offdiag.y, self.sigma_offdiag.z, self.sigma_diag.z))
+        sigma = Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag)
         new_sigma = (m * sigma * m.transpose()) / abs(m.determinant())
         self.sigma_diag = mp.Vector3(new_sigma.c1.x, new_sigma.c2.y, new_sigma.c3.z)
         self.sigma_offdiag = mp.Vector3(new_sigma.c2.x, new_sigma.c3.x, new_sigma.c3.y)
@@ -258,6 +299,13 @@ class LorentzianSusceptibility(Susceptibility):
         self.frequency = frequency
         self.gamma = gamma
 
+    def eval_susceptibility(self,freq):
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+        if self.gamma == 0:
+            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq) * sigma
+        else:
+            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
+
 
 class DrudeSusceptibility(Susceptibility):
 
@@ -265,6 +313,13 @@ class DrudeSusceptibility(Susceptibility):
         super(DrudeSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
+
+    def eval_susceptibility(self,freq):
+        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+        if self.gamma == 0:
+            return -self.frequency*self.frequency / (freq*(freq)) * sigma
+        else:
+            return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
 
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
@@ -341,24 +396,24 @@ class GeometricObject(object):
             material = epsilon_func
 
         self.material = material
-        self.center = center
+        self.center = Vector3(*center)
 
     def __contains__(self, point):
-        return mp.is_point_in_object(point, self)
+        return mp.is_point_in_object(Vector3(*point), self)
 
     def __add__(self, vec):
-        return self.shift(vec)
+        return self.shift(Vector3(*vec))
 
     def __radd__(self, vec):
-        return self.shift(vec)
+        return self.shift(Vector3(*vec))
 
     def __iadd__(self, vec):
-        self.center += vec
+        self.center += Vector3(*vec)
         return self
 
     def shift(self, vec):
         c = deepcopy(self)
-        c.center += vec
+        c.center += Vector3(*vec)
         return c
 
     def info(self, indent_by=0):
@@ -383,7 +438,7 @@ class Sphere(GeometricObject):
 class Cylinder(GeometricObject):
 
     def __init__(self, radius, axis=Vector3(0, 0, 1), height=1e20, **kwargs):
-        self.axis = axis
+        self.axis = Vector3(*axis)
         self.radius = float(radius)
         self.height = float(height)
         super(Cylinder, self).__init__(**kwargs)
@@ -409,7 +464,7 @@ class Wedge(Cylinder):
 
     def __init__(self, radius, wedge_angle=2 * math.pi, wedge_start=Vector3(1, 0, 0), **kwargs):
         self.wedge_angle = wedge_angle
-        self.wedge_start = wedge_start
+        self.wedge_start = Vector3(*wedge_start)
         super(Wedge, self).__init__(radius, **kwargs)
 
 
@@ -423,10 +478,10 @@ class Cone(Cylinder):
 class Block(GeometricObject):
 
     def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0), e3=Vector3(0, 0, 1), **kwargs):
-        self.size = size
-        self.e1 = e1
-        self.e2 = e2
-        self.e3 = e3
+        self.size = Vector3(*size)
+        self.e1 = Vector3(*e1)
+        self.e2 = Vector3(*e2)
+        self.e3 = Vector3(*e3)
         super(Block, self).__init__(**kwargs)
 
 
@@ -438,10 +493,11 @@ class Ellipsoid(Block):
 
 class Prism(GeometricObject):
 
-    def __init__(self, vertices, height, axis=Vector3(z=1), center=None, **kwargs):
+    def __init__(self, vertices, height, axis=Vector3(z=1), center=None, sidewall_angle=0, **kwargs):
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
         original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
         if center is not None and len(vertices):
+            center = Vector3(*center)
             # translate vertices to center prism at requested center
             shift = center - original_center
             vertices = list(map(lambda v: v + shift, vertices))
@@ -450,16 +506,21 @@ class Prism(GeometricObject):
         self.vertices = vertices
         self.height = height
         self.axis = axis
+        self.sidewall_angle = sidewall_angle
 
         super(Prism, self).__init__(center=center, **kwargs)
 
 
 class Matrix(object):
 
-    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
-        self.c1 = c1
-        self.c2 = c2
-        self.c3 = c3
+    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3(), diag=Vector3(), offdiag=Vector3()):
+        self.c1 = Vector3(*c1)
+        self.c2 = Vector3(*c2)
+        self.c3 = Vector3(*c3)
+        if c1 == c2 == c3 == Vector3():
+            self.c1 = Vector3(diag.x,offdiag.x,offdiag.y)
+            self.c2 = Vector3(np.conj(offdiag.x),diag.y,offdiag.z)
+            self.c3 = Vector3(np.conj(offdiag.y),np.conj(offdiag.z),diag.z)
 
     def __getitem__(self, i):
         return self.row(i)
@@ -519,7 +580,7 @@ class Matrix(object):
         return Matrix(c1, c2, c3)
 
     def mv_mult(self, v):
-        return Vector3(*[self.row(i).dot(v) for i in range(3)])
+        return Vector3(*[self.row(i).dot(Vector3(*v)) for i in range(3)])
 
     def scale(self, s):
         return Matrix(self.c1.scale(s), self.c2.scale(s), self.c3.scale(s))
@@ -578,11 +639,11 @@ class Lattice(object):
                  basis2=Vector3(0, 1, 0),
                  basis3=Vector3(0, 0, 1)):
 
-        self.size = size
-        self.basis_size = basis_size
-        self.basis1 = basis1
-        self.basis2 = basis2
-        self.basis3 = basis3
+        self.size = Vector3(*size)
+        self.basis_size = Vector3(*basis_size)
+        self.basis1 = Vector3(*basis1)
+        self.basis2 = Vector3(*basis2)
+        self.basis3 = Vector3(*basis3)
 
     @property
     def basis1(self):
@@ -683,6 +744,7 @@ def reciprocal_to_lattice(x, lat):
 
 def geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go):
 
+    shift_vector = Vector3(*shift_vector)
     def _dup(min_multiple, lst):
         if min_multiple <= max_multiple:
             shifted = go.shift(shift_vector.scale(min_multiple))
@@ -695,6 +757,7 @@ def geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go):
 
 def geometric_objects_duplicates(shift_vector, min_multiple, max_multiple, go_list):
     dups = []
+    shift_vector = Vector3(*shift_vector)
     for go in go_list:
         dups += geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go)
     return dups

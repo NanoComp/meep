@@ -20,12 +20,11 @@ geometry = [mp.Cylinder(radius=r+w, material=mp.Medium(index=n)),
             mp.Cylinder(radius=r)]
 
 fcen = 0.118
-df = 0.08
 
-src = [mp.Source(mp.ContinuousSource(fcen,fwidth=df),
+src = [mp.Source(mp.ContinuousSource(fcen),
                  component=mp.Ez,
                  center=mp.Vector3(r+0.1)),
-       mp.Source(mp.ContinuousSource(fcen,fwidth=df),
+       mp.Source(mp.ContinuousSource(fcen),
                  component=mp.Ez,
                  center=mp.Vector3(-(r+0.1)),
                  amplitude=-1)]
@@ -76,6 +75,7 @@ else:
 
 sim.reset_meep()
 
+df = 0.08
 src = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                  component=mp.Ez,
                  center=mp.Vector3(r+0.1)),
@@ -91,7 +91,7 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     symmetries=symmetries,
                     boundary_layers=pml_layers)
 
-dft_obj = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, where=nonpml_vol)
+dft_obj = sim.add_dft_fields([mp.Ez], fcen, 0, 1, where=nonpml_vol)
 
 sim.run(until_after_sources=100)
 

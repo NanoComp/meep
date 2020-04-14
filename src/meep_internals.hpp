@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -77,8 +77,6 @@ const int num_bandpts = 32;
 
 symmetry r_to_minus_r_symmetry(int m);
 
-#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
-
 // functions in step_generic.cpp:
 
 void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2, ptrdiff_t s1,
@@ -152,5 +150,13 @@ void step_beta_stride1(realnum *f, component c, const realnum *g, const grid_vol
     else                                                                                           \
       step_beta(f, c, g, gv, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd);              \
   } while (0)
+
+// analytical Green's functions from near2far.cpp, which we might want to expose someday
+void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+              const vec &x0, component c0, std::complex<double> f0, double m, double tol);
 
 } // namespace meep

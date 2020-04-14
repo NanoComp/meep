@@ -5,18 +5,18 @@
 Authors
 -------
 
-Meep originated as part of graduate research at [MIT](https://en.wikipedia.org/wiki/Massachusetts_Institute_of_Technology) with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep). [Christopher Hogan](https://github.com/ChristopherHogan) and [M.T. Homer Reid](http://homerreid.dyndns.org/) have lead the development of the [Python interface](Python_User_Interface.md), [mode-decomposition feature](Python_Tutorials/Mode_Decomposition.md), and [GDSII import routines](Python_Tutorials/GDSII_Import.md). M.T. Homer Reid developed the [adjoint solver](Python_Tutorials/AdjointSolver.md). [Alex Cerjan](http://www.alexcerjan.com/) assisted with adding support for saturable absorption via [multilevel atomic gain media](Materials.md#saturable-gain-and-absorption).
+Meep originated as part of graduate research at [MIT](https://en.wikipedia.org/wiki/Massachusetts_Institute_of_Technology) with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep). [Christopher Hogan](https://github.com/ChristopherHogan) and [M.T. Homer Reid](http://homerreid.dyndns.org/) lead the development of the [Python interface](Python_User_Interface.md), [mode-decomposition feature](Python_Tutorials/Mode_Decomposition.md), and [GDSII import routines](Python_Tutorials/GDSII_Import.md). M.T. Homer Reid developed the [adjoint solver](Python_Tutorials/AdjointSolver.md). [Alex Cerjan](http://www.alexcerjan.com/) assisted with adding support for saturable absorption via [multilevel atomic gain media](Materials.md#saturable-gain-and-absorption). [Alec Hammond](https://github.com/smartalecH/) developed the [visualization module](Python_User_Interface.md#data-visualization). [Yidong Chong](http://www1.spms.ntu.edu.sg/~ydchong/bio.html) and Alex Cerjan added support for [gyrotropic media](Materials.md#gyrotropic-media).
 
 Referencing
 -----------
 
 We request that you cite the following technical reference in any work for which you used Meep:
 
-- A.F. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)).
+- A. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)).
 
 If you want a one-sentence description of the algorithm for inclusion in a publication, we recommend something like:
 
-- Simulations were performed with the finite-difference time-domain (FDTD) method [ref FDTD], using an open-source software package [ref Meep].
+- "Simulations were performed with the finite-difference time-domain (FDTD) method [ref FDTD], using an open-source software package [ref Meep]."
 
 General references on the FDTD method include, for example:
 

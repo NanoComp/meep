@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
+#include <ftw.h>
 
 #include "meep.hpp"
 
@@ -30,18 +31,9 @@ using namespace std;
 
 namespace meep {
 
-const char symlink_name[] = "latest_output";
-
 void structure::set_output_directory(const char *name) {
-  char buf[300];
-  outdir = name;
-  if (!quiet) master_printf("Using output directory %s/\n", name);
-  if (readlink(symlink_name, buf, 300) > 0) {
-    // Link already exists.
-    unlink(symlink_name);
-  }
-  symlink(name, symlink_name);
-  outdir = name;
+  outdir = name; /* fixme: make a copy */
+  if (verbosity > 0) master_printf("Using output directory %s/\n", name);
 }
 
 void fields::set_output_directory(const char *name) {
@@ -116,9 +108,8 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   char sourcename[buflen]; // Holds the "example.cpp" filename.
   snprintf(sourcename, buflen, "%s.cpp", stripped_name);
 
-  if (jobname != NULL) {
-    snprintf(basename, buflen, "%s", jobname);
-  } else {
+  if (jobname != NULL) { snprintf(basename, buflen, "%s", jobname); }
+  else {
     snprintf(basename, buflen, "%s", stripped_name);
   }
 
@@ -127,7 +118,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   {
     int i = 0;
     while (!is_ok_dir(outdirname)) {
-      if (!quiet) master_printf("Output directory %s already exists!\n", outdirname);
+      if (verbosity > 0) master_printf("Output directory %s already exists!\n", outdirname);
       snprintf(outdirname, buflen, "%s-out-%d", basename, i++);
     }
   }
@@ -138,8 +129,48 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   return outdirname;
 }
 
+/* similar to above, but creates a temporary directory in /tmp
+   (note that the caller should delete[] the return value, but
+    it's not a big deal if they forget and leak memory since
+    this function is not called many times in a typical run) */
+char *make_output_directory() {
+  char *outdirname = NULL; // set to tmpdir/meepXXXXXX
+  static const char meeptemplate[] = "/meepXXXXXX";
+  const char *tmpdir;
+
+  // standard name of Unix temporary directory, cribbed from libuv
+  if (NULL != (tmpdir = getenv("TMPDIR"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TMP"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TEMP"))) goto got_tmpdir;
+  if (NULL != (tmpdir = getenv("TEMPDIR"))) goto got_tmpdir;
+  tmpdir = "/tmp";
+got_tmpdir:
+
+  size_t len = strlen(tmpdir) + strlen(meeptemplate) + 1;
+  outdirname = new char[len];
+  strcat(strcpy(outdirname, tmpdir), meeptemplate);
+
+  if (am_master() && !mkdtemp(outdirname)) {
+      abort("failed to create temporary output directory \"%s\"", outdirname);
+  }
+  broadcast(0, outdirname, len);
+  return outdirname;
+}
+
 void trash_output_directory(const char *dirname) {
   if (am_master()) mkdir(dirname, 00777);
+}
+
+static int rmpath(const char *path, const struct stat *s, int t, struct FTW *ftw) {
+  (void) s; (void) t; (void) ftw; // unused
+  return remove(path);
+}
+
+// equivalent to rm -rf path
+void delete_directory(const char *path) {
+  all_wait(); // make sure all processes are done writing to this directory
+  if (am_master())
+    nftw(path, rmpath, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
 }
 
 } // namespace meep

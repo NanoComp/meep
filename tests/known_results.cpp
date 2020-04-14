@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -44,7 +44,8 @@ void compare(double b, double a, const char *n) {
   double thresh = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-5;
   if (fabs(a - b) > fabs(b) * thresh || b != b) {
     abort("Failed %s (%g instead of %g, relerr %0.2g)\n", n, a, b, fabs(a - b) / fabs(b));
-  } else {
+  }
+  else {
     master_printf("Passed %s\n", n);
   }
 }
@@ -149,9 +150,7 @@ double polariton_energy(const grid_volume &gv, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
-  const char *mydirname = "known_results-out";
-  trash_output_directory(mydirname);
+  verbosity = 0;
   master_printf("Testing with some known results...\n");
   const double a = 10.0;
 

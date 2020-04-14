@@ -104,7 +104,7 @@ class ModeSolver(object):
         self.k_points = k_points
         self.geometry = geometry
         self.geometry_lattice = geometry_lattice
-        self.geometry_center = geometry_center
+        self.geometry_center = mp.Vector3(*geometry_center)
         self.default_material = default_material
         self.random_fields = random_fields
         self.filename_prefix = filename_prefix
@@ -341,7 +341,9 @@ class ModeSolver(object):
         return np.reshape(arr, dims)
 
     def get_poynting(self, which_band):
-        e = self.get_efield(which_band, False).ravel()
+        e = self.get_efield(which_band, False)
+        dims = e.shape
+        e = e.ravel()
         h = self.get_hfield(which_band, False).ravel()
         # Reshape into rows of vector3s
         e = e.reshape((int(e.shape[0] / 3), 3))
@@ -361,7 +363,8 @@ class ModeSolver(object):
         self.mode_solver.set_curfield_cmplx(flat_res)
         self.mode_solver.set_curfield_type('v')
 
-        return MPBArray(res, self.get_lattice, self.current_k)
+        arr = np.reshape(res, dims)
+        return MPBArray(arr, self.get_lattice(), self.current_k)
 
     def get_epsilon(self):
         self.mode_solver.get_epsilon()
@@ -383,8 +386,8 @@ class ModeSolver(object):
     def get_hfield(self, which_band, bloch_phase=True):
         return self._get_field('h', which_band, bloch_phase)
 
-    def get_charge_density(self, which_band):
-        self.get_efield(which_band)
+    def get_charge_density(self, which_band, bloch_phase=True):
+        self.get_efield(which_band, bloch_phase)
         self.mode_solver.compute_field_divergence()
 
     def _get_field(self, f, band, bloch_phase):
@@ -756,7 +759,7 @@ class ModeSolver(object):
         return self.mode_solver.compute_field_energy()
 
     def compute_field_divergence(self):
-        mode_solver.compute_field_divergence()
+        return self.mode_solver.compute_field_divergence()
 
     def compute_energy_in_objects(self, objs):
         return self.mode_solver.compute_energy_in_objects(objs)
@@ -1040,7 +1043,7 @@ class ModeSolver(object):
             ks.append(mp.find_root_deriv(rootfun(b), tol, kmag_min, kmag_max, k0s[b - band_min]))
 
         if band_funcs:
-            for b, k in zip(range(band_max, band_max - nb, -1), reversed(ks)):
+            for b, k in zip(range(1, band_max +1), reversed(ks)):
                 self.num_bands = b
                 self.k_points = [korig + kdir1.scale(k)]
 

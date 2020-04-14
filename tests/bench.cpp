@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -269,7 +269,7 @@ bench bench_3d(const double xmax, const double ymax, const double zmax, double e
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   master_printf("Benchmarking with %d processor%s...\n", count_processors(),
                 count_processors() > 1 ? "s" : "");
 

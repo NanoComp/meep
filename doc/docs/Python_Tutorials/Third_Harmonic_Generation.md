@@ -2,7 +2,7 @@
 # Third Harmonic Generation
 ---
 
-In this example, we consider wave propagation through a simple 1d nonlinear medium with a non-zero Kerr susceptibility χ$^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency ω, and because of the nonlinearity we also get a signal at a frequency 3ω. See also [3rd-harm-1d.py](https://github.com/NanoComp/meep/blob/master/python/examples/3rd-harm-1d.py).
+In this example, we consider wave propagation through a simple 1d nonlinear medium with a non-zero [Kerr susceptibility χ$^{(3)}$](https://en.wikipedia.org/wiki/Kerr_effect). See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency ω, and because of the nonlinearity we also get a signal at a frequency 3ω. See also [3rd-harm-1d.py](https://github.com/NanoComp/meep/blob/master/python/examples/3rd-harm-1d.py).
 
 Since this is a 1d calculation, we could implement it via a 2d cell of `Vector3(S,0,0)`, specifying periodic boundary conditions in the $y$ direction. However, this is slightly inefficient since the $y$ periodic boundaries are implemented internally via extra "ghost pixels" in the $y$ direction. Instead, Meep has special support for 1d simulations in the $z$ direction. To use this, we must explicitly set `dimensions` to `1`, and in that case we can *only* use $E_x$ (and $D_x$) and $H_y$ field components. This involves no loss of generality because of the symmetry of the problem.
 

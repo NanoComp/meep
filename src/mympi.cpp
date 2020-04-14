@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -75,15 +75,14 @@ namespace meep {
 static MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
 
-bool quiet = false; // defined in meep.h
-void (*master_printf_callback)(const char *s) = NULL;
+int verbosity = 1; // defined in meep.h
 
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
   int major, minor;
   MPI_Get_version(&major, &minor);
-  if (!quiet)
+  if (verbosity > 0)
     master_printf("Using MPI version %d.%d, %d processes\n", major, minor, count_processors());
 #else
   UNUSED(argc);
@@ -99,7 +98,7 @@ initialize::initialize(int &argc, char **&argv) {
 }
 
 initialize::~initialize() {
-  if (!quiet) master_printf("\nElapsed run time = %g s\n", elapsed_time());
+  if (verbosity > 0) master_printf("\nElapsed run time = %g s\n", elapsed_time());
 #ifdef HAVE_MPI
   end_divide_parallel();
   MPI_Finalize();
@@ -121,14 +120,20 @@ double wall_time(void) {
 void abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  fprintf(stderr, "meep: ");
-  vfprintf(stderr, fmt, ap);
+  char *s;
+  vasprintf(&s, fmt, ap);
   va_end(ap);
-  if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
+  // Make a std::string to support older compilers (std::runtime_error(char *) was added in C++11)
+  std::string error_msg(s);
+  free(s);
 #ifdef HAVE_MPI
+  if (count_processors() == 1) { throw runtime_error("meep: " + error_msg); }
+  fprintf(stderr, "meep: %s", error_msg.c_str());
+  if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
   MPI_Abort(MPI_COMM_WORLD, 1);
+#else
+  throw runtime_error("meep: " + error_msg);
 #endif
-  exit(1);
 }
 
 void send(int from, int to, double *data, int size) {
@@ -431,7 +436,8 @@ complex<long double> sum_to_all(complex<long double> in) {
     complex<double> dout;
     dout = sum_to_all(complex<double>(double(in.real()), double(in.imag())));
     out = complex<long double>(dout.real(), dout.imag());
-  } else
+  }
+  else
     MPI_Allreduce(&in, &out, 2, MPI_LONG_DOUBLE, MPI_SUM, mycomm);
 #endif
   return out;
@@ -567,6 +573,14 @@ void fields::boundary_communications(field_type ft) {
 
 bool am_really_master() { return (my_global_rank() == 0); }
 
+static meep_printf_callback_func master_printf_callback = NULL;
+
+meep_printf_callback_func set_meep_printf_callback(meep_printf_callback_func func) {
+  meep_printf_callback_func old_func = master_printf_callback;
+  master_printf_callback = func;
+  return old_func;
+}
+
 void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -576,7 +590,8 @@ void master_printf(const char *fmt, ...) {
       vasprintf(&s, fmt, ap);
       master_printf_callback(s);
       free(s);
-    } else {
+    }
+    else {
       vprintf(fmt, ap);
       fflush(stdout);
     }

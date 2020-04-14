@@ -2,7 +2,6 @@ import unittest
 import meep as mp
 import numpy as np
 
-
 class TestHoleyWvgCavity(unittest.TestCase):
 
     def setUp(self):
@@ -38,6 +37,14 @@ class TestHoleyWvgCavity(unittest.TestCase):
                                  boundary_layers=[mp.PML(self.dpml)],
                                  resolution=20)
 
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = mp.make_output_directory()
+
+    @classmethod
+    def tearDownClass(cls):
+        mp.delete_directory(cls.temp_dir)
+
     def test_resonant_modes(self):
         self.sim.sources = [mp.Source(mp.GaussianSource(self.fcen, fwidth=self.df),
                                       mp.Hz, mp.Vector3())]
@@ -45,6 +52,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
         self.sim.symmetries = [mp.Mirror(mp.Y, phase=-1),
                                mp.Mirror(mp.X, phase=-1)]
 
+        self.sim.use_output_directory(self.temp_dir)
         h = mp.Harminv(mp.Hz, mp.Vector3(), self.fcen, self.df)
         self.sim.run(mp.at_beginning(mp.output_epsilon),
                      mp.after_sources(h),

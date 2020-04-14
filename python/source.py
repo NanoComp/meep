@@ -12,12 +12,20 @@ def check_positive(prop, val):
 
 class Source(object):
 
-    def __init__(self, src, component, center, size=Vector3(), amplitude=1.0, amp_func=None,
+    def __init__(self, src, component, center=None, volume=None, size=Vector3(), amplitude=1.0, amp_func=None,
                  amp_func_file='', amp_data=None):
+        if center is None and volume is None:
+            raise ValueError("Source requires either center or volume")
+
+        if volume:
+            self.center = volume.center
+            self.size = volume.size
+        else:
+            self.center = Vector3(*center)
+            self.size = Vector3(*size)
+
         self.src = src
         self.component = component
-        self.center = center
-        self.size = size
         self.amplitude = complex(amplitude)
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
@@ -71,12 +79,13 @@ class GaussianSource(SourceTime):
 
 class CustomSource(SourceTime):
 
-    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, **kwargs):
+    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, **kwargs):
         super(CustomSource, self).__init__(**kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
-        self.swigobj = mp.custom_src_time(src_func, start_time, end_time)
+        self.center_frequency = center_frequency
+        self.swigobj = mp.custom_src_time(src_func, start_time, end_time, center_frequency)
         self.swigobj.is_integrated = self.is_integrated
 
 
@@ -84,7 +93,8 @@ class EigenModeSource(Source):
 
     def __init__(self,
                  src,
-                 center,
+                 center=None,
+                 volume=None,
                  eig_lattice_size=None,
                  eig_lattice_center=None,
                  component=mp.ALL_COMPONENTS,
@@ -97,13 +107,13 @@ class EigenModeSource(Source):
                  eig_tolerance=1e-12,
                  **kwargs):
 
-        super(EigenModeSource, self).__init__(src, component, center, **kwargs)
+        super(EigenModeSource, self).__init__(src, component, center, volume, **kwargs)
         self.eig_lattice_size = eig_lattice_size
         self.eig_lattice_center = eig_lattice_center
         self.component = component
         self.direction = direction
         self.eig_band = eig_band
-        self.eig_kpoint = eig_kpoint
+        self.eig_kpoint = mp.Vector3(*eig_kpoint)
         self.eig_match_freq = eig_match_freq
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution

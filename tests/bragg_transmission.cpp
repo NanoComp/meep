@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -148,7 +148,8 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq, d
     h5file *ff = f.open_h5file("flux", h5file::READONLY);
     ff->remove();
     delete ff;
-  } else
+  }
+  else
     fr -= fr0;
 
   while (f.time() < nfreq / fabs(freq_max - freq_min) / 2)
@@ -239,7 +240,7 @@ void doit(bool use_hdf5) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
 
 #ifdef HAVE_HDF5
   doit(true);

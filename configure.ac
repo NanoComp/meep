@@ -1,12 +1,12 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.9.0)
+AC_INIT(meep, 1.13.1)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="14:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="18:1:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -20,6 +20,7 @@ AC_ENABLE_SHARED
 ##############################################################################
 
 # Check for mpiCC immediately after getting C++ compiler...
+AC_PROG_CC
 AC_PROG_CXX
 AC_LANG([C++])
 
@@ -92,6 +93,12 @@ for flg in $CXXFLAGS; do
     esac
 done
 AC_SUBST(ARCHFLAG)
+
+AC_ARG_WITH(openmp, [AC_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, with_openmp=no)
+if test x"$with_openmp" = "xyes"; then
+   AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
+   AX_OPENMP([CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"], [AC_MSG_ERROR([don't know how to enable OpenMP])])
+fi
 
 ##############################################################################
 # More checks
@@ -180,6 +187,11 @@ if test $have_mpb = maybe; then
 fi
 
 AM_CONDITIONAL(WITH_MPB, test "x$have_mpb" = "xyes")
+if test "x$have_mpb" = "xyes"; then
+  # check for mpb_printf_callback
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <mpb.h>]], [mpb_printf_callback = 0;])],
+    AC_DEFINE([HAVE_MPB_PRINTF_CALLBACK], [1], [If we have the mpb_printf_callback variable]))
+fi
 
 ##############################################################################
 # GNU Scientific Library
@@ -220,6 +232,10 @@ if test "x$with_mpi" = "xyes"; then
    AC_CHECK_PROG(MPIRUN, mpirun, mpirun)
    # always use 2 processes for 'make check'
    RUNCODE="$MPIRUN -np 2"
+fi
+if test x"$with_openmp" = "xyes"; then
+   # use 2 openmp threads
+   RUNCODE="env OMP_NUM_THREADS=2 $RUNCODE"
 fi
 AC_SUBST(RUNCODE)
 AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" = "xyes")
@@ -495,9 +511,15 @@ AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to no
 
 # checks for python
 ##############################################################################
+
 AC_ARG_WITH(python,
 	[AC_HELP_STRING([--without-python], [compile without Python interface])],
         with_python=$withval,with_python=yes)
+
+AC_CHECK_PROG(SWIG, swig, swig, echo)
+if test "$USE_MAINTAINER_MODE" = yes && (test "x$with_python" = "xyes" || test "x$with_scheme" = "xyes") && test "x$SWIG" = xecho; then
+  AC_MSG_ERROR([SWIG not found; configure --without-python --without-scheme or use a release tarball])
+fi
 
 if test "x$with_python" = xno; then
   have_python=no
@@ -569,6 +591,7 @@ AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
+	src/support/Makefile
 	tests/Makefile
 ])
 

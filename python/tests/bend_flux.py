@@ -17,13 +17,13 @@ class TestBendFlux(unittest.TestCase):
         w = 1
         wvg_ycen = -0.5 * (sy - w - (2 * pad))
         wvg_xcen = 0.5 * (sx - w - (2 * pad))
-        height = 100
-        data_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+        height = mp.inf
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
         gdsii_file = os.path.join(data_dir, 'bend-flux.gds')
 
         if no_bend:
             if gdsii:
-                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 1)
+                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 1, 0, height)
             else:
                 no_bend_vertices = [mp.Vector3(-0.5 * sx - 5, wvg_ycen - 0.5 * w),
                                     mp.Vector3(+0.5 * sx + 5, wvg_ycen - 0.5 * w),
@@ -33,7 +33,7 @@ class TestBendFlux(unittest.TestCase):
                 geometry = [mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))]
         else:
             if gdsii:
-                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 2)
+                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 2, 0, height)
             else:
                 bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
                                  mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
@@ -68,7 +68,7 @@ class TestBendFlux(unittest.TestCase):
         refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
                                 size=mp.Vector3(0, w * 2))
 
-        self.refl = self.sim.add_flux(fcen, df, nfreq, refl_fr)
+        self.refl = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr)
 
         if no_bend:
             self.pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)

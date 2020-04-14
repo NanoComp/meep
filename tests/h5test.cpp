@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <meep.hpp>
 #include "meep_internals.hpp"
@@ -58,9 +59,10 @@ double get_reim(complex<double> x, int reim) { return reim ? imag(x) : real(x); 
 
 bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, double kx, double ky,
               component src_c, int file_c, volume file_gv, bool real_fields, int expected_rank,
-              const char *name) {
+              const char *name, const char *mydirname) {
   const grid_volume gv = vol2d(xsize, ysize, a);
   structure s(gv, eps, no_pml(), Sf(gv), splitting);
+  s.set_output_directory(mydirname);
   fields f(&s);
 
   f.use_bloch(X, real_fields ? 0.0 : kx);
@@ -71,7 +73,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
 
   if (file_c >= int(Dielectric)) real_fields = true;
 
-  while (f.time() <= 3.0 && !interrupt)
+  while (f.time() <= 3.0)
     f.step();
 
   h5file *file = f.open_h5file(name);
@@ -168,9 +170,11 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
 }
 
 bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, component src_c,
-              int file_c, volume file_gv, bool real_fields, int expected_rank, const char *name) {
+              int file_c, volume file_gv, bool real_fields, int expected_rank, const char *name,
+              const char *mydirname) {
   const grid_volume gv = vol3d(xsize, ysize, zsize, a);
   structure s(gv, eps, no_pml(), Sf(gv), splitting);
+  s.set_output_directory(mydirname);
   fields f(&s);
 
   if (real_fields) f.use_real_fields();
@@ -178,7 +182,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
 
   if (file_c >= Dielectric) real_fields = true;
 
-  while (f.time() <= 3.0 && !interrupt)
+  while (f.time() <= 3.0)
     f.step();
 
   h5file *file = f.open_h5file(name);
@@ -274,9 +278,11 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
 }
 
 bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc Sf, component src_c,
-                      int file_c, const vec &pt, bool real_fields, const char *name) {
+                      int file_c, const vec &pt, bool real_fields, const char *name,
+                      const char *mydirname) {
   const grid_volume gv = vol2d(xsize, ysize, a);
   structure s(gv, eps, no_pml(), Sf(gv), splitting);
+  s.set_output_directory(mydirname);
   fields f(&s);
 
   if (real_fields) f.use_real_fields();
@@ -299,7 +305,7 @@ bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc 
   const double T = 3.0;
   int NT = int(T / f.dt) + 2;
   complex<double> *mon = new complex<double>[NT];
-  while (f.time() <= T && !interrupt) {
+  while (f.time() <= T) {
     if (is_derived(file_c))
       f.output_hdf5(derived_component(file_c), volume(pt, pt), file, true);
     else
@@ -354,7 +360,8 @@ int main(int argc, char **argv) {
   const double a = 10.0;
   initialize mpi(argc, argv);
   int chances;
-  quiet = true;
+  verbosity = 0;
+  const char *temp_dir = make_output_directory();
 #ifdef HAVE_HDF5
   const double pad1 = 0.314159, pad2 = 0.27183, pad3 = 0.14142;
 
@@ -377,7 +384,7 @@ int main(int argc, char **argv) {
   if (!check_2d(funky_eps_2d, a, 1,
 		Sf2[3], Sf2_kx[3], Sf2_ky[3],
 		Ez, tm_c[3], gv_2d[1],
-		1, gv_2d_rank[1], "initial check"))
+		1, gv_2d_rank[1], "initial check", temp_dir))
     return 1;
 #endif
 
@@ -397,7 +404,7 @@ int main(int argc, char **argv) {
                        gv_2d_name[igv], component_name(tm_c[ic]), use_real ? "_r" : "");
               master_printf("Checking %s...\n", name);
               if (!check_2d(funky_eps_2d, a, splitting, Sf2[iS], Sf2_kx[iS], Sf2_ky[iS], Ez,
-                            tm_c[ic], gv_2d[igv], use_real, gv_2d_rank[igv], name))
+                            tm_c[ic], gv_2d[igv], use_real, gv_2d_rank[igv], name, temp_dir))
                 return 1;
             }
 
@@ -411,7 +418,7 @@ int main(int argc, char **argv) {
                      component_name(tm_c[ic]), use_real ? "_r" : "");
             master_printf("Checking %s...\n", name);
             if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, tm_c[ic],
-                                  vec(pad1, pad2), use_real, name))
+                                  vec(pad1, pad2), use_real, name, temp_dir))
               return 1;
           }
 
@@ -438,10 +445,13 @@ int main(int argc, char **argv) {
                      gv_3d_name[igv], component_name(c3d[ic]), use_real ? "_r" : "");
             master_printf("Checking %s...\n", name);
             if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic], gv_3d[igv], use_real,
-                          gv_3d_rank[igv], name))
+                          gv_3d_rank[igv], name, temp_dir))
               return 1;
           }
       }
 #endif /* HAVE_HDF5 */
+
+  delete_directory(temp_dir);
+
   return 0;
 }

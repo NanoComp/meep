@@ -1,4 +1,4 @@
-; Copyright (C) 2005-2019 Massachusetts Institute of Technology
+; Copyright (C) 2005-2020 Massachusetts Institute of Technology
 ;
 ; This program is free software; you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -15,6 +15,10 @@
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ; ****************************************************************
+
+; for define* (keyword args) in guile 1.8
+(if (< (string->number (major-version)) 2)
+    (use-modules (ice-9 optargs)))
 
 ; Get the number of arguments to a function p.  However, some
 ; older versions of Guile (e.g. 1.2) do not support the 'arity
@@ -215,10 +219,7 @@
 (define-param k-point false)
 
 ; whether to use the "beta" trick to handle kz in 2d
-; -- this is not true by default because its use changes
-;    the interpretation of the fields somewhat (for real fields),
-;    and it only works in 2d right now.
-(define-param special-kz? false)
+(define-param kz-2d "complex")
 
 (define fields '())
 
@@ -265,7 +266,7 @@
   (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions
       (if (and (= (vector3-z (object-property-value geometry-lattice 'size))
 		  no-size)
-	       (or (not k) special-kz? (zero? (vector3-z k))))
+	       (or (not k) (not (equal? kz-2d "3d")) (zero? (vector3-z k))))
 	  2
 	  3)
       dimensions))
@@ -449,30 +450,30 @@
 (define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
   (if (null? structure) (init-structure k-point))
-  (set! fields (new-meep-fields structure
-				(if (= dimensions CYLINDRICAL) m 0)
-				(if (and special-kz? k-point)
-				    (vector3-z k-point) 0.0)
-				(not accurate-fields-near-cylorigin?)))
-  (if verbose? (meep-fields-verbose fields))
-  (if (not (or force-complex-fields?
-	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
-	       (not (for-all? symmetries
-			      (lambda (s)
-				(zero? (imag-part
-					(object-property-value s 'phase))))))
-	       (not (or (not k-point)
-			(and special-kz?
-			     (= (vector3-x k-point) 0)
-			     (= (vector3-y k-point) 0))
-			(vector3= k-point (vector3 0))))))
-      (meep-fields-use-real-fields fields)
-      (print "Meep: using complex fields.\n"))
-  (if k-point (meep-fields-use-bloch fields
-				     (if special-kz?
-					 (vector3 (vector3-x k-point)
-						  (vector3-y k-point))
-					 k-point)))
+  (let ((kz2d (if (= (infer-dimensions k-point) 2) kz-2d "3d")))
+    (set! fields (new-meep-fields structure
+				  (if (= dimensions CYLINDRICAL) m 0)
+				  (if (and (not (equal? kz2d "3d")) k-point)
+				      (vector3-z k-point) 0.0)
+				  (not accurate-fields-near-cylorigin?)))
+    (if (not (or force-complex-fields?
+	         (and (= dimensions CYLINDRICAL) (not (zero? m)))
+	         (not (for-all? symmetries
+			        (lambda (s)
+				  (zero? (imag-part
+					  (object-property-value s 'phase))))))
+	         (not (or (not k-point)
+			  (and (equal? kz2d "real/imag")
+			       (= (vector3-x k-point) 0)
+			       (= (vector3-y k-point) 0))
+			  (vector3= k-point (vector3 0))))))
+        (meep-fields-use-real-fields fields)
+        (print "Meep: using complex fields.\n"))
+    (if k-point (meep-fields-use-bloch fields
+				       (if (not (equal? kz2d "3d"))
+					   (vector3 (vector3-x k-point)
+						    (vector3-y k-point))
+					   k-point))))
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
 
@@ -1197,6 +1198,12 @@
 (define (harminv c pt fcen df . mxbands)
   (harminv! harminv-data harminv-data-dt harminv-results c pt fcen df mxbands))
 
+; ****************************************************************
+; verbosity
+
+(define* (quiet #:optional (quiet? true))
+  (verbosity (if quiet? 0 1)))
+(if (and (defined? 'verbose) verbose?) (verbosity 2))
 
 ; ****************************************************************
 ; get-eigenmode-coefficients
@@ -1214,13 +1221,14 @@
         (eig-vol (get-keyword-value args #:eig-vol (meep-dft-flux-where-get flux)))
         (eig-resolution (get-keyword-value args #:eig-resolution 0))
         (eig-tolerance (get-keyword-value args #:eig-tolerance 1e-12))
+        (direction (get-keyword-value args #:direction AUTOMATIC))
         (num-bands (length bands))
         (kpoint-func (get-keyword-value args #:kpoint-func '())))
     (begin
       (define coeffs (make-typed-array 'c64 '0 num-bands (meep-dft-flux-Nfreq-get flux) 2))
       (define vgrp (make-typed-array 'f64 '0 num-bands (meep-dft-flux-Nfreq-get flux)))
       (define kpoints-and-kdom (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp
-                                                             eig-resolution eig-tolerance kpoint-func))
+                                                             eig-resolution eig-tolerance kpoint-func direction))
       (list coeffs vgrp (first kpoints-and-kdom) (second kpoints-and-kdom)))))
 
 ; ****************************************************************

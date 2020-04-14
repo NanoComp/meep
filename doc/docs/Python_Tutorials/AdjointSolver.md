@@ -109,7 +109,7 @@ The full list of command-line options is documented [here](https://homerreid.git
 
 ### Running Jobs in Parallel
 
-Aside from the adjoint solver, the `meep.adjoint` module provides functionality for [embarassingly parallel](https://en.wikipedia.org/wiki/Embarrassingly_parallel) workloads. The standalone module `meep.adjoint.ParallelDesignTester` offers a simple way to parallelize a large number of runs of a Python script with different command-line options. Thus, suppose you want to run the script `MyScript.py` with 100 different sets of command-line options, i.e. you want to achieve the effect of running the following sequence of shell commands:
+Aside from the adjoint solver, the `meep.adjoint` module provides functionality for [embarrassingly parallel](https://en.wikipedia.org/wiki/Embarrassingly_parallel) workloads. The standalone module `meep.adjoint.ParallelDesignTester` offers a simple way to parallelize a large number of runs of a Python script with different command-line options. Thus, suppose you want to run the script `MyScript.py` with 100 different sets of command-line options, i.e. you want to achieve the effect of running the following sequence of shell commands:
 
 ```bash
 % python MyScript.py '--x 1.0 --name x1'

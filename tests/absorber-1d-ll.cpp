@@ -70,7 +70,6 @@ int main(int argc, char *argv[]) {
                                          DEFAULT_SUBPIXEL_TOL,     // tol
                                          DEFAULT_SUBPIXEL_MAXEVAL, // maxeval
                                          false,                    // ensure_periodicity
-                                         false,                    // verbose
                                          meep_geom::vacuum, alist);
 
   if (alist) meep_geom::destroy_absorber_list(alist);
@@ -119,6 +118,7 @@ int main(int argc, char *argv[]) {
     master_printf(" should be:\n");
     master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n", f50, tFinal, fFinal);
     abort("Test failed.");
-  } else if (verbose)
+  }
+  else if (verbose)
     master_printf("Test successful.\n");
 }

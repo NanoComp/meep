@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,13 +86,14 @@ int different(double a, double a0, double thresh, const char *msg) {
     master_printf("error: %s\n --- %g vs. %g (%g error > %g)\n", msg, a, a0,
                   fabs(a - a0) / fabs(a0), thresh);
     return 1;
-  } else
+  }
+  else
     return 0;
 }
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
+  verbosity = 0;
   const double freq = 1.0 / 3.0;
 
   double a2, a3, a2_2, a3_2;

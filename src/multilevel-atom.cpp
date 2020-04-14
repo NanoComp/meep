@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -135,6 +135,7 @@ void *multilevel_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(multilevel_data) + sizeof(realnum) * (L * L + L + gv.ntot() * L + num * T - 1);
   multilevel_data *d = (multilevel_data *)malloc(sz);
+  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   memset(d, 0, sz);
   d->sz_data = sz;
   return (void *)d;
@@ -278,7 +279,8 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
         wp = W_prev[cdot[idot]][1];
         E8[idot][1] = w[i] + w[i + o1[idot]] + w[i + o2[idot]] + w[i + o1[idot] + o2[idot]] +
                       wp[i] + wp[i + o1[idot]] + wp[i + o2[idot]] + wp[i + o1[idot] + o2[idot]];
-      } else
+      }
+      else
         E8[idot][1] = 0;
     }
 
@@ -361,9 +363,8 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const realnum *w2 = W[c2][cmp];
           const realnum *s2 = w2 ? sigma[c][d2] : NULL;
 
-          if (s1 || s2) {
-            abort("nondiagonal saturable gain is not yet supported");
-          } else { // isotropic
+          if (s1 || s2) { abort("nondiagonal saturable gain is not yet supported"); }
+          else { // isotropic
             LOOP_OVER_VOL_OWNED(gv, c, i) {
               realnum pcur = p[i];
               const realnum *Ni = N + i * L;

@@ -1,5 +1,5 @@
 // -*- C++ -*-
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 #include <complex>
 #include <stddef.h>
+#include <stdexcept>
 
 namespace meep {
 
@@ -45,7 +46,7 @@ private:
 #define PRINTF_ATTR(f, a)
 #endif
 
-void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1, 2);
+void abort(const char *fmt, ...) PRINTF_ATTR(1, 2);
 void all_wait();
 int count_processors();
 int my_rank();
@@ -98,6 +99,8 @@ void debug_printf(const char *fmt, ...) PRINTF_ATTR(1, 2);
 void master_fprintf(FILE *f, const char *fmt, ...) PRINTF_ATTR(2, 3);
 FILE *master_fopen(const char *name, const char *mode);
 void master_fclose(FILE *f);
+typedef void (*meep_printf_callback_func)(const char *s);
+meep_printf_callback_func set_meep_printf_callback(meep_printf_callback_func func);
 
 void begin_critical_section(int tag);
 void end_critical_section(int tag);

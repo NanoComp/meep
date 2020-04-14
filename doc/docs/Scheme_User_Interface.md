@@ -19,7 +19,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 
 **`geometry-center` [ `vector3` class ]**
 —
-Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
+Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner). Setting `geometry-center` to `c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
 
 **`sources` [ list of `source` class ]**
 —
@@ -64,13 +64,17 @@ Specifies the computational grid resolution in pixels per distance unit. Default
 —
 If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a `vector3`, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. A non-zero `vector3` will produce complex fields. The `k-point` vector is specified in Cartesian coordinates in units of 2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k-points` through its function `reciprocal->cartesian`.
 
+**`kz-2d` [`"complex"`, `"real/imag"`, or `"3d"`]**
+—
+A 2d cell (i.e., `dimensions` is `2`) combined with a `k-point` that has a *non-zero* component in $z$ would normally result in a 3d simulation with complex fields. However, by default (`kz-2d` is `"complex"`), Meep will use a 2d computational cell in which $k_z$ is incorporated as an additional term in Maxwell's equations, which still results in complex fields but greatly improved performance. Setting `kz_2d` to `"3d"` will instead use a 3d cell that is one pixel thick (with Bloch-periodic boundary conditions), which is considerably more expensive. The third possibility, `kz_2d` is `"real/imag"`, saves an additional factor of two by storing some field components as purely real and some as purely imaginary in a "real" field, but this option requires some care to use. See [2d Cell with Out-of-Plane Wavevector](2d_Cell_Special_kz.md).
+
 **`ensure-periodicity` [`boolean`]**
 —
 If `true` (the default) *and* if the boundary conditions are periodic (`k-point` is not `false`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the cell.
 
 **`eps-averaging?` [`boolean`]**
 —
-If `true` (the default), then subpixel averaging is used when initializing the dielectric function. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). The input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `true` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function.  For simulations involving a [material function](#material-function), `eps-averaging?` is `false` (the default) and must be enabled in which case the input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
 
 **`force-complex-fields?` [`boolean`]**
 —
@@ -82,7 +86,7 @@ A string prepended to all output filenames. If empty (the default), then Meep us
 
 **`Courant` [`number`]**
 —
-Specify the Courant factor $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
+Specify the [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition) $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
 
 **`output-volume` [`meep::volume*`]**
 —
@@ -98,7 +102,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 
 **`extra-materials` [ list of `material-type` class ]**
 —
-By default, Meep turns off support for material dispersion (via susceptibilities or conductivity) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
+By default, Meep turns off support for material dispersion ([susceptibilities](#susceptibility) or [conductivity](Materials.md#conductivity-and-complex)) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your [material function](#material-function) only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -152,7 +156,7 @@ Specify a direction in the grid. One of `X`, `Y`, `Z`, `R`, `P` for $x$, $y$, $z
 
 **`side` constants**
 —
-Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` or `High`.
+Specify particular boundary in the positive `High` (e.g., +`X`) or negative `Low` (e.g., -`X`) direction.
 
 **`component` constants**
 —
@@ -225,11 +229,11 @@ The frequency-independent magnetic conductivity $σ_B$. Default is 0. You can al
 
 **`chi2` [`number`]**
 —
-The nonlinear (Pockels) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`chi3` [`number`]**
 —
-The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`E-susceptibilities` [ list of `susceptibility` class ]**
 —
@@ -243,9 +247,9 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 
 A perfectly-conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor`.
 
-**`material-function`**
+#### material function
 
-This material type allows you to specify the material as an arbitrary function of position. It has one property:
+This `material-function` type allows you to specify the material as an arbitrary function of position. It has one property:
 
 **`material-func` [`function`]**
 —
@@ -281,7 +285,7 @@ The resonance frequency $f_n = \omega_n / 2\pi$.
 —
 The resonance loss rate $γ_n / 2\pi$.
 
-Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` willl appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` will appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
 
 ### drude-susceptibility
 
@@ -353,11 +357,11 @@ The gyrotropy vector.  Its direction determines the orientation of the gyrotropi
 
 **`sigma` [`number`]**
 —
-The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In magnetic ferrites, this is the Larmor precession frequency at the saturation field.
+The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In [magnetic ferrites](https://en.wikipedia.org/wiki/Ferrite_(magnet)), this is the Larmor precession frequency at the saturation field.
 
 **`frequency` [`number`]**
 —
-The Larmor precession frequency, $f_n = \omega_n / 2\pi$.
+The [Larmor precession](https://en.wikipedia.org/wiki/Larmor_precession) frequency, $f_n = \omega_n / 2\pi$.
 
 **`gamma` [`number`]**
 —
@@ -661,15 +665,15 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`X`, `Y`, or `Z;` default `AUTOMATIC`], `eig-match-freq?` [`boolean;` default `true`], `eig-kpoint` [`vector3`]**
 —
-By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `NO-DIRECTION`, then `eig_kpoint` is not only initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Scheme_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane). If `eig-match-freq?` is `false`, then the specific **k** vector of the desired mode is specified with `eig-kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the Bloch mode, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `NO-DIRECTION`, then `eig_kpoint` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Scheme_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane). If `eig-match-freq?` is `false`, then the specific **k** vector of the desired mode is specified with `eig-kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `eig-kpoint`. Note that once **k** is either found by MPB, or specified by `eig-kpoint`, the field profile used to create the current sources corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave), $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig-parity` [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]**
 —
 The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, with respect to the `center` of the source region.  (In particular, it does not matter if your simulation as a whole has that symmetry, only the cross section where you are introducing the source.) If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN-Z + ODD-Y`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
-**`eig-resolution` [`integer`, defaults to same as Meep resolution ]**
+**`eig-resolution` [`integer`, defaults to `2*resolution` ]**
 —
-The spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels.
+The spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels.
 
 **`eig-tolerance` [`number`, defaults to 10<sup>–12</sup> ]**
 —
@@ -711,6 +715,10 @@ Roughly, the temporal width of the smoothing (technically, the inverse of the ex
 —
 Controls how far into the exponential tail of the tanh function the source turns on. Default is 3.0. A larger value means that the source turns on more gradually at the beginning.
 
+**`is-integrated?` [`boolean`]**
+—
+If `true`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `false`.
+
 ### gaussian-src
 
 A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
@@ -729,11 +737,15 @@ The starting time for the source. Default is 0 (turn on at $t=0$). This is not t
 
 **`cutoff` [`number`]**
 —
-How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start-time + cutoff*width`.
+How many `width`s the current decays for before it is cut off and set to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start-time + cutoff*width`.
+
+**`is-integrated?` [`boolean`]**
+—
+If `true`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `false`.
 
 ### custom-src
 
-A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped-pulse.ctl`](https://github.com/NanoComp/meep/blob/master/scheme/examples/chirped-pulse.ctl).
 
 **`src-func` [`function`]**
 —
@@ -746,6 +758,10 @@ The starting time for the source. Default is `(-infinity)`: turn on at $t=-\inft
 **`end-time` [`number`]**
 —
 The end time for the source. Default is `infinity` (never turn off).
+
+**`is-integrated?` [`boolean`]**
+—
+If `true`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `false`.
 
 ### flux-region
 
@@ -772,7 +788,11 @@ Note that the flux is always computed in the *positive* coordinate direction, al
 Miscellaneous Functions
 -----------------------
 
-Here, we describe a number of miscellaneous useful functions provided by Meep.
+### Verbose Output
+
+**`(quiet)`** or **`(quiet quietval)`**
+—
+Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `true` (the default). The output can be enabled again by passing `false`. This sets a global variable, so the value will persist across runs within the same script.
 
 ### Geometry Utilities
 
@@ -858,15 +878,15 @@ Given a `direction` constant, and a `meep::volume*`, returns the flux (the integ
 
 **`(electric-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(magnetic-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(field-energy-in-box box)`**
 —
-Given a `meep::volume*`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used.
+Given a `meep::volume*`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields-complex?=true`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
 
@@ -879,6 +899,8 @@ One versatile feature is that you can supply an arbitrary function $f(\mathbf{x}
 Returns the integral of the complex-valued function `func` over the `meep::volume` specified by `where` (defaults to entire cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
+
+Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
 
 **`(max-abs-field-function cs func [where] [fields-var])`**
 —
@@ -926,7 +948,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of `flux-region` objects (see [above](#flux-region)), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics](Scheme_Tutorials/Basics.md). The most important function is:
+Given a bunch of [`flux-region`](#flux-region) objects, you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute the Poynting flux spectra. (Note: as a matter of convention, the "intensity" of the electromagnetic fields refers to the Poynting flux, *not* to the [energy density](#energy-density-spectra).) See also [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**
 —
@@ -944,7 +966,7 @@ Once you have called `add-flux`, the Fourier transforms of the fields are accumu
 —
 Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
-You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `(display-fluxes f1 f2 f3)` is actually equivalent to `(display-csv "flux" (get-flux-freqs f1) (get-fluxes f1) (get-fluxes f2) (get-fluxes f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `(display-fluxes f1 f2 f3)` is actually equivalent to `(display-csv "flux" (get-flux-freqs f1) (get-fluxes f1) (get-fluxes f2) (get-fluxes f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
 **`(get-flux-freqs flux)`**
 —
@@ -954,7 +976,7 @@ Given a flux object, returns a list of the frequencies that it is computing the 
 —
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-flux filename flux)`**
 —
@@ -976,7 +998,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
 
-**`(get-eigenmode-coefficients flux bands eig-parity eig-vol eig-resolution eig-tolerance kpoint-func verbose=False)`**
+**`(get-eigenmode-coefficients flux bands eig-parity eig-vol eig-resolution eig-tolerance kpoint-func direction=AUTOMATIC)`**
 —
 Given a flux object and list of band indices, return a list with the following data:
 
@@ -991,9 +1013,9 @@ Here is an example of calling `get-eigenmode-coefficients` overriding the defaul
 (let ((result (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y))))
     (print (array-ref (list-ref result 0) 0 0 0)))
 ```
-The flux object must be created using `add-mode-monitor` (an alias for `add-flux`). `eig-vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `(meep-dft-flux-where-get flux)`). `eig-parity` should be one of [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `eigenmode-source` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `(+ EVEN-Z ODD-Y)`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig-resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig-tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.)
+The flux object must be created using `add-mode-monitor`.  (You could also use `add-flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add-flux` object should only be used with `get-eigenmode-coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add-flux` planes benefits more from symmetry.) `eig-vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `(meep-dft-flux-where-get flux)`). `eig-parity` should be one of [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `eigenmode-source` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `(+ EVEN-Z ODD-Y)`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig-resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig-tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.)
 
-Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig-vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint-func`, which is a function `(kpoint-func f n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig-vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint-func`.)
+Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig-vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint-func`, which is a function `(kpoint-func f n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig-vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint-func`.) If `direction` is set to `NO_DIRECTION`, then `kpoint-func` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Scheme_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the flux plane).
 
 **Note:** for planewaves in homogeneous media, the `kpoints` may *not* necessarily be equivalent to the actual wavevector of the mode. This quantity is given by `kdom`.
 
@@ -1009,7 +1031,7 @@ Very similar to flux spectra, you can also compute **energy density spectra**: t
 
 $$ \frac{1}{2}ε|\mathbf{E}|^2 + \frac{1}{2}μ|\mathbf{H}|^2 $$
 
-The usage is similar to the flux spectra: you define a set of `energy-region` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add-energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-electric-energy`, `display-magnetic-energy`, or `display-total-energy` to display the energy density spectra at the end. There are also `save-energy`, `load-energy`, and `load-minus-energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+The usage is similar to the [flux spectra](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend): you define a set of `energy-region` objects telling Meep where it should compute the Fourier-transformed fields and energy densities, and call `add-energy` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-electric-energy`, `display-magnetic-energy`, or `display-total-energy` to display the energy density spectra at the end. There are also `save-energy`, `load-energy`, and `load-minus-energy` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the energy from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
 **`energy-region`**
 
@@ -1045,7 +1067,7 @@ Once you have called `add-energy`, the Fourier transforms of the fields are accu
 —
 Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric, magnetic and total fields, respectively prefixed by "electric-energy1:", "magnetic-energy1:," "total-energy1:," or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
 
-You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `(display-electric-energy e1 e2 e3)` is actually equivalent to `(display-csv "electric-energy" (get-energy-freqs e1) (get-electric-energy e1) (get-electric-energy e2) (get-electric-energy e3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `(display-electric-energy e1 e2 e3)` is actually equivalent to `(display-csv "electric-energy" (get-energy-freqs e1) (get-electric-energy e1) (get-electric-energy e2) (get-electric-energy e3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
 **`(get-energy-freqs energy)`**
 —
@@ -1055,7 +1077,7 @@ Given an energy object, returns a list of the frequencies that it is computing t
 —
 Given an energy object, returns a list of the current energy density spectrum for the electric, magnetic, or total fields, respectively that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-energy filename energy)`**
 —
@@ -1075,13 +1097,13 @@ Very similar to flux spectra, you can also compute **force spectra**: forces on 
 
 $$σ_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} δ_{ij} \left( |\mathbf{E}|^2 + |\mathbf{H}|^2 \right)$$
 
-over a surface $S$ via $\mathbf{F} = \int_S σ d\mathbf{A}$. We recommend that you normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.
+over a surface $S$ via $\mathbf{F} = \int_S σ d\mathbf{A}$. You should normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.
 
 See also [Tutorial/Optical Forces](Scheme_Tutorials/Optical_Forces.md).
 
 Most commonly, you will want to **normalize** the force spectrum in some way, just as for flux spectra. Most simply, you could divide two different force spectra to compute the ratio of forces on two objects. Often, you will divide a force spectrum by a flux spectrum, to divide the force $F$ by the incident power $P$ on an object, in order to compute the useful dimensionless ratio $Fc$/$P$ where $c=1$ in Meep units. For example, it is a simple exercise to show that the force $F$ on a perfectly reflecting mirror with normal-incident power $P$ satisfies $Fc$/$P=2$, and for a perfectly absorbing (black) surface $Fc$/$P=1$.
 
-The usage is similar to the flux spectra: you define a set of `force-region` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add-force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-forces` to display the force spectra at the end. There are also `save-force`, `load-force`, and `load-minus-force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
+The usage is similar to the [flux spectra](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend): you define a set of `force-region` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add-force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-forces` to display the force spectra at the end. There are also `save-force`, `load-force`, and `load-minus-force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
 **`force-region`**
 
@@ -1123,7 +1145,7 @@ Once you have called `add-force`, the Fourier transforms of the fields are accum
 —
 Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the force spectra.
 
-You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `(display-forces f1 f2 f3)` is actually equivalent to `(display-csv "force" (get-force-freqs f1) (get-forces f1) (get-forces f2) (get-forces f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `(display-forces f1 f2 f3)` is actually equivalent to `(display-csv "force" (get-force-freqs f1) (get-forces f1) (get-forces f2) (get-forces f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
 **`(get-force-freqs force)`**
 —
@@ -1133,7 +1155,7 @@ Given a force object, returns a list of the frequencies that it is computing the
 —
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the force from scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the force from the scattered fields often requires saving the Fourier-transformed fields from a "normalization" run and then loading them into another run to be subtracted. This can be done via:
 
 **`(save-force filename force)`**
 —
@@ -1161,7 +1183,7 @@ Given an ldos object, returns a list of the frequencies that it is computing the
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `dft-ldos-data` global variable after the `run` is complete.
 
-Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
+Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, refer to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now it is defined as:
 
 $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}_0)\frac{\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,\omega)\hat{p}(\omega)^*]}{|\hat{p}(\omega)|^2}$$
 
@@ -1169,7 +1191,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 ### Near-to-Far-Field Spectra
 
-Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
+Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d, 3d, or cylindrical region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
@@ -1199,7 +1221,11 @@ Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in [Tutorial/Basics](Scheme_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+(Multi-frequency `output-farfields` can be accelerated by
+[compiling Meep](Build_From_Source.md#meep) with `--with-openmp` and using the
+`OMP_NUM_THREADS` environment variable to specify multiple threads.)
+
+For a scattered-field computation, you often want to separate the scattered and incident fields. As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Scheme_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-near2far filename near2far)`**
 —
@@ -1223,7 +1249,7 @@ Given a `volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid 
 
 ### Load and Dump Structure
 
-These functions dump the raw ε data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same chunks (i.e. the same grid, number of processors, and PML). Currently only stores ε and μ, and not nonlinear coefficients or polarizability.
+These functions dump the raw ε data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md) (i.e. the same grid, number of processors, and PML). Currently only stores ε and μ, and not nonlinear coefficients or polarizability.
 
 **`(meep-structure-dump structure fname)`**
 —
@@ -1239,7 +1265,9 @@ geometry (since it will be overwritten by `meep-structure-load` anyway).
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., ring resonators) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `continuous-src` with the desired frequency, [initialize the fields and geometry](#initializing-the-structure-and-fields) via `(init-fields)`, and then:
+Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., [ring resonators](Scheme_Tutorials/Frequency_Domain_Solver.md)) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source (using the default `width` of zero for no transient turn-on), time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy.
+
+To use the frequency-domain solver, simply define a `continuous-src` with the desired frequency, [initialize the fields and geometry](#initializing-the-structure-and-fields) via `(init-fields)`, and then:
 
 **`(meep-fields-solve-cw fields tol maxiters L)`**
 
@@ -1249,14 +1277,16 @@ The frequency-domain solver supports arbitrary geometries, PML, boundary conditi
 
 The frequency-domain solver requires you to use complex-valued fields, via `(set! force-complex-fields? true)`.
 
-After `meep-fields-solve-cw` completes, it should be as if you had just run the simulation for an infinite time with the source at that frequency. You can call the various field-output functions and so on as usual at this point.
+After `meep-fields-solve-cw` completes, it should be as if you had just run the simulation for an infinite time with the source at that frequency. You can call the various field-output functions and so on as usual at this point. For examples, see [Tutorial/Frequency Domain Solver](Scheme_Tutorials/Frequency_Domain_Solver.md) and [Tutorial/Mode Decomposition/Reflectance and Transmittance Spectra for Planewave at Oblique Incidence](Scheme_Tutorials/Mode_Decomposition.md#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence).
+
+**Note:** The convergence of the iterative solver can sometimes encounter difficulties. For example, increasing the diameter of a ring resonator relative to the wavelength increases the [condition number](https://en.wikipedia.org/wiki/Condition_number), which worsens the convergence of iterative solvers. The general way to improve this is to implement a more sophisticated iterative solver that employs [preconditioners](https://en.wikipedia.org/wiki/Preconditioner). Preconditioning wave equations (Helmholtz-like equations) is notoriously difficult to do well, but some possible strategies are discussed in [Issue #548](https://github.com/NanoComp/meep/issues/548). In the meantime, a simpler way improving convergence (at the expense of computational cost) is to increase the $L$ parameter and the number of iterations.
 
 Run and Step Functions
 ----------------------
 
-The actual work in Meep is performed by *run* functions, which time-step the simulation for a given amount of time or until a given condition is satisfied.
+The actual work in Meep is performed by `run` functions, which time-step the simulation for a given amount of time or until a given condition is satisfied.
 
-The run functions, in turn, can be modified by use of *step functions*: these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many *modifier functions*, like *at-beginning*, *during-sources*, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
+The run functions, in turn, can be modified by use of [step functions](#predefined-step-functions): these are called at every time step and can perform any arbitrary computation on the fields, do outputs and I/O, or even modify the simulation. The step functions can be transformed by many [modifier functions](#step-function-modifiers), like `at-beginning`, `during-sources`, etcetera which cause them to only be called at certain times, etcetera, instead of at every time step.
 
 A common point of confusion is described in [The Run Function Is Not A Loop](The_Run_Function_Is_Not_A_Loop.md). Read this article if you want to make Meep do some customized action on each time step, as many users make the same mistake. What you really want to in that case is to write a step function, as described below.
 
@@ -1308,11 +1338,11 @@ The predefined output functions are:
 
 **`output-epsilon`**
 —
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
+Output the dielectric function (relative permittivity) ε. Note that this only outputs the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 **`output-mu`**
 —
-Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
+Output the relative permeability function μ. Note that this only outputs the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 **`(output-dft dft-fields fname [where])`**
 —
@@ -1408,7 +1438,7 @@ For example, `(map harminv-freq-re harminv-results)` gives a list of the real pa
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Scheme_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Scheme_Tutorials/Basics.md) for examples.
 
 #### Miscellaneous Step-Function Modifiers
 
@@ -1522,4 +1552,4 @@ If you look at a function in the C++ interface, then there are a few simple rule
 -   Second, any method of a class is prefixed with the name of the class and a hyphen. For example, `meep::fields::step`, which is the function that performs a time-step, is exposed to Scheme as `meep-fields-step`. Moreover, you pass the object as the first argument in the Scheme wrapper. e.g. `f.step()` becomes `(meep-fields-step f)`.
 -   To call the C++ constructor for a type, you use `new-*`. e.g. `(new-meep-fields ...)` returns a new `meep::fields` object. Conversely, to call the destructor and deallocate an object, you use `delete-*`; most of the time, this is not necessary because objects are automatically garbage collected.
 
-Some argument type conversion is performed automatically, e.g. types like complex numbers are converted to `complex<double>`, etcetera. `vector3` vectors are converted to `meep::vec`, but to do this we need to know the dimensionality of the problem in C++. The problem dimensions are automatically initialized by `init-structure`, but if you want to pass vector arguments to C++ before that time you should call `(require-dimensions!)`, which infers the dimensions from the `geometry-lattice`, `k-point`, and `dimensions` variables.
+Some argument type conversion is performed automatically, e.g. types like complex numbers are converted to `complex<double>`, etcetera. `vector3` vectors are converted to `meep::vec`, but to do this it is necessary to know the dimensionality of the problem in C++. The problem dimensions are automatically initialized by `init-structure`, but if you want to pass vector arguments to C++ before that time you should call `(require-dimensions!)`, which infers the dimensions from the `geometry-lattice`, `k-point`, and `dimensions` variables.

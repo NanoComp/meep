@@ -1,27 +1,112 @@
 # Meep Release Notes
 
+## Meep 1.13.1
+
+2/25/2020
+
+* Avoid writing to source directory in remaining tests (#1132).
+
+## Meep 1.13.0
+
+2/19/2020
+
+* Optional parameter `omega` for `output-epsilon` and similar functions,
+  allowing the complex ε and μ at a given frequency to be outputted (#1112, following #919).
+
+* `near2far` computation now supports cylindrical coordinates (#1090).
+
+* Experimental support for slanted prisms (requires libctl 4.5)
+  via `sidewall_angle` parameter to prism objects (#1129).
+
+* New `yee_grid=False` optional argument to `add_dft_fields`; by passing `True`
+  one can compute the fields on the original Yee grid (#1095).
+
+* New function `meep::make_output_directory()` to make a temporary
+  directory (in `TMPDIR` or similar) and `meep::delete_directory(path)`
+  to perform recursive deletion (like `rm -rf`).  These are now
+  used in tests to avoid writing to the source directory (#1121, #1122 and #1126).
+
+* Jupyter notebooks now show a graphical progress bar during simulations (#1078).
+
+* `kz-2d` option in Scheme, mirroring Python `kz_2d` (#1062).
+
+* Various bugfixes, documentation supplements, and other minor improvements.
+
+## Meep 1.12.0
+
+11/12/19
+
+  * Faster 2d simulations with nonzero `kz` via the `kz_2d` option (#1047).
+
+  * New Meep `verbosity` option superseding `quiet` and `verbose` flags (#994).
+
+  * Output now only shows ≤ 10 geometric objects by default (#1002).
+
+  * Performance improvements for `split_chunks_evenly=False`.
+
+  * Fixed memory leaks (#1041, #1042).
+
+## Meep 1.11.0
+
+7/29/19
+
+  * Experimental support for gyrotropic media including magneto-optical effects (#863).
+
+  * Mode decomposition for oblique waveguides (#940, #945) and dispersive materials (#919).
+
+  * Accept tuples in place of Vector3 arguments (#960).
+
+  * Capture C++ error messages in Python notebooks (#953).
+
+  * Automatically abort simulation if the fields blow up (#922).
+
+  * Print additional timing statistics (#927, #952).
+
+  * Various small bugfixes and documentation improvements.
+
+## Meep 1.10.0
+
+6/5/19
+
+  * New Python functions for simple visualization of the simulation domain (#872).
+
+  * Capture Meep and MPB output in Python notebooks (#891, #894)
+
+  * Add optional `meep.quiet()` parameter to the Python interface (#876).
+
+  * Python evaluation of materials ε(ω) and μ(ω) (#862).
+
+  * Experimental multithreading support for near2far calculation (#868) and other speedups (#869).
+
+  * Add `stop_after_walltime` and `stop_on_interrupt` in Python (#860).
+
+  * GDSII file introspection (#817).
+
+  * Various small bugfixes and documentation improvements.
+
+
 ## Meep 1.9.0
 
 4/17/19
 
   * Adjoint solver to compute sensitivity of solution to material perturbations (#795).
-  
+
   * Experimental `do_averaging` feature for user-defined material functions (#771, #791).
-  
+
   * Periodic boundaries support in `near2far` via `nperiods` option (#769, #789).
-  
+
   * Capture more output in Python notebooks (#785, #807).
-  
+
   * `dft-energy` feature (#744, #747).
-  
+
   * Eigenmode sources are normalized to unit power (#728).
-  
+
   * Fix interpolation of DFT slice output (#787).
-  
+
   * Bug fix in `run-k-points` (#779).
-  
+
   * Eigenmode sources for negative angles (#752).
-  
+
   * Various other minor bugfixes, build fixes, documentation improvements, tutorials, etcetera.
 
 ## Meep 1.8.0
@@ -65,7 +150,7 @@
  * Add `transform` method to `meep.Medium` (#603).
 
  * Read epsilon input from a numpy array when passed to a `Simulation` as `default_material`(#593).
- 
+
  * Support `geometry_center` in Python (#599).
 
  * Add Python `Ldos` class (#581).
@@ -85,7 +170,7 @@
  * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz (#602).
 
  * Fix sync of eigenmode calculation when no mode is found (#596).
- 
+
  * Fix memory leak in `get_dft_array` (#577).
 
  * Use same MPB phase on all processes, fixing bug with eigenmodes and multiprocessing (#578).

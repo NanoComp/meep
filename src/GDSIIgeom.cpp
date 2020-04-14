@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -292,12 +292,13 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, dou
 
 #endif // HAVE_LIBGDSII
 
-std::vector<int> get_GDSII_layers(const char *GDSIIFile)
-{
+std::vector<int> get_GDSII_layers(const char *GDSIIFile) {
 #if defined(HAVE_LIBGDSII) && defined(HAVE_GDSII_GETLAYERS)
   return libGDSII::GetLayers(GDSIIFile);
 #else
-  GDSIIError("get_GDSII_layers (needs libGDSII version 0.21 or later)");
+  (void)GDSIIFile;
+  meep::abort(
+      "get_GDSII_layers needs Meep to be configured/compiled with libGDSII version 0.21 or later");
   std::vector<int> layers;
   return layers;
 #endif

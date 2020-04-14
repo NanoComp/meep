@@ -2,7 +2,7 @@
 # Frequency Domain Solver
 ---
 
-This tutorial demonstrates Meep's [frequency-domain solver](../Scheme_User_Interface.md#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For details on how this feature works, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in [Tutorial/Basics](Basics.md#modes-of-a-ring-resonator). We will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver.
+This tutorial demonstrates Meep's [frequency-domain solver](../Scheme_User_Interface.md#frequency-domain-solver) which is used to compute the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). For details on how this feature works, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This example involves using the frequency-domain solver to compute the fields of a ring resonator which has been described in [Tutorial/Basics/Modes of a Ring Resonator](Basics.md#modes-of-a-ring-resonator). We will verify that the error in the computed fields decreases monotonically with decreasing tolerance of the iterative solver.
 
 Usage of the frequency-domain solver involves only two changes to the [original simulation](https://github.com/NanoComp/meep/blob/master/scheme/examples/ring.ctl): (1) replace the Gaussian-pulse source with a [continuous source](../Scheme_User_Interface.md#source), and (2) turn on complex fields since, by default, real fields are used. Everything else remains unchanged.
 
@@ -32,14 +32,13 @@ The simulation script is in [examples/solve-cw.ctl](https://github.com/NanoComp/
 (set-param! resolution 10)
 
 (define-param fcen 0.118)
-(define-param df 0.08)
 (set! sources (list
                (make source
-                 (src (make continuous-src (frequency fcen) (fwidth df)))
+                 (src (make continuous-src (frequency fcen)))
                  (component Ez)
                  (center (+ r 0.1) 0))
                (make source
-                 (src (make continuous-src (frequency fcen) (fwidth df)))
+                 (src (make continuous-src (frequency fcen)))
                  (component Ez)
                  (center (- (+ r 0.1)) 0)
                  (amplitude -1))))

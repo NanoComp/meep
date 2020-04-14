@@ -37,7 +37,6 @@
 namespace meep {
     size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
     typedef std::complex<double> (*amplitude_function)(const vec &);
-    void (*master_printf_callback)(const char *s);
 }
 
 #ifdef HAVE_MPB
@@ -54,7 +53,7 @@ namespace meep {
         vec center;
         amplitude_function amp_func;
         int band_num;
-        double omega;
+        double frequency;
         double group_velocity;
     };
 }
@@ -202,11 +201,25 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
 
 void py_master_printf_wrap(const char *s) {
     PySys_WriteStdout("%s", s);
+    static PyObject *py_stdout = NULL;
+    if (py_stdout == NULL) {
+      py_stdout = PySys_GetObject("stdout");
+    }
+    PyObject *result = PyObject_CallMethod(py_stdout, "flush", NULL);
+    Py_XDECREF(result);
 }
 
 void set_ctl_printf_callback(void (*callback)(const char *s)) {
 #if HAVE_CTL_PRINTF_CALLBACK
   ctl_printf_callback = callback;
+#else
+  (void)callback;
+#endif
+}
+
+void set_mpb_printf_callback(void (*callback)(const char *s)) {
+#if HAVE_MPB_PRINTF_CALLBACK
+  mpb_printf_callback = callback;
 #else
   (void)callback;
 #endif
@@ -293,7 +306,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 // Wrapper around meep::dft_near2far::farfield
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
-    Py_ssize_t len = f->Nfreq * 6;
+    Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
     std::complex<double> *ff_arr = f->farfield(v);
@@ -322,7 +335,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
     // frequencies are the last dimension
-    if (n2f->Nfreq > 1) dims[rank++] = n2f->Nfreq;
+    if (n2f->freq.size() > 1) dims[rank++] = n2f->freq.size();
 
     // Additional rank to store all 12 E/H x/y/z r/i arrays.
     rank++;
@@ -333,7 +346,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     }
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_DOUBLE);
-    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->Nfreq);
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->freq.size());
 
     delete[] arr_dims;
     delete[] EH;
@@ -343,7 +356,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 
 // Wrapper around meep::dft_ldos::ldos
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
-    Py_ssize_t len = f->Nomega;
+    Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
     double *tmp = f->ldos();
@@ -359,7 +372,7 @@ PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
 
 // Wrapper around meep::dft_ldos_F
 PyObject *_dft_ldos_F(meep::dft_ldos *f) {
-    Py_ssize_t len = f->Nomega;
+    Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
     std::complex<double> *tmp = f->F();
@@ -375,7 +388,7 @@ PyObject *_dft_ldos_F(meep::dft_ldos *f) {
 
 // Wrapper arond meep::dft_ldos_J
 PyObject *_dft_ldos_J(meep::dft_ldos *f) {
-    Py_ssize_t len = f->Nomega;
+    Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
     std::complex<double> *tmp = f->J();
@@ -407,7 +420,7 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     int rank;
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
- 
+
     if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
      return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
@@ -441,7 +454,7 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
     }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
-        size_t Nchunk = cur->N * cur->Nomega;
+        size_t Nchunk = cur->N * cur->omega.size();
         for (size_t i = 0; i < Nchunk; ++i) {
             cdata[i + istart] = cur->dft[i];
         }
@@ -459,7 +472,7 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int
     }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
-        size_t Nchunk = cur->N * cur->Nomega;
+        size_t Nchunk = cur->N * cur->omega.size();
         for (size_t i = 0; i < Nchunk; ++i) {
             cur->dft[i] = cdata[i + istart];
         }
@@ -478,14 +491,14 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int *bands, int num_bands, int parity, double eig_resolution,
                                                    double eigensolver_tol, std::complex<double> *coeffs,
                                                    double *vgrp, meep::kpoint_func user_kpoint_func,
-                                                   void *user_kpoint_data, bool verbose) {
+                                                   void *user_kpoint_data, double *cscale, meep::direction d) {
 
-    size_t num_kpoints = num_bands * flux.Nfreq;
+    size_t num_kpoints = num_bands * flux.freq.size();
     meep::vec *kpoints = new meep::vec[num_kpoints];
     meep::vec *kdom = new meep::vec[num_kpoints];
 
     f->get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
-                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, verbose);
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, cscale, d);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -506,13 +519,13 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 }
 
 #ifdef HAVE_MPB
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                     bool verbose, double kdom[3]) {
+                                     double kdom[3]) {
 
-    void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
-                                  parity, resolution, eigensolver_tol, verbose, kdom);
+    void *data = f->get_eigenmode(frequency, d, where, eig_vol, band_num, _kpoint, match_frequency,
+                                  parity, resolution, eigensolver_tol, kdom);
     return (meep::eigenmode_data *)data;
 }
 
@@ -525,13 +538,13 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
 }
 
 #else
-void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                    bool verbose, double kdom[3]) {
-    (void) f; (void) omega_src; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
+                    double kdom[3]) {
+    (void) f; (void) frequency; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
     (void) match_frequency; (void) parity; (void) resolution; (void) eigensolver_tol;
-    (void) verbose; (void) kdom;
+    (void) kdom;
     meep::abort("Must compile Meep with MPB for get_eigenmode");
 }
 #endif
@@ -554,10 +567,8 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 double py_pml_profile(double u, void *f);
 
 %constant void py_master_printf_wrap(const char *s);
-namespace meep {
-    void (*master_printf_callback)(const char *s);
-}
 void set_ctl_printf_callback(void (*callback)(const char *s));
+void set_mpb_printf_callback(void (*callback)(const char *s));
 
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
                      double spectral_density, double Q_thresh, double rel_err_thresh,
@@ -785,7 +796,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for dft_flux
 
 %typemap(out) double* flux {
-    int size = arg1->Nfreq;
+    int size = arg1->freq.size();
     $result = PyList_New(size);
     for(int i = 0; i < size; i++) {
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
@@ -797,13 +808,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for dft_force
 
 %typemap(out) double* force {
-    int size = arg1->Nfreq;
+    int size = arg1->freq.size();
     $result = PyList_New(size);
     for(int i = 0; i < size; i++) {
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
     }
 
-    delete $1;
+    delete[] $1;
 }
 
 // Typemap suite for material_type
@@ -914,6 +925,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
+// typemap for solve_cw:
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* eigfreq {
+    $1 = is_array($input);
+}
+
+%typemap(in) std::complex<double>* eigfreq {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+
 //--------------------------------------------------
 // typemaps needed for get_eigenmode_coefficients
 //--------------------------------------------------
@@ -935,6 +957,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (double *)array_data($input);
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* cscale {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* cscale {
+    $1 = (double *)array_data($input);
+}
+
 //--------------------------------------------------
 // end typemaps for get_eigenmode_coefficients
 //--------------------------------------------------
@@ -942,6 +972,18 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 // typemaps needed for add_dft_fields
 //--------------------------------------------------
+
+%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)}
+
+%typecheck(SWIG_TYPECHECK_POINTER) const volume where {
+    int py_material = PyObject_IsInstance($input, py_volume_object());
+    $1 = py_material;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) meep::component *components {
+    $1 = PyList_Check($input);
+}
+
 %typemap(in) (meep::component *components, int num_components) {
     if (!PyList_Check($input)) {
         meep::abort("Expected a list");
@@ -1191,6 +1233,15 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     double *total
 };
 
+%exception {
+  try {
+    $action
+  } catch (std::runtime_error &e) {
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+    SWIG_fail;
+  }
+}
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
@@ -1277,15 +1328,15 @@ struct eigenmode_data {
     vec center;
     amplitude_function amp_func;
     int band_num;
-    double omega;
+    double frequency;
     double group_velocity;
 };
 }
 
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                                     bool verbose, double kdom[3]);
+                                     double kdom[3]);
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 
 %extend meep::eigenmode_data {
@@ -1295,39 +1346,16 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 }
 
 #else
-void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
-                    bool verbose, double kdom[3]);
+                    double kdom[3]);
 #endif // HAVE_MPB
 
-// Make omega members of meep::dft_ldos available as 'freq' in python
-%extend meep::dft_ldos {
-
-    double get_omega_min() {
-        return $self->omega_min;
-    }
-    double get_domega() {
-        return $self->domega;
-    }
-    int get_Nomega() {
-        return $self->Nomega;
-    }
-    %pythoncode %{
-        def freqs(self):
-            import math
-            import numpy as np
-            start = self.omega_min / (2 * math.pi)
-            stop = start + (self.domega / (2 * math.pi)) * self.Nomega
-            return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
-
-        __swig_getmethods__["freq_min"] = get_omega_min
-        __swig_getmethods__["nfreq"] = get_Nomega
-        __swig_getmethods__["dfreq"] = get_domega
-        if _newclass: freq_min = property(get_omega_min)
-        if _newclass: nfreq = property(get_Nomega)
-        if _newclass: dfreq = property(get_domega)
-    %}
+%extend meep::fields {
+  bool is_periodic(boundary_side side, direction dir) {
+    return $self->boundaries[side][dir] == meep::Periodic;
+  }
 }
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
@@ -1338,7 +1366,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    int parity, double eig_resolution, double eigensolver_tol,
                                                    std::complex<double> *coeffs, double *vgrp,
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                                   bool verbose);
+                                                   double *cscale, meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions);
 
@@ -1439,6 +1467,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         get_fluxes,
         get_force_freqs,
         get_forces,
+        get_ldos_freqs,
         get_magnetic_energy,
         get_near2far_freqs,
         get_total_energy,
@@ -1488,14 +1517,18 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         output_sfield_r,
         output_sfield_p,
         py_v3_to_vec,
+        quiet,
         scale_energy_fields,
         scale_flux_fields,
         scale_force_fields,
         scale_near2far_fields,
+        stop_after_walltime,
+        stop_on_interrupt,
         stop_when_fields_decayed,
         synchronized_magnetic,
         to_appended,
         vec,
+        verbosity,
         when_true,
         when_false,
         with_prefix
@@ -1509,12 +1542,18 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         SourceTime,
         check_positive,
     )
+    from .visualization import (
+        plot2D,
+        plot3D,
+        plot_fields,
+        Animate2D
+    )
 
     if with_mpi():
         try:
             from mpi4py import MPI
-        except ImportError:
-            print('\n**\n** failed to load python MPI module (mpi4py)\n**\n')
+        except ImportError as e:
+            print('\n**\n** failed to load python MPI module (mpi4py)\n**', e, '\n**\n')
             pass
         else:
             # this variable reference is needed for lazy initialization of MPI
@@ -1544,6 +1583,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     atexit.register(report_elapsed_time)
 %}
 
+%newobject create_structure_and_set_materials;
 %inline %{
 
 size_t get_realnum_size() {
@@ -1567,12 +1607,12 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     geometric_object_list gobj_list,
                                                     vector3 center,
                                                     bool _ensure_periodicity,
-                                                    bool verbose,
                                                     meep_geom::material_type _default_material,
                                                     meep_geom::absorber_list alist,
                                                     meep_geom::material_type_list extra_materials,
                                                     bool split_chunks_evenly,
-                                                    bool set_materials) {
+                                                    bool set_materials,
+                                                    meep::structure *existing_s) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1587,15 +1627,42 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
     meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
                                            &gv, cell_size, center, &gobj_list);
-
-    meep::structure *s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
-                                             use_anisotropic_averaging, tol, maxeval);
+    meep::structure *s;
+    if (existing_s) {
+      s = existing_s;
+    }
+    else {
+      s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
+                              use_anisotropic_averaging, tol, maxeval);
+    }
     s->shared_chunks = true;
 
     if (set_materials) {
       meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
-                                             maxeval, _ensure_periodicity, verbose, _default_material,
+                                             maxeval, _ensure_periodicity, _default_material,
                                              alist, extra_materials);
+    }
+
+    if (meep::verbosity > 1 && !split_chunks_evenly && set_materials) {
+      int num_procs = meep::count_processors();
+      double *costs = new double[num_procs];
+      for (int i = 0; i < num_procs; i++)
+        costs[i] = 0;
+      for (int i = 0; i < s->num_chunks; i++)
+        costs[s->chunks[i]->n_proc()] += s->chunks[i]->gv.get_cost();
+      double sum = 0, sumsq = 0;
+      master_printf("estimated costs per process: ");
+      for (int i = 0; i < num_procs; i++) {
+        double cost = costs[i];
+        sum += cost;
+        sumsq += cost*cost;
+        master_printf("%g%s", cost, i == num_procs - 1 ? "\n" : ", ");
+      }
+      delete[] costs;
+      double mean = sum / num_procs;
+      double stddev = sumsq - num_procs * mean * mean;
+      stddev = num_procs == 1 || stddev <= 0 ? 0.0 : sqrt(stddev / (num_procs - 1));
+      master_printf("estimated cost mean = %g, stddev = %g\n", mean, stddev);
     }
 
     // Return params to default state

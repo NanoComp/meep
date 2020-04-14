@@ -35,7 +35,7 @@ kpoint_list do_get_eigenmode_coefficients(meep::fields *f, meep::dft_flux flux,
                                           int parity, std::complex<double> *coeffs, double *vgrp,
                                           double eig_resolution, double eigensolver_tol,
                                           meep::kpoint_func user_kpoint_func,
-                                          void *user_kpoint_data);
+                                          void *user_kpoint_data, int dir);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 ctlio::number_list dft_energy_electric(meep::dft_energy *f);

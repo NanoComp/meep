@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,6 @@ namespace meep {
 fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin)
     : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta) {
   shared_chunks = s->shared_chunks;
-  verbosity = 0;
   components_allocated = false;
   synchronized_magnetic_fields = 0;
   outdir = new char[strlen(s->outdir) + 1];
@@ -48,13 +47,8 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   sources = NULL;
   fluxes = NULL;
   // Time stuff:
-  for (int i = 0; i < MEEP_TIMING_STACK_SZ; ++i)
-    was_working_on[i] = Other;
-  working_on = Other;
-  for (int i = 0; i <= Other; i++)
-    times_spent[i] = 0.0;
-  last_wall_time = last_step_output_wall_time = -1;
-  am_now_working_on(Other);
+  reset_timers();
+  last_step_output_wall_time = -1;
 
   num_chunks = s->num_chunks;
   typedef fields_chunk *fields_chunk_ptr;
@@ -92,7 +86,6 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
 fields::fields(const fields &thef)
     : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v) {
   shared_chunks = thef.shared_chunks;
-  verbosity = 0;
   components_allocated = thef.components_allocated;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
   outdir = new char[strlen(thef.outdir) + 1];
@@ -111,13 +104,8 @@ fields::fields(const fields &thef)
   sources = NULL;
   fluxes = NULL;
   // Time stuff:
-  for (int i = 0; i < MEEP_TIMING_STACK_SZ; ++i)
-    was_working_on[i] = Other;
-  working_on = Other;
-  for (int i = 0; i <= Other; i++)
-    times_spent[i] = 0.0;
-  last_wall_time = -1;
-  am_now_working_on(Other);
+  reset_timers();
+  last_step_output_wall_time = -1;
 
   num_chunks = thef.num_chunks;
   typedef fields_chunk *fields_chunk_ptr;
@@ -154,13 +142,6 @@ fields::~fields() {
   delete sources;
   delete fluxes;
   delete[] outdir;
-  if (!quiet) print_times();
-}
-
-void fields::verbose(int gv) {
-  verbosity = gv;
-  for (int i = 0; i < num_chunks; i++)
-    chunks[i]->verbose(gv);
 }
 
 void fields::use_real_fields() {
@@ -232,7 +213,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
       beta(beta) {
   s = the_s;
   s->refcount++;
-  verbosity = 0;
   outdir = od;
   new_s = NULL;
   is_real = 0;
@@ -252,7 +232,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
       if (cur) {
         cur->next = p;
         cur = p;
-      } else {
+      }
+      else {
         pol[ft] = cur = p;
       }
     }
@@ -289,7 +270,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
 fields_chunk::fields_chunk(const fields_chunk &thef) : gv(thef.gv), v(thef.v) {
   s = thef.s;
   s->refcount++;
-  verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
   zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;
@@ -313,7 +293,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef) : gv(thef.gv), v(thef.v) {
       if (cur) {
         cur->next = p;
         cur = p;
-      } else {
+      }
+      else {
         pol[ft] = cur = p;
       }
     }
@@ -429,7 +410,8 @@ void fields_chunk::figure_out_step_plan() {
             minus_component[c1] = c2;
             have_minus_deriv[c1] = true;
             minus_deriv_direction[c1] = d_deriv;
-          } else {
+          }
+          else {
             plus_component[c1] = c2;
             have_plus_deriv[c1] = true;
             plus_deriv_direction[c1] = d_deriv;
@@ -477,7 +459,8 @@ bool fields_chunk::alloc_f(component c) {
               f[bc][cmp][i] = 0.0;
           }
           f[c][cmp] = f[bc][cmp];
-        } else {
+        }
+        else {
           f[c][cmp] = new realnum[gv.ntot()];
           for (size_t i = 0; i < gv.ntot(); i++)
             f[c][cmp][i] = 0.0;

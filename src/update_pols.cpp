@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2019 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2020 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -31,10 +31,6 @@ void fields::update_pols(field_type ft) {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->update_pols(ft)) chunk_connections_valid = false;
-
-  /* synchronize to avoid deadlocks if one process decides it needs
-     to allocate E or H ... */
-  chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
 bool fields_chunk::update_pols(field_type ft) {
