@@ -7,7 +7,6 @@ class FilteredSource(CustomSource):
     def __init__(self,center_frequency,frequencies,frequency_response,dt,time_src=None):
         dt = dt/2 # divide by two to compensate for staggered E,H time interval
         self.dt = dt
-        df = frequencies[1]-frequencies[0]
         self.frequencies=frequencies
         self.center_frequencies = frequencies
 
@@ -15,7 +14,7 @@ class FilteredSource(CustomSource):
         # resulting nodes are wildly large and induce numerical precision errors. We can always 
         # produce a safe simulation by forcing the length of each basis function to meet the minimum
         # frequency requirements. This method still minimizes storage requirements.
-        self.T = 1/np.diff(frequencies)[0]
+        self.T = np.max(np.abs(1/np.diff(frequencies)))
         self.N = np.rint(self.T/self.dt)
         self.t = np.arange(0,dt*(self.N),dt)
         self.n = np.arange(self.N)
@@ -70,6 +69,8 @@ class FilteredSource(CustomSource):
         return np.exp(1j*2*np.pi*f[:,np.newaxis]*np.arange(y.size)*self.dt)@y
     
     def __call__(self,t):
+        if t > self.T:
+            return 0
         vec = self.nuttall(t,self.center_frequencies)
         return np.inner(vec,self.nodes)
     

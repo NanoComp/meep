@@ -23,5 +23,5 @@ def projection_filter(x,sigma,delta,beta):
     '''
     eta = 0.5 -  special.erf(delta/sigma)
     case1 = eta*npa.exp(-beta*(eta-x)/eta) - (eta-x)*npa.exp(-beta)
-    case2 = 1 - (1-eta)*eta*npa.exp(-beta*(x-eta)/(1-eta)) - (eta-x)*npa.exp(-beta)
+    case2 = 1 - (1-eta)*npa.exp(-beta*(x-eta)/(1-eta)) - (eta-x)*npa.exp(-beta)
     return npa.where(x < eta,case1,case2)

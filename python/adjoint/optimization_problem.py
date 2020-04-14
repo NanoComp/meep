@@ -54,7 +54,7 @@ class OptimizationProblem(object):
         self.num_design_regions = len(self.design_regions)
 
         # TODO typecheck frequency choices
-        if frequencies:
+        if frequencies is not None:
             self.frequencies = frequencies
             self.nf = np.array(frequencies).size
         else:

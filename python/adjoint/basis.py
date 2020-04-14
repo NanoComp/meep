@@ -94,10 +94,10 @@ class BilinearInterpolationBasis(Basis):
 
         # take care of symmetries
         if self.mirror_X:
-            dJ_deps = dJ_deps[int(dg_Nx/2):,:,:,:]
+            dJ_deps = dJ_deps[int(dg_Nx/2):,:,:,:] * 2
             x_grid = x_grid[int(dg_Nx/2):]
         if self.mirror_Y:
-            dJ_deps = dJ_deps[:,int(dg_Ny/2):,:,:]
+            dJ_deps = dJ_deps[:,int(dg_Ny/2):,:,:] * 2
             y_grid = y_grid[int(dg_Ny/2):]
 
         dg_Nx, dg_Ny, Nz, Nf = dJ_deps.shape # recalculate
