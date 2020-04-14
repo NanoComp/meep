@@ -20,7 +20,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
     # ----------- Helper Functions ------------ #
     # ----------------------------------------- #
     # Directly cals the C++ chi1 routine
-    def call_chi1(self,material,omega):
+    def call_chi1(self,material,frequency):
 
         sim = mp.Simulation(cell_size=mp.Vector3(1,1,1),
                     default_material=material,
@@ -31,10 +31,10 @@ class TestDispersiveEigenmode(unittest.TestCase):
         chi1inv = np.zeros((3,3),dtype=np.complex128)
         for i, com in enumerate([mp.Ex,mp.Ey,mp.Ez]):
             for k, dir in enumerate([mp.X,mp.Y,mp.Z]):
-                chi1inv[i,k] = sim.structure.get_chi1inv(com,dir,v3,omega)
+                chi1inv[i,k] = sim.structure.get_chi1inv(com,dir,v3,frequency)
         n = np.real(np.sqrt(np.linalg.inv(chi1inv.astype(np.complex128))))
 
-        n_actual = np.real(np.sqrt(material.epsilon(omega).astype(np.complex128)))
+        n_actual = np.real(np.sqrt(material.epsilon(frequency).astype(np.complex128)))
         
         np.testing.assert_allclose(n,n_actual)
 
@@ -46,9 +46,9 @@ class TestDispersiveEigenmode(unittest.TestCase):
     def tearDownClass(cls):
         mp.delete_directory(cls.temp_dir)
 
-    def verify_output_and_slice(self,material,omega):
+    def verify_output_and_slice(self,material,frequency):
         # Since the slice routines average the diagonals, we need to do that too:
-        chi1 = material.epsilon(omega).astype(np.complex128)
+        chi1 = material.epsilon(frequency).astype(np.complex128)
         chi1inv = np.linalg.inv(chi1)
         chi1inv = np.diag(chi1inv)
         N = chi1inv.size
@@ -62,13 +62,13 @@ class TestDispersiveEigenmode(unittest.TestCase):
         sim.use_output_directory(self.temp_dir)
         sim.init_sim()
         
-        # Check to make sure the get_slice routine is working with omega
-        n_slice = np.sqrt(np.max(sim.get_epsilon(omega)))
+        # Check to make sure the get_slice routine is working with frequency
+        n_slice = np.sqrt(np.max(sim.get_epsilon(frequency)))
         self.assertAlmostEqual(n,n_slice, places=4)
 
-        # Check to make sure h5 output is working with omega
+        # Check to make sure h5 output is working with frequency
         filename = os.path.join(self.temp_dir, 'dispersive_eigenmode-eps-000000.00.h5')
-        mp.output_epsilon(sim,omega=omega)
+        mp.output_epsilon(sim,frequency=frequency)
         n_h5 = 0
         mp.all_wait()
         with h5py.File(filename, 'r') as f:

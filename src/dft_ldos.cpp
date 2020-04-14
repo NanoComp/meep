@@ -23,19 +23,30 @@ using namespace std;
 namespace meep {
 
 dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
-  if (Nfreq <= 1) {
-    omega_min = (freq_min + freq_max) * pi;
-    domega = 0;
-    Nomega = 1;
-  }
-  else {
-    omega_min = freq_min * 2 * pi;
-    domega = (freq_max - freq_min) * 2 * pi / (Nfreq - 1);
-    Nomega = Nfreq;
-  }
-  Fdft = new complex<realnum>[Nomega];
-  Jdft = new complex<realnum>[Nomega];
-  for (int i = 0; i < Nomega; ++i)
+  freq = meep::linspace(freq_min, freq_max, Nfreq);
+  Fdft = new complex<realnum>[Nfreq];
+  Jdft = new complex<realnum>[Nfreq];
+  for (int i = 0; i < Nfreq; ++i)
+    Fdft[i] = Jdft[i] = 0.0;
+  Jsum = 1.0;
+}
+
+dft_ldos::dft_ldos(const std::vector<double> freq_) {
+  const size_t Nfreq = freq_.size();
+  freq = freq_;
+  Fdft = new complex<realnum>[Nfreq];
+  Jdft = new complex<realnum>[Nfreq];
+  for (size_t i = 0; i < Nfreq; ++i)
+    Fdft[i] = Jdft[i] = 0.0;
+  Jsum = 1.0;
+}
+
+dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
+  for (size_t i = 0; i < Nfreq; ++i)
+    freq[i] = freq_[i];
+  Fdft = new complex<realnum>[Nfreq];
+  Jdft = new complex<realnum>[Nfreq];
+  for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
 }
@@ -55,24 +66,27 @@ double *dft_ldos::ldos() const {
                  * -0.5                   // power = -1/2 Re[E* J]
                  / (Jsum_all * Jsum_all); // normalize to unit-integral current
 
-  double *sum = new double[Nomega];
-  for (int i = 0; i < Nomega; ++i) /* 4/pi * work done by unit dipole */
+  const size_t Nfreq = freq.size();
+  double *sum = new double[Nfreq];
+  for (size_t i = 0; i < Nfreq; ++i) /* 4/pi * work done by unit dipole */
     sum[i] = scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
-  double *out = new double[Nomega];
-  sum_to_all(sum, out, Nomega);
+  double *out = new double[Nfreq];
+  sum_to_all(sum, out, Nfreq);
   delete[] sum;
   return out;
 }
 
 complex<double> *dft_ldos::F() const {
-  complex<double> *out = new complex<double>[Nomega];
-  sum_to_all(Fdft, out, Nomega);
+  const size_t Nfreq = freq.size();
+  complex<double> *out = new complex<double>[Nfreq];
+  sum_to_all(Fdft, out, Nfreq);
   return out;
 }
 
 complex<double> *dft_ldos::J() const {
-  complex<double> *out = new complex<double>[Nomega];
-  sum_to_all(Jdft, out, Nomega);
+  const size_t Nfreq = freq.size();
+  complex<double> *out = new complex<double>[Nfreq];
+  sum_to_all(Jdft, out, Nfreq);
   return out;
 }
 
@@ -129,9 +143,9 @@ void dft_ldos::update(fields &f) {
         }
       }
     }
-  for (int i = 0; i < Nomega; ++i) {
-    complex<double> Ephase = polar(1.0, (omega_min + i * domega) * f.time()) * scale;
-    complex<double> Hphase = polar(1.0, (omega_min + i * domega) * (f.time() - f.dt / 2)) * scale;
+  for (size_t i = 0; i < freq.size(); ++i) {
+    complex<double> Ephase = polar(1.0, 2*pi * freq[i] * f.time()) * scale;
+    complex<double> Hphase = polar(1.0, 2*pi * freq[i] * (f.time() - f.dt / 2)) * scale;
     Fdft[i] += Ephase * EJ + Hphase * HJ;
 
     // NOTE: take only 1st time dependence: assumes all sources have same J(t)

@@ -45,22 +45,22 @@ class TestDFTFields(unittest.TestCase):
     def test_use_centered_grid(self):
         sim = self.init()
         sim.init_sim()
-        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1, yee_grid=True)
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1, yee_grid=True)
         sim.run(until=100)
-        
+
     def test_get_dft_array(self):
         sim = self.init()
         sim.init_sim()
-        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1)
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1)
         fr = mp.FluxRegion(mp.Vector3(), size=mp.Vector3(self.sxy, self.sxy), direction=mp.X)
         dft_flux = sim.add_flux(self.fcen, 0, 1, fr)
 
         # volumes with zero thickness in x and y directions to test collapsing
         # of empty dimensions in DFT array and HDF5 output routines
         thin_x_volume = mp.Volume(center=mp.Vector3(0.35*self.sxy), size=mp.Vector3(y=0.8*self.sxy))
-        thin_x_flux = sim.add_dft_fields([mp.Ez], self.fcen, self.fcen, 1, where=thin_x_volume)
+        thin_x_flux = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1, where=thin_x_volume)
         thin_y_volume = mp.Volume(center=mp.Vector3(y=0.25*self.sxy), size=mp.Vector3(x=self.sxy))
-        thin_y_flux = sim.add_flux(self.fcen, self.fcen, 1, mp.FluxRegion(volume=thin_y_volume))
+        thin_y_flux = sim.add_flux(self.fcen, 0, 1, mp.FluxRegion(volume=thin_y_volume))
 
         sim.run(until_after_sources=100)
 

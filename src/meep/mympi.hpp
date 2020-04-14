@@ -99,6 +99,8 @@ void debug_printf(const char *fmt, ...) PRINTF_ATTR(1, 2);
 void master_fprintf(FILE *f, const char *fmt, ...) PRINTF_ATTR(2, 3);
 FILE *master_fopen(const char *name, const char *mode);
 void master_fclose(FILE *f);
+typedef void (*meep_printf_callback_func)(const char *s);
+meep_printf_callback_func set_meep_printf_callback(meep_printf_callback_func func);
 
 void begin_critical_section(int tag);
 void end_critical_section(int tag);

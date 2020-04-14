@@ -11,7 +11,7 @@ bicgstab.hpp meepgeom.hpp material_data.hpp
 
 libmeep_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
 bands.cpp boundaries.cpp bicgstab.cpp casimir.cpp 	\
-control_c.cpp cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
+cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
 fields.cpp loop_in_chunks.cpp h5fields.cpp h5file.cpp 	\
 initialize.cpp integrate.cpp integrate2.cpp monitor.cpp mympi.cpp 	\
 multilevel-atom.cpp near2far.cpp output_directory.cpp random.cpp 	\

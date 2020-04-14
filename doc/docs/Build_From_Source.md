@@ -244,9 +244,20 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 —
 This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
 
+### Separating Build and Source Paths
+
+Meep supports ["VPATH" builds](https://www.gnu.org/software/automake/manual/html_node/VPATH-Builds.html), where you compile in a separate directory from the source directory.  This is helpful if you want to keep the source directory in a pristine state, or if you want to build multiple binaries simultaneously from the same source tree.   Just create a build directory and execute the `configure` script by supplying its path, for example
+
+```sh
+mkdir meepbuild
+cd meepbuild
+/path/to/meep/configure ...options...
+make
+```
+
 ### Building From Source
 
-The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. (There is a separate [script](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep.sh) if you only want the Scheme interface.) The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
 
 The entire build and install procedure can also be performed using an automated script:
 

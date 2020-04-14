@@ -23,8 +23,7 @@ si_zmin = 0
 oxide = mp.Medium(epsilon=2.25)
 silicon=mp.Medium(epsilon=12)
 
-lcen = 1.55
-fcen = 1/lcen
+fcen = 1/1.55
 df = 0.2*fcen
 
 def main(args):
@@ -72,8 +71,7 @@ def main(args):
         geometry = geometry+oxide_layer
 
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
-                                  size=src_vol.size,
-                                  center=src_vol.center,
+                                  volume=src_vol,
                                   eig_band=1,
                                   eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z,
                                   eig_match_freq=True)]

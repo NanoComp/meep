@@ -50,7 +50,7 @@ typedef struct {
   complex<double> *ph;
   complex<double> *fields;
   ptrdiff_t *offsets;
-  double omega;
+  double frequency;
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -144,7 +144,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
-  double omega = data->omega;
+  double frequency = data->frequency;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
   ptrdiff_t ieos[6];
@@ -175,11 +175,11 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
       if (cS[i] == Dielectric) {
         complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninveps; ++k) {
-          tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, omega) +
-                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], omega) +
-                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[1 + 2 * k], omega) +
+          tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, frequency) +
+                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], frequency) +
+                 fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[1 + 2 * k], frequency) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k] + ieos[1 + 2 * k],
-                                          omega));
+                                          frequency));
           if (tr == 0.0) tr += 4.0; // default inveps == 1
         }
         fields[i] = (4.0 * data->ninveps) / tr;
@@ -187,11 +187,11 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
       else if (cS[i] == Permeability) {
         complex<double> tr(0.0,0.0);
         for (int k = 0; k < data->ninvmu; ++k) {
-          tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, omega) +
-                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], omega) +
-                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[1 + 2 * k], omega) +
+          tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, frequency) +
+                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], frequency) +
+                 fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[1 + 2 * k], frequency) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k] + imos[1 + 2 * k],
-                                          omega));
+                                          frequency));
           if (tr == 0.0) tr += 4.0; // default invmu == 1
         }
         fields[i] = (4.0 * data->ninvmu) / tr;
@@ -224,7 +224,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
 void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
                          const component *components, field_function fun, void *fun_data_, int reim,
                          const volume &where, bool append_data, bool single_precision,
-                         double omega) {
+                         double frequency) {
   am_now_working_on(FieldOutput);
   h5_output_data data;
 
@@ -270,7 +270,7 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
   data.fun_data_ = fun_data_;
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
-  data.omega = omega;
+  data.frequency = frequency;
   data.ninveps = 0;
   bool needs_dielectric = false;
   for (int i = 0; i < num_fields; ++i)
@@ -320,23 +320,23 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
 void fields::output_hdf5(const char *dataname, int num_fields, const component *components,
                          field_function fun, void *fun_data_, const volume &where, h5file *file,
                          bool append_data, bool single_precision, const char *prefix,
-                         bool real_part_only, double omega) {
+                         bool real_part_only, double frequency) {
   bool delete_file;
   if ((delete_file = !file)) file = open_h5file(dataname, h5file::WRITE, prefix, true);
 
   if (real_part_only) {
     output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 0, where, append_data,
-                single_precision, omega);
+                single_precision, frequency);
   }
   else {
     int len = strlen(dataname) + 5;
     char *dataname2 = new char[len];
     snprintf(dataname2, len, "%s%s", dataname, ".r");
     output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 0, where, append_data,
-                single_precision, omega);
+                single_precision, frequency);
     snprintf(dataname2, len, "%s%s", dataname, ".i");
     output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 1, where, append_data,
-                single_precision, omega);
+                single_precision, frequency);
     delete[] dataname2;
   }
   if (delete_file) delete file;
@@ -357,7 +357,7 @@ static complex<double> rintegrand_fun(const complex<double> *fields, const vec &
 void fields::output_hdf5(const char *dataname, int num_fields, const component *components,
                          field_rfunction fun, void *fun_data_, const volume &where, h5file *file,
                          bool append_data, bool single_precision, const char *prefix,
-                         double omega) {
+                         double frequency) {
   bool delete_file;
   if ((delete_file = !file)) file = open_h5file(dataname, h5file::WRITE, prefix, true);
 
@@ -365,7 +365,7 @@ void fields::output_hdf5(const char *dataname, int num_fields, const component *
   data.fun = fun;
   data.fun_data_ = fun_data_;
   output_hdf5(file, dataname, num_fields, components, rintegrand_fun, (void *)&data, 0, where,
-              append_data, single_precision, omega);
+              append_data, single_precision, frequency);
 
   if (delete_file) delete file;
 }
@@ -379,27 +379,27 @@ static complex<double> component_fun(const complex<double> *fields, const vec &l
 }
 
 void fields::output_hdf5(component c, const volume &where, h5file *file, bool append_data,
-                         bool single_precision, const char *prefix, double omega) {
+                         bool single_precision, const char *prefix, double frequency) {
   if (is_derived(int(c))) {
-    output_hdf5(derived_component(c), where, file, append_data, single_precision, prefix, omega);
+    output_hdf5(derived_component(c), where, file, append_data, single_precision, prefix, frequency);
     return;
   }
 
   if (coordinate_mismatch(gv.dim, c)) return;
 
   char dataname[256];
-  bool has_imag = omega != 0 || (!is_real && c != Dielectric && c != Permeability);
+  bool has_imag = frequency != 0 || (!is_real && c != Dielectric && c != Permeability);
 
   bool delete_file;
   if ((delete_file = !file)) file = open_h5file(component_name(c), h5file::WRITE, prefix, true);
 
   snprintf(dataname, 256, "%s%s", component_name(c), has_imag ? ".r" : "");
   output_hdf5(file, dataname, 1, &c, component_fun, 0, 0, where, append_data, single_precision,
-              omega);
+              frequency);
   if (has_imag) {
     snprintf(dataname, 256, "%s.i", component_name(c));
     output_hdf5(file, dataname, 1, &c, component_fun, 0, 1, where, append_data, single_precision,
-                omega);
+                frequency);
   }
 
   if (delete_file) delete file;
@@ -408,9 +408,9 @@ void fields::output_hdf5(component c, const volume &where, h5file *file, bool ap
 /***************************************************************************/
 
 void fields::output_hdf5(derived_component c, const volume &where, h5file *file, bool append_data,
-                         bool single_precision, const char *prefix, double omega) {
+                         bool single_precision, const char *prefix, double frequency) {
   if (!is_derived(int(c))) {
-    output_hdf5(component(c), where, file, append_data, single_precision, prefix, omega);
+    output_hdf5(component(c), where, file, append_data, single_precision, prefix, frequency);
     return;
   }
 
@@ -421,7 +421,7 @@ void fields::output_hdf5(derived_component c, const volume &where, h5file *file,
   field_rfunction fun = derived_component_func(c, gv, nfields, cs);
 
   output_hdf5(component_name(c), nfields, cs, fun, &nfields, where, file, append_data,
-              single_precision, prefix, omega);
+              single_precision, prefix, frequency);
 }
 
 /***************************************************************************/

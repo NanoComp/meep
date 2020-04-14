@@ -180,10 +180,12 @@ int flux_2d(const double xmax, const double ymax, double eps(const vec &)) {
      around the source...should be positive and equal */
   volume box1(vec(xmax / 6 - 0.4, ymax / 6 - 0.2), vec(xmax / 6 + 0.6, ymax / 6 + 0.8));
   volume box2(vec(xmax / 6 - 0.9, ymax / 6 - 0.7), vec(xmax / 6 + 1.1, ymax / 6 + 1.3));
-  double fmin = 0.23, fmax = 0.27;
   int Nfreq = 10;
-  dft_flux flux1 = f.add_dft_flux_box(box1, fmin, fmax, Nfreq);
-  dft_flux flux2 = f.add_dft_flux_box(box2, fmin, fmax, Nfreq);
+  double freq_array[] = {0.230, 0.232, 0.238, 0.241, 0.248, 0.254, 0.256, 0.265, 0.269, 0.270};
+  // workaround for C++98 which does not support list initialization
+  const std::vector<double> freq(freq_array, freq_array + sizeof(freq_array)/sizeof(double));
+  dft_flux flux1 = f.add_dft_flux_box(box1, freq);
+  dft_flux flux2 = f.add_dft_flux_box(box2, freq);
 
   const double ttot = 130;
 
@@ -213,7 +215,7 @@ int flux_2d(const double xmax, const double ymax, double eps(const vec &)) {
   double *fl1 = flux1.flux();
   double *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
-    master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", fmin + i * flux1.dfreq, fl1[i], fl2[i],
+    master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", flux1.freq[i], fl1[i], fl2[i],
                   fl1[i] / fl2[i]);
     if (!compare(fl1[i], fl2[i], 0.09, 0, "Flux spectrum")) return 0;
   }
@@ -281,7 +283,7 @@ int flux_cyl(const double rmax, const double zmax, double eps(const vec &), int 
   double *fl1 = flux1.flux();
   double *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
-    master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", fmin + i * flux1.dfreq, fl1[i], fl2[i],
+    master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", flux1.freq[i], fl1[i], fl2[i],
                   fl1[i] / fl2[i]);
     if (!compare(fl1[i], fl2[i], 0.08, 0, "Flux spectrum")) return 0;
   }

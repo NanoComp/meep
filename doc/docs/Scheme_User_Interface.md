@@ -19,7 +19,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 
 **`geometry-center` [ `vector3` class ]**
 —
-Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).
+Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner). Setting `geometry-center` to `c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
 
 **`sources` [ list of `source` class ]**
 —
@@ -74,7 +74,7 @@ If `true` (the default) *and* if the boundary conditions are periodic (`k-point`
 
 **`eps-averaging?` [`boolean`]**
 —
-If `true` (the default), then subpixel averaging is used when initializing the dielectric function. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). The input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `true` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function.  For simulations involving a [material function](#material-function), `eps-averaging?` is `false` (the default) and must be enabled in which case the input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
 
 **`force-complex-fields?` [`boolean`]**
 —
@@ -102,7 +102,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 
 **`extra-materials` [ list of `material-type` class ]**
 —
-By default, Meep turns off support for material dispersion (via susceptibilities or conductivity) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
+By default, Meep turns off support for material dispersion ([susceptibilities](#susceptibility) or [conductivity](Materials.md#conductivity-and-complex)) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If your [material function](#material-function) only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function` here.
 
 The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
 
@@ -229,11 +229,11 @@ The frequency-independent magnetic conductivity $σ_B$. Default is 0. You can al
 
 **`chi2` [`number`]**
 —
-The nonlinear ([Pockels](https://en.wikipedia.org/wiki/Pockels_effect)) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`chi3` [`number`]**
 —
-The nonlinear ([Kerr](https://en.wikipedia.org/wiki/Kerr_effect)) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+The nonlinear [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
 **`E-susceptibilities` [ list of `susceptibility` class ]**
 —
@@ -247,9 +247,9 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 
 A perfectly-conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor`.
 
-**`material-function`**
+#### material function
 
-This material type allows you to specify the material as an arbitrary function of position. It has one property:
+This `material-function` type allows you to specify the material as an arbitrary function of position. It has one property:
 
 **`material-func` [`function`]**
 —
@@ -671,9 +671,9 @@ By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the 
 —
 The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, with respect to the `center` of the source region.  (In particular, it does not matter if your simulation as a whole has that symmetry, only the cross section where you are introducing the source.) If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN-Z + ODD-Y`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
-**`eig-resolution` [`integer`, defaults to same as Meep resolution ]**
+**`eig-resolution` [`integer`, defaults to `2*resolution` ]**
 —
-The spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels.
+The spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels.
 
 **`eig-tolerance` [`number`, defaults to 10<sup>–12</sup> ]**
 —
@@ -1013,7 +1013,7 @@ Here is an example of calling `get-eigenmode-coefficients` overriding the defaul
 (let ((result (get-eigenmode-coefficients flux (list 1) #:eig-parity (+ ODD-Z EVEN-Y))))
     (print (array-ref (list-ref result 0) 0 0 0)))
 ```
-The flux object must be created using `add-mode-monitor`.  (You could also use `add-flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add-flux` object should only be used with `get-eigenmode-coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add-flux` planes benefits more from symmetry.) `eig-vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `(meep-dft-flux-where-get flux)`). `eig-parity` should be one of [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `eigenmode-source` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `(+ EVEN-Z ODD-Y)`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig-resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels. `eig-tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.)
+The flux object must be created using `add-mode-monitor`.  (You could also use `add-flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add-flux` object should only be used with `get-eigenmode-coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add-flux` planes benefits more from symmetry.) `eig-vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `(meep-dft-flux-where-get flux)`). `eig-parity` should be one of [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `eigenmode-source` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `(+ EVEN-Z ODD-Y)`. Default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig-resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig-tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.)
 
 Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig-vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint-func`, which is a function `(kpoint-func f n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`.  (By default, the **k** components in the plane of the `eig-vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k-point` parameter, then the mode's **k** components in those directions will match `k-point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint-func`.) If `direction` is set to `NO_DIRECTION`, then `kpoint-func` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Scheme_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the flux plane).
 

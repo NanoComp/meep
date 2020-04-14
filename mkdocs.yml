@@ -45,6 +45,7 @@ pages:
     - 'Yee Lattice': 'Yee_Lattice.md'
     - 'Units and Nonlinearity': 'Units_and_Nonlinearity.md'
     - '2d Cell with Out-of-Plane Wavevector': '2d_Cell_Special_kz.md'
+    - 'Frequency-Domain Eigensolver': 'Eigensolver_Math.md'
 - 'Python Interface':
     - 'User Interface': 'Python_User_Interface.md'
     - 'Developer Information': 'Python_Developer_Information.md'

@@ -73,7 +73,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
 
   if (file_c >= int(Dielectric)) real_fields = true;
 
-  while (f.time() <= 3.0 && !interrupt)
+  while (f.time() <= 3.0)
     f.step();
 
   h5file *file = f.open_h5file(name);
@@ -182,7 +182,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
 
   if (file_c >= Dielectric) real_fields = true;
 
-  while (f.time() <= 3.0 && !interrupt)
+  while (f.time() <= 3.0)
     f.step();
 
   h5file *file = f.open_h5file(name);
@@ -305,7 +305,7 @@ bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc 
   const double T = 3.0;
   int NT = int(T / f.dt) + 2;
   complex<double> *mon = new complex<double>[NT];
-  while (f.time() <= T && !interrupt) {
+  while (f.time() <= T) {
     if (is_derived(file_c))
       f.output_hdf5(derived_component(file_c), volume(pt, pt), file, true);
     else

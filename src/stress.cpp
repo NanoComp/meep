@@ -27,10 +27,28 @@ namespace meep {
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin,
                      double fmax, int Nf, const volume &where_)
     : where(where_) {
-  if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
-  freq_min = fmin;
-  Nfreq = Nf;
-  dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
+  freq = meep::linspace(fmin, fmax, Nf);
+  offdiag1 = offdiag1_;
+  offdiag2 = offdiag2_;
+  diag = diag_;
+  // where = new volume(where_.get_min_corner(), where_.get_max_corner());
+}
+
+dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
+                     const std::vector<double> freq_, const volume &where_)
+    : where(where_) {
+  freq = freq_;
+  offdiag1 = offdiag1_;
+  offdiag2 = offdiag2_;
+  diag = diag_;
+  // where = new volume(where_.get_min_corner(), where_.get_max_corner());
+}
+
+dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
+                     const double *freq_, size_t Nfreq, const volume &where_)
+    : where(where_), freq(Nfreq) {
+  for (size_t i = 0; i < Nfreq; ++i)
+    freq[i] = freq_[i];
   offdiag1 = offdiag1_;
   offdiag2 = offdiag2_;
   diag = diag_;
@@ -38,9 +56,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
 }
 
 dft_force::dft_force(const dft_force &f) : where(f.where) {
-  freq_min = f.freq_min;
-  Nfreq = f.Nfreq;
-  dfreq = f.dfreq;
+  freq = f.freq;
   offdiag1 = f.offdiag1;
   offdiag2 = f.offdiag2;
   diag = f.diag;
@@ -71,26 +87,27 @@ void dft_force::operator-=(const dft_force &st) {
   if (diag && st.diag) *diag -= *st.diag;
 }
 
-static void stress_sum(int Nfreq, double *F, const dft_chunk *F1, const dft_chunk *F2) {
+static void stress_sum(size_t Nfreq, double *F, const dft_chunk *F1, const dft_chunk *F2) {
   for (const dft_chunk *curF1 = F1, *curF2 = F2; curF1 && curF2;
        curF1 = curF1->next_in_dft, curF2 = curF2->next_in_dft) {
     complex<realnum> extra_weight(real(curF1->extra_weight), imag(curF1->extra_weight));
     for (size_t k = 0; k < curF1->N; ++k)
-      for (int i = 0; i < Nfreq; ++i)
+      for (size_t i = 0; i < Nfreq; ++i)
         F[i] += real(extra_weight * curF1->dft[k * Nfreq + i] * conj(curF2->dft[k * Nfreq + i]));
   }
 }
 
 double *dft_force::force() {
+  const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];
-  for (int i = 0; i < Nfreq; ++i)
+  for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
 
   stress_sum(Nfreq, F, offdiag1, offdiag2);
   stress_sum(Nfreq, F, diag, diag);
 
   double *Fsum = new double[Nfreq];
-  sum_to_all(F, Fsum, Nfreq);
+  sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
   return Fsum;
 }
@@ -129,11 +146,11 @@ void dft_force::scale_dfts(complex<double> scale) {
   if (diag) diag->scale_dft(scale);
 }
 
+
 /* note that the components where->c indicate the direction of the
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
-dft_force fields::add_dft_force(const volume_list *where_, double freq_min, double freq_max,
-                                int Nfreq) {
+dft_force fields::add_dft_force(const volume_list *where_, const double *freq, size_t Nfreq) {
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
 
   volume_list *where = S.reduce(where_);
@@ -148,28 +165,28 @@ dft_force fields::add_dft_force(const volume_list *where_, double freq_min, doub
     if (coordinate_mismatch(gv.dim, fd)) abort("coordinate-type mismatch in add_dft_force");
 
     if (fd != nd) { // off-diagaonal stress-tensor terms
-      offdiag1 = add_dft(direction_component(Ex, fd), where->v, freq_min, freq_max, Nfreq, true,
+      offdiag1 = add_dft(direction_component(Ex, fd), where->v, freq, Nfreq, true,
                          where->weight, offdiag1);
-      offdiag2 = add_dft(direction_component(Ex, nd), where->v, freq_min, freq_max, Nfreq, false,
+      offdiag2 = add_dft(direction_component(Ex, nd), where->v, freq, Nfreq, false,
                          1.0, offdiag2);
-      offdiag1 = add_dft(direction_component(Hx, fd), where->v, freq_min, freq_max, Nfreq, true,
+      offdiag1 = add_dft(direction_component(Hx, fd), where->v, freq, Nfreq, true,
                          where->weight, offdiag1);
-      offdiag2 = add_dft(direction_component(Hx, nd), where->v, freq_min, freq_max, Nfreq, false,
+      offdiag2 = add_dft(direction_component(Hx, nd), where->v, freq, Nfreq, false,
                          1.0, offdiag2);
     }
     else // diagonal stress-tensor terms
       LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
         complex<double> weight1 = where->weight * (d == fd ? +0.5 : -0.5);
-        diag = add_dft(direction_component(Ex, d), where->v, freq_min, freq_max, Nfreq, true, 1.0,
+        diag = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0,
                        diag, true, weight1, false);
-        diag = add_dft(direction_component(Hx, d), where->v, freq_min, freq_max, Nfreq, true, 1.0,
+        diag = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0,
                        diag, true, weight1, false);
       }
     everywhere = everywhere | where->v;
   }
 
   delete where_save;
-  return dft_force(offdiag1, offdiag2, diag, freq_min, freq_max, Nfreq, everywhere);
+  return dft_force(offdiag1, offdiag2, diag, freq, Nfreq, everywhere);
 }
 
 } // namespace meep

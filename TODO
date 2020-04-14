@@ -1,11 +1,9 @@
-HDF5 file output routines for frequency-dependent permittivity and permeability.
-
 Skewed bloch periodic boundary conditions for non-orthogonal unit cells
 
 Discrete rotational symmetry in cylindrical coordinates.
 
 Second-order accurate subpixel smoothing scheme for
-dispersive materials involving complex permittivity.
+dispersive materials with complex permittivity.
 
 Support 3d (r,phi,z) cell, where m is "Bloch wavenumber"
       -- gives 6-fold (and n-fold) symmetry as side effect
@@ -18,7 +16,7 @@ Re-entrant functions: foo(vec&) arguments should be foo(vec&, void*)
 where the second argument can be used to pass state (instead of global
 vars).
 
-User proper PML for cylindrical coordinates, rather than quasi-PML.
+Use proper PML for cylindrical coordinates, rather than quasi-PML.
 
 Use more-stable algorithm for dispersive media.
 

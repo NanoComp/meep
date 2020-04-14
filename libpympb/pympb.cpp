@@ -836,7 +836,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
 
       // meep_geom::medium_struct *mm;
       // if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
-      //   printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n", 5 + 5, "",
+      //   meep::master_printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n", 5 + 5, "",
       //          mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
       // }
     }
@@ -863,7 +863,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   }
 
   if (verbose && meep::am_master()) {
-    printf("Geometry object bounding box tree:\n");
+    meep::master_printf("Geometry object bounding box tree:\n");
     display_geom_box_tree(5, geometry_tree);
   }
 
@@ -1004,12 +1004,12 @@ void mode_solver::solve_kpoint(vector3 kvector) {
   // If this is the first k point, print out a header line for the frequency
   // grep data.
   if (!kpoint_index && meep::am_master()) {
-    printf("%sfreqs:, k index, k1, k2, k3, kmag/2pi", parity_string(mdata));
+    meep::master_printf("%sfreqs:, k index, k1, k2, k3, kmag/2pi", parity_string(mdata));
 
     for (int i = 0; i < num_bands; ++i) {
-      printf(", %s%sband %d", parity_string(mdata), mdata->parity == NO_PARITY ? "" : " ", i + 1);
+      meep::master_printf(", %s%sband %d", parity_string(mdata), mdata->parity == NO_PARITY ? "" : " ", i + 1);
     }
-    printf("\n");
+    meep::master_printf("\n");
   }
 
   cur_kvector = kvector;
@@ -2614,8 +2614,8 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
       }
 
   if (verbose) {
-    printf("real part range: %g .. %g\n", min_out_re, max_out_re);
-    if (size_out_im > 0) printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
+    meep::master_printf("real part range: %g .. %g\n", min_out_re, max_out_re);
+    if (size_out_im > 0) meep::master_printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
   }
 }
 

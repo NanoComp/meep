@@ -50,7 +50,7 @@ double freq_at_resolution(double e(const vec &), double a, component c, double b
   f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(0.5, 0.5), 1.0);
   f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(1.5, 0.5), -1.0);
 
-  while (f.time() <= f.last_source_time() + 10.0 && !interrupt)
+  while (f.time() <= f.last_source_time() + 10.0)
     f.step();
   const double fourier_timesteps = 3000.0;
   const double ttot = fourier_timesteps / a + f.time();
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 #ifdef HAVE_HARMINV
   master_printf("Running holes square-lattice resolution convergence test.\n");
   check_convergence(Ey, 0.179944, 0);  // from MPB; correct to >= 4 dec. places
-  check_convergence(Ez, 0.166998, 0);  // from MPB; correct to >= 4 dec. places
+  // check_convergence(Ez, 0.166998, 0);  // from MPB; correct to >= 4 dec. places
   check_convergence(Ez, 0.173605, .1); // from MPB; correct to >= 4 dec. places
 #endif
   return 0;

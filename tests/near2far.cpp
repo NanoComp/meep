@@ -59,7 +59,6 @@ int check_cyl(double sr, double sz, double a) {
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
     F0[i] = EH[EHcomp[c]] * 2.0*pi*x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
     double d = abs(F0[i] - F[i]);
-    double f = abs(F[i]);
     double f0 = abs(F0[i]);
     diff += d * d;
     dot0 += f0 * f0;
@@ -114,7 +113,7 @@ int check_cyl(double sr, double sz, double a) {
   return 1;
 }
 
-int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
+int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c1 = NO_COMPONENT, bool evenz = true) {
   const double dpml = 1;
   if (dim != D2 && dim != D3) abort("2d or 3d required");
   grid_volume gv = dim == D2 ? vol2d(xmax + 2 * dpml, xmax + 2 * dpml, a)
@@ -122,14 +121,21 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
   gv.center_origin();
 
   if (!gv.has_field(c0)) return 1;
+  if (c1 != NO_COMPONENT && !gv.has_field(c1)) return 1;
   master_printf("TESTING %s AT RESOLUTION %g FOR %s SOURCE...\n", dim == D2 ? "2D" : "3D", a,
                 component_name(c0));
+  if (c1 != NO_COMPONENT) master_printf("   (and %s SOURCE)\n", component_name(c1));
 
-  structure s(gv, two, pml(dpml));
+  // HACK: to speed up tests, we assume c0 and c1 have these symmetries
+  symmetry S = dim == D3 ? (evenz ? mirror(Z, gv) - mirror(X, gv) : mirror(X, gv) - mirror(Z, gv)) :
+                           (evenz ? -mirror(X, gv) : mirror(X, gv)); // 2d
+
+  structure s(gv, two, pml(dpml), S);
   fields f(&s);
   double w = 0.30;
   continuous_src_time src(w);
   f.add_point_source(c0, src, zero_vec(dim));
+  if (c1 != NO_COMPONENT) f.add_point_source(c1, src, zero_vec(dim), 0.7654321);
   f.solve_cw(1e-6);
 
   FOR_E_AND_H(c) {
@@ -146,6 +152,10 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
         F[i] = f.get_field(c, x) * phase;
         (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c0, 1.0);
         F0[i] = EH[EHcomp[c]];
+        if (c1 != NO_COMPONENT) {
+          (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c1, 0.7654321);
+          F0[i] += EH[EHcomp[c]];
+        }
         double d = abs(F0[i] - F[i]);
         double f = abs(F[i]);
         double f0 = abs(F0[i]);
@@ -209,6 +219,10 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
         F[i] = EH[EHcomp[c]] * phase;
         (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c0, 1.0);
         F0[i] = EH[EHcomp[c]];
+        if (c1 != NO_COMPONENT) {
+          (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c1, 0.7654321);
+          F0[i] += EH[EHcomp[c]];
+        }
         double d = abs(F0[i] - F[i]);
         double f0 = abs(F0[i]);
         diff += d * d;
@@ -238,12 +252,12 @@ int main(int argc, char **argv) {
   const double a2d = argc > 1 ? atof(argv[1]) : 20, a3d = argc > 1 ? a2d : 10;
 
   if (!check_cyl(5.0, 10.0, 20.0)) return 1;
-  if (!check_2d_3d(D3, 4, a3d, Ez)) return 1;
-  if (!check_2d_3d(D3, 4, a3d, Hz)) return 1;
+
+  // NOTE: see hack above -- we require sources to be odd in Z and even in X or vice-versa
+  if (!check_2d_3d(D3, 4, a3d, Ez, Hx, false)) return 1;
 #ifdef HAVE_LIBGSL
-  FOR_E_AND_H(c0) {
-    if (!check_2d_3d(D2, 8, a2d, c0)) return 1;
-  }
+  if (!check_2d_3d(D2, 8, a2d, Ez, Hx, false)) return 1;
+  if (!check_2d_3d(D2, 8, a2d, Ex, Hz, true)) return 1;
 #endif
 
   return 0;

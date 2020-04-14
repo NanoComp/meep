@@ -520,11 +520,6 @@ AC_CHECK_PROG(SWIG, swig, swig, echo)
 if test "$USE_MAINTAINER_MODE" = yes && (test "x$with_python" = "xyes" || test "x$with_scheme" = "xyes") && test "x$SWIG" = xecho; then
   AC_MSG_ERROR([SWIG not found; configure --without-python --without-scheme or use a release tarball])
 fi
-if test "$USE_MAINTAINER_MODE" = yes && test "x$with_python" = "xyes"; then
-  if ($SWIG -version | grep "SWIG Version 4" > /dev/null 2>&1); then
-    AC_MSG_ERROR([SWIG version 4 is not supported for Python; configure --without-python or use a release tarball])
-  fi
-fi
 
 if test "x$with_python" = xno; then
   have_python=no

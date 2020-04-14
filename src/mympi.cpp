@@ -76,7 +76,6 @@ static MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
 
 int verbosity = 1; // defined in meep.h
-void (*master_printf_callback)(const char *s) = NULL;
 
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
@@ -573,6 +572,14 @@ void fields::boundary_communications(field_type ft) {
 // IO Routines...
 
 bool am_really_master() { return (my_global_rank() == 0); }
+
+static meep_printf_callback_func master_printf_callback = NULL;
+
+meep_printf_callback_func set_meep_printf_callback(meep_printf_callback_func func) {
+  meep_printf_callback_func old_func = master_printf_callback;
+  master_printf_callback = func;
+  return old_func;
+}
 
 void master_printf(const char *fmt, ...) {
   va_list ap;

@@ -37,7 +37,6 @@
 namespace meep {
     size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
     typedef std::complex<double> (*amplitude_function)(const vec &);
-    void (*master_printf_callback)(const char *s);
 }
 
 #ifdef HAVE_MPB
@@ -54,7 +53,7 @@ namespace meep {
         vec center;
         amplitude_function amp_func;
         int band_num;
-        double omega;
+        double frequency;
         double group_velocity;
     };
 }
@@ -307,7 +306,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 // Wrapper around meep::dft_near2far::farfield
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
-    Py_ssize_t len = f->Nfreq * 6;
+    Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
     std::complex<double> *ff_arr = f->farfield(v);
@@ -336,7 +335,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
     // frequencies are the last dimension
-    if (n2f->Nfreq > 1) dims[rank++] = n2f->Nfreq;
+    if (n2f->freq.size() > 1) dims[rank++] = n2f->freq.size();
 
     // Additional rank to store all 12 E/H x/y/z r/i arrays.
     rank++;
@@ -347,7 +346,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     }
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_DOUBLE);
-    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->Nfreq);
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->freq.size());
 
     delete[] arr_dims;
     delete[] EH;
@@ -357,7 +356,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 
 // Wrapper around meep::dft_ldos::ldos
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
-    Py_ssize_t len = f->Nomega;
+    Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
     double *tmp = f->ldos();
@@ -373,7 +372,7 @@ PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
 
 // Wrapper around meep::dft_ldos_F
 PyObject *_dft_ldos_F(meep::dft_ldos *f) {
-    Py_ssize_t len = f->Nomega;
+    Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
     std::complex<double> *tmp = f->F();
@@ -389,7 +388,7 @@ PyObject *_dft_ldos_F(meep::dft_ldos *f) {
 
 // Wrapper arond meep::dft_ldos_J
 PyObject *_dft_ldos_J(meep::dft_ldos *f) {
-    Py_ssize_t len = f->Nomega;
+    Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
     std::complex<double> *tmp = f->J();
@@ -455,7 +454,7 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
     }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
-        size_t Nchunk = cur->N * cur->Nomega;
+        size_t Nchunk = cur->N * cur->omega.size();
         for (size_t i = 0; i < Nchunk; ++i) {
             cdata[i + istart] = cur->dft[i];
         }
@@ -473,7 +472,7 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int
     }
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
-        size_t Nchunk = cur->N * cur->Nomega;
+        size_t Nchunk = cur->N * cur->omega.size();
         for (size_t i = 0; i < Nchunk; ++i) {
             cur->dft[i] = cdata[i + istart];
         }
@@ -494,7 +493,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    double *vgrp, meep::kpoint_func user_kpoint_func,
                                                    void *user_kpoint_data, double *cscale, meep::direction d) {
 
-    size_t num_kpoints = num_bands * flux.Nfreq;
+    size_t num_kpoints = num_bands * flux.freq.size();
     meep::vec *kpoints = new meep::vec[num_kpoints];
     meep::vec *kdom = new meep::vec[num_kpoints];
 
@@ -520,12 +519,12 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 }
 
 #ifdef HAVE_MPB
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
                                      double kdom[3]) {
 
-    void *data = f->get_eigenmode(omega_src, d, where, eig_vol, band_num, _kpoint, match_frequency,
+    void *data = f->get_eigenmode(frequency, d, where, eig_vol, band_num, _kpoint, match_frequency,
                                   parity, resolution, eigensolver_tol, kdom);
     return (meep::eigenmode_data *)data;
 }
@@ -539,11 +538,11 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
 }
 
 #else
-void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
                     double kdom[3]) {
-    (void) f; (void) omega_src; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
+    (void) f; (void) frequency; (void) d; (void) where; (void) eig_vol; (void) band_num; (void) _kpoint;
     (void) match_frequency; (void) parity; (void) resolution; (void) eigensolver_tol;
     (void) kdom;
     meep::abort("Must compile Meep with MPB for get_eigenmode");
@@ -568,9 +567,6 @@ void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const 
 double py_pml_profile(double u, void *f);
 
 %constant void py_master_printf_wrap(const char *s);
-namespace meep {
-    void (*master_printf_callback)(const char *s);
-}
 void set_ctl_printf_callback(void (*callback)(const char *s));
 void set_mpb_printf_callback(void (*callback)(const char *s));
 
@@ -800,7 +796,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for dft_flux
 
 %typemap(out) double* flux {
-    int size = arg1->Nfreq;
+    int size = arg1->freq.size();
     $result = PyList_New(size);
     for(int i = 0; i < size; i++) {
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
@@ -812,13 +808,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for dft_force
 
 %typemap(out) double* force {
-    int size = arg1->Nfreq;
+    int size = arg1->freq.size();
     $result = PyList_New(size);
     for(int i = 0; i < size; i++) {
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
     }
 
-    delete $1;
+    delete[] $1;
 }
 
 // Typemap suite for material_type
@@ -929,6 +925,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
+// typemap for solve_cw:
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* eigfreq {
+    $1 = is_array($input);
+}
+
+%typemap(in) std::complex<double>* eigfreq {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+
 //--------------------------------------------------
 // typemaps needed for get_eigenmode_coefficients
 //--------------------------------------------------
@@ -965,6 +972,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 // typemaps needed for add_dft_fields
 //--------------------------------------------------
+
+%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)}
 
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
@@ -1319,12 +1328,12 @@ struct eigenmode_data {
     vec center;
     amplitude_function amp_func;
     int band_num;
-    double omega;
+    double frequency;
     double group_velocity;
 };
 }
 
-meep::eigenmode_data *_get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                                      bool match_frequency, int parity, double resolution, double eigensolver_tol,
                                      double kdom[3]);
@@ -1337,40 +1346,11 @@ PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata);
 }
 
 #else
-void _get_eigenmode(meep::fields *f, double omega_src, meep::direction d, const meep::volume where,
+void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                     const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
                     bool match_frequency, int parity, double resolution, double eigensolver_tol,
                     double kdom[3]);
 #endif // HAVE_MPB
-
-// Make omega members of meep::dft_ldos available as 'freq' in python
-%extend meep::dft_ldos {
-
-    double get_omega_min() {
-        return $self->omega_min;
-    }
-    double get_domega() {
-        return $self->domega;
-    }
-    int get_Nomega() {
-        return $self->Nomega;
-    }
-    %pythoncode %{
-        def freqs(self):
-            import math
-            import numpy as np
-            start = self.omega_min / (2 * math.pi)
-            stop = start + (self.domega / (2 * math.pi)) * self.Nomega
-            return np.linspace(start, stop, num=self.Nomega, endpoint=False).tolist()
-
-        __swig_getmethods__["freq_min"] = get_omega_min
-        __swig_getmethods__["nfreq"] = get_Nomega
-        __swig_getmethods__["dfreq"] = get_domega
-        if _newclass: freq_min = property(get_omega_min)
-        if _newclass: nfreq = property(get_Nomega)
-        if _newclass: dfreq = property(get_domega)
-    %}
-}
 
 %extend meep::fields {
   bool is_periodic(boundary_side side, direction dir) {
@@ -1487,6 +1467,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         get_fluxes,
         get_force_freqs,
         get_forces,
+        get_ldos_freqs,
         get_magnetic_energy,
         get_near2far_freqs,
         get_total_energy,

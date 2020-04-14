@@ -604,7 +604,7 @@ sim = mp.Simulation(resolution=resolution,
                     symmetries=symmetries)
 
 mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dair)
-near_fields = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, center=mon_pt, size=mp.Vector3(dair if field_profile else 0,sy-2*dpml))
+near_fields = sim.add_dft_fields([mp.Ez], fcen, 0, 1, center=mon_pt, size=mp.Vector3(dair if field_profile else 0,sy-2*dpml))
 
 sim.run(until_after_sources=100)
 
@@ -625,7 +625,7 @@ sim = mp.Simulation(resolution=resolution,
                     sources=sources,
                     symmetries=symmetries)
 
-near_fields = sim.add_dft_fields([mp.Ez], fcen, fcen, 1, center=mon_pt, size=mp.Vector3(dair if field_profile else 0,sy-2*dpml))
+near_fields = sim.add_dft_fields([mp.Ez], fcen, 0, 1, center=mon_pt, size=mp.Vector3(dair if field_profile else 0,sy-2*dpml))
 
 sim.run(until_after_sources=100)
 

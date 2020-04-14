@@ -68,7 +68,7 @@ class TestBendFlux(unittest.TestCase):
         refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
                                 size=mp.Vector3(0, w * 2))
 
-        self.refl = self.sim.add_flux(fcen, df, nfreq, refl_fr)
+        self.refl = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr)
 
         if no_bend:
             self.pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)
