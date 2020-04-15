@@ -507,4 +507,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization. Note however that as a general rule of thumb, if your design problem involves less than ten degrees of freedom, using gradient-free optimization is typically more efficient than an adjoint solver.
+Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization with respect to a grid of ε values (also known as "density-based" topology optimization).  (Of course, you can always use finite differences or similar methods to compute sensitivities for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)
