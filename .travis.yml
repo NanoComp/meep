@@ -129,7 +129,7 @@ matrix:
           - libhdf5-serial-dev
     install:
       - pip install numpy mpi4py scipy h5py matplotlib
-  - python: "3.7"
+  - python: "3.5"
     env:
       - MPICONF="--with-mpi"
       - MKCHECKFLAGS=""
