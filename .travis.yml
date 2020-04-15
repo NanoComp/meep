@@ -141,7 +141,7 @@ matrix:
         packages:
           - *common_deps
           - libhdf5-openmpi-dev
-          - python-h5py
+          - python3-h5py
     install:
       - pip install numpy mpi4py scipy matplotlib ipython
 
