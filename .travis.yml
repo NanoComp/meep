@@ -90,6 +90,8 @@ matrix:
       - CXX=mpic++
       - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+    virtualenv:
+      system_site_packages: true
     addons:
       apt:
         packages:
@@ -136,6 +138,8 @@ matrix:
       - CXX=mpic++
       - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+    virtualenv:
+      system_site_packages: true
     addons:
       apt:
         packages:
