@@ -95,9 +95,9 @@ matrix:
         packages:
           - *common_deps
           - libhdf5-openmpi-dev
+          - python-h5py
     install:
       - pip install numpy mpi4py scipy matplotlib
-      - pip install --no-binary=h5py h5py
   - python: "3.7"
     env:
       - MPICONF="--without-mpi"
@@ -141,9 +141,9 @@ matrix:
         packages:
           - *common_deps
           - libhdf5-openmpi-dev
+          - python-h5py
     install:
       - pip install numpy mpi4py scipy matplotlib ipython
-      - pip install --no-binary=h5py h5py
 
 
 ##################################################
