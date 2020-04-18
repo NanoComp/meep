@@ -15,7 +15,7 @@ We also strongly recommend installing the [HDF5 package](Build_From_Source.md#hd
 
 If you don't install HDF5 with parallel I/O support, you can still do I/O from MPI &mdash; Meep has some hacks to let it write HDF5 files using serial I/O from multiple processes, one at a time. However, this does not scale very well to many processors. Some MPI implementations have been observed to freeze under the strain of trying to write from many processes at once.
 
-Then you just configure Meep with the flag `--with-mpi`. If you run the resulting Python or Scheme script, it runs on a single process; to run with multiple cores/processors you should use `mpirun` as described in the next section. Because you can run the parallel Meep in a single process using this approach (i.e., `mpirun -n 1 python foo.py` or just `python foo.py`, `mpirun -n 1 meep foo.ctl` or just `meep foo.ctl`), there is no need to separately compile and install the serial version of Meep.
+Then you just configure Meep with the flag `--with-mpi`. If you run the resulting Python or Scheme script, it runs on a single process; to run with multiple cores/processors you should use `mpirun` as described in the next section. Because you can run the parallel Meep in a single process using this approach (i.e., `mpirun -np 1 python foo.py` or just `python foo.py`, `mpirun -np 1 meep foo.ctl` or just `meep foo.ctl`), there is no need to separately compile and install the serial version of Meep.
 
 Using Parallel Meep
 -------------------
@@ -26,12 +26,12 @@ In order to run MPI programs, you typically have to use a command like `mpirun` 
 
 **Python**
 ```sh
-mpirun -n 4 python foo.py > foo.out
+mpirun -np 4 python foo.py > foo.out
 ```
 
 **Scheme**
 ```sh
-mpirun -n 4 meep foo.ctl > foo.out
+mpirun -np 4 meep foo.ctl > foo.out
 ```
 
 There is one important requirement: every MPI process must be able to read the `foo.py`/`foo.ctl` input file or whatever your script file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something. This requirement also applies to HDF5 files used for input (i.e., via `epsilon_input_file`) or output (i.e., `output_epsilon()`, `output_efield()`, etc.). Any disruptions to the network or disk failures on individual machines which affect the [network file system](https://en.wikipedia.org/wiki/Network_File_System) may cause Meep to freeze/hang.
@@ -40,9 +40,9 @@ For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-sp
 
 In general, you cannot run Meep interactively on multiple processors.
 
-**Warning:** when running a parallel PyMeep job, the failure of any one MPI process may cause the simulation to deadlock and not abort. This is due to a feature in [`mpi4py`](https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html). To avoid having to manually kill all the remaining processes, a simple solution is to load the `mpi4py` module (for versions 3.0+) at runtime:
+**Warning:** when running a parallel PyMeep job, the failure of any one MPI process may cause the simulation to deadlock and not abort. This is due to a feature in [`mpi4py`](https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html) related. To avoid having to manually kill all the remaining processes, a simple solution is to load the `mpi4py` module (for versions 3.0+) at runtime:
 ```sh
-mpirun -n 4 python -m mpi4py foo.py
+mpirun -np 4 python -m mpi4py foo.py
 ```
 
 ### Different Forms of Parallelization
