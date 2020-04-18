@@ -1,5 +1,23 @@
 # Meep Release Notes
 
+## Meep 1.14.0
+
+4/17/2020
+
+* New adjoint solver for density-based topology optimization, including
+  filtering, automatic differentiation, and other frequencies (#1167).
+
+* DFT functions now allow you to pass an arbitrary array of frequencies, instead
+  of being limited to equally spaced frequencies (#1154 and #1156).
+
+* Experimental shift-and-invert frequency-domain eigensolver (#1158).
+
+* Renamed `omega` parameter to `frequency` at some places in the Python API,
+  for consistency (#1171), and `dft_fields` object now takes `fcen` and `df` instead
+  of `freq_min` and `freq_max` in Python.
+
+* Support for SWIG 4.0 (#1159), and various other minor fixes.
+
 ## Meep 1.13.1
 
 2/25/2020
