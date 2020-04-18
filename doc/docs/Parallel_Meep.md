@@ -40,7 +40,7 @@ For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-sp
 
 In general, you cannot run Meep interactively on multiple processors.
 
-**Warning:** when running a parallel PyMeep job, the failure of any one MPI process may cause the simulation to deadlock and not abort. This is due to a feature in [`mpi4py`](https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html) related. To avoid having to manually kill all the remaining processes, a simple solution is to load the `mpi4py` module (for versions 3.0+) at runtime:
+**Warning:** when running a parallel PyMeep job, the failure of any one MPI process may cause the simulation to deadlock and not abort. This is due to a [behavior of `mpi4py`](https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html). To avoid having to manually kill all the remaining processes, a simple solution is to load the `mpi4py` module (for versions 3.0+) on the `mpirun` command line:
 ```sh
 mpirun -np 4 python -m mpi4py foo.py
 ```
