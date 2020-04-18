@@ -571,10 +571,7 @@
   (meep-dft-flux-scale-dfts f s))
 
 (define (get-flux-freqs f)
-  (arith-sequence
-   (meep-dft-flux-freq-min-get f)
-   (meep-dft-flux-dfreq-get f)
-   (meep-dft-flux-Nfreq-get f)))
+  (std-vector-double-to-scm (meep-dft-flux-freq-get f)))
 
 (export-type (make-list-type 'number))
 (define (get-fluxes f)
@@ -640,10 +637,7 @@
   (meep-dft-energy-scale-dfts f s))
 
 (define (get-energy-freqs f)
-  (arith-sequence
-   (meep-dft-energy-freq-min-get f)
-   (meep-dft-energy-dfreq-get f)
-   (meep-dft-energy-Nfreq-get f)))
+  (std-vector-double-to-scm (meep-dft-energy-freq-get f)))
 
 (define (get-electric-energy f)
   (dft-energy-electric f))
@@ -708,10 +702,7 @@
   (meep-dft-force-scale-dfts f s))
 
 (define (get-force-freqs f)
-  (arith-sequence
-   (meep-dft-force-freq-min-get f)
-   (meep-dft-force-dfreq-get f)
-   (meep-dft-force-Nfreq-get f)))
+  (std-vector-double-to-scm (meep-dft-force-freq-get f)))
 
 (define (get-forces f)
   (dft-force-force f))
@@ -759,10 +750,7 @@
   (meep-dft-near2far-scale-dfts f s))
 
 (define (get-near2far-freqs f)
-  (arith-sequence
-   (meep-dft-near2far-freq-min-get f)
-   (meep-dft-near2far-dfreq-get f)
-   (meep-dft-near2far-Nfreq-get f)))
+  (std-vector-double-to-scm (meep-dft-near2far-freq-get f)))
 
 (define (get-farfield f x)
   (dft-near2far-farfield f x))
@@ -1224,9 +1212,9 @@
         (direction (get-keyword-value args #:direction AUTOMATIC))
         (num-bands (length bands))
         (kpoint-func (get-keyword-value args #:kpoint-func '())))
-    (begin
-      (define coeffs (make-typed-array 'c64 '0 num-bands (meep-dft-flux-Nfreq-get flux) 2))
-      (define vgrp (make-typed-array 'f64 '0 num-bands (meep-dft-flux-Nfreq-get flux)))
+    (let ((nfreq (length (get-flux-freqs flux))))
+      (define coeffs (make-typed-array 'c64 '0 num-bands nfreq 2))
+      (define vgrp (make-typed-array 'f64 '0 num-bands nfreq))
       (define kpoints-and-kdom (do-get-eigenmode-coefficients fields flux eig-vol bands eig-parity coeffs vgrp
                                                              eig-resolution eig-tolerance kpoint-func direction))
       (list coeffs vgrp (first kpoints-and-kdom) (second kpoints-and-kdom)))))
@@ -1239,10 +1227,7 @@
 (define dft-ldos-Jdata '())
 
 (define (get-ldos-freqs f)
-  (arith-sequence
-   (/ (meep-dft-ldos-omega-min-get f) (* 2 pi))
-   (/ (meep-dft-ldos-domega-get f) (* 2 pi))
-   (meep-dft-ldos-Nomega-get f)))
+  (std-vector-double-to-scm (meep-dft-ldos-freq-get f)))
 
 (define (dft-ldos fcen df nfreq)
   (let ((ldos (new-meep-dft-ldos
