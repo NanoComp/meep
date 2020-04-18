@@ -59,4 +59,6 @@ ctlio::cnumber_list make_casimir_g_kz(double T, double dt, double sigma, meep::f
 meep::volume_list *make_volume_list(const meep::volume &v, int c, std::complex<double> weight,
                                     meep::volume_list *next);
 
+ctlio::number_list std_vector_double_to_scm(std::vector<double> *v);
+
 #endif // MEEP_CTL_SWIG_HPP

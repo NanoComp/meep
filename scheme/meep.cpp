@@ -189,3 +189,12 @@ ctlio::cnumber_list make_casimir_g_kz(double T, double dt, double sigma, meep::f
   delete[] g;
   return res;
 }
+
+ctlio::number_list std_vector_double_to_scm(std::vector<double> *v) {
+  ctlio::number_list res;
+  res.num_items = int(v->size());
+  res.items = new number[res.num_items];
+  for (int i = 0; i < res.num_items; ++i)
+    res.items[i] = (*v)[i];
+  return res;
+}
