@@ -51,7 +51,13 @@ void fields::reset_timers() {
   am_now_working_on(Other);
 }
 
-double fields::time_spent_on(time_sink s) { return times_spent[s]; }
+std::vector<double> fields::time_spent_on(time_sink s) {
+  int n = count_processors();
+  std::vector<double> time_spent_per_process(n);
+  for (int j =0; j < n; ++j)
+    time_spent_per_process[j] = sum_to_master(j == my_rank() ? times_spent[s] : 0);
+  return time_spent_per_process;
+}
 
 double fields::mean_time_spent_on(time_sink s) {
   int n = count_processors();
