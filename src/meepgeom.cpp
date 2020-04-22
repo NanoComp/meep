@@ -1190,6 +1190,7 @@ static bool susceptibility_equiv(const susceptibility *o0, const susceptibility 
   if (!vector3_equal(o0->bias, o->bias)) return 0;
   if (o0->frequency != o->frequency) return 0;
   if (o0->gamma != o->gamma) return 0;
+  if (o0->alpha != o->alpha) return 0;
   if (o0->noise_amp != o->noise_amp) return 0;
   if (o0->drude != o->drude) return 0;
   if (o0->saturated_gyrotropy != o->saturated_gyrotropy) return 0;

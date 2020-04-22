@@ -434,7 +434,7 @@ void *gyrotropic_susceptibility::copy_internal_data(void *data) const {
 bool gyrotropic_susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
   if (!is_electric(c) && !is_magnetic(c)) return false;
   direction d0 = component_direction(c);
-  return (d0 == X || d0 == Y || d0 == Z) && sigma[c][d0] && W[c][cmp];
+  return (d0 == X || d0 == Y || d0 == Z) && W[c][cmp];
 }
 
 // Similar to the OFFDIAG macro, but without averaging sigma.
@@ -470,8 +470,8 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                                  invdet * (gd * gd + gz * gz)}};
 
       FOR_COMPONENTS(c) DOCMP2 {
-        if (d->P[c][cmp][0]) {
-          const direction d0 = component_direction(c);
+	const direction d0 = component_direction(c);
+        if (d->P[c][cmp][0] && sigma[c][d0]) {
           const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
 
           if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
@@ -531,8 +531,8 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                                  invdet * (gd * gd + gz * gz)}};
 
       FOR_COMPONENTS(c) DOCMP2 {
-        if (d->P[c][cmp][0]) {
-          const direction d0 = component_direction(c);
+	const direction d0 = component_direction(c);
+        if (d->P[c][cmp][0] && sigma[c][d0]) {
           const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
 
           if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
