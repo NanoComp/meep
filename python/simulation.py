@@ -2301,6 +2301,9 @@ class Simulation(object):
         if self.fields:
             self.fields.print_times()
 
+    def time_spent_on(self, time_sink):
+        return self.fields.time_spent_on(time_sink)
+
     def get_epsilon(self,frequency=0,omega=0):
         if omega != 0:
             frequency = omega
