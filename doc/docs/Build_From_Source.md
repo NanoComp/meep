@@ -91,7 +91,7 @@ If you are not the system administrator of your machine, and/or want to install 
 
 ### Python
 
-If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+.
+If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+ and the [adjoint solver](Python_Tutorials/AdjointSolver.md) requires [autograd](https://github.com/HIPS/autograd).
 
 By default, Meep's Python module is installed for the program `python` on your system.  If you want to install using a different Python program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the Meep `configure` script. An Anaconda (`conda`) [package for Meep](Installation.md#conda-packages) is also available on some systems.
 
@@ -257,7 +257,7 @@ make
 
 ### Building From Source
 
-The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04. (There is a separate [script](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep.sh) if you only want the Scheme interface.) The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04/18.04. (There is a separate [script](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep.sh) if you only want the Scheme interface.) The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
 
 The entire build and install procedure can also be performed using an automated script:
 
@@ -303,10 +303,8 @@ sudo apt-get -y install     \
     libhdf5-openmpi-dev     \
     hdf5-tools              \
     libpython3.5-dev        \
-    python3-numpy           \
-    python3-scipy           \
     python3-pip             \
-    ffmpeg                  \
+    cmake                   \
 
 mkdir -p ~/install
 
@@ -344,9 +342,18 @@ make && sudo make install
 sudo pip3 install --upgrade pip
 
 pip3 install --user --no-cache-dir mpi4py
+pip3 install --user Cython==0.29.16
 export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
+pip3 install --user autograd
+pip3 install --user scipy
 pip3 install --user matplotlib>3.0.0
+pip3 install --user ffmpeg
+
+cd ~/install
+git clone git://github.com/stevengj/nlopt.git
+cd nlopt/
+cmake -DPYTHON_EXECUTABLE=/usr/bin/python3 && make && sudo make install
 
 cd ~/install
 git clone https://github.com/NanoComp/meep.git
@@ -355,13 +362,13 @@ sh autogen.sh --enable-shared --with-mpi --with-openmp PYTHON=python3 LDFLAGS="$
 make && sudo make install
 ```
 
-You may want to add the following line to your `.profile` so Python can always find the meep package:
+You may want to add the following line to your `.profile` so Python can always find the `meep` (and `nlopt`) package:
 
 ```bash
 # Ubuntu 16.04
-export PYTHONPATH=/usr/local/lib/python3.5/site-packages
+export PYTHONPATH=/usr/local/lib/python3.5/site-packages:/usr/local/lib/python3/dist-packages
 # Ubuntu 18.04
-export PYTHONPATH=/usr/local/lib/python3.6/site-packages
+export PYTHONPATH=/usr/local/lib/python3.6/site-packages:/usr/local/lib/python3/dist-packages
 ```
 
 #### CentOS 7
