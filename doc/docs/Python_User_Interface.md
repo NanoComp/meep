@@ -1025,6 +1025,14 @@ Field time usage:
           everything else: 0.324933 s +/- 0.377573 s
 ```
 
+**`Simulation.time_spent_on(time_sink)`**
+—
+Return a list of times spent by each process for a type of work `time_sink` which can be one of nine integer values: (`0`) connecting chunks, (`1`) time stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`) Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
+
+**`Simulation.mean_time_spent_on(time_sink)`**
+—
+Return the mean time spent by all processes for a type of work `time_sink` which can be one of nine integer values as shown above.
+
 ### Field Computations
 
 Meep supports a large number of functions to perform computations on the fields. Most of them are accessed via the lower-level C++/SWIG interface. Some of them are based on the following simpler, higher-level versions. They are accessible as methods of a `Simulation` instance.

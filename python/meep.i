@@ -1444,6 +1444,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Rotate4,
         Simulation,
         Symmetry,
+        DftFields,
+        DftFlux,
         Volume,
         after_sources,
         after_sources_and_time,

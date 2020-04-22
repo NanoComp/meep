@@ -90,14 +90,16 @@ matrix:
       - CXX=mpic++
       - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+    virtualenv:
+      system_site_packages: true
     addons:
       apt:
         packages:
           - *common_deps
           - libhdf5-openmpi-dev
+          - python-h5py
     install:
       - pip install numpy mpi4py scipy matplotlib
-      - pip install --no-binary=h5py h5py
   - python: "3.7"
     env:
       - MPICONF="--without-mpi"
@@ -127,7 +129,7 @@ matrix:
           - libhdf5-serial-dev
     install:
       - pip install numpy mpi4py scipy h5py matplotlib
-  - python: "3.7"
+  - python: "3.5"
     env:
       - MPICONF="--with-mpi"
       - MKCHECKFLAGS=""
@@ -136,14 +138,16 @@ matrix:
       - CXX=mpic++
       - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+    virtualenv:
+      system_site_packages: true
     addons:
       apt:
         packages:
           - *common_deps
           - libhdf5-openmpi-dev
+          - python3-h5py
     install:
       - pip install numpy mpi4py scipy matplotlib ipython
-      - pip install --no-binary=h5py h5py
 
 
 ##################################################
