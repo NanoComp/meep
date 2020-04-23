@@ -1476,6 +1476,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         in_point,
         in_volume,
         interpolate,
+        merge_subgroup_data,
         output_epsilon,
         output_mu,
         output_hpwr,

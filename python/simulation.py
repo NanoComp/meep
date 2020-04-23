@@ -3169,3 +3169,52 @@ def quiet(quietval=True):
 
 def verbosity(verbose_val):
     mp.cvar.verbosity = verbose_val
+
+def merge_subgroup_data(data,num_groups):
+    # Lazy import
+    from mpi4py import MPI    
+    
+    # Pull required parameters
+    comm = MPI.COMM_WORLD
+    num_workers = comm.Get_size()
+    shape=data.shape
+    size = data.size
+    out_shape = shape + (num_groups,)
+    dtype=data.dtype.char
+    
+    # Initialize new input and output datasets
+    input=np.zeros(shape,dtype,order='F')
+    input[:]=data
+    output=np.zeros(out_shape,dtype,order='F')
+    
+    # Specify how much talking each proc will do
+    count_in = np.array([size] * num_workers)
+    count_out = np.array([size] * num_workers)
+    
+    # Specify MPI datatype from numpy array
+    TypeMap = dict(
+            b=MPI.SIGNED_CHAR,
+            h=MPI.SHORT,
+            i=MPI.INT,
+            l=MPI.LONG,
+            q=MPI.LONG_LONG,
+            f=MPI.FLOAT,
+            d=MPI.DOUBLE,
+            F=MPI.C_COMPLEX,
+            D=MPI.C_DOUBLE_COMPLEX)
+    mpi_dtype = TypeMap[dtype]
+    sdt = [mpi_dtype] *num_workers
+    rdt = [mpi_dtype] *num_workers
+
+    # Specify array mapping
+    sdsp = [0] * num_workers
+    rdsp = [i for i in range(0, size*num_groups,size) for _ in range(int(num_workers/num_groups))]
+
+    # Formulate send and receive packets
+    smsg = [input, (count_in, sdsp), mpi_dtype]
+    rmsg = [output, (count_out, rdsp), mpi_dtype]
+    
+    # Send and receive
+    comm.Alltoallv(smsg, rmsg)
+
+    return output
