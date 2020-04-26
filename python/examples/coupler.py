@@ -18,7 +18,6 @@ t_air = 0.78
 
 dpml = 1
 cell_thickness = dpml+t_oxide+t_Si+t_air+dpml
-si_zmin = 0
 
 oxide = mp.Medium(epsilon=2.25)
 silicon=mp.Medium(epsilon=12)
@@ -29,7 +28,8 @@ df = 0.2*fcen
 def main(args):
     cell_zmax = 0.5*cell_thickness if args.three_d else 0
     cell_zmin = -0.5*cell_thickness if args.three_d else 0
-    si_zmax = t_Si if args.three_d else 0
+    si_zmax = 0.5*t_Si if args.three_d else 10
+    si_zmin = -0.5*t_Si if args.three_d else -10
 
     # read cell size, volumes for source region and flux monitors,
     # and coupler geometry from GDSII file
