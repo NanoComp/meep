@@ -3172,3 +3172,75 @@ def quiet(quietval=True):
 
 def verbosity(verbose_val):
     mp.cvar.verbosity = verbose_val
+
+def get_num_groups():
+    # Lazy import
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+
+    return comm.allreduce(int(mp.my_rank() == 0), op=MPI.SUM)
+
+def get_group_masters():
+    # Lazy import
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    num_workers = comm.Get_size()
+    num_groups = mp.get_num_groups 
+
+    # Check if current worker is a group master
+    is_group_master = True if mp.my_rank() == 0 else False
+    group_master_idx = np.zeros((num_workers,),dtype=np.bool)
+    
+    # Formulate send and receive packets
+    smsg = [np.array([is_group_master]),([1]*num_workers, [0]*num_workers)]
+    rmsg = [group_master_idx,([1]*num_workers, list(range(num_workers)))]
+
+    # Send and receive
+    comm.Alltoallv(smsg, rmsg)
+
+    # get rank of each group master
+    group_masters = np.arange(num_workers)[group_master_idx] # rank index of each group leader
+
+    return group_masters
+
+def merge_subgroup_data(data):
+    # Lazy import
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    num_workers = comm.Get_size()
+    num_groups = get_num_groups()
+
+    # Initialize new input and output datasets
+    input=np.array(data,copy=True,order='F')
+    shape=input.shape
+    size=input.size
+    out_shape=shape + (num_groups,)
+    output=np.zeros(out_shape,input.dtype,order='F')
+
+    # Get group masters
+    group_masters = get_group_masters()
+
+    # Specify how much talking each proc will do. Only group masters send data.
+    if mp.my_rank() == 0:
+        scount = np.array([size] * num_workers)
+    else:
+        scount = np.array([0] * num_workers)
+    rcount = np.array([0] * num_workers)
+    rcount[group_masters] = size
+
+    # Specify array mapping
+    sdsp = [0] * num_workers
+    rdsp = [0] * num_workers
+    buf_idx = 0
+    for grpidx in group_masters:
+        rdsp[grpidx] = buf_idx # offset group leader worker by size of each count
+        buf_idx += size
+
+    # Formulate send and receive packets
+    smsg = [input, (scount, sdsp)]
+    rmsg = [output, (rcount, rdsp)]
+    
+    # Send and receive
+    comm.Alltoallv(smsg, rmsg)
+
+    return output
