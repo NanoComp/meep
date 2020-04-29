@@ -100,7 +100,9 @@ To compare the convergence rate of the discretization error, the following plot 
 Enabling Averaging for Material Function
 ----------------------------------------
 
-Subpixel smoothing is automatically applied to `GeometricObject`s as `eps_averaging` is `True` by default. For a `material_function`, because it tends to have poor performance, subpixel averaging is disabled by default. Meep supports smoothing for a `material_function`; this requires setting its `do_averaging` property to `True` as demonstrated in the following example.
+By default, subpixel smoothing is automatically applied to any `GeometricObject` in the cell as `eps_averaging=True` in the [`Simulation`](Python_User_Interface.md#the-simulation-class) constructor. For a `material_function` however, subpixel smoothing [tends to be slow](FAQ.md#why-does-subpixel-averaging-take-so-long) due to an adaptive numerical integration method that involves callbacks from the low-level C++ routines and the Python-defined material functions. Because of this poor performance, subpixel smoothing is disabled by default for material functions (even though subpixel smoothing is still applied to other `GeometricObjects` which do not contain a `material_function`).
+
+Subpixel smoothing can be enabled for a `material_function` by setting its `do_averaging` property to `True` as demonstrated in the following example.
 
 ```py
 
@@ -126,4 +128,4 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     boundary_layers=[mp.PML(dpml)])
 ```
 
-Since the adaptive numerical integration tends to be *much* slower than the analytic approach, the values for its convergence parameters `subpixel_tol` (tolerance) and `subpixel_maxeval` (maximum number of function evaluations) can be increased/lowered to speed up the quadrature at the expense of reduced accuracy.
+The adaptive numerical integration used for subpixel smoothing of material functions tends to be significantly slower than the analytic approach. To speed this up at the expense of reduced accuracy, the values for its two convergence parameters `subpixel_tol` (tolerance) and `subpixel_maxeval` (maximum number of function evaluations) can be increased/lowered.

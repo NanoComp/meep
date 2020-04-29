@@ -2,9 +2,14 @@
 # Field Functions
 ---
 
-As described in [Python User Interface](Python_User_Interface.md), Meep provides several routines to integrate, analyze, and output arbitrary user-specified functions of the field components. See the functions whose names end with `_field_function`. This facility, while powerful, requires a bit more programming than most Meep usage, and is best illustrated by a few examples.
+As described in [Python User Interface](Python_User_Interface.md), Meep provides several routines to integrate, analyze, and output arbitrary user-defined functions of the field components. See the functions whose names end with `_field_function`. This facility, while powerful, requires a bit more programming than most Meep usage, and is best illustrated by a few examples.
 
-Note: field functions can be applied to time-domain *and* [frequency-domain](Python_User_Interface.md#frequency-domain-solver) fields.
+Note: field functions can be applied to time-domain and [frequency-domain](Python_User_Interface.md#frequency-domain-solver) fields.
+
+[TOC]
+
+Arbitrary Functions
+-------------------
 
 Every field-function that can be passed to these routines is of the form *f*(**r**,components...), where **r** is a position vector and "components..." are zero or more field components that the function depends on. The set of desired components is user-specified. As an example, suppose we are interested in the arbitrary function:
 
@@ -56,6 +61,9 @@ print("The integral of our weird function from (-1,0,0) to (1,0,0) is: {}"
        (integrate-field-function (list Ex Hz Dielectric) f (volume (size 2 0 0) (center 0 0 0))) "\n")
 ```
 
+Maximum Absolute Value
+----------------------
+
 Instead of computing the integral, Meep also provides a function to compute the maximum absolute value of our given function:
 
 **Python**
@@ -70,7 +78,10 @@ print("The maximum absolute value of our weird function from (-1,0,0) to (1,0,0)
        (max-abs-field-function (list Ex Hz Dielectric) f (volume (size 2 0 0) (center 0 0 0))) "\n")
 ```
 
-Finally, we can also output our function to an HDF5 file, similar to the built-in functions to output selected field components, and so on. The following outputs an HDF5 file consisting of our function `f` evaluated at every point in the cell:
+Outputting to an HDF5 File
+--------------------------
+
+We can also output our function to an HDF5 file, similar to the built-in functions to output selected field components, and so on. The following outputs an HDF5 file consisting of our function `f` evaluated at every point in the cell:
 
 **Python**
 ```py
@@ -127,6 +138,9 @@ meep.Simulation.run(meep.synchronized_magnetic(meep.at_every(1,my_weird_output))
 ```scm
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
+
+Coordinates of the Yee Grid
+---------------------------
 
 As a final example, the function `integrate_field_function` (Python) or `integrate-field-function` (Scheme) can be used to obtain the coordinates of the Yee grid. As long as the field arguments are on the *same* grid (e.g., $E_x$ and $D_x$, $E_y$ and $D_y$, etc.), the integral is computed over the exact Yee grid coordinates rather than being interpolated to the center of each grid point if fields from *different* grids are used (consistent with Meep's paradigm of [pervasive interpolation](Introduction.md#the-illusion-of-continuity)).
 
