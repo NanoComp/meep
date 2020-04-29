@@ -74,7 +74,7 @@ If `true` (the default) *and* if the boundary conditions are periodic (`k-point`
 
 **`eps-averaging?` [`boolean`]**
 —
-If `true` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function.  For simulations involving a [material function](#material-function), `eps-averaging?` is `false` (the default) and must be enabled in which case the input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `true` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function.  For simulations involving a [material function](#material-function), `eps-averaging?` is `false` (the default) and must be enabled in which case the input variables `subpixel-maxeval` (default 10<sup>4</sup>) and `subpixel-tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error. Disabling subpixel averaging will lead to [staircasing effects and irregular convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
 
 **`force-complex-fields?` [`boolean`]**
 —
