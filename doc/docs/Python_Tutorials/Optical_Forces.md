@@ -20,7 +20,7 @@ The gradient force can be computed using two different methods: (1) using MPB, c
 
 The simulation script is in [examples/parallel-wvgs-force.py](https://github.com/NanoComp/meep/blob/master/python/examples/parallel-wvgs-force.py). The notebook is [examples/parallel-wvgs-force.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/parallel-wvgs-force.ipynb).
 
-The main component of the script is the function `parallel_waveguide(s,xodd)` which computes the Poynting flux and the force given the waveguide separation distance `s` and parity of the waveguide mode `xodd`. Since the eigenmode frequency is not known apriori, a preliminary [`Harminv`](../Python_User_Interface.md#harminv) run is required using a broadband pulsed source. The propagating mode never decays away and the runtime is therefore chosen arbitrarily as 200 time units after the pulsed sources have turned off. Once we have determined the eigenmode frequency, we then replace the `Source` with [`EigenModeSource`](../Python_User_Interface.md#eigenmodesource) to compute: (1) the force on each waveguide due to the mode coupling and (2) the power in the mode. The [eigenmode source](Eigenmode_Source.md) enables a more efficient mode excitation than simply using a constant-amplitude point/area source.
+The main component of the script is the function `parallel_waveguide` which computes the Poynting flux and the force given the waveguide separation distance `s` and parity of the waveguide mode `xodd`. Since the eigenmode frequency is not known apriori, a preliminary [`Harminv`](../Python_User_Interface.md#harminv) run is required using a broadband pulsed source. The propagating mode never decays away and the runtime is therefore chosen arbitrarily as 200 time units after the pulsed sources have turned off. Once we have determined the eigenmode frequency, we then replace the `Source` with [`EigenModeSource`](../Python_User_Interface.md#eigenmodesource) to compute: (1) the force on each waveguide due to the mode coupling and (2) the power in the mode. The [eigenmode source](Eigenmode_Source.md) enables a more efficient mode excitation than simply using a constant-amplitude point/area source.
 
 ```py
 import meep as mp
@@ -86,12 +86,14 @@ def parallel_waveguide(s,xodd):
     eig_sources = [mp.EigenModeSource(src=mp.GaussianSource(f, fwidth=df),
                                       size=mp.Vector3(a,a),
                                       center=mp.Vector3(-0.5*(s+a)),
+                                      direction=mp.Z,
                                       eig_kpoint=k_point,
                                       eig_match_freq=True,
                                       eig_parity=mp.ODD_Y),
                    mp.EigenModeSource(src=mp.GaussianSource(f, fwidth=df),
                                       size=mp.Vector3(a,a),
                                       center=mp.Vector3(0.5*(s+a)),
+                                      direction=mp.Z,
                                       eig_kpoint=k_point,
                                       eig_match_freq=True,
                                       eig_parity=mp.ODD_Y,
@@ -115,7 +117,9 @@ def parallel_waveguide(s,xodd):
     return flux, force
 ```
 
-There are two important items to note in `parallel_waveguide`: (1) a single flux surface is used to compute the Poynting flux in $z$ which spans an area slightly larger than both waveguides rather than two separate flux surfaces (one for each waveguide). This is because in the limit of small separation, two flux surfaces overlap whereas the total power through a single flux surface need, by symmetry, only be halved in order to determine the value for just one of the two waveguides. (2) Instead of defining a closed, four-sided "box" surrounding the waveguides, the MST is computed along just two $y$-oriented lines (to obtain the force in the $x$ direction) with different `weight` values to correctly sum the total force. By symmetry, the force in the $y$ direction is zero and need not be computed. Choosing a suitable runtime requires some care. A large runtime is necessary to obtain the steady-state response but this will also lead to large values for the discrete Fourier-transformed fields used to compute both the flux and the MST. Large floating-point numbers may contain [roundoff errors](https://en.wikipedia.org/wiki/Round-off_error).
+There are three important items to note in `parallel_waveguide`: (1) a single flux surface is used to compute the Poynting flux in $z$ which spans an area slightly larger than both waveguides rather than two separate flux surfaces (one for each waveguide). This is because in the limit of small separation, two flux surfaces overlap whereas the total power through a single flux surface need, by symmetry, only be halved in order to determine the value for just one of the two waveguides. (2) Instead of defining a closed, four-sided "box" surrounding the waveguides, the MST is computed along just two $y$-oriented lines (to obtain the force in the $x$ direction) with different `weight` values to correctly sum the total force. By symmetry, the force in the $y$ direction is zero and need not be computed. (3) A 2d `cell_size` in $xy$ combined with a `k_point` containing a non-zero $z$ component results in a [2d simulation (by default)](../2d_Cell_Special_kz.md). Since `eig_match_freq=True` for the 2d `EigenModeSource`, its `direction` property must be set to $z$.
+
+Choosing a suitable runtime requires some care. A large runtime is necessary to obtain the steady-state response but this will also lead to large values for the discrete Fourier-transformed fields used to compute both the flux and the MST. Large floating-point numbers may contain [roundoff errors](https://en.wikipedia.org/wiki/Round-off_error).
 
 The simulation is run over the range of separation distances from 0.05 to 1.00 μm in increments of 0.05 μm. The results are compared with those from MPB. This is shown in the figure above. The two methods show good agreement.
 
@@ -210,6 +214,7 @@ def compute_force(f,vg):
 force_odd = compute_force(f_odd,vg_odd)
 force_even = compute_force(f_even,vg_even)
 
+plt.figure(dpi=200)
 plt.plot(ss[:-1],force_odd,'b-',label='antisymmetric')
 plt.plot(ss[:-1],force_even,'r-',label='symmetric')
 plt.xlabel("waveguide separation s/a")
