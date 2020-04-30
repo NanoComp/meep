@@ -1642,6 +1642,7 @@ std::vector<meep::volume> fragment_stats::pml_1d_vols;
 std::vector<meep::volume> fragment_stats::pml_2d_vols;
 std::vector<meep::volume> fragment_stats::pml_3d_vols;
 std::vector<meep::volume> fragment_stats::absorber_vols;
+material_type_list fragment_stats::extra_materials = material_type_list();
 bool fragment_stats::split_chunks_evenly = false;
 bool fragment_stats::eps_averaging = false;
 
@@ -1689,7 +1690,8 @@ fragment_stats compute_fragment_stats(
     geometric_object_list geom_, meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
     material_type default_mat, std::vector<dft_data> dft_data_list_,
     std::vector<meep::volume> pml_1d_vols_, std::vector<meep::volume> pml_2d_vols_,
-    std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_, double tol,
+    std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_,
+    material_type_list extra_materials_, double tol,
     int maxeval, bool ensure_per, bool eps_averaging) {
 
   fragment_stats::geom = geom_;
@@ -1698,6 +1700,7 @@ fragment_stats compute_fragment_stats(
   fragment_stats::pml_2d_vols = pml_2d_vols_;
   fragment_stats::pml_3d_vols = pml_3d_vols_;
   fragment_stats::absorber_vols = absorber_vols_;
+  fragment_stats::extra_materials = extra_materials_;
   fragment_stats::eps_averaging = eps_averaging;
 
   fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
@@ -1747,8 +1750,18 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
       count_nonzero_conductivity_pixels(med, pixels);
       break;
     }
+    case material_data::MATERIAL_USER: {
+      for (int i = 0; i < extra_materials.num_items; ++i) {
+        medium_struct *med = &extra_materials.items[i]->medium;
+        if (!anisotropic_pixels_already_added) { count_anisotropic_pixels(med, pixels); }
+        count_nonlinear_pixels(med, pixels);
+        count_susceptibility_pixels(med, pixels);
+        count_nonzero_conductivity_pixels(med, pixels);
+        break;
+      }
+    }
     default:
-      // Only Medium is supported
+      // Only Medium and Material Function is supported
       return;
   }
 }

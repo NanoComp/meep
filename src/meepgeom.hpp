@@ -72,6 +72,7 @@ struct fragment_stats {
   static std::vector<meep::volume> pml_2d_vols;
   static std::vector<meep::volume> pml_3d_vols;
   static std::vector<meep::volume> absorber_vols;
+  static material_type_list extra_materials;
   static bool split_chunks_evenly;
   static bool eps_averaging;
 
@@ -123,7 +124,8 @@ compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv, vector
                        vector3 cell_center, material_type default_mat,
                        std::vector<dft_data> dft_data_list, std::vector<meep::volume> pml_1d_vols,
                        std::vector<meep::volume> pml_2d_vols, std::vector<meep::volume> pml_3d_vols,
-                       std::vector<meep::volume> absorber_vols, double tol, int maxeval,
+                       std::vector<meep::volume> absorber_vols, material_type_list extra_materials,
+                       double tol, int maxeval,
                        bool ensure_per, bool eps_averaging);
 
 /***************************************************************/
