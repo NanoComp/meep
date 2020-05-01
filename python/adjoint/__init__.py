@@ -14,4 +14,4 @@ from .optimization_problem import (OptimizationProblem, Grid)
 
 from .filter_source import FilteredSource
 
-from .filters import (smoothing_filter, projection_filter)
+from .filters import *
