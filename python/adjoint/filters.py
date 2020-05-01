@@ -126,6 +126,8 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution):
     [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of 
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
+    # lazy import
+    from scipy import special, signal
     
     sigma=sigma*resolution
     
