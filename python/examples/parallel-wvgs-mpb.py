@@ -66,6 +66,7 @@ def compute_force(f,vg):
 force_odd = compute_force(f_odd,vg_odd)
 force_even = compute_force(f_even,vg_even)
 
+plt.figure(dpi=200)
 plt.plot(ss[:-1],force_odd,'b-',label='antisymmetric')
 plt.plot(ss[:-1],force_even,'r-',label='symmetric')
 plt.xlabel("waveguide separation s/a")
