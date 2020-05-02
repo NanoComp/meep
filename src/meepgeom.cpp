@@ -1751,12 +1751,28 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
       break;
     }
     case material_data::MATERIAL_USER: {
+      bool anisotropic_pixels_extmat_already_added = false;
+      bool nonlinear_pixels_extmat_already_added = false;
+      bool susceptibility_pixels_extmat_already_added = false;
+      bool nonzero_conductivity_pixels_extmat_already_added = false;
       for (int i = 0; i < extra_materials.num_items; ++i) {
         medium_struct *med = &extra_materials.items[i]->medium;
-        if (!anisotropic_pixels_already_added) { count_anisotropic_pixels(med, pixels); }
-        count_nonlinear_pixels(med, pixels);
-        count_susceptibility_pixels(med, pixels);
-        count_nonzero_conductivity_pixels(med, pixels);
+        if (!anisotropic_pixels_already_added && !anisotropic_pixels_extmat_already_added) {
+          count_anisotropic_pixels(med, pixels);
+          anisotropic_pixels_extmat_already_added = true;
+        }
+        if (!nonlinear_pixels_extmat_already_added) {
+          count_nonlinear_pixels(med, pixels);
+          nonlinear_pixels_extmat_already_added = true;
+        }
+        if (!susceptibility_pixels_extmat_already_added) {
+          count_susceptibility_pixels(med, pixels);
+          susceptibility_pixels_extmat_already_added = true;
+        }
+        if (!nonzero_conductivity_pixels_extmat_already_added) {
+          count_nonzero_conductivity_pixels(med, pixels);
+          nonzero_conductivity_pixels_extmat_already_added = true;
+        }
         break;
       }
     }
