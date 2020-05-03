@@ -1248,7 +1248,7 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 The parameters of this routine are the same as that of `get_eigenmode_coefficients` or `EigenModeSource`, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
 
 + `band_num`: same as the `band_num` parameter
-+ `frequency`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
++ `freq`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
 + `kdom`: the dominant planewave of mode `band_num`

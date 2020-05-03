@@ -641,6 +641,7 @@ direction fields::normal_direction(const volume &where) const {
         where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
     }
     d = where_pad.normal_direction();
+    if (d == NO_DIRECTION && gv.dim == D2 && beta != 0) d = Z;
     if (d == NO_DIRECTION) abort("Could not determine normal direction for given grid_volume.");
   }
   return d;
