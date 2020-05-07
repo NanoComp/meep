@@ -1024,6 +1024,7 @@ class Simulation(object):
             pml_vols2,
             pml_vols3,
             absorber_vols,
+            self.extra_materials,
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
