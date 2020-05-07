@@ -1758,20 +1758,16 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
       for (int i = 0; i < extra_materials.num_items; ++i) {
         medium_struct *med = &extra_materials.items[i]->medium;
         if (!anisotropic_pixels_already_added && !anisotropic_pixels_extmat_already_added) {
-          count_anisotropic_pixels(med, pixels);
-          anisotropic_pixels_extmat_already_added = true;
+          anisotropic_pixels_extmat_already_added = count_anisotropic_pixels(med, pixels);
         }
         if (!nonlinear_pixels_extmat_already_added) {
-          count_nonlinear_pixels(med, pixels);
-          nonlinear_pixels_extmat_already_added = true;
+          nonlinear_pixels_extmat_already_added = count_nonlinear_pixels(med, pixels);
         }
         if (!susceptibility_pixels_extmat_already_added) {
-          count_susceptibility_pixels(med, pixels);
-          susceptibility_pixels_extmat_already_added = true;
+          susceptibility_pixels_extmat_already_added = count_susceptibility_pixels(med, pixels);
         }
         if (!nonzero_conductivity_pixels_extmat_already_added) {
-          count_nonzero_conductivity_pixels(med, pixels);
-          nonzero_conductivity_pixels_extmat_already_added = true;
+          nonzero_conductivity_pixels_extmat_already_added = count_nonzero_conductivity_pixels(med, pixels);
         }
         break;
       }
@@ -1825,7 +1821,7 @@ void fragment_stats::compute_stats() {
   }
 }
 
-void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels) {
   size_t eps_offdiag_elements = 0;
   size_t mu_offdiag_elements = 0;
 
@@ -1838,9 +1834,10 @@ void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels)
 
   num_anisotropic_eps_pixels += eps_offdiag_elements * pixels;
   num_anisotropic_mu_pixels += mu_offdiag_elements * pixels;
+  return (eps_offdiag_elements != 0) || (mu_offdiag_elements != 0);
 }
 
-void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
   size_t nonzero_chi_elements = 0;
 
   if (med->E_chi2_diag.x != 0) { nonzero_chi_elements++; }
@@ -1857,14 +1854,16 @@ void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
   if (med->H_chi3_diag.z != 0) { nonzero_chi_elements++; }
 
   num_nonlinear_pixels += nonzero_chi_elements * pixels;
+  return nonzero_chi_elements != 0;
 }
 
-void fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
   num_susceptibility_pixels += med->E_susceptibilities.num_items * pixels;
   num_susceptibility_pixels += med->H_susceptibilities.num_items * pixels;
+  return (med->E_susceptibilities.num_items != 0) || (med->H_susceptibilities.num_items != 0);
 }
 
-void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
   size_t nonzero_conductivity_elements = 0;
 
   if (med->D_conductivity_diag.x != 0) { nonzero_conductivity_elements++; }
@@ -1875,6 +1874,7 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   if (med->B_conductivity_diag.z != 0) { nonzero_conductivity_elements++; }
 
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
+  return nonzero_conductivity_elements != 0;
 }
 
 void fragment_stats::compute_dft_stats() {

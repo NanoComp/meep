@@ -110,10 +110,10 @@ private:
   void update_stats_from_material(material_type mat, size_t pixels,
                                   bool anisotropic_pixels_already_added = false);
   void compute_stats();
-  void count_anisotropic_pixels(medium_struct *med, size_t pixels);
-  void count_nonlinear_pixels(medium_struct *med, size_t pixels);
-  void count_susceptibility_pixels(medium_struct *med, size_t pixels);
-  void count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
+  bool count_anisotropic_pixels(medium_struct *med, size_t pixels);
+  bool count_nonlinear_pixels(medium_struct *med, size_t pixels);
+  bool count_susceptibility_pixels(medium_struct *med, size_t pixels);
+  bool count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels);
   void compute_dft_stats();
   void compute_pml_stats();
   void compute_absorber_stats();
