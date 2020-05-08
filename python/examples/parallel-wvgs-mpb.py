@@ -58,7 +58,7 @@ def compute_force(f,vg):
     f_avg = 0.5*(f[:-1]+f[1:])
     df = f[1:]-f[:-1]
     vg_avg = 0.5*(vg[:-1]+vg[1:])
-    return np.multiply(np.multiply(-1/f_avg,df/ds), 1/vg_avg)
+    return -1/f_avg * df/ds * 1/vg_avg
 
 force_odd = compute_force(f_odd,vg_odd)
 force_even = compute_force(f_even,vg_even)
