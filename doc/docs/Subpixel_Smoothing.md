@@ -25,10 +25,10 @@ $$ \tilde{ε}^{-1} = \textbf{P}\langleε^{-1}\rangle + \big(1-\textbf{P}\big)\la
 
 where $\textbf{P}$ is the projection matrix $P_{ij}=n_{i}n_{j}$ onto the normal $\vec{n}$. The $\langle\cdots\rangle$ denotes an average over the voxel $sΔx\times sΔy\times sΔz$ surrounding the grid point in question where $s$ is a smoothing diameter in grid units equal to 1/`resolution`. If the initial materials are anisotropic (via `epsilon_diag` and `epsilon_offdiag`), a more complicated formula is used. They key point is that, even if the structure consists entirely of isotropic materials, the discretized structure will use anisotropic materials. For interface pixels, Meep computes the effective permittivity tensor automatically at the start of the simulation prior to time stepping via analytic expressions for the filling fraction and local normal vector. For details involving derivation of the effective permittivity tensor and its implementation in Meep/FDTD, see [Optics Letters, Vol. 36, pp. 2972-4, 2006](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-31-20-2972) and [Optics Letters, Vol. 35, pp. 2778-80, 2009](https://www.osapublishing.org/abstract.cfm?uri=ol-34-18-2778).
 
-Continuously-Varying Shapes and Results
+Continuously Varying Shapes and Results
 ---------------------------------------
 
-A key feature of Meep's subpixel smoothing, particularly relevant for shape optimization (i.e., [Applied Physics Letters, Vol. 104, 091121, 2014](https://aip.scitation.org/doi/abs/10.1063/1.4867892) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi14_tandem.pdf))), is that continuously varying the `geometry` yields continuously-varying results. This is demonstrated for a ring resonator: as the radius increases, the frequency of a resonant $H_z$-polarized mode decreases. Note: unlike the example in [Tutorial/Basics/Modes of a Ring Resonator](Python_Tutorials/Basics.md#modes-of-a-ring-resonator) involving $E_z$-polarized modes where the electric fields are always continuous (i.e., parallel to the interface), this example involves discontinuous fields. Also, the ring geometry contains no sharp corners/edges which tend to produce field singularities that degrade the error. The simulation script is shown below. The inner ring radius is varied from 1.8 to 2.0 μm in gradations of 0.005 μm. The ring width is constant (1 μm). The resolution is 10 pixels/μm. The gradations are therefore well below subpixel dimensions.
+A key feature of Meep's subpixel smoothing, particularly relevant for shape optimization (i.e., [Applied Physics Letters, Vol. 104, 091121, 2014](https://aip.scitation.org/doi/abs/10.1063/1.4867892) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi14_tandem.pdf))), is that continuously varying the `geometry` yields continuously varying results. This is demonstrated for a ring resonator: as the radius increases, the frequency of a resonant $H_z$-polarized mode decreases. Note: unlike the example in [Tutorial/Basics/Modes of a Ring Resonator](Python_Tutorials/Basics.md#modes-of-a-ring-resonator) involving $E_z$-polarized modes where the electric fields are always continuous (i.e., parallel to the interface), this example involves discontinuous fields. Also, the ring geometry contains no sharp corners/edges which tend to produce field singularities that degrade the error. The simulation script is shown below. The inner ring radius is varied from 1.8 to 2.0 μm in gradations of 0.005 μm. The ring width is constant (1 μm). The resolution is 10 pixels/μm. The gradations are therefore well below subpixel dimensions.
 
 ```py
 import meep as mp
@@ -138,7 +138,7 @@ When subpixel smoothing is disabled by either (1) setting `eps_averaging=False` 
 Subpixel Smoothing vs. Bilinear Interpolation
 ---------------------------------------------
 
-In certain cases, using subpixel smoothing may be impractical given the poor runtime performance of the adaptive numerical integration method as discussed previously. A workaround to ensure that Meep responds continuously to changes in the simulation parameters is to *interpolate* the structure onto the Yee grid. Otherwise, tiny changes in Meep's Yee grid due to e.g. small changes in the resolution could cause discontinuous jumps in ε.
+In certain cases, using subpixel smoothing may be impractical given the poor runtime performance of the adaptive numerical integration method as discussed previously. A workaround to ensure that Meep responds continuously to changes in the simulation parameters is to *interpolate* any discontinuous structure onto the Yee grid. Otherwise, tiny changes in Meep's Yee grid due to e.g. small changes in the resolution could cause discontinuous jumps in ε.
 
 As a demonstration of this effect, consider a ring resonator (inner radius: 2.0 μm, width: 1.0 μm) in which the "same" ring geometry can be represented using five different methods:
 
@@ -148,7 +148,11 @@ As a demonstration of this effect, consider a ring resonator (inner radius: 2.0 
 4. Grid via `epsilon_input_file` (no smoothing; bilinear interpolation onto Yee grid).
 5. Grid via `epsilon_input_file` (no smoothing; no interpolation).
 
-The HDF5 file used as the `epsilon_input_file` in (4) and (5) is generated by the function `output_epsilon` when using the `material_function` from (3) at a resolution of 80. The `Prism` ring geometry in (2) is generated using:
+Of these five methods, (3) and (5) produce discontinuous structures.
+
+The HDF5 file used as the `epsilon_input_file` in (4) and (5) is generated by the function `output_epsilon` when using the `material_function` from (3) at a resolution of 80.
+
+The `Prism` ring geometry in (2) is generated using:
 
 ```py
 N = 40
@@ -162,16 +166,16 @@ geometry = [mp.Prism(vertices_outer, height=mp.inf, material=mp.Medium(index=n))
             mp.Prism(vertices_inner, height=mp.inf, material=mp.vacuum)]
 ```
 
-The following plot shows the frequency for the resonant mode with $H_z$ polarization and $Q$ of ~10<sup>7</sup> as a function of resolution.
+The following convergence plot shows the frequency for the resonant mode with $H_z$ polarization and $Q$ of ~10<sup>7</sup> as a function of resolution.
 
 <center>
 ![](images/ring_freq_vs_resolution.png)
 </center>
 
-There are three important items to note. (1) The grid and `Prism` representations are each converging to a *different* frequency than the `material_function` and `Cylinder`. This is because in the limit of infinite resolution, they are *different* structures than the cylinders. (2) The `material_function` is the same structure as the `Cylinder` with no smoothing. In the limit of infinite resolution, the `material_function` and `Cylinder` converge to the same frequency. The only difference is the *rate* of convergence: the `Cylinder` is second order (due to subpixel smoothing) whereas the `material_function` is first order (this is shown in the third figure on this page). (3) The grid with no interpolation contains large irregularities when compared with the grid with interpolation. Also, the datasets for the two grids converge to *different* values because they are different structures: one structure is continuous and the other is not. To see this trend clearly requires reducing the "jumpiness" in the results for the grid with no interpolation: the Meep resolution needs to be increased beyond 200 which is already ~3X the grid resolution.
+There are three important items to note. (1) The grid and `Prism` representations are each converging to a *different* frequency than the `material_function` and `Cylinder`. This is because in the limit of infinite resolution, they are *different* structures than the cylinders. (2) The `material_function` is the same structure as the `Cylinder` with no smoothing. In the limit of infinite resolution, the `material_function` and `Cylinder` converge to the same frequency. The only difference is the *rate* of convergence: the `Cylinder` is second order (due to subpixel smoothing) whereas the `material_function` is first order. See the convergence plot in the third figure from the top. (3) The grid with no interpolation contains large irregularities when compared with the grid with interpolation. This is expected because one structure is discontinuous but the other is not. Also, because they are different structures the two grids converge to *different* frequencies. To see this trend clearly requires reducing the "jumpiness" in the results for the grid with no interpolation: the Meep resolution needs to be increased beyond 200 which is already ~3X the grid resolution.
 
-Since the grid with interpolation has already been smoothed to a *continuous* $\varepsilon(x,y)$ function, subpixel smoothing (even if it were supported for `epsilon_input_file` which it is not) is not really necessary once the Yee grid resolution exceeds the input image resolution. This can be seen in the above plot: for Meep resolutions of 80 (the grid resolution) and above, the changes in the results are much smaller than those at lower resolutions.
+Since the grid with interpolation has already been smoothed to a *continuous* $\varepsilon(x,y)$ function, subpixel smoothing (which is not supported for `epsilon_input_file`) is not really necessary once the Yee grid resolution exceeds the input image resolution. This can be seen in the above plot: for Meep resolutions of 80 (the grid resolution) and above, the changes in the results are much smaller than those at lower resolutions. Also, higher-order interpolation schemes are not necessary because the Yee discretization is already essentially equivalent to linear interpolation.
 
-As a practical matter, increasing the Meep resolution beyond the resolution of a grid with no interpolation is not physically meaningful because this is trying to resolve the individual pixels of an imported image. In the case of `epsilon_input_file`, this is not an issue because the bilinear interpolation is performed automatically. However, no interpolation is performed for a `material_function` unless this is somehow built directly into the `material_function` by the user (i.e., convolving an analytic function with a smoothing kernel).
+As a practical matter, increasing the Meep resolution beyond the resolution of a grid with no interpolation is not physically meaningful because this is trying to resolve the individual pixels of an imported image. In the case of a grid imported via `epsilon_input_file`, this is not an issue because the bilinear interpolation is performed automatically by default. However, no interpolation is applied to a `material_function` unless this is somehow incorporated into the `material_function` by the user (i.e., convolving an analytic function with a smoothing kernel).
 
-The key point is that to reduce the effect of discretization errors, any structure simulated using Meep should be made continuous somehow either by using subpixel smoothing or bilinear interpolation.
+The key point is that to reduce discretization errors, any discontinuous structure simulated using Meep must be made continuous somehow. This should be done preferably using subpixel smoothing or, as a fallback in cases where subpixel smoothing is inapplicable, bilinear interpolation. If the initial structure is already continuous, no additional preprocessing is necessary.
