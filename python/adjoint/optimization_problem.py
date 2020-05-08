@@ -339,6 +339,8 @@ class OptimizationProblem(object):
         rho_vector ....... a list of numpy arrays that maps to each design region
         """
         for bi, b in enumerate(self.design_variables):
+            if np.array(rho_vector[bi]).ndim > 1:
+                raise ValueError("Each vector of design variables must contain only one dimension.")
             b.set_rho_vector(rho_vector[bi])
         
         self.sim.reset_meep()

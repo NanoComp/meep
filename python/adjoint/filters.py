@@ -5,13 +5,70 @@ General filter functions to be used in other projection and morphological transf
 import numpy as np
 from autograd import numpy as npa
 
+def _centered(arr, newshape):
+    '''Helper function that reformats the padded array of the fft filter operation.
+
+    Borrowed from scipy:
+    https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
+    '''
+    # Return the center newshape portion of the array.
+    newshape = np.asarray(newshape)
+    currshape = np.array(arr.shape)
+    startind = (currshape - newshape) // 2
+    endind = startind + newshape
+    myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
+    return arr[tuple(myslice)]
+
+def _edge_pad(arr, pad):
+    
+    # fill sides
+    left = npa.tile(arr[0,:],(pad[0][0],1)) # left side
+    right = npa.tile(arr[-1,:],(pad[0][1],1)) # right side
+    top = npa.tile(arr[:,0],(pad[1][0],1)).transpose() # top side
+    bottom = npa.tile(arr[:,-1],(pad[1][1],1)).transpose() # bottom side)
+    
+    # fill corners
+    top_left = npa.tile(arr[0,0], (pad[0][0],pad[1][0])) # top left
+    top_right = npa.tile(arr[-1,0], (pad[0][1],pad[1][0])) # top right
+    bottom_left = npa.tile(arr[0,-1], (pad[0][0],pad[1][1])) # bottom left
+    bottom_right = npa.tile(arr[-1,-1], (pad[0][1],pad[1][1])) # bottom right
+    
+    out = npa.concatenate((
+        npa.concatenate((top_left,top,top_right)),
+        npa.concatenate((left,arr,right)),
+        npa.concatenate((bottom_left,bottom,bottom_right))    
+    ),axis=1)
+    
+    return out
+
+def _zero_pad(arr, pad):
+    
+    # fill sides
+    left = npa.tile(0,(pad[0][0],arr.shape[1])) # left side
+    right = npa.tile(0,(pad[0][1],arr.shape[1])) # right side
+    top = npa.tile(0,(arr.shape[0],pad[1][0])) # top side
+    bottom = npa.tile(0,(arr.shape[0],pad[1][1])) # bottom side
+    
+    # fill corners
+    top_left = npa.tile(0, (pad[0][0],pad[1][0])) # top left
+    top_right = npa.tile(0, (pad[0][1],pad[1][0])) # top right
+    bottom_left = npa.tile(0, (pad[0][0],pad[1][1])) # bottom left
+    bottom_right = npa.tile(0, (pad[0][1],pad[1][1])) # bottom right
+    
+    out = npa.concatenate((
+        npa.concatenate((top_left,top,top_right)),
+        npa.concatenate((left,arr,right)),
+        npa.concatenate((bottom_left,bottom,bottom_right))    
+    ),axis=1)
+    
+    return out
+
 def simple_2d_filter(x,kernel):
     """A simple 2d filter algorithm that is differentiable with autograd.
     Uses a 2D fft approach since it is typically faster and preserves the shape
     of the input and output arrays.
     
-    The kernel is always normalized so that the input energy and output energy
-    are the same.
+    The ffts pad the operation to prevent any circular convolution garbage.
 
     Parameters
     ----------
@@ -25,15 +82,27 @@ def simple_2d_filter(x,kernel):
     array_like (2D)
         The output of the 2d convolution.
     """
-    kernel_fft = np.fft.fft2(kernel) # Normalize response and get freq response
-    return npa.real(npa.fft.ifft2(npa.fft.fft2(x)*kernel_fft))
+    if (x.shape[0] != kernel.shape[0]) or (x.shape[1] != kernel.shape[1]):
+        raise ValueError("The input {} and kernel {} must have the same shape.".format(x.shape,kernel.shape))
+    Nx, Ny = kernel.shape
+    
+    # pad the kernel and input to avoid circular convolution garbage
+    kernel = _zero_pad(kernel,((int(Nx/2),int(Nx/2)-1),(int(Ny/2),int(Ny/2)-1)))
+    x = _edge_pad(x,((int(Nx/2),int(Nx/2)-1),(int(Ny/2),int(Ny/2)-1)))
+    H = npa.fft.fft2(kernel)
+    X = npa.fft.fft2(x)
+    Y = H * X
+    
+    # We need to fftshift since we padded both sides if each dimension of our input and kernel.
+    y = npa.fft.fftshift(npa.real(npa.fft.ifft2(Y)))
+    return _centered(y,(Nx,Ny))
 
 def cylindrical_filter(x,radius,Lx,Ly,resolution):
     '''A uniform cylindrical filter [1]. Typically allows for sharper transitions. 
     
     Parameters
     ----------
-    x : array_like
+    x : array_like (2D)
         Design parameters
     radius : float
         Filter radius (in "meep units")
@@ -46,7 +115,7 @@ def cylindrical_filter(x,radius,Lx,Ly,resolution):
 
     Returns
     -------
-    array_like
+    array_like (2D)
         Filtered design parameters.
     
     References
@@ -57,18 +126,18 @@ def cylindrical_filter(x,radius,Lx,Ly,resolution):
     Nx = int(Lx*resolution)
     Ny = int(Ly*resolution)
     
-    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True)
-    kernel = np.where(np.abs(xv ** 2 + yv ** 2) <= radius**2,1,0)
+    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True, indexing='ij')
+    kernel = np.where(np.abs(xv ** 2 + yv ** 2) <= radius**2,1,0).T
     kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
     
-    return simple_2d_filter(x.reshape(Nx,Ny),kernel).flatten()
+    return simple_2d_filter(x.reshape(Nx,Ny),kernel)
 
 def conic_filter(x,radius,Lx,Ly,resolution):
     '''A linear conic filter, also known as a "Hat" filter in the literature [1].
     
     Parameters
     ----------
-    x : array_like
+    x : array_like (2D)
         Design parameters
     radius : float
         Filter radius (in "meep units")
@@ -81,7 +150,7 @@ def conic_filter(x,radius,Lx,Ly,resolution):
 
     Returns
     -------
-    array_like
+    array_like (2D)
         Filtered design parameters.
     
     References
@@ -93,11 +162,11 @@ def conic_filter(x,radius,Lx,Ly,resolution):
     Nx = int(Lx*resolution)
     Ny = int(Ly*resolution)
     
-    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True)
+    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True, indexing='ij')
     kernel = np.where(np.abs(xv ** 2 + yv ** 2) <= radius**2,(1-np.sqrt(abs(xv ** 2 + yv ** 2))/radius),0)
     kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
-    
-    return simple_2d_filter(x.reshape(Nx,Ny),kernel).flatten()
+
+    return simple_2d_filter(x.reshape(Nx,Ny),kernel)
 
 
 def gaussian_filter(x,sigma,Lx,Ly,resolution):
@@ -105,7 +174,7 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution):
     
     Parameters
     ----------
-    x : array_like
+    x : array_like (2D)
         Design parameters
     sigma : float
         Filter radius (in "meep units")
@@ -118,7 +187,7 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution):
 
     Returns
     -------
-    array_like
+    array_like (2D)
         Filtered design parameters.
     
     References
@@ -138,7 +207,7 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution):
     kernel = np.outer(signal.gaussian(Nx, sigma), signal.gaussian(Ny, sigma)) # Gaussian filter kernel
     kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
         
-    return simple_2d_filter(x.reshape(Nx,Ny),kernel).flatten()
+    return simple_2d_filter(x.reshape(Nx,Ny),kernel)
 
 '''
 # ------------------------------------------------------------------------------------ #
@@ -526,17 +595,17 @@ def get_eta_from_conic(b,R):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     
-    if b/R < 0:
+    if b/(R) < 0:
         eta_e = 0
-    elif b/R < 1:
-        eta_e = 0.25 * (b/R) ** 2 + 0.5
-    elif b/R < 2:
-        eta_e = -0.25 * (b/R) ** 2 + b/R
+    elif b/(R) < 1:
+        eta_e = 0.25 * b/(R) ** 2 + 0.5
+    elif b/(R) < 2:
+        eta_e = -0.25 * b/(R) ** 2 + b/(R)
     else:
         eta_e = 1
     return eta_e
 
-def indicator_solid(x,c,filter_f,threshold_f):
+def indicator_solid(x,c,filter_f,threshold_f,resolution):
     '''Calculates the indicator function for the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -563,13 +632,15 @@ def indicator_solid(x,c,filter_f,threshold_f):
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
     
-    filtered_field = filter_f(x)
+    filtered_field = filter_f(x).reshape(x.shape)
     design_field = threshold_f(filtered_field)
     gradient_filtered_field = npa.gradient(filtered_field)
-    grad_mag = gradient_filtered_field[0] ** 2 + gradient_filtered_field[1] ** 2
+    grad_mag = (gradient_filtered_field[0]*resolution) ** 2 + (gradient_filtered_field[1]*resolution) ** 2
+    if grad_mag.ndim != 2:
+        raise ValueError("The gradient fields must be 2 dimensional. Check input array and filter functions.")
     return design_field * npa.exp(-c * grad_mag)
 
-def constraint_solid(x,c,eta_e,filter_f,threshold_f):
+def constraint_solid(x,c,eta_e,filter_f,threshold_f,resolution):
     '''Calculates the constraint function of the solid phase needed for minimum length optimization [1].
     
     Parameters
@@ -601,11 +672,12 @@ def constraint_solid(x,c,eta_e,filter_f,threshold_f):
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
     
-    filtered_field = filter_f(x).flatten()
-    return npa.mean(indicator_solid(x,c,filter_f,threshold_f).flatten() * 
-                    (npa.minimum(filtered_field-eta_e,np.zeros((filtered_field.size,))))**2)
+    filtered_field = filter_f(x)
+    return npa.mean(
+        indicator_solid(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten() * 
+                    (npa.minimum(filtered_field.flatten()-eta_e,np.zeros((filtered_field.size,))))**2)
 
-def indicator_void(x,c,filter_f,threshold_f):
+def indicator_void(x,c,filter_f,threshold_f,resolution):
     '''Calculates the indicator function for the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -632,13 +704,15 @@ def indicator_void(x,c,filter_f,threshold_f):
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
     
-    filtered_field = filter_f(x).flatten()
+    filtered_field = filter_f(x).reshape(x.shape)
     design_field = threshold_f(filtered_field)
     gradient_filtered_field = npa.gradient(filtered_field)
-    grad_mag = gradient_filtered_field[0] ** 2 + gradient_filtered_field[1] ** 2
+    grad_mag = (gradient_filtered_field[0]*resolution) ** 2 + (gradient_filtered_field[1]*resolution) ** 2
+    if grad_mag.ndim != 2:
+        raise ValueError("The gradient fields must be 2 dimensional. Check input array and filter functions.")
     return (1 - design_field) * npa.exp(-c * grad_mag)
 
-def constraint_void(x,c,eta_d,filter_f,threshold_f):
+def constraint_void(x,c,eta_d,filter_f,threshold_f,resolution):
     '''Calculates the constraint function of the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -670,6 +744,32 @@ def constraint_void(x,c,eta_d,filter_f,threshold_f):
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
     
-    filtered_field = filter_f(x).flatten()
-    return npa.mean(indicator_void(x,c,filter_f,threshold_f).flatten() * 
-                    (npa.minimum(eta_d-filtered_field,np.zeros((filtered_field.size,))))**2)
+    filtered_field = filter_f(x)
+    return npa.mean(
+        indicator_void(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten() * 
+                    (npa.minimum(eta_d-filtered_field.flatten(),np.zeros((filtered_field.size,))))**2)
+
+def gray_indicator(x):
+    '''Calculates a measure of "grayness" according to [1].
+
+    Lower numbers ( < 2%) indicate a good amount of binarization [1].
+    
+    Parameters
+    ----------
+    x : array_like
+        Filtered and thresholded design parameters (between 0 and 1)
+    
+    Returns
+    -------
+    float
+        Measure of "grayness" (in percent)
+    
+    References
+    ----------
+    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
+    '''
+    return np.mean(4 * x.flatten()) * (1-x.flatten()) * 100
+
+
+
