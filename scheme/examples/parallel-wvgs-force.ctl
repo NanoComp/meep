@@ -1,4 +1,4 @@
-(set-param! resolution 30)   ; pixels/um
+(set-param! resolution 40)   ; pixels/um
 
 (define Si (make medium (index 3.45)))
 
@@ -10,7 +10,7 @@
 (set! geometry-lattice
       (make lattice (size (+ sx (* 2 dpml)) (+ sy (* 2 dpml)) no-size)))
 
-(define-param a 1.0)  ; waveguide width
+(define-param a 1.0)  ; waveguide width/height
 (define-param s 1.0)  ; waveguide separation distance
 (set! geometry (list
 		(make block (center (* -0.5 (+ s a)) 0)
@@ -44,32 +44,24 @@
 (change-sources! (list
                   (make eigenmode-source
                     (src (make gaussian-src (frequency f) (fwidth df)))
-                    (size a a 0)
-                    (center (* -0.5 (+ s a)) 0)
-                    (direction Z)
+                    (size sx sy 0)
+                    (center 0 0 0)
+                    (eig-band (if xodd? 2 1))
                     (eig-kpoint k-point)
-                    (eig-match-freq? true)
-                    (eig-parity ODD-Y))
-                  (make eigenmode-source
-                    (src (make gaussian-src (frequency f) (fwidth df)))
-                    (size a a 0)
-                    (center (* 0.5 (+ s a)) 0)
-                    (direction Z)
-                    (eig-kpoint k-point)
-                    (eig-match-freq? true)
-                    (eig-parity ODD-Y)
-                    (amplitude (if xodd? -1.0 1.0)))))
+                    (eig-match-freq? false)
+                    (eig-parity ODD-Y))))
 
 (define wvg-flux (add-flux f 0 1
-			  (make flux-region (direction Z) (center 0 0)
-				(size (* 1.2 (+ (* 2 a) s)) (* 1.2 a) 0))))
-(define wvg-force (add-force f 0 1
-			     (make force-region (direction X) (weight +1.0)
-				   (center (* 0.5 s) 0) (size 0 a))
-			     (make force-region (direction X) (weight -1.0)
-				   (center (+ (* 0.5 s) a) 0) (size 0 a))))
+                           (make flux-region (direction Z)
+                                 (center 0 0) (size sx sy 0))))
 
-(run-sources+ 5000)
+(define wvg-force (add-force f 0 1
+			     (make force-region (direction X) (weight +1)
+				   (center (* 0.5 s) 0) (size 0 sy))
+			     (make force-region (direction X) (weight -1)
+				   (center (+ (* 0.5 s) a) 0) (size 0 sy))))
+
+(run-sources+ 1500)
 
 (display-fluxes wvg-flux)
 (display-forces wvg-force)
