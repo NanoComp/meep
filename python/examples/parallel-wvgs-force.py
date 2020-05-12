@@ -13,12 +13,11 @@ sx = 5
 sy = 3
 cell = mp.Vector3(sx+2*dpml,sy+2*dpml,0)
 
-a = 1.0     # waveguide width
+a = 1.0     # waveguide width/height
 
 k_point = mp.Vector3(z=0.5)
 
-fcen = 0.22
-df = 0.06
+fcen = 0.2
 
 def parallel_waveguide(s,xodd):
     geometry = [mp.Block(center=mp.Vector3(-0.5*(s+a)),
@@ -28,64 +27,53 @@ def parallel_waveguide(s,xodd):
                          size=mp.Vector3(a,a,mp.inf),
                          material=Si)]
 
-    symmetries = [mp.Mirror(mp.X, phase=-1.0 if xodd else 1.0),
-                  mp.Mirror(mp.Y, phase=-1.0)]
-
-    sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
-                         component=mp.Ey,
-                         center=mp.Vector3(-0.5*(s+a)),
-                         size=mp.Vector3(a,a)),
-               mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
-                         component=mp.Ey,
-                         center=mp.Vector3(0.5*(s+a)),
-                         size=mp.Vector3(a,a),
-                         amplitude=-1.0 if xodd else 1.0)]
+    symmetries = [mp.Mirror(mp.X, phase=-1 if xodd else 1),
+                  mp.Mirror(mp.Y, phase=-1)]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell,
-                        boundary_layers=pml_layers,
                         geometry=geometry,
                         symmetries=symmetries,
-                        k_point=k_point,
-                        sources=sources)
+                        k_point=k_point)
 
-    h = mp.Harminv(mp.Ey, mp.Vector3(0.5*(s+a)), fcen, df)
+    sim.init_sim()
+    EigenmodeData = sim.get_eigenmode(fcen,
+                                      mp.Z,
+                                      mp.Volume(center=mp.Vector3(), size=mp.Vector3(sx,sy)),
+                                      2 if xodd else 1,
+                                      k_point,
+                                      match_frequency=False,
+                                      parity=mp.ODD_Y)
 
-    sim.run(mp.after_sources(h), until_after_sources=200)
-
-    f = h.modes[0].freq
-    print("freq:, {}, {}".format(s, f))
+    f = EigenmodeData.freq
+    print("freq-{}:, {}, {}".format("xodd" if xodd else "xeven", s, f))
 
     sim.reset_meep()
 
-    eig_sources = [mp.EigenModeSource(src=mp.GaussianSource(f, fwidth=df),
-                                      size=mp.Vector3(a,a),
-                                      center=mp.Vector3(-0.5*(s+a)),
+    eig_sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.1*fcen),
+                                      size=mp.Vector3(sx,sy),
+                                      center=mp.Vector3(),
+                                      eig_band=2 if xodd else 1,
                                       eig_kpoint=k_point,
-                                      eig_match_freq=True,
-                                      eig_parity=mp.ODD_Y),
-                   mp.EigenModeSource(src=mp.GaussianSource(f, fwidth=df),
-                                      size=mp.Vector3(a,a),
-                                      center=mp.Vector3(0.5*(s+a)),
-                                      eig_kpoint=k_point,
-                                      eig_match_freq=True,
-                                      eig_parity=mp.ODD_Y,
-                                      amplitude=-1.0 if xodd else 1.0)]
+                                      eig_match_freq=False,
+                                      eig_parity=mp.ODD_Y)]
 
     sim.change_sources(eig_sources)
 
-    flux_reg = mp.FluxRegion(direction=mp.Z, center=mp.Vector3(), size=mp.Vector3(1.2*(2*a+s),1.2*a))
+    flux_reg = mp.FluxRegion(direction=mp.Z, center=mp.Vector3(), size=mp.Vector3(sx,sy))
     wvg_flux = sim.add_flux(f, 0, 1, flux_reg)
 
-    force_reg1 = mp.ForceRegion(mp.Vector3(0.5*s), direction=mp.X, weight=1.0, size=mp.Vector3(y=a))
-    force_reg2 = mp.ForceRegion(mp.Vector3(0.5*s+a), direction=mp.X, weight=-1.0, size=mp.Vector3(y=a))
+    force_reg1 = mp.ForceRegion(mp.Vector3(0.5*s), direction=mp.X, weight=1, size=mp.Vector3(y=a))
+    force_reg2 = mp.ForceRegion(mp.Vector3(0.5*s+a), direction=mp.X, weight=-1, size=mp.Vector3(y=a))
     wvg_force = sim.add_force(f, 0, 1, force_reg1, force_reg2)
 
     sim.run(until_after_sources=5000)
 
     flux = mp.get_fluxes(wvg_flux)[0]
     force = mp.get_forces(wvg_force)[0]
-    
+    print("flux-{}:, {}, {}".format("xodd" if xodd else "xeven", s, flux))
+    print("force-{}:, {}, {}".format("xodd" if xodd else "xeven", s, force))
+
     sim.reset_meep()
     return flux, force
 

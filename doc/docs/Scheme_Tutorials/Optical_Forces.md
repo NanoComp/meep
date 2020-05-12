@@ -82,21 +82,23 @@ Once we have determined the mode frequency, we then replace the `source` with [`
 ```scm
 (reset-meep)
 (change-sources! (list
-		  (make eigenmode-source
-		    (src (make gaussian-src (frequency f) (fwidth df)))
-		    (size a a 0)
-		    (center (* -0.5 (+ s a)) 0)
-		    (eig-kpoint k-point)
-		    (eig-match-freq? true)
-		    (eig-parity ODD-Y))
-		  (make eigenmode-source
-		    (src (make gaussian-src (frequency f) (fwidth df)))
-		    (size a a 0)
-		    (center (* 0.5 (+ s a)) 0)
-		    (eig-kpoint k-point)
-		    (eig-match-freq? true)
-		    (eig-parity ODD-Y)
-		    (amplitude (if xodd? -1.0 1.0)))))
+                  (make eigenmode-source
+                    (src (make gaussian-src (frequency f) (fwidth df)))
+                    (size a a 0)
+                    (center (* -0.5 (+ s a)) 0)
+                    (direction Z)
+                    (eig-kpoint k-point)
+                    (eig-match-freq? true)
+                    (eig-parity ODD-Y))
+                  (make eigenmode-source
+                    (src (make gaussian-src (frequency f) (fwidth df)))
+                    (size a a 0)
+                    (center (* 0.5 (+ s a)) 0)
+                    (direction Z)
+                    (eig-kpoint k-point)
+                    (eig-match-freq? true)
+                    (eig-parity ODD-Y)
+                    (amplitude (if xodd? -1.0 1.0)))))
 
 (define wvg-flux (add-flux f 0 1
 			  (make flux-region (direction Z) (center 0 0)
@@ -113,7 +115,9 @@ Once we have determined the mode frequency, we then replace the `source` with [`
 (display-forces wvg-force)
 ```
 
-There are two important items to note in the script: (1) We have defined a single flux surface to compute the Poynting flux in $z$ which spans an area slightly larger than both waveguides rather than two separate flux surfaces (one for each waveguide). This is because in the limit of small separation, two flux surfaces overlap whereas the total power through a single flux surface need, by symmetry, only be halved in order to determine the value for just one of the two waveguides. (2) Instead of defining a closed, four-sided "box" surrounding the waveguides for computing the MST, we chose instead to compute the MST along just two $y$-oriented lines (to obtain the force in the $x$ direction) with different `weight` values to correctly sum the total force. By symmetry, we need not consider the force in the $y$ direction. Choosing a suitable runtime requires some care. A large runtime is necessary to obtain the steady-state response but this will also lead to large values for the discrete Fourier-transformed fields used to compute both the flux and the MST. These large values may contain [roundoff errors](https://en.wikipedia.org/wiki/Round-off_error).
+There are three important items to note in the script: (1) We have defined a single flux surface to compute the Poynting flux in $z$ which spans an area slightly larger than both waveguides rather than two separate flux surfaces (one for each waveguide). This is because in the limit of small separation, two flux surfaces overlap whereas the total power through a single flux surface need, by symmetry, only be halved in order to determine the value for just one of the two waveguides. (2) Instead of defining a closed, four-sided "box" surrounding the waveguides for computing the MST, we chose instead to compute the MST along just two $y$-oriented lines (to obtain the force in the $x$ direction) with different `weight` values to correctly sum the total force. By symmetry, we need not consider the force in the $y$ direction. (3) A 2d `geometry-lattice` in $xy$ combined with a `k-point` containing a non-zero $z$ component results in a [2d simulation (by default)](../2d_Cell_Special_kz.md). Since `eig-match-freq?` is `true` for the 2d `eigenmode-source`, its `direction` property must be set to $z$.
+
+Choosing a suitable runtime requires some care. A large runtime is necessary to obtain the steady-state response but this will also lead to large values for the discrete Fourier-transformed fields used to compute both the flux and the MST. These large values may contain [roundoff errors](https://en.wikipedia.org/wiki/Round-off_error).
 
 We run this simulation over the range of separation distances and compare the results to those obtained from MPB. This is shown in the figure above. The two methods show good agreement.
 

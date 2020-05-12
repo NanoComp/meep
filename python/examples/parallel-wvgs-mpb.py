@@ -14,9 +14,6 @@ geometry_lattice = mp.Lattice(size=mp.Vector3(0,syz,syz))
 
 k_points = [mp.Vector3(0.5)]
 
-num_bands = 1
-tolerance = 1e-9
-
 a = 1.0  # waveguide width
 
 def parallel_waveguide(s,yodd):
@@ -31,8 +28,8 @@ def parallel_waveguide(s,yodd):
                         k_points=k_points,
                         geometry_lattice=geometry_lattice,
                         geometry=geometry,
-                        num_bands=num_bands,
-                        tolerance=tolerance)
+                        num_bands=1,
+                        tolerance=1e-9)
 
     if yodd:
         ms.run_yodd_zodd()
@@ -66,6 +63,7 @@ def compute_force(f,vg):
 force_odd = compute_force(f_odd,vg_odd)
 force_even = compute_force(f_even,vg_even)
 
+plt.figure(dpi=200)
 plt.plot(ss[:-1],force_odd,'b-',label='antisymmetric')
 plt.plot(ss[:-1],force_even,'r-',label='symmetric')
 plt.xlabel("waveguide separation s/a")

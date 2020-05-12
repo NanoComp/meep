@@ -187,7 +187,6 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
   bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
-      meep_geom::fragment_stats::has_non_medium_material() ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && adjusted_num_chunks > 1)
       master_printf("Splitting into %d chunks evenly\n", adjusted_num_chunks);

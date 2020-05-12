@@ -42,21 +42,23 @@
 
 (reset-meep)
 (change-sources! (list
-		  (make eigenmode-source
-		    (src (make gaussian-src (frequency f) (fwidth df)))
-		    (size a a 0)
-		    (center (* -0.5 (+ s a)) 0)
-		    (eig-kpoint k-point)
-		    (eig-match-freq? true)
-		    (eig-parity ODD-Y))
-		  (make eigenmode-source
-		    (src (make gaussian-src (frequency f) (fwidth df)))
-		    (size a a 0)
-		    (center (* 0.5 (+ s a)) 0)
-		    (eig-kpoint k-point)
-		    (eig-match-freq? true)
-		    (eig-parity ODD-Y)
-		    (amplitude (if xodd? -1.0 1.0)))))
+                  (make eigenmode-source
+                    (src (make gaussian-src (frequency f) (fwidth df)))
+                    (size a a 0)
+                    (center (* -0.5 (+ s a)) 0)
+                    (direction Z)
+                    (eig-kpoint k-point)
+                    (eig-match-freq? true)
+                    (eig-parity ODD-Y))
+                  (make eigenmode-source
+                    (src (make gaussian-src (frequency f) (fwidth df)))
+                    (size a a 0)
+                    (center (* 0.5 (+ s a)) 0)
+                    (direction Z)
+                    (eig-kpoint k-point)
+                    (eig-match-freq? true)
+                    (eig-parity ODD-Y)
+                    (amplitude (if xodd? -1.0 1.0)))))
 
 (define wvg-flux (add-flux f 0 1
 			  (make flux-region (direction Z) (center 0 0)

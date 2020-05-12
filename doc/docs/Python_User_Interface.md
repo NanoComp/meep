@@ -123,7 +123,7 @@ If `True` (the default) *and* if the boundary conditions are periodic (`k_point`
 
 **`eps_averaging` [`boolean`]**
 —
-If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error. Disabling subpixel averaging will lead to [staircasing effects and irregular convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
 
 **`force_complex_fields` [`boolean`]**
 —
@@ -1248,7 +1248,7 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 The parameters of this routine are the same as that of `get_eigenmode_coefficients` or `EigenModeSource`, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
 
 + `band_num`: same as the `band_num` parameter
-+ `frequency`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
++ `freq`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
 + `kdom`: the dominant planewave of mode `band_num`

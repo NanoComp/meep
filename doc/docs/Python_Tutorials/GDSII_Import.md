@@ -50,7 +50,6 @@ t_air = 0.78
 
 dpml = 1
 cell_thickness = dpml+t_oxide+t_Si+t_air+dpml
-si_zmin = 0
 
 oxide = mp.Medium(epsilon=2.25)
 silicon=mp.Medium(epsilon=12)
@@ -61,7 +60,8 @@ df = 0.2*fcen
 def main(args):
     cell_zmax = 0.5*cell_thickness if args.three_d else 0
     cell_zmin = -0.5*cell_thickness if args.three_d else 0
-    si_zmax = t_Si if args.three_d else 0
+    si_zmax = 0.5*t_Si if args.three_d else 10
+    si_zmin = -0.5*t_Si if args.three_d else -10
 
     # read cell size, volumes for source region and flux monitors,
     # and coupler geometry from GDSII file
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     main(args)
 ```
 
-For a given waveguide separation distance (`d`), the simulation computes the transmittance of Ports 2, 3, and 4. The transmittance is the square of the [S-parameter](https://en.wikipedia.org/wiki/Scattering_parameters) which is equivalent to the [mode coefficient](Mode_Decomposition.md). There is an additional mode monitor at Port 1 to compute the input power from the adjacent eigenmode source; this is used for normalization when computing the transmittance. The eight layers of the GDSII file are each converted to a `Simulation` object: the upper and lower branches of the coupler are defined as a collection of [`Prism`](../Python_User_Interface.md#prism)s, the rectilinear regions of the source and flux monitor as a [`Volume`](../Python_User_Interface.md#volume) and [`FluxRegion`](../Python_User_Interface.md#fluxregion). The size of the cell in the $y$ direction is dependent on `d`. The default dimensionality is 2d. An optional input parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the *z* direction and adding an oxide layer beneath similar to a [silicon on insulator](https://en.wikipedia.org/wiki/Silicon_on_insulator) (SOI) substrate. A schematic of the coupler design in 3d generated using MayaVi is shown below.
+For a given waveguide separation distance (`d`), the simulation computes the transmittance of Ports 2, 3, and 4. The transmittance is the square of the [S-parameter](https://en.wikipedia.org/wiki/Scattering_parameters) which is equivalent to the [mode coefficient](Mode_Decomposition.md). There is an additional mode monitor at Port 1 to compute the input power from the adjacent eigenmode source; this is used for normalization when computing the transmittance. The eight layers of the GDSII file are each converted to a `Simulation` object: the upper and lower branches of the coupler are defined as a collection of [`Prism`](../Python_User_Interface.md#prism)s, the rectilinear regions of the source and flux monitor as a [`Volume`](../Python_User_Interface.md#volume) and [`FluxRegion`](../Python_User_Interface.md#fluxregion). The size of the cell in the $y$ direction is dependent on `d`. The default dimensionality is 2d. (Note that for a 2d cell the `Prism` objects returned by `get_GDSII_prisms` must have a finite height. The finite height of `Volume` objects returned by `GDSII_vol` are ignored in 2d.) An optional input parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the *z* direction and adding an oxide layer beneath similar to a [silicon on insulator](https://en.wikipedia.org/wiki/Silicon_on_insulator) (SOI) substrate. A schematic of the coupler design in 3d generated using MayaVi is shown below.
 
 <center>
 ![](../images/coupler3D.png)
