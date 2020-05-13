@@ -1773,7 +1773,7 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
       }
     }
     default:
-      // Only Medium and Material Function is supported
+      // Only Medium and Material Function are supported
       return;
   }
 }
