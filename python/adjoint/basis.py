@@ -16,7 +16,7 @@ class Basis(ABC):
     """
     """
 
-    def __init__(self, rho_vector, volume=None, size=None, center=mp.Vector3()):
+    def __init__(self, rho_vector=None, volume=None, size=None, center=mp.Vector3()):
         self.volume = volume if volume else mp.Volume(center=center,size=size)
         self.rho_vector = rho_vector
     
@@ -45,15 +45,11 @@ class BilinearInterpolationBasis(Basis):
     Simple bilinear interpolation basis set.
     '''
 
-    def __init__(self,Nx,Ny,symmetry=None,**kwargs):
+    def __init__(self,resolution,symmetry=None,**kwargs):
         ''' 
         
         '''
-        self.Nx = Nx
-        self.Ny = Ny
-        # FIXME allow for 3d geometries using 2d bilinear interpolation
         self.dim = 2
-        self.num_design_params = self.Nx*self.Ny
 
         super(BilinearInterpolationBasis, self).__init__(**kwargs)
 
@@ -63,19 +59,28 @@ class BilinearInterpolationBasis(Basis):
         else:
             self.symmetry = symmetry
         
-        if mp.X in set(self.symmetry): # symmetry across x axis
-            self.rho_x = np.linspace(self.volume.center.x,self.volume.center.x + self.volume.size.x/2,Nx)
+        if mp.X in set(self.symmetry):
+            self.Nx = int(resolution * self.volume.size.x / 2)
+            self.rho_x = np.linspace(self.volume.center.x,self.volume.center.x + self.volume.size.x/2,self.Nx)
             self.mirror_X = True
         else:
-            self.rho_x = np.linspace(self.volume.center.x - self.volume.size.x/2,self.volume.center.x + self.volume.size.x/2,Nx)
+            self.Nx = int(resolution * self.volume.size.x)
+            self.rho_x = np.linspace(self.volume.center.x - self.volume.size.x/2,self.volume.center.x + self.volume.size.x/2,self.Nx)
             self.mirror_X = False
         
-        if mp.Y in set(self.symmetry): # symmetry across y axis
-            self.rho_y = np.linspace(self.volume.center.y,self.volume.center.y + self.volume.size.y/2,Ny)
+        if mp.Y in set(self.symmetry):
+            self.Ny = int(resolution * self.volume.size.y / 2)
+            self.rho_y = np.linspace(self.volume.center.y,self.volume.center.y + self.volume.size.y/2,self.Ny)
             self.mirror_Y = True
         else:
-            self.rho_y = np.linspace(self.volume.center.y - self.volume.size.y/2,self.volume.center.y + self.volume.size.y/2,Ny)
+            self.Ny = int(resolution * self.volume.size.y)
+            self.rho_y = np.linspace(self.volume.center.y - self.volume.size.y/2,self.volume.center.y + self.volume.size.y/2,self.Ny)
             self.mirror_Y = False
+        
+        self.num_design_params = self.Nx*self.Ny
+
+        if self.rho_vector is None:
+            self.rho_vector = np.ones((self.num_design_params,))
 
     def __call__(self, p):
         x = 2*self.volume.center.x - p.x if self.mirror_X and p.x < self.volume.center.x else p.x

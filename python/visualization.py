@@ -514,7 +514,9 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
 def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
             eps_parameters=None,boundary_parameters=None,
             source_parameters=None,monitor_parameters=None,
-            field_parameters=None, frequency=None):
+            field_parameters=None, frequency=None,
+            plot_eps_flag=True, plot_sources_flag=True,
+            plot_monitors_flag=True, plot_boundaries_flag=True):
 
     # Initialize the simulation
     if sim.structure is None:
@@ -546,16 +548,20 @@ def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
     output_plane = Volume(center=sim_center,size=sim_size)
 
     # Plot geometry
-    ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,frequency=frequency)
+    if plot_eps_flag:
+        ax = plot_eps(sim,ax,output_plane=output_plane,eps_parameters=eps_parameters,frequency=frequency)
 
     # Plot boundaries
-    ax = plot_boundaries(sim,ax,output_plane=output_plane,boundary_parameters=boundary_parameters)
+    if plot_boundaries_flag:
+        ax = plot_boundaries(sim,ax,output_plane=output_plane,boundary_parameters=boundary_parameters)
 
     # Plot sources
-    ax = plot_sources(sim,ax,output_plane=output_plane,labels=labels,source_parameters=source_parameters)
+    if plot_sources_flag:
+        ax = plot_sources(sim,ax,output_plane=output_plane,labels=labels,source_parameters=source_parameters)
 
     # Plot monitors
-    ax = plot_monitors(sim,ax,output_plane=output_plane,labels=labels,monitor_parameters=monitor_parameters)
+    if plot_monitors_flag:
+        ax = plot_monitors(sim,ax,output_plane=output_plane,labels=labels,monitor_parameters=monitor_parameters)
 
     # Plot fields
     ax = plot_fields(sim,ax,fields,output_plane=output_plane,field_parameters=field_parameters)
