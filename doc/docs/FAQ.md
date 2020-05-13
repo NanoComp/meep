@@ -323,7 +323,7 @@ a discretized computer model like Meep, this is approximated by a volume conduct
 
 ### How do I model a continuously-varying permittivity?
 
-You can use a [material function](Python_User_Interface.md#medium) to model any arbitrary, position-dependent permittivity/permeability function ε(**r**)/μ(**r**) including anisotropic, [dispersive](Materials.md#material-dispersion), and [nonlinear](Materials.md#nonlinearity) media. For an example involving a non-dispersive, anisotropic material, see [Tutorials/Mode Decomposition/Diffraction Spectrum of Liquid-Crystal Polarization Gratings](Python_Tutorials/Mode_Decomposition.md#diffraction-spectrum-of-liquid-crystal-polarization-gratings). The material function construct can also be used to specify arbitrary *shapes* (e.g., curves such as parabolas, sinusoids, etc.) within: (1) the interior boundary of a [`GeometricObject`](Python_User_Interface.md#geometricobject) (e.g., `Block`, `Sphere`, `Cylinder`, etc.), (2) the entire cell via the [`material_function`](Python_User_Interface.md#material-function) parameter of the `Simulation` constructor, or (3) a combination of the two.
+You can use a [material function](Python_User_Interface.md#medium) to model any arbitrary, position-dependent permittivity/permeability function ε(**r**)/μ(**r**) including anisotropic, [dispersive](Materials.md#material-dispersion), and [nonlinear](Materials.md#nonlinearity) media. For an example involving a non-dispersive, anisotropic material, see [Tutorial/Mode Decomposition/Diffraction Spectrum of Liquid-Crystal Polarization Gratings](Python_Tutorials/Mode_Decomposition.md#diffraction-spectrum-of-liquid-crystal-polarization-gratings). The material function construct can also be used to specify arbitrary *shapes* (e.g., curves such as parabolas, sinusoids, etc.) within: (1) the interior boundary of a [`GeometricObject`](Python_User_Interface.md#geometricobject) (e.g., `Block`, `Sphere`, `Cylinder`, etc.), (2) the entire cell via the [`material_function`](Python_User_Interface.md#material-function) parameter of the `Simulation` constructor, or (3) a combination of the two.
 
 Usage: Structures
 -----------------
@@ -334,7 +334,7 @@ There are five ways to define a structure: (1) the [`GeometricObject`](Python_Us
 
 ### Does Meep support importing GDSII files?
 
-Yes. The [`get_GDSII_prisms`](Python_User_Interface.md#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. See [Tutorial/GDSII Import](Python_Tutorials/GDSII_Import.md) for an example. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits. A useful tool for creating GDS files of simple geometries (e.g., curved waveguides, ring resonators, directional couplers, etc.) is [gdspy](https://gdspy.readthedocs.io/en/stable/).
+Yes. The [`get_GDSII_prisms`](Python_User_Interface.md#gdsii-support) routine is used to import [GDSII](https://en.wikipedia.org/wiki/GDSII) files. See [Tutorial/GDSII Import](Python_Tutorials/GDSII_Import.md) for examples. This feature facilitates the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, it enables Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits. A useful tool for creating GDS files of simple geometries (e.g., curved waveguides, ring resonators, directional couplers, etc.) is [gdspy](https://gdspy.readthedocs.io/en/stable/).
 
 ### Can Meep simulate time-varying structures?
 
@@ -372,7 +372,7 @@ Subpixel averaging affects pixels that contain **at most one** object interface.
 Yes but its performance tends to be slow. Subpixel averaging is performed by default (`eps_averaging=True`) for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the [effective permittivity](Subpixel_Smoothing.md#smoothed-permittivity-tensor-via-perturbation-theory), can be computed analytically. This procedure typically takes a few seconds for a 3d cell. Computing these quantities for a user-defined material function using adaptive numerical integration can be *very* slow (minutes, hours) and also less accurate than the analytic approach. As a result, simulations involving a discontinuous `material_function` may require disabling subpixel averaging (the default) and increasing the `resolution` for accurate results. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
 
 Usage: Performance
-----------------------------
+------------------
 
 ### Checking convergence
 
@@ -507,4 +507,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization.
+Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization with respect to a grid of ε values (also known as "density-based" topology optimization).  (Of course, you can always use finite differences or similar methods to compute sensitivities for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)

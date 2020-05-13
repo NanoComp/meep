@@ -40,6 +40,11 @@ For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-sp
 
 In general, you cannot run Meep interactively on multiple processors.
 
+**Warning:** when running a parallel PyMeep job, the failure of any one MPI process may cause the simulation to deadlock and not abort. This is due to a [behavior of `mpi4py`](https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html). To avoid having to manually kill all the remaining processes, a simple solution is to load the `mpi4py` module (for versions 3.0+) on the `mpirun` command line:
+```sh
+mpirun -np 4 python -m mpi4py foo.py
+```
+
 ### Different Forms of Parallelization
 
 Parallel Meep works by taking your simulation and dividing the cell among the MPI processes. This is the only way of parallelizing a single simulation and enables simulating very large problems.
@@ -80,7 +85,7 @@ Returns the number of processes that Meep is using in parallel.
 **`meep.my_rank()`**,
 **`(meep-my-rank)`**
 —
-Returns the index of the process running the current file, from zero to (meep-count-processors)–1.
+Returns the index of the process running the current file, from zero to `meep.count_processors()`-1.
 
 **`meep.all_wait()`**,
 **`(meep-all-wait)`**
