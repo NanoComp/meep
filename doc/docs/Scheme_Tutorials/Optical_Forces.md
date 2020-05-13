@@ -10,7 +10,7 @@ This tutorial demonstrates Meep's ability to compute classical forces via the [M
 
 The gradient force $F$ on each waveguide arising from the evanescent coupling of the two waveguide modes can be computed analytically:
 
-$$F=-\frac{1}{\omega}\frac{d\omega}{ds}\Bigg\vert_\vec{k}U,$$
+$$F=-\frac{1}{\omega}\frac{d\omega}{ds}\Bigg\vert_\vec{k}U$$
 
 where $\omega$ is the mode frequency of the coupled waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector, and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, Vol. 30, pp. 3042-4, 2005](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-30-22-3042). This expression has been shown to be mathematically equivalent to the Maxwell stress tensor in [Optics Express, Vol. 17, pp. 18116-35, 2009](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116). We will verify this result in this tutorial. In this particular example, only the fundamental mode with odd mirror-symmetry in $y$ shows the bidirectional force.
 
@@ -77,7 +77,7 @@ Since we do not know apriori what the mode frequency is for a given waveguide se
 (print "freq:, " s ", " f "\n")
 ```
 
-Once we have determined the mode frequency, we then replace the `source` with [`eigenmode-source`](../Scheme_User_Interface.md#eigenmode-source) to perform the main simulation: compute (1) the force on each waveguide due to the mode coupling and (2) the power in the mode. An `eigenmode-source` with `eig-match-freq?` set to `false` is then used to launch the guided mode. Alternatively, a constant-amplitude point/area source can be used to launch the mode but this is less efficient as demonstrated in [Tutorial/Eigenmode Source/Index-Guided Modes in a Ridge Waveguide](Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide).
+Once we have determined the mode frequency, we then replace the `source` with [`eigenmode-source`](../Scheme_User_Interface.md#eigenmode-source) to perform the main simulation: compute (1) the force on each waveguide due to the mode coupling and (2) the power in the mode. An `eigenmode-source` with `eig-match-freq?` set to `false` is then used to launch the guided mode using a pulse (the `frequency` but not the `fwidth` parameter of `gaussian-src` is ignored). Alternatively, a constant-amplitude point/area source can be used to launch the mode but this is less efficient as demonstrated in [Tutorial/Eigenmode Source/Index-Guided Modes in a Ridge Waveguide](Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide).
 
 ```scm
 (reset-meep)
@@ -113,7 +113,7 @@ In this example, the fields of the guided mode never decay away to zero. [Choosi
 
 The simulation is run over the range of separation distances $s$ from 0.05 to 1.00 μm in increments of 0.05 μm. The results are compared with those from MPB. This is shown in the top figure. The two methods show good agreement.
 
-The following figure shows the $E_y$ mode profile at a waveguide separation distance of 0.1 μm. This figure shows the source/flux region (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
+The following figure shows the $E_y$ mode profiles at a waveguide separation distance of 0.1 μm. This figure shows the source and flux monitor (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
 
 <center>
 ![](../images/parallel_wvgs_s0.1.png)
