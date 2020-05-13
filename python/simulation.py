@@ -2302,6 +2302,9 @@ class Simulation(object):
         if self.fields:
             self.fields.print_times()
 
+    def mean_time_spent_on(self, time_sink):
+        return self.fields.mean_time_spent_on(time_sink)
+
     def time_spent_on(self, time_sink):
         return self.fields.time_spent_on(time_sink)
 

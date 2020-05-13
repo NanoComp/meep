@@ -1009,7 +1009,7 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 —
 Return the current simulation time in simulation time units (e.g. during a run function). This is not the wall-clock time.
 
-Occasionally, e.g. for termination conditions of the form *time* &lt; *T*?, it is desirable to round the time to single precision in order to avoid small differences in roundoff error from making your results different by one timestep from machine to machine (a difference much bigger than roundoff error); in this case you can call `Simulation.round_time()` instead, which returns the time rounded to single precision.
+Occasionally, e.g. for termination conditions of the form $time < T?$, it is desirable to round the time to single precision in order to avoid small differences in roundoff error from making your results different by one timestep from machine to machine (a difference much bigger than roundoff error); in this case you can call `Simulation.round_time()` instead, which returns the time rounded to single precision.
 
 **`Simulation.print_times()`**
 —
@@ -1027,11 +1027,11 @@ Field time usage:
 
 **`Simulation.time_spent_on(time_sink)`**
 —
-Return a list of times spent by each process for a type of work `time_sink` which can be one of nine integer values: (`0`) connecting chunks, (`1`) time stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`) Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
+Return a list of times spent by each process for a type of work `time_sink` which can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`) Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
 
 **`Simulation.mean_time_spent_on(time_sink)`**
 —
-Return the mean time spent by all processes for a type of work `time_sink` which can be one of nine integer values as shown above.
+Return the mean time spent by all processes for a type of work `time_sink` which can be one of nine integer values `0`-`8` as described above.
 
 ### Field Computations
 
