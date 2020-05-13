@@ -3,6 +3,12 @@
 # Latest version of this script can be found at:
 #   https://github.com/NanoComp/meep/blob/master/contrib/build-meep.sh
 
+# included LD_PRELOAD for CentOS is needed otherwise
+# this error message is displayed when starting python:
+#   python3 /tmp/test-meep.py
+#   ** failed to load python MPI module (mpi4py)
+#   ** /usr/local/lib64/python3.6/site-packages/mpi4py/MPI.cpython-36m-x86_64-linux-gnu.so: undefined symbol: ompi_mpi_logical8
+
 help ()
 {
     cat << EOF
@@ -11,7 +17,7 @@ $1: Download MEEP sources and dependencies, build, and install
 
 Usage: $1 [options]
 EOF
-    sed -ne 's,[ \t]*\(-[^ \t]*\))[^#]*#[ \t]*\(.*\),    \1 \2,p' "$1"
+    sed -ne 's,^[ \t]*\(-[^ \t]*\))[^#]*#[ \t]*\(.*\),    \1 \2,p' "$1"
     echo ""
     echo "After installation, environment file 'meep-env.sh' is created in destination path."
     echo ""
@@ -36,20 +42,23 @@ autogensh ()
     LIB64="${DESTDIR}/lib"
     $centos && LIB64="${DESTDIR}/lib64"
     LLP="${LD_LIBRARY_PATH}:${LIB64}"
-    sh autogen.sh PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" RPATH_FLAGS="${RPATH_FLAGS}" LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" LD_LIBRARY_PATH=${LLP} \
-        --disable-static --enable-shared --prefix="${DESTDIR}" --libdir=${LIB64} \
+    set -x
+    sh autogen.sh PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" RPATH_FLAGS="${RPATH_FLAGS}" \
+        PYTHON=python3 CC="${CC}" LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" LD_LIBRARY_PATH=${LLP} \
+        --enable-shared --prefix="${DESTDIR}" --libdir=${LIB64} \
         --with-libctl=${DESTDIR}/share/libctl \
         "$@"
+    set -x
 }
 
 showenv()
 {
-    echo export PATH+=:${DESTDIR}/bin
-    echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib
-    echo export PYTHONPATH+=:${DESTDIR}/lib/${python}/site-packages
+    echo export PATH=${DESTDIR}/bin:\${PATH}
+    echo export LD_LIBRARY_PATH=${DESTDIR}/lib:\${LD_LIBRARY_PATH}
+    echo export PYTHONPATH=${DESTDIR}/lib/${python}/site-packages:\${PYTHONPATH}
     if $centos; then
-        echo export LD_LIBRARY_PATH+=:${DESTDIR}/lib64
-        echo export PYTHONPATH+=:/usr/local/lib64/${python}/site-packages
+        echo export LD_LIBRARY_PATH=${DESTDIR}/lib64:\${LD_LIBRARY_PATH}
+        echo export PYTHONPATH=/usr/local/lib64/${python}/site-packages:\${PYTHONPATH}
         echo export LD_PRELOAD+=:/usr/lib64/openmpi/lib/libmpi.so
     fi
 }
@@ -57,6 +66,7 @@ showenv()
 buildinstall=true
 installdeps=true
 bashrc=false
+BLAS=""
 unset DESTDIR
 
 while [ ! -z "$1" ]; do
@@ -87,6 +97,12 @@ while [ ! -z "$1" ]; do
             docker=ubuntu:18.04;;
         -Dcentos7)  # build 'meep-centos:7' docker image
             docker=centos:7;;
+        -Batlas)    # blas: use atlas
+            BLAS=atlas;;
+        -Bopenblas) # blas: use openblas
+            BLAS=openblas;;
+        -Bgslcblas)      # blas: use gsl+openblas (test)
+            BLAS=gslcblas;;
         --bashrc)
             bashrc=true;; # undocumented internal to store env in ~/.bashrc
         *)
@@ -97,7 +113,8 @@ while [ ! -z "$1" ]; do
     shift
 done
 
-[ -z "${DESTDIR}" ] && { echo "-d option is missing" ; help "$0"; }
+$buildinstall && [ -z "${DESTDIR}" ] && { echo "-d option is missing" ; help "$0"; }
+$buildinstall && [ -z "${BLAS}" ] && { echo "blas taste is missing" ; help "$0"; }
 
 if [ ! -z "${docker}" ]; then
     ddir="docker-${docker}"
@@ -109,18 +126,18 @@ if [ ! -z "${docker}" ]; then
             echo "FROM ${docker}" > Dockerfile
             echo "RUN apt-get update && apt-get -y install apt-utils sudo" >> Dockerfile
             echo "ADD \"$0\" \"$0\"" >> Dockerfile
-            echo "RUN mkdir -p ${DESTDIR}; ./\"$0\" -d ${DESTDIR} --bashrc" >> Dockerfile
+            echo "RUN mkdir -p ${DESTDIR}; ./\"$0\" -d ${DESTDIR} --bashrc -B${BLAS}" >> Dockerfile
             echo "CMD /bin/bash" >> Dockerfile
-            exec docker build -t "meep-${docker}" .
+            exec docker build -t "meep-${docker}-${BLAS}" .
             ;;
 
         *centos*)
             echo "FROM ${docker}" > Dockerfile
             echo "RUN yum -y install sudo" >> Dockerfile
             echo "ADD \"$0\" \"$0\"" >> Dockerfile
-            echo "RUN mkdir -p ${DESTDIR}; ./\"$0\" -d ${DESTDIR} --bashrc" >> Dockerfile
+            echo "RUN mkdir -p ${DESTDIR}; ./\"$0\" -d ${DESTDIR} --bashrc -B${BLAS}" >> Dockerfile
             echo "CMD /bin/bash" >> Dockerfile
-            exec docker build -t "meep-${docker}" .
+            exec docker build -t "meep-${docker}-${BLAS}" .
             exit 1;;
 
         *)
@@ -172,11 +189,12 @@ esac
 # these are passed to configure on demand with: 'autogensh ... CC=${CC} CXX=${CXX}'
 export CC=mpicc
 export CXX=mpicxx
+export CFLAGS="-O3 -mtune=native"
 
 if $ubuntu; then
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
     LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
+    CFLAGS="${CFLAGS} -I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
 fi
 
 if $centos; then
@@ -186,7 +204,7 @@ if $centos; then
 
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib64:/usr/lib64/openmpi/lib"
     LDFLAGS="-L${DESTDIR}/lib64 -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
+    CFLAGS="${CFLAGS} -I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
 fi
 
 eval $(showenv)
@@ -195,15 +213,18 @@ if $installdeps && $ubuntu; then
 
     sudo apt-get update
 
+    case ${BLAS} in
+        atlas*) BLAS=atlas; bpkg=libatlas-base-dev;;
+        openblas) bpkg=libopenblas-dev;;
+        gslcblas) BLAS=openblas; bpkg="libgsl-dev libgslcblas0 libopenblas-dev";;
+    esac
+
     sudo apt-get -y install     \
         git                     \
         build-essential         \
         gfortran                \
-        libblas-dev             \
-        liblapack-dev           \
         libgmp-dev              \
         swig                    \
-        libgsl-dev              \
         autoconf                \
         pkg-config              \
         $libpng                 \
@@ -217,56 +238,49 @@ if $installdeps && $ubuntu; then
         python3-scipy           \
         python3-pip             \
         ffmpeg                  \
+        ${bpkg}                 \
 
-    [ "$distrib" = ubuntu16.04 ] && sudo -H pip3 install --upgrade pip
-    sudo -H pip3 install --no-cache-dir mpi4py
-    export HDF5_MPI="ON"
-    sudo -H pip3 install --no-binary=h5py h5py
-    sudo -H pip3 install matplotlib\>3.0.0
 fi
 
 if $installdeps && $centos; then
 
     sudo yum -y --enablerepo=extras install epel-release
 
-    sudo yum -y install   \
-        git               \
-        bison             \
-        byacc             \
-        cscope            \
-        ctags             \
-        cvs               \
-        diffstat          \
-        oxygen            \
-        flex              \
-        gcc               \
-        gcc-c++           \
-        gcc-gfortran      \
-        gettext           \
-        git               \
-        indent            \
-        intltool          \
-        libtool           \
-        patch             \
-        patchutils        \
-        rcs               \
-        redhat-rpm-config \
-        rpm-build         \
-        subversion        \
-        systemtap         \
-        wget
+    case ${BLAS} in
+        atlas) bpkg="atlas atlas-devel"; LDFLAGS="${LDFLAGS} -L/usr/lib64/${BLAS}"; BLAS=tatlas;;
+        gslcblas|openblas) bpkg=openblas-devel; BLAS=openblas;;
+    esac
 
     sudo yum -y install    \
+        git                \
+        bison              \
+        byacc              \
+        cscope             \
+        ctags              \
+        cvs                \
+        diffstat           \
+        oxygen             \
+        flex               \
+        gcc                \
+        gcc-c++            \
+        gcc-gfortran       \
+        gettext            \
+        git                \
+        indent             \
+        intltool           \
+        libtool            \
+        patch              \
+        patchutils         \
+        redhat-rpm-config  \
+        rpm-build          \
+        systemtap          \
+        wget               \
         python3            \
         python3-devel      \
         python36-numpy     \
-        python36-scipy
-
-    sudo yum -y install    \
-        openblas-devel     \
+        python36-scipy     \
         fftw3-devel        \
         libpng-devel       \
-        gsl-devel          \
         gmp-devel          \
         pcre-devel         \
         libtool-ltdl-devel \
@@ -277,15 +291,13 @@ if $installdeps && $centos; then
         openssl-devel      \
         sqlite-devel       \
         bzip2-devel        \
-        ffmpeg
-
-    sudo yum -y install    \
+        ffmpeg             \
         openmpi-devel      \
         hdf5-openmpi-devel \
         guile-devel        \
-        swig
+        swig               \
+        ${bpkg}
 
-    sudo -E pip3 install mpi4py
 fi
 
 CPPFLAGS=${CFLAGS}
@@ -300,13 +312,13 @@ if $buildinstall; then
     cd ${SRCDIR}
     gitclone https://github.com/NanoComp/harminv.git
     cd harminv/
-    autogensh
+    autogensh --with-blas=${BLAS}
     make -j && $SUDO make install
 
     cd ${SRCDIR}
     gitclone https://github.com/NanoComp/libctl.git
     cd libctl/
-    autogensh
+    autogensh --with-blas=${BLAS}
     make -j && $SUDO make install
 
     cd ${SRCDIR}
@@ -318,7 +330,7 @@ if $buildinstall; then
     cd ${SRCDIR}
     gitclone https://github.com/NanoComp/mpb.git
     cd mpb/
-    autogensh CC=${CC} --with-hermitian-eps
+    autogensh CC=${CC} --with-hermitian-eps --with-blas=${BLAS}
     make -j && $SUDO make install
 
     cd ${SRCDIR}
@@ -327,11 +339,24 @@ if $buildinstall; then
     autogensh
     make -j && $SUDO make install
 
+if $ubuntu; then
+    sudo -E -H python3 -m pip install --upgrade pip
+    sudo -E -H python3 -m pip install --no-cache-dir mpi4py
+    export HDF5_MPI="ON" # for python h5py
+    sudo -E -H python3 -m pip install cython
+    sudo -E -H python3 -m pip install --no-cache-dir --no-binary=h5py h5py
+    sudo -E -H python3 -m pip install --no-cache-dir matplotlib>3.0.0
+else
+    sudo -E -H python3 -m pip install --no-cache-dir mpi4py
+    #sudo -E -H python3 -m pip install --no-binary=h5py h5py
+    sudo -E -H python3 -m pip install h5py
+    sudo -E -H python3 -m pip install matplotlib>3.0.0
+fi
+
     cd ${SRCDIR}
-    #gitclone https://github.com/NanoComp/meep.git
-    gitclone https://github.com/d-a-v/meep.git fixCentos7Installer
+    gitclone https://github.com/NanoComp/meep.git
     cd meep/
-    autogensh --with-mpi --with-openmp PYTHON=python3
+    autogensh --with-mpi --with-openmp --with-blas=${BLAS}
     make -j && $SUDO make install
 
     # all done
@@ -358,7 +383,6 @@ exit()
 EOF
 
 echo "------------ ENV (commands)"
-showenv
 showenv > ${DESTDIR}/meep-env.sh
 $bashrc && { showenv >> ~/.bashrc; }
 echo "------------ ENV (result)"
@@ -368,4 +392,5 @@ echo export LD_PRELOAD=${LD_PRELOAD}
 echo "------------ $test"
 cat $test
 echo "------------ EXEC python3 $test"
+. ${DESTDIR}/meep-env.sh
 python3 $test
