@@ -431,12 +431,6 @@ void *gyrotropic_susceptibility::copy_internal_data(void *data) const {
   return (void *)dnew;
 }
 
-bool gyrotropic_susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
-  if (!is_electric(c) && !is_magnetic(c)) return false;
-  direction d0 = component_direction(c);
-  return (d0 == X || d0 == Y || d0 == Z) && W[c][cmp];
-}
-
 // Similar to the OFFDIAG macro, but without averaging sigma.
 #define OFFDIAGW(g, sx, s) (0.25 * (g[i] + g[i - sx] + g[i + s] + g[i + s - sx]))
 
