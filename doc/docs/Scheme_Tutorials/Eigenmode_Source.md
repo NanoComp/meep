@@ -89,7 +89,9 @@ For the multi-mode case, a constant-amplitude current source excites a superposi
 
 Note that in `eigenmode-source`, the `direction` property must be set to `NO-DIRECTION` for a non-zero `eig-kpoint` which specifies the waveguide axis.
 
-Additionally, we can demonstrate the eigenmode source for a rotated waveguide. The results are shown in the two figures below for the single- and multi-mode case. There is one subtlety: for mode **A** in the multi-mode case, the `bnum` parameter is set to 3 rather than 2. This is because a non-zero rotation angle breaks the symmetry in the $y$-direction which therefore precludes the use of `EVEN-Y` in `eig-parity`. Without any parity specified for the $y$-direction, the second band corresponds to *odd* modes. This is why we must select the third band which contains even modes.
+### Oblique Waveguides
+
+The eigenmode source can also be used to launch modes in an oblique/rotated waveguide. The results are shown in the two figures below for the single- and multi-mode case. There is one subtlety: for mode **A** in the multi-mode case, the `bnum` parameter is set to 3 rather than 2. This is because a non-zero rotation angle breaks the symmetry in the $y$-direction which therefore precludes the use of `EVEN-Y` in `eig-parity`. Without any parity specified for the $y$-direction, the second band corresponds to *odd* modes. This is why we must select the third band which contains even modes.
 
 Note that an oblique waveguide leads to a breakdown in the [PML](../Perfectly_Matched_Layer.md#breakdown-of-pml-in-inhomogeneous-media). A simple workaround for mitigating the PML reflection artifacts in this case is to double the `thickness` from 1 to 2.
 
