@@ -25,10 +25,10 @@ $$ \tilde{ε}^{-1} = \textbf{P}\langleε^{-1}\rangle + \big(1-\textbf{P}\big)\la
 
 where $\textbf{P}$ is the projection matrix $P_{ij}=n_{i}n_{j}$ onto the normal $\vec{n}$. The $\langle\cdots\rangle$ denotes an average over the voxel $sΔx\times sΔy\times sΔz$ surrounding the grid point in question where $s$ is a smoothing diameter in grid units equal to 1/`resolution`. If the initial materials are anisotropic (via `epsilon_diag` and `epsilon_offdiag`), a more complicated formula is used. They key point is that, even if the structure consists entirely of isotropic materials, the discretized structure will use anisotropic materials. For interface pixels, Meep computes the effective permittivity tensor automatically at the start of the simulation prior to time stepping via analytic expressions for the filling fraction and local normal vector. For details involving derivation of the effective permittivity tensor and its implementation in Meep/FDTD, see [Optics Letters, Vol. 36, pp. 2972-4, 2006](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-31-20-2972) and [Optics Letters, Vol. 35, pp. 2778-80, 2009](https://www.osapublishing.org/abstract.cfm?uri=ol-34-18-2778).
 
-Continuously-Varying Shapes and Results
+Continuously Varying Shapes and Results
 ---------------------------------------
 
-A key feature of Meep's subpixel smoothing, particularly relevant for shape optimization (i.e., [Applied Physics Letters, Vol. 104, 091121, 2014](https://aip.scitation.org/doi/abs/10.1063/1.4867892) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi14_tandem.pdf))), is that continuously varying the `geometry` yields continuously-varying results. This is demonstrated for a ring resonator: as the radius increases, the frequency of a resonant $H_z$-polarized mode decreases. Note: unlike the example in [Tutorial/Basics/Modes of a Ring Resonator](Python_Tutorials/Basics.md#modes-of-a-ring-resonator) involving $E_z$-polarized modes where the electric fields are always continuous (i.e., parallel to the interface), this example involves discontinuous fields. Also, the ring geometry contains no sharp corners/edges which tend to produce field singularities that degrade the error. The simulation script is shown below. The inner ring radius is varied from 1.8 to 2.0 μm in gradations of 0.005 μm. The ring width is constant (1 μm). The resolution is 10 pixels/μm. The gradations are therefore well below subpixel dimensions.
+A key feature of Meep's subpixel smoothing, particularly relevant for shape optimization (i.e., [Applied Physics Letters, Vol. 104, 091121, 2014](https://aip.scitation.org/doi/abs/10.1063/1.4867892) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi14_tandem.pdf))), is that continuously varying the `geometry` yields continuously varying results. This is demonstrated for a ring resonator: as the radius increases, the frequency of a resonant $H_z$-polarized mode decreases. Note: unlike the example in [Tutorial/Basics/Modes of a Ring Resonator](Python_Tutorials/Basics.md#modes-of-a-ring-resonator) involving $E_z$-polarized modes where the electric fields are always continuous (i.e., parallel to the interface), this example involves discontinuous fields. Also, the ring geometry contains no sharp corners/edges which tend to produce field singularities that degrade the error. The simulation script is shown below. The inner ring radius is varied from 1.8 to 2.0 μm in gradations of 0.005 μm. The ring width is constant (1 μm). The resolution is 10 pixels/μm. The gradations are therefore well below subpixel dimensions.
 
 ```py
 import meep as mp
@@ -85,7 +85,7 @@ for rad in np.arange(1.800,2.001,0.005):
 
 A plot of the resonant frequency versus the ring radius is shown below for subpixel smoothing (red) and no smoothing (blue). Included for reference is the "exact" (black) computed using *no smoothing* at a resolution of 60 pixels/μm. The no-smoothing result shows "staircasing" effects which are artifacts of the discretization. The subpixel-smoothing result varies continuously with the ring radius similar to the high-resolution result which is at a resolution six times larger. The inset shows the scalar $H_z$ field profile of the resonant mode for a structure with inner radius of 1.9 μm.
 
-This particular resonant mode has a [quality (Q) factor](https://en.wikipedia.org/wiki/Q_factor) of ~10<sup>7</sup> at a frequency of 0.25 and radius of 2.0 μm. This means that roughly 4x10<sup>7</sup> optical periods are required to accurately resolve the field decay due to the Fourier uncertainty relation. Instead, [`Harminv`](Python_User_Interface.md#harminv) can resolve the Q using just ~1000 periods. This is nearly a four orders of magnitude reduction in the run time.
+This particular resonant mode has a [quality (Q) factor](https://en.wikipedia.org/wiki/Q_factor) of ~10<sup>7</sup> at a frequency of 0.25 and radius of 2.0 μm. This means that roughly 4x10<sup>7</sup> optical periods are required to accurately resolve the field decay due to the Fourier uncertainty relation. Instead, [`Harminv`](Python_User_Interface.md#harminv) can resolve the $Q$ using just ~1000 periods. This is nearly a four orders of magnitude reduction in the run time.
 
 <center>
 ![](images/ring_vary_radius.png)
@@ -100,7 +100,9 @@ To compare the convergence rate of the discretization error, the following plot 
 Enabling Averaging for Material Function
 ----------------------------------------
 
-Subpixel smoothing is automatically applied to `GeometricObject`s as `eps_averaging` is `True` by default. For a `material_function`, because it tends to have poor performance, subpixel averaging is disabled by default. Meep supports smoothing for a `material_function`; this requires setting its `do_averaging` property to `True` as demonstrated in the following example.
+By default, subpixel smoothing is automatically applied to any `GeometricObject` in the cell as `eps_averaging=True` in the [`Simulation`](Python_User_Interface.md#the-simulation-class) constructor. For a `material_function` however, subpixel smoothing [tends to be slow](FAQ.md#why-does-subpixel-averaging-take-so-long) due to an adaptive numerical integration method that involves callbacks from the low-level C++ routines and the Python-defined material functions. Because of this poor performance, subpixel smoothing is disabled by default for material functions (even though subpixel smoothing is still applied to other `GeometricObjects` which do not contain a `material_function`).
+
+Subpixel smoothing can be enabled for a `material_function` by setting its `do_averaging` property to `True` as demonstrated in the following example.
 
 ```py
 
@@ -126,4 +128,54 @@ sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                     boundary_layers=[mp.PML(dpml)])
 ```
 
-Since the adaptive numerical integration tends to be *much* slower than the analytic approach, the values for its convergence parameters `subpixel_tol` (tolerance) and `subpixel_maxeval` (maximum number of function evaluations) can be increased/lowered to speed up the quadrature at the expense of reduced accuracy.
+The adaptive numerical integration used for subpixel smoothing of material functions tends to be significantly slower than the analytic approach. To speed this up at the expense of reduced accuracy, the values for its two convergence parameters `subpixel_tol` (tolerance) and `subpixel_maxeval` (maximum number of function evaluations) can be increased/lowered.
+
+What Happens When Subpixel Smoothing is Disabled?
+-------------------------------------------------
+
+When subpixel smoothing is disabled by either (1) setting `eps_averaging=False` in the [`Simulation`](Python_User_Interface.md#the-simulation-class) constructor or (2) using a [material_function](Subpixel_Smoothing.md#enabling-averaging-for-material-function) (as is typical in the [adjoint solver](Python_Tutorials/AdjointSolver.md)), each electric field component ($E_x$, $E_y$, $E_z$) in a given voxel is individually assigned a scalar permittivity (for isotropic materials) based on whatever the value of the permittivity is at that position in the [Yee grid](Yee_Lattice.md). This results in [staircasing artifacts](Subpixel_Smoothing.md) due to the discontinuous material interfaces as well as the staggered nature of the Yee grid points. Any change in the resolution which shifts the location of the Yee grid points relative to the material interfaces will result in unpredictable changes to any computed quantities. The coordinates the Yee grid points can be obtained using a [field function](Field_Functions.md#coordinates-of-the-yee-grid) which can be useful for debugging.
+
+Subpixel Smoothing vs. Bilinear Interpolation
+---------------------------------------------
+
+In certain cases, using subpixel smoothing may be impractical given the poor runtime performance of the adaptive numerical integration method as discussed previously. A partial workaround, to ensure that Meep responds continuously to changes in the simulation parameters (even if absolute accuracy is not improved) is to *interpolate* any discontinuous structure onto the Yee grid. Otherwise, tiny changes in Meep's [Yee grid](Yee_Lattice.md) due to e.g. small changes in the resolution could cause discontinuous jumps in ε.
+
+As a demonstration of this effect, consider a ring resonator (same structure as [above](#continuously-varying-shapes-and-results)) in which the ring geometry can be represented using five different methods:
+
+1. Two overlapping [`Cylinder`](Python_User_Interface.md#cylinder) objects (subpixel smoothing).
+2. Two overlapping [`Prism`](Python_User_Interface.md#prism) objects (subpixel smoothing). Could also be imported as a [GDSII file](Python_User_Interface.md#gdsii-support).
+3. [material function](Python_User_Interface.md#material-function) (no smoothing).
+4. Grid via [`epsilon_input_file`](Python_User_Interface.md#the-simulation-class) (no smoothing; bilinear interpolation onto Yee grid).
+5. Grid via `epsilon_input_file` (no smoothing; no interpolation).
+
+Of these five methods, (3) and (5) produce discontinuous structures.
+
+The grid imported from `epsilon_input_file` via an HDF5 file in (4) and (5) is generated by the function `output_epsilon` when using the material function from (3) at a resolution of 80.
+
+The prism ring geometry in (2) is generated using:
+
+```py
+N = 40
+phis = np.linspace(0,2*np.pi,N+1)
+vertices_outer = []
+vertices_inner = []
+for phi in phis[:-1]:
+    vertices_outer.append((rad+w)*mp.Vector3(np.cos(phi),np.sin(phi),0))
+    vertices_inner.append(rad*mp.Vector3(np.cos(phi),np.sin(phi),0))
+geometry = [mp.Prism(vertices_outer, height=mp.inf, material=mp.Medium(index=n)),
+            mp.Prism(vertices_inner, height=mp.inf, material=mp.vacuum)]
+```
+
+The following convergence plot shows the frequency for the resonant mode with $H_z$ polarization and $Q$ of ~10<sup>7</sup> as a function of resolution.
+
+<center>
+![](images/ring_freq_vs_resolution.png)
+</center>
+
+There are three important items to note. (1) The grid and prism representations are each converging to a different frequency than the material function and cylinder. This is because in the limit of infinite resolution, they are *different* structures than the cylinders. (2) The material function is the same structure as the cylinder with no smoothing. In the limit of infinite resolution, the material function and cylinder converge to the same frequency. The only difference is the *rate* of convergence: the cylinder is second order (due to subpixel smoothing) whereas the material function is first order. See the convergence plot in the third figure from the top. (3) The non-interpolated grid shows irregular convergence compared with the interpolated grid. This is expected because the non-interpolated grid is discontinuous but the interpolated grid is not. Also, because these are different structures the two grids converge to different frequencies. To see this trend clearly requires reducing the "jumpiness" of the non-interpolated grid: the Meep resolution needs to be increased beyond 200 which is already ~3X the grid resolution.
+
+Since the interpolated grid has already been smoothed to a *continuous* $\varepsilon(x,y)$ function, subpixel smoothing (which is not supported for `epsilon_input_file`) is not really necessary once the Yee grid resolution exceeds the input image resolution. This can be seen in the above plot: for Meep Yee grid resolutions of 80 (equal to the grid resolution of the HDF5 file) and above, the changes in the results are much smaller than those at lower resolutions. Also, higher-order interpolation schemes are not necessary because the Yee discretization is already essentially equivalent to linear interpolation.
+
+As a practical matter, increasing the Meep resolution beyond the resolution of a non-interpolated grid is not physically meaningful because this is trying to resolve the individual pixels of an imported image. In the case of a grid imported via `epsilon_input_file`, this is not an issue because the bilinear interpolation is performed automatically by default. However, no built-in interpolation is provided for a material function; it must be provided by the user (i.e., convolving the discontinuous material function with a smoothing kernel).    As a corollary, when designing structures using a pixel grid (as in the [adjoint solver](Python_Tutorials/AdjointSolver.md)), the pixel density of the degrees of freedom should typically be at least as big as the Meep resolution if not greater.
+
+In general, by making a discontinuous structure continuous, via subpixel smoothing or some other form of interpolation, the convergence becomes more regular (the results change more continuously to changes in resolution or other parameters), although it does not necessarily become more accurate compared to the desired infinite-resolution structure unless the full anisotropic smoothing is performed.   If the initial structure is already continuous, no additional preprocessing is necessary. 

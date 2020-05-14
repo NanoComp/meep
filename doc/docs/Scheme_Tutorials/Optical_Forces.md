@@ -2,27 +2,27 @@
 # Optical Forces
 ---
 
-This tutorial demonstrates Meep's ability to compute classical forces via the [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor) (MST). Also demonstrated is the [eigenmode source](../Scheme_User_Interface.md#eigenmode-source). The geometry consists of two identical, parallel, silicon waveguides with square cross section in vacuum. A schematic of the geometry is shown below. Due to the parallel orientation of the waveguides, the two modes can be chosen to be either symmetric or anti-symmetric with respect to a mirror-symmetry plane between them. As the two waveguides are brought closer and closer together, their modes increasingly couple and give rise to a gradient force that is *transverse* to the waveguide axis. This is different from [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) which involves momentum exchange between photons and is *longitudinal* in nature. An interesting phenomena that occurs for this coupled system is that the force can be tuned to be either attractive or repulsive depending on the relative phase of the modes. This tutorial will demonstrate this effect.
+This tutorial demonstrates Meep's ability to compute classical forces via the [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor). The geometry consists of two identical, parallel, silicon waveguides with square cross section in vacuum. A schematic of the geometry is shown below. Due to the parallel orientation of the waveguides (propagation axis along $z$ and separation in $x$), the two modes can be chosen to be either symmetric or anti-symmetric with respect to an $x$ mirror-symmetry plane between them. As the two waveguides are brought closer and closer together, their modes couple and give rise to a gradient force that is *transverse* to the waveguide axis (i.e., in the $x$ direction). This is different from [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) which involves momentum exchange between photons and is longitudinal in nature (i.e., along the $z$ direction). An interesting phenomena that occurs for this coupled waveguide system is that the force can be tuned to be either attractive or repulsive depending on the relative phase of the two modes. This tutorial will demonstrate this effect.
 
 <center>
 ![](../images/Waveguide_forces.png)
 </center>
 
-The gradient force on each waveguide arising from the evanescent coupling of the two waveguide modes can be computed analytically:
+The gradient force $F$ on each waveguide arising from the evanescent coupling of the two waveguide modes can be computed analytically:
 
 $$F=-\frac{1}{\omega}\frac{d\omega}{ds}\Bigg\vert_\vec{k}U,$$
 
-where ω is the mode frequency of the coupled-waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, Vol. 30, pp. 3042-4, 2005](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-30-22-3042). This expression has been shown to be mathematically equivalent to the MST in [Optics Express, Vol. 17, pp. 18116-35, 2009](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116). We will verify this result in this tutorial.
+where $\omega$ is the mode frequency of the coupled waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector, and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, Vol. 30, pp. 3042-4, 2005](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-30-22-3042). This expression has been shown to be mathematically equivalent to the Maxwell stress tensor in [Optics Express, Vol. 17, pp. 18116-35, 2009](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116). We will verify this result in this tutorial. In this particular example, only the fundamental mode with odd mirror-symmetry in $y$ shows the bidirectional force.
 
-It is convenient to normalize the force in order to work with dimensionless quantities. Since the total power transmitted through the waveguide is $P=v_gU/L$ where $v_g$ is the group velocity, $L$ is the waveguide length, and $U$ is defined as before, we focus instead on the force per unit length per unit power $(F/L)(ac/P)$ where $a$ is the waveguide width and $c$ is the speed of light. This dimensionless quantity enables us to compute both the flux and the force in a single simulation.
+It is convenient to [normalize the force](../Scheme_User_Interface.md#force-spectra) in order to work with [dimensionless quantities](../Introduction.md#units-in-meep). Since the total transmitted power in the waveguide per unit length is $P=v_gU/L$ where $v_g$ is the group velocity, $U$ is the total energy of the electromagnetic fields (same as before), and $L$ is the waveguide length, we focus instead on the force per unit length per unit power $(F/L)(ac/P)$ where $a$ is the waveguide width/height and $c$ is the speed of light. This dimensionless quantity can be computed in a single simulation.
 
-We can compute the gradient force using two different methods and verify that they are equivalent: (1) using MPB, we compute the frequency and group velocity for a given mode over a range of separation distances and then use a [finite-difference](https://en.wikipedia.org/wiki/Finite_difference) scheme to numerically evaluate the formula from above, and (2) using Meep, we directly compute both the gradient force and the power transmitted through the waveguide for the guided mode over the same range of separation distances. In this particular example, we consider just the fundamental `ODD-Y` mode which shows the bidirectional force. The range of separation distances is from 0.02 to 1.02 μm in increments of 0.02 μm.
+The gradient force $F$ can be computed using two different methods: (1) using MPB, compute the frequency $\omega$ and group velocity $v_g$ for a given mode over a range of separation distances $s$ and then use a centered [finite-difference](https://en.wikipedia.org/wiki/Finite_difference) scheme to evaluate $F$ using the formula from above, and (2) using Meep, directly compute both the gradient force $F$ and the transmitted power $P$ over the same range of separation distances $s$. This tutorial verifies that (1) and (2) produce equivalent results.
 
 The simulation script is in [examples/parallel-wvgs-force.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/parallel-wvgs-force.ctl).
 
 
 ```scm
-(set-param! resolution 30)   ; pixels/um
+(set-param! resolution 40)   ; pixels/um
 
 (define Si (make medium (index 3.45)))
 
@@ -58,7 +58,7 @@ Next, we set the Bloch-periodic boundary condition for the mode with wavevector 
 (set! k-point (vector3 0 0 0.5))
 ```
 
-Since we do not know apriori what the mode frequency is for a given waveguide separation distance, a preliminary run is required to find this out using [`Harminv`](../Scheme_User_Interface.md#harminv) and a broadband pulsed source. Since the propagating mode never decays away, the runtime is chosen arbitrarily as 200 time units after the pulsed sources have turned off.
+Since we do not know apriori what the mode frequency is for a given waveguide separation distance, a preliminary run is required to find this out using [`Harminv`](../Scheme_User_Interface.md#harminv) and a broadband pulsed source. Since the guided mode never decays away, the runtime is chosen arbitrarily as 200 time units after the pulsed sources have turned off.
 
 ```scm
 (define-param fcen 0.22)
@@ -77,47 +77,49 @@ Since we do not know apriori what the mode frequency is for a given waveguide se
 (print "freq:, " s ", " f "\n")
 ```
 
-Once we have determined the mode frequency, we then replace the `source` with [`eigenmode-source`](../Scheme_User_Interface.md#eigenmodesource) to perform the main simulation: compute (1) the force on each waveguide due to the mode coupling and (2) the power in the mode. The `eigenmode-source` invokes [MPB](https://mpb.readthedocs.io) to compute the given mode of interest. The mode profile is then imported into Meep for use as the initial source amplitude. This enables a more efficient mode excitation than simply using a point or area source with constant amplitude. For more details on the eigenmode source feature, refer to Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+Once we have determined the mode frequency, we then replace the `source` with [`eigenmode-source`](../Scheme_User_Interface.md#eigenmode-source) to perform the main simulation: compute (1) the force on each waveguide due to the mode coupling and (2) the power in the mode. An `eigenmode-source` with `eig-match-freq?` set to `false` is then used to launch the guided mode. Alternatively, a constant-amplitude point/area source can be used to launch the mode but this is less efficient as demonstrated in [Tutorial/Eigenmode Source/Index-Guided Modes in a Ridge Waveguide](Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide).
 
 ```scm
 (reset-meep)
 (change-sources! (list
-		  (make eigenmode-source
-		    (src (make gaussian-src (frequency f) (fwidth df)))
-		    (size a a 0)
-		    (center (* -0.5 (+ s a)) 0)
-		    (eig-kpoint k-point)
-		    (eig-match-freq? true)
-		    (eig-parity ODD-Y))
-		  (make eigenmode-source
-		    (src (make gaussian-src (frequency f) (fwidth df)))
-		    (size a a 0)
-		    (center (* 0.5 (+ s a)) 0)
-		    (eig-kpoint k-point)
-		    (eig-match-freq? true)
-		    (eig-parity ODD-Y)
-		    (amplitude (if xodd? -1.0 1.0)))))
+                  (make eigenmode-source
+                    (src (make gaussian-src (frequency f) (fwidth df)))
+                    (size sx sy 0)
+                    (center 0 0 0)
+                    (eig-band (if xodd? 2 1))
+                    (eig-kpoint k-point)
+                    (eig-match-freq? false)
+                    (eig-parity ODD-Y))))
 
 (define wvg-flux (add-flux f 0 1
-			  (make flux-region (direction Z) (center 0 0)
-				(size (* 1.2 (+ (* 2 a) s)) (* 1.2 a) 0))))
-(define wvg-force (add-force f 0 1
-			     (make force-region (direction X) (weight +1.0)
-				   (center (* 0.5 s) 0) (size 0 a))
-			     (make force-region (direction X) (weight -1.0)
-				   (center (+ (* 0.5 s) a) 0) (size 0 a))))
+                           (make flux-region (direction Z)
+                                 (center 0 0) (size sx sy 0))))
 
-(run-sources+ 5000)
+(define wvg-force (add-force f 0 1
+			     (make force-region (direction X) (weight +1)
+				   (center (* 0.5 s) 0) (size 0 sy))
+			     (make force-region (direction X) (weight -1)
+				   (center (+ (* 0.5 s) a) 0) (size 0 sy))))
+
+(run-sources+ 1500)
 
 (display-fluxes wvg-flux)
 (display-forces wvg-force)
 ```
 
-There are two important items to note in the script: (1) We have defined a single flux surface to compute the Poynting flux in $z$ which spans an area slightly larger than both waveguides rather than two separate flux surfaces (one for each waveguide). This is because in the limit of small separation, two flux surfaces overlap whereas the total power through a single flux surface need, by symmetry, only be halved in order to determine the value for just one of the two waveguides. (2) Instead of defining a closed, four-sided "box" surrounding the waveguides for computing the MST, we chose instead to compute the MST along just two $y$-oriented lines (to obtain the force in the $x$ direction) with different `weight` values to correctly sum the total force. By symmetry, we need not consider the force in the $y$ direction. Choosing a suitable runtime requires some care. A large runtime is necessary to obtain the steady-state response but this will also lead to large values for the discrete Fourier-transformed fields used to compute both the flux and the MST. These large values may contain [roundoff errors](https://en.wikipedia.org/wiki/Round-off_error).
+There are four important items to note: (1) a single flux surface is used to compute the Poynting flux in $z$ which spans the entire non-PML region of the cell. This is because in the limit of small waveguide separation distance, two separate flux surfaces for each waveguide would overlap and result in overcounting. The total power through a single flux surface need, by symmetry, only be halved in order to determine the value for a single waveguide. (2) Instead of defining a closed, four-sided "box" surrounding the waveguides, the Maxwell stress tensor is computed using just two line monitors oriented in $y$ (to obtain the force in the perpendicular $x$ direction) with `weight` values of `+1`/`-1` to correctly sum the total force. The force monitors are placed in the vacuum region adjacent to the waveguide rather than on its surface so that the fields are [second-order accurate](../Subpixel_Smoothing.md). By symmetry, the force in the $y$ direction is zero and need not be computed. (3) Since the `eig-parity` parameter of `eigenmode-source` can only be specified using the $y$ and/or $z$ directions (but *not* $x$, the waveguide separation axis), the `eig_band` parameter must be set to `1`/`2` to distinguish modes with even/odd $x$-mirror symmetry.  (4) A 2d `cell-size` in $xy$ combined with a `k-point` containing a non-zero $z$ component results in a [2d simulation (which is the default)](../2d_Cell_Special_kz.md).
 
-We run this simulation over the range of separation distances and compare the results to those obtained from MPB. This is shown in the figure above. The two methods show good agreement.
+In this example, the fields of the guided mode never decay away to zero. [Choosing a runtime](../FAQ.md#checking-convergence) is therefore somewhat arbitrary but requires some care. A sufficiently long runtime is necessary to obtain the [steady-state response](../FAQ.md#how-do-i-compute-the-steady-state-fields). However, an excessively long runtime will lead to large values for the Fourier-transformed fields used to compute both the flux and the Maxwell stress tensor. Large floating-point numbers may contain [roundoff errors](https://en.wikipedia.org/wiki/Round-off_error) and produce inaccurate results.
 
-The MPB simulation is in [examples/parallel-wvgs-mpb.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/parallel-wvgs-mpb.ctl). Note: since MPB permits symmetries only in the $y$ and $z$ directions, the coordinate axes used in the MPB script to define the waveguide geometry are different than those in the Meep script. In MPB, the propagating axis is $x$ whereas in Meep it is $z$.
+The simulation is run over the range of separation distances $s$ from 0.05 to 1.00 μm in increments of 0.05 μm. The results are compared with those from MPB. This is shown in the top figure. The two methods show good agreement.
+
+The following figure shows the $E_y$ mode profile at a waveguide separation distance of 0.1 μm. This figure shows the source/flux region (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
+
+<center>
+![](../images/parallel_wvgs_s0.1.png)
+</center>
+
+The MPB simulation is in [examples/parallel-wvgs-mpb.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/parallel-wvgs-mpb.ctl). There are important differences related to the coordinate dimensions between the MPB and Meep scripts. In the MPB script, the 2d cell is defined using the $yz$ plane, the waveguide propagation axis is $x$, and the waveguide separation axis is $y$. As a consequence, the `num-bands` parameter is always `1` since the $y$ parity of the mode can be defined explicitly (i.e., `run-yodd-zodd` vs. `run-yeven-zodd`). This is different from the Meep script since Meep requires that a 2d cell be defined in the $xy$ plane. MPB has no such requirement.
 
 ```scm
 (set-param! resolution 128)  ; pixels/μm

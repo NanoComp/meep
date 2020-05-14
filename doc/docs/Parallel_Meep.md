@@ -85,7 +85,7 @@ Returns the number of processes that Meep is using in parallel.
 **`meep.my_rank()`**,
 **`(meep-my-rank)`**
 —
-Returns the index of the process running the current file, from zero to (meep-count-processors)–1.
+Returns the index of the process running the current file, from zero to `meep.count_processors()`-1.
 
 **`meep.all_wait()`**,
 **`(meep-all-wait)`**
