@@ -303,6 +303,7 @@ public:
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
+  virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
                         void *P_internal_data) const;
