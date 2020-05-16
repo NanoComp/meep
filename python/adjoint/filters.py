@@ -262,24 +262,24 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution,symmetries=[]):
     [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of 
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
-    # lazy import
-    from scipy import special, signal
-    
     # Get 2d parameter space shape
     Nx = int(Lx*resolution)
     Ny = int(Ly*resolution)
+
+    gaussian = lambda x,sigma: np.exp(-x**2/sigma**2)
     
     # Formulate grid over entire design region
-    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True, indexing='ij')
+    xv = np.linspace(-Lx/2,Lx/2,Nx)
+    yv = np.linspace(-Ly/2,Ly/2,Ny)
     
     # Calculate kernel
-    kernel = np.outer(signal.gaussian(Nx, sigma), signal.gaussian(Ny, sigma)) # Gaussian filter kernel
+    kernel = np.outer(gaussian(xv, sigma), gaussian(yv, sigma)) # Gaussian filter kernel
     
     # Normalize kernel
     kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
     
     # Filter the response
-    y = simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
+    y = mpa.simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
     
     return y
 
@@ -672,7 +672,7 @@ def get_eta_from_conic(b,R):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     
-    norm_length = 0.5*b/R
+    norm_length = b/R
     if norm_length < 0:
         eta_e = 0
     elif norm_length < 1:
@@ -711,9 +711,9 @@ def get_conic_radius_from_eta_e(b,eta_e):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
     if (eta_e >= 0.5) and (eta_e < 0.75):
-        return 0.5*b / (2*np.sqrt(eta_e-0.5))
+        return b / (2*np.sqrt(eta_e-0.5))
     elif (eta_e >= 0.75) and (eta_e <= 1):
-        return 0.5*b / (2-2*np.sqrt(1-eta_e))
+        return b / (2-2*np.sqrt(1-eta_e))
     else:
         raise ValueError("The erosion threshold point (eta_e) must be between 0.5 and 1.")
 
