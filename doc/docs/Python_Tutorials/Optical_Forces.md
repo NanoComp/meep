@@ -10,7 +10,7 @@ This tutorial demonstrates Meep's ability to compute classical forces via the [M
 
 The gradient force $F$ on each waveguide arising from the evanescent coupling of the two waveguide modes can be computed analytically:
 
-$$F=-\frac{1}{\omega}\frac{d\omega}{ds}\Bigg\vert_\vec{k}U,$$
+$$F=-\frac{1}{\omega}\frac{d\omega}{ds}\Bigg\vert_\vec{k}U$$
 
 where $\omega$ is the mode frequency of the coupled waveguide system, $s$ is the separation distance between the parallel waveguides, $k$ is the conserved wave vector, and $U$ is the total energy of the electromagnetic fields. By convention, negative and positive values correspond to attractive and repulsive forces, respectively. For more details, see [Optics Letters, Vol. 30, pp. 3042-4, 2005](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-30-22-3042). This expression has been shown to be mathematically equivalent to the Maxwell stress tensor in [Optics Express, Vol. 17, pp. 18116-35, 2009](http://www.opticsinfobase.org/oe/abstract.cfm?URI=oe-17-20-18116). We will verify this result in this tutorial. In this particular example, only the fundamental mode with odd mirror-symmetry in $y$ shows the bidirectional force.
 
@@ -20,7 +20,7 @@ The gradient force $F$ can be computed using two different methods: (1) using MP
 
 The simulation script is in [examples/parallel-wvgs-force.py](https://github.com/NanoComp/meep/blob/master/python/examples/parallel-wvgs-force.py). The notebook is [examples/parallel-wvgs-force.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/parallel-wvgs-force.ipynb).
 
-The main component of the Meep script is the function `parallel_waveguide` which computes the force $F$ and transmitted power $P$ given the waveguide separation distance `s` and relative phase of the waveguide modes `xodd=True/False`. The eigenmode frequency $\omega$ is computed first using `get_eigenmode` in order to specify the frequency of the `add_force` and `add_flux` monitors. An [`EigenModeSource`](../Python_User_Interface.md#eigenmodesource) with `eig_match_freq=False` is then used to launch the guided mode. Alternatively, a constant-amplitude point/area source can be used to launch the mode but this is less efficient as demonstrated in [Tutorial/Eigenmode Source/Index-Guided Modes in a Ridge Waveguide](Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide). The waveguide has width/height of $a=1$ μm and a fixed propagation wavevector of $\pi/a$.
+The main component of the Meep script is the function `parallel_waveguide` which computes the force $F$ and transmitted power $P$ given the waveguide separation distance `s` and relative phase of the waveguide modes `xodd=True/False`. The eigenmode frequency $\omega$ is computed first using `get_eigenmode` in order to specify the frequency of the `add_force` and `add_flux` monitors. (Note that when `match_frequency=False`, `get_eigenmode` ignores the input `frequency` parameter.) An [`EigenModeSource`](../Python_User_Interface.md#eigenmodesource) with `eig_match_freq=False` is then used to launch the guided mode using a pulse (the `frequency` but not the `fwidth` parameter of `GaussianSource` is ignored). Alternatively, a constant-amplitude point/area source can be used to launch the mode but this is less efficient as demonstrated in [Tutorial/Eigenmode Source/Index-Guided Modes in a Ridge Waveguide](Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide). The waveguide has width/height of $a=1$ μm and a fixed propagation wavevector of $\pi/a$.
 
 ```py
 import meep as mp
@@ -128,7 +128,7 @@ plt.legend(loc='upper right')
 plt.show()
 ```
 
-The following figure shows the $E_y$ mode profile at a waveguide separation distance of 0.1 μm. This figure was generated using the [`plot2D`](../Python_User_Interface.md#data-visualization) routine and shows the source/flux region (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
+The following figure shows the $E_y$ mode profiles at a waveguide separation distance of 0.1 μm. This figure was generated using the [`plot2D`](../Python_User_Interface.md#data-visualization) routine and shows the source and flux monitor (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
 
 <center>
 ![](../images/parallel_wvgs_s0.1.png)

@@ -696,7 +696,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   global_eigenmode_data->amp_func = A ? A : default_amp_func;
 
   src_time *src_mpb = src.clone();
-  if (!match_frequency) src_mpb->set_frequency(frequency);
+  if (!match_frequency) src_mpb->set_frequency(global_eigenmode_data->frequency);
 
   /*--------------------------------------------------------------*/
   // step 2: add sources whose radiated field reproduces the      */
