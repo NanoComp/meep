@@ -982,6 +982,10 @@ Miscellaneous Functions
 —
 Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
 
+**`meep.verbosity(v=1)`**
+—
+Given a number `v`, specify the degree of Meep's output: `0` is quiet mode, `1` (the default) is ordinary output, `2` is extra debugging output, and `3` is all debugging output.
+
 **`meep.interpolate(n, nums)`**
 —
 Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to add `n` new evenly-spaced values between each pair of consecutive values in the original list.
