@@ -73,8 +73,7 @@ void susceptibility::delete_internal_data(void *data) const { free(data); }
    have to worry about communicating with something that doesn't exist.
    TODO: reduce memory usage (bookkeeping seem much harder, though).
 */
-bool susceptibility::needs_P(component c, int cmp,
-                             realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+bool susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
   if (!is_electric(c) && !is_magnetic(c)) return false;
   FOR_DIRECTIONS(d) {
     if (!trivial_sigma[c][d] && W[direction_component(c, d)][cmp]) return true;
@@ -432,7 +431,8 @@ void *gyrotropic_susceptibility::copy_internal_data(void *data) const {
   return (void *)dnew;
 }
 
-bool gyrotropic_susceptibility::needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+bool gyrotropic_susceptibility::needs_P(component c, int cmp,
+                                        realnum *W[NUM_FIELD_COMPONENTS][2]) const {
   if (!is_electric(c) && !is_magnetic(c)) return false;
   direction d0 = component_direction(c);
   return (d0 == X || d0 == Y || d0 == Z) && sigma[c][d0] && W[c][cmp];
@@ -533,7 +533,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
       FOR_COMPONENTS(c) DOCMP2 {
         if (d->P[c][cmp][0]) {
-	  const direction d0 = component_direction(c);
+          const direction d0 = component_direction(c);
           const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
 
           if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
