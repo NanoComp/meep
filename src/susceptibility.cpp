@@ -472,7 +472,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
       FOR_COMPONENTS(c) DOCMP2 {
         if (d->P[c][cmp][0]) {
-	  const direction d0 = component_direction(c);
+          const direction d0 = component_direction(c);
           const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
 
           if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
