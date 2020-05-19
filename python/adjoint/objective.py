@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
-from matplotlib import pyplot as plt
 
 class ObjectiveQuantitiy(ABC):
     @abstractmethod
