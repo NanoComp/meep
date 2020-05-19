@@ -8,7 +8,7 @@ Meep uses a [second-order accurate finite-difference scheme](https://en.wikipedi
 ![](images/subpixel_smoothing.png)
 </center>
 
-The subpixel smoothing has four limitations: (1) it only applies to frequency-independent, lossless dielectrics (i.e., silicon at λ=1.55 μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials), (2) it can be efficiently applied to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.) but [*not* to a user-defined `material_function`](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function) which is [disabled by default](#enabling-averaging-for-material-function), (3) objects with sharp corners or edges are associated with field singularities which introduce an unavoidable error intermediate between first- and second-order, and (4) the fields directly *on* the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as [resonant frequencies](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes), and for overall integrals of fields and energies to which the interface contributes only O(Δx) of the integration domain.
+The subpixel smoothing has four limitations: (1) it only applies to frequency-independent, lossless dielectrics (i.e., silicon at λ=1.55 μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials), (2) it can be efficiently applied to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.) but [*not* to a user-defined `material function`](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function) which is [disabled by default](#enabling-averaging-for-material-function), (3) objects with sharp corners or edges are associated with field singularities which introduce an unavoidable error intermediate between first- and second-order, and (4) the fields directly *on* the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as [resonant frequencies](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes), and for overall integrals of fields and energies to which the interface contributes only O(Δx) of the integration domain.
 
 [TOC]
 
@@ -179,3 +179,68 @@ Since the interpolated pixel grid has already been smoothed to a continuous $\va
 As a practical matter, increasing the Meep resolution beyond the resolution of a non-interpolated pixel grid is not physically meaningful because this is trying to resolve the individual pixels of an imported image. In the case of a pixel grid imported via `epsilon_input_file`, this is not an issue because the bilinear interpolation is performed automatically by default. However, no built-in interpolation is provided for a material function; it must be provided by the user (i.e., convolving the discontinuous material function with a smoothing kernel).    As a corollary, when designing structures using a pixel grid (as in the [adjoint solver](Python_Tutorials/AdjointSolver.md)), the pixel density of the degrees of freedom should typically be at least as big as the Meep resolution if not greater.
 
 In general, by making a discontinuous structure continuous, via subpixel smoothing or some other form of interpolation, the convergence becomes more regular (the results change more continuously to changes in resolution or other parameters), although it does not necessarily become more accurate compared to the desired infinite-resolution structure unless the full anisotropic smoothing is performed.   If the initial structure is already continuous, no additional preprocessing is necessary. 
+
+Interpolation Techniques for Material Function
+----------------------------------------------
+
+There are an arbitrary number of ways that a discontinuous material function can be made continuous in preprocessing. As an example, two different types of interpolation techniques (discrete vs. analytical) are demonstrated for the ring resonator: (1) image processing based on a [Gaussian blur](https://en.wikipedia.org/wiki/Gaussian_blur) and (2) using a [Sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) to smooth the step function boundaries.
+
+In the first approach, the [`scipy.ndimage.gaussian_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html) is applied to a subpixel permittivity grid generated from the material function. The subpixel grid consists of a 5x5 array of points and the smoothing radius is equal to the size of the pixel (i.e., it is resolution dependent).
+
+```py
+import numpy as np
+from scipy.ndimage import gaussian_filter
+
+dxy = 1/resolution        # smoothing kernel radius
+Nxy = 5                   # smoothing grid pixel density
+
+def smooth_ring_resonator(p):
+    cx = np.linspace(p.x-0.5*dxy,p.x+0.5*dxy,Nxy)
+    cy = np.linspace(p.y-0.5*dxy,p.y+0.5*dxy,Nxy)
+    n_local = np.zeros((Nxy,Nxy))
+    for i in range(Nxy):
+        for j in range(Nxy):
+            n_local[i,j] = ring_resonator(mp.Vector3(cx[i],cy[j]))
+    if np.sum(n_local) == Nxy**2:
+        return mp.air
+    elif np.sum(n_local) == n*Nxy**2:
+        return mp.Medium(index=n)
+    else:
+        return mp.Medium(index=np.mean(gaussian_filter(n_local, sigma=1, mode='nearest')))
+
+geometry = [mp.Block(center=mp.Vector3(),
+                     size=mp.Vector3(sxy,sxy),
+                     material=smooth_ring_resonator)]
+```
+
+In the second approach, the step function boundaries (inner and outer radius of the ring resonator) are analytically smoothed using a Sigmoid function. This method tends to be faster than the first approach since it requires fewer function evaluations.
+
+```py
+import numpy as np
+
+dr = 1/resolution         # smoothing kernel width
+b = 5                     # turn on/off strength
+
+def ring_resonator(p):
+    rr = (p.x**2+p.y**2)**0.5
+    if (rr > rad-0.5*dr) and (rr < rad+0.5*dr):
+        return mp.Medium(index=1+(n-1)/(1+np.exp(-b*(rad-rr))))
+    elif (rr > rad+w-0.5*dr) and (rr < rad+w+0.5*dr):
+        return mp.Medium(index=1+(n-1)/(1+np.exp(b*(rad+w-rr))))
+    elif (rr >= rad+0.5*dr) and (rr <= rad+w-0.5*dr):
+        return mp.Medium(index=n)
+    else:
+        return mp.air
+
+geometry = [mp.Block(center=mp.Vector3(),
+                     size=mp.Vector3(sxy,sxy),
+                     material=ring_resonator)]
+```
+
+The plot of the resonant mode frequency with resolution is shown in the figure below. There are three items to note: (1) the non-smoothed and Gaussian-blurred structures are converging to the same frequency. This is expected because the smoothing radius of the Gaussian blur is going to zero as the resolution approaches infinity and thus it is converging to the same discontinuous structure. The Gaussian blur has made the convergence more regular compared with no smoothing. (2) The Sigmoid-smoothed structure with pixel-sized width (`dr=1/resolution`) is also converging to the same discontinuous structure but at a slower rate. (3) The Sigmoid-smoothed structure with constant width (`dr=0.05`) is converging to a different frequency than the other three structures because it is a different structure.
+
+<center>
+![](images/ring_matfunc_freq_vs_resolution.png)
+</center>
+
+Finally, it is worth mentioning that a Gaussian smoothing kernel (which provides only first-order accuracy) would probably be slower than doing the second-order accurate anisotropic smoothing using a [level set](https://en.wikipedia.org/wiki/Level_set) since the smoothing (via a Sigmoid function) and the normal vector can be computed analytically. In the future, Meep may provide built-in interpolation methods for material functions (see [\#1199](https://github.com/NanoComp/meep/issues/1199)).
