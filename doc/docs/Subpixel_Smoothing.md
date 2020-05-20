@@ -142,11 +142,11 @@ In certain cases, using subpixel smoothing may be impractical given the poor run
 
 As a demonstration of this effect, consider a ring resonator (inner radius: 2 μm, width: 1 μm; same structure as [above](#continuously-varying-shapes-and-results)) in which the ring geometry can be represented using five different methods:
 
-1. two overlapping [`Cylinder`](Python_User_Interface.md#cylinder) objects (subpixel smoothing).
-2. two overlapping [`Prism`](Python_User_Interface.md#prism) objects (subpixel smoothing). Could also be imported as a [GDSII file](Python_User_Interface.md#gdsii-support).
+1. two overlapping [`Cylinder`](Python_User_Interface.md#cylinder) objects (anisotropic subpixel smoothing).
+2. two overlapping [`Prism`](Python_User_Interface.md#prism) objects (anisotropic subpixel smoothing). Could also be imported as a [GDSII file](Python_User_Interface.md#gdsii-support).
 3. [material function](Python_User_Interface.md#material-function) (no smoothing).
-4. pixel grid via [`epsilon_input_file`](Python_User_Interface.md#the-simulation-class) (no smoothing; bilinear interpolation onto Yee grid).
-5. pixel grid via `epsilon_input_file` (no smoothing; no interpolation).
+4. pixel grid via [`epsilon_input_file`](Python_User_Interface.md#the-simulation-class) (bilinear interpolation onto Yee grid).
+5. pixel grid via `epsilon_input_file` (no smoothing).
 
 Of these five methods, (3) and (5) produce discontinuous structures.
 
