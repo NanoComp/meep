@@ -143,7 +143,7 @@ In certain cases, using subpixel smoothing may be impractical given the poor run
 As a demonstration of this effect, consider a ring resonator (inner radius: 2 μm, width: 1 μm; same structure as [above](#continuously-varying-shapes-and-results)) in which the ring geometry can be represented using five different methods:
 
 1. two overlapping [`Cylinder`](Python_User_Interface.md#cylinder) objects (anisotropic subpixel smoothing).
-2. two overlapping [`Prism`](Python_User_Interface.md#prism) objects (anisotropic subpixel smoothing). Could also be imported as a [GDSII file](Python_User_Interface.md#gdsii-support).
+2. two overlapping [`Prism`](Python_User_Interface.md#prism) objects (anisotropic subpixel smoothing). Similar to [GDSII file](Python_User_Interface.md#gdsii-support).
 3. [material function](Python_User_Interface.md#material-function) (no smoothing).
 4. pixel grid via [`epsilon_input_file`](Python_User_Interface.md#the-simulation-class) (bilinear interpolation onto Yee grid).
 5. pixel grid via `epsilon_input_file` (no smoothing).
@@ -177,6 +177,8 @@ There are three important items to note. (1) The pixel grid and prism representa
 Since the interpolated pixel grid has already been smoothed to a continuous $\varepsilon(x,y)$ function, subpixel smoothing (which is not supported for `epsilon_input_file`) is not really necessary once the Yee grid resolution exceeds the input image resolution. This can be seen in the above plot: for Meep Yee grid resolutions of 80 (equal to the pixel grid resolution of the HDF5 file) and above, the changes in the results are much smaller than those at lower resolutions. Also, higher-order interpolation schemes are not necessary because the Yee discretization is already essentially equivalent to linear interpolation.
 
 As a practical matter, increasing the Meep resolution beyond the resolution of a non-interpolated pixel grid is not physically meaningful because this is trying to resolve the individual pixels of an imported image. In the case of a pixel grid imported via `epsilon_input_file`, this is not an issue because the bilinear interpolation is performed automatically by default. However, no built-in interpolation is provided for a material function; it must be provided by the user (i.e., convolving the discontinuous material function with a smoothing kernel).    As a corollary, when designing structures using a pixel grid (as in the [adjoint solver](Python_Tutorials/AdjointSolver.md)), the pixel density of the degrees of freedom should typically be at least as big as the Meep resolution if not greater.
+
+In terms of runtime performance, for structures based on a frequency-independent permittivity, anisotropic subpixel smoothing will generally consume more memory (due to the additional off-diagonal elements of the permittivity tensor) and have a slower time-stepping rate (again due to the anisotropic permittivity tensor which couples different field components during the field updates) than a simple scalar interpolation technique. The gains in accuracy from the anisotropic smoothing though should far outweigh this small performance penalty.
 
 In general, by making a discontinuous structure continuous, via subpixel smoothing or some other form of interpolation, the convergence becomes more regular (the results change more continuously to changes in resolution or other parameters), although it does not necessarily become more accurate compared to the desired infinite-resolution structure unless the full anisotropic smoothing is performed.   If the initial structure is already continuous, no additional preprocessing is necessary. 
 
@@ -213,7 +215,7 @@ geometry = [mp.Block(center=mp.Vector3(),
                      material=smooth_ring_resonator)]
 ```
 
-In the second approach, the step function boundaries (inner and outer radius of the ring resonator) are analytically smoothed using a Sigmoid function. This method tends to be faster than the first approach since it requires fewer function evaluations.
+In the second approach, the step function boundaries (inner and outer radius of the ring resonator) are analytically smoothed using a Sigmoid function. This method tends to be faster than the discrete approach since it requires fewer function evaluations. The smoothing width `dr` can be either resolution dependent or a fixed constant.
 
 ```py
 import numpy as np
@@ -237,10 +239,12 @@ geometry = [mp.Block(center=mp.Vector3(),
                      material=ring_resonator)]
 ```
 
-The plot of the resonant mode frequency with resolution is shown in the figure below. There are three items to note: (1) the non-smoothed and Gaussian-blurred structures are converging to the same frequency. This is expected because the smoothing radius of the Gaussian blur is going to zero as the resolution approaches infinity and thus it is converging to the same discontinuous structure. The Gaussian blur has made the convergence more regular compared with no smoothing. (2) The Sigmoid-smoothed structure with pixel-sized width (`dr=1/resolution`) is also converging to the same discontinuous structure but at a slower rate. (3) The Sigmoid-smoothed structure with constant width (`dr=0.05`) is converging to a different frequency than the other three structures because it is a different structure.
+The plot of the resonant mode frequency with resolution is shown in the figure below. There are two items to note: (1) three structures — non smoothed, Gaussian blurred, and Sigmoid smoothed with pixel-sized smoothing width (`dr=1/resolution`) — are converging to the same frequency. This is expected because the smoothing radius/width is going to zero as the resolution approaches infinity and thus the two smoothed structures are converging to the same discontinuous structure. The effect of the smoothing has been to make the convergence more regular compared with no smoothing. The Sigmoid-smoothed structure has the slowest convergence rate of the three. (2) The Sigmoid-smoothed structure with constant smoothing width (`dr=0.05`) is converging to a different frequency than the other three structures because it is a different structure.
 
 <center>
 ![](images/ring_matfunc_freq_vs_resolution.png)
 </center>
 
-Finally, it is worth mentioning that a Gaussian smoothing kernel (which provides only first-order accuracy) would probably be slower than doing the second-order accurate anisotropic smoothing using a [level set](https://en.wikipedia.org/wiki/Level_set) since the smoothing (via a Sigmoid function) and the normal vector can be computed analytically. In the future, Meep may provide built-in interpolation methods for material functions (see [\#1199](https://github.com/NanoComp/meep/issues/1199)).
+Finally, it is worth mentioning that a Gaussian blur (which provides only first-order accuracy) would probably be slower than doing the second-order accurate anisotropic smoothing using a [level set](https://en.wikipedia.org/wiki/Level_set) since the smoothing (e.g., via a Sigmoid function) as well as the normal vector can be computed analytically.
+
+In the future, Meep may provide built-in interpolation methods for material functions (see [\#1199](https://github.com/NanoComp/meep/issues/1199)).
