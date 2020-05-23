@@ -46,6 +46,7 @@ TESTS =                                   \
     ${DISPERSIVE_EIGENMODE_TEST}          \
     $(TEST_DIR)/dft_energy.py             \
     $(TEST_DIR)/dft_fields.py             \
+    $(TEST_DIR)/divide_mpi_processes.py   \
     $(TEST_DIR)/eigfreq.py                \
     $(TEST_DIR)/faraday_rotation.py       \
     $(TEST_DIR)/field_functions.py        \
