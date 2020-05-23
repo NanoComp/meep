@@ -712,7 +712,6 @@ def pol_grating(d,ph,gp,nmode):
     sim.run(until_after_sources=100)
 
     input_flux = mp.get_fluxes(tran_flux)
-    input_flux_data = sim.get_flux_data(tran_flux)
 
     sim.reset_meep()
 
