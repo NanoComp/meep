@@ -1533,7 +1533,7 @@ public:
   void reset();
 
   // time.cpp
-  double time_spent_on(time_sink);
+  std::vector<double> time_spent_on(time_sink);
   double mean_time_spent_on(time_sink);
   void print_times();
   // boundaries.cpp

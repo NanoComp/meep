@@ -123,7 +123,7 @@ If `True` (the default) *and* if the boundary conditions are periodic (`k_point`
 
 **`eps_averaging` [`boolean`]**
 —
-If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error. Disabling subpixel averaging will lead to [staircasing effects and irregular convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
 
 **`force_complex_fields` [`boolean`]**
 —
@@ -813,7 +813,7 @@ The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute
 
 **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
 —
-By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#index-guided-modes-in-a-ridge-waveguide) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the specific **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave), $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). Also, the eigenmode frequency computed by MPB overwrites the `frequency` parameter of the `src` property for a `GaussianSource` and `ContinuousSource` but not `CustomSource` (the `width` or any other parameter of `src` is unchanged). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave), $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
 **`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]**
 —
@@ -982,6 +982,10 @@ Miscellaneous Functions
 —
 Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
 
+**`meep.verbosity(v=1)`**
+—
+Given a number `v`, specify the degree of Meep's output: `0` is quiet mode, `1` (the default) is ordinary output, `2` is extra debugging output, and `3` is all debugging output.
+
 **`meep.interpolate(n, nums)`**
 —
 Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to add `n` new evenly-spaced values between each pair of consecutive values in the original list.
@@ -1009,7 +1013,7 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 —
 Return the current simulation time in simulation time units (e.g. during a run function). This is not the wall-clock time.
 
-Occasionally, e.g. for termination conditions of the form *time* &lt; *T*?, it is desirable to round the time to single precision in order to avoid small differences in roundoff error from making your results different by one timestep from machine to machine (a difference much bigger than roundoff error); in this case you can call `Simulation.round_time()` instead, which returns the time rounded to single precision.
+Occasionally, e.g. for termination conditions of the form $time < T?$, it is desirable to round the time to single precision in order to avoid small differences in roundoff error from making your results different by one timestep from machine to machine (a difference much bigger than roundoff error); in this case you can call `Simulation.round_time()` instead, which returns the time rounded to single precision.
 
 **`Simulation.print_times()`**
 —
@@ -1024,6 +1028,14 @@ Field time usage:
      Fourier transforming: 0.0738274 s +/- 0.0967926 s
           everything else: 0.324933 s +/- 0.377573 s
 ```
+
+**`Simulation.time_spent_on(time_sink)`**
+—
+Return a list of times spent by each process for a type of work `time_sink` which can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`) Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
+
+**`Simulation.mean_time_spent_on(time_sink)`**
+—
+Return the mean time spent by all processes for a type of work `time_sink` which can be one of nine integer values `0`-`8` as described above.
 
 ### Field Computations
 
@@ -1240,11 +1252,13 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 The parameters of this routine are the same as that of `get_eigenmode_coefficients` or `EigenModeSource`, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
 
 + `band_num`: same as the `band_num` parameter
-+ `frequency`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
++ `freq`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
 + `kdom`: the dominant planewave of mode `band_num`
 + `amplitude(point, component)`: the (complex) value of the given E or H field `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in space (interpreted with Bloch-periodic boundary conditions if you give a point outside the original `eig_vol`).
+
+If `match_frequency=False` or `kpoint` is not zero in the given `direction`, the `frequency` input parameter is ignored.
 
 **`get_eigenmode_freqs(flux)`**
 —
@@ -1999,7 +2013,7 @@ The complex amplitude $a$.
 
 **`err`**
 —
-A crude measure of the error in the frequency (both real and imaginary)...if the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. **Note**: this error is only the uncertainty in the signal processing, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
+A crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: this error is only the uncertainty in the signal processing, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
 
 For example, `[m.freq for m in harminv_instance.modes]` gives a list of the real parts of the frequencies. Be sure to save a reference to the `Harminv` instance if you wish to use the results after the simulation:
 

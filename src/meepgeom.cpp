@@ -1190,6 +1190,7 @@ static bool susceptibility_equiv(const susceptibility *o0, const susceptibility 
   if (!vector3_equal(o0->bias, o->bias)) return 0;
   if (o0->frequency != o->frequency) return 0;
   if (o0->gamma != o->gamma) return 0;
+  if (o0->alpha != o->alpha) return 0;
   if (o0->noise_amp != o->noise_amp) return 0;
   if (o0->drude != o->drude) return 0;
   if (o0->saturated_gyrotropy != o->saturated_gyrotropy) return 0;
@@ -1642,6 +1643,7 @@ std::vector<meep::volume> fragment_stats::pml_1d_vols;
 std::vector<meep::volume> fragment_stats::pml_2d_vols;
 std::vector<meep::volume> fragment_stats::pml_3d_vols;
 std::vector<meep::volume> fragment_stats::absorber_vols;
+material_type_list fragment_stats::extra_materials = material_type_list();
 bool fragment_stats::split_chunks_evenly = false;
 bool fragment_stats::eps_averaging = false;
 
@@ -1689,7 +1691,8 @@ fragment_stats compute_fragment_stats(
     geometric_object_list geom_, meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
     material_type default_mat, std::vector<dft_data> dft_data_list_,
     std::vector<meep::volume> pml_1d_vols_, std::vector<meep::volume> pml_2d_vols_,
-    std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_, double tol,
+    std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_,
+    material_type_list extra_materials_, double tol,
     int maxeval, bool ensure_per, bool eps_averaging) {
 
   fragment_stats::geom = geom_;
@@ -1698,6 +1701,7 @@ fragment_stats compute_fragment_stats(
   fragment_stats::pml_2d_vols = pml_2d_vols_;
   fragment_stats::pml_3d_vols = pml_3d_vols_;
   fragment_stats::absorber_vols = absorber_vols_;
+  fragment_stats::extra_materials = extra_materials_;
   fragment_stats::eps_averaging = eps_averaging;
 
   fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
@@ -1747,8 +1751,30 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
       count_nonzero_conductivity_pixels(med, pixels);
       break;
     }
+    case material_data::MATERIAL_USER: {
+      bool anisotropic_pixels_extmat_already_added = false;
+      bool nonlinear_pixels_extmat_already_added = false;
+      bool susceptibility_pixels_extmat_already_added = false;
+      bool nonzero_conductivity_pixels_extmat_already_added = false;
+      for (int i = 0; i < extra_materials.num_items; ++i) {
+        medium_struct *med = &extra_materials.items[i]->medium;
+        if (!anisotropic_pixels_already_added && !anisotropic_pixels_extmat_already_added) {
+          anisotropic_pixels_extmat_already_added = count_anisotropic_pixels(med, pixels);
+        }
+        if (!nonlinear_pixels_extmat_already_added) {
+          nonlinear_pixels_extmat_already_added = count_nonlinear_pixels(med, pixels);
+        }
+        if (!susceptibility_pixels_extmat_already_added) {
+          susceptibility_pixels_extmat_already_added = count_susceptibility_pixels(med, pixels);
+        }
+        if (!nonzero_conductivity_pixels_extmat_already_added) {
+          nonzero_conductivity_pixels_extmat_already_added = count_nonzero_conductivity_pixels(med, pixels);
+        }
+        break;
+      }
+    }
     default:
-      // Only Medium is supported
+      // Only Medium and Material Function are supported
       return;
   }
 }
@@ -1796,7 +1822,7 @@ void fragment_stats::compute_stats() {
   }
 }
 
-void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels) {
   size_t eps_offdiag_elements = 0;
   size_t mu_offdiag_elements = 0;
 
@@ -1809,9 +1835,10 @@ void fragment_stats::count_anisotropic_pixels(medium_struct *med, size_t pixels)
 
   num_anisotropic_eps_pixels += eps_offdiag_elements * pixels;
   num_anisotropic_mu_pixels += mu_offdiag_elements * pixels;
+  return (eps_offdiag_elements != 0) || (mu_offdiag_elements != 0);
 }
 
-void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
   size_t nonzero_chi_elements = 0;
 
   if (med->E_chi2_diag.x != 0) { nonzero_chi_elements++; }
@@ -1828,14 +1855,16 @@ void fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
   if (med->H_chi3_diag.z != 0) { nonzero_chi_elements++; }
 
   num_nonlinear_pixels += nonzero_chi_elements * pixels;
+  return nonzero_chi_elements != 0;
 }
 
-void fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
   num_susceptibility_pixels += med->E_susceptibilities.num_items * pixels;
   num_susceptibility_pixels += med->H_susceptibilities.num_items * pixels;
+  return (med->E_susceptibilities.num_items != 0) || (med->H_susceptibilities.num_items != 0);
 }
 
-void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
+bool fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
   size_t nonzero_conductivity_elements = 0;
 
   if (med->D_conductivity_diag.x != 0) { nonzero_conductivity_elements++; }
@@ -1846,6 +1875,7 @@ void fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_
   if (med->B_conductivity_diag.z != 0) { nonzero_conductivity_elements++; }
 
   num_nonzero_conductivity_pixels += nonzero_conductivity_elements * pixels;
+  return nonzero_conductivity_elements != 0;
 }
 
 void fragment_stats::compute_dft_stats() {

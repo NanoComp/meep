@@ -1024,6 +1024,7 @@ class Simulation(object):
             pml_vols2,
             pml_vols3,
             absorber_vols,
+            self.extra_materials,
             self.subpixel_tol,
             self.subpixel_maxeval,
             self.ensure_periodicity,
@@ -2300,6 +2301,12 @@ class Simulation(object):
     def print_times(self):
         if self.fields:
             self.fields.print_times()
+
+    def mean_time_spent_on(self, time_sink):
+        return self.fields.mean_time_spent_on(time_sink)
+
+    def time_spent_on(self, time_sink):
+        return self.fields.time_spent_on(time_sink)
 
     def get_epsilon(self,frequency=0,omega=0):
         if omega != 0:
