@@ -981,6 +981,52 @@ def medium_interpolation(x):
 
 '''
 # ------------------------------------------------------------------------------------ #
+Multi-objective optimization tools.
+
+A comprehensive survey of the various MOO methods is found in [1].
+
+[1] Marler, R. T., & Arora, J. S. (2004). Survey of multi-objective optimization methods for 
+engineering. Structural and multidisciplinary optimization, 26(6), 369-395.
+'''
+
+def scale_objective(F,Fmin,Fmax):
+    return (F-Fmin)/(Fmax-Fmin)
+
+def compromise_objective(F,Fmin,Fmax,w,p):
+    '''
+    References
+    ----------
+    [1] Sehlström, A. (2013). Multiobjective topology optimization: Tracing of Pareto-optimal 
+    structures with respect to volume, compliance and fundamental eigenvalue (Master's thesis).
+    '''
+
+    F = npa.array(F)
+    Fmin = npa.array(Fmin)
+    Fmax = npa.array(Fmax)
+    w = npa.array(w)
+    return npa.sum( w * ((F-Fmin)/(Fmax-Fmin)),axis=0) ** (1/p)
+
+def exponential_weighting():
+    return
+
+def weighted_product():
+    return
+
+def physical_programming(x):
+    '''
+    TODO
+    References
+    ----------
+    [1] Messac, A. (1996). Physical programming-effective optimization for computational design. 
+    AIAA journal, 34(1), 149-158.
+    [2] Lin, J., Luo, Z., & Tong, L. (2010). A new multi-objective programming scheme for 
+    topology optimization of compliant mechanisms. Structural and Multidisciplinary Optimization, 
+    40(1-6), 241.
+    '''
+    return x
+
+'''
+# ------------------------------------------------------------------------------------ #
 Misc. tools
 '''
 
