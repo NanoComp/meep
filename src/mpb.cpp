@@ -793,9 +793,17 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       }
 
       double vg = get_group_velocity(mode_data);
+      vec kfound = get_k(mode_data);
       if (vgrp) vgrp[nb * num_freqs + nf] = vg;
-      if (kpoints) kpoints[nb * num_freqs + nf] = get_k(mode_data);
+      if (kpoints) kpoints[nb * num_freqs + nf] = kfound;
       if (kdom_list) kdom_list[nb * num_freqs + nf] = vec(kdom[0], kdom[1], kdom[2]);
+
+      /* in the common case of k aligned along a cartesian direction, update
+         our k-point guess based on the current k point plus a correction from the group velocity */
+      if (match_frequency &&  nf+1 < num_freqs && abs(kfound) > 0 &&
+          ((kfound.x() == 0 && (kfound.y() == 0 || kfound.z() == 0)) ||
+          (kfound.y() == 0 && kfound.z() == 0)))
+        kpoint = kfound + kfound * ((flux.freq[nf+1]-flux.freq[nf]) / (vg * abs(kfound)));
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
