@@ -23,6 +23,7 @@
 #include "meep_internals.hpp"
 
 #include "config.h"
+#include "multithreading.hpp"
 
 #define RESTRICT
 

@@ -81,6 +81,8 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
         s->user_volume.num_direction(d) == 1)
       use_bloch(d, 0.0);
   }
+
+  init_meep_threads();
 }
 
 fields::fields(const fields &thef)

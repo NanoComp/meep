@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include "meep.hpp"
+#include "multithreading.hpp"
 
 namespace meep {
 

@@ -27,6 +27,13 @@ using namespace std;
 
 namespace meep {
 
+void step_curl_multithreaded(RPR f, component c, const RPR g1, const RPR g2,
+                             ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
+                             const grid_volume &gv, double dtdx,
+                             direction dsig, const DPR sig, const DPR kap, const DPR siginv,
+                             RPR fu, direction dsigu, const DPR sigu, const DPR kapu, const DPR siginvu,
+                             double dt, const RPR cnd, const RPR cndinv, RPR fcnd);
+
 #define SWAP(t, a, b)                                                                              \
   {                                                                                                \
     t xxxx = a;                                                                                    \
@@ -69,6 +76,13 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
                const grid_volume &gv, double dtdx, direction dsig, const DPR sig, const DPR kap,
                const DPR siginv, RPR fu, direction dsigu, const DPR sigu, const DPR kapu,
                const DPR siginvu, double dt, const RPR cnd, const RPR cndinv, RPR fcnd) {
+  if (meep_threads > 0) {
+    step_curl_multithreaded(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig,
+                            kap, siginv, fu, dsigu, sigu, kapu, siginvu,
+                            dt, cnd, cndinv, fcnd);
+    return;
+  }
+
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
     SWAP(ptrdiff_t, s1, s2);
@@ -248,6 +262,12 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
   }
 }
 
+void step_beta_multithreaded(RPR f, component c, const RPR g,
+                             const grid_volume &gv, double betadt,
+                             direction dsig, const DPR siginv,
+                             RPR fu, direction dsigu, const DPR siginvu,
+                             const RPR cndinv, RPR fcnd);
+
 /* field-update equation f += betadt * g (plus variants for conductivity
    and/or PML).  This is used in 2d calculations to add an exp(i beta z)
    time dependence, which gives an additional i \beta \hat{z} \times
@@ -255,6 +275,11 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
 void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, double betadt,
                direction dsig, const DPR siginv, RPR fu, direction dsigu, const DPR siginvu,
                const RPR cndinv, RPR fcnd) {
+  if (meep_threads > 0) {
+    step_beta_multithreaded(f, c, g, gv, betadt, dsig, siginv,
+                            fu, dsigu, siginvu, cndinv, fcnd);
+    return;
+  }
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
     KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
@@ -362,10 +387,24 @@ inline double calc_nonlinear_u(const double Dsqr, const double Di, const double 
 
 */
 
+void step_update_EDHB_multithreaded(RPR f, component fc, const grid_volume &gv,
+                                    const RPR g, const RPR g1, const RPR g2,
+                                    const RPR u, const RPR u1, const RPR u2,
+                                    ptrdiff_t s, ptrdiff_t s1, ptrdiff_t s2,
+                                    const RPR chi2, const RPR chi3,
+                                    RPR fw, direction dsigw, const DPR sigw, const DPR kapw);
+
 void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, const RPR g1,
                       const RPR g2, const RPR u, const RPR u1, const RPR u2, ptrdiff_t s,
                       ptrdiff_t s1, ptrdiff_t s2, const RPR chi2, const RPR chi3, RPR fw,
                       direction dsigw, const DPR sigw, const DPR kapw) {
+  if (meep_threads > 0) {
+    step_update_EDHB_multithreaded(f, fc, gv, g, g1, g2,
+                                   u, u1, u2, s, s1, s2,
+                                   chi2, chi3, fw, dsigw, sigw, kapw);
+    return;
+  }
+
   if (!f) return;
 
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
