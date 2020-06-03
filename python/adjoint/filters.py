@@ -973,11 +973,84 @@ def metal_interpolation(x,n1,k1,n2,k2):
     k_bar = k1 + x*(k2-k1)
     return (n_bar**2 - k_bar**2) - 1j*(2*n_bar*k_bar)
 
-def medium_interpolation(x):
+
+def _eval_susceptibility(self,freq):
+    sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+    if self.gamma == 0:
+        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq) * sigma
+    else:
+        return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
+
+def _eval_susceptibility(self,freq):
+    sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+    if self.gamma == 0:
+        return -self.frequency*self.frequency / (freq*(freq)) * sigma
+    else:
+        return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
+
+def _get_eps(eps0, susceptibilities, conductivity, freqs):
+    # Clean the input
+    if np.isscalar(freq):
+        freqs = np.array(freq)[np.newaxis, np.newaxis, np.newaxis]
+    else:
+        freqs = np.squeeze(freq)
+        freqs = freqs[:, np.newaxis, np.newaxis]
+
+    # Initialize with instantaneous dielectric
+    eps = eps0
+
+    # Iterate through susceptibilities
+    for i_sus, sus in enumerate(susceptibilities):
+        epsmu = epsmu + _eval_susceptibility(sus,freqs)
+
+    # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
+    if np.count_nonzero(conductivity) > 0:
+        epsmu = (1 + 1j/freqs * conductivity) * epsmu
+
+    # Convert list matrix to 3D numpy array size [freqs,3,3]
+    return np.squeeze(epsmu)
+
+def _medium_interpolation(x,freqs,medium1,medium2):
+    '''
+
+    '''
+    mat = medium_interpolation(x,freqs,medium1,medium2)
+
+def medium_interpolation(x,freqs,medium1,medium2):
     '''
     TODO
     '''
-    return x
+    # get eps
+    eps1 = medium1.epsilon
+    eps2 = medium2.epsilon
+
+    # get sus
+    sus1 = medium1.E_susceptibilities.copy()
+    sus2 = medium2.E_susceptibilities.copy()
+    
+    # interp the ep0
+    epsilon = eps1 + x * (eps2-eps1)
+
+    omega0 = []
+    
+    # interp the sus cond of medium1
+    sigma1 = x
+    for s in sus1:
+        omega0.append(s.omega0)
+        s.sigma_diag = sigma1*s.sigma_diag
+    
+    # interp the sus cond of medium2
+    sigma2 = 1-x
+    for s in sus2:
+        omega0.append(s.omega0)
+        s.sigma_diag = sigma2*s.sigma_diag
+    
+    # interp the damping term
+    omega0 = np.mean(omega0)
+    conductivity = epsilon * (1-epsilon) * omega0
+
+    # build the final object
+    return mp.Medium(epsilon=epsilon,E_susceptibilities=sus,D_conductivity=conductivity)
 
 '''
 # ------------------------------------------------------------------------------------ #
