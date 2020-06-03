@@ -159,16 +159,21 @@ typedef void (*user_material_func)(vector3 x, void *user_data, medium_struct *me
 //                 'medium' field is filled in appropriately at
 //                 each evaluation point by calling the user's
 //                 routine.
+//  MATERIAL_GRID: material properties position-dependent, described
+//                 by user-supplied array of grid points. In this case 
+//                 the 'medium' field is filled in appropriately at
+//                 each evaluation point by interpolating the array.
 //  PERFECT_METAL: the 'medium' field is never referenced in this case.
 struct material_data {
   enum {
     MEDIUM,
     MATERIAL_FILE, // formerly MATERIAL_TYPE_SELF
     MATERIAL_USER, // formerly MATERIAL_FUNCTION
+    MATERIAL_GRID,
     PERFECT_METAL
   } which_subclass;
 
-  // this field is used for all material types except PERFECT_METAL
+  // this field is used for all material types except PERFECT_METAL and MATERIAL_GRID
   medium_struct medium;
 
   // these fields used only if which_subclass==MATERIAL_USER
@@ -179,6 +184,11 @@ struct material_data {
   // these fields used only if which_subclass==MATERIAL_FILE
   meep::realnum *epsilon_data;
   size_t epsilon_dims[3];
+
+  // these fields used only if which_subclass==MATERIAL_GRID
+  double* design_parameters;
+  medium_struct medium_1;
+  medium_struct medium_2;
 
   material_data()
       : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL) {
@@ -204,7 +214,9 @@ extern material_type vacuum;
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(char *epsilon_input_file);
+material_type make_material_grid(int Nx, int Ny = 0, int Nz = 0, medium_struct medium_1, medium_struct medium_2);
 void read_epsilon_file(const char *eps_input_file);
+void update_design_parameters(material_type matgrid, double* design_parameters);
 
 }; // namespace meep_geom
 
