@@ -94,6 +94,108 @@ else:
 
 Note that in `EigenModeSource` as well as `get_eigenmode_coefficients`, the `direction` property must be set to `NO_DIRECTION` for a non-zero `eig_kpoint` which specifies the waveguide axis.
 
+### What Happens When the Source Time Profile is a Pulse?
+
+The eigenmode source can only launch a single mode specified by either its frequency (`eig_match_freq=True`) or wavevector (`eig_kpoint`). When the time profile of the source is a [Gaussian pulse](Python_User_Interface.md#gaussiansource) (which is necessary for calculations involving [Fourier-transformed fields](FAQ.md#for-calculations-involving-fourier-transformed-fields-why-should-the-source-be-a-pulse-rather-than-a-continuous-wave) such as [mode coefficients or S-parameters](Python_Tutorials/GDSII_Import.md)), rather than adding multiple eigenmode sources at the same position at all frequencies (which has the disadvantage that the runtime increases as you add more frequency points due to the narrower source bandwidths), a *single* broadband eigenmode source is often sufficient for most practical applications (as long as the waveguide source is operated away from any band edge).
+
+This can be demonstrated by computing the error in a broadband eigenmode source via the backward-propagating and scattered power (i.e., any fields which are not forward-propagating waveguide modes) for the single and multi mode ridge waveguides.
+
+```py
+import meep as mp
+import numpy as np
+import matplotlib.pyplot as plt
+
+resolution = 50 # pixels/μm
+
+sxy = 10
+cell_size = mp.Vector3(sxy,sxy)
+
+dpml = 1
+pml_layers = [mp.PML(thickness=dpml)]
+
+w = 1.0 # width of waveguide
+
+geometry = [mp.Block(center=mp.Vector3(),
+                     size=mp.Vector3(mp.inf,w,mp.inf),
+                     material=mp.Medium(epsilon=12))]
+
+fsrc = 0.35 # frequency of eigenmode source
+kx = 1.2    # initial guess for wavevector in x-direction of eigenmode
+bnum = 1    # band number of eigenmode
+
+df = 0.1    # frequency width
+nfreq = 51  # number of frequencies
+
+symmetries = [mp.Mirror(mp.Y)]
+
+sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=df),
+                              center=mp.Vector3(0,0),
+                              size=mp.Vector3(0,sxy),
+                              direction=mp.NO_DIRECTION,
+                              eig_parity=mp.EVEN_Y+mp.ODD_Z,
+                              eig_kpoint=mp.Vector3(kx),
+                              eig_band=bnum,
+                              eig_match_freq=True)]
+
+sim = mp.Simulation(cell_size=cell_size,
+                    resolution=resolution,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    geometry=geometry,
+                    symmetries=symmetries)
+
+flux_mon_tp = sim.add_flux(fsrc,df,nfreq,mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy-dpml),size=mp.Vector3(sxy-2*dpml,0),weight=+1))
+flux_mon_bt = sim.add_flux(fsrc,df,nfreq,mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy+dpml),size=mp.Vector3(sxy-2*dpml,0),weight=-1))
+flux_mon_rt = sim.add_flux(fsrc,df,nfreq,mp.FluxRegion(center=mp.Vector3(+0.5*sxy-dpml,0),size=mp.Vector3(0,sxy-2*dpml),weight=+1))
+flux_mon_lt = sim.add_flux(fsrc,df,nfreq,mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0),size=mp.Vector3(0,sxy-2*dpml),weight=-1))
+
+sim.run(until_after_sources=50)
+
+freqs = mp.get_flux_freqs(flux_mon_tp)
+flux_tp = np.asarray(mp.get_fluxes(flux_mon_tp))
+flux_bt = np.asarray(mp.get_fluxes(flux_mon_bt))
+flux_rt = np.asarray(mp.get_fluxes(flux_mon_rt))
+flux_lt = np.asarray(mp.get_fluxes(flux_mon_lt))
+
+res = sim.get_eigenmode_coefficients(flux_mon_rt,[bnum],eig_parity=mp.EVEN_Y+mp.ODD_Z)
+coeffs = res.alpha[0,:,0]
+guided = np.power(np.abs(coeffs),2)
+
+flux_total = flux_tp + flux_bt + flux_rt + flux_lt
+back = flux_lt / flux_total
+scat = (flux_total - guided) / flux_total
+
+if mp.am_master():
+    fig = plt.figure()
+    plt.subplot(1,2,1)
+    plt.plot(freqs,back,'bo-')
+    plt.xlabel('frequency')
+    plt.ylabel('backward power (fraction of total power)')
+    plt.subplot(1,2,2)
+    plt.plot(freqs,scat,'ro-')
+    plt.xlabel('frequency')
+    plt.ylabel('scattered power (fraction of total power)')
+    fig.subplots_adjust(wspace=0.5, hspace=0)
+    fig.suptitle("multi mode waveguide with pulsed eigenmode source\n center frequency = {}, band = {} (mode B)".format(fsrc,bnum))
+    plt.savefig('multi_mode_eigsource_B.png',dpi=150,bbox_inches='tight')
+```
+
+Results are shown for the single mode waveguide with one eigenmode **A** (`fsrc=0.15`, `kx=0.4`, `bnum=1`) and multi mode waveguide with two eigenmodes **A** (`fsrc=0.35`, `kx=0.4`, `bnum=2`) and **B** (`fsrc=0.35`, `kx=1.1`, `bnum=1`).
+
+<center>
+![](../images/single_mode_eigsource_pulse.png)
+</center>
+
+<center>
+![](../images/multi_mode_eigsource_pulse_A.png)
+</center>
+
+<center>
+![](../images/multi_mode_eigsource_pulse_B.png)
+</center>
+
+These results demonstrate that in all cases the error is nearly 0 at the center frequency and increases roughly quadratically away from the center frequency. The error tends to be smallest for single mode waveguides because any source excitation (i.e., point or area source, etc.) can only couple to a single eigenmode. Note that in this case the maximum error is ~1% for a source bandwidth that is 67% of its center frequency.
+
 ### Oblique Waveguides
 
 The eigenmode source can also be used to launch modes in an oblique/rotated waveguide. The results are shown in the two figures below for the single- and multi-mode case. There is one subtlety: for mode **A** in the multi-mode case, the `bnum` parameter is set to 3 rather than 2. This is because a non-zero rotation angle breaks the symmetry in the $y$-direction which therefore precludes the use of `EVEN_Y` in `eig_parity`. Without any parity specified for the $y$-direction, the second band corresponds to *odd* modes. This is why we must select the third band which contains even modes.
