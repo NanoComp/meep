@@ -7,7 +7,7 @@ mkdocs package (useful for verifying changes on your local machine
 before committing), first install `mkdocs` (version 0.17.5) as
 well as two auxiliary packages via e.g.:
 
-% pip3 install --user mkdocs=0.17.5 python-markdown-math mkdocs-material
+% pip3 install --user mkdocs==0.17.5 python-markdown-math mkdocs-material
 
 Next, run the following command from the top-level MEEP repository tree:
 
@@ -22,3 +22,17 @@ plus a filesystem hook for rebuilding the documentation
 tree automatically whenever any .md file is modified.
 This enables viewing the HTML documentation in real time
 as the source files are edited.
+
+To build the HTML version of the documentation, run:
+
+% mkdocs build
+
+The results will be put into the ./doc/site folder.
+
+To generate the Python API documentation (extracted from the docstrings) run
+this command in the project root folder:
+
+% python generate_py_api.py
+
+Rerun this after making changes to the docstrings in the source and rebuilding
+the project.
