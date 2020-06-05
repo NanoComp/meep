@@ -34,5 +34,5 @@ this command in the project root folder:
 
 % python generate_py_api.py
 
-Rerun this after making changes to the docstrings in the source and rebuilding
-the project.
+Rerun this after making any changes to the docstrings in the source and
+rebuilding the project, in order to update the documentation.
