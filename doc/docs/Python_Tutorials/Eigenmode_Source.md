@@ -96,7 +96,7 @@ Note that in `EigenModeSource` as well as `get_eigenmode_coefficients`, the `dir
 
 ### What Happens When the Source Time Profile is a Pulse?
 
-The eigenmode source can only launch a single mode specified by either its frequency (`eig_match_freq=True`) or wavevector (`eig_kpoint`). When the time profile of the source is a [Gaussian pulse](Python_User_Interface.md#gaussiansource) (which is necessary for calculations involving [Fourier-transformed fields](FAQ.md#for-calculations-involving-fourier-transformed-fields-why-should-the-source-be-a-pulse-rather-than-a-continuous-wave) such as [mode coefficients or S-parameters](Python_Tutorials/GDSII_Import.md)), rather than adding multiple eigenmode sources at the same position at all frequencies (which has the disadvantage that the runtime increases as you add more frequency points due to the narrower source bandwidths), a *single* broadband eigenmode source is often sufficient for most practical applications (as long as the waveguide source is operated away from any band edge).
+The eigenmode source launches a fixed spatial mode profile specified by either its frequency (`eig_match_freq=True`) or wavevector (`eig_kpoint`) multiplied by the time profile.  When the time profile of the source is has a finite bandwidth, e.g. a [Gaussian pulse](Python_User_Interface.md#gaussiansource) (which is typical for calculations involving [Fourier-transformed fields](FAQ.md#for-calculations-involving-fourier-transformed-fields-why-should-the-source-be-a-pulse-rather-than-a-continuous-wave) such as [mode coefficients or S-parameters](Python_Tutorials/GDSII_Import.md)), then the frequency-dependence (dispersion) of the true modal pattern means that the eigenmode source does not match the desired mode exactly over the whole bandwidth.  This is described in section 4.2.2 of our ["Electromagnetic Wave Source Conditions"](https://arxiv.org/abs/1301.5366) review article.   A more accurate mode profile may be obtained by adding multiple narrow-band eigenmode sources at the same position at several frequencies across the bandwidth, which has the disadvantage that the runtime increases as you add more frequency points due to the narrower source bandwidths.  However, a *single* broadband eigenmode source is often sufficient for most practical applications (excepting cases with extreme modal dispersion, e.g. near a cutoff frequency).
 
 This can be demonstrated by computing the error in a broadband eigenmode source via the backward-propagating and scattered power (i.e., any fields which are not forward-propagating waveguide modes) for the single and multi mode ridge waveguides.
 
@@ -180,7 +180,7 @@ if mp.am_master():
     plt.savefig('multi_mode_eigsource_B.png',dpi=150,bbox_inches='tight')
 ```
 
-Results are shown for the single mode waveguide with one eigenmode **A** (`fsrc=0.15`, `kx=0.4`, `bnum=1`) and multi mode waveguide with two eigenmodes **A** (`fsrc=0.35`, `kx=0.4`, `bnum=2`) and **B** (`fsrc=0.35`, `kx=1.1`, `bnum=1`).
+Results are shown for the single mode waveguide with one eigenmode **A** (band 1) and multi mode waveguide with two eigenmodes **A** (higher-order mode, band 2) and **B** (fundamental mode, band 1), all with a center frequency of `0.35`.
 
 <center>
 ![](../images/single_mode_eigsource_pulse.png)
@@ -194,7 +194,7 @@ Results are shown for the single mode waveguide with one eigenmode **A** (`fsrc=
 ![](../images/multi_mode_eigsource_pulse_B.png)
 </center>
 
-These results demonstrate that in all cases the error is nearly 0 at the center frequency and increases roughly quadratically away from the center frequency. The error tends to be smallest for single mode waveguides because any source excitation (i.e., point or area source, etc.) can only couple to a single eigenmode. Note that in this case the maximum error is ~1% for a source bandwidth that is 67% of its center frequency.
+These results demonstrate that in all cases the error is nearly 0 at the center frequency and increases roughly quadratically away from the center frequency. The error tends to be smallest for single-mode waveguides because a localized source excitation couples most strongly into guided modes. Note that in this case the maximum error is ~1% for a source bandwidth that is 67% of its center frequency.  For the multi-mode waveguide, a much larger scattering loss is obtained for the higher-order mode **A** at frequencies below the center frequency, but this is simply because that mode ceases to be guided around a frequency `≈ 0.3`, and the mode pattern changes dramatically as this cutoff is approached.
 
 ### Oblique Waveguides
 
