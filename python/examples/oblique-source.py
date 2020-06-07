@@ -15,15 +15,14 @@ w = 1.0 # width of waveguide
 
 geometry = [mp.Block(center=mp.Vector3(),
                      size=mp.Vector3(mp.inf,w,mp.inf),
-                     e1=mp.Vector3(1).rotate(mp.Vector3(z=1), rot_angle),
+                     e1=mp.Vector3(x=1).rotate(mp.Vector3(z=1), rot_angle),
                      e2=mp.Vector3(y=1).rotate(mp.Vector3(z=1), rot_angle),
                      material=mp.Medium(epsilon=12))]
 
 fsrc = 0.15 # frequency of eigenmode or constant-amplitude source
-kx = 0.4    # initial guess for wavevector in x-direction of eigenmode
 bnum = 1    # band number of eigenmode
 
-kpoint = mp.Vector3(kx).rotate(mp.Vector3(z=1), rot_angle)
+kpoint = mp.Vector3(x=1).rotate(mp.Vector3(z=1), rot_angle)
 
 compute_flux = True # compute flux (True) or plot the field profile (False)
 
