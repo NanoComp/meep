@@ -679,6 +679,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
+        if (((material_data *)$1.material)->design_parameters) {
+            delete[] ((material_data *)$1.material)->design_parameters;
+        }
         delete[] ((material_data *)$1.material)->epsilon_data;
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
@@ -720,6 +723,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
         delete[] ((material_data *)$1.items[i].material)->epsilon_data;
+        delete[] ((material_data *)$1.items[i].material)->design_parameters;
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -841,6 +845,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if ($1->medium.H_susceptibilities.items) {
         delete[] $1->medium.H_susceptibilities.items;
     }
+    delete[] $1->design_parameters;
     delete[] $1->epsilon_data;
     delete $1;
 }
@@ -1190,6 +1195,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             if ($1.items[i]->medium.H_susceptibilities.items) {
                 delete[] $1.items[i]->medium.H_susceptibilities.items;
             }
+            delete[] $1.items[i]->design_parameters;
             delete[] $1.items[i]->epsilon_data;
         }
         delete[] $1.items;
@@ -1404,6 +1410,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         GyrotropicSaturatedSusceptibility,
         Lattice,
         LorentzianSusceptibility,
+        MaterialGrid,
         Matrix,
         Medium,
         MultilevelAtom,

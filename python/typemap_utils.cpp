@@ -73,6 +73,15 @@ static PyObject *py_material_object() {
   return material_object;
 }
 
+static PyObject *py_material_grid_object() {
+  static PyObject *material_object = NULL;
+  if (material_object == NULL) {
+    PyObject *geom_mod = get_geom_mod();
+    material_object = PyObject_GetAttrString(geom_mod, "MaterialGrid");
+  }
+  return material_object;
+}
+
 static PyObject *py_vector3_object() {
   static PyObject *vector3_object = NULL;
   if (vector3_object == NULL) {
@@ -421,12 +430,38 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
   return 1;
 }
 
+static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
+  //po must be a python MaterialGrid object
+  
+  // initialize grid size
+  if (!get_attr_v3(po, &md->grid_size, "grid_size")) { meep::abort("MaterialGrid grid_size failed to init.");}
+
+  // initialize user specified materials
+  PyObject *po_medium1 = PyObject_GetAttrString(po, "medium1");
+  if (!pymedium_to_medium(po_medium1, &md->medium_1)) { meep::abort("MaterialGrid medium1 failed to init."); }
+  PyObject *po_medium2 = PyObject_GetAttrString(po, "medium2");
+  if (!pymedium_to_medium(po_medium2, &md->medium_2)) { meep::abort("MaterialGrid medium2 failed to init."); }
+
+  // Initialize design parameters
+  PyObject *po_dp = PyObject_GetAttrString(po, "design_parameters");
+  PyArrayObject *pao = (PyArrayObject *)po_dp;
+  if (!PyArray_Check(pao)) { meep::abort("MaterialGrid design_parameters failed to init.");}
+  if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array design_parameters must be C-style contiguous."); }
+  md->design_parameters = new double(PyArray_NDIM(pao));
+  memcpy(md->design_parameters, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
+  return 1;
+}
+
 static int pymaterial_to_material(PyObject *po, material_type *mt) {
   material_data *md;
 
   if (PyObject_IsInstance(po, py_material_object())) {
     md = make_dielectric(1);
     if (!pymedium_to_medium(po, &md->medium)) { return 0; }
+  }
+  else if (PyObject_IsInstance(po, py_material_grid_object())) { // Material grid subclass
+    md = make_material_grid();
+    if (!pymaterial_grid_to_material_grid(po, md)) { return 0; }
   }
   else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
@@ -462,7 +497,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
                   md->epsilon_dims[1], md->epsilon_dims[2]);
   }
   else {
-    meep::abort("Expected a Medium, a function, or a filename");
+    meep::abort("Expected a Medium, a Material Grid, a function, or a filename");
   }
 
   *mt = md;

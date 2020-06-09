@@ -186,15 +186,19 @@ struct material_data {
   size_t epsilon_dims[3];
 
   // these fields used only if which_subclass==MATERIAL_GRID
+  vector3 grid_size;
   double* design_parameters;
   medium_struct medium_1;
   medium_struct medium_2;
 
   material_data()
-      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL) {
+      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL), design_parameters(NULL), medium_1(), medium_2() {
     epsilon_dims[0] = 0;
     epsilon_dims[1] = 0;
     epsilon_dims[2] = 0;
+    grid_size.x = 0;
+    grid_size.y = 0;
+    grid_size.z = 0;
   }
 };
 
@@ -214,7 +218,7 @@ extern material_type vacuum;
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(char *epsilon_input_file);
-material_type make_material_grid(int Nx, int Ny = 0, int Nz = 0, medium_struct medium_1, medium_struct medium_2);
+material_type make_material_grid();
 void read_epsilon_file(const char *eps_input_file);
 void update_design_parameters(material_type matgrid, double* design_parameters);
 

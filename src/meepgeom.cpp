@@ -79,6 +79,7 @@ static void susceptibility_list_gc(susceptibility_list *sl) {
 
 // garbage collection for material structures: called to deallocate memory
 // allocated for susceptibilities in user-defined materials.
+//TODO
 void material_gc(material_type m) {
   if (!m || m->which_subclass != material_data::MATERIAL_USER) return;
   susceptibility_list_gc(&(m->medium.E_susceptibilities));
@@ -93,6 +94,7 @@ bool material_type_equal(const material_type m1, const material_type m2) {
     case material_data::PERFECT_METAL: return true;
     case material_data::MATERIAL_USER:
       return m1->user_func == m2->user_func && m1->user_data == m2->user_data;
+    case material_data::MATERIAL_GRID:
     case material_data::MEDIUM: return medium_struct_equal(&(m1->medium), &(m2->medium));
     default: return false;
   }
@@ -242,6 +244,9 @@ geom_box gv2box(const meep::volume &v) {
   return box;
 }
 
+bool is_material_grid(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_GRID); }
+bool is_material_grid(void *md) { return is_material_grid((material_type)md); }
+
 bool is_variable(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_USER); }
 bool is_variable(void *md) { return is_variable((material_type)md); }
 
@@ -262,6 +267,7 @@ bool is_metal(meep::field_type ft, const material_type *material) {
   material_data *md = *material;
   if (ft == meep::E_stuff) switch (md->which_subclass) {
       case material_data::MEDIUM:
+      case material_data::MATERIAL_GRID:
         return (md->medium.epsilon_diag.x < 0 || md->medium.epsilon_diag.y < 0 ||
                 md->medium.epsilon_diag.z < 0);
       case material_data::PERFECT_METAL: return true;
@@ -270,11 +276,39 @@ bool is_metal(meep::field_type ft, const material_type *material) {
   else
     switch (md->which_subclass) {
       case material_data::MEDIUM:
+      case material_data::MATERIAL_GRID:
         return (md->medium.mu_diag.x < 0 || md->medium.mu_diag.y < 0 || md->medium.mu_diag.z < 0);
       case material_data::PERFECT_METAL:
         return false; // is an electric conductor, but not a magnetic conductor
       default: meep::abort("unknown material type"); return false;
     }
+}
+
+// return material of the point p from the material grid
+void epsilon_material_grid(material_data *md, vector3 p) {
+  // NOTE: assume p lies on normalized grid within (0,1)
+
+  if (!(md->design_parameters)) meep::abort("material params were not initialized!");
+
+  medium_struct *mm = &(md->medium);
+  medium_struct *m1 = &(md->medium_1);
+  medium_struct *m2 = &(md->medium_2);
+
+  // Linearly interpolate to find closest design parameter in grid
+  
+  double u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,md->grid_size.y, md->grid_size.z, 1);
+  
+  // Linearly interpolate epsilon diagonal values from design parameters
+  mm->epsilon_diag.x = m1->epsilon_diag.x + u*(m2->epsilon_diag.x - m1->epsilon_diag.x);
+  mm->epsilon_diag.y = m1->epsilon_diag.y + u*(m2->epsilon_diag.y - m1->epsilon_diag.y);
+  mm->epsilon_diag.z = m1->epsilon_diag.z + u*(m2->epsilon_diag.z - m1->epsilon_diag.z);
+
+  //TODO: interpolate offdiagonal terms too
+  mm->epsilon_offdiag.x.re = mm->epsilon_offdiag.y.re = mm->epsilon_offdiag.z.re = 0;
+  master_printf("linear interp: %g, %g, %g, %g, %g, %g \n",md->design_parameters[0], u, m1->epsilon_diag.x,md->grid_size.x,md->grid_size.y, md->grid_size.z);
+
+  //TODO: interpolate resonant strength from d.p.
+  //TODO: interpolate electric conductivity from d.p.
 }
 
 // return material of the point p from the file (assumed already read)
@@ -462,6 +496,7 @@ static void material_epsmu(meep::field_type ft, material_type material, symmetri
       case material_data::MEDIUM:
       case material_data::MATERIAL_FILE:
       case material_data::MATERIAL_USER:
+      case material_data::MATERIAL_GRID:
         epsmu->m00 = md->medium.epsilon_diag.x;
         epsmu->m11 = md->medium.epsilon_diag.y;
         epsmu->m22 = md->medium.epsilon_diag.z;
@@ -489,6 +524,7 @@ static void material_epsmu(meep::field_type ft, material_type material, symmetri
       case material_data::MEDIUM:
       case material_data::MATERIAL_FILE:
       case material_data::MATERIAL_USER:
+      case material_data::MATERIAL_GRID:
         epsmu->m00 = md->medium.mu_diag.x;
         epsmu->m11 = md->medium.mu_diag.y;
         epsmu->m22 = md->medium.mu_diag.z;
@@ -524,6 +560,16 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
   material_data *md = material;
 
   switch (md->which_subclass) {
+    // material grid: interpolate onto user specified material grid to get properties at r
+    case material_data::MATERIAL_GRID:
+      vector3 shiftby, u;
+      int precedence;
+      const geometric_object *o;
+      o = object_of_point_in_tree(p,restricted_tree,&shiftby,&precedence); // Get object corresponding to material grid
+      u = to_geom_object_coords(p, *o); //normalize point to objects coordinates
+      epsilon_material_grid(md, u);
+      
+      return;
     // material read from file: interpolate to get properties at r
     case material_data::MATERIAL_FILE:
       if (md->epsilon_data)
@@ -576,6 +622,7 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
 
    Requires moderately horrifying logic to figure things out properly,
    stolen from MPB. */
+//TODO
 static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree, vector3 &pcenter,
                              const geometric_object **o_front, vector3 &shiftby_front,
                              material_type &mat_front, material_type &mat_behind) {
@@ -748,6 +795,9 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
     }
   }
 
+  if (mat->which_subclass == material_data::MATERIAL_GRID) {
+    goto noavg;
+  }
   /* check for trivial case of only one object/material */
   if (material_type_equal(mat, mat_behind)) goto trivial;
 
@@ -1057,7 +1107,7 @@ bool geom_epsilon::has_chi(meep::component c, int p) {
 bool geom_epsilon::has_chi3(meep::component c) { return has_chi(c, 3); }
 
 bool geom_epsilon::has_chi2(meep::component c) { return has_chi(c, 2); }
-
+//TODO
 double geom_epsilon::chi(meep::component c, const meep::vec &r, int p) {
   material_type material;
   get_material_pt(material, r);
@@ -1137,6 +1187,7 @@ bool geom_epsilon::has_conductivity(meep::component c) {
 }
 
 static meep::vec geometry_edge; // geometry_lattice.size / 2
+//TODO
 double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_type material;
   get_material_pt(material, r);
@@ -1201,7 +1252,7 @@ static bool susceptibility_equiv(const susceptibility *o0, const susceptibility 
 
   return 1;
 }
-
+// TODO
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::vec &r) {
 
   vector3 p = vec_to_vector3(r);
@@ -1219,6 +1270,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
   sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
 
   if (mat->which_subclass == material_data::MATERIAL_USER ||
+      mat->which_subclass == material_data::MATERIAL_GRID ||
       mat->which_subclass == material_data::MEDIUM) {
 
     susceptibility_list slist =
@@ -1600,6 +1652,20 @@ material_type make_file_material(const char *eps_input_file) {
   }
 
   return md;
+}
+
+/******************************************************************************/
+/* Material grid functions                                                    */
+/******************************************************************************/
+material_type make_material_grid() {
+  material_data *md = new material_data();
+  md->which_subclass = material_data::MATERIAL_GRID;
+  md->do_averaging = false;
+  return md;
+}
+
+void update_design_parameters(material_type matgrid, double* design_parameters){
+
 }
 
 /******************************************************************************/

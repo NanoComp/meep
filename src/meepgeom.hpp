@@ -175,16 +175,21 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
 material_type make_file_material(const char *eps_input_file);
+material_type make_material_grid();
+void update_design_parameters(material_type matgrid, double* design_parameters);
 
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
+void epsilon_material_grid(material_data *md, vector3 p);
 void epsilon_file_material(material_data *md, vector3 p);
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2);
 bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2);
 void material_gc(material_type m);
 bool material_type_equal(const material_type m1, const material_type m2);
+bool is_material_grid(material_type mt);
+bool is_material_grid(void *md);
 bool is_variable(material_type mt);
 bool is_variable(void *md);
 bool is_file(material_type md);
