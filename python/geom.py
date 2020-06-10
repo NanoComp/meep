@@ -298,10 +298,12 @@ class MaterialGrid(object):
         else:
             self.design_parameters = design_parameters.flatten().astype(np.float64)
 
-        return
-    def update_parameters(sim,x):
-        return
-    def get_gradient(fields,grid):
+        self.swigobj = None
+    def update_parameters(self,x):
+        if x.size != self.num_params:
+            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,grid_size))
+        self.design_parameters=x.flatten().astype(np.float64)
+    def get_gradient(self,fields,grid):
         return
 
 class Susceptibility(object):

@@ -62,3 +62,8 @@ sim = mp.Simulation(cell_size=cell_size,
 
 sim.plot2D()
 plt.show()
+sim.reset_meep()
+mg.update_parameters(dp*0)
+sim.init_sim()
+sim.plot2D()
+plt.show()

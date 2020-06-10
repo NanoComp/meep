@@ -625,7 +625,6 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
 
    Requires moderately horrifying logic to figure things out properly,
    stolen from MPB. */
-//TODO
 static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree, vector3 &pcenter,
                              const geometric_object **o_front, vector3 &shiftby_front,
                              material_type &mat_front, material_type &mat_behind) {
@@ -1665,7 +1664,8 @@ material_type make_material_grid() {
 }
 
 void update_design_parameters(material_type matgrid, double* design_parameters){
-
+  int N = matgrid->grid_size.x*matgrid->grid_size.y*matgrid->grid_size.z;
+  memcpy(matgrid->design_parameters, design_parameters, N * sizeof(meep::realnum));
 }
 
 /******************************************************************************/
