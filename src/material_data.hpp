@@ -187,7 +187,7 @@ struct material_data {
 
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
-  double* design_parameters;
+  meep::realnum* design_parameters;
   medium_struct medium_1;
   medium_struct medium_2;
 

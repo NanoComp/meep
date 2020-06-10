@@ -661,7 +661,7 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, in
                            int nz, int stride) {
 
   int x, y, z, x2, y2, z2;
-  realnum dx, dy, dz;
+  realnum dx, dy, dz, ans;
 
   /* mirror boundary conditions for r just beyond the boundary */
   if (rx < 0.0)
@@ -678,10 +678,10 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, in
     rz = 1.0 - rz;
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = pmod(int(rx * nx), nx);
-  y = pmod(int(ry * ny), ny);
-  z = pmod(int(rz * nz), nz);
-
+  x = rx == 1.0 ? nx-1 : pmod(int(rx * nx), nx);
+  y = ry == 1.0 ? ny-1 : pmod(int(ry * ny), ny);
+  z = rz == 1.0 ? nz-1 : pmod(int(rz * nz), nz);
+  if ((x > nx) || (x < 0)) {master_printf("error: %d\n",x);}
   /* get the difference between (x,y,z) and the actual point
      ... we shift by 0.5 to center the data points in the pixels */
   dx = rx * nx - x - 0.5;
@@ -702,13 +702,14 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, in
      in row-major order (the order used by HDF5): */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 
-  return (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
+  ans =  (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
            (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
               (1.0 - dz) +
           ((D(x, y, z2) * (1.0 - dx) + D(x2, y, z2) * dx) * (1.0 - dy) +
            (D(x, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
               dz);
-
+  if (ans < 0.0) {master_printf("ans rx %g nx %d x %d y %d z %d x2 %d y2 %d z2 %d dx %g %g %g\n",rx,nx,x,y,z,x2,y2,z2,dx,dy,dz);}
+  return ans;
 #undef D
 }
 

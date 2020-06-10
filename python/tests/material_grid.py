@@ -9,19 +9,20 @@ cell_size = mp.Vector3(14,14)
 pml_layers = [mp.PML(thickness=2)]
 
 # rotation angle (in degrees) of waveguide, counter clockwise (CCW) around z-axis
-rot_angle = np.radians(0)
+rot_angle = np.radians(20)
 
 w = 1.0 # width of waveguide
 
 m1 = mp.Medium(epsilon=2)
 m2 = mp.Medium(epsilon=12)
-gs = mp.Vector3(2*14*2,2*2)
+n = 100
+gs = mp.Vector3(n,n)
 np.random.seed(1)
-dp = np.random.rand(14*2*2*2*2)
+dp = np.random.rand(n*n)
 mg = mp.MaterialGrid(gs,m1,m2,dp)
 
 geometry = [mp.Block(center=mp.Vector3(),
-                     size=mp.Vector3(14,w,mp.inf),
+                     size=mp.Vector3(2,2,mp.inf),
                      e1=mp.Vector3(x=1).rotate(mp.Vector3(z=1), rot_angle),
                      e2=mp.Vector3(y=1).rotate(mp.Vector3(z=1), rot_angle),
                      material=mg)]
@@ -54,7 +55,7 @@ sim = mp.Simulation(cell_size=cell_size,
                     resolution=resolution,
                     boundary_layers=pml_layers,
                     sources=sources,
-                    eps_averaging=False,
+                    #eps_averaging=False,
                     geometry=geometry
                     #symmetries=[mp.Mirror(mp.Y)] if rot_angle == 0 else []
                     )

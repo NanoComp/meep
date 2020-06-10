@@ -247,7 +247,7 @@ geom_box gv2box(const meep::volume &v) {
 bool is_material_grid(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_GRID); }
 bool is_material_grid(void *md) { return is_material_grid((material_type)md); }
 
-bool is_variable(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_USER); }
+bool is_variable(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_USER) || (mt->which_subclass == material_data::MATERIAL_GRID); }
 bool is_variable(void *md) { return is_variable((material_type)md); }
 
 bool is_file(material_type md) { return (md->which_subclass == material_data::MATERIAL_FILE); }
@@ -295,17 +295,20 @@ void epsilon_material_grid(material_data *md, vector3 p) {
   medium_struct *m2 = &(md->medium_2);
 
   // Linearly interpolate to find closest design parameter in grid
-  
-  double u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,md->grid_size.y, md->grid_size.z, 1);
+  meep::realnum u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,md->grid_size.y, md->grid_size.z, 1);
   
   // Linearly interpolate epsilon diagonal values from design parameters
   mm->epsilon_diag.x = m1->epsilon_diag.x + u*(m2->epsilon_diag.x - m1->epsilon_diag.x);
   mm->epsilon_diag.y = m1->epsilon_diag.y + u*(m2->epsilon_diag.y - m1->epsilon_diag.y);
   mm->epsilon_diag.z = m1->epsilon_diag.z + u*(m2->epsilon_diag.z - m1->epsilon_diag.z);
 
-  //TODO: interpolate offdiagonal terms too
-  mm->epsilon_offdiag.x.re = mm->epsilon_offdiag.y.re = mm->epsilon_offdiag.z.re = 0;
-  master_printf("linear interp: %g, %g, %g, %g, %g, %g \n",md->design_parameters[0], u, m1->epsilon_diag.x,md->grid_size.x,md->grid_size.y, md->grid_size.z);
+  //Linearly interpolate offdiagonal terms too
+  mm->epsilon_offdiag.x.re = m1->epsilon_offdiag.x.re + u*(m2->epsilon_offdiag.x.re - m1->epsilon_offdiag.x.re);
+  mm->epsilon_offdiag.x.im = m1->epsilon_offdiag.x.im + u*(m2->epsilon_offdiag.x.im - m1->epsilon_offdiag.x.im);
+  mm->epsilon_offdiag.y.re = m1->epsilon_offdiag.y.re + u*(m2->epsilon_offdiag.y.re - m1->epsilon_offdiag.y.re);
+  mm->epsilon_offdiag.y.im = m1->epsilon_offdiag.y.im + u*(m2->epsilon_offdiag.y.im - m1->epsilon_offdiag.y.im);
+  mm->epsilon_offdiag.z.re = m1->epsilon_offdiag.z.re + u*(m2->epsilon_offdiag.z.re - m1->epsilon_offdiag.z.re);
+  mm->epsilon_offdiag.z.im = m1->epsilon_offdiag.z.im + u*(m2->epsilon_offdiag.z.im - m1->epsilon_offdiag.z.im);
 
   //TODO: interpolate resonant strength from d.p.
   //TODO: interpolate electric conductivity from d.p.
@@ -795,9 +798,6 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
     }
   }
 
-  if (mat->which_subclass == material_data::MATERIAL_GRID) {
-    goto noavg;
-  }
   /* check for trivial case of only one object/material */
   if (material_type_equal(mat, mat_behind)) goto trivial;
 

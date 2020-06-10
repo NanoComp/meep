@@ -447,7 +447,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   PyArrayObject *pao = (PyArrayObject *)po_dp;
   if (!PyArray_Check(pao)) { meep::abort("MaterialGrid design_parameters failed to init.");}
   if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array design_parameters must be C-style contiguous."); }
-  md->design_parameters = new double(PyArray_NDIM(pao));
+  md->design_parameters = new realnum[PyArray_SIZE(pao)];
   memcpy(md->design_parameters, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
   return 1;
 }
