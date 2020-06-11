@@ -180,32 +180,35 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i)
     adjusted_num_chunks *= prime_factors[i];
 
+  int my_num_chunks = meep_geom::fragment_stats::split_chunks_evenly ?
+    desired_num_chunks : adjusted_num_chunks;
+
   // Finally, create the chunks:
   num_chunks = 0;
-  chunks = new structure_chunk_ptr[adjusted_num_chunks * num_effort_volumes];
+  chunks = new structure_chunk_ptr[my_num_chunks * num_effort_volumes];
   std::vector<grid_volume> chunk_volumes;
 
   bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
-    if (verbosity > 0 && adjusted_num_chunks > 1)
-      master_printf("Splitting into %d chunks evenly\n", adjusted_num_chunks);
-    for (int i = 0; i < adjusted_num_chunks; i++) {
+    if (verbosity > 0 && my_num_chunks > 1)
+      master_printf("Splitting into %d chunks evenly\n", my_num_chunks);
+    for (int i = 0; i < my_num_chunks; i++) {
       grid_volume vi =
-          gv.split_by_effort(adjusted_num_chunks, i, num_effort_volumes, effort_volumes, effort);
+          gv.split_by_effort(my_num_chunks, i, num_effort_volumes, effort_volumes, effort);
       chunk_volumes.push_back(vi);
     }
   }
   else {
-    if (verbosity > 0 && adjusted_num_chunks > 1)
-      master_printf("Splitting into %d chunks by cost\n", adjusted_num_chunks);
+    if (verbosity > 0 && my_num_chunks > 1)
+      master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
     by_cost = true;
   }
 
   // Break off PML regions into their own chunks
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = i * count_processors() / adjusted_num_chunks;
+    const int proc = i * count_processors() / my_num_chunks;
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
