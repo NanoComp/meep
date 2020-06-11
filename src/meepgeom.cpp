@@ -84,6 +84,10 @@ void material_gc(material_type m) {
   if (!m || m->which_subclass != material_data::MATERIAL_USER) return;
   susceptibility_list_gc(&(m->medium.E_susceptibilities));
   susceptibility_list_gc(&(m->medium.H_susceptibilities));
+  susceptibility_list_gc(&(m->medium_1.E_susceptibilities));
+  susceptibility_list_gc(&(m->medium_1.H_susceptibilities));
+  susceptibility_list_gc(&(m->medium_2.E_susceptibilities));
+  susceptibility_list_gc(&(m->medium_2.H_susceptibilities));
 }
 
 bool material_type_equal(const material_type m1, const material_type m2) {
@@ -310,8 +314,39 @@ void epsilon_material_grid(material_data *md, vector3 p) {
   mm->epsilon_offdiag.z.re = m1->epsilon_offdiag.z.re + u*(m2->epsilon_offdiag.z.re - m1->epsilon_offdiag.z.re);
   mm->epsilon_offdiag.z.im = m1->epsilon_offdiag.z.im + u*(m2->epsilon_offdiag.z.im - m1->epsilon_offdiag.z.im);
 
-  //TODO: interpolate resonant strength from d.p.
-  //TODO: interpolate electric conductivity from d.p.
+  //Interpolate resonant strength from d.p.
+  for (int i = 0; i < m1->E_susceptibilities.num_items; i++) {
+    // iterate through medium1 sus list first
+    mm->E_susceptibilities.items[i].sigma_diag.x = (1-u) * m1->E_susceptibilities.items[i].sigma_diag.x;
+    mm->E_susceptibilities.items[i].sigma_diag.y = (1-u) * m1->E_susceptibilities.items[i].sigma_diag.y;
+    mm->E_susceptibilities.items[i].sigma_diag.z = (1-u) * m1->E_susceptibilities.items[i].sigma_diag.z;
+    mm->E_susceptibilities.items[i].sigma_offdiag.x = (1-u) * m1->E_susceptibilities.items[i].sigma_offdiag.x;
+    mm->E_susceptibilities.items[i].sigma_offdiag.y = (1-u) * m1->E_susceptibilities.items[i].sigma_offdiag.y;
+    mm->E_susceptibilities.items[i].sigma_offdiag.z = (1-u) * m1->E_susceptibilities.items[i].sigma_offdiag.z;
+  }
+  for (int i = 0; i < m2->E_susceptibilities.num_items; i++) {
+    // iterate through medium2 sus list next
+    int j = i + m1->E_susceptibilities.num_items;
+    mm->E_susceptibilities.items[j].sigma_diag.x = u * m2->E_susceptibilities.items[i].sigma_diag.x;
+    mm->E_susceptibilities.items[j].sigma_diag.y = u * m2->E_susceptibilities.items[i].sigma_diag.y;
+    mm->E_susceptibilities.items[j].sigma_diag.z = u * m2->E_susceptibilities.items[i].sigma_diag.z;
+    mm->E_susceptibilities.items[j].sigma_offdiag.x = u * m2->E_susceptibilities.items[i].sigma_offdiag.x;
+    mm->E_susceptibilities.items[j].sigma_offdiag.y = u * m2->E_susceptibilities.items[i].sigma_offdiag.y;
+    mm->E_susceptibilities.items[j].sigma_offdiag.z = u * m2->E_susceptibilities.items[i].sigma_offdiag.z;    
+  }
+
+  //Linearly interpolate electric conductivity from d.p.
+  //This prevents instabilities when interpolating between sus. profiles.
+  if ((m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items) > 0.0) {
+    // calculate mean harmonic frequency
+    double omega_mean = 0;
+    for (int i = 0; i < m1->E_susceptibilities.num_items; i++) { omega_mean += m1->E_susceptibilities.items[i].frequency;}
+    for (int i = 0; i < m2->E_susceptibilities.num_items; i++) { omega_mean += m2->E_susceptibilities.items[i].frequency;}
+    omega_mean = omega_mean / (m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items);
+
+    // assign interpolated, nondimensionalized conductivity term
+    mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) * omega_mean;
+  }
 }
 
 // return material of the point p from the file (assumed already read)
@@ -1106,7 +1141,7 @@ bool geom_epsilon::has_chi(meep::component c, int p) {
 bool geom_epsilon::has_chi3(meep::component c) { return has_chi(c, 3); }
 
 bool geom_epsilon::has_chi2(meep::component c) { return has_chi(c, 2); }
-//TODO
+
 double geom_epsilon::chi(meep::component c, const meep::vec &r, int p) {
   material_type material;
   get_material_pt(material, r);
@@ -1116,6 +1151,7 @@ double geom_epsilon::chi(meep::component c, const meep::vec &r, int p) {
   material_data *md = material;
   switch (md->which_subclass) {
     case material_data::MEDIUM:
+    case material_data::MATERIAL_GRID:
     case material_data::MATERIAL_USER: chi_val = get_chi(c, &(md->medium), p); break;
 
     default: chi_val = 0;
@@ -1195,6 +1231,7 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_data *md = material;
   switch (md->which_subclass) {
     case material_data::MEDIUM:
+    case material_data::MATERIAL_GRID:
     case material_data::MATERIAL_USER: cond_val = get_cnd(c, &(md->medium)); break;
     default: cond_val = 0;
   }
@@ -1251,7 +1288,7 @@ static bool susceptibility_equiv(const susceptibility *o0, const susceptibility 
 
   return 1;
 }
-// TODO
+
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::vec &r) {
 
   vector3 p = vec_to_vector3(r);
@@ -1263,6 +1300,16 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
   if (mat->which_subclass == material_data::MATERIAL_USER) {
     mat->medium = medium_struct();
     mat->user_func(p, mat->user_data, &(mat->medium));
+    check_offdiag(&mat->medium);
+  }
+
+  if (mat->which_subclass == material_data::MATERIAL_GRID) {
+    vector3 shiftby, u;
+    int precedence;
+    const geometric_object *o;
+    o = object_of_point_in_tree(p,restricted_tree,&shiftby,&precedence); // Get object corresponding to material grid
+    u = to_geom_object_coords(p, *o); //normalize point to objects coordinates
+    epsilon_material_grid(mat, u);
     check_offdiag(&mat->medium);
   }
 

@@ -1,6 +1,7 @@
 import meep as mp
 import numpy as np
 import matplotlib.pyplot as plt
+from meep.materials import Si, SiO2
 
 resolution = 50 # pixels/μm
 
@@ -13,8 +14,8 @@ rot_angle = np.radians(20)
 
 w = 1.0 # width of waveguide
 
-m1 = mp.Medium(epsilon=2)
-m2 = mp.Medium(epsilon=12)
+m1 = SiO2#mp.Medium(epsilon=2)
+m2 = Si#mp.Medium(epsilon=12)
 n = 100
 gs = mp.Vector3(n,n)
 np.random.seed(1)
@@ -27,7 +28,7 @@ geometry = [mp.Block(center=mp.Vector3(),
                      e2=mp.Vector3(y=1).rotate(mp.Vector3(z=1), rot_angle),
                      material=mg)]
 
-fsrc = 0.15 # frequency of eigenmode or constant-amplitude source
+fsrc = 1/1.55 # frequency of eigenmode or constant-amplitude source
 bnum = 1    # band number of eigenmode
 
 kpoint = mp.Vector3(x=1).rotate(mp.Vector3(z=1), rot_angle)
@@ -55,15 +56,16 @@ sim = mp.Simulation(cell_size=cell_size,
                     resolution=resolution,
                     boundary_layers=pml_layers,
                     sources=sources,
+                    extra_materials = [m1,m2],
                     #eps_averaging=False,
                     geometry=geometry
                     #symmetries=[mp.Mirror(mp.Y)] if rot_angle == 0 else []
                     )
 
-sim.plot2D()
+sim.plot2D(frequency=1/1.55)
 plt.show()
 sim.reset_meep()
 mg.update_parameters(dp*0)
 sim.init_sim()
-sim.plot2D()
+sim.plot2D(frequency=1/1.55)
 plt.show()
