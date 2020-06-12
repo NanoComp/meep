@@ -432,6 +432,16 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 
 static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   //po must be a python MaterialGrid object
+
+  // specify the type of material grid
+  long gt_enum = PyInt_AsLong(PyObject_GetAttrString(po, "grid_type"));
+  switch (gt_enum) {
+    case 0: md->material_grid_kinds=material_data::U_MIN; break;
+    case 1: md->material_grid_kinds=material_data::U_PROD; break;
+    case 2: md->material_grid_kinds=material_data::U_SUM; break;
+    case 3: md->material_grid_kinds=material_data::U_DEFAULT; break;
+    default: meep::abort("Invalid material grid enumeration code: %d.\n",gt_enum);
+  }
   
   // initialize grid size
   if (!get_attr_v3(po, &md->grid_size, "grid_size")) { meep::abort("MaterialGrid grid_size failed to init.");}

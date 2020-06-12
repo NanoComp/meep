@@ -288,8 +288,52 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
+meep::realnum material_grid_val(vector3 p, material_data *md) {
+  // given the relative location, p, interpolate the material grid point.
+
+  if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n");}
+  meep::realnum u;
+  u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,md->grid_size.y, md->grid_size.z, 1);
+  return u;
+}
+
+static int matgrid_val_count = 0; /* cache for gradient calculation */
+meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md)
+{
+  meep::realnum uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
+  matgrid_val_count = 0;
+  
+  // iterate through object tree at current point
+  if (tp) {
+    do {
+        u = material_grid_val(to_geom_box_coords(p, &tp->objects[oi]),(material_data *)tp->objects[oi].o->material);
+        if (matgrid_val_count == 0) udefault = u;
+        if (u < umin) umin = u;
+        uprod *= u;
+        usum += u; ++matgrid_val_count;
+        tp = geom_tree_search_next(p, tp, &oi);
+      } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
+  }
+  // perhaps there is not object tree and the default material is a material grid
+  if (!tp && is_material_grid(&default_material)) {
+    p.x = geometry_lattice.size.x == 0 ? 0 : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
+    p.y = geometry_lattice.size.y == 0 ? 0 : 0.5 + (p.y - geometry_center.y) / geometry_lattice.size.y;
+    p.z = geometry_lattice.size.z == 0 ? 0 : 0.5 + (p.z - geometry_center.z) / geometry_lattice.size.z;
+    u = material_grid_val(p,(material_data *)default_material);
+    if (matgrid_val_count == 0) udefault = u;
+    if (u < umin) umin = u;
+    uprod *= u;
+    usum += u; ++matgrid_val_count;
+  }
+
+  return (md->material_grid_kinds == material_data::U_MIN ? umin
+      : (md->material_grid_kinds == material_data::U_PROD ? uprod
+       : (md->material_grid_kinds == material_data::U_SUM ? usum / matgrid_val_count
+       : udefault)));
+}
+
 // return material of the point p from the material grid
-void epsilon_material_grid(material_data *md, vector3 p) {
+void epsilon_material_grid(material_data *md, meep::realnum u) {
   // NOTE: assume p lies on normalized grid within (0,1)
 
   if (!(md->design_parameters)) meep::abort("material params were not initialized!");
@@ -297,9 +341,6 @@ void epsilon_material_grid(material_data *md, vector3 p) {
   medium_struct *mm = &(md->medium);
   medium_struct *m1 = &(md->medium_1);
   medium_struct *m2 = &(md->medium_2);
-
-  // Linearly interpolate to find closest design parameter in grid
-  meep::realnum u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,md->grid_size.y, md->grid_size.z, 1);
   
   // Linearly interpolate epsilon diagonal values from design parameters
   mm->epsilon_diag.x = m1->epsilon_diag.x + u*(m2->epsilon_diag.x - m1->epsilon_diag.x);
@@ -600,12 +641,13 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
   switch (md->which_subclass) {
     // material grid: interpolate onto user specified material grid to get properties at r
     case material_data::MATERIAL_GRID:
-      vector3 shiftby, u;
-      int precedence;
-      const geometric_object *o;
-      o = object_of_point_in_tree(p,restricted_tree,&shiftby,&precedence); // Get object corresponding to material grid
-      u = to_geom_object_coords(p, *o); //normalize point to objects coordinates
-      epsilon_material_grid(md, u);
+      meep::realnum u; 
+      int oi;
+      geom_box_tree tp;
+
+      tp = geom_tree_search(p, restricted_tree, &oi);
+      u = matgrid_val(p, tp, oi, md); // interpolate onto material grid
+      epsilon_material_grid(md, u); // interpolate material from material grid point
       
       return;
     // material read from file: interpolate to get properties at r
@@ -1304,12 +1346,13 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
   }
 
   if (mat->which_subclass == material_data::MATERIAL_GRID) {
-    vector3 shiftby, u;
-    int precedence;
-    const geometric_object *o;
-    o = object_of_point_in_tree(p,restricted_tree,&shiftby,&precedence); // Get object corresponding to material grid
-    u = to_geom_object_coords(p, *o); //normalize point to objects coordinates
-    epsilon_material_grid(mat, u);
+    meep::realnum u; 
+    int oi;
+    geom_box_tree tp;
+
+    tp = geom_tree_search(p, restricted_tree, &oi);
+    u = matgrid_val(p, tp, oi, mat); // interpolate onto material grid
+    epsilon_material_grid(mat, u); // interpolate material from material grid point
     check_offdiag(&mat->medium);
   }
 
@@ -2081,4 +2124,4 @@ void fragment_stats::print_stats() const {
 dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
     : num_freqs(freqs), num_components(components), vols(volumes) {}
 
-} // namespace meep_geom
+}

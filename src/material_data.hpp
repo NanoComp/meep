@@ -190,6 +190,29 @@ struct material_data {
   meep::realnum* design_parameters;
   medium_struct medium_1;
   medium_struct medium_2;
+  /*
+  There are several possible scenarios when material grids overlap -- these
+  different scenarios enable different applications.
+
+  For U_MIN: Where multiple grids overlap, only those grids that contribute
+  the minimum u contribute, and for other grids the gradient is zero.
+  This unfortunately makes the gradient only piecewise continuous.
+
+  For U_PROD: The gradient is multiplied by the product of u's from
+  overlapping grids, divided by the u from the current grid.  This
+  unfortunately makes the gradient zero when two or more u's are zero,
+  stalling convergence, although we try to avoid this by making the
+  minimum u = 1e-4 instead of 0.
+
+  For U_SUM: The gradient is divided by the number of overlapping grids.
+  This doesn't have the property that u=0 in one grid makes the total
+  u=0, unfortunately, which is desirable if u=0 indicates "drilled holes".
+
+  For U_DEFAULT: Expect the default behavior with libctl objects; that is
+  the object on top always wins and everything underneath is ignored.
+  Specifically, that means that u = the top material grid value at that point.
+  */
+  enum { U_MIN = 0, U_PROD = 1, U_SUM = 2, U_DEFAULT = 3 } material_grid_kinds;
 
   material_data()
       : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL), design_parameters(NULL), medium_1(), medium_2() {
@@ -199,6 +222,7 @@ struct material_data {
     grid_size.x = 0;
     grid_size.y = 0;
     grid_size.z = 0;
+    material_grid_kinds = U_DEFAULT;
   }
 };
 

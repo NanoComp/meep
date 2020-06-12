@@ -279,7 +279,7 @@ class Medium(object):
         return np.squeeze(epsmu)
 
 class MaterialGrid(object):
-    def __init__(self,grid_size,medium1,medium2,design_parameters=None):
+    def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT"):
         self.grid_size = grid_size
         self.medium1 = medium1
         self.medium2 = medium2
@@ -298,6 +298,16 @@ class MaterialGrid(object):
         else:
             self.design_parameters = design_parameters.flatten().astype(np.float64)
 
+        grid_type_dict = {
+            "U_MIN":0,
+            "U_PROD":1,
+            "U_SUM":2,
+            "U_DEFAULT":3
+        }
+        if grid_type not in grid_type_dict:
+            raise ValueError("Invalid grid_type: {}. Must be either U_MIN, U_PROD, U_SUM, or U_DEFAULT".format(grid_type_dict))
+        self.grid_type = grid_type_dict[grid_type]
+        
         self.swigobj = None
     def update_parameters(self,x):
         if x.size != self.num_params:

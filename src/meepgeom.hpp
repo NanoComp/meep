@@ -176,12 +176,11 @@ material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
 material_type make_file_material(const char *eps_input_file);
 material_type make_material_grid();
-void update_design_parameters(material_type matgrid, double* design_parameters);
 
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
-void epsilon_material_grid(material_data *md, vector3 p);
+void epsilon_material_grid(material_data *md, meep::realnum u);
 void epsilon_file_material(material_data *md, vector3 p);
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2);
@@ -199,6 +198,14 @@ bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
 void check_offdiag(medium_struct *m);
 geom_box gv2box(const meep::volume &v);
+
+
+/***************************************************************/
+// material grid functions
+/***************************************************************/
+void update_design_parameters(material_type matgrid, double* design_parameters);
+meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
+meep::realnum material_grid_val(vector3 p, material_data *md);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/
