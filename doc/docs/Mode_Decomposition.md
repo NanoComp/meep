@@ -1,6 +1,6 @@
 # Mode Decomposition
 
-Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure via its integration with the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides an overview of the theory and implementation of this feature. Tutorial examples are provided in [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
+Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure via its integration with the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides an overview of the theory and implementation of this feature. For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 [TOC]
 
@@ -129,7 +129,7 @@ Besides `get_eigenmode_coefficients,` there are a few computational routines in 
                               double *kdom);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [mpb.cpp](https://github.com/NanoComp/meep/blob/master/src/mpb.cpp#L215-L537).
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [src/mpb.cpp](https://github.com/NanoComp/meep/blob/master/src/mpb.cpp#L236-L630).
 
 ### Working with MPB Eigenmodes
 
