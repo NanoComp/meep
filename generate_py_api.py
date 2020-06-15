@@ -194,7 +194,7 @@ def update_api_document(class_items):
 
     # manipulate
     for name, doc in class_items.items():
-        tag = f'@@{name}@@'
+        tag = f'@@ {name} @@'
         if tag in srcdoc:
             srcdoc = srcdoc.replace(tag, doc)
 
