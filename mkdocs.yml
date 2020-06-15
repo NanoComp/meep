@@ -47,7 +47,6 @@ pages:
     - '2d Cell with Out-of-Plane Wavevector': '2d_Cell_Special_kz.md'
     - 'Frequency-Domain Eigensolver': 'Eigensolver_Math.md'
 - 'Python Interface':
-    - 'New API Documentation': 'python_api.md'
     - 'User Interface': 'Python_User_Interface.md'
     - 'Developer Information': 'Python_Developer_Information.md'
     - 'Tutorial/Basics': 'Python_Tutorials/Basics.md'

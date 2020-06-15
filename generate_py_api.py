@@ -2,15 +2,16 @@
 This tool will extract the docstrings from the meep package and add them to the
 hand-written documentation tree.
 
-It is expected that the docstrings will be Markdown compatibile and will not be
-massaged in any way. One reason for this is to help ensure that the Look and
-Feel of the API documentation matches the rest of the documentation.
+It is expected that the docstrings will be Markdown compatibile and will not
+need to be massaged in any way. One reason for this is to help ensure that the
+Look and Feel of the API documentation matches the rest of the documentation.
 
 Before running this script the meep package needs to have been built and the
 Python used to run this tool must be able to import meep. Output will be written
-to the {project_folder}/doc/docs/python_api.md file.
+to the {project_folder}/doc/docs/Python_User_Interface.md, using the
+Python_User_Interface.md.in file asa template.
 
-In order to keep the noise in the module to a minimul, some markdown
+In order to keep the noise in the module to a minimum, some markdown
 snippets/templates used in the generation of the API documentation files can be
 found in {project_folder}/doc/_api_snippets, and will be loaded as needed while
 processing the docstrings.
@@ -23,13 +24,16 @@ import io
 
 import meep
 
-DESTDIR = 'doc/docs'
-API_DOC = os.path.join(DESTDIR, 'python_api.md')
 SNIPSDIR = 'doc/_api_snippets'
+SRCDOC = 'doc/docs/Python_User_Interface.md.in'
+DESTDOC = 'doc/docs/Python_User_Interface.md'
 
-# List of names that should not have documentation generated. Individual class
-# methods can be excluded by using 'Classname.Methodname'
-EXCLUDES = ['SwigPyIterator']
+# List of names that should not have documentation generated.
+#
+# Top-level items in the module are automatically excluded if their name is not
+# used in a subsition tag in the master template file. Individual class memberes
+# can be excluded by using 'Classname.Methodname'
+EXCLUDES = ['']
 
 #----------------------------------------------------------------------------
 
@@ -83,7 +87,7 @@ class MethodItem(FunctionItem):
         with open(os.path.join(SNIPSDIR, 'method_template.md')) as f:
             self.template = f.read()
 
-    def create_markdown(self, stream):
+    def create_markdown(self):
         # pull relevant attributes into local variables
         class_name = self.klass.name
         method_name = self.name
@@ -91,8 +95,8 @@ class MethodItem(FunctionItem):
         docstring = self.docstring if self.docstring else ''
         parameters = self.get_parameters(4 + len(method_name) + 1)
 
-        # Write it to the stream using the template
-        stream.write(self.template.format(**locals()))
+        # Substitute values into the template
+        return self.template.format(**locals())
 
 
 
@@ -112,49 +116,54 @@ class ClassItem(Item):
             if inspect.isfunction(member):
                 self.methods.append(MethodItem(name, member, self))
 
-    def create_markdown(self, stream):
+    def create_markdown(self):
         # pull relevant attributes into local variables
+        if self.name == 'Simulation':
+            print('break here')
+
         class_name = self.name
         docstring = self.docstring if self.docstring else ''
         base_classes = [base.__name__ for base in self.obj.__bases__]
         base_classes = ', '.join(base_classes)
 
-        method_docs = ''
+        method_docs = []
         if self.methods:
-            method_stream = io.StringIO()
             for item in self.methods:
                 if not check_excluded(item.name) and \
                    not check_excluded(f'{self.name}.{item.name}'):
-                    item.create_markdown(method_stream)
-            method_docs = method_stream.getvalue()
+                     doc = item.create_markdown()
+                     method_docs.append(doc)
+        method_docs = '\n'.join(method_docs)
 
-        # Write it to the stream using the template
-        stream.write(self.template.format(**locals()))
-        stream.write('\n\n')
+        # TODO: reorder self.methods so __init__ comes first
+
+        # Substitute values into the template
+        doc = self.template.format(**locals())
+        return doc
 
 #----------------------------------------------------------------------------
 
 def check_excluded(name):
     if name in EXCLUDES:
         return True
-    if name.startswith('_') and not name.startswith('__'):
+    if name.startswith('_') and not (name.startswith('__') and name.endswith('__')):
         # It's probably meant to be private
         return True
     return False
 
-def get_template(name):
-    with open(os.path.join(SNIPSDIR, f'{name}.md')) as f:
-        text = f.read()
-    return text
-
 
 def load_module(module):
+    """
+    Inspect the module and return a list of documentable items in the module.
+    """
     items = []
     members = inspect.getmembers(meep)
 
     for name, member in members:
         if inspect.isclass(member):
             items.append(ClassItem(name, member))
+            if name == 'Simulation':
+                print('break here')
         if inspect.isfunction(member):
             items.append(FunctionItem(name, member))
 
@@ -162,22 +171,43 @@ def load_module(module):
 
 
 def generate_class_docs(items):
-    stream = io.StringIO()
+    """
+    Process the items (just classes for now) and create markdown from their
+    docstrings, returned as a dictionary.
+    """
+    class_docs = dict()
     for item in items:
         if isinstance(item, ClassItem) and not check_excluded(item.name):
-            item.create_markdown(stream)
-    return stream.getvalue()
+            doc = item.create_markdown()
+            class_docs[item.name] = doc
+    return class_docs
+
+
+def update_api_document(class_items):
+    """
+    Substitute the available class docstrings into the template SRCDOC and write
+    to DESTDOC.
+    """
+    # read
+    with open(SRCDOC, 'r') as f:
+        srcdoc = f.read()
+
+    # manipulate
+    for name, doc in class_items.items():
+        tag = f'@@{name}@@'
+        if tag in srcdoc:
+            srcdoc = srcdoc.replace(tag, doc)
+
+    # write results
+    with open(DESTDOC, 'w') as f:
+        f.write(srcdoc)
 
 
 def main(args):
     items = load_module(meep)
 
-    all_class_docs = generate_class_docs(items)
-    api_doc_tail = get_template('api_doc_tail')
-
-    template = get_template('api_doc_template')
-    with open(API_DOC, 'w') as f:
-        f.write(template.format(**locals()))
+    class_items = generate_class_docs(items)
+    update_api_document(class_items)
 
 
 
