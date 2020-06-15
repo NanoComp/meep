@@ -288,7 +288,7 @@ class Medium(object):
                  H_chi3=None,
                  valid_freq_range=FreqRange(min=-mp.inf, max=mp.inf)):
         """
-        Creates a `Measure` object.
+        Creates a `Medium` object.
 
         **`epsilon` [`number`]**
         —The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
