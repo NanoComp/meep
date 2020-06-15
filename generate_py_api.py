@@ -118,9 +118,6 @@ class ClassItem(Item):
 
     def create_markdown(self):
         # pull relevant attributes into local variables
-        if self.name == 'Simulation':
-            print('break here')
-
         class_name = self.name
         docstring = self.docstring if self.docstring else ''
         base_classes = [base.__name__ for base in self.obj.__bases__]
@@ -128,14 +125,23 @@ class ClassItem(Item):
 
         method_docs = []
         if self.methods:
-            for item in self.methods:
+            # reorder self.methods so __init__ comes first, if it isn't already
+            methods = self.methods[:]
+            for idx, meth in enumerate(self.methods):
+                if meth.name == '__init__':
+                    if idx != 0:
+                        methods.remove(meth)
+                        methods.insert(0, meth)
+                    break
+
+            for item in methods:
                 if not check_excluded(item.name) and \
                    not check_excluded(f'{self.name}.{item.name}'):
                      doc = item.create_markdown()
                      method_docs.append(doc)
-        method_docs = '\n'.join(method_docs)
 
-        # TODO: reorder self.methods so __init__ comes first
+        # join the methods into a single string
+        method_docs = '\n'.join(method_docs)
 
         # Substitute values into the template
         doc = self.template.format(**locals())
@@ -162,8 +168,6 @@ def load_module(module):
     for name, member in members:
         if inspect.isclass(member):
             items.append(ClassItem(name, member))
-            if name == 'Simulation':
-                print('break here')
         if inspect.isfunction(member):
             items.append(FunctionItem(name, member))
 
