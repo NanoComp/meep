@@ -111,9 +111,18 @@ class ClassItem(Item):
             self.template = f.read()
 
     def add_methods(self):
+        # Use a predicate to only look at things in this class, not
+        # inherited members
+        def _predicate(value):
+            if inspect.isfunction(value):
+                class_name = value.__qualname__.split('.')[0]
+                return class_name == self.name
+            else:
+                return False
+
         self.methods = []
-        for name, member in inspect.getmembers(self.obj):
-            if inspect.isfunction(member):
+        for name, member in inspect.getmembers(self.obj, _predicate):
+            if inspect.isfunction(member): # unbound methods are just functions at this point
                 self.methods.append(MethodItem(name, member, self))
 
     def create_markdown(self):
