@@ -631,6 +631,9 @@ class MultilevelAtom(Susceptibility):
 
 
 class Transition(object):
+    """
+    # TODO:
+    """
 
     def __init__(self,
                  from_level,
@@ -641,6 +644,8 @@ class Transition(object):
                  gamma=0,
                  pumping_rate=0):
         """
+        Construct a `Transition`.
+
         **`frequency` [`number`]**
         —
         The radiative transition frequency $f = \omega / 2\pi$.
@@ -679,8 +684,75 @@ class Transition(object):
 
 
 class GeometricObject(object):
+    """
+    This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated.
 
+    In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
+
+    **Geometry Utilities**
+
+    See the [MPB documentation](https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities) for utility functions to help manipulate geometric objects.
+
+    **Examples**
+
+    These are some examples of geometric objects created using some `GeometricObject` subclasses:
+
+    ```python
+    # A cylinder of infinite radius and height 0.25 pointing along the x axis,
+    # centered at the origin:
+    cyl = mp.Cylinder(center=mp.Vector3(0,0,0), height=0.25, radius=mp.inf,
+                    axis=mp.Vector3(1,0,0), material=mp.Medium(index=3.5))
+    ```
+
+    ```python
+    # An ellipsoid with its long axis pointing along (1,1,1), centered on
+    # the origin (the other two axes are orthogonal and have equal semi-axis lengths):
+    ell = mp.Ellipsoid(center=mp.Vector3(0,0,0), size=mp.Vector3(0.8,0.2,0.2),
+                    e1=Vector3(1,1,1), e2=Vector3(0,1,-1), e3=Vector3(-2,1,1),
+                    material=mp.Medium(epsilon=13))
+    ```
+
+    ```python
+    # A unit cube of material metal with a spherical air hole of radius 0.2 at
+    # its center, the whole thing centered at (1,2,3):
+    geometry=[mp.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=mp.metal),
+            mp.Sphere(center=Vector3(1,2,3), radius=0.2, material=mp.air)]
+    ```
+
+    ```python
+    # A hexagonal prism defined by six vertices centered on the origin
+    # of material crystalline silicon (from the materials library)
+    vertices = [mp.Vector3(-1,0),
+                mp.Vector3(-0.5,math.sqrt(3)/2),
+                mp.Vector3(0.5,math.sqrt(3)/2),
+                mp.Vector3(1,0),
+                mp.Vector3(0.5,-math.sqrt(3)/2),
+                mp.Vector3(-0.5,-math.sqrt(3)/2)]
+
+    geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
+
+    ```
+
+    """
     def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
+        """
+        Construct a `GeometricObject`.
+
+        **`material` [`Medium` class or function ]**
+        —
+        The material that the object is made of (usually some sort of dielectric). Uses default `Medium`. If a function is supplied, it must take one argument and return a Python `Medium`.
+
+        **`epsilon_func` [ function ]**
+        —
+        A function that takes one argument (a `Vector3`) and returns the dielectric constant at that point. Can be used instead of `material`. Default is `None`.
+
+        **`center` [`Vector3`]**
+        —
+        Center point of the object. Defaults to `(0,0,0)`.
+
+        One normally does not create objects of type `GeometricObject` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties and can be specified in a subclass's constructor via keyword arguments.
+
+        """
         if type(material) is not Medium and callable(material):
             init_do_averaging(material)
             material.eps = False
@@ -706,17 +778,40 @@ class GeometricObject(object):
         return self
 
     def shift(self, vec):
+        """
+        Shifts the object's `center` by `vec` (`Vector3`), returning a new object.
+        This can also be accomplished via the `+` operator:
+
+        ```python
+        geometric_obj + Vector3(10,10,10)`
+        ```
+
+        Using `+=` will shift the object in place.
+        """
         c = deepcopy(self)
         c.center += Vector3(*vec)
         return c
 
     def info(self, indent_by=0):
+        """
+        Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
+        """
         mp.display_geometric_object_info(indent_by, self)
 
 
 class Sphere(GeometricObject):
+    """
+    Represents a sphere.
+
+    **Properties:**
+
+    **`radius` [`number`]**
+    —
+    Radius of the sphere. No default value.
+    """
 
     def __init__(self, radius, **kwargs):
+        """Constructs a `Sphere`"""
         self.radius = float(radius)
         super(Sphere, self).__init__(**kwargs)
 
@@ -730,8 +825,27 @@ class Sphere(GeometricObject):
 
 
 class Cylinder(GeometricObject):
+    """
+    A cylinder, with circular cross-section and finite height.
+
+    **Properties:**
+    **`radius` [`number`]**
+    —
+    Radius of the cylinder's cross-section. No default value.
+
+    **`height` [`number`]**
+    —
+    Length of the cylinder along its axis. No default value.
+
+    **`axis` [`Vector3`]**
+    —
+    Direction of the cylinder's axis; the length of this vector is ignored. Defaults to `Vector3(x=0, y=0, z=1)`.
+    """
 
     def __init__(self, radius, axis=Vector3(0, 0, 1), height=1e20, **kwargs):
+        """
+        Constructs a `Cylinder`.
+        """
         self.axis = Vector3(*axis)
         self.radius = float(radius)
         self.height = float(height)
@@ -755,23 +869,51 @@ class Cylinder(GeometricObject):
 
 
 class Wedge(Cylinder):
-
+    """
+    Represents a cylindrical wedge.
+    """
     def __init__(self, radius, wedge_angle=2 * math.pi, wedge_start=Vector3(1, 0, 0), **kwargs):
+        """
+        Constructs a `Wedge`.
+        """
         self.wedge_angle = wedge_angle
         self.wedge_start = Vector3(*wedge_start)
         super(Wedge, self).__init__(radius, **kwargs)
 
 
 class Cone(Cylinder):
-
+    """
+    A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `Cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
+    """
     def __init__(self, radius, radius2=0, **kwargs):
+        """
+        Construct a `Cone`.
+
+        **`radius2` [`number`]**
+        —
+        Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
+        """
         self.radius2 = radius2
         super(Cone, self).__init__(radius, **kwargs)
 
 
 class Block(GeometricObject):
-
+    """
+    A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
+    """
     def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0), e3=Vector3(0, 0, 1), **kwargs):
+        """
+        Construct a `Block`.
+
+        **`size` [`Vector3`]**
+        —
+        The lengths of the block edges along each of its three axes. Not really a 3-vector, but it has three components, each of which should be nonzero. No default value.
+
+        **`e1`, `e2`, `e3` [`Vector3`]**
+        —
+        The directions of the axes of the block; the lengths of these vectors are ignored. Must be linearly independent. They default to the three lattice directions.
+        """
+
         self.size = Vector3(*size)
         self.e1 = Vector3(*e1)
         self.e2 = Vector3(*e2)
@@ -780,14 +922,41 @@ class Block(GeometricObject):
 
 
 class Ellipsoid(Block):
-
+    """
+    An ellipsoid. This is actually a subclass of `Block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
+    """
     def __init__(self, **kwargs):
+        """
+        Construct an `Ellipsiod`.
+        """
         super(Ellipsoid, self).__init__(**kwargs)
 
 
 class Prism(GeometricObject):
-
+    """
+    Polygonal prism type.
+    """
     def __init__(self, vertices, height, axis=Vector3(z=1), center=None, sidewall_angle=0, **kwargs):
+        """
+        Construct a `Prism`.
+
+        **`vertices` [list of `Vector3`]**
+        —
+        The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell.
+
+        **`height` [`number`]**
+        —
+        The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height. No default value.
+
+        **`axis` [`Vector3`]**
+        —
+        The axis perpendicular to the prism. Defaults to `Vector3(0,0,1)`.
+
+        **`center` [`Vector3`]**
+        —
+        If `center` is not specified, then the coordinates of the `vertices` define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and bottom) of the resulting 3d prism so that the coordinates of the `vertices` are shifted accordingly.
+        """
+
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
         original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
         if center is not None and len(vertices):
@@ -806,8 +975,44 @@ class Prism(GeometricObject):
 
 
 class Matrix(object):
+    """
+    The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
 
+    ```python
+    m.transpose()
+    m.getH() or m.H
+    m.determinant()
+    m.inverse()
+    ```
+
+    Return the transpose, adjoint (conjugate transpose), determinant, or inverse of the given matrix.
+
+    ```python
+    m1 + m2
+    m1 - m2
+    m1 * m2
+    ```
+
+    Return the sum, difference, or product of the given matrices.
+
+    ```python
+    v * m
+    m * v
+    ```
+
+    Returns the `Vector3` product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
+
+    ```python
+    s * m
+    m * s
+    ```
+
+    Scales the matrix `m` by the number `s`.
+    """
     def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3(), diag=Vector3(), offdiag=Vector3()):
+        """
+        Constructs a `Matrix`.
+        """
         self.c1 = Vector3(*c1)
         self.c2 = Vector3(*c2)
         self.c3 = Vector3(*c3)

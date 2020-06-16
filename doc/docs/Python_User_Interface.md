@@ -11,177 +11,12 @@ The Python API functions and classes can be found in the `meep` module, which sh
 The Simulation Class
 ---------------------
 
-The `Simulation` [class](#classes) contains all the attributes that you can set to control various parameters of the Meep computation. The function signature of the `Simulation` constructor with its default values is listed here for convenience:
+The `Simulation` class is the primary abstraction of the high-level interface. Minimally, a simulation script amounts to passing the desired keyword arguments to the `Simulation` constructor and calling the `run` method on the resulting instance.
 
-```python
-class Simulation(object):
 
-    def __init__(self,
-                 cell_size,
-                 resolution,
-                 geometry=[],
-                 sources=[],
-                 eps_averaging=True,
-                 dimensions=3,
-                 boundary_layers=[],
-                 symmetries=[],
-                 force_complex_fields=False,
-                 default_material=mp.Medium(),
-                 m=0,
-                 k_point=False,
-                 kz_2d="complex",
-                 extra_materials=[],
-                 material_function=None,
-                 epsilon_func=None,
-                 epsilon_input_file='',
-                 progress_interval=4,
-                 subpixel_tol=1e-4,
-                 subpixel_maxeval=100000,
-                 ensure_periodicity=True,
-                 num_chunks=0,
-                 Courant=0.5,
-                 accurate_fields_near_cylorigin=False,
-                 filename_prefix=None,
-                 output_volume=None,
-                 output_single_precision=False,
-                 load_structure='',
-                 geometry_center=mp.Vector3(),
-                 force_all_components=False,
-                 split_chunks_evenly=True,
-                 chunk_layout=None):
-```
+@@Simulation@@
 
-All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
 
-**`geometry` [ list of `GeometricObject` class ]**
-—
-Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
-
-**`geometry_center` [ `Vector3` class ]**
-—
-Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).  Passing `geometry_center=c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
-
-**`sources` [ list of `Source` class ]**
-—
-Specifies the current sources to be present in the simulation. Defaults to none (empty list).
-
-**`symmetries` [ list of `Symmetry` class ]**
-—
-Specifies the spatial symmetries (mirror or rotation) to exploit in the simulation. Defaults to none (empty list). The symmetries must be obeyed by *both* the structure and the sources. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
-
-**`boundary_layers` [ list of `PML` class ]**
-—
-Specifies the [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to none.
-
-**`cell_size` [ `Vector3` ]**
-—
-Specifies the size of the cell which is centered on the origin of the coordinate system. Any sizes of 0 imply a reduced-dimensionality calculation. Strictly speaking, the dielectric function is taken to be uniform along that dimension. A 2d calculation is especially optimized. See `dimensions` below. **Note:** because Maxwell's equations are scale invariant, you can use any units of distance you want to specify the cell size: nanometers, microns, centimeters, etc. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units](Introduction.md#units-in-meep). Required argument (no default).
-
-**`default_material` [`Medium` class ]**
-—
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below). If you want to use a material function as the default material, use the `material_function` keyword argument (below).
-
-**`material_function` [ function ]**
-—
-A Python function that takes a `Vector3` and returns a `Medium`. See also [Material Function](#material-function). Defaults to `None`.
-
-**`epsilon_func` [ function ]**
-—
-A Python function that takes a `Vector3` and returns the dielectric constant at that point. See also [Material Function](#material-function). Defaults to `None`.
-
-**`epsilon_input_file` [`string`]**
-—
-If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default_material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need *not* match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default_material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default_material` are still used.
-
-**`dimensions` [`integer`]**
-—
-Explicitly specifies the dimensionality of the simulation, if the value is less than 3. If the value is 3 (the default), then the dimensions are automatically reduced to 2 if possible when `cell_size` in the $z$ direction is `0`. If `dimensions` is the special value of `CYLINDRICAL`, then cylindrical coordinates are used and the $x$ and $z$ dimensions are interpreted as $r$ and $z$, respectively. If `dimensions` is 1, then the cell must be along the $z$ direction and only $E_x$ and $H_y$ field components are permitted. If `dimensions` is 2, then the cell must be in the $xy$ plane.
-
-**`m` [`number`]**
-—
-For `CYLINDRICAL` simulations, specifies that the angular $\phi$ dependence of the fields is of the form $e^{im\phi}$ (default is `m=0`). If the simulation cell includes the origin $r=0$, then `m` must be an integer.
-
-**`accurate_fields_near_cylorigin` [`boolean`]**
-—
-For `CYLINDRICAL` simulations with |*m*| &gt; 1, compute more accurate fields near the origin $r=0$ at the expense of requiring a smaller Courant factor. Empirically, when this option is set to `True`, a Courant factor of roughly $\min[0.5, 1 / (|m| + 0.5)]$ or smaller seems to be needed. Default is `False`, in which case the $D_r$, $D_z$, and $B_r$ fields within |*m*| pixels of the origin are forced to zero, which usually ensures stability with the default Courant factor of 0.5, at the expense of slowing convergence of the fields near $r=0$.
-
-**`resolution` [`number`]**
-—
-Specifies the computational grid resolution in pixels per distance unit. Required argument. No default.
-
-**`k_point` [`False` or `Vector3`]**
-—
-If `False` (the default), then the boundaries are perfect metallic (zero electric field). If a `Vector3`, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. A non-zero `Vector3` will produce complex fields. The `k_point` vector is specified in Cartesian coordinates in units of 2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k_points` through its function `reciprocal->cartesian`.
-
-**`kz_2d` [`"complex"`, `"real/imag"`, or `"3d"`]**
-—
-A 2d cell (i.e., `dimensions=2`) combined with a `k_point` that has a *non-zero* component in $z$ would normally result in a 3d simulation with complex fields. However, by default (`kz_2d="complex"`), Meep will use a 2d computational cell in which $k_z$ is incorporated as an additional term in Maxwell's equations, which still results in complex fields but greatly improved performance. Setting `kz_2d="3d"` will instead use a 3d cell that is one pixel thick (with Bloch-periodic boundary conditions), which is considerably more expensive. The third possibility, `kz_2d="real/imag"`, saves an additional factor of two by storing some field components as purely real and some as purely imaginary in a "real" field, but this option requires some care to use. See [2d Cell with Out-of-Plane Wavevector](2d_Cell_Special_kz.md).
-
-**`ensure_periodicity` [`boolean`]**
-—
-If `True` (the default) *and* if the boundary conditions are periodic (`k_point` is not `False`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the cell.
-
-**`eps_averaging` [`boolean`]**
-—
-If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error. Disabling subpixel averaging will lead to [staircasing effects and irregular convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
-
-**`force_complex_fields` [`boolean`]**
-—
-By default, Meep runs its simulations with purely real fields whenever possible. It uses complex fields which require twice the memory and computation if the `k_point` is non-zero or if `m` is non-zero. However, by setting `force_complex_fields` to `True`, Meep will always use complex fields.
-
-**`force_all_components` [`boolean`]**
-—
-By default, in a 2d simulation Meep uses only the field components that might excited by your current sources: either the in-plane (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or out-of-plane (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>) polarization, depending on the source.  (Both polarizations are excited if you use multiple source polarizations, or if an anisotropic medium is present that couples the two polarizations.)   In rare cases (primarily for combining results of multiple simulations with differing polarizations), you might want to force it to simulate all fields, even those that remain zero throughout the simulation, by setting `force_all_components` to `True`.
-
-**`filename_prefix` [`string`]**
-—
-A string prepended to all output filenames. If empty (the default), then Meep uses the name of the current Python file, with ".py" replaced by "-" (e.g. `foo.py` uses a `"foo-"` prefix). See also [Output File Names](Python_User_Interface.md#output-file-names).
-
-**`Courant` [`number`]**
-—
-Specify the [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition) $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
-
-**`output_volume` [`Volume` class ]**
-—
-Specifies the default region of space that is output by the HDF5 output functions (below); see also the `Volume` class which manages `meep::volume*` objects. Default is `None`, which means that the whole cell is output. Normally, you should use the `in_volume(...)` function to modify the output volume instead of setting `output_volume` directly.
-
-**`output_single_precision` [`boolean`]**
-—
-Meep performs its computations in [double precision](https://en.wikipedia.org/wiki/double_precision), and by default its output HDF5 files are in the same format. However, by setting this variable to `True` (default is `False`) you can instead output in [single precision](https://en.wikipedia.org/wiki/single_precision) which saves a factor of two in space.
-
-**`progress_interval` [`number`]**
-—
-Time interval (seconds) after which Meep prints a progress message. Default is 4 seconds.
-
-**`extra_materials` [ list of `Medium` class ]**
-—
-By default, Meep turns off support for material dispersion ([susceptibilities](#susceptibility) or [conductivity](Materials.md#conductivity-and-complex)) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material_function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra_materials`. `extra_materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material_function` here.
-
-**`load_structure` [`string`]**
-—
-If not empty, Meep will load the structure file specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
-
-**`chunk_layout` [`string` or `Simulation` instance]**
-—
-This will cause the `Simulation` to use the chunk layout described by either an h5 file (created by `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump Structure](#load-and-dump-structure) for more information.
-
-The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
-
-**`structure` [`meep::structure*`]**
-—
-Pointer to the current structure being simulated; initialized by `_init_structure` which is called automatically by `init_sim()` which is called automatically by any of the [run functions](#run-functions). The structure initialization is handled by the `Simulation` class, and most users will not need to call `_init_structure`.
-
-**`fields` [`meep::fields*`]**
-—
-Pointer to the current fields being simulated; initialized by `init_sim()` which is called automatically by any of the [run functions](#run-functions).
-
-**`num_chunks` [`integer`]**
-—
-Minimum number of "chunks" (subarrays) to divide the structure/fields into (default 0). Actual number is determined by number of processors, PML layers, etcetera. Mainly useful for debugging.
-
-**`split_chunks_evenly` [`boolean`]**
-—
-When `True` (the default), the work per [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of [parallel simulations](Parallel_Meep.md).
 
 Predefined Variables
 --------------------
@@ -249,21 +84,76 @@ import meep
 
 More information, including their property types and default values, is available with the standard python `help` function: `help(mp.ClassName)`.
 
-The following are available directly via the `meep` package.
+The following classes are available directly via the `meep` package.
 
+
+---
+<a id="Medium"></a>
 ### Medium
+
+```python
+class Medium(object):
+```
 
 This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
 
+**Material Function**
+
+Any function that accepts a `Medium` instance can also accept a user-defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
+
+Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
+
+**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra_materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* values of γ<sub>*n*</sub> and ω<sub>*n*</sub>, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously and a matching σ<sub>*n*</sub> need not be specified in `extra_materials`. For nonlinear or conductivity materials, your `extra_materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously.
+
+**Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the [conductivity](Materials.md#conductivity-and-complex). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex ε and/or μ, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `LorentzianSusceptibility` or `DrudeSusceptibility` classes below.
+
+Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `Susceptibility`.
+
+
+<a id="Medium.__init__"></a>
+**Medium.\_\_init\_\_**
+
+```python
+def __init__(self,
+             epsilon_diag=Vector3<1.0, 1.0, 1.0>,
+             epsilon_offdiag=Vector3<0.0, 0.0, 0.0>,
+             mu_diag=Vector3<1.0, 1.0, 1.0>,
+             mu_offdiag=Vector3<0.0, 0.0, 0.0>,
+             E_susceptibilities=[],
+             H_susceptibilities=[],
+             E_chi2_diag=Vector3<0.0, 0.0, 0.0>,
+             E_chi3_diag=Vector3<0.0, 0.0, 0.0>,
+             H_chi2_diag=Vector3<0.0, 0.0, 0.0>,
+             H_chi3_diag=Vector3<0.0, 0.0, 0.0>,
+             D_conductivity_diag=Vector3<0.0, 0.0, 0.0>,
+             D_conductivity_offdiag=Vector3<0.0, 0.0, 0.0>,
+             B_conductivity_diag=Vector3<0.0, 0.0, 0.0>,
+             B_conductivity_offdiag=Vector3<0.0, 0.0, 0.0>,
+             epsilon=None,
+             index=None,
+             mu=None,
+             chi2=None,
+             chi3=None,
+             D_conductivity=None,
+             B_conductivity=None,
+             E_chi2=None,
+             E_chi3=None,
+             H_chi2=None,
+             H_chi3=None,
+             valid_freq_range=FreqRange(min=-1e+20, max=1e+20))
+```
+
+Creates a `Medium` object.
+
 **`epsilon` [`number`]**
-—The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
+—The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\muarepsilon}$.
 
 Using `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
 
 **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]**
 —
 These properties allow you to specify ε as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts. Specifying `epsilon_diag=Vector3(a, b, c)` and/or `epsilon_offdiag=Vector3(u, v, w)` corresponds to a relative permittivity ε tensor
-\\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
+\begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
 
 Default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
@@ -299,43 +189,119 @@ List of dispersive susceptibilities (see below) added to the dielectric constant
 —
 List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
 
+
+
+<a id="Medium.epsilon"></a>
+**Medium.epsilon**
+
+```python
+def epsilon(self, freq)
+```
+
+**`epsilon(freq)`**
+—
+Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified frequency `freq` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
+
+
+
+<a id="Medium.mu"></a>
+**Medium.mu**
+
+```python
+def mu(self, freq)
+```
+
+**`mu(freq)`**
+—
+Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `freq` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
+
+
+
+<a id="Medium.rotate"></a>
+**Medium.rotate**
+
+```python
+def rotate(self, axis, theta)
+```
+
+
+
+
+
+<a id="Medium.transform"></a>
+**Medium.transform**
+
+```python
+def transform(self, m)
+```
+
 **`transform(M` [ `Matrix` class ]`)`**
 —
 Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](FAQ.md#why-does-my-simulation-diverge-if-0).
 
-**`epsilon(f)`**
-—
-Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
-**`mu(f)`**
-—
-Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `f` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
-#### Material Function
 
-Any function that accepts a `Medium` instance can also accept a user-defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
 
-Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
-
-**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra_materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* values of γ<sub>*n*</sub> and ω<sub>*n*</sub>, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously and a matching σ<sub>*n*</sub> need not be specified in `extra_materials`. For nonlinear or conductivity materials, your `extra_materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously.
-
-**Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the [conductivity](Materials.md#conductivity-and-complex). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex ε and/or μ, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `LorentzianSusceptibility` or `DrudeSusceptibility` classes below.
-
-Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `Susceptibility`.
-
+---
+<a id="Susceptibility"></a>
 ### Susceptibility
 
+```python
+class Susceptibility(object):
+```
+
 Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+
+
+<a id="Susceptibility.__init__"></a>
+**Susceptibility.\_\_init\_\_**
+
+```python
+def __init__(self,
+             sigma_diag=Vector3<0.0, 0.0, 0.0>,
+             sigma_offdiag=Vector3<0.0, 0.0, 0.0>,
+             sigma=None)
+```
 
 **`sigma` [`number`]**
 —
 The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma_diag` which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)` corresponds to a σ tensor
 
-\\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
+\begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
 
+
+
+<a id="Susceptibility.transform"></a>
+**Susceptibility.transform**
+
+```python
+def transform(self, m)
+```
+
+
+
+
+
+
+
+---
+<a id="LorentzianSusceptibility"></a>
 ### LorentzianSusceptibility
 
+```python
+class LorentzianSusceptibility(Susceptibility):
+```
+
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+
+
+<a id="LorentzianSusceptibility.__init__"></a>
+**LorentzianSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self, frequency=0.0, gamma=0.0, **kwargs)
+```
 
 **`frequency` [`number`]**
 —
@@ -347,9 +313,38 @@ The resonance loss rate $γ_n / 2\pi$.
 
 Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` will appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
 
+
+
+<a id="LorentzianSusceptibility.eval_susceptibility"></a>
+**LorentzianSusceptibility.eval\_susceptibility**
+
+```python
+def eval_susceptibility(self, freq)
+```
+
+
+
+
+
+
+
+---
+<a id="DrudeSusceptibility"></a>
 ### DrudeSusceptibility
 
+```python
+class DrudeSusceptibility(Susceptibility):
+```
+
 Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+
+
+<a id="DrudeSusceptibility.__init__"></a>
+**DrudeSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self, frequency=0.0, gamma=0.0, **kwargs)
+```
 
 **`frequency` [`number`]**
 —
@@ -359,11 +354,78 @@ The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a re
 —
 The loss rate $γ_n / 2\pi$.
 
+
+
+<a id="DrudeSusceptibility.eval_susceptibility"></a>
+**DrudeSusceptibility.eval\_susceptibility**
+
+```python
+def eval_susceptibility(self, freq)
+```
+
+
+
+
+
+
+
+---
+<a id="MultilevelAtom"></a>
 ### MultilevelAtom
+
+```python
+class MultilevelAtom(Susceptibility):
+```
 
 Specifies a multievel atomic susceptibility for modeling saturable gain and absorption. This is a subclass of `E_susceptibilities` which contains two objects: (1) `transitions`: a list of atomic `Transition`s (defined below), and (2) `initial_populations`: a list of numbers defining the initial population of each atomic level. See [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
 
-#### Transition
+
+<a id="MultilevelAtom.__init__"></a>
+**MultilevelAtom.\_\_init\_\_**
+
+```python
+def __init__(self,
+             initial_populations=[],
+             transitions=[],
+             **kwargs)
+```
+
+**`sigma` [`number`]**
+—
+The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma_diag` which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)` corresponds to a σ tensor
+
+\begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
+
+
+
+
+
+---
+<a id="Transition"></a>
+### Transition
+
+```python
+class Transition(object):
+```
+
+# TODO:
+
+
+<a id="Transition.__init__"></a>
+**Transition.\_\_init\_\_**
+
+```python
+def __init__(self,
+             from_level,
+             to_level,
+             transition_rate=0,
+             frequency=0,
+             sigma_diag=Vector3<1.0, 1.0, 1.0>,
+             gamma=0,
+             pumping_rate=0)
+```
+
+Construct a `Transition`.
 
 **`frequency` [`number`]**
 —
@@ -393,27 +455,140 @@ The non-radiative transition rate $f = \omega / 2\pi$. Default is 0.
 —
 The pumping rate $f = \omega / 2\pi$. Default is 0.
 
-### NoisyLorentzianSusceptibility or NoisyDrudeSusceptibility
+
+
+
+
+---
+<a id="NoisyLorentzianSusceptibility"></a>
+### NoisyLorentzianSusceptibility
+
+```python
+class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
+```
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
 
+
+<a id="NoisyLorentzianSusceptibility.__init__"></a>
+**NoisyLorentzianSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self, noise_amp=0.0, **kwargs)
+```
+
 **`noise_amp` [`number`]**
 —
-The noise has root-mean square amplitude σ $\times$ `noise_amp`.
+The noise has root-mean square amplitude σ $    imes$ `noise_amp`.
 
 This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to [compute far-field thermal radiation using Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
 
-### GyrotropicLorentzianSusceptibility or GyrotropicDrudeSusceptibility
+
+
+
+
+---
+<a id="NoisyDrudeSusceptibility"></a>
+### NoisyDrudeSusceptibility
+
+```python
+class NoisyDrudeSusceptibility(DrudeSusceptibility):
+```
+
+Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
+
+
+<a id="NoisyDrudeSusceptibility.__init__"></a>
+**NoisyDrudeSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self, noise_amp=0.0, **kwargs)
+```
+
+**`noise_amp` [`number`]**
+—
+The noise has root-mean square amplitude σ $    imes$ `noise_amp`.
+
+This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to [compute far-field thermal radiation using Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
+
+
+
+
+
+---
+<a id="GyrotropicLorentzianSusceptibility"></a>
+### GyrotropicLorentzianSusceptibility
+
+```python
+class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
+```
 
 (**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+
+
+<a id="GyrotropicLorentzianSusceptibility.__init__"></a>
+**GyrotropicLorentzianSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs)
+```
 
 **`bias` [`Vector3`]**
 —
 The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
 
+
+
+
+
+---
+<a id="GyrotropicDrudeSusceptibility"></a>
+### GyrotropicDrudeSusceptibility
+
+```python
+class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
+```
+
+(**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+
+
+<a id="GyrotropicDrudeSusceptibility.__init__"></a>
+**GyrotropicDrudeSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs)
+```
+
+**`bias` [`Vector3`]**
+—
+The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
+
+
+
+
+
+---
+<a id="GyrotropicSaturatedSusceptibility"></a>
 ### GyrotropicSaturatedSusceptibility
 
+```python
+class GyrotropicSaturatedSusceptibility(Susceptibility):
+```
+
 (**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by a [linearized Landau-Lifshitz-Gilbert equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
+
+
+<a id="GyrotropicSaturatedSusceptibility.__init__"></a>
+**GyrotropicSaturatedSusceptibility.\_\_init\_\_**
+
+```python
+def __init__(self,
+             bias=Vector3<0.0, 0.0, 0.0>,
+             frequency=0.0,
+             gamma=0.0,
+             alpha=0.0,
+             **kwargs)
+```
 
 **`sigma` [`number`]**
 —
@@ -429,13 +604,23 @@ The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
 
 **`alpha` [`number`]**
 —
-The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
+The loss factor $lpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
 
 **`bias` [`Vector3`]**
 —
 Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter for the [gyrotropic Lorentzian/Drude susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility), the magnitude is ignored; instead, the relevant precession frequencies are determined by the `sigma` and `frequency` parameters.
 
+
+
+
+
+---
+<a id="Vector3"></a>
 ### Vector3
+
+```python
+class Vector3(object):
+```
 
 Properties:
 
@@ -443,81 +628,367 @@ Properties:
 —
 The `x`, `y`, and `z` components of the vector. Generally, functions that take a `Vector3` as an argument will accept an iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
 
-**`Vector3(x=0.0, y=0.0, z=0.0)`**
-—
+
+<a id="Vector3.__init__"></a>
+**Vector3.\_\_init\_\_**
+
+```python
+def __init__(self, x=0.0, y=0.0, z=0.0)
+```
+
 Create a new `Vector3` with the given components. All three components default to zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
 
 
+
+<a id="Vector3.__add__"></a>
+**Vector3.\_\_add\_\_**
+
+```python
+def __add__(self, other)
+```
+
+Return the sum of the two vectors.
+
 ```python
 v3 = v1 + v2
-v3 = v1 - v2
-v3 = v1.cross(v2)
 ```
 
-Return the sum, difference, or cross product of the two vectors.
+
+
+<a id="Vector3.__array__"></a>
+**Vector3.\_\_array\_\_**
 
 ```python
-c = v1 * b
-c = b * v1
+def __array__(self)
 ```
 
-If `b` is a `Vector3`, returns the dot product `v1` and `b`. If `b` is a number, then `v1` is scaled by the number.
+
+
+
+
+<a id="Vector3.__eq__"></a>
+**Vector3.\_\_eq\_\_**
 
 ```python
-v3 = v1.dot(v2)
-```
-
-Returns the dot product of *`v1`* and *`v2`*.
-
-```python
-v3 = v1.cross(v2)
-```
-
-Returns the cross product of *`v1`* and *`v2`*.
-
-```python
-v3 = v1.cdot(v2)
-```
-
-Returns the conjugated dot product: *v1*\* dot *v2*.
-
-```python
-v2 = v1.norm()
-```
-
-Returns the length `math.sqrt(abs(v1.dot(v1)))` of the given vector.
-
-```python
-v2 = v1.unit()
-```
-
-Returns a unit vector in the direction of v1.
-
-```python
-v1.close(v2, [tol])
-```
-
-Returns whether or not the corresponding components of the two vectors are within *`tol`* of each other. Defaults to 1e-7.
-
-```python
-v1 == v2
+def __eq__(self, other)
 ```
 
 Returns whether or not the two vectors are numerically equal. Beware of using this function after operations that may have some error due to the finite precision of floating-point numbers; use `close` instead.
 
 ```python
+v1 == v2
+```
+
+
+
+<a id="Vector3.__getitem__"></a>
+**Vector3.\_\_getitem\_\_**
+
+```python
+def __getitem__(self, i)
+```
+
+
+
+
+
+<a id="Vector3.__mul__"></a>
+**Vector3.\_\_mul\_\_**
+
+```python
+def __mul__(self, other)
+```
+
+If `other` is a `Vector3`, returns the dot product of `v1` and `other`. If `other` is a number, then `v1` is scaled by the number.
+
+```python
+c = v1 * other
+```
+
+
+
+<a id="Vector3.__ne__"></a>
+**Vector3.\_\_ne\_\_**
+
+```python
+def __ne__(self, other)
+```
+
+Returns whether or not the two vectors are numerically unequal. Beware of using this function after operations that may have some error due to the finite precision of floating-point numbers; use `close` instead.
+
+```python
+v1 != v2
+```
+
+
+
+<a id="Vector3.__repr__"></a>
+**Vector3.\_\_repr\_\_**
+
+```python
+def __repr__(self)
+```
+
+Return repr(self).
+
+
+
+<a id="Vector3.__rmul__"></a>
+**Vector3.\_\_rmul\_\_**
+
+```python
+def __rmul__(self, other)
+```
+
+If `other` is a `Vector3`, returns the dot product of `v1` and `other`. If `other` is a number, then `v1` is scaled by the number.
+
+```python
+c = other * v1
+```
+
+
+
+<a id="Vector3.__sub__"></a>
+**Vector3.\_\_sub\_\_**
+
+```python
+def __sub__(self, other)
+```
+
+Return the difference of the two vectors.
+
+```python
+v3 = v1 - v2
+```
+
+
+
+<a id="Vector3.__truediv__"></a>
+**Vector3.\_\_truediv\_\_**
+
+```python
+def __truediv__(self, other)
+```
+
+
+
+
+
+<a id="Vector3.cdot"></a>
+**Vector3.cdot**
+
+```python
+def cdot(self, v)
+```
+
+Returns the conjugated dot product: *self*\* dot *v*.
+
+
+
+<a id="Vector3.close"></a>
+**Vector3.close**
+
+```python
+def close(self, v, tol=1e-07)
+```
+
+Returns whether or not the corresponding components of the `self` and `v` vectors are within *`tol`* of each other. Defaults to 1e-7.
+
+```python
+v1.close(v2, [tol])
+```
+
+
+
+<a id="Vector3.conj"></a>
+**Vector3.conj**
+
+```python
+def conj(self)
+```
+
+
+
+
+
+<a id="Vector3.cross"></a>
+**Vector3.cross**
+
+```python
+def cross(self, v)
+```
+
+Return the cross product of `self` and `v`.
+
+```python
+v3 = v1.cross(v2)
+```
+
+
+
+<a id="Vector3.dot"></a>
+**Vector3.dot**
+
+```python
+def dot(self, v)
+```
+
+Returns the dot product of *`self`* and *`v`*.
+
+```python
+v3 = v1.dot(v2)
+```
+
+
+
+<a id="Vector3.norm"></a>
+**Vector3.norm**
+
+```python
+def norm(self)
+```
+
+Returns the length `math.sqrt(abs(self.dot(self)))` of the given vector.
+
+```python
+v2 = v1.norm()
+```
+
+
+
+<a id="Vector3.rotate"></a>
+**Vector3.rotate**
+
+```python
+def rotate(self, axis, theta)
+```
+
+Returns the vector rotated by an angle *`theta`* (in radians) in the right-hand direction around the *`axis`* vector (whose length is ignored). You may find the python functions `math.degrees` and `math.radians` useful to convert angles between degrees and radians.
+
+```python
 v2 = v1.rotate(axis, theta)
 ```
 
-Returns the vector *`v1`* rotated by an angle *`theta`* (in radians) in the right-hand direction around the *`axis`* vector (whose length is ignored). You may find the python functions `math.degrees` and `math.radians` useful to convert angles between degrees and radians.
 
+
+<a id="Vector3.rotate_lattice"></a>
+**Vector3.rotate\_lattice**
+
+```python
+def rotate_lattice(self, axis, theta, lat)
+```
+
+
+
+
+
+<a id="Vector3.rotate_reciprocal"></a>
+**Vector3.rotate\_reciprocal**
+
+```python
+def rotate_reciprocal(self, axis, theta, lat)
+```
+
+
+
+
+
+<a id="Vector3.scale"></a>
+**Vector3.scale**
+
+```python
+def scale(self, s)
+```
+
+
+
+
+
+<a id="Vector3.unit"></a>
+**Vector3.unit**
+
+```python
+def unit(self)
+```
+
+Returns a unit vector in the direction of the vector.
+
+```python
+v2 = v1.unit()
+```
+
+
+
+
+
+---
+<a id="GeometricObject"></a>
 ### GeometricObject
 
-This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:
+```python
+class GeometricObject(object):
+```
 
-**`GeometricObject`**
+This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated.
 
-Properties:
+In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
+
+**Geometry Utilities**
+
+See the [MPB documentation](https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities) for utility functions to help manipulate geometric objects.
+
+**Examples**
+
+These are some examples of geometric objects created using some `GeometricObject` subclasses:
+
+```python
+# A cylinder of infinite radius and height 0.25 pointing along the x axis,
+# centered at the origin:
+cyl = mp.Cylinder(center=mp.Vector3(0,0,0), height=0.25, radius=mp.inf,
+                axis=mp.Vector3(1,0,0), material=mp.Medium(index=3.5))
+```
+
+```python
+# An ellipsoid with its long axis pointing along (1,1,1), centered on
+# the origin (the other two axes are orthogonal and have equal semi-axis lengths):
+ell = mp.Ellipsoid(center=mp.Vector3(0,0,0), size=mp.Vector3(0.8,0.2,0.2),
+                e1=Vector3(1,1,1), e2=Vector3(0,1,-1), e3=Vector3(-2,1,1),
+                material=mp.Medium(epsilon=13))
+```
+
+```python
+# A unit cube of material metal with a spherical air hole of radius 0.2 at
+# its center, the whole thing centered at (1,2,3):
+geometry=[mp.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=mp.metal),
+        mp.Sphere(center=Vector3(1,2,3), radius=0.2, material=mp.air)]
+```
+
+```python
+# A hexagonal prism defined by six vertices centered on the origin
+# of material crystalline silicon (from the materials library)
+vertices = [mp.Vector3(-1,0),
+            mp.Vector3(-0.5,math.sqrt(3)/2),
+            mp.Vector3(0.5,math.sqrt(3)/2),
+            mp.Vector3(1,0),
+            mp.Vector3(0.5,-math.sqrt(3)/2),
+            mp.Vector3(-0.5,-math.sqrt(3)/2)]
+
+geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
+
+```
+
+
+<a id="GeometricObject.__init__"></a>
+**GeometricObject.\_\_init\_\_**
+
+```python
+def __init__(self,
+             material=<meep.geom.Medium object at 0x7ff7e869ed50>,
+             center=Vector3<0.0, 0.0, 0.0>,
+             epsilon_func=None)
+```
+
+Construct a `GeometricObject`.
 
 **`material` [`Medium` class or function ]**
 —
@@ -531,36 +1002,126 @@ A function that takes one argument (a `Vector3`) and returns the dielectric cons
 —
 Center point of the object. Defaults to `(0,0,0)`.
 
-Methods:
-
-**`shift`(vec [`Vector3`])**
-—
-Shifts the object's `center` by `vec`, returning a new object. This can also be accomplished via the `+` operator: `geometric_obj + Vector3(10,10,10)`. Using `+=` will shift the object in place.
-
-**`info`(indent_by [`integer`])**
-—
-Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
-
 One normally does not create objects of type `GeometricObject` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties and can be specified in a subclass's constructor via keyword arguments.
 
-In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
-#### Geometry Utilities
 
-See the [MPB documentation](https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities) for utility functions to help manipulate geometric objects.
+<a id="GeometricObject.__add__"></a>
+**GeometricObject.\_\_add\_\_**
 
+```python
+def __add__(self, vec)
+```
+
+
+
+
+
+<a id="GeometricObject.__contains__"></a>
+**GeometricObject.\_\_contains\_\_**
+
+```python
+def __contains__(self, point)
+```
+
+
+
+
+
+<a id="GeometricObject.__iadd__"></a>
+**GeometricObject.\_\_iadd\_\_**
+
+```python
+def __iadd__(self, vec)
+```
+
+
+
+
+
+<a id="GeometricObject.__radd__"></a>
+**GeometricObject.\_\_radd\_\_**
+
+```python
+def __radd__(self, vec)
+```
+
+
+
+
+
+<a id="GeometricObject.info"></a>
+**GeometricObject.info**
+
+```python
+def info(self, indent_by=0)
+```
+
+Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
+
+
+
+<a id="GeometricObject.shift"></a>
+**GeometricObject.shift**
+
+```python
+def shift(self, vec)
+```
+
+Shifts the object's `center` by `vec` (`Vector3`), returning a new object.
+This can also be accomplished via the `+` operator:
+
+```python
+geometric_obj + Vector3(10,10,10)`
+```
+
+Using `+=` will shift the object in place.
+
+
+
+
+
+---
+<a id="Sphere"></a>
 ### Sphere
 
-A sphere. Properties:
+```python
+class Sphere(GeometricObject):
+```
+
+Represents a sphere.
+
+**Properties:**
 
 **`radius` [`number`]**
 —
 Radius of the sphere. No default value.
 
+
+<a id="Sphere.__init__"></a>
+**Sphere.\_\_init\_\_**
+
+```python
+def __init__(self, radius, **kwargs)
+```
+
+Constructs a `Sphere`
+
+
+
+
+
+---
+<a id="Cylinder"></a>
 ### Cylinder
 
-A cylinder, with circular cross-section and finite height. Properties:
+```python
+class Cylinder(GeometricObject):
+```
 
+A cylinder, with circular cross-section and finite height.
+
+**Properties:**
 **`radius` [`number`]**
 —
 Radius of the cylinder's cross-section. No default value.
@@ -573,17 +1134,104 @@ Length of the cylinder along its axis. No default value.
 —
 Direction of the cylinder's axis; the length of this vector is ignored. Defaults to `Vector3(x=0, y=0, z=1)`.
 
+
+<a id="Cylinder.__init__"></a>
+**Cylinder.\_\_init\_\_**
+
+```python
+def __init__(self,
+             radius,
+             axis=Vector3<0.0, 0.0, 1.0>,
+             height=1e+20,
+             **kwargs)
+```
+
+Constructs a `Cylinder`.
+
+
+
+
+
+---
+<a id="Wedge"></a>
+### Wedge
+
+```python
+class Wedge(Cylinder):
+```
+
+Represents a cylindrical wedge.
+
+
+<a id="Wedge.__init__"></a>
+**Wedge.\_\_init\_\_**
+
+```python
+def __init__(self,
+             radius,
+             wedge_angle=6.283185307179586,
+             wedge_start=Vector3<1.0, 0.0, 0.0>,
+             **kwargs)
+```
+
+Constructs a `Wedge`.
+
+
+
+
+
+---
+<a id="Cone"></a>
 ### Cone
 
+```python
+class Cone(Cylinder):
+```
+
 A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `Cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
+
+
+<a id="Cone.__init__"></a>
+**Cone.\_\_init\_\_**
+
+```python
+def __init__(self, radius, radius2=0, **kwargs)
+```
+
+Construct a `Cone`.
 
 **`radius2` [`number`]**
 —
 Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
 
+
+
+
+
+---
+<a id="Block"></a>
 ### Block
 
+```python
+class Block(GeometricObject):
+```
+
 A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
+
+
+<a id="Block.__init__"></a>
+**Block.\_\_init\_\_**
+
+```python
+def __init__(self,
+             size,
+             e1=Vector3<1.0, 0.0, 0.0>,
+             e2=Vector3<0.0, 1.0, 0.0>,
+             e3=Vector3<0.0, 0.0, 1.0>,
+             **kwargs)
+```
+
+Construct a `Block`.
 
 **`size` [`Vector3`]**
 —
@@ -593,13 +1241,59 @@ The lengths of the block edges along each of its three axes. Not really a 3-vect
 —
 The directions of the axes of the block; the lengths of these vectors are ignored. Must be linearly independent. They default to the three lattice directions.
 
+
+
+
+
+---
+<a id="Ellipsoid"></a>
 ### Ellipsoid
+
+```python
+class Ellipsoid(Block):
+```
 
 An ellipsoid. This is actually a subclass of `Block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
 
+
+<a id="Ellipsoid.__init__"></a>
+**Ellipsoid.\_\_init\_\_**
+
+```python
+def __init__(self, **kwargs)
+```
+
+Construct an `Ellipsiod`.
+
+
+
+
+
+---
+<a id="Prism"></a>
 ### Prism
 
+```python
+class Prism(GeometricObject):
+```
+
 Polygonal prism type.
+
+
+<a id="Prism.__init__"></a>
+**Prism.\_\_init\_\_**
+
+```python
+def __init__(self,
+             vertices,
+             height,
+             axis=Vector3<0.0, 0.0, 1.0>,
+             center=None,
+             sidewall_angle=0,
+             **kwargs)
+```
+
+Construct a `Prism`.
 
 **`vertices` [list of `Vector3`]**
 —
@@ -617,51 +1311,21 @@ The axis perpendicular to the prism. Defaults to `Vector3(0,0,1)`.
 —
 If `center` is not specified, then the coordinates of the `vertices` define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and bottom) of the resulting 3d prism so that the coordinates of the `vertices` are shifted accordingly.
 
-These are some examples of geometric objects created using the above classes:
 
-```py
-# A cylinder of infinite radius and height 0.25 pointing along the x axis,
-# centered at the origin:
-cyl = mp.Cylinder(center=mp.Vector3(0,0,0), height=0.25, radius=mp.inf,
-                  axis=mp.Vector3(1,0,0), material=mp.Medium(index=3.5))
+
+
+
+---
+<a id="Matrix"></a>
+### Matrix
+
+```python
+class Matrix(object):
 ```
 
-```py
-# An ellipsoid with its long axis pointing along (1,1,1), centered on
-# the origin (the other two axes are orthogonal and have equal semi-axis lengths):
-ell = mp.Ellipsoid(center=mp.Vector3(0,0,0), size=mp.Vector3(0.8,0.2,0.2),
-                   e1=Vector3(1,1,1), e2=Vector3(0,1,-1), e3=Vector3(-2,1,1),
-                   material=mp.Medium(epsilon=13))
-```
-
-```py
-# A unit cube of material metal with a spherical air hole of radius 0.2 at
-# its center, the whole thing centered at (1,2,3):
-geometry=[mp.Block(center=Vector3(1,2,3), size=Vector3(1,1,1), material=mp.metal),
-          mp.Sphere(center=Vector3(1,2,3), radius=0.2, material=mp.air)]
-```
-
-```py
-# A hexagonal prism defined by six vertices centered on the origin
-# of material crystalline silicon (from the materials library)
-vertices = [mp.Vector3(-1,0),
-            mp.Vector3(-0.5,math.sqrt(3)/2),
-            mp.Vector3(0.5,math.sqrt(3)/2),
-            mp.Vector3(1,0),
-            mp.Vector3(0.5,-math.sqrt(3)/2),
-            mp.Vector3(-0.5,-math.sqrt(3)/2)]
-
-geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
-
-```
-
-### 3x3 Matrix
-
-**`Matrix`(c1 [`Vector3`], c2 [`Vector3`], c3 [`Vector3`])**
-—
 The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
 
-```
+```python
 m.transpose()
 m.getH() or m.H
 m.determinant()
@@ -670,7 +1334,7 @@ m.inverse()
 
 Return the transpose, adjoint (conjugate transpose), determinant, or inverse of the given matrix.
 
-```
+```python
 m1 + m2
 m1 - m2
 m1 * m2
@@ -678,35 +1342,242 @@ m1 * m2
 
 Return the sum, difference, or product of the given matrices.
 
-```
+```python
 v * m
 m * v
 ```
 
 Returns the `Vector3` product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
 
-```
+```python
 s * m
 m * s
 ```
 
 Scales the matrix `m` by the number `s`.
 
+
+<a id="Matrix.__init__"></a>
+**Matrix.\_\_init\_\_**
+
+```python
+def __init__(self,
+             c1=Vector3<0.0, 0.0, 0.0>,
+             c2=Vector3<0.0, 0.0, 0.0>,
+             c3=Vector3<0.0, 0.0, 0.0>,
+             diag=Vector3<0.0, 0.0, 0.0>,
+             offdiag=Vector3<0.0, 0.0, 0.0>)
+```
+
+Constructs a `Matrix`.
+
+
+
+<a id="Matrix.__add__"></a>
+**Matrix.\_\_add\_\_**
+
+```python
+def __add__(self, m)
+```
+
+
+
+
+
+<a id="Matrix.__array__"></a>
+**Matrix.\_\_array\_\_**
+
+```python
+def __array__(self)
+```
+
+
+
+
+
+<a id="Matrix.__getitem__"></a>
+**Matrix.\_\_getitem\_\_**
+
+```python
+def __getitem__(self, i)
+```
+
+
+
+
+
+<a id="Matrix.__mul__"></a>
+**Matrix.\_\_mul\_\_**
+
+```python
+def __mul__(self, m)
+```
+
+
+
+
+
+<a id="Matrix.__repr__"></a>
+**Matrix.\_\_repr\_\_**
+
+```python
+def __repr__(self)
+```
+
+Return repr(self).
+
+
+
+<a id="Matrix.__rmul__"></a>
+**Matrix.\_\_rmul\_\_**
+
+```python
+def __rmul__(self, left_arg)
+```
+
+
+
+
+
+<a id="Matrix.__sub__"></a>
+**Matrix.\_\_sub\_\_**
+
+```python
+def __sub__(self, m)
+```
+
+
+
+
+
+<a id="Matrix.__truediv__"></a>
+**Matrix.\_\_truediv\_\_**
+
+```python
+def __truediv__(self, scalar)
+```
+
+
+
+
+
+<a id="Matrix.conj"></a>
+**Matrix.conj**
+
+```python
+def conj(self)
+```
+
+
+
+
+
+<a id="Matrix.determinant"></a>
+**Matrix.determinant**
+
+```python
+def determinant(self)
+```
+
+
+
+
+
+<a id="Matrix.getH"></a>
+**Matrix.getH**
+
+```python
+def getH(self)
+```
+
+
+
+
+
+<a id="Matrix.inverse"></a>
+**Matrix.inverse**
+
+```python
+def inverse(self)
+```
+
+
+
+
+
+<a id="Matrix.mm_mult"></a>
+**Matrix.mm\_mult**
+
+```python
+def mm_mult(self, m)
+```
+
+
+
+
+
+<a id="Matrix.mv_mult"></a>
+**Matrix.mv\_mult**
+
+```python
+def mv_mult(self, v)
+```
+
+
+
+
+
+<a id="Matrix.row"></a>
+**Matrix.row**
+
+```python
+def row(self, i)
+```
+
+
+
+
+
+<a id="Matrix.scale"></a>
+**Matrix.scale**
+
+```python
+def scale(self, s)
+```
+
+
+
+
+
+<a id="Matrix.transpose"></a>
+**Matrix.transpose**
+
+```python
+def transpose(self)
+```
+
+
+
+
+
+
+
+
+<!-- TODO: function -->
 **`meep.get_rotation_matrix`(axis [`Vector3`], theta [`number`])**
 
 Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result as `v.rotate(axis, theta)`.
 
+
+---
+<a id="Symmetry"></a>
 ### Symmetry
 
+```python
+class Symmetry(object):
+```
+
 This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting Symmetry](Exploiting_Symmetry.md). This is the base class of the specific symmetries below, so normally you don't create it directly. However, it has two properties which are shared by all symmetries:
-
-**`direction` [`direction` constant ]**
-—
-The direction of the symmetry (the normal to a mirror plane or the axis for a rotational symmetry). e.g. `X`, `Y`, or `Z` (only Cartesian/grid directions are allowed). No default value.
-
-**`phase` [`complex`]**
-—
-An additional phase to multiply the fields by when operating the symmetry on them. Default is +1, e.g. a phase of -1 for a mirror plane corresponds to an *odd* mirror. Technically, you are essentially specifying the representation of the symmetry group that your fields and sources transform under.
 
 The specific symmetry sub-classes are:
 
@@ -722,9 +1593,107 @@ A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of
 —
 A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of the rotation.
 
+
+<a id="Symmetry.__init__"></a>
+**Symmetry.\_\_init\_\_**
+
+```python
+def __init__(self, direction, phase=1)
+```
+
+Construct a `Symmetry`.
+
+**`direction` [`direction` constant ]**
+—
+The direction of the symmetry (the normal to a mirror plane or the axis for a rotational symmetry). e.g. `X`, `Y`, or `Z` (only Cartesian/grid directions are allowed). No default value.
+
+**`phase` [`complex`]**
+—
+An additional phase to multiply the fields by when operating the symmetry on them. Default is +1, e.g. a phase of -1 for a mirror plane corresponds to an *odd* mirror. Technically, you are essentially specifying the representation of the symmetry group that your fields and sources transform under.
+
+
+
+
+
+---
+<a id="Rotate2"></a>
+### Rotate2
+
+```python
+class Rotate2(Symmetry):
+```
+
+A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of the rotation.
+
+
+
+
+
+---
+<a id="Rotate4"></a>
+### Rotate4
+
+```python
+class Rotate4(Symmetry):
+```
+
+A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of the rotation.
+
+
+
+
+
+---
+<a id="Mirror"></a>
+### Mirror
+
+```python
+class Mirror(Symmetry):
+```
+
+A mirror symmetry plane. `direction` is the direction *normal* to the mirror plane.
+
+
+
+
+
+---
+<a id="Identity"></a>
+### Identity
+
+```python
+class Identity(Symmetry):
+```
+
+
+
+
+
+
+
+---
+<a id="PML"></a>
 ### PML
 
+```python
+class PML(object):
+```
+
 This class is used for specifying the PML absorbing boundary layers around the cell, if any, via the `boundary_layers` input variable. See also [Perfectly Matched Layers](Perfectly_Matched_Layer.md). `boundary_layers` can be zero or more `PML` objects, with multiple objects allowing you to specify different PML layers on different boundaries. The class represents a single PML layer specification, which sets up one or more PML layers around the boundaries according to the following properties.
+
+
+<a id="PML.__init__"></a>
+**PML.\_\_init\_\_**
+
+```python
+def __init__(self,
+             thickness,
+             direction=-1,
+             side=-1,
+             R_asymptotic=1e-15,
+             mean_stretch=1.0,
+             pml_profile=<function PML.<lambda> at 0x7ff7b87117a0>)
+```
 
 **`thickness` [`number`]**
 —
@@ -746,7 +1715,17 @@ The asymptotic reflection in the limit of infinite resolution or infinite PML th
 —
 By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml_profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `pml_profile=lambda u: u*u*u`.
 
-#### `Absorber`
+
+
+
+
+---
+<a id="Absorber"></a>
+### Absorber
+
+```python
+class Absorber(PML):
+```
 
 Instead of a `PML` layer, there is an alternative class called `Absorber` which is a **drop-in** replacement for `PML`. For example, you can do `boundary_layers=[mp.Absorber(thickness=2)]` instead of `boundary_layers=[mp.PML(thickness=2)]`. All the parameters are the same as for `PML`, above. You can have a mix of `PML` on some boundaries and `Absorber` on others.
 
@@ -758,13 +1737,40 @@ The main reason to use `Absorber` is if you have **a case in which PML fails:**
 -   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can readily occur in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601, 2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
 -   PML can fail if you have a waveguide hitting the edge of your cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
 
+
+
+
+
+---
+<a id="Source"></a>
 ### Source
+
+```python
+class Source(object):
+```
 
 The `Source` class is used to specify the current sources via the `Simulation.sources` attribute. Note that all sources in Meep are separable in time and space, i.e. of the form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions $\mathbf{A}$ and $f$. Non-separable sources can be simulated, however, by modifying the sources after each time step. When real fields are being used (which is the default in many cases; see `Simulation.force_complex_fields`), only the real part of the current source is used.
 
 **Important note**: These are *current* sources (**J** terms in Maxwell's equations), even though they are labelled by electric/magnetic field components. They do *not* specify a particular electric/magnetic field which would be what is called a "hard" source in the FDTD literature. There is no fixed relationship between the current source and the resulting field amplitudes; it depends on the surrounding geometry, as described in the [FAQ](FAQ.md#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude) and in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-Properties:
+
+<a id="Source.__init__"></a>
+**Source.\_\_init\_\_**
+
+```python
+def __init__(self,
+             src,
+             component,
+             center=None,
+             volume=None,
+             size=Vector3<0.0, 0.0, 0.0>,
+             amplitude=1.0,
+             amp_func=None,
+             amp_func_file='',
+             amp_data=None)
+```
+
+Construct a `Source`.
 
 **`src` [`SourceTime` class ]**
 —
@@ -803,9 +1809,81 @@ Like `amp_func_file` above, but instead of interpolating into an HDF5 file, inte
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
+
+
+
+
+---
+<a id="SourceTime"></a>
+### SourceTime
+
+```python
+class SourceTime(object):
+```
+
+# TODO:
+
+
+<a id="SourceTime.__init__"></a>
+**SourceTime.\_\_init\_\_**
+
+```python
+def __init__(self, is_integrated=False)
+```
+
+# TODO:
+
+
+
+
+
+---
+<a id="EigenModeSource"></a>
 ### EigenModeSource
 
+```python
+class EigenModeSource(Source):
+```
+
 This is a subclass of `Source` and has **all of the properties** of `Source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r}) e^{i \mathbf{k} \cdot \mathbf{r}}$, of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp_func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
+
+Eigenmode sources are normalized so that in the case of a time-harmonic simulation with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$ where $f_m$ is the frequency of the eigenmode, the total time-average power of the fields — the integral of the normal Poynting vector over the entire cross-sectional line or plane — is equal to 1. This convention has two use cases:
+
++ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver) involving a `ContinuousSource` time dependence, the time-average power of the fields is 1.
+
++ For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the [Poynting flux](#flux-spectra) and [energy density](#energy-density-spectra) are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
+
+In either case, the `eig_power` method returns the total power at frequency `f`. However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not* include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier transform of your source function $W(t)$. You will have to multiply by this yourself if you need it.
+
+**Note:** Due to discretization effects, the normalization of eigenmode sources to yield unit power transmission is only approximate: at any finite resolution, the power of the fields as measured using [DFT flux](#flux-spectra) monitors will not precisely match that of calling `eig_power` but will rather include discretization errors that decrease with resolution.  Generally, the most reliable procedure is to normalize your calculations by the power computed in a separate normalization run at the same resolution, as shown in several of the tutorial examples.
+
+Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
+
+The `src_time` object (`Source.src`), which specifies the time dependence of the source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
+
+
+<a id="EigenModeSource.__init__"></a>
+**EigenModeSource.\_\_init\_\_**
+
+```python
+def __init__(self,
+             src,
+             center=None,
+             volume=None,
+             eig_lattice_size=None,
+             eig_lattice_center=None,
+             component=20,
+             direction=-1,
+             eig_band=1,
+             eig_kpoint=Vector3<0.0, 0.0, 0.0>,
+             eig_match_freq=True,
+             eig_parity=0,
+             eig_resolution=0,
+             eig_tolerance=1e-12,
+             **kwargs)
+```
+
+Construct an `EigenModeSource`.
 
 **`eig_band` [`integer`]**
 —
@@ -835,27 +1913,48 @@ Once the MPB modes are computed, equivalent electric and magnetic sources are cr
 —
 Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig_lattice_size` and `eig_lattice_center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
 
-**`eig_power(f)`**
-—
-Returns the total power of the fields from the eigenmode source at frequency `f`.
 
-Eigenmode sources are normalized so that in the case of a time-harmonic simulation with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$ where $f_m$ is the frequency of the eigenmode, the total time-average power of the fields — the integral of the normal Poynting vector over the entire cross-sectional line or plane — is equal to 1. This convention has two use cases:
 
-+ For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver) involving a `ContinuousSource` time dependence, the time-average power of the fields is 1.
+<a id="EigenModeSource.eig_power"></a>
+**EigenModeSource.eig\_power**
 
-+ For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the [Poynting flux](#flux-spectra) and [energy density](#energy-density-spectra) are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
+```python
+def eig_power(self, freq)
+```
 
-In either case, the `eig_power` class method returns the total power at frequency `f`. However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not* include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier transform of your source function $W(t)$. You will have to multiply by this yourself if you need it.
+Returns the total power of the fields from the eigenmode source at frequency `freq`.
 
-**Note:** Due to discretization effects, the normalization of eigenmode sources to yield unit power transmission is only approximate: at any finite resolution, the power of the fields as measured using [DFT flux](#flux-spectra) monitors will not precisely match that of calling `eig_power` but will rather include discretization errors that decrease with resolution.  Generally, the most reliable procedure is to normalize your calculations by the power computed in a separate normalization run at the same resolution, as shown in several of the tutorial examples.
 
-Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
 
-The `src_time` object (`Source.src`), which specifies the time dependence of the source, can be one of the following three classes.
 
+
+---
+<a id="ContinuousSource"></a>
 ### ContinuousSource
 
+```python
+class ContinuousSource(SourceTime):
+```
+
 A continuous-wave (CW) source is proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off. In practice, the CW source [never produces an exact single-frequency response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
+
+
+<a id="ContinuousSource.__init__"></a>
+**ContinuousSource.\_\_init\_\_**
+
+```python
+def __init__(self,
+             frequency=None,
+             start_time=0,
+             end_time=1e+20,
+             width=0,
+             fwidth=inf,
+             cutoff=3.0,
+             wavelength=None,
+             **kwargs)
+```
+
+Construct a `ContinuousSource`.
 
 **`frequency` [`number`]**
 —
@@ -881,9 +1980,36 @@ Controls how far into the exponential tail of the tanh function the source turns
 —
 If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `False`.
 
+
+
+
+
+---
+<a id="GaussianSource"></a>
 ### GaussianSource
 
-A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
+```python
+class GaussianSource(SourceTime):
+```
+
+A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} rac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
+
+
+<a id="GaussianSource.__init__"></a>
+**GaussianSource.\_\_init\_\_**
+
+```python
+def __init__(self,
+             frequency=None,
+             width=0,
+             fwidth=inf,
+             start_time=0,
+             cutoff=5.0,
+             wavelength=None,
+             **kwargs)
+```
+
+Construct a `GaussianSource`.
 
 **`frequency` [`number`]**
 —
@@ -909,16 +2035,52 @@ If `True`, the source is the integral of the current (the [dipole moment](https:
 —
 Returns the Fourier transform of the current evaluated at frequency `f` (`ω=2πf`) given by:
 $$
-   \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
-   \int e^{i\omega t}G(t)\,dt \equiv
-   \frac{1}{\Delta f}
-   e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
+\widetilde G(\omega) \equiv rac{1}{\sqrt{2\pi}}
+\int e^{i\omega t}G(t)\,dt \equiv
+rac{1}{\Delta f}
+e^{i\omega t_0 -rac{(\omega-\omega_0)^2}{2\Delta f^2}}
 $$
 where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$ is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and $t_0$ is the peak time discussed above. Note that this does not include any `amplitude` or `amp_func` factor that you specified for the source.
 
+
+
+<a id="GaussianSource.fourier_transform"></a>
+**GaussianSource.fourier\_transform**
+
+```python
+def fourier_transform(self, freq)
+```
+
+
+
+
+
+
+
+---
+<a id="CustomSource"></a>
 ### CustomSource
 
+```python
+class CustomSource(SourceTime):
+```
+
 A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off. To use a custom source within an `EigenModeSource`, you must specify the `center_frequency` parameter, since Meep does not know the frequency content of the `CustomSource`. The resultant eigenmode is calculated at this frequency only. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
+
+
+<a id="CustomSource.__init__"></a>
+**CustomSource.\_\_init\_\_**
+
+```python
+def __init__(self,
+             src_func,
+             start_time=-1e+20,
+             end_time=1e+20,
+             center_frequency=0,
+             **kwargs)
+```
+
+Construct a `CustomSource`.
 
 **`src_func` [`function`]**
 —
@@ -940,13 +2102,38 @@ If `True`, the source is the integral of the current (the [dipole moment](https:
 —
 Optional center frequency so that the `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
 
-<a name="fluxregion"></a>
 
+
+
+
+
+<a name="fluxregion"></a>
+---
+<a id="FluxRegion"></a>
 ### FluxRegion
+
+```python
+class FluxRegion(object):
+```
 
 A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a region in which Meep should accumulate the appropriate Fourier-transformed fields in order to compute a flux spectrum. It represents a region (volume, plane, line, or point) in which to compute the integral of the Poynting vector of the Fourier-transformed fields. `ModeRegion` is an alias for `FluxRegion` for use with `add_mode_monitor`.
 
-Properties:
+Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
+
+
+<a id="FluxRegion.__init__"></a>
+**FluxRegion.\_\_init\_\_**
+
+```python
+def __init__(self,
+             center=None,
+             size=Vector3<0.0, 0.0, 0.0>,
+             direction=-1,
+             weight=1.0,
+             volume=None)
+```
+
+Construct a `FluxRegion` object.
 
 **`center` [`Vector3`]**
 —The center of the flux region (no default).
@@ -963,13 +2150,73 @@ Properties:
 **`volume` [`Volume`]**
 —A `meep.Volume` can be used to specify the flux region instead of a `center` and a `size`.
 
-Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
 
-<a name="Volume"></a>
 
+
+
+---
+<a id="Volume"></a>
 ### Volume
 
+```python
+class Volume(object):
+```
+
 Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you. Alternatively, you can specify a list of `Vector3` vertices using the `vertices` parameter. The `center` and `size` will automatically be computed from this list.
+
+
+<a id="Volume.__init__"></a>
+**Volume.\_\_init\_\_**
+
+```python
+def __init__(self,
+             center=Vector3<0.0, 0.0, 0.0>,
+             size=Vector3<0.0, 0.0, 0.0>,
+             dims=2,
+             is_cylindrical=False,
+             vertices=[])
+```
+
+Construct a Volume.
+
+
+
+<a id="Volume.get_edges"></a>
+**Volume.get\_edges**
+
+```python
+def get_edges(self)
+```
+
+
+
+
+
+<a id="Volume.get_vertices"></a>
+**Volume.get\_vertices**
+
+```python
+def get_vertices(self)
+```
+
+
+
+
+
+<a id="Volume.pt_in_volume"></a>
+**Volume.pt\_in\_volume**
+
+```python
+def pt_in_volume(self, pt)
+```
+
+
+
+
+
+
+
+
 
 **`meep.get_center_and_size(vol)`**
 —

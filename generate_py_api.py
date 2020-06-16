@@ -111,7 +111,7 @@ class ClassItem(Item):
             self.template = f.read()
 
     def add_methods(self):
-        # Use a predicate to only look at things in this class, not
+        # Use a match predicate to only look at things in this class, not
         # inherited members
         def _predicate(value):
             if inspect.isfunction(value):
@@ -178,6 +178,7 @@ def load_module(module):
         if inspect.isclass(member):
             items.append(ClassItem(name, member))
         if inspect.isfunction(member):
+            # print(name)
             items.append(FunctionItem(name, member))
 
     return items
@@ -216,9 +217,9 @@ def update_api_document(class_items):
         f.write(srcdoc)
 
 
+
 def main(args):
     items = load_module(meep)
-
     class_items = generate_class_docs(items)
     update_api_document(class_items)
 

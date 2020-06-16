@@ -99,14 +99,36 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
 
 
 class PML(object):
-
+    """
+    This class is used for specifying the PML absorbing boundary layers around the cell, if any, via the `boundary_layers` input variable. See also [Perfectly Matched Layers](Perfectly_Matched_Layer.md). `boundary_layers` can be zero or more `PML` objects, with multiple objects allowing you to specify different PML layers on different boundaries. The class represents a single PML layer specification, which sets up one or more PML layers around the boundaries according to the following properties.
+    """
     def __init__(self, thickness,
                  direction=mp.ALL,
                  side=mp.ALL,
                  R_asymptotic=1e-15,
                  mean_stretch=1.0,
                  pml_profile=lambda u: u * u):
+        """
+        **`thickness` [`number`]**
+        —
+        The spatial thickness of the PML layer which extends from the boundary towards the *inside* of the cell. The thinner it is, the more numerical reflections become a problem. No default value.
 
+        **`direction` [`direction` constant ]**
+        —
+        Specify the direction of the boundaries to put the PML layers next to. e.g. if `X`, then specifies PML on the $\pm x$ boundaries (depending on the value of `side`, below). Default is the special value `ALL`, which puts PML layers on the boundaries in all directions.
+
+        **`side` [`side` constant ]**
+        —
+        Specify which side, `Low` or `High` of the boundary or boundaries to put PML on. e.g. if side is `Low` and direction is `X`, then a PML layer is added to the $-x$ boundary. Default is the special value `ALL`, which puts PML layers on both sides.
+
+        **`R_asymptotic` [`number`]**
+        —
+        The asymptotic reflection in the limit of infinite resolution or infinite PML thickness, for reflections from air (an upper bound for other media with index &gt; 1). For a finite resolution or thickness, the reflection will be *much larger*, due to the discretization of Maxwell's equation. Default value is 10<sup>−15</sup>, which should suffice for most purposes. You want to set this to be small enough so that waves propagating within the PML are attenuated sufficiently, but making `R_asymptotic` too small will increase the numerical reflection due to discretization.
+
+        **`pml_profile` [`function`]**
+        —
+        By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml_profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `pml_profile=lambda u: u*u*u`.
+        """
         self.thickness = thickness
         self.direction = direction
         self.side = side
@@ -142,37 +164,87 @@ class PML(object):
 
 
 class Absorber(PML):
-    pass
+    """
+    Instead of a `PML` layer, there is an alternative class called `Absorber` which is a **drop-in** replacement for `PML`. For example, you can do `boundary_layers=[mp.Absorber(thickness=2)]` instead of `boundary_layers=[mp.PML(thickness=2)]`. All the parameters are the same as for `PML`, above. You can have a mix of `PML` on some boundaries and `Absorber` on others.
+
+    The `Absorber` class does *not* implement a perfectly matched layer (PML), however (except in 1d). Instead, it is simply a scalar electric **and** magnetic conductivity that turns on gradually within the layer according to the `pml_profile` (defaulting to quadratic). Such a scalar conductivity gradient is only reflectionless in the limit as the layer becomes sufficiently thick.
+
+    The main reason to use `Absorber` is if you have **a case in which PML fails:**
+
+    -   No true PML exists for *periodic* media, and a scalar absorber is computationally less expensive and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+    -   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can readily occur in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601, 2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
+    -   PML can fail if you have a waveguide hitting the edge of your cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
+    """
+
 
 
 class Symmetry(object):
+    """
+    This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting Symmetry](Exploiting_Symmetry.md). This is the base class of the specific symmetries below, so normally you don't create it directly. However, it has two properties which are shared by all symmetries:
 
+    The specific symmetry sub-classes are:
+
+    **`Mirror`**
+    —
+    A mirror symmetry plane. `direction` is the direction *normal* to the mirror plane.
+
+    **`Rotate2`**
+    —
+    A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of the rotation.
+
+    **`Rotate4`**
+    —
+    A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of the rotation.
+    """
     def __init__(self, direction, phase=1):
+        """
+        Construct a `Symmetry`.
+
+        **`direction` [`direction` constant ]**
+        —
+        The direction of the symmetry (the normal to a mirror plane or the axis for a rotational symmetry). e.g. `X`, `Y`, or `Z` (only Cartesian/grid directions are allowed). No default value.
+
+        **`phase` [`complex`]**
+        —
+        An additional phase to multiply the fields by when operating the symmetry on them. Default is +1, e.g. a phase of -1 for a mirror plane corresponds to an *odd* mirror. Technically, you are essentially specifying the representation of the symmetry group that your fields and sources transform under.
+        """
         self.direction = direction
         self.phase = complex(phase)
         self.swigobj = None
 
 
 class Rotate2(Symmetry):
-    pass
+    """
+    A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of the rotation.
+    """
 
 
 class Rotate4(Symmetry):
-    pass
+    """
+    A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). `direction` is the axis of the rotation.
+    """
 
 
 class Mirror(Symmetry):
-    pass
+    """
+    A mirror symmetry plane. `direction` is the direction *normal* to the mirror plane.
+    """
 
 
 class Identity(Symmetry):
-    pass
+    """
+    """
 
 
 class Volume(object):
+    """
+    Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This class creates such a volume object, given the `center` and `size` properties (just like e.g. a `Block` object). If the `size` is not specified, it defaults to `(0,0,0)`, i.e. a single point. Any method that accepts such a volume also accepts `center` and `size` keyword arguments. If these are specified instead of the volume, the library will construct a volume for you. Alternatively, you can specify a list of `Vector3` vertices using the `vertices` parameter. The `center` and `size` will automatically be computed from this list.
+    """
 
     def __init__(self, center=Vector3(), size=Vector3(), dims=2, is_cylindrical=False, vertices=[]):
-
+        """
+        Construct a Volume.
+        """
         if len(vertices) == 0:
             self.center = Vector3(*center)
             self.size = Vector3(*size)
@@ -243,8 +315,30 @@ class Volume(object):
 
 
 class FluxRegion(object):
+    """
+    A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a region in which Meep should accumulate the appropriate Fourier-transformed fields in order to compute a flux spectrum. It represents a region (volume, plane, line, or point) in which to compute the integral of the Poynting vector of the Fourier-transformed fields. `ModeRegion` is an alias for `FluxRegion` for use with `add_mode_monitor`.
 
+    Note that the flux is always computed in the *positive* coordinate direction, although this can effectively be flipped by using a `weight` of -1.0. This is useful, for example, if you want to compute the outward flux through a box, so that the sides of the box add instead of subtract.
+    """
     def __init__(self, center=None, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0, volume=None):
+        """
+        Construct a `FluxRegion` object.
+
+        **`center` [`Vector3`]**
+        —The center of the flux region (no default).
+
+        **`size` [`Vector3`]**
+        —The size of the flux region along each of the coordinate axes. Default is `(0,0,0)`; a single point.
+
+        **`direction` [`direction` constant ]**
+        —The direction in which to compute the flux (e.g. `mp.X`, `mp.Y`, etcetera). Default is `AUTOMATIC`, in which the direction is determined by taking the normal direction if the flux region is a plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point or volume), then you *must* specify the `direction` explicitly (not doing so will lead to an error).
+
+        **`weight` [`complex`]**
+        —A weight factor to multiply the flux by when it is computed. Default is 1.0.
+
+        **`volume` [`Volume`]**
+        —A `meep.Volume` can be used to specify the flux region instead of a `center` and a `size`.
+        """
         if center is None and volume is None:
             raise ValueError("Either center or volume required")
 
