@@ -9,19 +9,17 @@ This tutorial demonstrates using a custom source to define a source with an arbi
 Stochastic Dipole Emission in Light Emitting Diodes
 ---------------------------------------------------
 
-In addition to the two source time profiles of a [continuous wave](../Python_User_Interface.md#continuoussource) (CW) and finite-bandwidth [pulse](../Python_User_Interface.md#gaussiansource), Meep supports a [custom source](../Python_User_Interface.md#customsource) for defining an arbitrary time profile. This feature can be used to model spatially incoherent random (i.e., [white noise](https://en.wikipedia.org/wiki/White_noise)) dipole emission in a [light-emitting diode](https://en.wikipedia.org/wiki/Light-emitting_diode) (LED) as well as spontaneously recombining excitonic emission in an [organic light-emitting diode](https://en.wikipedia.org/wiki/OLED) (OLED). 
+In addition to the two source time profiles of a [continuous wave](../Python_User_Interface.md#continuoussource) (CW) and finite-bandwidth [pulse](../Python_User_Interface.md#gaussiansource), Meep supports a [custom source](../Python_User_Interface.md#customsource) for defining an arbitrary time profile. This feature can be used to model spatially incoherent random (i.e., [white noise](https://en.wikipedia.org/wiki/White_noise)) dipole emission in a [light-emitting diode](https://en.wikipedia.org/wiki/Light-emitting_diode) (LED), spontaneously recombining excitonic emission in an [organic light-emitting diode](https://en.wikipedia.org/wiki/OLED) (OLED), as well as near-field heat transfer.
 
-This tutorial example involves computing the radiated [flux](../Introduction.md#transmittancereflectance-spectra) of a 2d LED-like periodic structure with a thin (1d) light-emitting layer. A schematic of the unit cell geometry and simulation layout is shown below. A silver (Ag) back reflector is used to direct (nearly) all the flux upwards into the $+y$ direction. PML is used to terminate the air region at the top of the cell. (Note: PML is not necessary at the bottom of the cell as long as the Ag layer thickness is larger than its [skin depth](https://en.wikipedia.org/wiki/Skin_effect) of ~0.5 µm so that the bottom boundary condition does not affect the results.) The emitting layer has a wavelength-independent refractive index of 3.45.
+This tutorial example involves computing the radiated [flux](../Introduction.md#transmittancereflectance-spectra) from $N$ dipole emitters of a 2d LED-like periodic structure with a thin (1d) light-emitting layer. A schematic of the unit cell geometry and simulation layout is shown below. A silver (Ag) back reflector is used to direct nearly all the flux upwards into the $+y$ direction. PML is used to terminate the air region at the top of the cell. (Note: PML is not necessary at the bottom of the cell as long as the Ag layer thickness is larger than its [skin depth](https://en.wikipedia.org/wiki/Skin_effect) of ~0.5 µm so that the boundary condition at $-y$ does not affect the results.) The emitting layer is placed within a lossless dielectric with wavelength-independent refractive index of 3.45.
 
 <center>
 ![](../images/LED_layout.png)
 </center>
 
-There are two different methods for computing the radiated flux from $N$ dipoles based on the type of emitter: (1) random or (2) deterministic. In the first method (brute force), each emitter is a white-noise dipole source via `CustomSource`: every timestep for every dipole is an independent random number. A single iteration involves all $N$ dipoles. The results are averaged over multiple iterations via [Monte-Carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method). The second method involves a sequence of $N$ separate iterations each with a single deterministic dipole (i.e., pulsed time profile) at different positions in the emitting layer. Because dipoles at different positions are uncorrelated, the radiated flux is simply the average of all the individual iterations. The two approaches produce identical results but (1) is more computationally expensive than (2) because it requires a much large number of ensembles/iterations ($≫  N$) to attain low noise variance.
+There are two different methods for computing the radiated flux based on the type of emitter: (1) random or (2) deterministic. In Method 1 (brute force), each emitter is a white-noise dipole: every timestep for every dipole is an independent random number. A single run involves all $N$ dipoles which are modeled using a `CustomSource`. The stochastic results for the radiated flux are averaged over multiple trials/iterations via [Monte-Carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method). Method 2 involves a sequence of $N$ separate runs each with a single deterministic dipole (i.e., pulse time profile, `GaussianSource`) at different positions in the emitting layer. Because dipoles at different positions are uncorrelated, the radiated flux from the ensemble is simply the average of all the individual iterations. The two approaches produce identical results but Method 1 is more computationally expensive than Method 2 due to the much larger number of trials/iterations ($≫  N$) required to attain low noise variance.
 
-*Note regarding normalization*. When comparing the results from the two methods, it is necessary to scale the flux spectrum from method 2 in post processing due to the Gaussian pulse profile. However, it is convenient to nondimensionalize the results for both methods by dividing the flux spectrum for the textured surface with that from a flat surface. This way, the results can be compared directly without any tricky scaling.
-
-(A similar approach can be used to compute the near-field heat transfer between two grey bodies at thermal equilibrium.)
+*Note regarding normalization*. When comparing the results for the radiated flux from the two methods, it is necessary to scale the spectrum from Method 2 in post processing due to the Gaussian pulse profile. However, it is convenient to nondimensionalize the results (for both methods) by dividing the flux spectrum for the textured surface with that from a flat surface. This way, the results can be compared as-is without any tricky scaling.
 
 The simulation script is in [examples/stochastic_emitter.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter.py).
 
@@ -36,7 +34,6 @@ parser.add_argument('-res', type=int, default=50, help='resolution (pixels/um)')
 parser.add_argument('-nr', type=int, default=20, help='number of random trials (method 1)')
 parser.add_argument('-nd', type=int, default=10, help='number of dipoles')
 parser.add_argument('-nf', type=int, default=500, help='number of frequencies')
-parser.add_argument('-run_time', type=float, default=1000, help='runtime after Gaussian source has turned off (method 2)')
 parser.add_argument('-textured', action='store_true', default=False, help='flat (default) or textured surface')
 parser.add_argument('-method', type=int, choices=[1,2], default=1, help='type of method: (1) random dipoles with nr trials or (2) single dipole with 1 run per dipole')
 args = parser.parse_args()
@@ -63,10 +60,8 @@ fcen = 1.0
 df = 0.2
 nfreq = args.nf
 ndipole = args.nd
-
 ntrial = args.nr
-
-run_time = 2*nfreq/df if args.method == 1 else args.run_time
+run_time = 2*nfreq/df
 
 geometry = [mp.Block(material=mp.Medium(index=3.45),
                      center=mp.Vector3(0,0.5*sy-dpml-dair-hrod-0.5*dglass),
@@ -80,12 +75,17 @@ if args.textured:
                              center=mp.Vector3(0,0.5*sy-dpml-dair-0.5*hrod),
                              size=mp.Vector3(wrod,hrod,mp.inf)))
 
-def compute_flux_method1():
-    sources = []
-    for n in range(ndipole):
-        sources.append(mp.Source(mp.CustomSource(src_func=lambda t: np.random.randn()),
-                                 component=mp.Ez,
-                                 center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dglass)))
+def compute_flux(m=1,n=0):
+    if m == 1:
+        sources = []
+        for n in range(ndipole):
+            sources.append(mp.Source(mp.CustomSource(src_func=lambda t: np.random.randn()),
+                                     component=mp.Ez,
+                                     center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dglass)))
+    else:
+        sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                             component=mp.Ez,
+                             center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dglass))]
 
     sim = mp.Simulation(cell_size=cell_size,
                         resolution=resolution,
@@ -106,39 +106,15 @@ def compute_flux_method1():
 
     return freqs, flux
 
-def compute_flux_method2(n):
-    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
-                         component=mp.Ez,
-                         center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dglass))]
-
-    sim = mp.Simulation(cell_size=cell_size,
-                        resolution=resolution,
-                        k_point=mp.Vector3(),
-                        boundary_layers=pml_layers,
-                        geometry=geometry,
-                        sources=sources)
-
-    flux_mon = sim.add_flux(fcen,
-                            df,
-                            nfreq,
-                            mp.FluxRegion(center=mp.Vector3(0,0.5*sy-dpml),size=mp.Vector3(sx)))
-
-    sim.run(until_after_sources=run_time)
-
-    flux = mp.get_fluxes(flux_mon)
-    freqs = mp.get_flux_freqs(flux_mon)
-
-    return freqs, flux
-
 
 if args.method == 1:
     fluxes = np.zeros((nfreq,ntrial))
-    for m in range(ntrial):
-        freqs, fluxes[:,m] = compute_flux_method1()
+    for t in range(ntrial):
+        freqs, fluxes[:,t] = compute_flux(m=1)
 else:
     fluxes = np.zeros((nfreq,ndipole))
-    for n in range(ndipole):
-        freqs, fluxes[:,n] = compute_flux_method2(n)
+    for d in range(ndipole):
+        freqs, fluxes[:,d] = compute_flux(m=2,n=d)
 
 
 if mp.am_master():
@@ -146,15 +122,57 @@ if mp.am_master():
         np.savez(f,freqs=freqs,fluxes=fluxes)
 ```
 
-There are three items to note in this script. (1) The frequency discretization of the flux spectrum must be sufficiently fine to resolve noisy features (`nfreq = 500` by default). (2) The runtime must be long enough for the DFT spectrum to resolve these oscillations. For method 1, the runtime is ~1/frequency resolution due to the Fourier Uncertainty Principle (`run_time = 2*nfreq/df`). Method 2 requires a [convergence check](../FAQ.md#checking-convergence) in which the runtime is repeatedly doubled. (3) The material properties for Ag are imported from the [materials library](../Materials.md#materials-library).
+There are five items to note in this script. (1) The frequency discretization of the flux spectrum must be sufficiently fine to resolve noisy features. In this example, the frequency range is 0.9 to 1.1 with spacing of 0.0004. (2) The runtime must be long enough for the DFT spectrum to resolve these oscillations. Due to the Fourier Uncertainty Principle, the runtime should be at least ~1/frequency resolution. To ensure [convergence](../FAQ.md#checking-convergence), a larger runtime of 2/frequency resolution is used. (3) The material properties for Ag are imported from the [materials library](../Materials.md#materials-library). (4) At the end of the run, the flux spectra from all iterations are saved to a file using NumPy's [uncompressed `.npz` format](https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html#module-numpy.lib.format). This data is used to plot the results in post processing. (5) For Method 1, it is not necessary to use identical white-noise dipole emitters in the trial runs for the two cases of a flat and textured surface. Any run involving white-noise emitters is independent of the others.
 
-Results for Method 1 are shown in the following three figures. As the number of random trials/iterations is increased, the noisy variance is gradually reduced.
+Results for Methods 1 and 2 for the two cases of a flat and textured surface are generated using the following shell script:
+```
+# Method 1: flat surface
+python stochastic_emitter.py -method 1 -res 50 -nf 500 -nd 10 -nr 500
+
+# Method 1: textured surface
+python stochastic_emitter.py -method 1 -res 50 -nf 500 -nd 10 -nr 500 -textured
+
+# Method 2: flat surface
+python stochastic_emitter.py -method 2 -res 50 -nf 500 -nd 10
+
+# Method 2: textured surface
+python stochastic_emitter.py -method 2 -res 50 -nf 500 -nd 10 -textured
+```
+
+Afterwards, the four NumPy files produced by each run are used to plot the normalized flux for each method.
+```py
+import numpy as np
+import matplotlib.pyplot as plt
+
+method1_f0 = np.load('method1_flat_res50_nfreq500_ndipole10.npz')
+method1_f1 = np.load('method1_textured_res50_nfreq500_ndipole10.npz')
+
+method1_freqs = method1_f0['freqs']
+method1_f0_mean = np.mean(method1_f0['fluxes'],axis=1)
+method1_f1_mean = np.mean(method1_f1['fluxes'],axis=1)
+
+method2_f0 = np.load('method2_flat_res50_nfreq500_ndipole10.npz')
+method2_f1 = np.load('method2_textured_res50_nfreq500_ndipole10.npz')
+
+method2_freqs = method2_f0['freqs']
+method2_f0_mean = np.mean(method2_f0['fluxes'],axis=1)
+method2_f1_mean = np.mean(method2_f1['fluxes'],axis=1)
+
+plt.semilogy(method1_freqs,method1_f1_mean/method1_f0_mean,'b-',label='method 1 (500 trials)')
+plt.semilogy(method2_freqs,method2_f1_mean/method2_f0_mean,'r-',label='method 2')
+plt.xlabel('frequency')
+plt.ylabel('normalized flux')
+plt.legend()
+plt.show()
+```
+
+Results for Method 1 for three different numbers of trials/iterations (10, 50, and 500) are shown in the following three figures. As the number of trials/iterations is increased, the "noisiness" in the plot is gradually reduced.
 
 <center>
 ![](../images/stochastic_emitter_trials.png)
 </center>
 
-The next figure shows a comparison of the results for Methods 1 and 2. The results show good agreement. The Method 1 results required almost three days to obtain whereas the Method 2 results were obtained in less than five minutes.
+The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2. The results show good agreement over the entire bandwidth spectrum. The Method 1 results required almost *three days* whereas the Method 2 results were obtained in less than five minutes.
 
 <center>
 ![](../images/stochastic_emitter_normalized_flux_comparison.png)
