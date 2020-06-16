@@ -233,6 +233,20 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
+// return the next number factorizable into powers of 2,3,5,7
+// for efficient FFTs, similar to optimize-grid-size! in MPB:
+static int nextpow2357(int n) {
+  while (1) {
+    int m = n;
+    while (m % 3 == 0) m /= 3;
+    while (m % 5 == 0) m /= 5;
+    while (m % 7 == 0) m /= 7;
+    if ((m & (m - 1)) == 0) // if m is a power of 2
+      return n;
+    n += 1;
+  }
+}
+
 /****************************************************************/
 /* call MPB to get the band_numth eigenmode at freq frequency.  */
 /*                                                              */
@@ -332,6 +346,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   for (int i = 0; i < 3; ++i) {
     n[i] = int(resolution * s[i] + 0.5);
     if (n[i] == 0) n[i] = 1;
+    n[i] = nextpow2357(n[i]);
     if (s[i] != 0)
       R[i][i] = s[i];
     else {
@@ -516,6 +531,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   for (int i = 0; i < 3; ++i)
     destroy_evectmatrix(W[i]);
 
+  am_now_working_on(MpiTime);
   /* We only run MPB eigensolver on the master process to avoid
      any possibility of inconsistent mode solutions (#568) */
   eigval = broadcast(0, eigval);
@@ -528,6 +544,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   }
   if (!am_master()) update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
   broadcast(0, (double *)H.data, 2 * H.n * H.p);
+  finished_working();
 
   if (!match_frequency) frequency = sqrt(eigval);
 

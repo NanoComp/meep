@@ -13,16 +13,15 @@
 
 (set! geometry (list (make block
                        (center 0 0 0)
-                       (size infinity 1 infinity)
+                       (size infinity w infinity)
                        (e1 (rotate-vector3 (vector3 0 0 1) rot-angle (vector3 1 0 0)))
                        (e2 (rotate-vector3 (vector3 0 0 1) rot-angle (vector3 0 1 0)))
                        (material (make medium (epsilon 12))))))
 
 (define-param fsrc 0.15) ; frequency of eigenmode or constant-amplitude source
-(define-param kx 0.4)    ; initial guess for wavevector in x-direction of eigenmode
 (define-param bnum 1)    ; band number of eigenmode
 
-(define kpoint (rotate-vector3 (vector3 0 0 1) rot-angle (vector3 kx 0 0)))
+(define kpoint (rotate-vector3 (vector3 0 0 1) rot-angle (vector3 1 0 0)))
 
 (define-param compute-flux? true) ; compute flux (true) or output the field profile (false)
 
