@@ -14,7 +14,1791 @@ The Simulation Class
 The `Simulation` class is the primary abstraction of the high-level interface. Minimally, a simulation script amounts to passing the desired keyword arguments to the `Simulation` constructor and calling the `run` method on the resulting instance.
 
 
-@@Simulation@@
+---
+<a id="Simulation"></a>
+### Simulation
+
+```python
+class Simulation(object):
+```
+
+The `Simulation` [class](#classes) contains all the attributes that you can
+set to control various parameters of the Meep computation.
+
+
+<a id="Simulation.__init__"></a>
+**Simulation.\_\_init\_\_**
+
+```python
+def __init__(self,
+             cell_size,
+             resolution,
+             geometry=[],
+             sources=[],
+             eps_averaging=True,
+             dimensions=3,
+             boundary_layers=[],
+             symmetries=[],
+             force_complex_fields=False,
+             default_material=<meep.geom.Medium object at 0x7feeb98d4b90>,
+             m=0,
+             k_point=False,
+             kz_2d='complex',
+             extra_materials=[],
+             material_function=None,
+             epsilon_func=None,
+             epsilon_input_file='',
+             progress_interval=4,
+             subpixel_tol=0.0001,
+             subpixel_maxeval=100000,
+             ensure_periodicity=True,
+             num_chunks=0,
+             Courant=0.5,
+             accurate_fields_near_cylorigin=False,
+             filename_prefix=None,
+             output_volume=None,
+             output_single_precision=False,
+             load_structure='',
+             geometry_center=Vector3<0.0, 0.0, 0.0>,
+             force_all_components=False,
+             split_chunks_evenly=True,
+             chunk_layout=None,
+             collect_stats=False)
+```
+
+All `Simulation` attributes are described in further detail below. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
+
+**`geometry` [ list of `GeometricObject` class ]**
+—
+Specifies the geometric objects making up the structure being simulated. When objects overlap, later objects in the list take precedence. Defaults to no objects (empty list).
+
+**`geometry_center` [ `Vector3` class ]**
+—
+Specifies the coordinates of the center of the cell. Defaults to (0, 0, 0), but changing this allows you to shift the coordinate system used in Meep (for example, to put the origin at the corner).  Passing `geometry_center=c` is equivalent to adding the `c` vector to the coordinates of every other object in the simulation, i.e. `c` becomes the new origin that other objects are defined with respect to.
+
+**`sources` [ list of `Source` class ]**
+—
+Specifies the current sources to be present in the simulation. Defaults to none (empty list).
+
+**`symmetries` [ list of `Symmetry` class ]**
+—
+Specifies the spatial symmetries (mirror or rotation) to exploit in the simulation. Defaults to none (empty list). The symmetries must be obeyed by *both* the structure and the sources. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
+
+**`boundary_layers` [ list of `PML` class ]**
+—
+Specifies the [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to none.
+
+**`cell_size` [ `Vector3` ]**
+—
+Specifies the size of the cell which is centered on the origin of the coordinate system. Any sizes of 0 imply a reduced-dimensionality calculation. Strictly speaking, the dielectric function is taken to be uniform along that dimension. A 2d calculation is especially optimized. See `dimensions` below. **Note:** because Maxwell's equations are scale invariant, you can use any units of distance you want to specify the cell size: nanometers, microns, centimeters, etc. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units](Introduction.md#units-in-meep). Required argument (no default).
+
+**`default_material` [`Medium` class ]**
+—
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε=1). This can also be a NumPy array that defines a dielectric function much like `epsilon_input_file` below (see below). If you want to use a material function as the default material, use the `material_function` keyword argument (below).
+
+**`material_function` [ function ]**
+—
+A Python function that takes a `Vector3` and returns a `Medium`. See also [Material Function](#material-function). Defaults to `None`.
+
+**`epsilon_func` [ function ]**
+—
+A Python function that takes a `Vector3` and returns the dielectric constant at that point. See also [Material Function](#material-function). Defaults to `None`.
+
+**`epsilon_input_file` [`string`]**
+—
+If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default_material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need *not* match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the ε property of the `default_material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default_material` are still used.
+
+**`dimensions` [`integer`]**
+—
+Explicitly specifies the dimensionality of the simulation, if the value is less than 3. If the value is 3 (the default), then the dimensions are automatically reduced to 2 if possible when `cell_size` in the $z$ direction is `0`. If `dimensions` is the special value of `CYLINDRICAL`, then cylindrical coordinates are used and the $x$ and $z$ dimensions are interpreted as $r$ and $z$, respectively. If `dimensions` is 1, then the cell must be along the $z$ direction and only $E_x$ and $H_y$ field components are permitted. If `dimensions` is 2, then the cell must be in the $xy$ plane.
+
+**`m` [`number`]**
+—
+For `CYLINDRICAL` simulations, specifies that the angular $\phi$ dependence of the fields is of the form $e^{im\phi}$ (default is `m=0`). If the simulation cell includes the origin $r=0$, then `m` must be an integer.
+
+**`accurate_fields_near_cylorigin` [`boolean`]**
+—
+For `CYLINDRICAL` simulations with |*m*| &gt; 1, compute more accurate fields near the origin $r=0$ at the expense of requiring a smaller Courant factor. Empirically, when this option is set to `True`, a Courant factor of roughly $\min[0.5, 1 / (|m| + 0.5)]$ or smaller seems to be needed. Default is `False`, in which case the $D_r$, $D_z$, and $B_r$ fields within |*m*| pixels of the origin are forced to zero, which usually ensures stability with the default Courant factor of 0.5, at the expense of slowing convergence of the fields near $r=0$.
+
+**`resolution` [`number`]**
+—
+Specifies the computational grid resolution in pixels per distance unit. Required argument. No default.
+
+**`k_point` [`False` or `Vector3`]**
+—
+If `False` (the default), then the boundaries are perfect metallic (zero electric field). If a `Vector3`, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. A non-zero `Vector3` will produce complex fields. The `k_point` vector is specified in Cartesian coordinates in units of 2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k_points` through its function `reciprocal->cartesian`.
+
+**`kz_2d` [`"complex"`, `"real/imag"`, or `"3d"`]**
+—
+A 2d cell (i.e., `dimensions=2`) combined with a `k_point` that has a *non-zero* component in $z$ would normally result in a 3d simulation with complex fields. However, by default (`kz_2d="complex"`), Meep will use a 2d computational cell in which $k_z$ is incorporated as an additional term in Maxwell's equations, which still results in complex fields but greatly improved performance. Setting `kz_2d="3d"` will instead use a 3d cell that is one pixel thick (with Bloch-periodic boundary conditions), which is considerably more expensive. The third possibility, `kz_2d="real/imag"`, saves an additional factor of two by storing some field components as purely real and some as purely imaginary in a "real" field, but this option requires some care to use. See [2d Cell with Out-of-Plane Wavevector](2d_Cell_Special_kz.md).
+
+**`ensure_periodicity` [`boolean`]**
+—
+If `True` (the default) *and* if the boundary conditions are periodic (`k_point` is not `False`), then the geometric objects are automatically repeated periodically according to the lattice vectors which define the size of the cell.
+
+**`eps_averaging` [`boolean`]**
+—
+If `True` (the default), then [subpixel averaging](Subpixel_Smoothing.md) is used when initializing the dielectric function. For simulations involving a [material function](#material-function), `eps_averaging` is `False` (the default) and must be [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for the adaptive numerical integration. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error. Disabling subpixel averaging will lead to [staircasing effects and irregular convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
+
+**`force_complex_fields` [`boolean`]**
+—
+By default, Meep runs its simulations with purely real fields whenever possible. It uses complex fields which require twice the memory and computation if the `k_point` is non-zero or if `m` is non-zero. However, by setting `force_complex_fields` to `True`, Meep will always use complex fields.
+
+**`force_all_components` [`boolean`]**
+—
+By default, in a 2d simulation Meep uses only the field components that might excited by your current sources: either the in-plane (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or out-of-plane (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>) polarization, depending on the source.  (Both polarizations are excited if you use multiple source polarizations, or if an anisotropic medium is present that couples the two polarizations.)   In rare cases (primarily for combining results of multiple simulations with differing polarizations), you might want to force it to simulate all fields, even those that remain zero throughout the simulation, by setting `force_all_components` to `True`.
+
+**`filename_prefix` [`string`]**
+—
+A string prepended to all output filenames. If empty (the default), then Meep uses the name of the current Python file, with ".py" replaced by "-" (e.g. `foo.py` uses a `"foo-"` prefix). See also [Output File Names](Python_User_Interface.md#output-file-names).
+
+**`Courant` [`number`]**
+—
+Specify the [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition) $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_      extrm{min}/\sqrt{       extrm{# dimensions}}$, where $n_        extrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
+
+**`output_volume` [`Volume` class ]**
+—
+Specifies the default region of space that is output by the HDF5 output functions (below); see also the `Volume` class which manages `meep::volume*` objects. Default is `None`, which means that the whole cell is output. Normally, you should use the `in_volume(...)` function to modify the output volume instead of setting `output_volume` directly.
+
+**`output_single_precision` [`boolean`]**
+—
+Meep performs its computations in [double precision](https://en.wikipedia.org/wiki/double_precision), and by default its output HDF5 files are in the same format. However, by setting this variable to `True` (default is `False`) you can instead output in [single precision](https://en.wikipedia.org/wiki/single_precision) which saves a factor of two in space.
+
+**`progress_interval` [`number`]**
+—
+Time interval (seconds) after which Meep prints a progress message. Default is 4 seconds.
+
+**`extra_materials` [ list of `Medium` class ]**
+—
+By default, Meep turns off support for material dispersion ([susceptibilities](#susceptibility) or [conductivity](Materials.md#conductivity-and-complex)) or nonlinearities if none of the objects in `geometry` have materials with these properties &mdash; since they are not needed, it is faster to omit their calculation. This doesn't work, however, if you use a `material_function`: materials via a user-specified function of position instead of just geometric objects. If your material function only returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra_materials`. `extra_materials` is a list of materials that Meep should look for in the cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material_function` here.
+
+**`load_structure` [`string`]**
+—
+If not empty, Meep will load the structure file specified by this string. The file must have been created by `mp.dump_structure`. Defaults to an empty string. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+
+**`chunk_layout` [`string` or `Simulation` instance]**
+—
+This will cause the `Simulation` to use the chunk layout described by either an h5 file (created by `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump Structure](#load-and-dump-structure) for more information.
+
+The following require a bit more understanding of the inner workings of Meep to use. See also [SWIG Wrappers](#swig-wrappers).
+
+**`structure` [`meep::structure*`]**
+—
+Pointer to the current structure being simulated; initialized by `_init_structure` which is called automatically by `init_sim()` which is called automatically by any of the [run functions](#run-functions). The structure initialization is handled by the `Simulation` class, and most users will not need to call `_init_structure`.
+
+**`fields` [`meep::fields*`]**
+—
+Pointer to the current fields being simulated; initialized by `init_sim()` which is called automatically by any of the [run functions](#run-functions).
+
+**`num_chunks` [`integer`]**
+—
+Minimum number of "chunks" (subarrays) to divide the structure/fields into (default 0). Actual number is determined by number of processors, PML layers, etcetera. Mainly useful for debugging.
+
+**`split_chunks_evenly` [`boolean`]**
+—
+When `True` (the default), the work per [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks up for multiple processors. The cell is simply split up into equal chunks (with the exception of PML regions, which must be on their own chunk). When `False`, Meep attempts to allocate an equal amount of work to each processor, which can increase the performance of [parallel simulations](Parallel_Meep.md).
+
+
+
+<a id="Simulation.add_dft_fields"></a>
+**Simulation.add\_dft\_fields**
+
+```python
+def add_dft_fields(self, *args, **kwargs)
+```
+
+
+
+
+
+<a id="Simulation.add_eigenmode"></a>
+**Simulation.add\_eigenmode**
+
+```python
+def add_eigenmode(self, *args)
+```
+
+
+
+
+
+<a id="Simulation.add_energy"></a>
+**Simulation.add\_energy**
+
+```python
+def add_energy(self, *args)
+```
+
+
+
+
+
+<a id="Simulation.add_flux"></a>
+**Simulation.add\_flux**
+
+```python
+def add_flux(self, *args)
+```
+
+
+
+
+
+<a id="Simulation.add_force"></a>
+**Simulation.add\_force**
+
+```python
+def add_force(self, *args)
+```
+
+
+
+
+
+<a id="Simulation.add_mode_monitor"></a>
+**Simulation.add\_mode\_monitor**
+
+```python
+def add_mode_monitor(self, *args)
+```
+
+
+
+
+
+<a id="Simulation.add_near2far"></a>
+**Simulation.add\_near2far**
+
+```python
+def add_near2far(self, *args, **kwargs)
+```
+
+
+
+
+
+<a id="Simulation.add_source"></a>
+**Simulation.add\_source**
+
+```python
+def add_source(self, src)
+```
+
+
+
+
+
+<a id="Simulation.change_k_point"></a>
+**Simulation.change\_k\_point**
+
+```python
+def change_k_point(self, k)
+```
+
+
+
+
+
+<a id="Simulation.change_sources"></a>
+**Simulation.change\_sources**
+
+```python
+def change_sources(self, new_sources)
+```
+
+
+
+
+
+<a id="Simulation.display_electric_energy"></a>
+**Simulation.display\_electric\_energy**
+
+```python
+def display_electric_energy(self, *energys)
+```
+
+
+
+
+
+<a id="Simulation.display_fluxes"></a>
+**Simulation.display\_fluxes**
+
+```python
+def display_fluxes(self, *fluxes)
+```
+
+
+
+
+
+<a id="Simulation.display_forces"></a>
+**Simulation.display\_forces**
+
+```python
+def display_forces(self, *forces)
+```
+
+
+
+
+
+<a id="Simulation.display_magnetic_energy"></a>
+**Simulation.display\_magnetic\_energy**
+
+```python
+def display_magnetic_energy(self, *energys)
+```
+
+
+
+
+
+<a id="Simulation.display_total_energy"></a>
+**Simulation.display\_total\_energy**
+
+```python
+def display_total_energy(self, *energys)
+```
+
+
+
+
+
+<a id="Simulation.dump_chunk_layout"></a>
+**Simulation.dump\_chunk\_layout**
+
+```python
+def dump_chunk_layout(self, fname)
+```
+
+
+
+
+
+<a id="Simulation.dump_structure"></a>
+**Simulation.dump\_structure**
+
+```python
+def dump_structure(self, fname)
+```
+
+
+
+
+
+<a id="Simulation.electric_energy_in_box"></a>
+**Simulation.electric\_energy\_in\_box**
+
+```python
+def electric_energy_in_box(self, box=None, center=None, size=None)
+```
+
+
+
+
+
+<a id="Simulation.field_energy_in_box"></a>
+**Simulation.field\_energy\_in\_box**
+
+```python
+def field_energy_in_box(self, box=None, center=None, size=None)
+```
+
+
+
+
+
+<a id="Simulation.flux_in_box"></a>
+**Simulation.flux\_in\_box**
+
+```python
+def flux_in_box(self, d, box=None, center=None, size=None)
+```
+
+
+
+
+
+<a id="Simulation.get_array"></a>
+**Simulation.get\_array**
+
+```python
+def get_array(self,
+              component=None,
+              vol=None,
+              center=None,
+              size=None,
+              cmplx=None,
+              arr=None,
+              frequency=0,
+              omega=0)
+```
+
+
+
+
+
+<a id="Simulation.get_array_metadata"></a>
+**Simulation.get\_array\_metadata**
+
+```python
+def get_array_metadata(self,
+                       vol=None,
+                       center=None,
+                       size=None,
+                       dft_cell=None,
+                       collapse=False,
+                       snap=False,
+                       return_pw=False)
+```
+
+
+
+
+
+<a id="Simulation.get_avg_chunk_communication_area"></a>
+**Simulation.get\_avg\_chunk\_communication\_area**
+
+```python
+def get_avg_chunk_communication_area(self)
+```
+
+
+
+
+
+<a id="Simulation.get_bfield"></a>
+**Simulation.get\_bfield**
+
+```python
+def get_bfield(self)
+```
+
+
+
+
+
+<a id="Simulation.get_bfield_p"></a>
+**Simulation.get\_bfield\_p**
+
+```python
+def get_bfield_p(self)
+```
+
+
+
+
+
+<a id="Simulation.get_bfield_r"></a>
+**Simulation.get\_bfield\_r**
+
+```python
+def get_bfield_r(self)
+```
+
+
+
+
+
+<a id="Simulation.get_bfield_x"></a>
+**Simulation.get\_bfield\_x**
+
+```python
+def get_bfield_x(self)
+```
+
+
+
+
+
+<a id="Simulation.get_bfield_y"></a>
+**Simulation.get\_bfield\_y**
+
+```python
+def get_bfield_y(self)
+```
+
+
+
+
+
+<a id="Simulation.get_bfield_z"></a>
+**Simulation.get\_bfield\_z**
+
+```python
+def get_bfield_z(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dfield"></a>
+**Simulation.get\_dfield**
+
+```python
+def get_dfield(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dfield_p"></a>
+**Simulation.get\_dfield\_p**
+
+```python
+def get_dfield_p(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dfield_r"></a>
+**Simulation.get\_dfield\_r**
+
+```python
+def get_dfield_r(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dfield_x"></a>
+**Simulation.get\_dfield\_x**
+
+```python
+def get_dfield_x(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dfield_y"></a>
+**Simulation.get\_dfield\_y**
+
+```python
+def get_dfield_y(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dfield_z"></a>
+**Simulation.get\_dfield\_z**
+
+```python
+def get_dfield_z(self)
+```
+
+
+
+
+
+<a id="Simulation.get_dft_array"></a>
+**Simulation.get\_dft\_array**
+
+```python
+def get_dft_array(self, dft_obj, component, num_freq)
+```
+
+
+
+
+
+<a id="Simulation.get_dft_array_metadata"></a>
+**Simulation.get\_dft\_array\_metadata**
+
+```python
+def get_dft_array_metadata(self,
+                           dft_cell=None,
+                           vol=None,
+                           center=None,
+                           size=None)
+```
+
+
+
+
+
+<a id="Simulation.get_dft_data"></a>
+**Simulation.get\_dft\_data**
+
+```python
+def get_dft_data(self, dft_chunk)
+```
+
+
+
+
+
+<a id="Simulation.get_dpwr"></a>
+**Simulation.get\_dpwr**
+
+```python
+def get_dpwr(self)
+```
+
+
+
+
+
+<a id="Simulation.get_efield"></a>
+**Simulation.get\_efield**
+
+```python
+def get_efield(self)
+```
+
+
+
+
+
+<a id="Simulation.get_efield_p"></a>
+**Simulation.get\_efield\_p**
+
+```python
+def get_efield_p(self)
+```
+
+
+
+
+
+<a id="Simulation.get_efield_r"></a>
+**Simulation.get\_efield\_r**
+
+```python
+def get_efield_r(self)
+```
+
+
+
+
+
+<a id="Simulation.get_efield_x"></a>
+**Simulation.get\_efield\_x**
+
+```python
+def get_efield_x(self)
+```
+
+
+
+
+
+<a id="Simulation.get_efield_y"></a>
+**Simulation.get\_efield\_y**
+
+```python
+def get_efield_y(self)
+```
+
+
+
+
+
+<a id="Simulation.get_efield_z"></a>
+**Simulation.get\_efield\_z**
+
+```python
+def get_efield_z(self)
+```
+
+
+
+
+
+<a id="Simulation.get_eigenmode"></a>
+**Simulation.get\_eigenmode**
+
+```python
+def get_eigenmode(self,
+                  frequency,
+                  direction,
+                  where,
+                  band_num,
+                  kpoint,
+                  eig_vol=None,
+                  match_frequency=True,
+                  parity=0,
+                  resolution=0,
+                  eigensolver_tol=1e-12)
+```
+
+
+
+
+
+<a id="Simulation.get_eigenmode_coefficients"></a>
+**Simulation.get\_eigenmode\_coefficients**
+
+```python
+def get_eigenmode_coefficients(self,
+                               flux,
+                               bands,
+                               eig_parity=0,
+                               eig_vol=None,
+                               eig_resolution=0,
+                               eig_tolerance=1e-12,
+                               kpoint_func=None,
+                               direction=-1)
+```
+
+
+
+
+
+<a id="Simulation.get_epsilon"></a>
+**Simulation.get\_epsilon**
+
+```python
+def get_epsilon(self, frequency=0, omega=0)
+```
+
+
+
+
+
+<a id="Simulation.get_epsilon_point"></a>
+**Simulation.get\_epsilon\_point**
+
+```python
+def get_epsilon_point(self, pt, frequency=0, omega=0)
+```
+
+
+
+
+
+<a id="Simulation.get_estimated_costs"></a>
+**Simulation.get\_estimated\_costs**
+
+```python
+def get_estimated_costs(self)
+```
+
+
+
+
+
+<a id="Simulation.get_estimated_memory_usage"></a>
+**Simulation.get\_estimated\_memory\_usage**
+
+```python
+def get_estimated_memory_usage(self)
+```
+
+
+
+
+
+<a id="Simulation.get_farfield"></a>
+**Simulation.get\_farfield**
+
+```python
+def get_farfield(self, f, v)
+```
+
+
+
+
+
+<a id="Simulation.get_farfields"></a>
+**Simulation.get\_farfields**
+
+```python
+def get_farfields(self,
+                  near2far,
+                  resolution,
+                  where=None,
+                  center=None,
+                  size=None)
+```
+
+
+
+
+
+<a id="Simulation.get_field_point"></a>
+**Simulation.get\_field\_point**
+
+```python
+def get_field_point(self, c, pt)
+```
+
+
+
+
+
+<a id="Simulation.get_filename_prefix"></a>
+**Simulation.get\_filename\_prefix**
+
+```python
+def get_filename_prefix(self)
+```
+
+
+
+
+
+<a id="Simulation.get_flux_data"></a>
+**Simulation.get\_flux\_data**
+
+```python
+def get_flux_data(self, flux)
+```
+
+
+
+
+
+<a id="Simulation.get_force_data"></a>
+**Simulation.get\_force\_data**
+
+```python
+def get_force_data(self, force)
+```
+
+
+
+
+
+<a id="Simulation.get_hfield"></a>
+**Simulation.get\_hfield**
+
+```python
+def get_hfield(self)
+```
+
+
+
+
+
+<a id="Simulation.get_hfield_p"></a>
+**Simulation.get\_hfield\_p**
+
+```python
+def get_hfield_p(self)
+```
+
+
+
+
+
+<a id="Simulation.get_hfield_r"></a>
+**Simulation.get\_hfield\_r**
+
+```python
+def get_hfield_r(self)
+```
+
+
+
+
+
+<a id="Simulation.get_hfield_x"></a>
+**Simulation.get\_hfield\_x**
+
+```python
+def get_hfield_x(self)
+```
+
+
+
+
+
+<a id="Simulation.get_hfield_y"></a>
+**Simulation.get\_hfield\_y**
+
+```python
+def get_hfield_y(self)
+```
+
+
+
+
+
+<a id="Simulation.get_hfield_z"></a>
+**Simulation.get\_hfield\_z**
+
+```python
+def get_hfield_z(self)
+```
+
+
+
+
+
+<a id="Simulation.get_hpwr"></a>
+**Simulation.get\_hpwr**
+
+```python
+def get_hpwr(self)
+```
+
+
+
+
+
+<a id="Simulation.get_max_chunk_communication_area"></a>
+**Simulation.get\_max\_chunk\_communication\_area**
+
+```python
+def get_max_chunk_communication_area(self)
+```
+
+
+
+
+
+<a id="Simulation.get_mode_data"></a>
+**Simulation.get\_mode\_data**
+
+```python
+def get_mode_data(self, flux)
+```
+
+
+
+
+
+<a id="Simulation.get_mu"></a>
+**Simulation.get\_mu**
+
+```python
+def get_mu(self)
+```
+
+
+
+
+
+<a id="Simulation.get_near2far_data"></a>
+**Simulation.get\_near2far\_data**
+
+```python
+def get_near2far_data(self, n2f)
+```
+
+
+
+
+
+<a id="Simulation.get_sfield"></a>
+**Simulation.get\_sfield**
+
+```python
+def get_sfield(self)
+```
+
+
+
+
+
+<a id="Simulation.get_sfield_p"></a>
+**Simulation.get\_sfield\_p**
+
+```python
+def get_sfield_p(self)
+```
+
+
+
+
+
+<a id="Simulation.get_sfield_r"></a>
+**Simulation.get\_sfield\_r**
+
+```python
+def get_sfield_r(self)
+```
+
+
+
+
+
+<a id="Simulation.get_sfield_x"></a>
+**Simulation.get\_sfield\_x**
+
+```python
+def get_sfield_x(self)
+```
+
+
+
+
+
+<a id="Simulation.get_sfield_y"></a>
+**Simulation.get\_sfield\_y**
+
+```python
+def get_sfield_y(self)
+```
+
+
+
+
+
+<a id="Simulation.get_sfield_z"></a>
+**Simulation.get\_sfield\_z**
+
+```python
+def get_sfield_z(self)
+```
+
+
+
+
+
+<a id="Simulation.get_source"></a>
+**Simulation.get\_source**
+
+```python
+def get_source(self,
+               component,
+               vol=None,
+               center=None,
+               size=None)
+```
+
+
+
+
+
+<a id="Simulation.get_tot_pwr"></a>
+**Simulation.get\_tot\_pwr**
+
+```python
+def get_tot_pwr(self)
+```
+
+
+
+
+
+<a id="Simulation.h5topng"></a>
+**Simulation.h5topng**
+
+```python
+def h5topng(self, rm_h5, option, *step_funcs)
+```
+
+
+
+
+
+<a id="Simulation.has_mu"></a>
+**Simulation.has\_mu**
+
+```python
+def has_mu(self)
+```
+
+
+
+
+
+<a id="Simulation.init_fields"></a>
+**Simulation.init\_fields**
+
+```python
+def init_fields(self)
+```
+
+
+
+
+
+<a id="Simulation.init_sim"></a>
+**Simulation.init\_sim**
+
+```python
+def init_sim(self)
+```
+
+
+
+
+
+<a id="Simulation.initialize_field"></a>
+**Simulation.initialize\_field**
+
+```python
+def initialize_field(self, cmpnt, amp_func)
+```
+
+
+
+
+
+<a id="Simulation.integrate2_field_function"></a>
+**Simulation.integrate2\_field\_function**
+
+```python
+def integrate2_field_function(self,
+                              fields2,
+                              cs1,
+                              cs2,
+                              func,
+                              where=None,
+                              center=None,
+                              size=None)
+```
+
+
+
+
+
+<a id="Simulation.integrate_field_function"></a>
+**Simulation.integrate\_field\_function**
+
+```python
+def integrate_field_function(self,
+                             cs,
+                             func,
+                             where=None,
+                             center=None,
+                             size=None)
+```
+
+
+
+
+
+<a id="Simulation.load_chunk_layout"></a>
+**Simulation.load\_chunk\_layout**
+
+```python
+def load_chunk_layout(self, br, source)
+```
+
+
+
+
+
+<a id="Simulation.load_energy"></a>
+**Simulation.load\_energy**
+
+```python
+def load_energy(self, fname, energy)
+```
+
+
+
+
+
+<a id="Simulation.load_flux"></a>
+**Simulation.load\_flux**
+
+```python
+def load_flux(self, fname, flux)
+```
+
+
+
+
+
+<a id="Simulation.load_flux_data"></a>
+**Simulation.load\_flux\_data**
+
+```python
+def load_flux_data(self, flux, fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_force"></a>
+**Simulation.load\_force**
+
+```python
+def load_force(self, fname, force)
+```
+
+
+
+
+
+<a id="Simulation.load_force_data"></a>
+**Simulation.load\_force\_data**
+
+```python
+def load_force_data(self, force, fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_energy"></a>
+**Simulation.load\_minus\_energy**
+
+```python
+def load_minus_energy(self, fname, energy)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_flux"></a>
+**Simulation.load\_minus\_flux**
+
+```python
+def load_minus_flux(self, fname, flux)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_flux_data"></a>
+**Simulation.load\_minus\_flux\_data**
+
+```python
+def load_minus_flux_data(self, flux, fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_force"></a>
+**Simulation.load\_minus\_force**
+
+```python
+def load_minus_force(self, fname, force)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_force_data"></a>
+**Simulation.load\_minus\_force\_data**
+
+```python
+def load_minus_force_data(self, force, fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_mode"></a>
+**Simulation.load\_minus\_mode**
+
+```python
+def load_minus_mode(self, fname, flux)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_mode_data"></a>
+**Simulation.load\_minus\_mode\_data**
+
+```python
+def load_minus_mode_data(self, flux, fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_near2far"></a>
+**Simulation.load\_minus\_near2far**
+
+```python
+def load_minus_near2far(self, fname, n2f)
+```
+
+
+
+
+
+<a id="Simulation.load_minus_near2far_data"></a>
+**Simulation.load\_minus\_near2far\_data**
+
+```python
+def load_minus_near2far_data(self, n2f, n2fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_mode"></a>
+**Simulation.load\_mode**
+
+```python
+def load_mode(self, fname, flux)
+```
+
+
+
+
+
+<a id="Simulation.load_mode_data"></a>
+**Simulation.load\_mode\_data**
+
+```python
+def load_mode_data(self, flux, fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_near2far"></a>
+**Simulation.load\_near2far**
+
+```python
+def load_near2far(self, fname, n2f)
+```
+
+
+
+
+
+<a id="Simulation.load_near2far_data"></a>
+**Simulation.load\_near2far\_data**
+
+```python
+def load_near2far_data(self, n2f, n2fdata)
+```
+
+
+
+
+
+<a id="Simulation.load_structure"></a>
+**Simulation.load\_structure**
+
+```python
+def load_structure(self, fname)
+```
+
+
+
+
+
+<a id="Simulation.magnetic_energy_in_box"></a>
+**Simulation.magnetic\_energy\_in\_box**
+
+```python
+def magnetic_energy_in_box(self, box=None, center=None, size=None)
+```
+
+
+
+
+
+<a id="Simulation.max_abs_field_function"></a>
+**Simulation.max\_abs\_field\_function**
+
+```python
+def max_abs_field_function(self,
+                           cs,
+                           func,
+                           where=None,
+                           center=None,
+                           size=None)
+```
+
+
+
+
+
+<a id="Simulation.mean_time_spent_on"></a>
+**Simulation.mean\_time\_spent\_on**
+
+```python
+def mean_time_spent_on(self, time_sink)
+```
+
+
+
+
+
+<a id="Simulation.meep_time"></a>
+**Simulation.meep\_time**
+
+```python
+def meep_time(self)
+```
+
+
+
+
+
+<a id="Simulation.modal_volume_in_box"></a>
+**Simulation.modal\_volume\_in\_box**
+
+```python
+def modal_volume_in_box(self, box=None, center=None, size=None)
+```
+
+
+
+
+
+<a id="Simulation.output_component"></a>
+**Simulation.output\_component**
+
+```python
+def output_component(self, c, h5file=None, frequency=0, omega=0)
+```
+
+
+
+
+
+<a id="Simulation.output_components"></a>
+**Simulation.output\_components**
+
+```python
+def output_components(self, fname, *components)
+```
+
+
+
+
+
+<a id="Simulation.output_dft"></a>
+**Simulation.output\_dft**
+
+```python
+def output_dft(self, dft_fields, fname)
+```
+
+
+
+
+
+<a id="Simulation.output_farfields"></a>
+**Simulation.output\_farfields**
+
+```python
+def output_farfields(self,
+                     near2far,
+                     fname,
+                     resolution,
+                     where=None,
+                     center=None,
+                     size=None)
+```
+
+
+
+
+
+<a id="Simulation.output_field_function"></a>
+**Simulation.output\_field\_function**
+
+```python
+def output_field_function(self,
+                          name,
+                          cs,
+                          func,
+                          real_only=False,
+                          h5file=None)
+```
+
+
+
+
+
+<a id="Simulation.phase_in_material"></a>
+**Simulation.phase\_in\_material**
+
+```python
+def phase_in_material(self, structure, time)
+```
+
+
+
+
+
+<a id="Simulation.plot2D"></a>
+**Simulation.plot2D**
+
+```python
+def plot2D(self, **kwargs)
+```
+
+
+
+
+
+<a id="Simulation.plot3D"></a>
+**Simulation.plot3D**
+
+```python
+def plot3D(self)
+```
+
+
+
+
+
+<a id="Simulation.plot_fields"></a>
+**Simulation.plot\_fields**
+
+```python
+def plot_fields(self, **kwargs)
+```
+
+
+
+
+
+<a id="Simulation.print_times"></a>
+**Simulation.print\_times**
+
+```python
+def print_times(self)
+```
+
+
+
+
+
+<a id="Simulation.require_dimensions"></a>
+**Simulation.require\_dimensions**
+
+```python
+def require_dimensions(self)
+```
+
+
+
+
+
+<a id="Simulation.reset_meep"></a>
+**Simulation.reset\_meep**
+
+```python
+def reset_meep(self)
+```
+
+
+
+
+
+<a id="Simulation.restart_fields"></a>
+**Simulation.restart\_fields**
+
+```python
+def restart_fields(self)
+```
+
+
+
+
+
+<a id="Simulation.round_time"></a>
+**Simulation.round\_time**
+
+```python
+def round_time(self)
+```
+
+
+
+
+
+<a id="Simulation.run"></a>
+**Simulation.run**
+
+```python
+def run(self, *step_funcs, **kwargs)
+```
+
+
+
+
+
+<a id="Simulation.run_k_point"></a>
+**Simulation.run\_k\_point**
+
+```python
+def run_k_point(self, t, k)
+```
+
+
+
+
+
+<a id="Simulation.run_k_points"></a>
+**Simulation.run\_k\_points**
+
+```python
+def run_k_points(self, t, k_points)
+```
+
+
+
+
+
+<a id="Simulation.save_energy"></a>
+**Simulation.save\_energy**
+
+```python
+def save_energy(self, fname, energy)
+```
+
+
+
+
+
+<a id="Simulation.save_flux"></a>
+**Simulation.save\_flux**
+
+```python
+def save_flux(self, fname, flux)
+```
+
+
+
+
+
+<a id="Simulation.save_force"></a>
+**Simulation.save\_force**
+
+```python
+def save_force(self, fname, force)
+```
+
+
+
+
+
+<a id="Simulation.save_mode"></a>
+**Simulation.save\_mode**
+
+```python
+def save_mode(self, fname, flux)
+```
+
+
+
+
+
+<a id="Simulation.save_near2far"></a>
+**Simulation.save\_near2far**
+
+```python
+def save_near2far(self, fname, n2f)
+```
+
+
+
+
+
+<a id="Simulation.set_boundary"></a>
+**Simulation.set\_boundary**
+
+```python
+def set_boundary(self, side, direction, condition)
+```
+
+
+
+
+
+<a id="Simulation.set_epsilon"></a>
+**Simulation.set\_epsilon**
+
+```python
+def set_epsilon(self, eps)
+```
+
+
+
+
+
+<a id="Simulation.set_materials"></a>
+**Simulation.set\_materials**
+
+```python
+def set_materials(self, geometry=None, default_material=None)
+```
+
+
+
+
+
+<a id="Simulation.solve_cw"></a>
+**Simulation.solve\_cw**
+
+```python
+def solve_cw(self, tol=1e-08, maxiters=10000, L=2)
+```
+
+
+
+
+
+<a id="Simulation.solve_eigfreq"></a>
+**Simulation.solve\_eigfreq**
+
+```python
+def solve_eigfreq(self,
+                  tol=1e-07,
+                  maxiters=100,
+                  guessfreq=None,
+                  cwtol=None,
+                  cwmaxiters=10000,
+                  L=10)
+```
+
+
+
+
+
+<a id="Simulation.time_spent_on"></a>
+**Simulation.time\_spent\_on**
+
+```python
+def time_spent_on(self, time_sink)
+```
+
+
+
+
+
+<a id="Simulation.use_output_directory"></a>
+**Simulation.use\_output\_directory**
+
+```python
+def use_output_directory(self, dname='')
+```
+
+
+
+
+
+<a id="Simulation.visualize_chunks"></a>
+**Simulation.visualize\_chunks**
+
+```python
+def visualize_chunks(self)
+```
+
+
+
+
+
+
 
 
 
@@ -983,7 +2767,7 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 
 ```python
 def __init__(self,
-             material=<meep.geom.Medium object at 0x7ff7e869ed50>,
+             material=<meep.geom.Medium object at 0x7feeb853ed10>,
              center=Vector3<0.0, 0.0, 0.0>,
              epsilon_func=None)
 ```
@@ -1692,7 +3476,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7ff7b87117a0>)
+             pml_profile=<function PML.<lambda> at 0x7feeb98d17a0>)
 ```
 
 **`thickness` [`number`]**
