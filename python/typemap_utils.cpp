@@ -478,6 +478,10 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
       !py_list_to_susceptibility_list(py_h_sus_m1, &md->medium.H_susceptibilities)) {
     return 0;
   }
+
+  // Store the pointer of the material object in the python class
+  PyObject* md_ptr_py = PyCapsule_New(md,NULL,NULL);
+  if (PyObject_SetAttrString(po, "swigobj", md_ptr_py) != 0) meep::abort("Unable to assign md pointer");
   
   return 1;
 }

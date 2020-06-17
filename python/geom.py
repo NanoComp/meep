@@ -289,7 +289,7 @@ class MaterialGrid(object):
             self.grid_size.y = 1
         elif self.grid_size.z == 0:
             self.grid_size.z = 1
-        self.num_params=self.grid_size.x*self.grid_size.y*self.grid_size.z
+        self.num_params=int(self.grid_size.x*self.grid_size.y*self.grid_size.z)
 
         if design_parameters is None:
             self.design_parameters = np.zeros((self.num_params,))
@@ -312,9 +312,7 @@ class MaterialGrid(object):
     def update_parameters(self,x):
         if x.size != self.num_params:
             raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,grid_size))
-        self.design_parameters=x.flatten().astype(np.float64)
-    def get_gradient(self,fields,grid):
-        return
+        self.design_parameters[:]=x.flatten().astype(np.float64)
 
 class Susceptibility(object):
 

@@ -752,6 +752,78 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete[] $1.items;
 }
 
+//--------------------------------------------------
+// typemaps needed for material grid
+//--------------------------------------------------
+
+/*
+void _get_gradient(meep::realnum *grad,int gn, int gf,
+ meep::realnum *fields, int fx, int fy, int fz, int ff,
+ const meep::volume &where, meep::realnum *frequencies, int nf, geometric_object_list *geometry_tree) {
+
+    int fdims[4] = {fx,fy,fz,ff};
+    double scalegrad = 1;
+    material_grids_addgradient(grad,fields,frequencies,fdims,scalegrad,where,geometry_tree);
+
+}
+*/
+
+%inline %{
+void _get_gradient(PyObject *grad, PyObject *fields, PyObject *grid_volume, PyObject *frequencies, PyObject *py_geom_list) {
+    // clean the gradient array
+    PyArrayObject *pao_grad = (PyArrayObject *)grad;
+    if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
+    meep::realnum * grad_c = (meep::realnum *)PyArray_DATA(pao_grad);
+
+    // clean the fields array
+    PyArrayObject *pao_fields = (PyArrayObject *)fields;
+    if (!PyArray_Check(pao_fields)) meep::abort("fields parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields)) meep::abort("Numpy fields array must be C-style contiguous.");
+    meep::realnum * fields_c = (meep::realnum *)PyArray_DATA(pao_fields);
+
+    // scalegrad not currently used
+    double scalegrad = 1.0;
+
+    // clean the volume object
+    void* where;
+    
+    PyObject* swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
+    SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
+    const meep::volume* where_vol = (const meep::volume*)where;
+
+    // clean the frequencies array
+    PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
+    if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
+    meep::realnum* frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
+
+    // get the proper dimensions of the fields array
+    if (PyArray_NDIM(pao_fields) !=4) {meep::abort("Fields array must have 4 dimensions.");}
+    int fdims_c[4];
+    for (int i = 0; i < PyArray_NDIM(pao_fields); ++i) {
+      fdims_c[i] = PyArray_DIMS(pao_fields)[i];
+    }
+
+    // prepare a geometry_tree
+    geometric_object_list *l;
+    l = new geometric_object_list();
+    if (!py_list_to_gobj_list(py_geom_list,l)) meep::abort("Unable to convert geometry tree.");
+    
+    geom_box_tree geometry_tree = calculate_tree(*where_vol,*l);
+
+    // calculate the gradient
+    meep_geom::material_grids_addgradient(grad_c,fields_c,frequencies_c,fdims_c,scalegrad,*where_vol,geometry_tree);
+    
+    destroy_geom_box_tree(geometry_tree);
+    delete[] l;
+
+}
+%}
+//--------------------------------------------------
+// end typemaps needed for material grid
+//--------------------------------------------------
+
 // Typemap suite for sources
 
 %typecheck(SWIG_TYPECHECK_POINTER) const meep::src_time & {

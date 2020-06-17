@@ -654,6 +654,9 @@ void fields::unset_solve_cw_omega() {
     chunks[i]->unset_solve_cw_omega();
 }
 
+/* implement mirror boundary conditions for i outside 0..n-1: */
+static int mirrorindex(int i, int n) { return i >= n ? 2*n-1-i : (i < 0 ? -1-i : i); }
+
 /* Linearly interpolate a given point in a 3d grid of data.  The point
    coordinates should be in the range [0,1], or at the very least [-1,2]
    ... anything outside [0,1] is *mirror* reflected into [0,1] */
@@ -664,34 +667,24 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, in
   realnum dx, dy, dz;
 
   /* mirror boundary conditions for r just beyond the boundary */
-  if (rx < 0.0)
-    rx = -rx;
-  else if (rx > 1.0)
-    rx = 1.0 - rx;
-  if (ry < 0.0)
-    ry = -ry;
-  else if (ry > 1.0)
-    ry = 1.0 - ry;
-  if (rz < 0.0)
-    rz = -rz;
-  else if (rz > 1.0)
-    rz = 1.0 - rz;
+  rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
+  ry = ry < 0.0 ? -ry : (ry > 1.0 ? 1.0 - ry : ry);
+  rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = rx == 1.0 ? nx-1 : pmod(int(rx * nx), nx);
-  y = ry == 1.0 ? ny-1 : pmod(int(ry * ny), ny);
-  z = rz == 1.0 ? nz-1 : pmod(int(rz * nz), nz);
+  x = mirrorindex(int(rx * nx), nx);
+  y = mirrorindex(int(ry * ny), ny);
+  z = mirrorindex(int(rz * nz), nz);
 
-  /* get the difference between (x,y,z) and the actual point
-     ... we shift by 0.5 to center the data points in the pixels */
-  dx = rx * nx - x - 0.5;
-  dy = ry * ny - y - 0.5;
-  dz = rz * nz - z - 0.5;
+  /* get the difference between (x,y,z) and the actual point */
+  dx = rx * nx - x;
+  dy = ry * ny - y;
+  dz = rz * nz - z;
 
   /* get the other closest point in the grid, with mirror boundaries: */
-  x2 = pmod((dx >= 0.0 ? x + 1 : x - 1), nx);
-  y2 = pmod((dy >= 0.0 ? y + 1 : y - 1), ny);
-  z2 = pmod((dz >= 0.0 ? z + 1 : z - 1), nz);
+  x2 = mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);
+  y2 = mirrorindex(dy >= 0.0 ? y + 1 : y - 1, ny);
+  z2 = mirrorindex(dz >= 0.0 ? z + 1 : z - 1, nz);
 
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
   dx = fabs(dx);

@@ -206,6 +206,15 @@ geom_box gv2box(const meep::volume &v);
 void update_design_parameters(material_type matgrid, double* design_parameters);
 meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 meep::realnum material_grid_val(vector3 p, material_data *md);
+geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
+meep::realnum get_material_gradient(meep::realnum u, meep::realnum freq, const material_data *md);
+void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz, meep::realnum *data,
+          int nx, int ny, int nz, int stride,
+          double scaleby,
+          const meep::realnum *udata,
+          int ukind, double uval);
+void material_grids_addgradient_point(meep::realnum *v, vector3 p, meep::realnum scalegrad, meep::realnum freq, geom_box_tree geometry_tree);
+void material_grids_addgradient(meep::realnum *v, meep::realnum *fields, meep::realnum *frequencies, int *fdims, meep::realnum scalegrad, const meep::volume &where, geom_box_tree geometry_tree);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/
