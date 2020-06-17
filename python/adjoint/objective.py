@@ -5,6 +5,8 @@ import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
 
+from collections import namedtuple
+
 class ObjectiveQuantitiy(ABC):
     @abstractmethod
     def __init__(self):
