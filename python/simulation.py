@@ -50,8 +50,8 @@ def fix_dft_args(args, i):
         df = args[i+1]
         nfreq = args[i+2]
         freq = [fcen] if nfreq == 1 else np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq)
-        if i == 1 and df >= fcen:
-            warnings.warn("add_dft_fields: df >= fcen ({} >= {}). input arguments are (fcen,df) rather than (freq_min,freq_max)".format(df,fcen), RuntimeWarning)
+        if i == 1 and 0.5*df >= fcen:
+            warnings.warn("add_dft_fields: 0.5*df >= fcen ({} >= {}). input arguments are (fcen,df) rather than (freq_min,freq_max)".format(0.5*df,fcen), RuntimeWarning)
         return args[:i] + (freq,) + args[i+3:]
     elif not isinstance(args[i], (np.ndarray, list)):
         raise TypeError("add_dft functions only accept fcen,df,nfreq (3 numbers) or freq (array/list)")
