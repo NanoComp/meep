@@ -61,6 +61,7 @@ pages:
     - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'
     - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
     - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
+    - 'Tutorial/Custom Source': 'Python_Tutorials/Custom_Source.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
     - 'Tutorial/Adjoint Solver': 'Python_Tutorials/AdjointSolver.md'
