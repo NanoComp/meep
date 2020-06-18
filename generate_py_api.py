@@ -92,8 +92,15 @@ class FunctionItem(Item):
             param_str += ')'
         return param_str
 
-    def create_markdown(self, stream):
-        pass
+    def create_markdown(self):
+        # pull relevant attributes into local variables
+        function_name = self.name
+        function_name_escaped = function_name.replace('_', '\_')
+        docstring = self.docstring if self.docstring else ''
+        parameters = self.get_parameters(len(function_name) + 1)
+
+        # Substitute values into the template
+        return self.template.format(**locals())
 
 
 class MethodItem(FunctionItem):
