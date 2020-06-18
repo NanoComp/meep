@@ -38,13 +38,31 @@ EXCLUDES = ['']
 #----------------------------------------------------------------------------
 
 class Item(object):
+    """
+    Common base class for documentable items.
+    """
+
+    # Save a copy of the various templates as a class attribute
+    templates = dict()
+
+    # This must be overwridden in derived classes
+    template_name = None
+
     def __init__(self, name, obj):
+        # load the template if it hasn't been already
+        if self.template_name not in Item.templates:
+            with open(os.path.join(SNIPSDIR, self.template_name)) as f:
+                Item.templates[self.template_name] = f.read()
+        self.template = Item.templates[self.template_name]
+
+        # Set other attributes for the item
         self.name = name
         self.obj = obj
         doc = inspect.getdoc(obj)
         if doc:
             doc = inspect.cleandoc(doc)
         self.docstring = doc
+
 
     def create_markdown(self, stream):
         raise NotImplementedError
@@ -54,6 +72,8 @@ class FunctionItem(Item):
     """
     An introspected item that is a function at module scope.
     """
+    template_name = 'function_template.md'
+
     def __init__(self, name, obj):
         super().__init__(name, obj)
         self.signature = inspect.signature(obj)
@@ -81,11 +101,11 @@ class MethodItem(FunctionItem):
     An introspected item that is a method of a class.
     Mostly the same as a FunctionItem, but can do extra stuff for methods if needed.
     """
+    template_name = 'method_template.md'
+
     def __init__(self, name, obj, klass):
         super().__init__(name, obj)
         self.klass = klass
-        with open(os.path.join(SNIPSDIR, 'method_template.md')) as f:
-            self.template = f.read()
 
     def create_markdown(self):
         # pull relevant attributes into local variables
@@ -104,11 +124,11 @@ class ClassItem(Item):
     """
     An introspected item that is a Class.
     """
+    template_name = 'class_template.md'
+
     def __init__(self, name, obj):
         super().__init__(name, obj)
         self.add_methods()
-        with open(os.path.join(SNIPSDIR, 'class_template.md')) as f:
-            self.template = f.read()
 
     def add_methods(self):
         # Use a match predicate to only look at things in this class, not
@@ -184,20 +204,20 @@ def load_module(module):
     return items
 
 
-def generate_class_docs(items):
+def generate_docs(items):
     """
-    Process the items (just classes for now) and create markdown from their
-    docstrings, returned as a dictionary.
+    Process the items and create markdown from their docstrings, returned as a
+    dictionary.
     """
-    class_docs = dict()
+    docs = dict()
     for item in items:
-        if isinstance(item, ClassItem) and not check_excluded(item.name):
+        if not check_excluded(item.name):
             doc = item.create_markdown()
-            class_docs[item.name] = doc
-    return class_docs
+            docs[item.name] = doc
+    return docs
 
 
-def update_api_document(class_items):
+def update_api_document(doc_items):
     """
     Substitute the available class docstrings into the template SRCDOC and write
     to DESTDOC.
@@ -207,7 +227,7 @@ def update_api_document(class_items):
         srcdoc = f.read()
 
     # manipulate
-    for name, doc in class_items.items():
+    for name, doc in doc_items.items():
         tag = f'@@ {name} @@'
         if tag in srcdoc:
             srcdoc = srcdoc.replace(tag, doc)
@@ -220,8 +240,8 @@ def update_api_document(class_items):
 
 def main(args):
     items = load_module(meep)
-    class_items = generate_class_docs(items)
-    update_api_document(class_items)
+    doc_items = generate_docs(items)
+    update_api_document(doc_items)
 
 
 
