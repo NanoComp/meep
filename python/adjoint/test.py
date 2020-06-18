@@ -54,18 +54,23 @@ ob_list = [Ez0]
 
 
 def J1(alpha):
-	return npa.abs(alpha[0,0]) **2
+    return npa.abs(alpha[0,0]) **2
 
 
 def J2(alpha):
-	return npa.abs(alpha[0,1]) **2 + npa.abs(alpha[0,0]) **2 + npa.abs(alpha[0,2]) **2 + npa.abs(alpha[0,3]) **2 +\
-	npa.abs(alpha[0,4]) **2 + npa.abs(alpha[0,5]) **2 + npa.abs(alpha[0,6]) **2 + npa.abs(alpha[0,7]) **2 + npa.abs(alpha[0,8]) **2 + npa.abs(alpha[0,13]) **2 +\
-	npa.abs(alpha[0,16]) **2 + npa.abs(alpha[0,14]) **2 + npa.abs(alpha[0,11]) **2 + npa.abs(alpha[0,10]) **2 + npa.abs(alpha[0,9]) **2 + npa.abs(alpha[0,12]) **2 +\
-	npa.abs(alpha[0,17]) **2 + npa.abs(alpha[0,15]) **2 +npa.abs(alpha[0,14]) **2 + npa.abs(alpha[0,18]) **2 + npa.abs(alpha[0,19]) **2 + npa.abs(alpha[0,20]) **2 +\
-	npa.abs(alpha[0,21]) **2
+    return npa.abs(alpha[0,0]) **2 + npa.abs(alpha[0,1]) **2 + npa.abs(alpha[0,2]) **2 + npa.abs(alpha[0,3]) **2 +\
+    npa.abs(alpha[0,4]) **2 + npa.abs(alpha[0,5]) **2 + npa.abs(alpha[0,6]) **2 + npa.abs(alpha[0,7]) **2 + npa.abs(alpha[0,8]) **2 + npa.abs(alpha[0,9]) **2 +\
+    npa.abs(alpha[0,10]) **2 + npa.abs(alpha[0,11]) **2 + npa.abs(alpha[0,12]) **2 + npa.abs(alpha[0,13]) **2 + npa.abs(alpha[0,14]) **2 + npa.abs(alpha[0,15]) **2 +\
+    npa.abs(alpha[0,16]) **2 + npa.abs(alpha[0,17]) **2 +npa.abs(alpha[0,18]) **2 + npa.abs(alpha[0,19]) **2 + npa.abs(alpha[0,20]) **2 + npa.abs(alpha[0,21]) **2
 
 def J3(alpha):
     return npa.sum(npa.abs(alpha[0,:])**2)
+
+def J4(alpha):
+    sum_sq = 0
+    for i in alpha[0,:]:
+        sum_sq += npa.abs(i)**2
+    return sum_sq
 
 opt = mpa.OptimizationProblem(
     simulation=sim,
@@ -103,7 +108,7 @@ max_g = np.max(g_discrete)
 
 plt.figure()
 plt.plot([min_g, max_g],[min_g, max_g],label='y=x comparison')
-plt.plot([min_g, max_g],[m*min_g+b, m*max_g+b],'--',label='Best fit')
+plt.plot([min_g, max_g],[m*min_g+b, m*max_g+b],'--',label='Best fit m='+str(m))
 plt.plot(g_discrete,g_adjoint[idx],'o',label='Adjoint comparison')
 plt.xlabel('Finite Difference Gradient')
 plt.ylabel('Adjoint Gradient')
