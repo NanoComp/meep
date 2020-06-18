@@ -18,11 +18,11 @@ dpml = 1.0
 dair = 1.0
 hrod = 0.7
 wrod = 0.5
-dglass = 5.0
+dsub = 5.0
 dAg = 0.5
 
 sx = 1.1
-sy = dpml+dair+hrod+dglass+dAg
+sy = dpml+dair+hrod+dsub+dAg
 
 cell_size = mp.Vector3(sx,sy)
 
@@ -38,8 +38,8 @@ ntrial = args.nr
 run_time = 2*nfreq/df
 
 geometry = [mp.Block(material=mp.Medium(index=3.45),
-                     center=mp.Vector3(0,0.5*sy-dpml-dair-hrod-0.5*dglass),
-                     size=mp.Vector3(mp.inf,dglass,mp.inf)),
+                     center=mp.Vector3(0,0.5*sy-dpml-dair-hrod-0.5*dsub),
+                     size=mp.Vector3(mp.inf,dsub,mp.inf)),
             mp.Block(material=Ag,
                      center=mp.Vector3(0,-0.5*sy+0.5*dAg),
                      size=mp.Vector3(mp.inf,dAg,mp.inf))]
@@ -55,11 +55,11 @@ def compute_flux(m=1,n=0):
         for n in range(ndipole):
             sources.append(mp.Source(mp.CustomSource(src_func=lambda t: np.random.randn()),
                                      component=mp.Ez,
-                                     center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dglass)))
+                                     center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dsub)))
     else:
         sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                              component=mp.Ez,
-                             center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dglass))]
+                             center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dsub))]
 
     sim = mp.Simulation(cell_size=cell_size,
                         resolution=resolution,
