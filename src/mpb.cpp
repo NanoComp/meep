@@ -67,7 +67,7 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   }
   else {
     // get cache pointer, doubling cache size as needed:
-    double *cache = eps_data->icache < eps_data->ncache ? eps_data->cache :
+    double *cache = i < eps_data->ncache ? eps_data->cache :
         (eps_data->cache = (double*) realloc(eps_data->cache, 6 * (eps_data->ncache *= 2)));
 
     const double *s = eps_data->s;
@@ -91,7 +91,8 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
     ASSIGN_ESCALAR(eps->m01, 0, 0);
     eps->m02 = eps->m12 = eps_inv->m01 = eps_inv->m02 = eps_inv->m12 = eps->m01;
   }
-  eps_data->icache += 1;
+
+  eps_data->icache += 1; // next call will use the subsequent cache element
 }
 
 /**************************************************************/
