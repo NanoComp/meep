@@ -463,21 +463,15 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");
   PyObject *py_e_sus_m2 = PyObject_GetAttrString(po_medium2, "E_susceptibilities");
-  PyObject *py_h_sus_m1 = PyObject_GetAttrString(po_medium1, "H_susceptibilities");
-  PyObject *py_h_sus_m2 = PyObject_GetAttrString(po_medium2, "H_susceptibilities");
-  if (!py_e_sus_m1 || !py_e_sus_m2 || !py_h_sus_m1 || !py_h_sus_m2) { return 0;}
-
-  for (int i=0; i<PyList_Size(py_e_sus_m2);i++){
-    if (PyList_Append(py_e_sus_m1, PyList_GetItem(py_e_sus_m2, i)) != 0) {meep::abort("unable to merge e sus lists.\n");}
-  }
-  for (int i=0; i<PyList_Size(py_h_sus_m2);i++){
-    if (PyList_Append(py_h_sus_m1, PyList_GetItem(py_h_sus_m2, i)) != 0) {meep::abort("unable to merge h sus lists.\n");}
-  }
+  if (!py_e_sus_m1 || !py_e_sus_m2) { return 0;}
   
-  if (!py_list_to_susceptibility_list(py_e_sus_m1, &md->medium.E_susceptibilities) ||
-      !py_list_to_susceptibility_list(py_h_sus_m1, &md->medium.H_susceptibilities)) {
-    return 0;
-  }
+  PyObject* py_sus = PyList_New(0);
+  for (int i=0; i<PyList_Size(py_e_sus_m1);i++) {
+    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m1, i)) != 0) meep::abort("unable to merge e sus lists.\n");}
+  for (int i=0; i<PyList_Size(py_e_sus_m2);i++) {
+    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m2, i)) != 0) meep::abort("unable to merge e sus lists.\n");}
+  
+  if (!py_list_to_susceptibility_list(py_sus, &md->medium.E_susceptibilities)) {return 0;}
 
   // Store the pointer of the material object in the python class
   PyObject* md_ptr_py = PyCapsule_New(md,NULL,NULL);

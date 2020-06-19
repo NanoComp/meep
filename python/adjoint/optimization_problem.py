@@ -15,16 +15,16 @@ class DesignRegion(object):
         self.num_design_params=design_parameters.num_params
     def update_design_parameters(self,design_parameters):
         self.design_parameters.update_parameters(design_parameters)
-    def get_gradient(self,fields,frequencies,geom_list):
+    def get_gradient(self,fields_a,fields_f,frequencies,geom_list,f):
         # sanitize the input
-        if fields.ndim < 4:
-            raise ValueError("Fields array must have 4 dimensions (x,y,z,frequency)")
+        if (fields_a.ndim < 5) or (fields_f.ndim < 5):
+            raise ValueError("Fields arrays must have 5 dimensions (x,y,z,frequency,component)")
         num_freqs = np.array(frequencies).size
 
         grad = np.zeros((self.num_design_params*num_freqs,)) # preallocate
 
         # compute the gradient
-        mp._get_gradient(grad,fields,self.volume,np.array(frequencies),geom_list) 
+        mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f) 
 
         return grad
 
@@ -202,11 +202,11 @@ class OptimizationProblem(object):
             self.f0 = self.f0[0]
 
         # Store forward fields for each set of design variables in array (x,y,z,field_components,frequencies)
-        self.d_E = [np.zeros((len(dg.x),len(dg.y),len(dg.z),3,self.nf),dtype=np.complex128) for dg in self.design_grids]
+        self.d_E = [np.zeros((len(dg.x),len(dg.y),len(dg.z),self.nf,3),dtype=np.complex128) for dg in self.design_grids]
         for nb, dgm in enumerate(self.design_region_monitors):
             for f in range(self.nf):
                 for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
-                    self.d_E[nb][:,:,:,ic,f] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+                    self.d_E[nb][:,:,:,f,ic] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
@@ -236,18 +236,18 @@ class OptimizationProblem(object):
         self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, self.minimum_run_time))
 
         # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
-        self.a_E.append([np.zeros((len(dg.x),len(dg.y),len(dg.z),3,self.nf),dtype=np.complex128) for dg in self.design_grids])
+        self.a_E.append([np.zeros((len(dg.x),len(dg.y),len(dg.z),self.nf,3),dtype=np.complex128) for dg in self.design_grids])
         for nb, dgm in enumerate(self.design_region_monitors):
             for f in range(self.nf):
                 for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
-                    self.a_E[objective_idx][nb][:,:,:,ic,f] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+                    self.a_E[objective_idx][nb][:,:,:,f,ic] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # update optimizer's state
         self.current_state = "ADJ"
 
     def calculate_gradient(self):
-        # Iterate through all design region bases, calculate, gradient w.r.t. permittivity, and backprop to gradient w.r.t. design variables
-        self.gradient = [[dr.get_gradient(2*np.sum(np.real(self.a_E[ar][dri]*self.d_E[dri]),axis=(3)),self.frequencies,self.sim.geometry) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
+        # Iterate through all design regions and calculate gradient
+        self.gradient = [[dr.get_gradient(self.a_E[ar][dri],self.d_E[dri],self.frequencies,self.sim.geometry,self.sim.fields) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
         
         # Cleanup list of lists
         if len(self.gradient) == 1:
