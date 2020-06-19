@@ -79,11 +79,11 @@ class Source(object):
 
 class SourceTime(object):
     """
-    # TODO:
+    TODO:
     """
     def __init__(self, is_integrated=False):
         """
-        # TODO:
+        TODO:
         """
         self.is_integrated = is_integrated
 

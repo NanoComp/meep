@@ -375,6 +375,9 @@ class Medium(object):
         self.B_conductivity_offdiag = Vector3(*D_conductivity_offdiag)
         self.valid_freq_range = valid_freq_range
 
+    def __repr__(self):
+        return 'Medium()'
+
     def transform(self, m):
         """
         **`transform(M` [ `Matrix` class ]`)`**
@@ -632,7 +635,7 @@ class MultilevelAtom(Susceptibility):
 
 class Transition(object):
     """
-    # TODO:
+    TODO:
     """
 
     def __init__(self,
@@ -1382,8 +1385,13 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
 
 
 def get_rotation_matrix(axis, theta):
-    """ Returns the rotation matrix for rotating by theta around axis """
+    """
+    Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result as `v.rotate(axis, theta)`.
 
+    axis [`Vector3`] —
+
+    theta [`number`] —
+    """
     return Matrix(Vector3(x=1).rotate(axis, theta),
                   Vector3(y=1).rotate(axis, theta),
                   Vector3(z=1).rotate(axis, theta))

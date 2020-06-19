@@ -355,8 +355,52 @@ class FluxRegion(object):
 
 ModeRegion = FluxRegion
 Near2FarRegion = FluxRegion
-ForceRegion = FluxRegion
-EnergyRegion = FluxRegion
+
+
+class ForceRegion(FluxRegion):
+    """
+    A region (volume, plane, line, or point) in which to compute the integral of the stress tensor of the Fourier-transformed fields. Its properties are:
+
+    **`center` [ `Vector3` ]**
+    —
+    The center of the force region (no default).
+
+    **`size` [ `Vector3` ]**
+    —
+    The size of the force region along each of the coordinate axes. Default is `(0,0,0)` (a single point).
+
+    **`direction` [ `direction constant` ]**
+    —
+    The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). Unlike `FluxRegion`, you must specify this explicitly, because there is not generally any relationship between the direction of the force and the orientation of the force region.
+
+    **`weight` [ `complex` ]**
+    —
+    A weight factor to multiply the force by when it is computed. Default is 1.0.
+
+    **`volume` [`Volume`]**
+    —
+    A `meep.Volume` can be used to specify the force region instead of a `center` and a `size`.
+
+    In most circumstances, you should define a set of `ForceRegion`s whose union is a closed surface lying in vacuum and enclosing the object that is experiencing the force.
+    """
+
+
+class EnergyRegion(FluxRegion):
+    """
+    A region (volume, plane, line, or point) in which to compute the integral of the energy density of the Fourier-transformed fields. Its properties are:
+
+    **`center` [`Vector3`]**
+    —
+    The center of the energy region (no default).
+
+    **`size` [`Vector3`]**
+    —
+    The size of the energy region along each of the coordinate axes. Default is (0,0,0): a single point.
+
+    **`weight` [`complex`]**
+    —
+    A weight factor to multiply the energy density by when it is computed. Default is 1.0.
+    """
 
 
 class FieldsRegion(object):
@@ -676,6 +720,15 @@ class Simulation(object):
     """
     The `Simulation` [class](#classes) contains all the attributes that you can
     set to control various parameters of the Meep computation.
+
+    #### Output File Names
+
+    The output filenames used by Meep, e.g. for HDF5 files, are automatically
+    prefixed by the `filename_prefix` parameter. If `filename_prefix` is
+    `None` (the default), however, then Meep constructs a default prefix based
+    on the current Python filename with `".py"` replaced by `"-"`: e.g.
+    `test.py` implies a prefix of `"test-"`. You can get this prefix by calling
+    `get_filename_prefix`.
     """
     def __init__(self,
                  cell_size,
@@ -1450,6 +1503,9 @@ class Simulation(object):
         return [self.structure.estimated_cost(i) for i in range(mp.count_processors())]
 
     def set_materials(self, geometry=None, default_material=None):
+        """
+        This can be called in a step function, and is useful for changing the geometry or default material as a function of time.
+        """
         if self.fields:
             self.fields.remove_susceptibilities()
 
@@ -1577,6 +1633,9 @@ class Simulation(object):
         self.init_sim()
 
     def initialize_field(self, cmpnt, amp_func):
+        """
+        Initialize the component `c` fields using the function `func` which has a single argument, a `Vector3` giving a position and returns a complex number for the value of the field at that point.
+        """
         if self.fields is None:
             self.init_sim()
         self.fields.initialize_field(cmpnt, amp_func)
@@ -1632,6 +1691,11 @@ class Simulation(object):
         return total_bytes
 
     def meep_time(self):
+        """
+        Return the current simulation time in simulation time units (e.g. during a run function). This is not the wall-clock time.
+
+        Occasionally, e.g. for termination conditions of the form $time < T?$, it is desirable to round the time to single precision in order to avoid small differences in roundoff error from making your results different by one timestep from machine to machine (a difference much bigger than roundoff error); in this case you can call `Simulation.round_time()` instead, which returns the time rounded to single precision.
+        """
         if self.fields is None:
             self.init_sim()
         return self.fields.time()
@@ -1643,22 +1707,38 @@ class Simulation(object):
         return self.fields.round_time()
 
     def phase_in_material(self, structure, time):
+        """
+        `newstructure` should be the `structure` field of another `Simulation` object with the same cell size and resolution.   Over the next time period `phasetime` (in the current simulation's time units), the current structure (ε, μ, and conductivity) will be gradually changed to `newstructure`. In particular, at each timestep it linearly interpolates between the old structure and the new structure. After `phasetime` has elapsed, the structure will remain equal to `newstructure`. This is demonstrated in the following image for two [Cylinder](#cylinder) objects (the simulation script is in [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
+
+        <center>
+        ![](images/phase-in-material.png)
+        </center>
+        """
         if self.fields is None:
             self.init_sim()
 
         return self.fields.phase_in_material(structure, time)
 
     def set_boundary(self, side, direction, condition):
+        """
+        Sets the condition of the boundary on the specified side in the specified direction. See the [Constants (Enumerated Types)](#constants-enumerated-types) section for valid `side`, `direction`, and `boundary_condition` values.
+        """
         if self.fields is None:
             self.init_sim()
 
         self.fields.set_boundary(side, direction, condition)
 
     def get_field_point(self, c, pt):
+        """
+        Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`, returns the value of that component at that point.
+        """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
     def get_epsilon_point(self, pt, frequency=0, omega=0):
+        """
+        Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue of the permittivity tensor at that location and frequency. If `frequency` is non-zero, the result is complex valued; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
+        """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         if omega != 0:
             frequency = omega
@@ -1666,6 +1746,13 @@ class Simulation(object):
         return self.fields.get_eps(v3,frequency)
 
     def get_filename_prefix(self):
+        """
+        Return the current prefix string that is prepended, by default, to all file names.
+
+        If you don't want to use any prefix, then you should set `filename_prefix` to the empty string `''`.
+
+        In addition to the filename prefix, you can also specify that all the output files be written into a newly-created directory (if it does not yet exist). This is done by calling `Simulation.use_output_directory([dirname])`
+        """
         if isinstance(self.filename_prefix, str):
             return self.filename_prefix
         elif self.filename_prefix is None:
@@ -1679,6 +1766,9 @@ class Simulation(object):
             raise TypeError("Expected a string for filename_prefix, or None for the default.")
 
     def use_output_directory(self, dname=''):
+        """
+        Put output in a subdirectory, which is created if necessary. If the optional argument dirname is specified, that is the name of the directory. Otherwise, the directory name is the current Python file name with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of `"test-out"`.
+        """
         if not dname:
             dname = self.get_filename_prefix() + '-out'
 
@@ -1882,6 +1972,9 @@ class Simulation(object):
                 dft.swigobj = dft.func(*dft.args)
 
     def add_dft_fields(self, *args, **kwargs):
+        """
+        Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies over the `Volume` specified by `where` (default to the entire cell). The volume can also be specified via the `center` and `size` arguments. The default routine interpolates the Fourier transformed fields at the center of each voxel within the specified volume. Alternatively, the exact Fourier transformed fields evaluated at each corresponding Yee grid point is available by setting `yee_grid` to `True`.
+        """
         components = args[0]
         args = fix_dft_args(args, 1)
         freq = args[1]
@@ -1923,6 +2016,11 @@ class Simulation(object):
         return arr
 
     def add_near2far(self, *args, **kwargs):
+        """
+        add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1)
+
+        Add a bunch of `Near2FarRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass to the functions below to get the far fields.
+        """
         args = fix_dft_args(args, 0)
         freq = args[0]
         near2fars = args[1:]
@@ -1937,6 +2035,9 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars, nperiods)
 
     def add_energy(self, *args):
+        """
+        Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return an *energy object*, which you can pass to the functions below to get the energy spectrum, etcetera.
+        """
         args = fix_dft_args(args, 0)
         freq = args[0]
         energys = args[1:]
@@ -1955,32 +2056,58 @@ class Simulation(object):
             display_csv(self, "{}-energy".format(name), zip(freqs, *[func(f) for f in energys]))
 
     def display_electric_energy(self, *energys):
+        """
+        Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the electric fields prefixed by "electric_energy1:" or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+        """
         self._display_energy('electric', get_electric_energy, energys)
 
     def display_magnetic_energy(self, *energys):
+        """
+        Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the magnetic fields prefixed by "magnetic_energy1:" or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+        """
         self._display_energy('magnetic', get_magnetic_energy, energys)
 
     def display_total_energy(self, *energys):
+        """
+        Given a number of energy objects, this displays a comma-separated table of frequencies and energy density spectra for the total fields "total_energy1:" or similar (where the number is incremented after each run). All of the energy should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the energy density spectra.
+        """
         self._display_energy('total', get_total_energy, energys)
 
     def load_energy(self, fname, energy):
+        """
+        Load the Fourier-transformed fields into the given energy object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_energy` in a simulation of the same dimensions for both the cell and the energy regions with the same number of processors.
+        """
         if self.fields is None:
             self.init_sim()
         energy.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_energy(self, fname, energy):
+        """
+        Save the Fourier-transformed fields corresponding to the given energy object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+        """
         if self.fields is None:
             self.init_sim()
         energy.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_energy(self, fname, energy):
+        """
+        As `load_energy`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
         self.load_energy(fname, energy)
         energy.scale_dfts(-1.0)
 
-    def get_farfield(self, f, v):
-        return mp._get_farfield(f.swigobj, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
+    def get_farfield(self, near2far, x):
+        """
+        Given a `Vector3` point `x` which can lie anywhere outside the near-field surface, including outside the cell and a `near2far` object, returns the computed (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting of fields (E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...) for the frequencies 1,2,…,`nfreq`.
+        """
+        return mp._get_farfield(near2far.swigobj, py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical))
 
     def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
+        """
+        Like `output_farfields` but returns a dictionary of NumPy arrays instead of writing to a file. The dictionary keys are `Ex`, `Ey`, `Ez`, `Hx`, `Hy`, `Hz`. Each array has the same shape as described in `output_farfields`.
+
+        Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
+        """
         if self.fields is None:
             self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
@@ -2003,6 +2130,9 @@ class Simulation(object):
         }
 
     def output_farfields(self, near2far, fname, resolution, where=None, center=None, size=None):
+        """
+        Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grid points / distance unit), outputs the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions that =1 are omitted. The volume can optionally be specified via `center` and `size`.
+        """
         if self.fields is None:
             self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
@@ -2010,31 +2140,52 @@ class Simulation(object):
         near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
         self.fields.finished_working()
 
-    def load_near2far(self, fname, n2f):
+    def load_near2far(self, fname, near2far):
+        """
+        Load the Fourier-transformed fields into the given `near2far` object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_near2far` in a simulation of *the same dimensions* for both the cell and the near2far regions with the same number of processors.
+        """
         if self.fields is None:
             self.init_sim()
-        n2f.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
+        near2far.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
-    def save_near2far(self, fname, n2f):
+    def save_near2far(self, fname, near2far):
+        """
+        Save the Fourier-transformed fields corresponding to the given `near2far` object in an HDF5 file of the given `filename` (without the ".h5" suffix). The current filename-prefix is prepended automatically.
+        """
         if self.fields is None:
             self.init_sim()
-        n2f.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
+        near2far.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
-    def load_minus_near2far(self, fname, n2f):
+    def load_minus_near2far(self, fname, near2far):
+        """
+        As `load_near2far`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
         self.load_near2far(fname, n2f)
-        n2f.scale_dfts(-1.0)
+        near2far.scale_dfts(-1.0)
 
-    def get_near2far_data(self, n2f):
-        return NearToFarData(F=self.get_dft_data(n2f.F))
+    def get_near2far_data(self, near2far):
+        """
+        Get the Fourier-transformed fields corresponding to the given `near2far` object as a `NearToFarData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_near2far_data` below and should be considered opaque.
+        """
+        return NearToFarData(F=self.get_dft_data(near2far.F))
 
-    def load_near2far_data(self, n2f, n2fdata):
-        mp._load_dft_data(n2f.F, n2fdata.F)
+    def load_near2far_data(self, near2far, n2fdata):
+        """
+        Load the Fourier-transformed fields into the `near2far` object (replacing any values currently there) from the `NearToFarData` object `n2fdata`. You must load from an object that was created by `get_near2far_data` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+        """
+        mp._load_dft_data(near2far.F, n2fdata.F)
 
-    def load_minus_near2far_data(self, n2f, n2fdata):
-        self.load_near2far_data(n2f, n2fdata)
-        n2f.scale_dfts(complex(-1.0))
+    def load_minus_near2far_data(self, near2far, n2fdata):
+        """
+        As `load_near2far_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
+        self.load_near2far_data(near2far, n2fdata)
+        near2far.scale_dfts(complex(-1.0))
 
     def add_force(self, *args):
+        """
+        Add a bunch of `ForceRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return a `force`object, which you can pass to the functions below to get the force spectrum, etcetera.
+        """
         args = fix_dft_args(args, 0)
         freq = args[0]
         forces = args[1:]
@@ -2048,38 +2199,62 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_force, freq, forces)
 
     def display_forces(self, *forces):
+        """
+        Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the force spectra.
+        """
         force_freqs = get_force_freqs(forces[0])
         display_csv(self, 'force', zip(force_freqs, *[get_forces(f) for f in forces]))
 
     def load_force(self, fname, force):
+        """
+        Load the Fourier-transformed fields into the given force object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_force` in a simulation of the same dimensions for both the cell and the force regions with the same number of processors.
+        """
         if self.fields is None:
             self.init_sim()
         force.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_force(self, fname, force):
+        """
+        Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+        """
         if self.fields is None:
             self.init_sim()
         force.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_force(self, fname, force):
+        """
+        As `load_force`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
         self.load_force(fname, force)
         force.scale_dfts(-1.0)
 
     def get_force_data(self, force):
+        """
+        Get the Fourier-transformed fields corresponding to the given force object as a `ForceData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_force_data` below and should be considered opaque.
+        """
         return ForceData(offdiag1=self.get_dft_data(force.offdiag1),
                          offdiag2=self.get_dft_data(force.offdiag2),
                          diag=self.get_dft_data(force.diag))
 
     def load_force_data(self, force, fdata):
+        """
+        Load the Fourier-transformed fields into the given force object (replacing any values currently there) from the `ForceData` object `fdata`. You must load from an object that was created by `get_force_data` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+        """
         mp._load_dft_data(force.offdiag1, fdata.offdiag1)
         mp._load_dft_data(force.offdiag2, fdata.offdiag2)
         mp._load_dft_data(force.diag, fdata.diag)
 
     def load_minus_force_data(self, force, fdata):
+        """
+        As `load_force_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
         self.load_force_data(force, fdata)
         force.scale_dfts(complex(-1.0))
 
     def add_flux(self, *args):
+        """
+        Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced frequencies. Return a *flux object*, which you can pass to the functions below to get the flux spectrum, etcetera.
+        """
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
@@ -2093,6 +2268,9 @@ class Simulation(object):
         return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
 
     def add_mode_monitor(self, *args):
+        """
+        Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
+        """
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
@@ -2119,9 +2297,15 @@ class Simulation(object):
         return self.add_mode_monitor(args)
 
     def display_fluxes(self, *fluxes):
+        """
+        Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and subsequent columns are the flux spectra.
+        """
         display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
 
     def load_flux(self, fname, flux):
+        """
+        Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save_flux` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+        """
         if self.fields is None:
             self.init_sim()
 
@@ -2130,6 +2314,9 @@ class Simulation(object):
     load_mode = load_flux
 
     def save_flux(self, fname, flux):
+        """
+        Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given `filename` without the ".h5" suffix (the current filename-prefix is prepended automatically).
+        """
         if self.fields is None:
             self.init_sim()
 
@@ -2138,29 +2325,44 @@ class Simulation(object):
     save_mode = save_flux
 
     def load_minus_flux(self, fname, flux):
+        """
+        As `load_flux`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
     load_minus_mode = load_minus_flux
 
     def get_flux_data(self, flux):
+        """
+        Get the Fourier-transformed fields corresponding to the given flux object as a `FluxData`, which is just a named tuple of NumPy arrays. Note that this object is only useful for passing to `load_flux_data` below and should be considered opaque.
+        """
         return FluxData(E=self.get_dft_data(flux.E), H=self.get_dft_data(flux.H))
 
     get_mode_data = get_flux_data
 
     def load_flux_data(self, flux, fdata):
+        """
+        Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from the `FluxData` object `fdata`. You must load from an object that was created by `get_flux_data` in a simulation of the same dimensions (for both the cell and the flux regions) with the same number of processors.
+        """
         mp._load_dft_data(flux.E, fdata.E)
         mp._load_dft_data(flux.H, fdata.H)
 
     load_mode_data = load_flux_data
 
     def load_minus_flux_data(self, flux, fdata):
+        """
+        As `load_flux_data`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
+        """
         self.load_flux_data(flux, fdata)
         flux.scale_dfts(complex(-1.0))
 
     load_minus_mode_data = load_minus_flux_data
 
     def flux_in_box(self, d, box=None, center=None, size=None):
+        """
+        Given a `direction` constant, and a `mp.Volume`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `flux_in_box(d=mp.X,mp.Volume(center=mp.Vector3(0,0,0),size=mp.Vector3(0,1,1)))`. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you.
+        """
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using flux_in_box')
 
@@ -2169,6 +2371,9 @@ class Simulation(object):
         return self.fields.flux_in_box(d, box)
 
     def electric_energy_in_box(self, box=None, center=None, size=None):
+        """
+        Given a `mp.Volume`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
+        """
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
 
@@ -2177,6 +2382,9 @@ class Simulation(object):
         return self.fields.electric_energy_in_box(box)
 
     def magnetic_energy_in_box(self, box=None, center=None, size=None):
+        """
+        Given a `mp.Volume`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
+        """
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
 
@@ -2185,6 +2393,9 @@ class Simulation(object):
         return self.fields.magnetic_energy_in_box(box)
 
     def field_energy_in_box(self, box=None, center=None, size=None):
+        """
+        Given a `mp.Volume`, returns the integral of the electric- and magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size along a dimension, a lower-dimensional integral is used. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you. Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
+        """
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using field_energy_in_box')
 
@@ -2193,6 +2404,15 @@ class Simulation(object):
         return self.fields.field_energy_in_box(box)
 
     def modal_volume_in_box(self, box=None, center=None, size=None):
+        """
+        Given a `mp.Volume`, returns the instantaneous modal volume according to the Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum (ε|E|<sup>2</sup>). If no volume argument is provided, the entire cell is used by default. If the `center` and `size` arguments are provided instead of `box`, Meep will construct the appropriate volume for you.
+
+        Note that if you are at a fixed frequency and you use complex fields (via Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the flux or energy integrals above corresponds to the time average of the flux or energy for a simulation with real fields.
+
+        Often, you want the integration box to be the entire cell. A useful function to return this box, which you can then use for the `box` arguments above, is `Simulation.total_volume()`.
+
+        One versatile feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output_field_function`, described later). This is done via the functions:
+        """
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using modal_volume_in_box')
 
@@ -2388,6 +2608,17 @@ class Simulation(object):
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
+        """
+        Given a flux object and list of band indices, return a `namedtuple` with the following fields:
+
+        + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes propagating in the forward (+) or backward (-) directions.
+        + `vgrp`: the group velocity as a NumPy array.
+        + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
+        + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
+        + `cscale`: a NumPy array of each mode's scaling coefficient. Useful for adjoint calculations.
+
+        See [Mode Decomposition](#mode-decomposition)
+        """
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
         if eig_vol is None:
@@ -2421,6 +2652,18 @@ class Simulation(object):
 
     def get_eigenmode(self, frequency, direction, where, band_num, kpoint, eig_vol=None, match_frequency=True,
                       parity=mp.NO_PARITY, resolution=0, eigensolver_tol=1e-12):
+        """
+        The parameters of this routine are the same as that of `get_eigenmode_coefficients` or `EigenModeSource`, but this function returns an object that can be used to inspect the computed mode.  In particular, it returns an `EigenmodeData` instance with the following fields:
+
+        + `band_num`: same as the `band_num` parameter
+        + `freq`: the computed frequency, same as the `frequency` input parameter if `match_frequency=True`
+        + `group_velocity`: the group velocity of the mode in `direction`
+        + `k`: the Bloch wavevector of the mode in `direction`
+        + `kdom`: the dominant planewave of mode `band_num`
+        + `amplitude(point, component)`: the (complex) value of the given E or H field `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in space (interpreted with Bloch-periodic boundary conditions if you give a point outside the original `eig_vol`).
+
+        If `match_frequency=False` or `kpoint` is not zero in the given `direction`, the `frequency` input parameter is ignored.
+        """
 
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode")
@@ -2462,18 +2705,50 @@ class Simulation(object):
         return where
 
     def integrate_field_function(self, cs, func, where=None, center=None, size=None):
+        """
+        Returns the integral of the complex-valued function `func` over the `Volume` specified by `where` (defaults to entire cell) for the `meep::fields` contained in the `Simulation` instance that calls this method. `func` is a function of position (a `Vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued. The volume can optionally be specified via the `center` and `size` arguments.
+
+        If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
+
+        Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements) by the circumference $2\pi r$, or equivalently the integral is over an annular volume.
+        """
         where = self._get_field_function_volume(where, center, size)
         return self.fields.integrate([cs, func], where)
 
     def integrate2_field_function(self, fields2, cs1, cs2, func, where=None, center=None, size=None):
+        """
+        Similar to `integrate_field_function`, but takes additional parameters `fields2` and `cs2`. `fields2` is a `meep::fields*` object similar to the global `fields` variable (see below) specifying the fields from another simulation. `cs1` is a list of components to integrate with from the `meep::fields` instance in `Simulation.fields`, as for `integrate_field_function`, while `cs2` is a list of components to integrate from `fields2`. Similar to `integrate_field_function`, `func` is a function that returns an number given arguments consisting of: the position vector, followed by the values of the components specified by `cs1` (in order), followed by the values of the components specified by `cs2` (in order). The volume can optionally be specified via the `center` and `size` arguments.
+
+        To get two fields in memory at once for `integrate2_field_function`, the easiest way is to run one simulation within a given Python file, then save the results in another fields variable, then run a second simulation. This would look something like:
+
+        ```py
+        ...set up and run first simulation...
+        fields2 = sim.fields # save the fields in a variable
+        sim.fields = None    # prevent the fields from getting deallocated by reset-meep
+        sim.reset_meep()
+        ...set up and run second simulation...
+        ```
+
+        It is also possible to timestep both fields simultaneously (e.g. doing one timestep of one simulation then one timestep of another simulation, and so on, but this requires you to call much lower-level functions like `fields_step()`.
+        """
         where = self._get_field_function_volume(where, center, size)
         return self.fields.integrate2(fields2, [cs1, cs2, func], where)
 
     def max_abs_field_function(self, cs, func, where=None, center=None, size=None):
+        """
+        As `integrate_field_function`, but returns the maximum absolute value of `func` in the volume `where` instead of its integral.
+
+        The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Functions](Field_Functions.md) for examples of how to call `integrate_field_function` and `max_abs_field_function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields. The volume can optionally be specified via the `center` and `size` arguments.
+
+        Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
+        """
         where = self._get_field_function_volume(where, center, size)
         return self.fields.max_abs([cs, func], where)
 
     def change_k_point(self, k):
+        """
+        Change the `k_point` (the Bloch periodicity).
+        """
         self.k_point = k
 
         if self.fields:
@@ -2488,6 +2763,9 @@ class Simulation(object):
                     self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical))
 
     def change_sources(self, new_sources):
+        """
+        Change the list of sources in `Simulation.sources` to `new_sources`, and changes the sources used for the current simulation. `new_sources` must be a list of `Source` objects.
+        """
         self.sources = new_sources
         if self.fields:
             self.fields.remove_sources()
@@ -2495,12 +2773,18 @@ class Simulation(object):
                 self.add_source(s)
 
     def reset_meep(self):
+        """
+        Reset all of Meep's parameters, deleting the fields, structures, etcetera, from memory as if you had not run any computations.
+        """
         self.fields = None
         self.structure = None
         self.dft_objects = []
         self._is_initialized = False
 
     def restart_fields(self):
+        """
+        Restart the fields at time zero, with zero fields. Does *not* reset the Fourier transforms of the flux planes, which continue to be accumulated.
+        """
         if self.fields is not None:
             self.fields.t = 0
             self.fields.zero_fields()
@@ -2529,13 +2813,32 @@ class Simulation(object):
             raise ValueError("Invalid run configuration")
 
     def print_times(self):
+        """
+        Call after running a simulation to print the times spent on various types of work. Example output:
+
+        ```
+        Field time usage:
+                connecting chunks: 0.0819176 s +/- 0.000428381 s
+                    time stepping: 0.198949 s +/- 0.0225551 s
+                    communicating: 0.410577 s +/- 0.278853 s
+                outputting fields: 0.512352 s +/- 0.0238399 s
+             Fourier transforming: 0.0738274 s +/- 0.0967926 s
+                  everything else: 0.324933 s +/- 0.377573 s
+        ```
+        """
         if self.fields:
             self.fields.print_times()
 
     def mean_time_spent_on(self, time_sink):
+        """
+        Return the mean time spent by all processes for a type of work `time_sink` which can be one of nine integer values `0`-`8` as described above.
+        """
         return self.fields.mean_time_spent_on(time_sink)
 
     def time_spent_on(self, time_sink):
+        """
+        Return a list of times spent by each process for a type of work `time_sink` which can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`) Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
+        """
         return self.fields.time_spent_on(time_sink)
 
     def get_epsilon(self,frequency=0,omega=0):
@@ -3253,6 +3556,11 @@ def output_sfield_p(sim):
 
 
 def Ldos(*args):
+    """
+    Ldos(fcen, df, nfreq, freq)
+
+    Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. This can be passed to the `dft_ldos` step function below as a keyword argument.
+    """
     args = fix_dft_args(args, 0)
     freq = args[0]
 
@@ -3260,6 +3568,13 @@ def Ldos(*args):
 
 
 def dft_ldos(*args, **kwargs):
+    """
+    dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)
+
+    Compute the power spectrum of the sources (usually a single point dipole source), normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at `fcen` and `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced frequencies. One can also pass in an `Ldos` object as `dft_ldos(ldos=my_Ldos)`.
+
+    The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `ldos_data` variable of the `Simulation` object after the `run` is complete.
+    """
     ldos = kwargs.get('ldos', None)
     if ldos is None:
         args = fix_dft_args(args, 0)
@@ -3281,18 +3596,30 @@ def dft_ldos(*args, **kwargs):
 
 
 def scale_flux_fields(s, flux):
+    """
+    Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load_minus_flux` is equivalent to `load_flux` followed by `scale_flux_fields` with `s=-1`.
+    """
     flux.scale_dfts(s)
 
 
 def get_ldos_freqs(l):
+    """
+    Given an LDOS object, returns a list of the frequencies that it is computing the spectrum for.
+    """
     return [l.freq[i] for i in range(l.freq.size())]
 
 
 def get_flux_freqs(f):
+    """
+    Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
+    """
     return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_fluxes(f):
+    """
+    Given a flux object, returns a list of the current flux spectrum that it has accumulated.
+    """
     return f.flux()
 
 
@@ -3301,22 +3628,37 @@ def scale_force_fields(s, force):
 
 
 def get_eigenmode_freqs(f):
+    """
+    Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
+    """
     return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_force_freqs(f):
+    """
+    Given a force object, returns a list of the frequencies that it is computing the spectrum for.
+    """
     return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_forces(f):
+    """
+    Given a force object, returns a list of the current force spectrum that it has accumulated.
+    """
     return f.force()
 
 
-def scale_near2far_fields(s, n2f):
+def scale_near2far_fields(s, near2far):
+    """
+    Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.g. `load_minus_near2far` is equivalent to `load_near2far` followed by `scale_near2far_fields` with `s=-1`.
+    """
     n2f.scale_dfts(s)
 
 
 def get_near2far_freqs(f):
+    """
+    Given a `near2far` object, returns a list of the frequencies that it is computing the spectrum for.
+    """
     return [f.freq[i] for i in range(f.freq.size())]
 
 
@@ -3325,22 +3667,37 @@ def scale_energy_fields(s, ef):
 
 
 def get_energy_freqs(f):
+    """
+    Given an energy object, returns a list of the frequencies that it is computing the spectrum for.
+    """
     return [f.freq[i] for i in range(f.freq.size())]
 
 
 def get_electric_energy(f):
+    """
+    Given an energy object, returns a list of the current energy density spectrum for the electric fields that it has accumulated.
+    """
     return f.electric()
 
 
 def get_magnetic_energy(f):
+    """
+    Given an energy object, returns a list of the current energy density spectrum for the magnetic fields that it has accumulated.
+    """
     return f.magnetic()
 
 
 def get_total_energy(f):
+    """
+    Given an energy object, returns a list of the current energy density spectrum for the total fields that it has accumulated.
+    """
     return f.total()
 
 
 def interpolate(n, nums):
+    """
+    Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to add `n` new evenly-spaced values between each pair of consecutive values in the original list.
+    """
     res = []
     if isinstance(nums[0], mp.Vector3):
         for low, high in zip(nums, nums[1:]):
@@ -3358,16 +3715,19 @@ def interpolate(n, nums):
 
 
 # extract center and size of a meep::volume
-def get_center_and_size(v):
-    rmin = v.get_min_corner()
-    rmax = v.get_max_corner()
+def get_center_and_size(vol):
+    """
+    Utility function that takes a `meep::volume` `vol` and returns the center and size of the volume as a tuple of `Vector3`.
+    """
+    rmin = vol.get_min_corner()
+    rmax = vol.get_max_corner()
     v3rmin = mp.Vector3(rmin.x(), rmin.y(), rmin.z())
     v3rmax = mp.Vector3(rmax.x(), rmax.y(), rmax.z())
 
-    if v.dim == mp.D2:
+    if vol.dim == mp.D2:
         v3rmin.z = 0
         v3rmax.z = 0
-    elif v.dim == mp.D1:
+    elif vol.dim == mp.D1:
         v3rmin.x = 0
         v3rmin.y = 0
         v3rmin.y = 0
@@ -3402,10 +3762,16 @@ def complexarray(re, im):
 
 
 def quiet(quietval=True):
+    """
+    Meep ordinarily prints various diagnostic and progress information to standard output. This output can be suppressed by calling this function with `True` (the default). The output can be enabled again by passing `False`. This sets a global variable, so the value will persist across runs within the same script.
+    """
     mp.cvar.verbosity = int(not quietval)
 
-def verbosity(verbose_val):
-    mp.cvar.verbosity = verbose_val
+def verbosity(v=1):
+    """
+    Given a number `v`, specify the degree of Meep's output: `0` is quiet mode, `1` (the default) is ordinary output, `2` is extra debugging output, and `3` is all debugging output.
+    """
+    mp.cvar.verbosity = v
 
 def get_num_groups():
     # Lazy import
