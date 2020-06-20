@@ -80,11 +80,11 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
 
     // call get_chi1inv with parallel=false to get only local epsilon data
     cache[6*i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
-    cache[6*i+2] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
-    cache[6*i+3] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
-    cache[6*i+4] = real(f->get_chi1inv(Ex, Y, p, frequency, false));
-    cache[6*i+5] = real(f->get_chi1inv(Ex, Z, p, frequency, false));
-    cache[6*i+6] = real(f->get_chi1inv(Ey, Z, p, frequency, false));
+    cache[6*i+1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
+    cache[6*i+2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
+    cache[6*i+3] = real(f->get_chi1inv(Ex, Y, p, frequency, false));
+    cache[6*i+4] = real(f->get_chi1inv(Ex, Z, p, frequency, false));
+    cache[6*i+5] = real(f->get_chi1inv(Ey, Z, p, frequency, false));
 
     // return a dummy value epsilon = 1 while we are building up the cache
     eps->m00 = eps->m11 = eps->m22 = eps_inv->m00 = eps_inv->m11 = eps_inv->m22 = 1;
@@ -415,7 +415,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // then, synchronize the data
     eps_data.ncache = eps_data.icache; // actual amount of cached data
     double *summed_cache = (double *) malloc(sizeof(double) * 6 * eps_data.ncache);
-    sum_to_all(eps_data.cache, summed_cache, eps_data.ncache);
+    sum_to_all(eps_data.cache, summed_cache, eps_data.ncache*6);
     free(eps_data.cache);
     eps_data.cache = summed_cache;
 
