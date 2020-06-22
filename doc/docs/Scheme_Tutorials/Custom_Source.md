@@ -122,7 +122,7 @@ meep method=2 resolution=50 nf=500 nd=10 textured?=true stochastic-emitter.ctl >
 grep flux method2-textured.out |cut -d, -f2- > method2-textured.dat
 ```
 
-Afterwards, the four data files containing all the flux spectra are used to plot the normalized flux for each method.
+Afterwards, the four data files containing all the flux spectra are used to plot the normalized flux for each method using Octave/Matlab.
 ```matlab
 nfreq = 500;
 ntrial = 500;
