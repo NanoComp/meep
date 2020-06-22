@@ -21,7 +21,7 @@ One can take two different approaches to computing the radiated flux based on th
 
 *Note regarding normalization:* To directly compare the results for the radiated flux from the two methods, one might scale the spectrum from Method 2 in post processing to correct for the difference in spectrum between a Gaussian pulse and white noise. However, it is usually more convenient to *nondimensionalize* the results (for both methods) by dividing the flux spectrum for the textured surface with a reference spectrum computed by the *same method*, for example emission from a flat surface or in a homogeneous medium. This way, the details of the source spectra cancel automatically, and the nondimensionalized results can be compared as-is without any tricky scaling calculations.  This kind of nondimensionalized comparison is useful to determine the *emission enhancement* (or suppression) of one structure relative to another as well as the *light-extraction efficiency* (the ratio of the radiated flux to the total flux emitted by the dipoles).  In order to compute the *absolute* (not relative) light emission by a particular structure, using either Method 1 or Method 2, one would need to rescale the output ([thanks to linearity](http://doi.org/10.1103/PhysRevLett.107.114302)) to convert the input spectrum (from white noise or Gaussian) to the actual emission spectrum (e.g. determined from the gain spectrum of a light-emitting diode).
 
-The simulation script is in [examples/stochastic_emitter.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter.py).
+The simulation script is in [examples/stochastic_emitter.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter.py). The notebook is [examples/stochastic_emitter.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/stochastic_emitter.ipynb).
 
 ```py
 import meep as mp
@@ -126,6 +126,8 @@ There are five items to note in this script. (1) The frequency discretization of
 
 Results for Methods 1 and 2 for the two cases of a flat and textured surface are generated using the following shell script:
 ```
+#!/bin/bash
+
 # Method 1: flat surface
 python stochastic_emitter.py -method 1 -res 50 -nf 500 -nd 10 -nr 500
 
@@ -158,7 +160,7 @@ method2_freqs = method2_f0['freqs']
 method2_f0_mean = np.mean(method2_f0['fluxes'],axis=1)
 method2_f1_mean = np.mean(method2_f1['fluxes'],axis=1)
 
-plt.semilogy(method1_freqs,method1_f1_mean/method1_f0_mean,'b-',label='Method 1 (500 trials)')
+plt.semilogy(method1_freqs,method1_f1_mean/method1_f0_mean,'b-',label='Method 1')
 plt.semilogy(method2_freqs,method2_f1_mean/method2_f0_mean,'r-',label='Method 2')
 plt.xlabel('frequency')
 plt.ylabel('normalized flux')
@@ -166,7 +168,7 @@ plt.legend()
 plt.show()
 ```
 
-Results for Method 1 for three different numbers of trials/iterations (10, 50, and 500) are shown in the following three figures. As the number of trials/iterations is increased, the "noisiness" in the plot is gradually reduced. However, the total runtime increases significantly.
+Results for Method 1 for three different numbers of trials/iterations (10, 50, and 500) are shown in the following three figures. Each trial/iteration involves two runs: one each for the flat and textured surface. As the number of trials/iterations is increased, the "noisiness" in the plot is gradually reduced. However, the total runtime increases significantly.
 
 <center>
 ![](../images/stochastic_emitter_trials.png)

@@ -79,6 +79,7 @@ pages:
     - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
     - 'Tutorial/Frequency-Domain Solver': 'Scheme_Tutorials/Frequency_Domain_Solver.md'
     - 'Tutorial/Eigenmode Source': 'Scheme_Tutorials/Eigenmode_Source.md'
+    - 'Tutorial/Custom Source': 'Scheme_Tutorials/Custom_Source.md'
     - 'Tutorial/Mode Decomposition': 'Scheme_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
     - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
