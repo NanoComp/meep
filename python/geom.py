@@ -410,16 +410,12 @@ class Medium(object):
 
     def epsilon(self,freq):
         """
-            **`epsilon(freq)`**
-            —
             Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified frequency `freq` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
         """
         return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
 
     def mu(self,freq):
         """
-        **`mu(freq)`**
-        —
         Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `freq` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
         """
         return self._get_epsmu(self.mu_diag, self.mu_offdiag, self.H_susceptibilities, self.B_conductivity_diag, self.B_conductivity_offdiag, freq)
