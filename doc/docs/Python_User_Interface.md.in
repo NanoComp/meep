@@ -172,6 +172,15 @@ The following classes are available directly via the `meep` package.
 ** Related function:**
 @@ get_center_and_size @@
 
+@@ DftObj @@
+@@ DftFlux @@
+@@ DftForce @@
+@@ DftNear2Far @@
+@@ DftEnergy @@
+@@ DftFields @@
+
+@@ Animate2D @@
+
 
 Miscellaneous Functions
 -----------------------
@@ -214,10 +223,70 @@ Miscellaneous Functions
 @@ dft_ldos @@
 
 
-#### NEar2Far Functions
+#### Near2Far Functions
 
 @@ get_near2far_freqs @@
 @@ scale_near2far_fields @@
+
+
+#### GDSII Functions
+
+@@ GDSII_layers @@
+@@ GDSII_prisms @@
+@@ GDSII_vol @@
+
+
+#### Run and Step Functions
+
+@@ stop_when_fields_decayed @@
+@@ stop_after_walltime @@
+@@ stop_on_interrupt @@
+
+
+#### Output Functions
+
+@@ output_epsilon @@
+@@ output_mu @@
+@@ output_poynting @@
+@@ output_hpwr @@
+@@ output_dpwr @@
+@@ output_tot_pwr @@
+@@ output_png @@
+
+@@ output_hfield @@
+@@ output_hfield_x @@
+@@ output_hfield_y @@
+@@ output_hfield_z @@
+@@ output_hfield_r @@
+@@ output_hfield_p @@
+
+@@ output_bfield @@
+@@ output_bfield_x @@
+@@ output_bfield_y @@
+@@ output_bfield_z @@
+@@ output_bfield_r @@
+@@ output_bfield_p @@
+
+@@ output_efield @@
+@@ output_efield_x @@
+@@ output_efield_y @@
+@@ output_efield_z @@
+@@ output_efield_r @@
+@@ output_efield_p @@
+
+@@ output_dfield @@
+@@ output_dfield_x @@
+@@ output_dfield_y @@
+@@ output_dfield_z @@
+@@ output_dfield_r @@
+@@ output_dfield_p @@
+
+@@ output_sfield @@
+@@ output_sfield_x @@
+@@ output_sfield_y @@
+@@ output_sfield_z @@
+@@ output_sfield_r @@
+@@ output_sfield_p @@
 
 
 ### Output File Names
@@ -481,27 +550,17 @@ To keep the fields in memory and avoid writing to and reading from a file, use t
 * [Simulation.load_near2far_data(near2far, n2fdata)](#Simulation.load_near2far_data)
 * [Simulation.load_minus_near2far_data(near2far, n2fdata)](#Simulation.load_minus_near2far_data)
 * [meep.scale_near2far_fields(s, near2far)](#scale_near2far_fields)
+* [DftNear2Far.flux(direction, where, resolution)](#DftNear2Far.flux)
 
-
-**`flux(direction, where, resolution)`**
-—
-Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a list. The dataset is a 1d array of `nfreq` dimensions.
 
 ### Load and Dump Structure
 
 These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
-**`Simulation.dump_structure(fname)`**
-—
-Dumps the structure to the file `fname`.
+* [Simulation.dump_structure(fname)](#Simulation.dump_structure)
+* [Simulation.load_structure(fname)](#Simulation.load_structure)
+* [Simulation.dump_chunk_layout(fname)](#Simulation.dump_chunk_layout)
 
-**`Simulation.load_structure(fname)`**
-—
-Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
-
-**`Simulation.dump_chunk_layout(fname)`**
-—
-Dumps the chunk layout to file `fname`.
 
 To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor, passing either a file obtained from `dump_chunk_layout` or another `Simulation` instance. Note that when using `split_chunks_evenly=False` this parameter is required when saving and loading flux spectra, force spectra, or near-to-far spectra so that the two runs have the same chunk layout. Just pass the `Simulation` object from the first run to the second run:
 
@@ -563,159 +622,23 @@ As for `solve_cw` above, you are required to set `force_complex_fields=True` to 
 
 ### GDSII Support
 
-This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii).
+This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii). See:
 
-**`mp.GDSII_layers(gdsii_filename)`**
+* [meep.GDSII_layers(fname)](#GDSII_layers)
+* [meep.GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0)](#GDSII_prisms)
+* [meep.GDSII_vol(fname, layer, zmin, zmax)](#GDSII_vol)
 
-Returns a list of integer-valued layer indices for the layers present in
-the specified GDSII file.
-
-```python
-mp.GDSII_layers('python/examples/coupler.gds')
-Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
-```
-
-**`mp.get_GDSII_prisms(material, gdsii_filename, layer, zmin, zmax)`**
-—
-Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `gdsii_filename` with `zmin` and `zmax` (default 0).
-
-**`mp.GDSII_vol(fname, layer, zmin, zmax)`**
-—
-Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with `zmin` and `zmax` (default 0). This function is useful for creating a `FluxRegion` from a GDSII file as follows
-
-```python
-fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
-```
 
 ### Data Visualization
 
 This module provides basic visualization functionality for the simulation domain. The spirit of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output.
 
-**`Simulation.plot2D(ax=None, output_plane=None, fields=None, labels=False, eps_parameters=None, boundary_parameters=None, source_parameters=None, monitor_parameters=None, field_parameters=None, frequency=None)`**
-—
-Plots a 2D cross section of the simulation domain using `matplotlib`. The plot includes the geometry, boundary layers, sources, and monitors. Fields can also be superimposed on a 2D slice. Requires [matplotlib](https://matplotlib.org). Calling this function would look something like:
+* [Simulation.plot2D(...)](#Simulation.plot2D)
+* [Simulation.plot3D()](#Simulation.plot3D)
+* [Simulation.visualize_chunks()](#Simulation.visualize_chunks)
 
-```py
-sim = mp.Simulation(...)
-sim.run(...)
-field_func = lambda x: 20*np.log10(np.abs(x))
-import matplotlib.pyplot as plt
-sim.plot2D(fields=mp.Ez,
-           field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
-           boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
-plt.show()
-plt.savefig('sim_domain.png')
-```
+An animated visualization is also possible via the [Animate2D](#Animate2D) class.
 
-* `ax`: a `matplotlib` axis object. `plot2D()` will add plot objects, like lines, patches, and scatter plots, to this object. If no `ax` is supplied, then the routine will create a new figure and grab its axis.
-* `output_plane`: a `Volume` object that specifies the plane over which to plot. Must be 2D and a subset of the grid volume (i.e., it should not extend beyond the cell).
-* `fields`: the field component (`mp.Ex`, `mp.Ey`, `mp.Ez`, `mp.Hx`, `mp.Hy`, `mp.Hz`) to superimpose over the simulation geometry. Default is `None`, where no fields are superimposed.
-* `labels`: if `True`, then labels will appear over each of the simulation elements.
-* `eps_parameters`: a `dict` of optional plotting parameters that override the default parameters for the geometry.
-    - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
-    - `cmap='binary'`: the color map of the geometry
-    - `alpha=1.0`: transparency of geometry
-* `boundary_parameters`: a `dict` of optional plotting parameters that override the default parameters for the boundary layers.
-    - `alpha=1.0`: transparency of boundary layers
-    - `facecolor='g'`: color of polygon face
-    - `edgecolor='g'`: color of outline stroke
-    - `linewidth=1`: line width of outline stroke
-    - `hatch='\'`: hatching pattern
-* `source_parameters`: a `dict` of optional plotting parameters that override the default parameters for the sources.
-    - `color='r'`: color of line and pt sources
-    - `alpha=1.0`: transparency of source
-    - `facecolor='none'`: color of polygon face for planar sources
-    - `edgecolor='r'`: color of outline stroke for planar sources
-    - `linewidth=1`: line width of outline stroke
-    - `hatch='\'`: hatching pattern
-    - `label_color='r'`: color of source labels
-    - `label_alpha=0.3`: transparency of source label box
-    - `offset=20`: distance from source center and label box
-* `monitor_parameters`: a `dict` of optional plotting parameters that override the default parameters for the monitors.
-    - `color='g'`: color of line and point monitors
-    - `alpha=1.0`: transparency of monitors
-    - `facecolor='none'`: color of polygon face for planar monitors
-    - `edgecolor='r'`: color of outline stroke for planar monitors
-    - `linewidth=1`: line width of outline stroke
-    - `hatch='\'`: hatching pattern
-    - `label_color='g'`: color of source labels
-    - `label_alpha=0.3`: transparency of monitor label box
-    - `offset=20`: distance from monitor center and label box
-* `field_parameters`: a `dict` of optional plotting parameters that override the default parameters for the fields.
-    - `interpolation='spline36'`: interpolation function used to upsample field pixels
-    - `cmap='RdBu'`: color map for field pixels
-    - `alpha=0.6`: transparency of fields
-    - `post_process=np.real`: post processing function to apply to fields (must be a function object)
-* `frequency`: for materials with a [frequency-dependent permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the frequency $f$ (in Meep units) of the real part of the permittivity to use in the plot. Defaults to the `frequency` parameter of the [Source](#source) object.
-
-**`Simulation.plot3D()`**
-— Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.
-
-**`Simulation.visualize_chunks()`**
-—
-Displays an interactive image of how the cell is divided into chunks. Each rectangular region is a chunk, and each color represents a different processor. Requires [matplotlib](https://matplotlib.org).
-
-#### Animate2D
-
-A class used to record the fields during timestepping (i.e., a [`run`](#run-functions) function). The object is initialized prior to timestepping by specifying the simulation object and the field component. The object can then be passed to any [step-function modifier](#step-function-modifiers). For example, one can record the E<sub>z</sub> fields at every one time unit using:
-
-```py
-animate = mp.Animate2D(sim,
-                       fields=mp.Ez,
-                       realtime=True,
-                       field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
-                       boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
-
-sim.run(mp.at_every(1,animate),until=25)
-```
-
-By default, the object saves each frame as a PNG image into memory (not disk). This is typically more memory efficient than storing the actual fields. If the user sets the `normalize` argument, then the object will save the actual field information as a NumPy array to be normalized for post processing. The fields of a figure can also be updated in realtime by setting the `realtime` flag. This does not work for IPython/Jupyter notebooks, however.
-
-Once the simulation is run, the animation can be output as an interactive JSHTML object, an mp4, or a GIF.
-
-Multiple Animate2D objects can be initialized and passed to the run function to track different volume locations (using `mp.in_volume`) or field components.
-
-Properties:
-
-**`sim`**
-— Simulation object.
-
-**`fields`**
-— Field component to record at each time instant.
-
-**`f=None`**
-— Optional `matplotlib` figure object that the routine will update on each call. If not supplied, then a new one will be created upon initialization.
-
-**`realtime=True`**
-— Whether or not to update a figure window in realtime as the simulation progresses. Disabled by default. Not compatible with IPython/Jupyter notebooks.
-
-**`normalize=False`**
-— Records fields at each time step in memory in a NumPy array and then normalizes the result by dividing by the maximum field value at a single point in the cell over all the time snapshots.
-
-**`plot_modifiers=None`**
-— A list of functions that can modify the figure's `axis` object. Each function modifier accepts a single argument, an `axis` object, and must return that same axis object. The following modifier changes the `xlabel`:
-
-```py
-def mod1(ax):
-    ax.set_xlabel('Testing')
-    return ax
-
-plot_modifiers = [mod1]
-```
-
-**`**customization_args`**
-— Customization keyword arguments passed to `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
-
-Methods:
-
-**`Animate2D.to_jshtml(fps)`**
-— Outputs an interactable JSHTML animation object that is embeddable in Jupyter notebooks. The object is packaged with controls to manipulate the video's playback. User must specify a frame rate `fps` in frames per second.
-
-**`Animate2D.to_mp4(fps,filename)`**
-— Generates and outputs an mp4 video file of the animation with the filename, `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p format. Requires `ffmpeg`.
-
-**`Animate2D.to_gif(fps,filename)`**
-— Generates and outputs a GIF file of the animation with the filename, `filename`, and the frame rate, `fps`. Note that GIFs are significantly larger than mp4 videos since they don't use any compression. Artifacts are also common because the GIF format only supports 256 colors from a _predefined_ color palette. Requires `ffmpeg`.
 
 Run and Step Functions
 ----------------------
@@ -738,29 +661,16 @@ Run the simulation until all sources have turned off, calling the given step fun
 
 In particular, a useful value for `until_after_sources` or `until` is often `stop_when_field_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend):
 
-**`stop_when_fields_decayed(dT, c, pt, decay_by)`**
-—
-Return a `condition` function, suitable for passing to `until`/`until_after_sources`, that examines the component `c` (e.g. `Ex`, etc.) at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared* has decayed by at least `decay_by` from its maximum previous value. In particular, it keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value over that time period &mdash; in this way, it won't be fooled just because the field happens to go through 0 at some instant.
+* [meep.stop_when_fields_decayed(dT, c, pt, decay_by)](#stop_when_fields_decayed)
+* [meep.stop_after_walltime(t)](#stop_after_walltime)
+* [meep.stop_on_interrupt()](#stop_on_interrupt)
 
-Note that, if you make `decay_by` very small, you may need to increase the `cutoff` property of your source(s), to decrease the amplitude of the small high-frequency components that are excited when the source turns off. High frequencies near the [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
-
-**`stop_after_walltime(t)`**
-—
-Return a `condition` function, suitable for passing to `until`. Stops the simulation after `t` seconds of wall time have passed.
-
-**`stop_on_interrupt()`**
-—
-Return a `condition` function, suitable for passing to `until`. Instead of terminating when receiving a SIGINT or SIGTERM signal from the system, the simulation will abort time stepping and continue executing any code that follows the `run` function (e.g., outputting fields).
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is:
 
-**`run_k_points(t, k_points)`**
-—
-Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $t$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources. Returns a list of lists of frequencies (one list of frequencies for each *k*). Also prints out a comma-delimited list of frequencies, prefixed by `freqs:`, and their imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
+* [meep.run_k_points(t, k_points)](#Simulation.run_k_points)
+* [meep.run_k_point(t, k_point)](#Simulation.run_k_point)
 
-**`run_k_point(t, k_point)`**
-—
-Lower level function called by `run_k_points` above that runs a simulation for a single *k* point `k_point` and returns a `Harminv` instance. Useful when you need to access more `Harminv` data than just the frequencies.
 
 ### Predefined Step Functions
 
@@ -772,94 +682,65 @@ The most common step function is an output function, which outputs some field co
 
 Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), when they are outputted they are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d.
 
-<a name="output_epsilon"></a>
-**`output_epsilon(frequency=0)`**
-—
-Given a frequency `frequency`, output ε (relative permittivity); for an anisotropic ε tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If `frequency` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
+* [meep.output_epsilon(frequency=0)](#output_epsilon)
+* [meep.output_mu(frequency=0)](#output_mu)
+* [Simulation.output_dft(dft_fields, fname)](#Simulation.output_dft)
+* [meep.output_poynting()](#output_poynting)
+* [meep.output_hpwr()](#output_hpwr)
+* [meep.output_dpwr()](#output_dpwr)
+* [meep.output_tot_pwr()](#output_tot_pwr)
+* [meep.output_png(component, h5topng_options)](#output_png)
 
-**`output_mu(frequency=0)`**
-—
-Given a frequency `frequency`, output μ (relative permeability); for an anisotropic μ tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If `frequency` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
+* [meep.output_hfield()](#output_hfield)
+* [meep.output_hfield_x()](#output_hfield_x)
+* [meep.output_hfield_y()](#output_hfield_y)
+* [meep.output_hfield_z()](#output_hfield_z)
+* [meep.output_hfield_r()](#output_hfield_r)
+* [meep.output_hfield_p()](#output_hfield_p)
 
-**`Simulation.output_dft(dft_fields, fname)`**
-—
-Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix).
+* [meep.output_bfield()](#output_bfield)
+* [meep.output_bfield_x()](#output_bfield_x)
+* [meep.output_bfield_y()](#output_bfield_y)
+* [meep.output_bfield_z()](#output_bfield_z)
+* [meep.output_bfield_r()](#output_bfield_r)
+* [meep.output_bfield_p()](#output_bfield_p)
 
-**`output_poynting()`**
-—
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+* [meep.output_efield()](#output_efield)
+* [meep.output_efield_x()](#output_efield_x)
+* [meep.output_efield_y()](#output_efield_y)
+* [meep.output_efield_z()](#output_efield_z)
+* [meep.output_efield_r()](#output_efield_r)
+* [meep.output_efield_p()](#output_efield_p)
 
-**`output_hpwr()`**
-—
-Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
+* [meep.output_dfield()](#output_dfield)
+* [meep.output_dfield_x()](#output_dfield_x)
+* [meep.output_dfield_y()](#output_dfield_y)
+* [meep.output_dfield_z()](#output_dfield_z)
+* [meep.output_dfield_r()](#output_dfield_r)
+* [meep.output_dfield_p()](#output_dfield_p)
 
-**`output_dpwr()`**
-—
-Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
+* [meep.output_sfield()](#output_sfield)
+* [meep.output_sfield_x()](#output_sfield_x)
+* [meep.output_sfield_y()](#output_sfield_y)
+* [meep.output_sfield_z()](#output_sfield_z)
+* [meep.output_sfield_r()](#output_sfield_r)
+* [meep.output_sfield_p()](#output_sfield_p)
 
-**`output_tot_pwr()`**
-—
-Output the total electric and magnetic energy density. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
-**`output_Xfield_x(), output_Xfield_y(), output_Xfield_z(), output_Xfield_r(), output_Xfield_p()`**
-—
-Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting flux, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+More generally, it is possible to output an arbitrary function of position and zero or more field components, similar to the `Simulation.integrate_field_function` method, described above. This is done by:
 
-**`output_Xfield()`**
-—
-Outputs *all* the components of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` as above, to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
-
-**`output_png(component, h5topng_options)`**
-—
-Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](https://github.com/NanoComp/h5utils/blob/master/README.md), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc bluered"`). See also [Tutorial/Basics/Output Tips and Tricks](Python_Tutorials/Basics.md#output-tips-and-tricks).
-
-It is often useful to use the h5topng `-C` or `-A` options to overlay the dielectric function when outputting fields. To do this, you need to know the name of the dielectric-function `.h5` file which must have been previously output by `output_epsilon`. To make this easier, a built-in shell variable `$EPS` is provided which refers to the last-output dielectric-function `.h5` file. So, for example `output_png(mp.Ez,"-C $EPS")` will output the $E_z$ field and overlay the dielectric contours.
-
-By default, `output_png` deletes the `.h5` file when it is done. To preserve the `.h5` file requires `output_png(component, h5topng_options, rm_h5=False)`.
-
-More generally, it is possible to output an arbitrary function of position and zero or more field components, similar to the `integrate_field_function` described above. This is done by:
-
-**`output_field_function(name, cs, func, real_only=False)`**
-—
-Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
+* [Simulation.output_field_function(name, cs, func, real_only=False)](#Simulation.output_field_function)
 
 See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+
 
 #### Array Slices
 
 The output functions described above write the data for the fields and materials for the entire cell to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
-```python
- get_array(vol=None, center=None, size=None, component=mp.Ez, cmplx=False, arr=None, frequency=0)
-```
+* [Simulation.get_array(vol=None, center=None, size=None, component=mp.Ez, cmplx=False, arr=None, frequency=0)](#Simulation.get_array)
+* [Simulation.get_dft_array(dft_obj, component, num_freq)](#Simulation.get_dft_array)
 
-with the following input parameters:
-
-+ `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If `None` (default), then a `size` and `center` must be specified.
-
-+ `center`, `size` : `Vector3`; if both are specified, the library will construct an appropriate `Volume`. This is a convenience feature and alternative to supplying a `Volume`.
-
-+ `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc). Defaults to `mp.Ez`.
-
-+ `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return real-valued data (default).
-
-+ `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
-
-+ `frequency`: optional frequency point over which the average eigenvalue of the dielectric and permeability tensors are evaluated (defaults to 0).
-
-For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent with the fields (real or complex). The routines `get_epsilon()` and `get_mu()` accept the optional `frequency` parameter (defaults to 0).
-
-**Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`, etc. use as default `size=meep.Simulation.fields.total_volume()` which for simulations involving Bloch-periodic boundaries (via `k_point`) will result in arrays that have slightly *different* dimensions than e.g. `get_array(center=meep.Vector3(), size=cell_size, component=meep.Dielectric`, etc. (i.e., the slice spans the entire cell volume `cell_size`). Neither of these approaches is "wrong", they are just slightly different methods of fetching the boundaries. The key point is that if you pass the same value for the `size` parameter, or use the default, the slicing routines always give you the same-size array for all components. You should *not* try to predict the exact size of these arrays; rather, you should simply rely on Meep's output.
-
-**`get_dft_array(dft_obj, component, num_freq)`**
-—
-Returns the Fourier-transformed fields as a NumPy array.
-
-+ `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
-
-+ `component`: a field component (e.g., `mp.Ez`)
-
-+ `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
 
 #### Array Metadata
 

@@ -1561,16 +1561,25 @@ class Simulation(object):
         )
 
     def dump_structure(self, fname):
+        """
+        Dumps the structure to the file `fname`.
+        """
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling dump_structure")
         self.structure.dump(fname)
 
     def load_structure(self, fname):
+        """
+        Loads a structure from the file `fname`. A file name to load can also be passed to the `Simulation` constructor via the `load_structure` keyword argument.
+        """
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling load_structure")
         self.structure.load(fname)
 
     def dump_chunk_layout(self, fname):
+        """
+        Dumps the chunk layout to file `fname`.
+        """
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling load_structure")
         self.structure.dump_chunk_layout(fname)
@@ -1873,6 +1882,9 @@ class Simulation(object):
         self._run_until(new_conds, step_funcs)
 
     def _run_sources(self, step_funcs):
+        """
+        Lower level function called by `run_k_points` that runs a simulation for a single *k* point `k_point` and returns a `Harminv` instance. Useful when you need to access more `Harminv` data than just the frequencies.
+        """
         self._run_sources_until(self, 0, step_funcs)
 
     def run_k_point(self, t, k):
@@ -1898,6 +1910,9 @@ class Simulation(object):
         return h
 
     def run_k_points(self, t, k_points):
+        """
+        Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $t$ time units. It will run [Harminv](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources. Returns a list of lists of frequencies (one list of frequencies for each *k*). Also prints out a comma-delimited list of frequencies, prefixed by `freqs:`, and their imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
+        """
         k_index = 0
         all_freqs = []
 
@@ -2012,6 +2027,9 @@ class Simulation(object):
         return self.fields.add_dft_fields(components, where, freq, use_centered_grid)
 
     def output_dft(self, dft_fields, fname):
+        """
+        Output the Fourier-transformed fields in `dft_fields` (created by `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5` suffix).
+        """
         if self.fields is None:
             self.init_sim()
 
@@ -2516,6 +2534,27 @@ class Simulation(object):
         return convert_h5(rm_h5, cmd, *step_funcs)
 
     def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, frequency=0, omega=0):
+        """
+        Takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
+
+        **Parameters:**
+
+        + `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as the `Volume`'s `size` attribute. If `None` (default), then a `size` and `center` must be specified.
+
+        + `center`, `size` : `Vector3`; if both are specified, the library will construct an appropriate `Volume`. This is a convenience feature and alternative to supplying a `Volume`.
+
+        + `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc). Defaults to `mp.Ez`.
+
+        + `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return real-valued data (default).
+
+        + `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
+
+        + `frequency`: optional frequency point over which the average eigenvalue of the dielectric and permeability tensors are evaluated (defaults to 0).
+
+        For convenience, the following wrappers for `get_array` over the entire cell are available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`, `get_tot_pwr()`, `get_Xfield()`, `get_Xfield_x()`, `get_Xfield_y()`, `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`, `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent with the fields (real or complex). The routines `get_epsilon()` and `get_mu()` accept the optional `frequency` parameter (defaults to 0).
+
+        **Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`, etc. use as default `size=meep.Simulation.fields.total_volume()` which for simulations involving Bloch-periodic boundaries (via `k_point`) will result in arrays that have slightly *different* dimensions than e.g. `get_array(center=meep.Vector3(), size=cell_size, component=meep.Dielectric`, etc. (i.e., the slice spans the entire cell volume `cell_size`). Neither of these approaches is "wrong", they are just slightly different methods of fetching the boundaries. The key point is that if you pass the same value for the `size` parameter, or use the default, the slicing routines always give you the same-size array for all components. You should *not* try to predict the exact size of these arrays; rather, you should simply rely on Meep's output.
+        """
         if component is None:
             raise ValueError("component is required")
         if isinstance(component, mp.Volume) or isinstance(component, mp.volume):
@@ -2561,6 +2600,17 @@ class Simulation(object):
         return arr
 
     def get_dft_array(self, dft_obj, component, num_freq):
+        """
+        Returns the Fourier-transformed fields as a NumPy array.
+
+        **Parameters:**
+
+        + `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
+
+        + `component`: a field component (e.g., `mp.Ez`)
+
+        + `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`, where `nfreq` is the number of frequencies stored in `dft_obj` as set by the `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
+        """
         if hasattr(dft_obj, 'swigobj'):
             dft_swigobj = dft_obj.swigobj
         else:
@@ -2697,6 +2747,9 @@ class Simulation(object):
                              emdata, mp.Vector3(kdom[0], kdom[1], kdom[2]))
 
     def output_field_function(self, name, cs, func, real_only=False, h5file=None):
+        """
+        Output the field function `func` to an HDF5 file in the datasets named `name*.r` and `name*.i` for the real and imaginary parts. Similar to `integrate_field_function`, `func` is a function of position (a `Vector3`) and the field components corresponding to `cs`: a list of `component` constants. If `real_only` is True, only outputs the real part of `func`.
+        """
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_field_function")
 
@@ -3002,16 +3055,95 @@ class Simulation(object):
     def get_sfield_p(self):
         return self.get_array(mp.Sp, cmplx=not self.fields.is_real)
 
-    def plot2D(self,**kwargs):
-        return vis.plot2D(self,**kwargs)
+
+    def plot2D(self, ax=None, output_plane=None, fields=None, labels=False,
+               eps_parameters=None, boundary_parameters=None,
+               source_parameters=None, monitor_parameters=None,
+               field_parameters=None, frequency=None,
+               plot_eps_flag=True, plot_sources_flag=True,
+               plot_monitors_flag=True, plot_boundaries_flag=True,
+               **kwargs):
+        """
+        Plots a 2D cross section of the simulation domain using `matplotlib`. The plot includes the geometry, boundary layers, sources, and monitors. Fields can also be superimposed on a 2D slice. Requires [matplotlib](https://matplotlib.org). Calling this function would look something like:
+
+        ```py
+        sim = mp.Simulation(...)
+        sim.run(...)
+        field_func = lambda x: 20*np.log10(np.abs(x))
+        import matplotlib.pyplot as plt
+        sim.plot2D(fields=mp.Ez,
+                field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
+                boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
+        plt.show()
+        plt.savefig('sim_domain.png')
+        ```
+
+        **Parameters:**
+
+        * `ax`: a `matplotlib` axis object. `plot2D()` will add plot objects, like lines, patches, and scatter plots, to this object. If no `ax` is supplied, then the routine will create a new figure and grab its axis.
+        * `output_plane`: a `Volume` object that specifies the plane over which to plot. Must be 2D and a subset of the grid volume (i.e., it should not extend beyond the cell).
+        * `fields`: the field component (`mp.Ex`, `mp.Ey`, `mp.Ez`, `mp.Hx`, `mp.Hy`, `mp.Hz`) to superimpose over the simulation geometry. Default is `None`, where no fields are superimposed.
+        * `labels`: if `True`, then labels will appear over each of the simulation elements.
+        * `eps_parameters`: a `dict` of optional plotting parameters that override the default parameters for the geometry.
+            - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
+            - `cmap='binary'`: the color map of the geometry
+            - `alpha=1.0`: transparency of geometry
+        * `boundary_parameters`: a `dict` of optional plotting parameters that override the default parameters for the boundary layers.
+            - `alpha=1.0`: transparency of boundary layers
+            - `facecolor='g'`: color of polygon face
+            - `edgecolor='g'`: color of outline stroke
+            - `linewidth=1`: line width of outline stroke
+            - `hatch='\'`: hatching pattern
+        * `source_parameters`: a `dict` of optional plotting parameters that override the default parameters for the sources.
+            - `color='r'`: color of line and pt sources
+            - `alpha=1.0`: transparency of source
+            - `facecolor='none'`: color of polygon face for planar sources
+            - `edgecolor='r'`: color of outline stroke for planar sources
+            - `linewidth=1`: line width of outline stroke
+            - `hatch='\'`: hatching pattern
+            - `label_color='r'`: color of source labels
+            - `label_alpha=0.3`: transparency of source label box
+            - `offset=20`: distance from source center and label box
+        * `monitor_parameters`: a `dict` of optional plotting parameters that override the default parameters for the monitors.
+            - `color='g'`: color of line and point monitors
+            - `alpha=1.0`: transparency of monitors
+            - `facecolor='none'`: color of polygon face for planar monitors
+            - `edgecolor='r'`: color of outline stroke for planar monitors
+            - `linewidth=1`: line width of outline stroke
+            - `hatch='\'`: hatching pattern
+            - `label_color='g'`: color of source labels
+            - `label_alpha=0.3`: transparency of monitor label box
+            - `offset=20`: distance from monitor center and label box
+        * `field_parameters`: a `dict` of optional plotting parameters that override the default parameters for the fields.
+            - `interpolation='spline36'`: interpolation function used to upsample field pixels
+            - `cmap='RdBu'`: color map for field pixels
+            - `alpha=0.6`: transparency of fields
+            - `post_process=np.real`: post processing function to apply to fields (must be a function object)
+        * `frequency`: for materials with a [frequency-dependent permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the frequency $f$ (in Meep units) of the real part of the permittivity to use in the plot. Defaults to the `frequency` parameter of the [Source](#source) object.
+
+        """
+        return vis.plot2D(self, ax=ax, output_plane=output_plane, fields=fields, labels=labels,
+            eps_parameters=eps_parameters, boundary_parameters=boundary_parameters,
+            source_parameters=source_parameters,monitor_parameters=monitor_parameters,
+            field_parameters=field_parameters, frequency=frequency,
+            plot_eps_flag=plot_eps_flag, plot_sources_flag=plot_sources_flag,
+            plot_monitors_flag=plot_monitors_flag, plot_boundaries_flag=plot_boundaries_flag,
+            **kwargs)
+
 
     def plot_fields(self,**kwargs):
         return vis.plot_fields(self,**kwargs)
 
     def plot3D(self):
+        """
+        Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D. Can also be embedded in Jupyter notebooks.
+        """
         return vis.plot3D(self)
 
     def visualize_chunks(self):
+        """
+        Displays an interactive image of how the cell is divided into chunks. Each rectangular region is a chunk, and each color represents a different processor. Requires [matplotlib](https://matplotlib.org).
+        """
         vis.visualize_chunks(self)
 
 
@@ -3230,7 +3362,11 @@ def to_appended(fname, *step_funcs):
 
 
 def stop_when_fields_decayed(dt, c, pt, decay_by):
+    """
+Return a `condition` function, suitable for passing to `Simulation.run` as the `until` or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.) at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared* has decayed by at least `decay_by` from its maximum previous value. In particular, it keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value over that time period &mdash; in this way, it won't be fooled just because the field happens to go through 0 at some instant.
 
+Note that, if you make `decay_by` very small, you may need to increase the `cutoff` property of your source(s), to decrease the amplitude of the small high-frequency components that are excited when the source turns off. High frequencies near the [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+"""
     closure = {
         'max_abs': 0,
         'cur_max': 0,
@@ -3256,6 +3392,9 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
 
 
 def stop_after_walltime(t):
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until` parameter. Stops the simulation after `t` seconds of wall time have passed.
+    """
     start = mp.wall_time()
     def _stop_after_walltime(sim):
         if mp.wall_time() - start > t:
@@ -3265,6 +3404,9 @@ def stop_after_walltime(t):
 
 
 def stop_on_interrupt():
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until` parameter. Instead of terminating when receiving a SIGINT or SIGTERM signal from the system, the simulation will abort time stepping and continue executing any code that follows the `run` function (e.g., outputting fields).
+    """
     shutting_down = [False]
 
     def _signal_handler(sig, frame):
@@ -3376,6 +3518,13 @@ def convert_h5(rm_h5, convert_cmd, *step_funcs):
 
 
 def output_png(compnt, options, rm_h5=True):
+    """
+    Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](https://github.com/NanoComp/h5utils/blob/master/README.md), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc bluered"`). See also [Tutorial/Basics/Output Tips and Tricks](Python_Tutorials/Basics.md#output-tips-and-tricks).
+
+    It is often useful to use the h5topng `-C` or `-A` options to overlay the dielectric function when outputting fields. To do this, you need to know the name of the dielectric-function `.h5` file which must have been previously output by `output_epsilon`. To make this easier, a built-in shell variable `$EPS` is provided which refers to the last-output dielectric-function `.h5` file. So, for example `output_png(mp.Ez,"-C $EPS")` will output the $E_z$ field and overlay the dielectric contours.
+
+    By default, `output_png` deletes the `.h5` file when it is done. To preserve the `.h5` file requires `output_png(component, h5topng_options, rm_h5=False)`.
+    """
     closure = {'maxabs': 0.0}
 
     def _output_png(sim, todo):
@@ -3394,6 +3543,9 @@ def output_png(compnt, options, rm_h5=True):
 
 
 def output_epsilon(sim,*step_func_args,**kwargs):
+    """
+    Given a frequency `frequency`, (provided as a keyword argument) output ε (relative permittivity); for an anisotropic ε tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If `frequency` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of ε (the $\omega\to\infty$ limit).
+    """
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
     if omega != 0:
@@ -3403,6 +3555,9 @@ def output_epsilon(sim,*step_func_args,**kwargs):
 
 
 def output_mu(sim,*step_func_args,**kwargs):
+    """
+    Given a frequency `frequency`, (provided as a keyword argument) output μ (relative permeability); for an anisotropic μ tensor the output is the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If `frequency` is non-zero, the output is complex; otherwise it is the real, frequency-independent part of μ (the $\omega\to\infty$ limit).
+    """
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
     if omega != 0:
@@ -3412,115 +3567,199 @@ def output_mu(sim,*step_func_args,**kwargs):
 
 
 def output_hpwr(sim):
+    """
+    Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
+    """
     sim.output_component(mp.H_EnergyDensity)
 
 
 def output_dpwr(sim):
+    """
+    Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
+    """
     sim.output_component(mp.D_EnergyDensity)
 
 
 def output_tot_pwr(sim):
+    """
+    Output the total electric and magnetic energy density. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_component(mp.EnergyDensity)
 
 
 def output_hfield(sim):
+    """
+    Outputs *all* the components of the field *h*, (magnetic) to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
+    """
     sim.output_components('h', mp.Hx, mp.Hy, mp.Hz, mp.Hr, mp.Hp)
 
 
 def output_hfield_x(sim):
+    """
+    Output the $x$ component of the field *h* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Hx)
 
 
 def output_hfield_y(sim):
+    """
+    Output the $y$ component of the field *h* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Hy)
 
 
 def output_hfield_z(sim):
+    """
+    Output the $z$ component of the field *h* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Hz)
 
 
 def output_hfield_r(sim):
+    """
+    Output the $r$ component of the field *h* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Hr)
 
 
 def output_hfield_p(sim):
+    """
+    Output the $\phi$ component of the field *h* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Hp)
 
 
 def output_bfield(sim):
+    """
+    Outputs *all* the components of the field *b*, (magnetic) to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
+    """
     sim.output_components('b', mp.Bx, mp.By, mp.Bz, mp.Br, mp.Bp)
 
 
 def output_bfield_x(sim):
+    """
+    Output the $x$ component of the field *b* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Bx)
 
 
 def output_bfield_y(sim):
+    """
+    Output the $y$ component of the field *b* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.By)
 
 
 def output_bfield_z(sim):
+    """
+    Output the $z$ component of the field *b* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Bz)
 
 
 def output_bfield_r(sim):
+    """
+    Output the $r$ component of the field *b* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Br)
 
 
 def output_bfield_p(sim):
+    """
+    Output the $\phi$ component of the field *b* (magnetic). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_component(mp.Bp)
 
 
 def output_efield(sim):
+    """
+    Outputs *all* the components of the field *e*, (electric) to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
+    """
     sim.output_components('e', mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep)
 
 
 def output_efield_x(sim):
+    """
+    Output the $x$ component of the field *e* (electric). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Ex)
 
 
 def output_efield_y(sim):
+    """
+    Output the $y$ component of the field *e* (electric). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Ey)
 
 
 def output_efield_z(sim):
+    """
+    Output the $z$ component of the field *e* (electric). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Ez)
 
 
 def output_efield_r(sim):
+    """
+    Output the $r$ component of the field *e* (electric). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Er)
 
 
 def output_efield_p(sim):
+    """
+    Output the $\phi$ component of the field *e* (electric). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_component(mp.Ep)
 
 
 def output_dfield(sim):
+    """
+    Outputs *all* the components of the field *d*, (displacement) to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
+    """
     sim.output_components('d', mp.Dx, mp.Dy, mp.Dz, mp.Dr, mp.Dp)
 
 
 def output_dfield_x(sim):
+    """
+    Output the $x$ component of the field *d* (displacement). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Dx)
 
 
 def output_dfield_y(sim):
+    """
+    Output the $y$ component of the field *d* (displacement). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Dy)
 
 
 def output_dfield_z(sim):
+    """
+    Output the $z$ component of the field *d* (displacement). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Dz)
 
 
 def output_dfield_r(sim):
+    """
+    Output the $r$ component of the field *d* (displacement). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Dr)
 
 
 def output_dfield_p(sim):
+    """
+    Output the $\phi$ component of the field *d* (displacement). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_component(mp.Dp)
 
 
 # MPB compatibility
 def output_poynting(sim):
+    """
+    Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_components('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
 
 
@@ -3545,26 +3784,44 @@ def output_poynting_p(sim):
 
 
 def output_sfield(sim):
+    """
+    Outputs *all* the components of the field *s*, (poynting flux) to an HDF5 file. That is, the different components are stored as different datasets within the *same* file. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_components('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
 
 
 def output_sfield_x(sim):
+    """
+    Output the $x$ component of the field *s* (poynting flux). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Sx)
 
 
 def output_sfield_y(sim):
+    """
+    Output the $y$ component of the field *s* (poynting flux). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Sy)
 
 
 def output_sfield_z(sim):
+    """
+    Output the $z$ component of the field *s* (poynting flux). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Sz)
 
 
 def output_sfield_r(sim):
+    """
+    Output the $r$ component of the field *s* (poynting flux). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively.
+    """
     sim.output_component(mp.Sr)
 
 
 def output_sfield_p(sim):
+    """
+    Output the $\phi$ component of the field *s* (poynting flux). If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting flux, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     sim.output_component(mp.Sp)
 
 
@@ -3751,9 +4008,25 @@ def get_center_and_size(vol):
     return center, size
 
 def GDSII_layers(fname):
+    """
+    Returns a list of integer-valued layer indices for the layers present in
+    the specified GDSII file.
+
+    ```python
+    mp.GDSII_layers('python/examples/coupler.gds')
+    Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
+    ```
+    """
     return list(mp.get_GDSII_layers(fname))
 
 def GDSII_vol(fname, layer, zmin, zmax):
+    """
+    Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with `zmin` and `zmax` (default 0). This function is useful for creating a `FluxRegion` from a GDSII file as follows:
+
+    ```python
+    fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
+    ```
+    """
     meep_vol = mp.get_GDSII_volume(fname, layer, zmin, zmax)
     dims = meep_vol.dim + 1
     is_cyl = False
