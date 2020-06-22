@@ -426,7 +426,7 @@ class DftObj(object):
     multiple DFT objects to the simulation, the load balancing code only knows about
     the first one and can't split the work up nicely. To circumvent this, we delay
     the execution of the 'add_flux' methods as late as possible. When 'add_flux' (or
-    add_near2far, etc.) is called, we
+    add_near2far, etc.) is called, we:
 
     1. Create an instance of the appropriate subclass of DftObj (DftForce, DftFlux,
     etc.). Set its args property to the list of arguments passed to add_flux, and
@@ -476,6 +476,8 @@ class DftObj(object):
 
 
 class DftFlux(DftObj):
+    """
+    """
 
     def __init__(self, func, args):
         super(DftFlux, self).__init__(func, args)
@@ -512,6 +514,8 @@ class DftFlux(DftObj):
         return self.swigobj_attr('freq')
 
 class DftForce(DftObj):
+    """
+    """
 
     def __init__(self, func, args):
         super(DftForce, self).__init__(func, args)
@@ -540,6 +544,8 @@ class DftForce(DftObj):
         return self.swigobj_attr('freq')
 
 class DftNear2Far(DftObj):
+    """
+    """
 
     def __init__(self, func, args):
         super(DftNear2Far, self).__init__(func, args)
@@ -569,6 +575,9 @@ class DftNear2Far(DftObj):
         return self.swigobj_attr('mu')
 
     def flux(self, direction, where, resolution):
+        """
+        Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid points / distance unit), compute the far fields in `where` (which may lie *outside* the cell) in a grid with the given resolution (which may differ from the FDTD solution) and return its Poynting flux in `direction` as a list. The dataset is a 1d array of `nfreq` dimensions.
+        """
         return self.swigobj_attr('flux')(direction, where.swigobj, resolution)
 
     @property
@@ -576,6 +585,8 @@ class DftNear2Far(DftObj):
         return self.swigobj_attr('freq')
 
 class DftEnergy(DftObj):
+    """
+    """
 
     def __init__(self, func, args):
         super(DftEnergy, self).__init__(func, args)
@@ -600,6 +611,8 @@ class DftEnergy(DftObj):
         return self.swigobj_attr('freq')
 
 class DftFields(DftObj):
+    """
+    """
 
     def __init__(self, func, args):
         super(DftFields, self).__init__(func, args)
