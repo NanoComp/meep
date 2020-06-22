@@ -3755,6 +3755,13 @@ def GDSII_vol(fname, layer, zmin, zmax):
     return Volume(center, size, dims, is_cyl)
 
 
+def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0):
+    """
+    Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number `layer` of a GDSII file `fname` with `zmin` and `zmax` (default 0).
+    """
+    return mp.get_GDSII_prisms(material, fname, layer, zmin, zmax)
+
+
 def complexarray(re, im):
     z = im * 1j
     z += re
