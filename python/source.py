@@ -150,7 +150,7 @@ class EigenModeSource(Source):
     @component.setter
     def component(self, val):
         if val != mp.ALL_COMPONENTS:
-            warnings.warn("EigenModeSource component is not ALL_COMPONENTS (default)",RuntimeWarning)
+            warnings.warn("EigenModeSource component is not ALL_COMPONENTS (the default), which makes it non-unidirectional.",RuntimeWarning)
         self._component = val
 
     @property
