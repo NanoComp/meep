@@ -181,6 +181,8 @@ The following classes are available directly via the `meep` package.
 
 @@ Animate2D @@
 
+@@ Harminv @@
+
 
 Miscellaneous Functions
 -----------------------
@@ -287,6 +289,7 @@ Miscellaneous Functions
 @@ output_sfield_z @@
 @@ output_sfield_r @@
 @@ output_sfield_p @@
+
 
 
 ### Output File Names
@@ -744,20 +747,9 @@ The output functions described above write the data for the fields and materials
 
 #### Array Metadata
 
-**`get_array_metadata(vol=None, center=None, size=None, dft_cell=None)`**
+* [Simulation.get_array_metadata(vol=None, center=None, size=None, dft_cell=None)](#Simulation.get_array_metadata)
 
-This routine provides geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
-
-+ `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the grid slice
-+ `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule for integrating over the spatial region (with the points in the cubature rule being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum:
-
-$$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
-
-This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is just one line: `np.sum(w*Q).`
-
-A convenience parameter `dft_cell` is provided as an alternative to `vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object to define the region covered by the array. If the `dft` argument is provided then all other arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided, then the entire cell is used.
-
-Here are some examples of how array metadata can be used:
+This routine provides geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. Here are some examples of how array metadata can be used:
 
 **Labeling Axes in Plots of Grid Quantities**
 
@@ -811,137 +803,50 @@ plt.show()
 
 #### Source Slices
 
-**`get_source_slice(component, vol=None, center=None, size=None)`**
-—
-Deprecated. Use `get_source` below.
+* *get_source_slice(component, vol=None, center=None, size=None)* — Deprecated. Use `get_source` below.
+* [Simulation.get_source(component, vol=None, center=None, size=None)](#Simulation.get_source)
 
-**`get_source(component, vol=None, center=None, size=None)`**
-—
-Return an array of complex values of the [source](#source) amplitude for `component` over the given `vol` or `center`/`size`. The array has the same dimensions as that returned by [`get_array`](#array-slices).
 
-#### Harminv
+#### Harminv Step Function
 
 The following step function collects field data from a given point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract the frequencies, decay rates, and other information.
 
-**`Harminv(c, pt, fcen, df, [maxbands])`**
-—
-`Harminv` is implemented as a class whose constructor returns a step function that collects data from the field component `c` (e.g. E<sub>x</sub>, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
+* [Harminv class](#Harminv)
 
-**Important:** normally, you should only use Harminv to analyze data *after the sources are off*. Wrapping it in `after_sources(mp.Harminv(...))` is sufficient.
-
-In particular, Harminv takes the time series $f(t)$ corresponding to the given field component as a function of time and decomposes it (within the specified bandwidth) as:
-
-$$f(t) = \sum_n a_n e^{-i\omega_n t}$$
-
-The results are stored in the list `Harminv.modes`, which is a list of tuples holding the frequency, amplitude, and error of the modes. Given one of these tuples (e.g., `first_mode = harminv_instance.modes[0]`), you can extract its various components:
-
-**`freq`**
-—
-The real part of frequency ω (in the usual Meep 2πc units).
-
-**`decay`**
-—
-The imaginary part of the frequency ω.
-
-**`Q`**
-—
-The dimensionless lifetime, or quality factor defined as $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
-
-**`amp`**
-—
-The complex amplitude $a$.
-
-**`err`**
-—
-A crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: this error is only the uncertainty in the signal processing, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
-
-For example, `[m.freq for m in harminv_instance.modes]` gives a list of the real parts of the frequencies. Be sure to save a reference to the `Harminv` instance if you wish to use the results after the simulation:
-
-```py
-sim = mp.Simulation(...)
-h = mp.Harminv(...)
-sim.run(mp.after_sources(h))
-# do something with h.modes
-```
 
 ### Step-Function Modifiers
 
 Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior.
 See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
+
 #### Miscellaneous Step-Function Modifiers
 
-**`combine_step_funcs(step_functions...)`**
-—
-Given zero or more step functions, return a new step function that on each step calls all of the passed step functions.
+@@ combine_step_funcs @@
+@@ synchronized_magnetic @@
 
-**`synchronized_magnetic(step_functions...)`**
-—
-Given zero or more step functions, return a new step function that on each step calls all of the passed step functions with the magnetic field synchronized in time with the electric field. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 #### Controlling When a Step Function Executes
 
-**`when_true(condition, step_functions...)`**
-—
-Given zero or more step functions and a condition function `condition` (a function of no arguments), evaluate the step functions whenever `condition` returns `True`.
+@@ when_true @@
+@@ when_false @@
+@@ at_every @@
+@@ after_time @@
+@@ before_time @@
+@@ at_time @@
+@@ after_sources @@
+@@ after_sources_and_time @@
+@@ during_sources @@
+@@ at_beginning @@
+@@ at_end @@
 
-**`when_false(condition, step_functions...)`**
-—
-Given zero or more step functions and a condition function `condition` (a function of no arguments), evaluate the step functions whenever `condition` returns `False`.
-
-**`at_every(dT, step_functions...)`**
-—
-Given zero or more step functions, evaluates them at every time interval of $dT$ units (rounded up to the next time step).
-
-**`after_time(T, step_functions...)`**
-—
-Given zero or more step functions, evaluates them only for times after a $T$ time units have elapsed from the start of the run.
-
-**`before_time(T, step_functions...)`**
-—
-Given zero or more step functions, evaluates them only for times before a $T$ time units have elapsed from the start of the run.
-
-**`at_time(T, step_functions...)`**
-—
-Given zero or more step functions, evaluates them only once, after a $T$ time units have elapsed from the start of the run.
-
-**`after_sources(step_functions...)`**
-—
-Given zero or more step functions, evaluates them only for times after all of the sources have turned off.
-
-**`after_sources_and_time(T, step_functions...)`**
-—
-Given zero or more step functions, evaluates them only for times after all of the sources have turned off, plus an additional $T$ time units have elapsed.
-
-**`during_sources(step_functions...)`**
-—
-Given zero or more step functions, evaluates them only for times *before* all of the sources have turned off.
-
-**`at_beginning(step_functions...)`**
-—
-Given zero or more step functions, evaluates them only once, at the beginning of the run.
-
-**`at_end(step_functions...)`**
-—
-Given zero or more step functions, evaluates them only once, at the end of the run.
 
 #### Modifying HDF5 Output
 
-**`in_volume(v, step_functions...)`**
-—
-Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the cell, corresponding to the `meep::volume* v` (created by the `Volume` function).
-
-**`in_point(pt, step_functions...)`**
-—
-Given zero or more step functions, modifies any output functions among them to only output a single *point* of data, at `pt` (a `Vector3`).
-
-**`to_appended(filename, step_functions...)`**
-—
-Given zero or more step functions, modifies any output functions among them to *append* their data to datasets in a single newly-created file named `filename` (plus an `.h5` suffix and the current filename prefix). They append by adding an *extra dimension* to their datasets, corresponding to time.
-
-**`with_prefix(prefix, step_functions...)`**
-—
-Given zero or more step functions, modifies any output functions among them to prepend the string `prefix` to the file names (much like `filename_prefix`, above).
+@@ in_volume @@
+@@ in_point @@
+@@ to_appended @@
+@@ with_prefix @@
 
 ### Writing Your Own Step Functions
 
@@ -949,7 +854,7 @@ A step function can take two forms. The simplest is just a function with one arg
 
 ```py
 def my_step(sim):
-       print("Hello world!")
+    print("Hello world!")
 ```
 
 If one then does `sim.run(my_step, until=100)`, Meep will run for 100 time units and print "Hello world!" at every time step.

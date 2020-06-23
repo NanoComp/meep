@@ -644,8 +644,54 @@ class EigenmodeData(object):
 
 
 class Harminv(object):
+    """
+    `Harminv` is implemented as a class with a [`__call__`](#Harminv.__call__) method, which allows it to be used as a step function that collects field data from a given point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract the frequencies, decay rates, and other information.
 
+    See [`__init__`](#Harminv.__init__) for details about constructing a `Harminv`.
+
+    **Important:** normally, you should only use Harminv to analyze data *after the sources are off*. Wrapping it in `after_sources(mp.Harminv(...))` is sufficient.
+
+    In particular, Harminv takes the time series $f(t)$ corresponding to the given field component as a function of time and decomposes it (within the specified bandwidth) as:
+
+    $$f(t) = \sum_n a_n e^{-i\omega_n t}$$
+
+    The results are stored in the list `Harminv.modes`, which is a list of tuples holding the frequency, amplitude, and error of the modes. Given one of these tuples (e.g., `first_mode = harminv_instance.modes[0]`), you can extract its various components:
+
+    **`freq`**
+    —
+    The real part of frequency ω (in the usual Meep 2πc units).
+
+    **`decay`**
+    —
+    The imaginary part of the frequency ω.
+
+    **`Q`**
+    —
+    The dimensionless lifetime, or quality factor defined as $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
+
+    **`amp`**
+    —
+    The complex amplitude $a$.
+
+    **`err`**
+    —
+    A crude measure of the error in the frequency (both real and imaginary). If the error is much larger than the imaginary part, for example, then you can't trust the $Q$ to be accurate. Note: this error is only the uncertainty in the signal processing, and tells you nothing about the errors from finite resolution, finite cell size, and so on.
+
+    For example, `[m.freq for m in harminv_instance.modes]` gives a list of the real parts of the frequencies. Be sure to save a reference to the `Harminv` instance if you wish to use the results after the simulation:
+
+    ```py
+    sim = mp.Simulation(...)
+    h = mp.Harminv(...)
+    sim.run(mp.after_sources(h))
+    # do something with h.modes
+    ```
+    """
     def __init__(self, c, pt, fcen, df, mxbands=None):
+        """
+        Construct a Harminv object.
+
+        A `Harminv` is a step function that collects data from the field component `c` (e.g. E<sub>x</sub>, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `mxbands` is the maximum number of modes to search for. Defaults to 100.
+        """
         self.c = c
         self.pt = pt
         self.fcen = fcen
@@ -663,6 +709,9 @@ class Harminv(object):
         self.step_func = self._harminv()
 
     def __call__(self, sim, todo):
+        """
+        Allows a Haminv instance to be used as astep function.
+        """
         self.step_func(sim, todo)
 
     def _collect_harminv(self):
@@ -2628,6 +2677,9 @@ class Simulation(object):
             raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
 
     def get_source(self, component, vol=None, center=None, size=None):
+        """
+        Return an array of complex values of the [source](#source) amplitude for `component` over the given `vol` or `center`/`size`. The array has the same dimensions as that returned by [`get_array`](#array-slices).
+        """
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
@@ -2644,6 +2696,18 @@ class Simulation(object):
     # otherwise return value is 4-tuple (xtics, ytics, ztics, weights).
     def get_array_metadata(self, vol=None, center=None, size=None, dft_cell=None,
                            collapse=False, snap=False, return_pw=False):
+        """
+        This routine provides geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
+
+        + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the grid slice
+        + `w` is an array of the same dimensions as the array returned by `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule for integrating over the spatial region (with the points in the cubature rule being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is some spatially-varying quantity whose value at the $n$th grid point is $Q_n$, the integral of $Q$ over the region may be approximated by the sum:
+
+        $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
+
+        This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is just one line: `np.sum(w*Q).`
+
+        A convenience parameter `dft_cell` is provided as an alternative to `vol` or `center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object to define the region covered by the array. If the `dft` argument is provided then all other arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided, then the entire cell is used.
+        """
         if dft_cell:
             vol, collapse = dft_cell.where, True
         if vol is None and center is None and size is None:
@@ -3228,6 +3292,9 @@ def _when_true_funcs(cond, *step_funcs):
 # Public step functions
 
 def after_sources(*step_funcs):
+    """
+    Given zero or more step functions, evaluates them only for times after all of the sources have turned off.
+    """
     def _after_sources(sim, todo):
         time = sim.fields.last_source_time()
         if sim.round_time() >= time:
@@ -3237,6 +3304,9 @@ def after_sources(*step_funcs):
 
 
 def after_sources_and_time(t, *step_funcs):
+    """
+    Given zero or more step functions, evaluates them only for times after all of the sources have turned off, plus an additional $T$ time units have elapsed.
+    """
     def _after_s_and_t(sim, todo):
         time = sim.fields.last_source_time() + t - sim.round_time()
         if sim.round_time() >= time:
@@ -3246,12 +3316,18 @@ def after_sources_and_time(t, *step_funcs):
 
 
 def after_time(t, *step_funcs):
+    """
+    Given zero or more step functions, evaluates them only for times after a $T$ time units have elapsed from the start of the run.
+    """
     def _after_t(sim):
         return sim.round_time() >= t
     return _when_true_funcs(_after_t, *step_funcs)
 
 
 def at_beginning(*step_funcs):
+    """
+    Given zero or more step functions, evaluates them only once, at the beginning of the run.
+    """
     closure = {'done': False}
 
     def _beg(sim, todo):
@@ -3263,6 +3339,9 @@ def at_beginning(*step_funcs):
 
 
 def at_end(*step_funcs):
+    """
+    Given zero or more step functions, evaluates them only once, at the end of the run.
+    """
     def _end(sim, todo):
         if todo == 'finish':
             for func in step_funcs:
@@ -3273,6 +3352,9 @@ def at_end(*step_funcs):
 
 
 def at_every(dt, *step_funcs):
+    """
+    Given zero or more step functions, evaluates them at every time interval of $dT$ units (rounded up to the next time step).
+    """
     closure = {'tlast': 0.0}
 
     def _every(sim, todo):
@@ -3285,6 +3367,9 @@ def at_every(dt, *step_funcs):
 
 
 def at_time(t, *step_funcs):
+    """
+    Given zero or more step functions, evaluates them only once, after a $T$ time units have elapsed from the start of the run.
+    """
     closure = {'done': False}
 
     def _at_time(sim, todo):
@@ -3296,12 +3381,18 @@ def at_time(t, *step_funcs):
 
 
 def before_time(t, *step_funcs):
+    """
+    Given zero or more step functions, evaluates them only for times before a $T$ time units have elapsed from the start of the run.
+    """
     def _before_t(sim):
         return sim.round_time() < t
     return _when_true_funcs(_before_t, *step_funcs)
 
 
 def during_sources(*step_funcs):
+    """
+    Given zero or more step functions, evaluates them only for times *before* all of the sources have turned off.
+    """
     closure = {'finished': False}
 
     def _during_sources(sim, todo):
@@ -3317,6 +3408,9 @@ def during_sources(*step_funcs):
 
 
 def in_volume(v, *step_funcs):
+    """
+    Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the cell, corresponding to the `meep::volume* v` (created by the `Volume` function).
+    """
     closure = {'cur_eps': ''}
 
     def _in_volume(sim, todo):
@@ -3338,11 +3432,17 @@ def in_volume(v, *step_funcs):
 
 
 def in_point(pt, *step_funcs):
+    """
+    Given zero or more step functions, modifies any output functions among them to only output a single *point* of data, at `pt` (a `Vector3`).
+    """
     v = Volume(pt)
     return in_volume(v, *step_funcs)
 
 
 def to_appended(fname, *step_funcs):
+    """
+    Given zero or more step functions, modifies any output functions among them to *append* their data to datasets in a single newly-created file named `filename` (plus an `.h5` suffix and the current filename prefix). They append by adding an *extra dimension* to their datasets, corresponding to time.
+    """
     closure = {'h5': None}
 
     def _to_appended(sim, todo):
@@ -3422,7 +3522,17 @@ def stop_on_interrupt():
     return _stop
 
 
+def combine_step_funcs(*step_funcs):
+    """
+    Given zero or more step functions, return a new step function that on each step calls all of the passed step functions.
+    """
+    return _combine_step_funcs(*step_funcs)
+
+
 def synchronized_magnetic(*step_funcs):
+    """
+    Given zero or more step functions, return a new step function that on each step calls all of the passed step functions with the magnetic field synchronized in time with the electric field. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+    """
     def _sync(sim, todo):
         sim.fields.synchronize_magnetic_fields()
         for f in step_funcs:
@@ -3432,14 +3542,23 @@ def synchronized_magnetic(*step_funcs):
 
 
 def when_true(cond, *step_funcs):
+    """
+    Given zero or more step functions and a condition function `condition` (a function of no arguments), evaluate the step functions whenever `condition` returns `True`.
+    """
     return _when_true_funcs(cond, *step_funcs)
 
 
 def when_false(cond, *step_funcs):
+    """
+    Given zero or more step functions and a condition function `condition` (a function of no arguments), evaluate the step functions whenever `condition` returns `False`.
+    """
     return _when_true_funcs(lambda: not cond, *step_funcs)
 
 
 def with_prefix(pre, *step_funcs):
+    """
+    Given zero or more step functions, modifies any output functions among them to prepend the string `prefix` to the file names (much like `filename_prefix`, above).
+    """
     def _with_prefix(sim, todo):
         saved_pre = sim.filename_prefix
         sim.filename_prefix = pre + sim.get_filename_prefix()
