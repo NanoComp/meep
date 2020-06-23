@@ -113,7 +113,7 @@ bool material_type_equal(const material_type m1, const material_type m2) {
     case material_data::PERFECT_METAL: return true;
     case material_data::MATERIAL_USER:
       return m1->user_func == m2->user_func && m1->user_data == m2->user_data;
-    case material_data::MATERIAL_GRID: //return material_grid_equal(m1, m2);
+    case material_data::MATERIAL_GRID:
     case material_data::MEDIUM: return medium_struct_equal(&(m1->medium), &(m2->medium));
     default: return false;
   }
@@ -394,10 +394,14 @@ void epsilon_material_grid(material_data *md, meep::realnum u) {
     interp_tensors(zero_vec, zero_vec, m2->E_susceptibilities.items[i].sigma_diag, m2->E_susceptibilities.items[i].sigma_offdiag, 
     &mm->E_susceptibilities.items[j].sigma_diag, &mm->E_susceptibilities.items[j].sigma_offdiag, u);  
   }
+  /*
+  TODO: eventually we want to add support for lossy materials
+  // Linearly interpolate electric conductivity
+  vector3 zero_offdiag;
+  interp_tensors(m1->D_conductivity_diag,zero_vec,m2->D_conductivity_diag,zero_vec,&mm->D_conductivity_diag,&zero_offdiag,u);
 
-  //Linearly interpolate electric conductivity from d.p.
-  //This prevents instabilities when interpolating between sus. profiles.
-  //We assume that the material doesn't have any underlying conductance....
+  // Add damping factor if we have dispersion.
+  // This prevents instabilities when interpolating between sus. profiles.
   if ((m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items) > 0.0) {
     // calculate mean harmonic frequency
     double omega_mean = 0;
@@ -408,6 +412,7 @@ void epsilon_material_grid(material_data *md, meep::realnum u) {
     // assign interpolated, nondimensionalized conductivity term
     mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) * omega_mean;
   }
+  */
 }
 
 // return material of the point p from the file (assumed already read)
@@ -665,7 +670,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
       int oi;
       geom_box_tree tp;
 
-      tp = geom_tree_search(p, geometry_tree, &oi);
+      tp = geom_tree_search(p, restricted_tree, &oi);
       u = matgrid_val(p, tp, oi, md); // interpolate onto material grid
       epsilon_material_grid(md, u); // interpolate material from material grid point
       
@@ -1370,7 +1375,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     int oi;
     geom_box_tree tp;
 
-    tp = geom_tree_search(p, geometry_tree, &oi);
+    tp = geom_tree_search(p, restricted_tree, &oi);
     u = matgrid_val(p, tp, oi, mat); // interpolate onto material grid
     epsilon_material_grid(mat, u); // interpolate material from material grid point
     check_offdiag(&mat->medium);
@@ -2201,51 +2206,37 @@ meep::realnum get_material_gradient(
   meep::realnum freq,             // frequency
   const material_data *md         // material
   ){
-  /*
-  Calculate d\eps/du, which is the derivative of the permittivity wrt the design parameter.
+  const medium_struct *mm = &(md->medium);
+  const medium_struct *m1 = &(md->medium_1);
+  const medium_struct *m2 = &(md->medium_2);
 
-  We can define the permittivity as the product of two quantities: the conductivity profile (1+i*sigma/omega)
-  and the lorentizian terms (\eps_infty + \sum{sigma/(....)})
-
-  We can use the product rule to make this easy
-  */
-
- // trivial case
-/*if ((md->medium.E_susceptibilities.num_items == 0) && 
-      md->medium.D_conductivity_diag.x == 0 && 
-      md->medium.D_conductivity_diag.y == 0 &&
-      md->medium.D_conductivity_diag.z == 0)
+  // trivial case
+  if ((mm->E_susceptibilities.num_items == 0) && 
+      mm->D_conductivity_diag.x == 0 && 
+      mm->D_conductivity_diag.y == 0 &&
+      mm->D_conductivity_diag.z == 0)
   {
-    master_printf("f_a %g %g %g \n",fields_a[0].real(),fields_a[1].real(),fields_a[2].real());
-    master_printf("f_f %g %g %g \n",fields_f[0].real(),fields_f[1].real(),fields_f[2].real());
-    double temp = 2 * (md->medium_2.epsilon_diag.x - md->medium_1.epsilon_diag.x) * (
+   return 2 * (m2->epsilon_diag.x - m1->epsilon_diag.x) * (
      (fields_a[0]*fields_f[0]).real() + (fields_a[1]*fields_f[1]).real() + (fields_a[2]*fields_f[2]).real());
-     master_printf("r %g \n",temp);
-   return 2 * (md->medium_2.epsilon_diag.x - md->medium_1.epsilon_diag.x) * (
-     (fields_a[0]*fields_f[0]).real() + (fields_a[1]*fields_f[1]).real() + (fields_a[2]*fields_f[2]).real());
-  }*/
+  }
   
   // nontrivial case 
   std::complex<double> a[9] = {std::complex<double>(0, 0)};
   std::complex<double> dadu[9] = {std::complex<double>(0, 0)};
   std::complex<double> b[9] = {std::complex<double>(0, 0)};
   std::complex<double> dbdu[9] = {std::complex<double>(0, 0)};
-
-  const medium_struct *mm = &(md->medium);
-  const medium_struct *m1 = &(md->medium_1);
-  const medium_struct *m2 = &(md->medium_2);
-
   a[0] = a[4] = a[8] = std::complex<double>(1, 0);
   for (int i = 0; i < 9; i++) {
+    /*
+    TODO: eventually we want to support lossy materials too.
+
     // compute first part containing conductivity
-    // NOTE: Current implementation assumes thatmaterials being interpolated
-    // don't have their own conductivities! Just the synthetic conductivity
-    // used to dampen the interpolated lorentzians
     vector3 dummy; dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
     a[i] += std::complex<double>(0.0, conductivityCur / freq);
 
     // compute derivative of conductivity component wrt u
+    dadu[i] = std::complex<double>(0.0,1/freq*(vec_to_value(m2->D_conductivity_diag, dummy, i) - vec_to_value(m1->D_conductivity_diag, dummy, i)));
     if ((m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items) > 0.0) {
       // calculate mean harmonic frequency
       double omega_mean = 0;
@@ -2256,6 +2247,7 @@ meep::realnum get_material_gradient(
       // assign interpolated, nondimensionalized conductivity term to diag comps
       if ((i == 0) || (i == 4) || (i==8)) dadu[i] += std::complex<double>(0.0,(1-2*u)*omega_mean/freq);
     }
+    */
 
     // compute lorentzian component
     b[i] = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
@@ -2306,7 +2298,7 @@ meep::realnum get_material_gradient(
       dA_du[idx] = left[idx] + right[idx];
     }
   }
-  
+
   /*Calculate the vector-matrix-vector product conj(v1) A v2.*/
   std::complex<double> dummy[3] = {std::complex<double>(0,0)};
   // first matrix-vector product
@@ -2318,7 +2310,7 @@ meep::realnum get_material_gradient(
   }
   
   // inner product
-  std::complex<double> result = dummy[0] * fields_a[0] + dummy[1] * fields_a[1]  + dummy[2] * fields_a[2] ;
+  std::complex<double> result = dummy[0] * fields_a[0] + dummy[1] * fields_a[1]  + dummy[2] * fields_a[2];
   return 2*result.real();
 }
 
@@ -2350,9 +2342,9 @@ void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum r
   z = mirrorindex(int(rz * nz), nz);
 
   /* get the difference between (x,y,z) and the actual point */
-  dx = rx * nx - x;
-  dy = ry * ny - y;
-  dz = rz * nz - z;
+  dx = rx * nx - x - 0.5;
+  dy = ry * ny - y - 0.5;
+  dz = rz * nz - z - 0.5;
 
   /* get the other closest point in the grid, with mirror boundaries: */
   x2 = mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);

@@ -662,7 +662,6 @@ class Simulation(object):
         self.collect_stats = collect_stats
         self.fragment_stats = None
         self._output_stats = os.environ.get('MEEP_STATS', None)
-        self.material_grids = [] # Needed to store array of c pointers for each grid
 
         self.special_kz = False
         if self.cell_size.z == 0 and self.k_point and self.k_point.z != 0:

@@ -677,9 +677,9 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, in
   z = mirrorindex(int(rz * nz), nz);
 
   /* get the difference between (x,y,z) and the actual point */
-  dx = rx * nx - x;
-  dy = ry * ny - y;
-  dz = rz * nz - z;
+  dx = rx * nx - x - 0.5;
+  dy = ry * ny - y - 0.5;
+  dz = rz * nz - z - 0.5;
 
   /* get the other closest point in the grid, with mirror boundaries: */
   x2 = mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);

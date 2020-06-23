@@ -472,10 +472,6 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m2, i)) != 0) meep::abort("unable to merge e sus lists.\n");}
   
   if (!py_list_to_susceptibility_list(py_sus, &md->medium.E_susceptibilities)) {return 0;}
-
-  // Store the pointer of the material object in the python class
-  PyObject* md_ptr_py = PyCapsule_New(md,NULL,NULL);
-  if (PyObject_SetAttrString(po, "swigobj", md_ptr_py) != 0) meep::abort("Unable to assign md pointer");
   
   return 1;
 }
