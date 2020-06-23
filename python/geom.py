@@ -31,14 +31,15 @@ class Vector3(object):
     """
     Properties:
 
-    **`x`, `y`, `z` [`float` or `complex`]**
-    —
-    The `x`, `y`, and `z` components of the vector. Generally, functions that take a `Vector3` as an argument will accept an iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
+    **`x`, `y`, `z` [`float` or `complex`]** — The `x`, `y`, and `z` components of the
+    vector. Generally, functions that take a `Vector3` as an argument will accept an
+    iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
     """
 
     def __init__(self, x=0.0, y=0.0, z=0.0):
         """
-        Create a new `Vector3` with the given components. All three components default to zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
+        Create a new `Vector3` with the given components. All three components default to
+        zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
         """
         self.x = float(x) if type(x) is int else x
         self.y = float(y) if type(y) is int else y
@@ -46,7 +47,9 @@ class Vector3(object):
 
     def __eq__(self, other):
         """
-        Returns whether or not the two vectors are numerically equal. Beware of using this function after operations that may have some error due to the finite precision of floating-point numbers; use `close` instead.
+        Returns whether or not the two vectors are numerically equal. Beware of using this
+        function after operations that may have some error due to the finite precision of
+        floating-point numbers; use `close` instead.
 
         ```python
         v1 == v2
@@ -56,7 +59,9 @@ class Vector3(object):
 
     def __ne__(self, other):
         """
-        Returns whether or not the two vectors are numerically unequal. Beware of using this function after operations that may have some error due to the finite precision of floating-point numbers; use `close` instead.
+        Returns whether or not the two vectors are numerically unequal. Beware of using
+        this function after operations that may have some error due to the finite
+        precision of floating-point numbers; use `close` instead.
 
         ```python
         v1 != v2
@@ -97,7 +102,8 @@ class Vector3(object):
 
     def __mul__(self, other):
         """
-        If `other` is a `Vector3`, returns the dot product of `v1` and `other`. If `other` is a number, then `v1` is scaled by the number.
+        If `other` is a `Vector3`, returns the dot product of `v1` and `other`. If `other`
+        is a number, then `v1` is scaled by the number.
 
         ```python
         c = v1 * other
@@ -120,7 +126,8 @@ class Vector3(object):
 
     def __rmul__(self, other):
         """
-        If `other` is a `Vector3`, returns the dot product of `v1` and `other`. If `other` is a number, then `v1` is scaled by the number.
+        If `other` is a `Vector3`, returns the dot product of `v1` and `other`. If `other`
+        is a number, then `v1` is scaled by the number.
 
         ```python
         c = other * v1
@@ -207,7 +214,8 @@ class Vector3(object):
 
     def close(self, v, tol=1.0e-7):
         """
-        Returns whether or not the corresponding components of the `self` and `v` vectors are within *`tol`* of each other. Defaults to 1e-7.
+        Returns whether or not the corresponding components of the `self` and `v` vectors
+        are within *`tol`* of each other. Defaults to 1e-7.
 
         ```python
         v1.close(v2, [tol])
@@ -219,7 +227,10 @@ class Vector3(object):
 
     def rotate(self, axis, theta):
         """
-        Returns the vector rotated by an angle *`theta`* (in radians) in the right-hand direction around the *`axis`* vector (whose length is ignored). You may find the python functions `math.degrees` and `math.radians` useful to convert angles between degrees and radians.
+        Returns the vector rotated by an angle *`theta`* (in radians) in the right-hand
+        direction around the *`axis`* vector (whose length is ignored). You may find the
+        python functions `math.degrees` and `math.radians` useful to convert angles
+        between degrees and radians.
 
         ```python
         v2 = v1.rotate(axis, theta)
@@ -247,19 +258,51 @@ class Vector3(object):
 
 class Medium(object):
     """
-    This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
+    This class is used to specify the materials that geometric objects are made of. It
+    represents an electromagnetic medium which is possibly nonlinear and/or dispersive.
+    See also [Materials](Materials.md). To model a perfectly-conducting metal, use the
+    predefined `metal` object, above. To model imperfect conductors, use a dispersive
+    dielectric material. See also the [Predefined Variables](#predefined-variables):
+    `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
 
     **Material Function**
 
-    Any function that accepts a `Medium` instance can also accept a user-defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
+    Any function that accepts a `Medium` instance can also accept a user-defined Python
+    function. This allows you to specify the material as an arbitrary function of
+    position. The function must have one argument, the position `Vector3`, and return the
+    material at that point, which should be a Python `Medium` instance. This is
+    accomplished by passing a function to the `material_function` keyword argument in the
+    `Simulation` constructor, or the `material` keyword argument in any `GeometricObject`
+    constructor. For an example, see [Subpixel Smoothing/Enabling Averaging for Material
+    Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
 
-    Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
+    Instead of the `material` or `material_function` arguments, you can also use the
+    `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a
+    function of position that returns the dielectric constant at that point.
 
-    **Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra_materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* values of γ<sub>*n*</sub> and ω<sub>*n*</sub>, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously and a matching σ<sub>*n*</sub> need not be specified in `extra_materials`. For nonlinear or conductivity materials, your `extra_materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously.
+    **Important:** If your material function returns nonlinear, dispersive (Lorentzian or
+    conducting), or magnetic materials, you should also include a list of these materials
+    in the `extra_materials` input variable (above) to let Meep know that it needs to
+    support these material types in your simulation. For dispersive materials, you need to
+    include a material with the *same* values of γ<sub>*n*</sub> and ω<sub>*n*</sub>, so
+    you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary
+    continuously and a matching σ<sub>*n*</sub> need not be specified in
+    `extra_materials`. For nonlinear or conductivity materials, your `extra_materials`
+    list need not match the actual values of σ or χ returned by your material function,
+    which can vary continuously.
 
-    **Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the [conductivity](Materials.md#conductivity-and-complex). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex ε and/or μ, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `LorentzianSusceptibility` or `DrudeSusceptibility` classes below.
+    **Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep
+    where the imaginary part is a frequency-independent loss but there is an alternative.
+    That is because there are only two important physical situations. First, if you only
+    care about the loss in a narrow bandwidth around some frequency, you can set the loss
+    at that frequency via the [conductivity](Materials.md#conductivity-and-complex).
+    Second, if you care about a broad bandwidth, then all physical materials have a
+    frequency-dependent complex ε and/or μ, and you need to specify that frequency
+    dependence by fitting to Lorentzian and/or Drude resonances via the
+    `LorentzianSusceptibility` or `DrudeSusceptibility` classes below.
 
-    Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `Susceptibility`.
+    Dispersive dielectric and magnetic materials, above, are specified via a list of
+    objects that are subclasses of type `Susceptibility`.
     """
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
                  epsilon_offdiag=Vector3(),
@@ -290,50 +333,56 @@ class Medium(object):
         """
         Creates a `Medium` object.
 
-        **`epsilon` [`number`]**
-        —The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `index=n` as a synonym for `epsilon=n*n`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$.
+        + **`epsilon` [`number`]** The frequency-independent isotropic relative
+          permittivity or dielectric constant. Default is 1. You can also use `index=n` as
+          a synonym for `epsilon=n*n`; note that this is not really the refractive index
+          if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$. Using
+          `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
 
-        Using `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
+        + **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]** — These properties allow
+          you to specify ε as an arbitrary real-symmetric tensor by giving the diagonal
+          and offdiagonal parts. Specifying `epsilon_diag=Vector3(a, b, c)` and/or
+          `epsilon_offdiag=Vector3(u, v, w)` corresponds to a relative permittivity ε
+          tensor \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
+          Default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
-        **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]**
-        —
-        These properties allow you to specify ε as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts. Specifying `epsilon_diag=Vector3(a, b, c)` and/or `epsilon_offdiag=Vector3(u, v, w)` corresponds to a relative permittivity ε tensor
-        \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
+        + **`mu` [`number`]** — The frequency-independent isotropic relative permeability
+          μ. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=mp.Vector3(pm,
+          pm, pm)`.
 
-        Default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
+        + **`mu_diag` and `mu_offdiag` [`Vector3`]** — These properties allow you to
+          specify μ as an arbitrary real-symmetric tensor by giving the diagonal and
+          offdiagonal parts exactly as for ε above. Default is the identity matrix.
 
-        **`mu` [`number`]**
-        —
-        The frequency-independent isotropic relative permeability μ. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=mp.Vector3(pm, pm, pm)`.
+        + **`D_conductivity` [`number`]** — The frequency-independent electric
+          conductivity $\sigma_D$. Default is 0. You can also specify a diagonal
+          anisotropic conductivity tensor by using the property `D_conductivity_diag`
+          which takes a `Vector3` to give the $\sigma_D$ tensor diagonal. See also
+          [Conductivity](Materials.md#conductivity-and-complex).
 
-        **`mu_diag` and `mu_offdiag` [`Vector3`]**
-        —
-        These properties allow you to specify μ as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts exactly as for ε above. Default is the identity matrix.
+        + **`B_conductivity` [`number`]** — The frequency-independent magnetic
+          conductivity $\sigma_B$. Default is 0. You can also specify a diagonal
+          anisotropic conductivity tensor by using the property `B_conductivity_diag`
+          which takes a `Vector3` to give the $\sigma_B$ tensor diagonal. See also
+          [Conductivity](Materials.md#conductivity-and-complex).
 
-        **`D_conductivity` [`number`]**
-        —
-        The frequency-independent electric conductivity $\sigma_D$. Default is 0. You can also specify a diagonal anisotropic conductivity tensor by using the property `D_conductivity_diag` which takes a `Vector3` to give the $\sigma_D$ tensor diagonal. See also [Conductivity](Materials.md#conductivity-and-complex).
+        + **`chi2` [`number`]** — The nonlinear
+          [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility
+          $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
-        **`B_conductivity` [`number`]**
-        —
-        The frequency-independent magnetic conductivity $\sigma_B$. Default is 0. You can also specify a diagonal anisotropic conductivity tensor by using the property `B_conductivity_diag` which takes a `Vector3` to give the $\sigma_B$ tensor diagonal. See also [Conductivity](Materials.md#conductivity-and-complex).
+        + **`chi3` [`number`]** — The nonlinear
+          [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$.
+          Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
-        **`chi2` [`number`]**
-        —
-        The nonlinear [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+        + **`E_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
+          susceptibilities (see below) added to the dielectric constant ε in order to
+          model material dispersion. Defaults to none (empty list). See also [Material
+          Dispersion](Materials.md#material-dispersion).
 
-        **`chi3` [`number`]**
-        —
-        The nonlinear [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
-
-        **`E_susceptibilities` [ list of `Susceptibility` class ]**
-        —
-        List of dispersive susceptibilities (see below) added to the dielectric constant ε in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
-
-        **`H_susceptibilities` [ list of `Susceptibility` class ]**
-        —
-        List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none (empty list). See also [Material Dispersion](Materials.md#material-dispersion).
-
+        + **`H_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
+          susceptibilities (see below) added to the permeability μ in order to model
+          material dispersion. Defaults to none (empty list). See also [Material
+          Dispersion](Materials.md#material-dispersion).
         """
 
         if epsilon:
@@ -380,9 +429,16 @@ class Medium(object):
 
     def transform(self, m):
         """
-        **`transform(M` [ `Matrix` class ]`)`**
-        —
-        Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility) by the 3×3 matrix `M`. If `M` is a [rotation matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of the susceptibilities are rotated by `M`.  More generally, the susceptibilities χ are transformed to MχMᵀ/|det M|, which corresponds to [transformation optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an arbitrary curvilinear coordinate transformation with Jacobian matrix M. The absolute value of the determinant is to prevent inadvertent construction of left-handed materials, which are [problematic in nondispersive media](FAQ.md#why-does-my-simulation-diverge-if-0).
+        Transforms `epsilon`, `mu`, and `sigma` of any [susceptibilities](#susceptibility)
+        by the 3×3 matrix `m`. If `m` is a [rotation
+        matrix](https://en.wikipedia.org/wiki/Rotation_matrix), then the principal axes of
+        the susceptibilities are rotated by `m`.  More generally, the susceptibilities χ
+        are transformed to MχMᵀ/|det M|, which corresponds to [transformation
+        optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an
+        arbitrary curvilinear coordinate transformation with Jacobian matrix M. The
+        absolute value of the determinant is to prevent inadvertent construction of
+        left-handed materials, which are [problematic in nondispersive
+        media](FAQ.md#why-does-my-simulation-diverge-if-0).
         """
         eps = Matrix(mp.Vector3(self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y),
                      mp.Vector3(self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z),
@@ -410,13 +466,17 @@ class Medium(object):
 
     def epsilon(self,freq):
         """
-            Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified frequency `freq` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
+        Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified
+        frequency `freq` which can be either a scalar, list, or Numpy array. In the case
+        of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
         """
         return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
 
     def mu(self,freq):
         """
-        Returns the medium's permeability tensor as a 3x3 Numpy array at the specified frequency `freq` which can be either a scalar, list, or Numpy array. In the case of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
+        Returns the medium's permeability tensor as a 3x3 Numpy array at the specified
+        frequency `freq` which can be either a scalar, list, or Numpy array. In the case
+        of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
         """
         return self._get_epsmu(self.mu_diag, self.mu_offdiag, self.H_susceptibilities, self.B_conductivity_diag, self.B_conductivity_offdiag, freq)
 
@@ -452,13 +512,18 @@ class Medium(object):
 
 class Susceptibility(object):
     """
-    Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+    Parent class for various dispersive susceptibility terms, parameterized by an
+    anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
     """
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
         """
-        **`sigma` [`number`]**
-        —
-        The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma_diag` which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is, `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)` corresponds to a σ tensor
+        + **`sigma` [`number`]** — The scale factor σ.
+
+        You can also specify an anisotropic σ tensor by using the property `sigma_diag`
+        which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+        `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
+        `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
+        corresponds to a σ tensor
 
         \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
         """
@@ -474,19 +539,19 @@ class Susceptibility(object):
 
 class LorentzianSusceptibility(Susceptibility):
     """
-    Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+    Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
+    oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with
+    the parameters (in addition to σ):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
-        **`frequency` [`number`]**
-        —
-        The resonance frequency $f_n = \omega_n / 2\pi$.
+        + **`frequency` [`number`]** — The resonance frequency $f_n = \omega_n / 2\pi$.
 
-        **`gamma` [`number`]**
-        —
-        The resonance loss rate $γ_n / 2\pi$.
+        + **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\pi$.
 
-        Note: multiple objects with identical values for the `frequency` and `gamma` but different `sigma` will appear as a *single* Lorentzian susceptibility term in the preliminary simulation info output.
+        Note: multiple objects with identical values for the `frequency` and `gamma` but
+        different `sigma` will appear as a *single* Lorentzian susceptibility term in the
+        preliminary simulation info output.
         """
         super(LorentzianSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
@@ -502,17 +567,15 @@ class LorentzianSusceptibility(Susceptibility):
 
 class DrudeSusceptibility(Susceptibility):
     """
-    Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+    Specifies a single dispersive susceptibility of Drude form. See [Material
+    Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
-        **`frequency` [`number`]**
-        —
-        The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a resonance frequency).
+        + **`frequency` [`number`]** — The frequency scale factor $f_n = \omega_n / 2\pi$
+          which multiplies σ (not a resonance frequency).
 
-        **`gamma` [`number`]**
-        —
-        The loss rate $γ_n / 2\pi$.
+        + **`gamma` [`number`]** — The loss rate $γ_n / 2\pi$.
         """
         super(DrudeSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
@@ -528,15 +591,29 @@ class DrudeSusceptibility(Susceptibility):
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
     """
-    Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
+    Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
+    oscillator) or Drude form. See [Material
+    Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and
+    `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in
+    space and time, zero mean) added to the **P** damped-oscillator equation.
     """
     def __init__(self, noise_amp=0.0, **kwargs):
         """
-        **`noise_amp` [`number`]**
-        —
-        The noise has root-mean square amplitude σ $\times$ `noise_amp`.
+        + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\times$
+          `noise_amp`.
 
-        This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to [compute far-field thermal radiation using Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
+        This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a
+        random noise term added into the damped-oscillator equation at each point. This
+        can be used to directly model thermal radiation in both the [far
+        field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the
+        [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however
+        that it is more efficient to [compute far-field thermal radiation using
+        Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of
+        radiation, which states that emissivity equals absorptivity. Near-field thermal
+        radiation can usually be computed more efficiently using frequency-domain methods,
+        e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g.
+        [here](http://doi.org/10.1103/PhysRevB.92.134202) or
+        [here](http://doi.org/10.1103/PhysRevB.88.054305).
         """
         super(NoisyLorentzianSusceptibility, self).__init__(**kwargs)
         self.noise_amp = noise_amp
@@ -544,15 +621,29 @@ class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
 
 class NoisyDrudeSusceptibility(DrudeSusceptibility):
     """
-    Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
+    Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
+    oscillator) or Drude form. See [Material
+    Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and
+    `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in
+    space and time, zero mean) added to the **P** damped-oscillator equation.
     """
     def __init__(self, noise_amp=0.0, **kwargs):
         """
-        **`noise_amp` [`number`]**
-        —
-        The noise has root-mean square amplitude σ $\times$ `noise_amp`.
+        + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\times$
+          `noise_amp`.
 
-        This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to [compute far-field thermal radiation using Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g. [here](http://doi.org/10.1103/PhysRevB.92.134202) or [here](http://doi.org/10.1103/PhysRevB.88.054305).
+        This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a
+        random noise term added into the damped-oscillator equation at each point. This
+        can be used to directly model thermal radiation in both the [far
+        field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the
+        [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however
+        that it is more efficient to [compute far-field thermal radiation using
+        Kirchhoff's law](http://www.simpetus.com/projects.html#meep_thermal_radiation) of
+        radiation, which states that emissivity equals absorptivity. Near-field thermal
+        radiation can usually be computed more efficiently using frequency-domain methods,
+        e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g.
+        [here](http://doi.org/10.1103/PhysRevB.92.134202) or
+        [here](http://doi.org/10.1103/PhysRevB.88.054305).
         """
         super(NoisyDrudeSusceptibility, self).__init__(**kwargs)
         self.noise_amp = noise_amp
@@ -560,13 +651,17 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
 
 class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
     """
-    (**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+    (**Experimental feature**) Specifies a single dispersive [gyrotropic
+    susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic
+    oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its
+    parameters are `sigma`, `frequency`, and `gamma`, which have the [usual
+    meanings](#susceptibility), and an additional 3-vector `bias`:
     """
     def __init__(self, bias=Vector3(), **kwargs):
         """
-        **`bias` [`Vector3`]**
-        —
-        The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
+        + **`bias` [`Vector3`]** — The gyrotropy vector.  Its direction determines the
+          orientation of the gyrotropic response, and the magnitude is the precession
+          frequency $|\mathbf{b}_n|/2\pi$.
         """
         super(GyrotropicLorentzianSusceptibility, self).__init__(**kwargs)
         self.bias = bias
@@ -574,13 +669,17 @@ class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
 
 class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
     """
-    (**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its parameters are `sigma`, `frequency`, and `gamma`, which have the [usual meanings](#susceptibility), and an additional 3-vector `bias`:
+    (**Experimental feature**) Specifies a single dispersive [gyrotropic
+    susceptibility](Materials.md#gyrotropic-media) of [Lorentzian (damped harmonic
+    oscillator) or Drude form](Materials.md#gyrotropic-drude-lorentz-model). Its
+    parameters are `sigma`, `frequency`, and `gamma`, which have the [usual
+    meanings](#susceptibility), and an additional 3-vector `bias`:
     """
     def __init__(self, bias=Vector3(), **kwargs):
         """
-        **`bias` [`Vector3`]**
-        —
-        The gyrotropy vector.  Its direction determines the orientation of the gyrotropic response, and the magnitude is the precession frequency $|\mathbf{b}_n|/2\pi$.
+        + **`bias` [`Vector3`]** — The gyrotropy vector.  Its direction determines the
+          orientation of the gyrotropic response, and the magnitude is the precession
+          frequency $|\mathbf{b}_n|/2\pi$.
         """
         super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
         self.bias = bias
@@ -588,29 +687,37 @@ class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
 
 class GyrotropicSaturatedSusceptibility(Susceptibility):
     """
-    (**Experimental feature**) Specifies a single dispersive [gyrotropic susceptibility](Materials.md#gyrotropic-media) governed by a [linearized Landau-Lifshitz-Gilbert equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model). This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are different from the Lorentzian and Drude case. It also takes a 3-vector `bias` parameter and an `alpha` parameter:
+    (**Experimental feature**) Specifies a single dispersive [gyrotropic
+    susceptibility](Materials.md#gyrotropic-media) governed by a [linearized
+    Landau-Lifshitz-Gilbert
+    equation](Materials.md#gyrotropic-saturated-dipole-linearized-landau-lifshitz-gilbert-model).
+    This class takes parameters `sigma`, `frequency`, and `gamma`, whose meanings are
+    different from the Lorentzian and Drude case. It also takes a 3-vector `bias`
+    parameter and an `alpha` parameter:
     """
     def __init__(self, bias=Vector3(), frequency=0.0, gamma=0.0, alpha=0.0, **kwargs):
         """
-        **`sigma` [`number`]**
-        —
-        The coupling factor $\sigma_n / 2\pi$ between the polarization and the driving field. In [magnetic ferrites](https://en.wikipedia.org/wiki/Ferrite_(magnet)), this is the Larmor precession frequency at the saturation field.
+        + **`sigma` [`number`]** — The coupling factor $\sigma_n / 2\pi$ between the
+          polarization and the driving field. In [magnetic
+          ferrites](https://en.wikipedia.org/wiki/Ferrite_(magnet)), this is the Larmor
+          precession frequency at the saturation field.
 
-        **`frequency` [`number`]**
-        —
-        The [Larmor precession](https://en.wikipedia.org/wiki/Larmor_precession) frequency, $f_n = \omega_n / 2\pi$.
+        + **`frequency` [`number`]** — The [Larmor
+          precession](https://en.wikipedia.org/wiki/Larmor_precession) frequency,
+          $f_n = \omega_n / 2\pi$.
 
-        **`gamma` [`number`]**
-        —
-        The loss rate $\gamma_n / 2\pi$ in the off-diagonal response.
+        + **`gamma` [`number`]** — The loss rate $\gamma_n / 2\pi$ in the off-diagonal
+          response.
 
-        **`alpha` [`number`]**
-        —
-        The loss factor $\alpha_n$ in the diagonal response. Note that this parameter is dimensionless and contains no 2π factor.
+        + **`alpha` [`number`]** — The loss factor $\alpha_n$ in the diagonal response.
+          Note that this parameter is dimensionless and contains no 2π factor.
 
-        **`bias` [`Vector3`]**
-        —
-        Vector specifying the orientation of the gyrotropic response. Unlike the similarly-named `bias` parameter for the [gyrotropic Lorentzian/Drude susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility), the magnitude is ignored; instead, the relevant precession frequencies are determined by the `sigma` and `frequency` parameters.
+        + **`bias` [`Vector3`]** — Vector specifying the orientation of the gyrotropic
+          response. Unlike the similarly-named `bias` parameter for the [gyrotropic
+          Lorentzian/Drude
+          susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility),
+          the magnitude is ignored; instead, the relevant precession frequencies are
+          determined by the `sigma` and `frequency` parameters.
         """
         super(GyrotropicSaturatedSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
@@ -621,7 +728,12 @@ class GyrotropicSaturatedSusceptibility(Susceptibility):
 
 class MultilevelAtom(Susceptibility):
     """
-    Specifies a multievel atomic susceptibility for modeling saturable gain and absorption. This is a subclass of `E_susceptibilities` which contains two objects: (1) `transitions`: a list of atomic `Transition`s (defined below), and (2) `initial_populations`: a list of numbers defining the initial population of each atomic level. See [Materials/Saturable Gain and Absorption](Materials.md#saturable-gain-and-absorption).
+    Specifies a multievel atomic susceptibility for modeling saturable gain and
+    absorption. This is a subclass of `E_susceptibilities` which contains two objects: (1)
+    `transitions`: a list of atomic `Transition`s (defined below), and (2)
+    `initial_populations`: a list of numbers defining the initial population of each
+    atomic level. See [Materials/Saturable Gain and
+    Absorption](Materials.md#saturable-gain-and-absorption).
     """
     def __init__(self, initial_populations=[], transitions=[], **kwargs):
         super(MultilevelAtom, self).__init__(**kwargs)
@@ -631,7 +743,7 @@ class MultilevelAtom(Susceptibility):
 
 class Transition(object):
     """
-    TODO:
+    A `Transition` is... (TODO)
     """
 
     def __init__(self,
@@ -645,33 +757,20 @@ class Transition(object):
         """
         Construct a `Transition`.
 
-        **`frequency` [`number`]**
-        —
-        The radiative transition frequency $f = \omega / 2\pi$.
+        + **`frequency` [`number`]** — The radiative transition frequency $f = \omega / 2\pi$.
 
-        **`gamma` [`number`]**
-        —
-        The loss rate $\gamma = \gamma / 2\pi$.
+        + **`gamma` [`number`]** — The loss rate $\gamma = \gamma / 2\pi$.
 
-        **`sigma_diag` [`Vector3`]**
-        —
-        The per-polarization coupling strength $\sigma$.
+        + **`sigma_diag` [`Vector3`]** — The per-polarization coupling strength $\sigma$.
 
-        **`from_level` [`number`]**
-        —
-        The atomic level from which the transition occurs.
+        + **`from_level` [`number`]** — The atomic level from which the transition occurs.
 
-        **`to_level` [`number`]**
-        —
-        The atomic level to which the transition occurs.
+        + **`to_level` [`number`]** — The atomic level to which the transition occurs.
 
-        **`transition_rate` [`number`]**
-        —
-        The non-radiative transition rate $f = \omega / 2\pi$. Default is 0.
+        + **`transition_rate` [`number`]** — The non-radiative transition rate
+          $f = \omega / 2\pi$. Default is 0.
 
-        **`pumping_rate` [`number`]**
-        —
-        The pumping rate $f = \omega / 2\pi$. Default is 0.
+        + **`pumping_rate` [`number`]** — The pumping rate $f = \omega / 2\pi$. Default is 0.
         """
         self.from_level = check_nonnegative('from_level', from_level)
         self.to_level = check_nonnegative('to_level', to_level)
@@ -684,17 +783,21 @@ class Transition(object):
 
 class GeometricObject(object):
     """
-    This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated.
+    This class, and its descendants, are used to specify the solid geometric objects that
+    form the dielectric structure being simulated.
 
-    In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
+    In a 2d calculation, only the intersections of the objects with the $xy$ plane are
+    considered.
 
     **Geometry Utilities**
 
-    See the [MPB documentation](https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities) for utility functions to help manipulate geometric objects.
+    See the [MPB documentation](https://mpb.readthedocs.io/en/latest/Python_User_Interface/#geometry-utilities)
+    for utility functions to help manipulate geometric objects.
 
     **Examples**
 
-    These are some examples of geometric objects created using some `GeometricObject` subclasses:
+    These are some examples of geometric objects created using some `GeometricObject`
+    subclasses:
 
     ```python
     # A cylinder of infinite radius and height 0.25 pointing along the x axis,
@@ -729,28 +832,27 @@ class GeometricObject(object):
                 mp.Vector3(-0.5,-math.sqrt(3)/2)]
 
     geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
-
     ```
-
     """
     def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
         """
         Construct a `GeometricObject`.
 
-        **`material` [`Medium` class or function ]**
-        —
-        The material that the object is made of (usually some sort of dielectric). Uses default `Medium`. If a function is supplied, it must take one argument and return a Python `Medium`.
+        + **`material` [`Medium` class or function ]** — The material that the object is
+          made of (usually some sort of dielectric). Uses default `Medium`. If a function
+          is supplied, it must take one argument and return a Python `Medium`.
 
-        **`epsilon_func` [ function ]**
-        —
-        A function that takes one argument (a `Vector3`) and returns the dielectric constant at that point. Can be used instead of `material`. Default is `None`.
+        + **`epsilon_func` [ function ]** — A function that takes one argument (a
+          `Vector3`) and returns the dielectric constant at that point. Can be used
+          instead of `material`. Default is `None`.
 
-        **`center` [`Vector3`]**
-        —
-        Center point of the object. Defaults to `(0,0,0)`.
+        + **`center` [`Vector3`]** — Center point of the object. Defaults to `(0,0,0)`.
 
-        One normally does not create objects of type `GeometricObject` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties and can be specified in a subclass's constructor via keyword arguments.
-
+        One normally does not create objects of type `GeometricObject` directly, however;
+        instead, you use one of the following subclasses. Recall that subclasses inherit
+        the properties of their superclass, so these subclasses automatically have the
+        `material` and `center` properties and can be specified in a subclass's
+        constructor via keyword arguments.
         """
         if type(material) is not Medium and callable(material):
             init_do_averaging(material)
@@ -793,7 +895,8 @@ class GeometricObject(object):
 
     def info(self, indent_by=0):
         """
-        Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces (default is 0).
+        Displays all properties and current values of a `GeometricObject`, indented by
+        `indent_by` spaces (default is 0).
         """
         mp.display_geometric_object_info(indent_by, self)
 
@@ -804,9 +907,7 @@ class Sphere(GeometricObject):
 
     **Properties:**
 
-    **`radius` [`number`]**
-    —
-    Radius of the sphere. No default value.
+    + **`radius` [`number`]** — Radius of the sphere. No default value.
     """
 
     def __init__(self, radius, **kwargs):
@@ -828,17 +929,13 @@ class Cylinder(GeometricObject):
     A cylinder, with circular cross-section and finite height.
 
     **Properties:**
-    **`radius` [`number`]**
-    —
-    Radius of the cylinder's cross-section. No default value.
 
-    **`height` [`number`]**
-    —
-    Length of the cylinder along its axis. No default value.
+    + **`radius` [`number`]** — Radius of the cylinder's cross-section. No default value.
 
-    **`axis` [`Vector3`]**
-    —
-    Direction of the cylinder's axis; the length of this vector is ignored. Defaults to `Vector3(x=0, y=0, z=1)`.
+    + **`height` [`number`]** — Length of the cylinder along its axis. No default value.
+
+    + **`axis` [`Vector3`]** — Direction of the cylinder's axis; the length of this vector
+      is ignored. Defaults to `Vector3(x=0, y=0, z=1)`.
     """
 
     def __init__(self, radius, axis=Vector3(0, 0, 1), height=1e20, **kwargs):
@@ -882,7 +979,11 @@ class Wedge(Cylinder):
 
 class Cone(Cylinder):
     """
-    A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and inherits all of the same properties, with one additional property. The radius of the base of the cone is given by the `radius` property inherited from `Cylinder`, while the radius of the tip is given by the new property, `radius2`. The `center` of a cone is halfway between the two circular ends.
+    A cone, or possibly a truncated cone. This is actually a subclass of `Cylinder`, and
+    inherits all of the same properties, with one additional property. The radius of the
+    base of the cone is given by the `radius` property inherited from `Cylinder`, while
+    the radius of the tip is given by the new property, `radius2`. The `center` of a cone
+    is halfway between the two circular ends.
     """
     def __init__(self, radius, radius2=0, **kwargs):
         """
@@ -904,13 +1005,13 @@ class Block(GeometricObject):
         """
         Construct a `Block`.
 
-        **`size` [`Vector3`]**
-        —
-        The lengths of the block edges along each of its three axes. Not really a 3-vector, but it has three components, each of which should be nonzero. No default value.
+        + **`size` [`Vector3`]** — The lengths of the block edges along each of its three
+          axes. Not really a 3-vector, but it has three components, each of which should
+          be nonzero. No default value.
 
-        **`e1`, `e2`, `e3` [`Vector3`]**
-        —
-        The directions of the axes of the block; the lengths of these vectors are ignored. Must be linearly independent. They default to the three lattice directions.
+        + **`e1`, `e2`, `e3` [`Vector3`]** — The directions of the axes of the block; the
+          lengths of these vectors are ignored. Must be linearly independent. They default
+          to the three lattice directions.
         """
 
         self.size = Vector3(*size)
@@ -922,7 +1023,8 @@ class Block(GeometricObject):
 
 class Ellipsoid(Block):
     """
-    An ellipsoid. This is actually a subclass of `Block`, and inherits all the same properties, but defines an ellipsoid inscribed inside the block.
+    An ellipsoid. This is actually a subclass of `Block`, and inherits all the same
+    properties, but defines an ellipsoid inscribed inside the block.
     """
     def __init__(self, **kwargs):
         """
@@ -939,21 +1041,24 @@ class Prism(GeometricObject):
         """
         Construct a `Prism`.
 
-        **`vertices` [list of `Vector3`]**
-        —
-        The vertices that make up the prism. They must lie in a plane that's perpendicular to the `axis`. Note that infinite lengths are not supported. To simulate infinite geometry, just extend the edge of the prism beyond the cell.
+        + **`vertices` [list of `Vector3`]** — The vertices that make up the prism. They
+          must lie in a plane that's perpendicular to the `axis`. Note that infinite
+          lengths are not supported. To simulate infinite geometry, just extend the edge
+          of the prism beyond the cell.
 
-        **`height` [`number`]**
-        —
-        The prism thickness, extruded in the direction of `axis`. `mp.inf` can be used for infinite height. No default value.
+        + **`height` [`number`]** — The prism thickness, extruded in the direction of
+          `axis`. `mp.inf` can be used for infinite height. No default value.
 
-        **`axis` [`Vector3`]**
-        —
-        The axis perpendicular to the prism. Defaults to `Vector3(0,0,1)`.
+        + **`axis` [`Vector3`]** — The axis perpendicular to the prism. Defaults to
+          `Vector3(0,0,1)`.
 
-        **`center` [`Vector3`]**
-        —
-        If `center` is not specified, then the coordinates of the `vertices` define the *bottom* of the prism with the top of the prism being at the same coordinates shifted by `height*axis`. If `center` is specified, then `center` is the coordinates of the [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and bottom) of the resulting 3d prism so that the coordinates of the `vertices` are shifted accordingly.
+        + **`center` [`Vector3`]** — If `center` is not specified, then the coordinates of
+          the `vertices` define the *bottom* of the prism with the top of the prism being
+          at the same coordinates shifted by `height*axis`. If `center` is specified, then
+          `center` is the coordinates of the
+          [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and
+          bottom) of the resulting 3d prism so that the coordinates of the `vertices` are
+          shifted accordingly.
         """
 
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
@@ -984,7 +1089,8 @@ class Matrix(object):
     m.inverse()
     ```
 
-    Return the transpose, adjoint (conjugate transpose), determinant, or inverse of the given matrix.
+    Return the transpose, adjoint (conjugate transpose), determinant, or inverse of the
+    given matrix.
 
     ```python
     m1 + m2
@@ -999,7 +1105,8 @@ class Matrix(object):
     m * v
     ```
 
-    Returns the `Vector3` product of the matrix `m` by the vector `v`, with the vector multiplied on the left or the right respectively.
+    Returns the `Vector3` product of the matrix `m` by the vector `v`, with the vector
+    multiplied on the left or the right respectively.
 
     ```python
     s * m
@@ -1382,11 +1489,13 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
 
 def get_rotation_matrix(axis, theta):
     """
-    Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result as `v.rotate(axis, theta)`.
+    Like `Vector3.rotate`, except returns the (unitary) rotation matrix that performs the
+    given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result
+    as `v.rotate(axis, theta)`.
 
-    axis [`Vector3`] —
+    + axis [`Vector3`] —
 
-    theta [`number`] —
+    + theta [`number`] —
     """
     return Matrix(Vector3(x=1).rotate(axis, theta),
                   Vector3(y=1).rotate(axis, theta),
