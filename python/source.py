@@ -13,51 +13,86 @@ def check_positive(prop, val):
 
 class Source(object):
     """
-    The `Source` class is used to specify the current sources via the `Simulation.sources` attribute. Note that all sources in Meep are separable in time and space, i.e. of the form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions $\mathbf{A}$ and $f$. Non-separable sources can be simulated, however, by modifying the sources after each time step. When real fields are being used (which is the default in many cases; see `Simulation.force_complex_fields`), only the real part of the current source is used.
+    The `Source` class is used to specify the current sources via the `Simulation.sources`
+    attribute. Note that all sources in Meep are separable in time and space, i.e. of the
+    form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions
+    $\mathbf{A}$ and $f$. Non-separable sources can be simulated, however, by modifying
+    the sources after each time step. When real fields are being used (which is the
+    default in many cases; see `Simulation.force_complex_fields`), only the real part of
+    the current source is used.
 
-    **Important note**: These are *current* sources (**J** terms in Maxwell's equations), even though they are labelled by electric/magnetic field components. They do *not* specify a particular electric/magnetic field which would be what is called a "hard" source in the FDTD literature. There is no fixed relationship between the current source and the resulting field amplitudes; it depends on the surrounding geometry, as described in the [FAQ](FAQ.md#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude) and in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+    **Important note**: These are *current* sources (**J** terms in Maxwell's equations),
+    even though they are labelled by electric/magnetic field components. They do *not*
+    specify a particular electric/magnetic field which would be what is called a "hard"
+    source in the FDTD literature. There is no fixed relationship between the current
+    source and the resulting field amplitudes; it depends on the surrounding geometry, as
+    described in the
+    [FAQ](FAQ.md#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude)
+    and in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter
+    4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of
+    the book [Advances in FDTD Computational Electrodynamics: Photonics and
+    Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
     """
     def __init__(self, src, component, center=None, volume=None, size=Vector3(), amplitude=1.0, amp_func=None,
                  amp_func_file='', amp_data=None):
         """
         Construct a `Source`.
 
-        **`src` [`SourceTime` class ]**
-        —
-        Specify the time-dependence of the source (see below). No default.
+        + **`src` [`SourceTime` class ]** — Specify the time-dependence of the source (see
+          below). No default.
 
-        **`component` [`component` constant ]**
-        —
-        Specify the direction and type of the current component: e.g. `mp.Ex`, `mp.Ey`, etcetera for an electric-charge current, and `mp.Hx`, `mp.Hy`, etcetera for a magnetic-charge current. Note that currents pointing in an arbitrary direction are specified simply as multiple current sources with the appropriate amplitudes for each component. No default.
+        + **`component` [`component` constant ]** — Specify the direction and type of the
+          current component: e.g. `mp.Ex`, `mp.Ey`, etcetera for an electric-charge
+          current, and `mp.Hx`, `mp.Hy`, etcetera for a magnetic-charge current. Note that
+          currents pointing in an arbitrary direction are specified simply as multiple
+          current sources with the appropriate amplitudes for each component. No default.
 
-        **`center` [`Vector3`]**
-        —
-        The location of the center of the current source in the cell. No default.
+        + **`center` [`Vector3`]** — The location of the center of the current source in
+          the cell. No default.
 
-        **`size` [`Vector3`]**
-        —
-        The size of the current distribution along each direction of the cell. Default is `(0,0,0)`: a point-dipole source.
+        + **`size` [`Vector3`]** — The size of the current distribution along each
+          direction of the cell. Default is `(0,0,0)`: a point-dipole source.
 
-        **`volume` [`Volume`]**
-        —A `meep.Volume` can be used to specify the source region instead of a `center` and a `size`.
+        + **`volume` [`Volume`]** — A `meep.Volume` can be used to specify the source
+          region instead of a `center` and a `size`.
 
-        **`amplitude` [`complex`]**
-        —
-        An overall complex amplitude multiplying the current source. Default is 1.0.
+        + **`amplitude` [`complex`]** — An overall complex amplitude multiplying the
+          current source. Default is 1.0.
 
-        **`amp_func` [`function`]**
-        —
-        A Python function of a single argument, that takes a `Vector3` giving a position and returns a complex current amplitude for that point. The position argument is *relative* to the `center` of the current source, so that you can move your current around without changing your function. Default is `None`, meaning that a constant amplitude of 1.0 is used. Note that your amplitude function (if any) is *multiplied* by the `amplitude` property, so both properties can be used simultaneously.
+        + **`amp_func` [`function`]** — A Python function of a single argument, that takes
+          a `Vector3` giving a position and returns a complex current amplitude for that
+          point. The position argument is *relative* to the `center` of the current
+          source, so that you can move your current around without changing your function.
+          Default is `None`, meaning that a constant amplitude of 1.0 is used. Note that
+          your amplitude function (if any) is *multiplied* by the `amplitude` property, so
+          both properties can be used simultaneously.
 
-        **`amp_func_file` [`string`]**
-        —
-        String of the form `path_to_h5_file.h5:dataset`. The `.h5` extension is optional. Meep will read the HDF5 file and create an amplitude function that interpolates into the grid specified by the file. Meep expects the data to be split into real and imaginary parts, so in the above example it will look for `dataset.re` and `dataset.im` in the file `path_to_h5_file.h5`. Defaults to the empty string.
+        + **`amp_func_file` [`string`]** — String of the form
+          `path_to_h5_file.h5:dataset`. The `.h5` extension is optional. Meep will read
+          the HDF5 file and create an amplitude function that interpolates into the grid
+          specified by the file. Meep expects the data to be split into real and imaginary
+          parts, so in the above example it will look for `dataset.re` and `dataset.im` in
+          the file `path_to_h5_file.h5`. Defaults to the empty string.
 
-        **`amp_data` [`numpy.ndarray with dtype=numpy.complex128`]**
-        —
-        Like `amp_func_file` above, but instead of interpolating into an HDF5 file, interpolates into a complex NumPy array. The array should be three dimensions. For a 2d simulation, just pass 1 for the third dimension, e.g., `arr = np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
+        + **`amp_data` [`numpy.ndarray with dtype=numpy.complex128`]** — Like
+          `amp_func_file` above, but instead of interpolating into an HDF5 file,
+          interpolates into a complex NumPy array. The array should be three dimensions.
+          For a 2d simulation, just pass 1 for the third dimension, e.g., `arr =
+          np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
-        As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
+        As described in Section 4.2 ("Incident Fields and Equivalent Currents") in
+        [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source
+        Conditions") of the book [Advances in FDTD Computational Electrodynamics:
+        Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707),
+        it is also possible to supply a source that is designed to couple exclusively into
+        a single waveguide mode (or other mode of some cross section or periodic region)
+        at a single frequency, and which couples primarily into that mode as long as the
+        bandwidth is not too broad. This is possible if you have
+        [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the
+        field profile of the desired mode, and uses the field profile to produce an
+        equivalent current source. Note: this feature does *not* work in cylindrical
+        coordinates. To do this, instead of a `source` you should use an
+        `EigenModeSource`
         """
         if center is None and volume is None:
             raise ValueError("Source requires either center or volume")
@@ -90,7 +125,10 @@ class SourceTime(object):
 
 class ContinuousSource(SourceTime):
     """
-    A continuous-wave (CW) source is proportional to $\exp(-i\omega t)$, possibly with a smooth (exponential/tanh) turn-on/turn-off. In practice, the CW source [never produces an exact single-frequency response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
+    A continuous-wave (CW) source is proportional to $\exp(-i\omega t)$, possibly with a
+    smooth (exponential/tanh) turn-on/turn-off. In practice, the CW source [never produces
+    an exact single-frequency
+    response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
     """
 
     def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0,
@@ -98,29 +136,36 @@ class ContinuousSource(SourceTime):
         """
         Construct a `ContinuousSource`.
 
-        **`frequency` [`number`]**
-        —
-        The frequency *f* in units of $c$/distance or ω in units of 2π$c$/distance. See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+        + **`frequency` [`number`]** — The frequency *f* in units of $c$/distance or ω in
+          units of 2π$c$/distance. See [Units](Introduction.md#units-in-meep). No default
+          value. You can instead specify `wavelength=x` or `period=x`, which are both a
+          synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or
+          the temporal period.
 
-        **`start_time` [`number`]**
-        —
-        The starting time for the source. Default is 0 (turn on at $t=0$).
+        + **`start_time` [`number`]** — The starting time for the source. Default is 0
+          (turn on at $t=0$).
 
-        **`end_time` [`number`]**
-        —
-        The end time for the source. Default is 10<sup>20</sup> (never turn off).
+        + **`end_time` [`number`]** — The end time for the source. Default is
+          10<sup>20</sup> (never turn off).
 
-        **`width` [`number`]**
-        —
-        Roughly, the temporal width of the smoothing (technically, the inverse of the exponential rate at which the current turns off and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
+        + **`width` [`number`]** — Roughly, the temporal width of the smoothing
+          (technically, the inverse of the exponential rate at which the current turns off
+          and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which
+          is a synonym for `width=1/x` (i.e. the frequency width is proportional to the
+          inverse of the temporal width).
 
-        **`slowness` [`number`]**
-        —
-        Controls how far into the exponential tail of the tanh function the source turns on. Default is 3.0. A larger value means that the source turns on more gradually at the beginning.
+        + **`slowness` [`number`]** — Controls how far into the exponential tail of the
+          tanh function the source turns on. Default is 3.0. A larger value means that the
+          source turns on more gradually at the beginning.
 
-        **`is_integrated` [`boolean`]**
-        —
-        If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates but does not increase for a sinusoidal current. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `False`.
+        + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
+          current (the [dipole
+          moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which oscillates
+          but does not increase for a sinusoidal current. In practice, there is little
+          difference between integrated and non-integrated sources *except* for
+          [planewaves extending into
+          PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default
+          is `False`.
         """
 
         if frequency is None and wavelength is None:
@@ -139,43 +184,56 @@ class ContinuousSource(SourceTime):
 
 class GaussianSource(SourceTime):
     """
-    A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$. Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t - (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually irrelevant.
+    A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$.
+    Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a
+    Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t -
+    (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually
+    irrelevant.
     """
     def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0, wavelength=None,
                  **kwargs):
         """
         Construct a `GaussianSource`.
 
-        **`frequency` [`number`]**
-        —
-        The center frequency $f$ in units of $c$/distance (or ω in units of 2π$c$/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `wavelength=x` or `period=x`, which are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+        + **`frequency` [`number`]** — The center frequency $f$ in units of $c$/distance
+          (or ω in units of 2π$c$/distance). See [Units](Introduction.md#units-in-meep).
+          No default value. You can instead specify `wavelength=x` or `period=x`, which
+          are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum
+          wavelength or the temporal period.
 
-        **`width` [`number`]**
-        —
-        The width $w$ used in the Gaussian. No default value. You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the frequency width is proportional to the inverse of the temporal width).
+        + **`width` [`number`]** — The width $w$ used in the Gaussian. No default value.
+          You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the
+          frequency width is proportional to the inverse of the temporal width).
 
-        **`start_time` [`number`]**
-        —
-        The starting time for the source; default is 0 (turn on at $t=0$). This is not the time of the peak. See below.
+        + **`start_time` [`number`]** — The starting time for the source; default is 0
+          (turn on at $t=0$). This is not the time of the peak. See below.
 
-        **`cutoff` [`number`]**
-        —
-        How many `width`s the current decays for before it is cut off and set to zero &mdash; this applies for both turn-on and turn-off of the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the Gaussian is reached at the time $t_0$=`start_time + cutoff*width`.
+        + **`cutoff` [`number`]** — How many `width`s the current decays for before it is
+          cut off and set to zero &mdash; this applies for both turn-on and turn-off of
+          the pulse. Default is 5.0. A larger value of `cutoff` will reduce the amount of
+          high-frequency components that are introduced by the start/stop of the source,
+          but will of course lead to longer simulation times. The peak of the Gaussian is
+          reached at the time $t_0$=`start_time + cutoff*width`.
 
-        **`is_integrated` [`boolean`]**
-        —
-        If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `False`.
+        + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
+          current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment))
+          which is guaranteed to be zero after the current turns off. In practice, there
+          is little difference between integrated and non-integrated sources *except* for
+          [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml).
+          Default is `False`.
 
-        **`fourier_transform(f)`**
-        —
-        Returns the Fourier transform of the current evaluated at frequency `f` (`ω=2πf`) given by:
-        $$
-        \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
-        \int e^{i\omega t}G(t)\,dt \equiv
-        \frac{1}{\Delta f}
-        e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
-        $$
-        where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$ is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and $t_0$ is the peak time discussed above. Note that this does not include any `amplitude` or `amp_func` factor that you specified for the source.
+        + **`fourier_transform(f)`** — Returns the Fourier transform of the current
+          evaluated at frequency `f` (`ω=2πf`) given by:
+          $$
+          \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
+          \int e^{i\omega t}G(t)\,dt \equiv
+          \frac{1}{\Delta f}
+          e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
+          $$
+          where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
+          is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and
+          $t_0$ is the peak time discussed above. Note that this does not include any
+          `amplitude` or `amp_func` factor that you specified for the source.
         """
         if frequency is None and wavelength is None:
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
@@ -196,32 +254,44 @@ class GaussianSource(SourceTime):
 
 class CustomSource(SourceTime):
     """
-    A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you must specify an `end_time` explicitly if you want `run` functions like `until_after_sources` to work, since they need to know when your source turns off. To use a custom source within an `EigenModeSource`, you must specify the `center_frequency` parameter, since Meep does not know the frequency content of the `CustomSource`. The resultant eigenmode is calculated at this frequency only. For a demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
+    A user-specified source function $f(t)$. You can also specify start/end times at which
+    point your current is set to zero whether or not your function is actually zero. These
+    are optional, but you must specify an `end_time` explicitly if you want `run`
+    functions like `until_after_sources` to work, since they need to know when your source
+    turns off. To use a custom source within an `EigenModeSource`, you must specify the
+    `center_frequency` parameter, since Meep does not know the frequency content of the
+    `CustomSource`. The resultant eigenmode is calculated at this frequency only. For a
+    demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse), see
+    [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
     """
 
     def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, **kwargs):
         """
         Construct a `CustomSource`.
 
-        **`src_func` [`function`]**
-        —
-        The function $f(t)$ specifying the time-dependence of the source. It should take one argument (the time in Meep units) and return a complex number.
+        + **`src_func` [`function`]** — The function $f(t)$ specifying the time-dependence
+          of the source. It should take one argument (the time in Meep units) and return a
+          complex number.
 
-        **`start_time` [`number`]**
-        —
-        The starting time for the source. Default is -10<sup>20</sup>: turn on at $t=-\infty$. Note, however, that the simulation normally starts at $t=0$ with zero fields as the initial condition, so there is implicitly a sharp turn-on at $t=0$ whether you specify it or not.
+        + **`start_time` [`number`]** — The starting time for the source. Default is
+          -10<sup>20</sup>: turn on at $t=-\infty$. Note, however, that the simulation
+          normally starts at $t=0$ with zero fields as the initial condition, so there is
+          implicitly a sharp turn-on at $t=0$ whether you specify it or not.
 
-        **`end_time` [`number`]**
-        —
-        The end time for the source. Default is 10<sup>20</sup> (never turn off).
+        + **`end_time` [`number`]** — The end time for the source. Default is
+          10<sup>20</sup> (never turn off).
 
-        **`is_integrated` [`boolean`]**
-        —
-        If `True`, the source is the integral of the current (the [dipole moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is guaranteed to be zero after the current turns off. In practice, there is little difference between integrated and non-integrated sources *except* for [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default is `False`.
+        + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
+          current (the [dipole
+          moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is
+          guaranteed to be zero after the current turns off. In practice, there is little
+          difference between integrated and non-integrated sources *except* for
+          [planewaves extending into
+          PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml). Default
+          is `False`.
 
-        **`center_frequency` [`number`]**
-        —
-        Optional center frequency so that the `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
+        + **`center_frequency` [`number`]** — Optional center frequency so that the
+          `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
         """
         super(CustomSource, self).__init__(**kwargs)
         self.src_func = src_func
@@ -234,21 +304,55 @@ class CustomSource(SourceTime):
 
 class EigenModeSource(Source):
     """
-    This is a subclass of `Source` and has **all of the properties** of `Source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r}) e^{i \mathbf{k} \cdot \mathbf{r}}$, of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp_func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
+    This is a subclass of `Source` and has **all of the properties** of `Source` above.
+    However, you normally do not specify a `component`. Instead of `component`, the
+    current source components and amplitude profile are computed by calling MPB to compute
+    the modes, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r}) e^{i \mathbf{k} \cdot \mathbf{r}}$,
+    of the dielectric profile in the region given by the `size` and `center` of the
+    source, with the modes computed as if the *source region were repeated periodically in
+    all directions*. If an `amplitude` and/or `amp_func` are supplied, they are
+    *multiplied* by this current profile. The desired eigenmode and other features are
+    specified by the properties shown in `__init__`.
 
-    Eigenmode sources are normalized so that in the case of a time-harmonic simulation with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$ where $f_m$ is the frequency of the eigenmode, the total time-average power of the fields — the integral of the normal Poynting vector over the entire cross-sectional line or plane — is equal to 1. This convention has two use cases:
+    Eigenmode sources are normalized so that in the case of a time-harmonic simulation
+    with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$
+    where $f_m$ is the frequency of the eigenmode, the total time-average power of the
+    fields — the integral of the normal Poynting vector over the entire cross-sectional
+    line or plane — is equal to 1. This convention has two use cases:
 
-    + For [frequency-domain calculations](Python_User_Interface.md#frequency-domain-solver) involving a `ContinuousSource` time dependence, the time-average power of the fields is 1.
+    + For [frequency-domain
+      calculations](Python_User_Interface.md#frequency-domain-solver) involving a
+      `ContinuousSource` time dependence, the time-average power of the fields is 1.
 
-    + For time-domain calculations involving a time dependence $W(t)$ which is typically a [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while field-bilinear quantities like the [Poynting flux](#flux-spectra) and [energy density](#energy-density-spectra) are multiplied by $|\widetilde W(f)|^2$. For the particular case of a Gaussian time dependence, the Fourier transform at $f$ can be obtained via the `fourier_transform` class method.
+    + For time-domain calculations involving a time dependence $W(t)$ which is typically a
+      [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be
+      multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while
+      field-bilinear quantities like the [Poynting flux](#flux-spectra) and [energy
+      density](#energy-density-spectra) are multiplied by $|\widetilde W(f)|^2$. For the
+      particular case of a Gaussian time dependence, the Fourier transform at $f$ can be
+      obtained via the `fourier_transform` class method.
 
-    In either case, the `eig_power` method returns the total power at frequency `f`. However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not* include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier transform of your source function $W(t)$. You will have to multiply by this yourself if you need it.
+    In either case, the `eig_power` method returns the total power at frequency `f`.
+    However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not*
+    include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier
+    transform of your source function $W(t)$. You will have to multiply by this yourself
+    if you need it.
 
-    **Note:** Due to discretization effects, the normalization of eigenmode sources to yield unit power transmission is only approximate: at any finite resolution, the power of the fields as measured using [DFT flux](#flux-spectra) monitors will not precisely match that of calling `eig_power` but will rather include discretization errors that decrease with resolution.  Generally, the most reliable procedure is to normalize your calculations by the power computed in a separate normalization run at the same resolution, as shown in several of the tutorial examples.
+    **Note:** Due to discretization effects, the normalization of eigenmode sources to
+    yield unit power transmission is only approximate: at any finite resolution, the power
+    of the fields as measured using [DFT flux](#flux-spectra) monitors will not precisely
+    match that of calling `eig_power` but will rather include discretization errors that
+    decrease with resolution.  Generally, the most reliable procedure is to normalize your
+    calculations by the power computed in a separate normalization run at the same
+    resolution, as shown in several of the tutorial examples.
 
-    Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses μ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
+    Note that Meep's MPB interface only supports dispersionless non-magnetic materials but
+    it does support anisotropic ε. Any nonlinearities, magnetic responses μ,
+    conductivities σ, or dispersive polarizations in your materials will be *ignored* when
+    computing the eigenmode source. PML will also be ignored.
 
-    The `src_time` object (`Source.src`), which specifies the time dependence of the source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
+    The `src_time` object (`Source.src`), which specifies the time dependence of the
+    source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
     """
     def __init__(self,
                  src,
@@ -268,33 +372,81 @@ class EigenModeSource(Source):
         """
         Construct an `EigenModeSource`.
 
-        **`eig_band` [`integer`]**
-        —
-        The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency band at a given **k** point, and so on.
+        + **`eig_band` [`integer`]** — The index *n* (1,2,3,...) of the desired band
+          ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
+          band at a given **k** point, and so on.
 
-        **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`], `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]**
-        —
-        By default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find_k` functionality. Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [launch modes in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides) (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units of 2π/(unit length)). Also, the eigenmode frequency computed by MPB overwrites the `frequency` parameter of the `src` property for a `GaussianSource` and `ContinuousSource` but not `CustomSource` (the `width` or any other parameter of `src` is unchanged). By default, the **k** components in the plane of the source region are zero.  However, if the source region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or specified by `eig_kpoint`, the field profile used to create the current sources corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave), $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+        + **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`],
+          `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]** — By
+          default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same
+          frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning
+          **k** vectors in the given `direction` using MPB's `find_k` functionality.
+          Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for
+          **k**. By default, `direction` is the direction normal to the source region,
+          assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a
+          plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is
+          not only the initial guess and the search direction of the **k** vectors, but is
+          also taken to be the direction of the waveguide, allowing you to [launch modes
+          in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides)
+          (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the
+          **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units
+          of 2π/(unit length)). Also, the eigenmode frequency computed by MPB overwrites
+          the `frequency` parameter of the `src` property for a `GaussianSource` and
+          `ContinuousSource` but not `CustomSource` (the `width` or any other parameter of
+          `src` is unchanged). By default, the **k** components in the plane of the source
+          region are zero.  However, if the source region spans the *entire* cell in some
+          directions, and the cell has Bloch-periodic boundary conditions via the
+          `k_point` parameter, then the mode's **k** components in those directions will
+          match `k_point` so that the mode satisfies the Meep boundary conditions,
+          regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or
+          specified by `eig_kpoint`, the field profile used to create the current sources
+          corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave),
+          $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate
+          exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
 
-        **`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]**
-        —
-        The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, with respect to the `center` of the source region.  (In particular, it does not matter if your simulation as a whole has that symmetry, only the cross section where you are introducing the source.) If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
+        + **`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`,
+          `mp.ODD_Y`]** — The parity (= polarization in 2d) of the mode to calculate,
+          assuming the structure has $z$ and/or $y$ mirror symmetry *in the source
+          region*, with respect to the `center` of the source region.  (In particular, it
+          does not matter if your simulation as a whole has that symmetry, only the cross
+          section where you are introducing the source.) If the structure has both $y$ and
+          $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z +
+          ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands
+          which will still be even or odd if the structure has mirror symmetry, of course.
+          This is especially useful in 2d simulations to restrict yourself to a desired
+          polarization.
 
-        **`eig_resolution` [`integer`, defaults to `2*resolution` ]**
-        —
-        The spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels.
+        + **`eig_resolution` [`integer`, defaults to `2*resolution` ]** — The spatial
+          resolution to use in MPB for the eigenmode calculations. This defaults to twice
+          the Meep `resolution` in which case the structure is linearly interpolated from
+          the Meep pixels.
 
-        **`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]**
-        —
-        The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.
+        + **`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]** — The tolerance to
+          use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to
+          less than this fractional tolerance.
 
-        **`component` [as above, but defaults to `ALL_COMPONENTS`]**
-        —
-        Once the MPB modes are computed, equivalent electric and magnetic sources are created within Meep. By default, these sources include magnetic and electric currents in *all* transverse directions within the source region, corresponding to the mode fields as described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). If you specify a `component` property, however, you can include only one component of these currents if you wish. Most users won't need this feature.
+        + **`component` [as above, but defaults to `ALL_COMPONENTS`]** — Once the MPB
+          modes are computed, equivalent electric and magnetic sources are created within
+          Meep. By default, these sources include magnetic and electric currents in *all*
+          transverse directions within the source region, corresponding to the mode fields
+          as described in Section 4.2 ("Incident Fields and Equivalent Currents") in
+          [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source
+          Conditions") of the book [Advances in FDTD Computational Electrodynamics:
+          Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+          If you specify a `component` property, however, you can include only one
+          component of these currents if you wish. Most users won't need this feature.
 
-        **`eig_lattice_size` [`Vector3`], `eig_lattice_center` [`Vector3`]**
-        —
-        Normally, the MPB computational unit cell is the same as the source volume given by the `size` and `center` parameters. However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium, you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig_lattice_size` and `eig_lattice_center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
+        + **`eig_lattice_size` [`Vector3`], `eig_lattice_center` [`Vector3`]** — Normally,
+          the MPB computational unit cell is the same as the source volume given by the
+          `size` and `center` parameters. However, occasionally you want the unit cell to
+          be larger than the source volume. For example, to create an eigenmode source in
+          a periodic medium, you need to pass MPB the entire unit cell of the periodic
+          medium, but once the mode is computed then the actual current sources need only
+          lie on a cross section of that medium. To accomplish this, you can specify the
+          optional `eig_lattice_size` and `eig_lattice_center`, which define a volume
+          (which must enclose `size` and `center`) that is used for the unit cell in MPB
+          with the dielectric function ε taken from the corresponding region in the Meep
+          simulation.
         """
 
         super(EigenModeSource, self).__init__(src, component, center, volume, **kwargs)
