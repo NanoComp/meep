@@ -1054,11 +1054,11 @@ class Simulation(object):
           ".py" replaced by "-" (e.g. `foo.py` uses a `"foo-"` prefix). See also [Output
           File Names](Python_User_Interface.md#output-file-names).
 
-        + **`Courant` [`number`]** — Specify the [Courant
-          factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition)
-          $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ
-          x$. Default is 0.5. For numerical stability, the Courant factor must be *at
-          most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is
+        + **`Courant` [`number`]** — Specify the
+          [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition)
+          $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$.
+          Default is 0.5. For numerical stability, the Courant factor must be *at
+          most* $n_\\textrm{min}/\sqrt{\\textrm{# dimensions}}$, where $n_\\textrm{min}$ is
           the minimum refractive index (usually 1), and in practice $S$ should be slightly
           smaller.
 
