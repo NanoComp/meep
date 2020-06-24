@@ -1,5 +1,7 @@
 from __future__ import division
 
+import warnings
+
 import meep as mp
 from meep.geom import Vector3, check_nonnegative
 
@@ -140,6 +142,16 @@ class EigenModeSource(Source):
             self._eig_lattice_center = self.center
         else:
             self._eig_lattice_center = val
+
+    @property
+    def component(self):
+        return self._component
+
+    @component.setter
+    def component(self, val):
+        if val != mp.ALL_COMPONENTS:
+            warnings.warn("EigenModeSource component is not ALL_COMPONENTS (the default), which makes it non-unidirectional.",RuntimeWarning)
+        self._component = val
 
     @property
     def eig_band(self):
