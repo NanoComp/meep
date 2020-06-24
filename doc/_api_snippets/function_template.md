@@ -4,7 +4,7 @@
 **meep.{function_name_escaped} function**
 
 ```python
-def {function_name}{parameters}
+def {function_name}{parameters}:
 ```
 
 <div class="function_docstring" markdown="1">

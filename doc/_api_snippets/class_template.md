@@ -12,6 +12,7 @@ class {class_name}({base_classes}):
 {docstring}
 
 </div>
+
 <div class="class_members" markdown="1">
 
 {method_docs}
