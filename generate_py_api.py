@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 This tool will extract the docstrings from the meep package and add them to the
 hand-written documentation tree.
