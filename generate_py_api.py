@@ -9,7 +9,7 @@ Look and Feel of the API documentation matches the rest of the documentation.
 Before running this script the meep package needs to have been built and the
 Python used to run this tool must be able to import meep. Output will be written
 to the {project_folder}/doc/docs/Python_User_Interface.md, using the
-Python_User_Interface.md.in file asa template.
+Python_User_Interface.md.in file as a template.
 
 In order to keep the noise in the module to a minimum, some markdown
 snippets/templates used in the generation of the API documentation files can be
@@ -32,7 +32,7 @@ DESTDOC = 'doc/docs/Python_User_Interface.md'
 #
 # Top-level items in the module are automatically excluded if their name is not
 # used in a subsition tag in the master template file. Individual class memberes
-# can be excluded by using 'Classname.Methodname'
+# can be excluded by using 'Classname.method_name'
 EXCLUDES = ['']
 
 #----------------------------------------------------------------------------
