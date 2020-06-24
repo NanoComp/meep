@@ -50,10 +50,14 @@ typedef struct {
   bool use_cache; // whether we are using the cache
 } meep_mpb_eps_data;
 
-static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+static int  meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv,
+                         mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
+                         const mpb_real r[3],
                          void *eps_data_) {
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   size_t i = eps_data->icache;
+
+  (void) n; (void) d1; (void) d2; (void) d3; (void) tol;  // unused
 
   if (eps_data->use_cache) {
     const double *cache = eps_data->cache;
@@ -93,6 +97,8 @@ static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const
   }
 
   eps_data->icache += 1; // next call will use the subsequent cache element
+
+  return 1; // tells MPB not to do its own subpixel averaging
 }
 
 /**************************************************************/
@@ -410,7 +416,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // first, build up a cache of the local epsilon data (while returning dummy values to MPB)
     eps_data.use_cache = false;
     eps_data.icache = 0;
-    set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
+    set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
 
     // then, synchronize the data
     eps_data.ncache = eps_data.icache; // actual amount of cached data
@@ -422,7 +428,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // finally, send MPB the real epsilon data using the synchronized cache
     eps_data.use_cache = true;
     eps_data.icache = 0;
-    set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
+    set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+    assert(eps_data.icache == eps_data.ncache);
 
     free(eps_data.cache);
 
