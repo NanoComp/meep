@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "meep.hpp"
 #include "config.h"
 
