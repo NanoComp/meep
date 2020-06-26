@@ -93,3 +93,20 @@ Returns the index of the process running the current file, from zero to `meep.co
 Blocks until all processes execute this statement (MPI_Barrier).
 
 For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)` as the last line in the Scheme file to ensure that all processors terminate at the same point in the execution. Otherwise, one processor may finish and abruptly terminate the other processors.
+
+Runtime Scaling on MPI Clusters
+-------------------------------
+
+The following are benchmarking results of the total runtime vs. number of processors/chunks for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for MPI clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances on the [Google Cloud Platform](https://cloud.google.com/). Hyperthreading is disabled and one slot on each instance/node is reserved for kernel tasks leaving 7 slots/node. [elasticluster](https://elasticluster.readthedocs.io/en/latest/) is used for the cluster management and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. Even chunk splitting is used (`split_chunks_evenly=True`). The size of the clusters ranges from 2 to 14 nodes (14 to 98 processors).
+
+As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the time spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one corresponds well to the minimum runtime of the first figure.
+
+<center>
+![](images/parallel_benchmark_runtime_vs_nprocs.png)
+</center>
+
+<center>
+![](images/parallel_benchmark_commcomp_vs_nprocs.png)
+</center>
+
+The results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the *x* axis to along the *y* axis).
