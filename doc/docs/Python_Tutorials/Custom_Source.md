@@ -125,7 +125,7 @@ if mp.am_master():
 There are five items to note in this script. (1) The frequency discretization of the flux spectrum must be sufficiently fine to resolve noisy features. In this example, the frequency range is 0.9 to 1.1 with spacing of 0.0004. (2) The runtime must be long enough for the DFT spectrum to resolve these oscillations. Due to the Fourier Uncertainty Principle, the runtime should be at least ~1/frequency resolution. Here, we found that a larger runtime of 2/frequency resolution was sufficient to [converge](../FAQ.md#checking-convergence) to the desired accuracy.  Technically, what we are doing is [spectral density estimation](https://en.wikipedia.org/wiki/Spectral_density_estimation) of the [periodogram](https://en.wikipedia.org/wiki/Periodogram) by an ensemble average with a [rectangular window](https://en.wikipedia.org/wiki/Window_function#Rectangular_window), but many variations on this general idea exist.  (3) The material properties for Ag are imported from the [materials library](../Materials.md#materials-library). (4) At the end of the run, the flux spectra from all iterations are saved to a file using NumPy's [uncompressed `.npz` format](https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html#module-numpy.lib.format). This data is used to plot the results in post processing. (5) For Method 1, independent random numbers can be used for the white-noise dipole emitters in the trial runs for the two cases of a flat and textured surface, since all that matters is that they average to the same power spectrum.
 
 Results for Methods 1 and 2 for the two cases of a flat and textured surface are generated using the following shell script:
-```
+```sh
 #!/bin/bash
 
 # Method 1: flat surface
@@ -174,10 +174,184 @@ Results for Method 1 for three different numbers of trials/iterations (10, 50, a
 ![](../images/stochastic_emitter_trials.png)
 </center>
 
-The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 results required almost *four days* whereas the Method 2 results were obtained in less than forty minutes.    In general, deterministic approaches tend to be more efficient than brute-force Monte-Carlo.
+The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 results required almost *four days* of compute time using an Intel Xeon processor with two single-threaded cores at 3.8 GHz whereas the Method 2 results were obtained in 24 minutes.    In general, deterministic approaches tend to be more efficient than brute-force Monte-Carlo.
 
 <center>
 ![](../images/stochastic_emitter_normalized_flux_comparison.png)
 </center>
 
 One situation in which you may need to perform brute-force Monte-Carlo simulations is that of nonlinear or time-varying media, because the equivalence between random and deterministic simulations above relied on linearity and time-invariance.   However, in such media one also cannot directly employ white-noise sources, but you must instead input the noise with the correct spectrum for your desired emission process.   For example, to [model thermal emission in a nonlinear medium](http://doi.org/10.1103/PhysRevB.91.115406) one must have a noise spectrum consistent with the [fluctuation-dissipation theorem](https://en.wikipedia.org/wiki/Fluctuation-dissipation_theorem), which can be achieved using the `NoisyLorentzianSusceptibility` feature in Meep.
+
+For cases involving a large number $N$ of spatially incoherent dipole emitters, a more computationally efficient approach than $N$ single-dipole simulations (Method 2) is $M$ separate simulations involving a *line* source with a different set of basis functions (Method 3). $M$ is typically independent of the resolution and $\ll N$. (For Method 2, the number of point dipoles $N$ comprising a line source increases with resolution.) The mathematical details of Method 3 are described in [Physical Review A, 80, 012119, 2010](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.81.012119). The source amplitude function of the $m$th run in the ensemble is defined by a cosine Fourier series:
+
+$$f_m(x) = \sqrt{\frac{c_m}{L}} \cos \left(\frac{m\pi x}{L}\right), ~m = 0,1,\ldots, M-1$$
+
+where $c_m = 1$ if $m=0$ and $c_m=2$ otherwise, $L$ is the length of the line source.
+
+As a demonstration of Method 3 and to compare with Method 2, the same 2d LED-like periodic structure with a 1d light-emitting layer is used. As before, results for the radiated flux of the textured surface are normalized using the flat surface so that the two methods can be compared directly without any additional post processing.
+
+The simulation script is in [examples/stochastic_emitter_line.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter_line.py).
+
+```py
+import meep as mp
+from meep.materials import Ag
+import numpy as np
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-res', type=int, default=50, help='resolution (pixels/um)')
+parser.add_argument('-nf', type=int, default=500, help='number of frequencies')
+parser.add_argument('-nsrc', type=int, default=10, help='number of line sources with cosine Fourier series amplitude function (method 3)')
+parser.add_argument('-textured', action='store_true', default=False, help='flat (default) or textured surface')
+parser.add_argument('-method', type=int, choices=[2,3], default=2,
+                    help='type of method: (2) single dipole with 1 run per dipole or (3) line source with cosine Fourier series amplitude function')
+args = parser.parse_args()
+
+resolution = args.res
+
+dpml = 1.0
+dair = 1.0
+hrod = 0.7
+wrod = 0.5
+dsub = 5.0
+dAg = 0.5
+
+sx = 1.1
+sy = dpml+dair+hrod+dsub+dAg
+
+cell_size = mp.Vector3(sx,sy)
+
+pml_layers = [mp.PML(direction=mp.Y,
+                     thickness=dpml,
+                     side=mp.High)]
+
+fcen = 1.0
+df = 0.2
+nfreq = args.nf
+nsrc = args.nsrc
+ndipole = int(sx*resolution)
+run_time = 2*nfreq/df
+
+geometry = [mp.Block(material=mp.Medium(index=3.45),
+                     center=mp.Vector3(0,0.5*sy-dpml-dair-hrod-0.5*dsub),
+                     size=mp.Vector3(mp.inf,dsub,mp.inf)),
+            mp.Block(material=Ag,
+                     center=mp.Vector3(0,-0.5*sy+0.5*dAg),
+                     size=mp.Vector3(mp.inf,dAg,mp.inf))]
+
+if args.textured:
+    geometry.append(mp.Block(material=mp.Medium(index=3.45),
+                             center=mp.Vector3(0,0.5*sy-dpml-dair-0.5*hrod),
+                             size=mp.Vector3(wrod,hrod,mp.inf)))
+
+def src_amp_func(n):
+    def _src_amp_func(p):
+        if n == 0:
+            return 1/np.sqrt(sx)
+        else:
+            return np.sqrt(2/sx) * np.cos(n*np.pi*(p.x+0.5*sx)/sx)
+    return _src_amp_func
+
+def compute_flux(m,n):
+    if m == 2:
+        sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                             component=mp.Ez,
+                             center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dsub))]
+    else:
+        sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                             component=mp.Ez,
+                             center=mp.Vector3(0,-0.5*sy+dAg+0.5*dsub),
+                             size=mp.Vector3(sx,0),
+                             amp_func=src_amp_func(n))]
+
+    sim = mp.Simulation(cell_size=cell_size,
+                        resolution=resolution,
+                        k_point=mp.Vector3(),
+                        boundary_layers=pml_layers,
+                        geometry=geometry,
+                        sources=sources)
+
+    flux_mon = sim.add_flux(fcen, df, nfreq,
+                            mp.FluxRegion(center=mp.Vector3(0,0.5*sy-dpml),size=mp.Vector3(sx)))
+
+    sim.run(until=run_time)
+
+    flux = mp.get_fluxes(flux_mon)
+    freqs = mp.get_flux_freqs(flux_mon)
+
+    return freqs, flux
+
+
+if args.method == 2:
+    fluxes = np.zeros((nfreq,ndipole))
+    for d in range(ndipole):
+        freqs, fluxes[:,d] = compute_flux(2,d)
+else:
+    fluxes = np.zeros((nfreq,nsrc))
+    for d in range(nsrc):
+        freqs, fluxes[:,d] = compute_flux(3,d)
+
+
+if mp.am_master():
+    with open('method{}_{}_res{}_nfreq{}_{}{}.npz'.format(args.method,
+                                                          "textured" if args.textured else "flat",
+                                                          resolution,
+                                                          nfreq,
+                                                          "ndipole" if args.method == 2 else "nsrc",
+                                                          ndipole if args.method == 2 else nsrc),'wb') as f:
+        np.savez(f,freqs=freqs,fluxes=fluxes)
+```
+
+There are three items to note in this script. (1) The line source spans the entire length of the cell in the *x* direction (i.e., $L$ is `sx`). (2) The number of point dipoles in Method 2 is defined by `sx*resolution`, one per pixel. (3) The source amplitude function in Method 3 is specified by the `amp_func` property of the [`Source`](../Python_User_Interface.md#source) object. In the case of a Fourier cosine series as conventionally written, $\cos (m\pi x)/L$ is defined over the interval $x=[0,L]$ such that $x=0$ corresponds to the *edge* of the source, not the center. Since the source region in this example is defined in $[-L/2,+L/2]$, the amplitude function must shift the $x$ coordinate by $+L/2$ or `0.5*sx`.
+
+Method 3 requires a convergence check in which $M$ (`nsrc`) is repeatedly doubled until the change in the results are within a desired tolerance of e.g., < 1%. In this example, $M=10$ was found to be sufficient.
+
+Results for Methods 2 and 3 for the two cases of a flat and textured surface are generated using the following shell script:
+```sh
+#!/bin/bash
+
+# Method 2: flat surface
+python stochastic_emitter_line.py -method 2 -res 50 -nf 500
+
+# Method 2: textured surface
+python stochastic_emitter_line.py -method 2 -res 50 -nf 500 -textured
+
+# Method 3: flat surface
+python stochastic_emitter_line.py -method 3 -res 50 -nf 500 -nsrc 10
+
+# Method 3: textured surface
+python stochastic_emitter_line.py -method 3 -res 50 -nf 500 -nsrc 10 -textured
+```
+
+Afterwards, the four NumPy files produced by each run are used to plot the normalized flux for each method.
+```py
+import numpy as np
+import matplotlib.pyplot as plt
+
+method2_f0 = np.load('method2_flat_res50_nfreq500.npz')
+method2_f1 = np.load('method2_textured_res50_nfreq500.npz')
+
+method2_freqs = method2_f0['freqs']
+method2_f0_mean = np.mean(method2_f0['fluxes'],axis=1)
+method2_f1_mean = np.mean(method2_f1['fluxes'],axis=1)
+
+method3_f0 = np.load('method3_flat_res50_nfreq500_nsrc10.npz')
+method3_f1 = np.load('method3_textured_res50_nfreq500_nsrc10.npz')
+
+method3_freqs = method3_f0['freqs']
+method3_f0_mean = np.mean(method3_f0['fluxes'],axis=1)
+method3_f1_mean = np.mean(method3_f1['fluxes'],axis=1)
+
+plt.semilogy(method2_freqs,method2_f1_mean/method2_f0_mean,'b-',label='Method 2')
+plt.semilogy(method3_freqs,method3_f1_mean/method3_f0_mean,'r-',label='Method 3')
+plt.xlabel('frequency')
+plt.ylabel('normalized flux')
+plt.legend()
+plt.show()
+```
+
+Results for Method 2 and 3 are shown in the following figure. The agreement is good but there is a significant difference in the runtime. Method 2 involves $N=55$ simulations each for the flat and textured surface for a total of 110 runs which required 7.0 hours. Method 3 involves $M=10$ simulations for the flat/textured surface for a total of 20 runs which required just 1.0 hour.
+
+<center>
+![](../images/stochastic_emitter_line_normalized_flux_comparison.png)
+</center>
