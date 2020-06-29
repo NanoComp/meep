@@ -9,6 +9,14 @@ well as two auxiliary packages via e.g.:
 
 % pip3 install --user mkdocs==0.17.5 python-markdown-math mkdocs-material
 
+To generate the Python API documentation (extracted from the docstrings) run
+this command in the project root folder:
+
+% python generate_py_api.py
+
+Rerun this after making any changes to the docstrings in the source and
+rebuilding the project, in order to update the documentation.
+
 Next, run the following command from the top-level MEEP repository tree:
 
 % mkdocs serve
@@ -29,10 +37,13 @@ To build the HTML version of the documentation, run:
 
 The results will be put into the ./doc/site folder.
 
-To generate the Python API documentation (extracted from the docstrings) run
-this command in the project root folder:
+Alternatively, the project Makefile can also be used to build the documentation and to
+build a distribution archive containing the documentation. To do so, run one of the
+following commands from the top-level MEEP repository tree:
 
-% python generate_py_api.py
+% make docs
 
-Rerun this after making any changes to the docstrings in the source and
-rebuilding the project, in order to update the documentation.
+or
+
+% make docs-dist
+

@@ -28,4 +28,11 @@ meep.pc: meep-pkgconfig
 libmeep:
 	cd src && $(MAKE)
 
+docs: libmeep
+	python generate_py_api.py
+	python -m mkdocs build
+
+docs-dist: docs
+	tar czvf meep-documentation-$(PACKAGE_VERSION).tgz doc/site
+
 DISTCLEANFILES = meep.pc
