@@ -47,7 +47,6 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
         '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
         correct scaling/time profile.
-
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
         dt ........ the timestep size from sim.fields.dt of the forward sim
         '''

@@ -6,7 +6,7 @@ import sys
 
 import meep as mp
 
-from .objective import EigenmodeCoefficient
+from .objective import *
 
 from .basis import BilinearInterpolationBasis
 
