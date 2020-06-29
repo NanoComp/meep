@@ -6,7 +6,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-res', type=int, default=50, help='resolution (pixels/um)')
 parser.add_argument('-nf', type=int, default=500, help='number of frequencies')
-parser.add_argument('-nsrc', type=int, default=10, help='number of line sources with cosine Fourier series amplitude function (method 3)')
+parser.add_argument('-nsrc', type=int, default=15, help='number of line sources with cosine Fourier series amplitude function (method 3)')
 parser.add_argument('-textured', action='store_true', default=False, help='flat (default) or textured surface')
 parser.add_argument('-method', type=int, choices=[2,3], default=2,
                     help='type of method: (2) single dipole with 1 run per dipole or (3) line source with cosine Fourier series amplitude function')
@@ -15,13 +15,13 @@ args = parser.parse_args()
 resolution = args.res
 
 dpml = 1.0
-dair = 1.0
-hrod = 0.7
-wrod = 0.5
-dsub = 5.0
-dAg = 0.5
+dair = 0.9
+hrod = 0.6
+wrod = 0.8
+dsub = 5.4
+dAg = 0.4
 
-sx = 1.1
+sx = 1.5
 sy = dpml+dair+hrod+dsub+dAg
 
 cell_size = mp.Vector3(sx,sy)
