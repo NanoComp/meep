@@ -9,8 +9,8 @@ well as two auxiliary packages via e.g.:
 
 % pip3 install --user mkdocs==0.17.5 python-markdown-math mkdocs-material
 
-To generate the Python API documentation (extracted from the docstrings) run
-this command in the project root folder:
+To (re)generate the Python API documentation (extracted from the docstrings)
+run this command in the project root folder:
 
 % python generate_py_api.py
 
