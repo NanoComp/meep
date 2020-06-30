@@ -77,7 +77,7 @@ class FunctionItem(Item):
     template_name = 'function_template.md'
 
     def __init__(self, name, obj):
-        super().__init__(name, obj)
+        super(FunctionItem, self).__init__(name, obj)
         self.signature = inspect.signature(obj)
 
     def get_parameters(self, indent):
@@ -113,7 +113,7 @@ class MethodItem(FunctionItem):
     template_name = 'method_template.md'
 
     def __init__(self, name, obj, klass):
-        super().__init__(name, obj)
+        super(MethodItem, self).__init__(name, obj)
         self.klass = klass
 
     def create_markdown(self):
@@ -136,7 +136,7 @@ class ClassItem(Item):
     template_name = 'class_template.md'
 
     def __init__(self, name, obj):
-        super().__init__(name, obj)
+        super(ClassItem, self).__init__(name, obj)
         self.add_methods()
 
     def add_methods(self):
