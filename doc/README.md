@@ -12,10 +12,11 @@ well as two auxiliary packages via e.g.:
 ```
 
 To (re)generate the Python API documentation (extracted from the docstrings)
-run this command in the project root folder:
+run the following command in the project root folder. Note that this requires
+that the Python extension for the meep library has been built:
 
 ```
-% python generate_py_api.py
+% PYTHONPATH=./python python generate_py_api.py
 ```
 
 Rerun this after making any changes to the docstrings in the source and
@@ -50,11 +51,12 @@ documentation. To do so, run one of the following commands from the
 top-level MEEP repository tree:
 
 ```
+# Only regenerate the Python API document, useful if you're using `mkdocs serve`
+% make python_api_doc
+
+# Regenerate the API doc and run `mkdocs build`
 % make docs
-```
 
-or
-
-```
+# Bundle the document files into a tarball archive
 % make docs-dist
 ```
