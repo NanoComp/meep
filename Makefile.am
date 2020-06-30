@@ -41,7 +41,7 @@ docs: python_api_doc
 	mkdir -p doc/site
 	if test -z $$SKIP_BUILD_DOCS; then $(PYTHON) -m mkdocs build; else true; fi
 
-# Build a tarball containing just the docs
+# Build a tarball containing just the html docs
 docs-dist: docs
 	tar czvf meep-documentation-$(PACKAGE_VERSION).tgz doc/site
 

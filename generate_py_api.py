@@ -174,7 +174,7 @@ class ClassItem(Item):
 
             for item in methods:
                 if not check_excluded(item.name) and \
-                   not check_excluded(f'{self.name}.{item.name}'):
+                   not check_excluded('{}.{}'.format(self.name, item.name)):
                      doc = item.create_markdown()
                      method_docs.append(doc)
 
@@ -237,7 +237,7 @@ def update_api_document(doc_items):
 
     # manipulate
     for name, doc in doc_items.items():
-        tag = f'@@ {name} @@'
+        tag = '@@ {} @@'.format(name)
         if tag in srcdoc:
             srcdoc = srcdoc.replace(tag, doc)
 
