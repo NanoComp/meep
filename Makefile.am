@@ -17,7 +17,7 @@ endif
   SUBDIRS += python
 endif
 
-EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in doc
+EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in doc generate_py_api.py
 DIST_TARGETS = docs dist-gzip
 
 pkgconfigdir = $(libdir)/pkgconfig
