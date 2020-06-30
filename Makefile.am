@@ -17,7 +17,8 @@ endif
   SUBDIRS += python
 endif
 
-EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in
+EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in doc
+DIST_TARGETS = docs dist-gzip
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
@@ -28,11 +29,17 @@ meep.pc: meep-pkgconfig
 libmeep:
 	cd src && $(MAKE)
 
-docs: libmeep
+# Generate the Python API Document
+# Set PYTHONPATH to use the in-place build of meep
+python_api_doc: libmeep
 	PYTHONPATH=./python $(PYTHON) generate_py_api.py
+
+# Build the HTML version of the docs
+docs: python_api_doc
 	$(PYTHON) -m mkdocs build
 
+# Build a tarball containing just the docs
 docs-dist: docs
-	tar czvf meep-documentation-$(PACKAGE_VERSION).tgz doc/site
+	tar czvf $(distdir)/meep-documentation-$(PACKAGE_VERSION).tgz doc/site
 
 DISTCLEANFILES = meep.pc
