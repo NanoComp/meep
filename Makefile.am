@@ -33,12 +33,13 @@ libmeep:
 # Generate the Python API Document
 # Set PYTHONPATH to use the in-place build of meep
 python_api_doc: all
-	test -d doc || cp -rf $(top_srcdir)/doc .
+	test -d doc || cp -rf $(top_srcdir)/doc . && chmod -R +rw doc
 	PYTHONPATH=./python $(PYTHON) generate_py_api.py
 
 # Build the HTML version of the docs
 docs: python_api_doc
-	$(PYTHON) -m mkdocs build
+	mkdir -p doc/site
+	if test -z $$SKIP_BUILD_DOCS; then $(PYTHON) -m mkdocs build; else true; fi
 
 # Build a tarball containing just the docs
 docs-dist: docs
