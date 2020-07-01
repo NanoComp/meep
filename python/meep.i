@@ -421,8 +421,10 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
-    if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
-     return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
+    if (rank==0 || dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
+     std::complex<double> d[1] = {std::complex<double>(0,0)};
+     return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, d);
+    }
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
@@ -800,10 +802,10 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     }
 
     // prepare a geometry_tree
+    //TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
     geometric_object_list *l;
     l = new geometric_object_list();
     if (!py_list_to_gobj_list(py_geom_list,l)) meep::abort("Unable to convert geometry tree.");
-    
     geom_box_tree geometry_tree = calculate_tree(*where_vol,*l);
 
     // clean the fields pointer

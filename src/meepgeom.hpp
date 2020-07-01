@@ -207,7 +207,8 @@ void update_design_parameters(material_type matgrid, double* design_parameters);
 meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 meep::realnum material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
-meep::realnum get_material_gradient(meep::realnum u, std::complex<double> *fields_a, std::complex<double> *fields_f, meep::realnum freq, const material_data *md);
+void get_material_tensor(const medium_struct *mm, meep::realnum freq, std::complex<double> *tensor);
+meep::realnum get_material_gradient(meep::realnum u, std::complex<double> *fields_a, std::complex<double> *fields_f, meep::realnum freq, material_data *md,meep::realnum du=1.0e-3);
 void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz, meep::realnum *data,
           int nx, int ny, int nz, int stride,
           double scaleby,

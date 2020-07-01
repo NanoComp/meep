@@ -26,7 +26,7 @@ class DesignRegion(object):
         # compute the gradient
         mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f) 
 
-        return grad
+        return np.squeeze(grad.reshape(self.num_design_params,num_freqs,order='F'))
 
 class OptimizationProblem(object):
     """Top-level class in the MEEP adjoint module.
@@ -140,11 +140,8 @@ class OptimizationProblem(object):
                 self.calculate_gradient()
             else:
                 raise ValueError("Incorrect solver state detected: {}".format(self.current_state))
-        
-        # clean up design grid list object
-        dg = self.design_grids[0] if len(self.design_grids) == 1 else self.design_grids
 
-        return self.f0, self.gradient, dg
+        return self.f0, self.gradient
 
     def get_fdf_funcs(self):
         """construct callable functions for objective function value and gradient

@@ -23,7 +23,7 @@ class ObjectiveQuantitiy(ABC):
         return
 
 class EigenmodeCoefficient(ObjectiveQuantitiy):
-    def __init__(self,sim,volume,mode,forward=True,k0=None,**kwargs):
+    def __init__(self,sim,volume,mode,forward=True,kpoint_func=None,**kwargs):
         '''
         '''
         self.sim = sim
@@ -31,7 +31,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         self.mode=mode
         self.forward = 0 if forward else 1
         self.normal_direction = None
-        self.k0 = k0
+        self.kpoint_func = kpoint_func
         self.eval = None
         self.EigenMode_kwargs = kwargs
         return
@@ -52,7 +52,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         dJ = np.atleast_1d(dJ)
         # determine starting kpoint for reverse mode eigenmode source
         direction_scalar = 1 if self.forward else -1
-        if self.k0 is None:
+        if self.kpoint_func is None:
             if self.normal_direction == 0:
                 k0 = direction_scalar * mp.Vector3(x=1)
             elif self.normal_direction == 1:
@@ -60,7 +60,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             elif self.normal_direction == 2:
                 k0 == direction_scalar * mp.Vector3(z=1)
         else:
-            k0 = direction_scalar * self.k0
+            k0 = direction_scalar * self.kpoint_func(self.time_src.frequency,1)
         
         # -------------------------------------- #
         # Get scaling factor 
@@ -94,6 +94,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                     direction=mp.NO_DIRECTION,
                     eig_kpoint=k0,
                     amplitude=amp,
+                    eig_match_freq=True,
                     size=self.volume.size,
                     center=self.volume.center,
                     **self.EigenMode_kwargs)
@@ -105,7 +106,8 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         self.time_src = self.sim.sources[0].src
 
         # Eigenmode data
-        ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],**self.EigenMode_kwargs)
+        direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
+        ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],direction=direction,kpoint_func=self.kpoint_func,**self.EigenMode_kwargs)
         self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling   
         self.cscale = ob.cscale # pull scaling factor
 
