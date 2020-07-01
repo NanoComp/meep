@@ -34,7 +34,7 @@ libmeep:
 # Set PYTHONPATH to use the in-place build of meep
 python_api_doc: all
 	test -d doc || cp -rf $(top_srcdir)/doc . && chmod -R +rw doc
-	PYTHONPATH=./python $(PYTHON) generate_py_api.py
+	if test -z $$SKIP_BUILD_DOCS; then PYTHONPATH=./python $(PYTHON) generate_py_api.py; else true; fi
 
 # Build the HTML version of the docs
 docs: python_api_doc
