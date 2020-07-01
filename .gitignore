@@ -71,7 +71,6 @@ python/meep.py
 python/__init__.py
 python/mpb-python.cxx
 python/mpb.py
-doc/docs/Python_User_Interface.md
 
 # test programs
 tests/2D_convergence
