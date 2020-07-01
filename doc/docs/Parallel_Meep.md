@@ -97,9 +97,9 @@ For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)`
 Runtime Scaling on MPI Clusters
 -------------------------------
 
-The following are benchmarking results of the total runtime vs. number of processors/chunks for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for MPI clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances on the [Google Cloud Platform](https://cloud.google.com/). Hyperthreading is disabled and one slot on each instance/node is reserved for kernel tasks leaving 7 slots/node. [elasticluster](https://elasticluster.readthedocs.io/en/latest/) is used for the cluster management and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. Even chunk splitting is used (`split_chunks_evenly=True`). The size of the clusters ranges from 2 to 14 nodes (14 to 98 processors).
+The following are benchmarking results of the total runtime vs. number of processors/chunks for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for [MPICH](https://www.mpich.org/) clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances on the [Google Cloud Platform](https://cloud.google.com/). Hyperthreading is disabled. One slot on each node is reserved for kernel tasks leaving 7 slots/node. The software stack includes the Meep [nightly build Conda package](Installation.md#nightly-builds), [elasticluster](https://elasticluster.readthedocs.io/en/latest/) for the cluster management, and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. In order to reduce cache contention, process affinity is used via the `mpirun` option `-bind-to core`. Meep's simulation domain is split into equal-sized [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (`split_chunks_evenly=True`). The size of the clusters ranges from 2 to 14 nodes (14 to 98 processors).
 
-As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the time spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one corresponds well to the minimum runtime of the first figure.
+As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the mean time per processor spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). (These timing metrics were obtained using the routine [`Simulation.mean_time_spent_on`](Python_User_Interface.md#simulation-time).) This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one — the regime in which the simulation is constrained by the network communication rather than the CPU computation — corresponds well to the minimum runtime of the first figure.
 
 <center>
 ![](images/parallel_benchmark_runtime_vs_nprocs.png)
@@ -110,3 +110,25 @@ As shown in the first figure below, the runtime reaches a minimum at 77 processo
 </center>
 
 The results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the *x* axis to along the *y* axis).
+
+We can also analyze the per-processor timing results for the three categories of time-stepping, MPI/synchronization, and DFTs separately as shown in the next figure for the case of a cluster with 35 processors (5 nodes). Because the simulation is not load balanced properly (due to the equal-sized chunks), there is a large variation in the individual timings particularly for the DFTs.
+
+<center>
+![](images/parallel_benchmark_barplot.png)
+</center>
+
+Based on these results, we plot the average timings over the full range of cluster sizes. There are two important items to point out: (1) The average time for the time-stepping and DFTs decreases continuously with increasing number of processors. This is not the case for MPI/synchronization. (2) The runtime standard deviation for all three categories generally increases with the number of processors. This is mainly due to intrinsic variations in the network bandwidth of the virtual cluster.
+
+<center>
+![](images/parallel_benchmark_timestep.png)
+</center>
+
+<center>
+![](images/parallel_benchmark_MPI.png)
+</center>
+
+<center>
+![](images/parallel_benchmark_DFT.png)
+</center>
+
+See also [FAQ/Should I expect linear speedup from the parlalel Meep](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep)?
