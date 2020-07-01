@@ -16,7 +16,7 @@ run the following command in the project root folder. Note that this requires
 that the Python extension for the meep library has been built:
 
 ```
-% PYTHONPATH=./python python generate_py_api.py
+% PYTHONPATH=./python python doc/generate_py_api.py
 ```
 
 Rerun this after making any changes to the docstrings in the source and
@@ -57,6 +57,6 @@ top-level MEEP repository tree:
 # Regenerate the API doc and run `mkdocs build`
 % make docs
 
-# Bundle the document files into a tarball archive
+# Bundle the HTML version of the document files into a tarball archive
 % make docs-dist
 ```
