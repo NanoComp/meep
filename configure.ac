@@ -587,9 +587,6 @@ if test "x$with_python" = xyes; then
    AC_CONFIG_FILES([libpympb/Makefile python/Makefile])
 fi
 
-AC_CONFIG_LINKS([generate_py_api.py:generate_py_api.py
-                 mkdocs.yml:mkdocs.yml])
-
 AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
