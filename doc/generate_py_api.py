@@ -208,7 +208,6 @@ def load_module(module):
         if inspect.isclass(member):
             items.append(ClassItem(name, member))
         if inspect.isfunction(member):
-            # print(name)
             items.append(FunctionItem(name, member))
 
     return items
