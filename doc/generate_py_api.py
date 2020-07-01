@@ -26,9 +26,11 @@ import io
 
 import meep
 
-SNIPSDIR = 'doc/_api_snippets'
-SRCDOC = 'doc/docs/Python_User_Interface.md.in'
-DESTDOC = 'doc/docs/Python_User_Interface.md'
+HERE = os.path.dirname(os.path.abspath(sys.argv[0]))
+SNIPSDIR = os.path.join(HERE, '_api_snippets')
+SRCDOC = os.path.join(HERE, 'docs/Python_User_Interface.md.in')
+DESTDOC = os.path.join(HERE, 'docs/Python_User_Interface.md')
+
 
 # List of names that should not have documentation generated.
 #
@@ -126,7 +128,6 @@ class MethodItem(FunctionItem):
 
         # Substitute values into the template
         return self.template.format(**locals())
-
 
 
 class ClassItem(Item):
