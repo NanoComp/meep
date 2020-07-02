@@ -3182,6 +3182,7 @@ class Simulation(object):
                                        center=center, size=size, collapse=True)
     
     def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
+<<<<<<< HEAD
         """
         Computes the dimensions of a dft array for a particular `component` (`mp.Ez`, `mp.Ey`, etc.).
 
@@ -3191,17 +3192,25 @@ class Simulation(object):
         corresponding to the minimum corner of the volume DFT volume object (`min_corner`),
         and a `Vector3` object corresponding to the maximum corner (`max_corner`).
         """
+=======
+>>>>>>> add yee grid to array slice
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
+<<<<<<< HEAD
         corners = []
         _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, False, component,corners)
         dim_sizes[dim_sizes==0] = 1
         min_corner = corners[0]
         max_corner = corners[1]
         return dim_sizes, min_corner, max_corner
+=======
+        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, True, component)
+        dims = [s for s in dim_sizes if s != 0]
+        return dims
+>>>>>>> add yee grid to array slice
     
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
