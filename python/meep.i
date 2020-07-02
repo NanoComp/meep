@@ -508,21 +508,15 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 }
 
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-<<<<<<< HEAD
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, 
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL) {
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
 
     meep::vec min_max_loc_vec[2];
     meep::vec* min_max_loc_vec_ptr = min_max_loc_vec;
     if (!min_max_loc) min_max_loc_vec_ptr = NULL;
-    
+
     int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions, min_max_loc_vec_ptr, 0, cgrid);
-=======
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, meep::component cgrid = Centered) {
-    meep::direction dirs[3] = {meep::X, meep::X, meep::X};
-    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions, NULL, 0, cgrid);
->>>>>>> add yee grid to array slice
 
     PyObject *py_dirs = PyList_New(3);
     for (Py_ssize_t i = 0; i < 3; ++i) {
@@ -807,7 +801,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     // clean the volume object
     void* where;
-    
+
     PyObject* swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
     SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
     const meep::volume* where_vol = (const meep::volume*)where;
@@ -834,7 +828,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     // calculate the gradient
     meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c);
-    
+
     destroy_geom_box_tree(geometry_tree);
     delete[] l;
 
@@ -1468,12 +1462,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    double *cscale, meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-<<<<<<< HEAD
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL);
-=======
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, meep::component cgrid = Centered);
->>>>>>> add yee grid to array slice
 
 %ignore eps_func;
 %ignore inveps_func;
