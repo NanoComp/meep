@@ -1595,7 +1595,7 @@ public:
   int get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
                                  bool collapse_empty_dimensions = false,
                                  bool snap_empty_dimensions = false, vec *min_max_loc = NULL,
-                                 void *data = 0);
+                                 void *data = 0, component cgrid = Centered);
 
   int get_dft_array_dimensions(const volume &where, size_t dims[3], direction dirs[3]) {
     return get_array_slice_dimensions(where, dims, dirs, true);

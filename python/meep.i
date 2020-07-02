@@ -508,9 +508,9 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 }
 
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions) {
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, meep::component cgrid = Centered) {
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
-    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions);
+    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions, NULL, 0, cgrid);
 
     PyObject *py_dirs = PyList_New(3);
     for (Py_ssize_t i = 0; i < 3; ++i) {
@@ -1445,7 +1445,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    double *cscale, meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions);
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, meep::component cgrid = Centered);
 
 %ignore eps_func;
 %ignore inveps_func;

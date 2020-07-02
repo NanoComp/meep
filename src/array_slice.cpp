@@ -410,7 +410,7 @@ cdouble *array_to_all(cdouble *array, size_t array_size) {
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
                                        bool collapse_empty_dimensions, bool snap_empty_dimensions,
-                                       vec *min_max_loc, void *caller_data) {
+                                       vec *min_max_loc, void *caller_data, component cgrid) {
   am_now_working_on(FieldOutput);
 
   // use a local data structure if the caller didn't provide one
@@ -434,7 +434,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   }
 
   bool use_symmetry = true;
-  loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, Centered, use_symmetry,
+  loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, cgrid, use_symmetry,
                  snap_empty_dimensions);
 
   data->min_corner = -max_to_all(-data->min_corner); // i.e., min_to_all
