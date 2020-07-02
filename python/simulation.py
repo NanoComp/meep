@@ -2153,7 +2153,17 @@ class Simulation(object):
                       DeprecationWarning)
         return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
                                        center=center, size=size, collapse=True)
-
+    
+    def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
+        if vol is None and center is None and size is None:
+            v = self.fields.total_volume()
+        else:
+            v = self._volume_from_kwargs(vol, center, size)
+        dim_sizes = np.zeros(3, dtype=np.uintp)
+        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, True, component)
+        dims = [s for s in dim_sizes if s != 0]
+        return dims
+    
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
         if self.fields is None:
