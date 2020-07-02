@@ -134,3 +134,204 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             return self.eval
         except AttributeError:
             raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+
+class E_Coefficients(ObjectiveQuantitiy):
+    def __init__(self,sim,volume, component):
+        '''
+        '''
+        self.sim = sim
+        self.volume=volume
+        self.eval = None
+        self.component = component
+        return
+
+    def register_monitors(self,frequencies):
+        self.frequencies = np.asarray(frequencies)
+        self.num_freq = len(self.frequencies)
+        self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=False)
+
+        return self.monitor
+
+    def place_adjoint_source(self,dJ,dt):
+        '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
+        correct scaling/time profile.
+        dJ ........ the user needs to pass the dJ/dMonitor evaluation
+        dt ........ the timestep size from sim.fields.dt of the forward sim
+        '''
+
+        if self.sim.cell_size.y == 0:
+            dV = 1/self.sim.resolution
+        elif self.sim.cell_size.z == 0:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution
+        else:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
+
+        self.sources = []
+
+        '''
+        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+        for freq_i in range(self.num_freq):
+            self.src = mp.GaussianSource(self.frequencies[freq_i], fwidth=0.02)
+            scale = dV * 1j * 2 * np.pi * self.frequencies[freq_i] / self.src.fourier_transform(self.frequencies[freq_i])
+            amp = -atleast_3d(dJ[freq_i]) * scale
+        '''
+
+
+        if self.num_freq == 1:
+            scale = dV * 1j * 2 * np.pi * self.frequencies[0] / self.time_src.fourier_transform(self.frequencies[0])
+            amp = -atleast_3d(dJ[0]) * scale
+            for zi in range(len(self.dg.z)):
+                for yi in range(len(self.dg.y)):
+                    for xi in range(len(self.dg.x)):
+                        if amp[xi, yi, zi] != 0:
+                            self.sources += [mp.Source(self.time_src, component=self.component, amplitude= amp[xi, yi, zi],
+                            center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
+        else:
+            dJ_4d = np.array([atleast_3d(dJ[f]) for f in range(self.num_freq)])
+            for zi in range(len(self.dg.z)):
+                for yi in range(len(self.dg.y)):
+                    for xi in range(len(self.dg.x)):
+                        scale = -dJ_4d[:,xi,yi,zi] * dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
+                        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+                        self.sources += [mp.Source(src, component=self.component, amplitude= 1,
+                                center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
+
+        return self.sources
+
+    def __call__(self):
+        self.time_src = self.sim.sources[0].src
+
+        self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
+        self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
+        return self.eval
+
+    def get_evaluation(self):
+        '''Returns the requested eigenmode coefficient.
+        '''
+        try:
+            return self.eval
+        except AttributeError:
+            raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+
+class H_Coefficients(ObjectiveQuantitiy):
+    def __init__(self,sim,volume, component):
+        '''
+        '''
+        self.sim = sim
+        self.volume=volume
+        self.eval = None
+        self.component = component
+        return
+
+    def register_monitors(self,frequencies):
+        self.frequencies = np.asarray(frequencies)
+        self.num_freq = len(self.frequencies)
+        self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=False)
+
+        return self.monitor
+
+    def place_adjoint_source(self,dJ,dt):
+        '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
+        correct scaling/time profile.
+        dJ ........ the user needs to pass the dJ/dMonitor evaluation
+        dt ........ the timestep size from sim.fields.dt of the forward sim
+        '''
+
+        if self.sim.cell_size.y == 0:
+            dV = 1/self.sim.resolution
+        elif self.sim.cell_size.z == 0:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution
+        else:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
+
+        self.sources = []
+
+        '''
+        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+        for freq_i in range(self.num_freq):
+            self.src = mp.GaussianSource(self.frequencies[freq_i], fwidth=0.02)
+            scale = dV * 1j * 2 * np.pi * self.frequencies[freq_i] / self.src.fourier_transform(self.frequencies[freq_i])
+            amp = -atleast_3d(dJ[freq_i]) * scale
+        '''
+
+
+        if self.num_freq == 1:
+            scale = dV * 1j * 2 * np.pi * self.frequencies[0] / self.time_src.fourier_transform(self.frequencies[0])
+            amp = atleast_3d(dJ[0]) * scale
+            for zi in range(len(self.dg.z)):
+                for yi in range(len(self.dg.y)):
+                    for xi in range(len(self.dg.x)):
+                        if amp[xi, yi, zi] != 0:
+                            self.sources += [mp.Source(self.time_src, component=self.component, amplitude= amp[xi, yi, zi],
+                            center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
+        else:
+            dJ_4d = np.array([atleast_3d(dJ[f]) for f in range(self.num_freq)])
+            for zi in range(len(self.dg.z)):
+                for yi in range(len(self.dg.y)):
+                    for xi in range(len(self.dg.x)):
+                        scale = dJ_4d[:,xi,yi,zi] * dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
+                        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+                        self.sources += [mp.Source(src, component=self.component, amplitude= 1,
+                                center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
+
+        return self.sources
+
+    def __call__(self):
+        self.time_src = self.sim.sources[0].src
+
+        self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
+        self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
+        return self.eval
+
+    def get_evaluation(self):
+        '''Returns the requested eigenmode coefficient.
+        '''
+        try:
+            return self.eval
+        except AttributeError:
+            raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+
+
+Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
+
+def atleast_3d(*arys):
+    from numpy import array, asanyarray, newaxis
+    '''
+    Modified version of numpy's `atleast_3d`
+
+    Keeps one dimensional array data in first dimension, as
+    opposed to moving it to the second dimension as numpy's
+    version does. Keeps the meep dimensionality convention.
+
+    View inputs as arrays with at least three dimensions.
+    Parameters
+    ----------
+    arys1, arys2, ... : array_like
+        One or more array-like sequences.  Non-array inputs are converted to
+        arrays.  Arrays that already have three or more dimensions are
+        preserved.
+    Returns
+    -------
+    res1, res2, ... : ndarray
+        An array, or list of arrays, each with ``a.ndim >= 3``.  Copies are
+        avoided where possible, and views with three or more dimensions are
+        returned.  For example, a 1-D array of shape ``(N,)`` becomes a view
+        of shape ``(N, 1, 1)``, and a 2-D array of shape ``(M, N)`` becomes a
+        view of shape ``(M, N, 1)``.
+    '''
+    res = []
+    for ary in arys:
+        ary = asanyarray(ary)
+        if ary.ndim == 0:
+            result = ary.reshape(1, 1, 1)
+        elif ary.ndim == 1:
+            result = ary[:, newaxis, newaxis]
+        elif ary.ndim == 2:
+            result = ary[:, :, newaxis]
+        else:
+            result = ary
+        res.append(result)
+    if len(res) == 1:
+        return res[0]
+    else:
+        return res

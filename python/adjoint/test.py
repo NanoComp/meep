@@ -1,14 +1,17 @@
+import sys
+sys.path.append("/usr/local/lib/python3.5/site-packages/")
+
 import meep as mp
 import meep.adjoint as mpa
 import numpy as np
 from autograd import numpy as npa
 from matplotlib import pyplot as plt
-#from objective_Ez import *
+
 mp.quiet(quietval=True)
 seed = 24
 np.random.seed(seed)
 
-resolution = 10
+resolution = 20
 
 Sx = 6
 Sy = 5
@@ -24,7 +27,7 @@ source_size    = mp.Vector3(0,2,0)
 kpoint = mp.Vector3(1,0,0)
 src = mp.GaussianSource(frequency=fcen,fwidth=fwidth)
 
-source = [mp.Source(src,component=mp.Ez,
+source = [mp.Source(src,component=mp.Ex,
                     size = source_size,
                     center=source_center)]
 
@@ -49,12 +52,17 @@ sim = mp.Simulation(cell_size=cell_size,
                     resolution=resolution)
 
 
-Ez0 = mpa.Ez_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)))
-ob_list = [Ez0]
+Ex = mpa.E_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)), mp.Ex)
+Hx = mpa.H_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)), mp.Hx)
 
+#ob_list = [Ez, Hx]
+ob_list = [Ex]
+
+def J5(E, H):
+    return npa.abs(E[0,2])**2 + npa.abs(H[1,3])**2
 
 def J1(alpha):
-    return npa.abs(alpha[0,0]) **2
+    return npa.abs(alpha[0,0])**2 #+ 3*npa.abs(alpha[1,4])**2 #+ npa.abs(alpha[2,0])**2
 
 
 def J2(alpha):
@@ -64,7 +72,7 @@ def J2(alpha):
     npa.abs(alpha[0,16]) **2 + npa.abs(alpha[0,17]) **2 +npa.abs(alpha[0,18]) **2 + npa.abs(alpha[0,19]) **2 + npa.abs(alpha[0,20]) **2 + npa.abs(alpha[0,21]) **2
 
 def J3(alpha):
-    return npa.sum(npa.abs(alpha[0,:])**2)
+    return npa.sum(npa.abs(alpha)**2)
 
 def J4(alpha):
     sum_sq = 0
@@ -74,13 +82,14 @@ def J4(alpha):
 
 opt = mpa.OptimizationProblem(
     simulation=sim,
-    objective_functions=J3,
+    objective_functions=J1,
     objective_arguments=ob_list,
     design_variables=[design_variables],
     fcen=fcen,
-    df = 0,
-    nf = 1,
-    decay_fields=[mp.Ez]
+    df = 0.03,
+    nf = 3,
+    decay_fields=[mp.Ex],
+    decay_by = 1e-6
 )
 
 
@@ -92,7 +101,8 @@ opt.update_design([x0])
 
 f0, dJ_deps, dg = opt()
 
-g_adjoint = design_variables.get_basis_vjp(dJ_deps,dg)
+g_adjoint = np.sum(design_variables.get_basis_vjp(dJ_deps,dg), axis=1)
+
 
 
 
@@ -116,4 +126,3 @@ plt.title('Resolution: {} Seed: {} Nx: {} Ny: {}'.format(resolution,seed,Nx,Ny))
 plt.legend()
 plt.grid(True)
 plt.show()
-
