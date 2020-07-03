@@ -4887,13 +4887,15 @@ def quiet(quietval=True):
     """
     mp.cvar.verbosity = int(not quietval)
 
-def verbosity(v=1):
+def verbosity(level=1):
     """
-    Given a number `v`, specify the degree of Meep's output: `0` is quiet mode, `1` (the
+    Given a number `level`, specify the degree of Meep's output: `0` is quiet mode, `1` (the
     default) is ordinary output, `2` is extra debugging output, and `3` is all debugging
-    output.
+    output. Returns the prior setting.
     """
-    mp.cvar.verbosity = v
+    old = mp.cvar.verbosity
+    mp.cvar.verbosity = level
+    return old
 
 def get_num_groups():
     # Lazy import
