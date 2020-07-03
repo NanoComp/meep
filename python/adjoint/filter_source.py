@@ -66,7 +66,7 @@ class FilteredSource(CustomSource):
         a = [0.355768, 0.4873960, 0.144232, 0.012604]
         return self.cos_window_fd(a,f,f0)
     def dtft(self,y,f):
-        return np.exp(1j*2*np.pi*f[:,np.newaxis]*np.arange(y.size)*self.dt)@y
+        return np.matmul(np.exp(1j*2*np.pi*f[:,np.newaxis]*np.arange(y.size)*self.dt), y)
     
     def __call__(self,t):
         if t > self.T:
@@ -84,7 +84,7 @@ class FilteredSource(CustomSource):
         # TODO: come up with a more sophisticated way to choose temporal window size and basis locations
         # that will minimize l2 estimation error and the node weights (since matrix is ill-conditioned)
         vandermonde = self.nuttall_dtft(self.frequencies[:,np.newaxis],self.center_frequencies[np.newaxis,:])
-        nodes = linalg.pinv(vandermonde)@H
-        H_hat = vandermonde@nodes
+        nodes = np.matmul(linalg.pinv(vandermonde), H)
+        H_hat = np.matmul(vandermonde, nodes)
         l2_err = np.sum(np.abs(H-H_hat)**2/np.abs(H)**2)        
         return nodes, l2_err
