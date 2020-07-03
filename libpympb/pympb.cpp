@@ -55,6 +55,10 @@ typedef mpb_real real; // needed for the CASSIGN macros below
 
 namespace py_mpb {
 
+// The verbosity level. See pympb.hpp
+int verbosity = 2;
+
+
 // TODO: Placeholder
 int mpb_comm;
 
