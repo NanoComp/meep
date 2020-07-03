@@ -6,7 +6,7 @@ import unittest
 
 class TestMaterialGrid(unittest.TestCase):
     def gen_sim(self):
-        resolution = 10 # pixels/μm
+        resolution = 10 # pixels/um
         cell_size = mp.Vector3(14,14)
         pml_layers = [mp.PML(thickness=2)]
         w = 3.0 # width of waveguide
