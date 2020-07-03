@@ -1,5 +1,17 @@
 # Meep Release Notes
 
+## Meep 1.15.0-alpha
+
+* Minimum-lengthscale filters for adjoint optimization (#1205).
+
+* `merge_subgroup_data` Python function for coordinating parallel
+  computations (#1192).
+
+* Eigenmode sources now ensure that the source has the same
+  frequency as the mode (#1218).
+
+* Performance improvements to eigenmode sources (#1233, #1244, #1257).
+
 ## Meep 1.14.0
 
 4/17/2020

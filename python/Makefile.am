@@ -166,7 +166,7 @@ meep.py: meep-python.cxx
 
 __init__.py: meep.py $(MPB_PY)
 	cp $< $@
-	echo "__version__ = '$(shell git describe --tags | sed 's/^v//')'" >> $@
+	echo "__version__ = '@VERSION@'" >> $@
 	if [[ "${SWIG_VERSION}" = 3.0.12 ]]; then \
 		sed -i.bak '/^if _swig_python_version_info >= (2, 7, 0):/,/^else:/d' $@; \
 		sed -i.bak 's/    import _meep/from . import _meep/' $@; \
