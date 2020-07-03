@@ -874,7 +874,7 @@ Given a list of field components `cs`, compute the Fourier transform of these fi
 
 **`(flux-in-box dir box)`**
 —
-Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box `X (volume (center 0) (size 0 1 1)))`.
+Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box X (volume (center 0) (size 0 1 1)))`.
 
 **`(electric-energy-in-box box)`**
 —
