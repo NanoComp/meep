@@ -318,8 +318,7 @@ Only the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of eigenva
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
-Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength. In
-a discretized computer model like Meep, this is approximated by a volume conductivity that is one pixel (`1/resolution`) thick *and* has an amplitude scaled by `resolution`. Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
+Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength. In a discretized computer model like Meep, this is approximated by a volume conductivity that is one pixel (`1/resolution`) thick *and* has an amplitude scaled by `resolution`. Such a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`. For accurate results, the Yee grid resolution should be comparable to a singe-atom thickness. Unfortunately, this means that the memory requirements of even a 2d simulation will be quite large. Finite-element methods which are based on variable grid resolution may be more suitable for these types of problems.
 
 ### How do I model a continuously varying permittivity?
 
