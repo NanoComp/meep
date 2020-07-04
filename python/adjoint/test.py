@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 mp.quiet(quietval=True)
 seed = 24
-np.random.seed(seed)
+#np.random.seed(seed)
 
 resolution = 20
 
@@ -27,7 +27,7 @@ source_size    = mp.Vector3(0,2,0)
 kpoint = mp.Vector3(1,0,0)
 src = mp.GaussianSource(frequency=fcen,fwidth=fwidth)
 
-source = [mp.Source(src,component=mp.Ex,
+source = [mp.Source(src,component=mp.Hz,
                     size = source_size,
                     center=source_center)]
 
@@ -54,15 +54,17 @@ sim = mp.Simulation(cell_size=cell_size,
 
 Ex = mpa.E_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)), mp.Ex)
 Hx = mpa.H_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)), mp.Hx)
+Ey = mpa.E_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)), mp.Ey)
+Hz = mpa.H_Coefficients(sim,mp.Volume(center=mp.Vector3(0,1,0),size=mp.Vector3(2,0,0)), mp.Hz)
 
-#ob_list = [Ez, Hx]
-ob_list = [Ex]
+ob_list = [Ex, Hz]
+#ob_list = [Hz]
 
 def J5(E, H):
     return npa.abs(E[0,2])**2 + npa.abs(H[1,3])**2
 
 def J1(alpha):
-    return npa.abs(alpha[0,0])**2 #+ 3*npa.abs(alpha[1,4])**2 #+ npa.abs(alpha[2,0])**2
+    return npa.abs(alpha[0,0])**2
 
 
 def J2(alpha):
@@ -82,14 +84,14 @@ def J4(alpha):
 
 opt = mpa.OptimizationProblem(
     simulation=sim,
-    objective_functions=J1,
+    objective_functions=J5,
     objective_arguments=ob_list,
     design_variables=[design_variables],
     fcen=fcen,
     df = 0.03,
     nf = 3,
-    decay_fields=[mp.Ex],
-    decay_by = 1e-6
+    decay_fields=[mp.Hz],
+    decay_by = 1e-4
 )
 
 
