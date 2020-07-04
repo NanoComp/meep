@@ -510,6 +510,41 @@ class Medium(object):
         # Convert list matrix to 3D numpy array size [freqs,3,3]
         return np.squeeze(epsmu)
 
+class MaterialGrid(object):
+    def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT"):
+        self.grid_size = grid_size
+        self.medium1 = medium1
+        self.medium2 = medium2
+        if self.grid_size.x == 0:
+            self.grid_size.x = 1
+        elif self.grid_size.y == 0:
+            self.grid_size.y = 1
+        elif self.grid_size.z == 0:
+            self.grid_size.z = 1
+        self.num_params=int(self.grid_size.x*self.grid_size.y*self.grid_size.z)
+
+        if design_parameters is None:
+            self.design_parameters = np.zeros((self.num_params,))
+        elif design_parameters.size != self.num_params:
+            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,grid_size))
+        else:
+            self.design_parameters = design_parameters.flatten().astype(np.float64)
+
+        grid_type_dict = {
+            "U_MIN":0,
+            "U_PROD":1,
+            "U_SUM":2,
+            "U_DEFAULT":3
+        }
+        if grid_type not in grid_type_dict:
+            raise ValueError("Invalid grid_type: {}. Must be either U_MIN, U_PROD, U_SUM, or U_DEFAULT".format(grid_type_dict))
+        self.grid_type = grid_type_dict[grid_type]
+        
+        self.swigobj = None
+    def update_parameters(self,x):
+        if x.size != self.num_params:
+            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,grid_size))
+        self.design_parameters[:]=x.flatten().astype(np.float64)
 
 class Susceptibility(object):
     """

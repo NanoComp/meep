@@ -138,6 +138,13 @@ typedef struct eigenmode_data {
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
+// utility routine for modular arithmetic that always returns a nonnegative integer
+static int pmod(int n, int modulus) {
+  n = n % modulus;
+  if (n < 0) n += modulus;
+  return n;
+}
+
 /*******************************************************************/
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */

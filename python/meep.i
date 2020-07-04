@@ -421,8 +421,10 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
-    if (rank==0 || dft_arr==NULL) // this can happen e.g. if component c vanishes by symmetry
-     return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
+    if (rank==0 || dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
+     std::complex<double> d[1] = {std::complex<double>(0,0)};
+     return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, d);
+    }
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
@@ -679,6 +681,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
+        delete[] ((material_data *)$1.material)->design_parameters;
         delete[] ((material_data *)$1.material)->epsilon_data;
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
@@ -720,6 +723,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
         delete[] ((material_data *)$1.items[i].material)->epsilon_data;
+        delete[] ((material_data *)$1.items[i].material)->design_parameters;
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -749,6 +753,77 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) susceptibility_list {
     delete[] $1.items;
 }
+
+//--------------------------------------------------
+// typemaps needed for material grid
+//--------------------------------------------------
+
+%inline %{
+void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObject *grid_volume, PyObject *frequencies, PyObject *py_geom_list, PyObject *f) {
+    // clean the gradient array
+    PyArrayObject *pao_grad = (PyArrayObject *)grad;
+    if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
+    meep::realnum * grad_c = (meep::realnum *)PyArray_DATA(pao_grad);
+
+    // clean the adjoint fields array
+    PyArrayObject *pao_fields_a = (PyArrayObject *)fields_a;
+    if (!PyArray_Check(pao_fields_a)) meep::abort("fields parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy fields array must be C-style contiguous.");
+    std::complex<double> * fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
+
+    // clean the forward fields array
+    PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
+    if (!PyArray_Check(pao_fields_f)) meep::abort("fields parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy fields array must be C-style contiguous.");
+    std::complex<double> * fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
+
+    // scalegrad not currently used
+    double scalegrad = 1.0;
+
+    // clean the volume object
+    void* where;
+    
+    PyObject* swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
+    SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
+    const meep::volume* where_vol = (const meep::volume*)where;
+
+    // clean the frequencies array
+    PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
+    if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
+    meep::realnum* frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
+
+    // get the proper dimensions of the fields array
+    if (PyArray_NDIM(pao_fields_a) !=5) {meep::abort("Fields array must have 5 dimensions.");}
+    int fdims_c[4];
+    for (int i = 0; i < PyArray_NDIM(pao_fields_a); ++i) {
+      fdims_c[i] = PyArray_DIMS(pao_fields_a)[i];
+    }
+
+    // prepare a geometry_tree
+    //TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
+    geometric_object_list *l;
+    l = new geometric_object_list();
+    if (!py_list_to_gobj_list(py_geom_list,l)) meep::abort("Unable to convert geometry tree.");
+    geom_box_tree geometry_tree = calculate_tree(*where_vol,*l);
+
+    // clean the fields pointer
+    void* f_v;
+    SWIG_ConvertPtr(f,&f_v,NULL,NULL);
+    meep::fields* f_c = (meep::fields *)f_v;
+
+    // calculate the gradient
+    meep_geom::material_grids_addgradient(grad_c,fields_a_c,fields_f_c,frequencies_c,fdims_c,scalegrad,*where_vol,geometry_tree,f_c);
+    
+    destroy_geom_box_tree(geometry_tree);
+    delete[] l;
+
+}
+%}
+//--------------------------------------------------
+// end typemaps needed for material grid
+//--------------------------------------------------
 
 // Typemap suite for sources
 
@@ -841,6 +916,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if ($1->medium.H_susceptibilities.items) {
         delete[] $1->medium.H_susceptibilities.items;
     }
+    delete[] $1->design_parameters;
     delete[] $1->epsilon_data;
     delete $1;
 }
@@ -1190,6 +1266,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             if ($1.items[i]->medium.H_susceptibilities.items) {
                 delete[] $1.items[i]->medium.H_susceptibilities.items;
             }
+            delete[] $1.items[i]->design_parameters;
             delete[] $1.items[i]->epsilon_data;
         }
         delete[] $1.items;
@@ -1404,6 +1481,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         GyrotropicSaturatedSusceptibility,
         Lattice,
         LorentzianSusceptibility,
+        MaterialGrid,
         Matrix,
         Medium,
         MultilevelAtom,
