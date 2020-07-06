@@ -456,6 +456,7 @@ void structure::set_epsilon(material_function &eps, bool use_anisotropic_averagi
                             int maxeval) {
   double tstart = wall_time();
   FOR_ELECTRIC_COMPONENTS(c) { set_chi1inv(c, eps, use_anisotropic_averaging, tol, maxeval); }
+  all_wait(); // sync so that timing results are accurate
   if (verbosity > 0) master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
 
@@ -469,6 +470,7 @@ void structure::set_mu(material_function &m, bool use_anisotropic_averaging, dou
                        int maxeval) {
   double tstart = wall_time();
   FOR_MAGNETIC_COMPONENTS(c) { set_chi1inv(c, m, use_anisotropic_averaging, tol, maxeval); }
+  all_wait(); // sync so that timing results are accurate
   if (verbosity > 0) master_printf("time for set_mu = %g s\n", wall_time() - tstart);
 }
 
@@ -484,6 +486,7 @@ void structure::set_conductivity(component c, material_function &C) {
   changing_chunks();
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->set_conductivity(c, C);
+  all_wait(); // sync so that timing results are accurate
   if (verbosity > 0) master_printf("time for set_conductivity = %g s\n", wall_time() - tstart);
 }
 

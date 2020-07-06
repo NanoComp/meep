@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "meep.hpp"
 #include "config.h"
 
@@ -41,35 +42,64 @@ typedef struct {
   double frequency;
   ndim dim;
   const fields *f;
+
+  /* for parallel efficiency, we first cache the epsinv data from each process, then
+     sum_to_all to synchonize, and then re-run set_maxwell_dielectric with the cached data */
+  double *cache; // array of 6*ncache eps_inv matrix entries in the order that they are needed
+  size_t ncache; // allocated size of the cache
+  size_t icache; // current position in the cache
+  bool use_cache; // whether we are using the cache
 } meep_mpb_eps_data;
 
-static void meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+static int  meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv,
+                         mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
+                         const mpb_real r[3],
                          void *eps_data_) {
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
-  const double *s = eps_data->s;
-  const double *o = eps_data->o;
-  double frequency = eps_data->frequency;
-  vec p(eps_data->dim == D3 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2])
-                            : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
-                                                   /* D1 */ vec(o[2] + r[2] * s[2])));
-  const fields *f = eps_data->f;
+  size_t i = eps_data->icache;
 
-  eps_inv->m00 = real(f->get_chi1inv(Ex, X, p, frequency));
-  eps_inv->m11 = real(f->get_chi1inv(Ey, Y, p, frequency));
-  eps_inv->m22 = real(f->get_chi1inv(Ez, Z, p, frequency));
+  (void) n; (void) d1; (void) d2; (void) d3; (void) tol;  // unused
 
-  ASSIGN_ESCALAR(eps_inv->m01, real(f->get_chi1inv(Ex, Y, p, frequency)), 0);
-  ASSIGN_ESCALAR(eps_inv->m02, real(f->get_chi1inv(Ex, Z, p, frequency)), 0);
-  ASSIGN_ESCALAR(eps_inv->m12, real(f->get_chi1inv(Ey, Z, p, frequency)), 0);
-  /*
-  master_printf("m11(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m00);
-  master_printf("m22(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m11);
-  master_printf("m33(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m22);
-  master_printf("m12(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m01);
-  master_printf("m13(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m02);
-  master_printf("m23(%g,%g) = %g\n", p.x(), p.y(), eps_inv->m12);
-  */
-  maxwell_sym_matrix_invert(eps, eps_inv);
+  if (eps_data->use_cache) {
+    const double *cache = eps_data->cache;
+    eps_inv->m00 = cache[6*i];
+    eps_inv->m11 = cache[6*i+1];
+    eps_inv->m22 = cache[6*i+2];
+    ASSIGN_ESCALAR(eps_inv->m01, cache[6*i+3], 0);
+    ASSIGN_ESCALAR(eps_inv->m02, cache[6*i+4], 0);
+    ASSIGN_ESCALAR(eps_inv->m12, cache[6*i+5], 0);
+    maxwell_sym_matrix_invert(eps, eps_inv);
+  }
+  else {
+    // get cache pointer, doubling cache size as needed:
+    double *cache = i < eps_data->ncache ? eps_data->cache :
+        (eps_data->cache = (double*) realloc(eps_data->cache, sizeof(double) * 6 * (eps_data->ncache *= 2)));
+
+    const double *s = eps_data->s;
+    const double *o = eps_data->o;
+    double frequency = eps_data->frequency;
+    vec p(eps_data->dim == D3 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2])
+                              : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
+                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
+    const fields *f = eps_data->f;
+
+    // call get_chi1inv with parallel=false to get only local epsilon data
+    cache[6*i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
+    cache[6*i+1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
+    cache[6*i+2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
+    cache[6*i+3] = real(f->get_chi1inv(Ex, Y, p, frequency, false));
+    cache[6*i+4] = real(f->get_chi1inv(Ex, Z, p, frequency, false));
+    cache[6*i+5] = real(f->get_chi1inv(Ey, Z, p, frequency, false));
+
+    // return a dummy value epsilon = 1 while we are building up the cache
+    eps->m00 = eps->m11 = eps->m22 = eps_inv->m00 = eps_inv->m11 = eps_inv->m22 = 1;
+    ASSIGN_ESCALAR(eps->m01, 0, 0);
+    eps->m02 = eps->m12 = eps_inv->m01 = eps_inv->m02 = eps_inv->m12 = eps->m01;
+  }
+
+  eps_data->icache += 1; // next call will use the subsequent cache element
+
+  return 1; // tells MPB not to do its own subpixel averaging
 }
 
 /**************************************************************/
@@ -382,7 +412,28 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     eps_data.dim = gv.dim;
     eps_data.f = this;
     eps_data.frequency = frequency;
-    set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps, NULL, &eps_data);
+    eps_data.cache = (double *) malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
+
+    // first, build up a cache of the local epsilon data (while returning dummy values to MPB)
+    eps_data.use_cache = false;
+    eps_data.icache = 0;
+    set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+
+    // then, synchronize the data
+    eps_data.ncache = eps_data.icache; // actual amount of cached data
+    double *summed_cache = (double *) malloc(sizeof(double) * 6 * eps_data.ncache);
+    sum_to_all(eps_data.cache, summed_cache, eps_data.ncache*6);
+    free(eps_data.cache);
+    eps_data.cache = summed_cache;
+
+    // finally, send MPB the real epsilon data using the synchronized cache
+    eps_data.use_cache = true;
+    eps_data.icache = 0;
+    set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+    assert(eps_data.icache == eps_data.ncache);
+
+    free(eps_data.cache);
+
     if (user_mdata) *user_mdata = (void *)mdata;
   }
   else {
