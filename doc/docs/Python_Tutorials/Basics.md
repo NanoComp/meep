@@ -896,6 +896,111 @@ For `resolution = 25`, the error decreases (as expected) to 1.5%.
 scatt:, 8.2215435272741395 (meep), 8.3429545590438750 (theory)
 ```
 
+Absorbed Power Density Map of a Lossy Cylinder
+----------------------------------------------
+
+The `dft_flux` routines (`add_flux`) described in the previous examples compute the *total* power in a given region (`FluxRegion`). It is also possible to compute the *local* (i.e., position-dependent) absorbed power density in a dispersive (lossy) material. This quantity is useful for obtaining a spatial map of the photon absorption. The absorbed power density is defined as $$\mathrm{Re}\, \left[ {\mathbf{E}^* \cdot \frac{d\mathbf{P}}{dt}} \right]$$ where $\mathbf{P}$ is the total polarization field. In the Fourier (frequency) domain with time-harmonic fields, this expression is $$\mathrm{Re}\, {\mathbf{E}^* \cdot (-i \omega \mathbf{P})} = \omega\, \mathrm{Im}\, {\mathbf{E}^* \cdot \mathbf{P}} $$ where $\mathbf{E}^* \cdot \mathbf{P}$ denotes the dot product of the conjugate of $\mathbf{E}$ with $\mathbf{P}$. However, since $\mathbf{D}=\mathbf{E}+\mathbf{P}$, this is equivalent to $$ \omega\, \mathrm{Im}\, {\mathbf{E}^* \cdot (\mathbf{D}-\mathbf{E})} = \omega\, \mathrm{Im}\, {\mathbf{E}^* \cdot \mathbf{D}} $$ since $\mathbf{E}^* \cdot \mathbf{E} = |\mathbf{E}|^2$ is purely real. Calculating this quantity involves two steps: (1) compute the Fourier-transformed $\mathbf{E}$ and $\mathbf{D}$ fields in a region via the `dft_fields` feature and (2) in post processing, compute $\omega\, \mathrm{Im}\, {\mathbf{E}^* \cdot \mathbf{D}}$.
+
+This tutorial example involves computing a map of the absorbed power density for a cylinder (radius: 1 μm) of SiO<sub>2</sub> from the [materials library](Materials.md#materials-library) at a wavelength of 1 μm given an incident $E_z$-polarized planewave. We will also verify that the *total* power absorbed by the cylinder is the same when computed using two different methods: (1) integrating the absorbed power density over the entire cylinder or (2) surrounding the cylinder with a four-sided, closed `dft_flux` box (Poynting's theorem).
+
+The simulation script is in [examples/absorbed_power_density.py](https://github.com/NanoComp/meep/blob/master/python/examples/absorbed_power_density.py).
+
+```py
+import numpy as np
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+
+import meep as mp
+from meep.materials import SiO2
+
+resolution = 50  # pixels/um
+
+dpml = 1.0
+pml_layers = [mp.PML(thickness=dpml)]
+
+r = 1.0     # radius of cylinder
+dair = 2.0  # air padding thickness
+
+s = 2*(dpml+dair+r)
+cell_size = mp.Vector3(s,s)
+
+fcen = 1.0  # wavelength of 1.0 um
+
+# is_integrated=True necessary for any planewave source extending into PML
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.1*fcen,is_integrated=True),
+                     center=mp.Vector3(-0.5*s+dpml),
+                     size=mp.Vector3(0,s),
+                     component=mp.Ez)]
+
+symmetries = [mp.Mirror(mp.Y)]
+
+geometry = [mp.Cylinder(material=SiO2,
+                        center=mp.Vector3(),
+                        radius=r,
+                        height=mp.inf)]
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    k_point=mp.Vector3(),
+                    symmetries=symmetries,
+                    geometry=geometry)
+
+dft_fields = sim.add_dft_fields([mp.Dz,mp.Ez], fcen, 0, 1, center=mp.Vector3(), size=mp.Vector3(2*r,2*r))
+
+# closed box surrounding cylinder for computing total incoming flux
+flux_box = sim.add_flux(fcen, 0, 1,
+                        mp.FluxRegion(center=mp.Vector3(x=-r),size=mp.Vector3(0,2*r),weight=+1),
+                        mp.FluxRegion(center=mp.Vector3(x=+r),size=mp.Vector3(0,2*r),weight=-1),
+                        mp.FluxRegion(center=mp.Vector3(y=+r),size=mp.Vector3(2*r,0),weight=-1),
+                        mp.FluxRegion(center=mp.Vector3(y=-r),size=mp.Vector3(2*r,0),weight=+1))
+
+sim.run(until_after_sources=100)
+
+plt.figure()
+sim.plot2D()
+plt.savefig('power_density_cell.png',dpi=150,bbox_inches='tight')
+
+(x,y,z,w) = sim.get_array_metadata(dft_cell=dft_fields)
+Dz = sim.get_dft_array(dft_fields,mp.Dz,0)
+Ez = sim.get_dft_array(dft_fields,mp.Ez,0)
+absorbed_power_density = 2*np.pi*fcen * np.imag(np.conj(Ez)*Dz)
+
+plt.figure()
+plt.pcolormesh(x,y,np.transpose(absorbed_power_density),cmap='inferno_r',shading='gouraud',vmin=0,vmax=np.amax(absorbed_power_density))
+plt.xlabel("x")
+plt.ylabel("y")
+plt.gca().set_aspect('equal')
+plt.title("absorbed power density")
+plt.colorbar()
+plt.savefig('power_density_map.png',dpi=150,bbox_inches='tight')
+
+absorbed_power = np.sum(w*absorbed_power_density)
+absorbed_flux = mp.get_fluxes(flux_box)[0]
+err = abs(absorbed_power-absorbed_flux)/absorbed_flux
+print("flux:, {} (dft_fields), {} (dft_flux), {} (error)".format(absorbed_power,absorbed_flux,err))
+```
+
+A schematic of the simulation layout generated using [`plot2D`](Python_User_Interface.md#data-visualization) shows the line source (red), PMLs (green hatch region), `dft_flux` box (solid blue contour line), and `dft_fields` surface (blue hatch region).
+
+<center>
+![](../images/power_density_cell.png)
+</center>
+
+The spatial map of the absorbed power density shows that, as expected, most of the absorption occurs on the surface of the cylinder facing the incident planewave. Note that the labeled $x$ and $y$ coordinate axes of the 2d region are obtained using [`get_array_metadata`](Python_User_Interface.md#array-metadata) which also provides the interpolation weights (`w`) used to compute the integral of the absorbed power density.
+
+<center>
+![](../images/power_density_map.png)
+</center>
+
+Finally, the two values for the total absorbed power which are displayed at the end of the run are nearly equivalent. The relative error between the two methods is ~0.015%.
+
+```
+flux:, 0.13616252647147556 (dft_fields), 0.13618334277271416 (dft_flux), 0.00015285497341138284 (error)
+```
+
 Modes of a Ring Resonator
 -------------------------
 
