@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import meep as mp
 from meep.materials import SiO2
 
-resolution = 50  # pixels/um
+resolution = 100  # pixels/um
 
 dpml = 1.0
 pml_layers = [mp.PML(thickness=dpml)]
@@ -17,7 +17,8 @@ dair = 2.0  # air padding thickness
 s = 2*(dpml+dair+r)
 cell_size = mp.Vector3(s,s)
 
-fcen = 1.0  # wavelength of 1.0 um
+wvl = 1.0
+fcen = 1/wvl
 
 # is_integrated=True necessary for any planewave source extending into PML
 sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.1*fcen,is_integrated=True),
@@ -51,25 +52,25 @@ flux_box = sim.add_flux(fcen, 0, 1,
 
 sim.run(until_after_sources=100)
 
-plt.figure()
-sim.plot2D()
-plt.savefig('power_density_cell.png',dpi=150,bbox_inches='tight')
-
 (x,y,z,w) = sim.get_array_metadata(dft_cell=dft_fields)
 Dz = sim.get_dft_array(dft_fields,mp.Dz,0)
 Ez = sim.get_dft_array(dft_fields,mp.Ez,0)
 absorbed_power_density = 2*np.pi*fcen * np.imag(np.conj(Ez)*Dz)
 
-plt.figure()
-plt.pcolormesh(x,y,np.transpose(absorbed_power_density),cmap='inferno_r',shading='gouraud',vmin=0,vmax=np.amax(absorbed_power_density))
-plt.xlabel("x")
-plt.ylabel("y")
-plt.gca().set_aspect('equal')
-plt.title("absorbed power density")
-plt.colorbar()
-plt.savefig('power_density_map.png',dpi=150,bbox_inches='tight')
-
 absorbed_power = np.sum(w*absorbed_power_density)
 absorbed_flux = mp.get_fluxes(flux_box)[0]
 err = abs(absorbed_power-absorbed_flux)/absorbed_flux
 print("flux:, {} (dft_fields), {} (dft_flux), {} (error)".format(absorbed_power,absorbed_flux,err))
+
+plt.figure()
+sim.plot2D()
+plt.savefig('power_density_cell.png',dpi=150,bbox_inches='tight')
+
+plt.figure()
+plt.pcolormesh(x,y,np.transpose(absorbed_power_density),cmap='inferno_r',shading='gouraud',vmin=0,vmax=np.amax(absorbed_power_density))
+plt.xlabel("x (μm)")
+plt.ylabel("y (μm)")
+plt.gca().set_aspect('equal')
+plt.title("absorbed power density" + "\n" +"SiO2 Labs(λ={} μm) = {:.2f} μm".format(wvl,wvl/np.imag(np.sqrt(SiO2.epsilon(fcen)[0][0]))))
+plt.colorbar()
+plt.savefig('power_density_map.png',dpi=150,bbox_inches='tight')
