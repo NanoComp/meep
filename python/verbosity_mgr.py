@@ -33,11 +33,14 @@ class Verbosity(object):
 
     def set(self, level):
         """
-        Validates the range, and sets the global verbosity level.
+        Validates the range, and sets the global verbosity level. Returns the
+        former value.
         """
         if level < 0 or level > 3:
             raise ValueError('Only verbosity levels 0-3 are supported')
+        old = self.cvar.verbosity
         self.cvar.verbosity = level
+        return old
 
     def __call__(self, level):
         """
@@ -49,7 +52,7 @@ class Verbosity(object):
         verbosity(0)
         ```
         """
-        self.set(level)
+        return self.set(level)
 
     def __int__(self):
         """
