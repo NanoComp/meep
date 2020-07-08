@@ -2,7 +2,7 @@
 from __future__ import absolute_import, print_function
 
 
-class Verbosity(int):
+class Verbosity(object):
     """
     A class to help make accessing and setting the global verbosity level a bit
     more pythonic.
@@ -15,7 +15,7 @@ class Verbosity(int):
     """
     def __init__(self, cvar=None):
         """
-        Initialize the Verbosity manager. `cvar` shoudl be some object that has
+        Initialize the Verbosity manager. `cvar` should be some object that has
         a `verbosity` attribute, such as meep.cvar or mpb.cvar.
         """
         super(Verbosity, self).__init__()
