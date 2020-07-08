@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function
 
-from ._mpb import cvar
 
 class Verbosity(int):
     """
@@ -14,22 +13,33 @@ class Verbosity(int):
         2: a lot (default)
         3: debugging
     """
+    def __init__(self, cvar=None):
+        """
+        Initialize the Verbosity manager. `cvar` shoudl be some object that has
+        a `verbosity` attribute, such as meep.cvar or mpb.cvar.
+        """
+        super(Verbosity, self).__init__()
+        self.cvar = cvar
+        if cvar is None:
+            class _dummy():
+                verbosity = 2
+            self.cvar = _dummy()
 
     def get(self):
         """
         Returns the current verbosity level.
         """
-        return cvar.verbosity
+        return self.cvar.verbosity
 
-    def set(self, value):
+    def set(self, level):
         """
         Validates the range, and sets the global verbosity level.
         """
-        if value < 0 or value > 3:
+        if level < 0 or level > 3:
             raise ValueError('Only verbosity levels 0-3 are supported')
-        cvar.verbosity = value
+        self.cvar.verbosity = level
 
-    def __call__(self, value):
+    def __call__(self, level):
         """
         Convenience for setting the verbosity level. This lets you set the level
         by calling the instance like a function. For example, if `verbosity` is
@@ -39,14 +49,13 @@ class Verbosity(int):
         verbosity(0)
         ```
         """
-        self.set(value)
+        self.set(level)
 
     def __int__(self):
         """
         A convenience for getting the verbosity level anywhere an integer is
         expected.
         """
-        #print('__int__')
         return self.get()
 
     # Some comparrison operators
