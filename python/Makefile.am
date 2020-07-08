@@ -116,10 +116,10 @@ pkgpyexec_LTLIBRARIES = _meep.la
 ######################################################################
 if WITH_MPB
   BUILT_SOURCES += mpb-python.cxx mpb.py
-  EXTRA_DIST += solver.py mpb_data.py
+  EXTRA_DIST += solver.py mpb_data.py verbosity.py
   MPB_LA = _mpb.la
   pympbdir = $(pkgpythondir)/mpb
-  pympb_PYTHON = mpb.py solver.py mpb_data.py
+  pympb_PYTHON = mpb.py solver.py mpb_data.py verbosity.py
   pympb_LTLIBRARIES = _mpb.la
   _mpb_la_SOURCES = mpb-python.cxx
   _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
@@ -224,7 +224,7 @@ if WITH_MPB
 	mkdir -p meep/mpb
 	cp .libs/_mpb.so meep/mpb
 	cp $(MPB_PY_PATH) meep/mpb/__init__.py
-	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py meep/mpb
+	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py $(srcdir)/verbosity.py meep/mpb
 endif
 
 all-local: meep

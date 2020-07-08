@@ -391,17 +391,6 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
         MPBData,
     )
 
-    def verbosity(level=2):
-        """
-        Given a number `level`, specify the degree of MPB's output:
-            0: minimal output
-            1: a little
-            2: a lot (default)
-            3: debugging
-
-        Returns the prior setting.
-        """
-        old = _mpb.cvar.verbosity
-        _mpb.cvar.verbosity = level
-        return old
+    from .verbosity import Verbosity
+    verbosity = Verbosity()
 %}
