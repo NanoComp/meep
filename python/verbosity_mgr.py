@@ -71,6 +71,7 @@ class Verbosity(object):
 
 
 
+
 def main():
     # simple test code
     verbosity = Verbosity()

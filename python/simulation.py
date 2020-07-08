@@ -20,7 +20,7 @@ import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
 import meep.visualization as vis
-
+from meep.verbosity_mgr import Verbosity
 
 try:
     basestring
@@ -33,6 +33,8 @@ try:
     do_progress = True
 except ImportError:
     do_progress = False
+
+verbosity = Verbosity(mp.cvar)
 
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
@@ -1556,7 +1558,7 @@ class Simulation(object):
         return stats
 
     def _init_structure(self, k=False):
-        if mp.cvar.verbosity > 0:
+        if verbosity > 0:
             print('-' * 11)
             print('Initializing structure...')
 
@@ -1579,7 +1581,7 @@ class Simulation(object):
         if self.collect_stats and isinstance(self.default_material, mp.Medium):
             self.fragment_stats = self._compute_fragment_stats(gv)
 
-        if self._output_stats and isinstance(self.default_material, mp.Medium) and mp.cvar.verbosity > 0:
+        if self._output_stats and isinstance(self.default_material, mp.Medium) and verbosity > 0:
             stats = self._compute_fragment_stats(gv)
             print("STATS: aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
             print("STATS: anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
@@ -1851,7 +1853,7 @@ class Simulation(object):
 
         if use_real(self):
             self.fields.use_real_fields()
-        elif mp.cvar.verbosity > 0:
+        elif verbosity > 0:
             print("Meep: using complex fields.")
 
         if self.k_point:
@@ -2039,7 +2041,7 @@ class Simulation(object):
         closure = {'trashed': False}
 
         def hook():
-            if mp.cvar.verbosity > 0:
+            if verbosity > 0:
                 print("Meep: using output directory '{}'".format(dname))
             self.fields.set_output_directory(dname)
             if not closure['trashed']:
@@ -2100,7 +2102,7 @@ class Simulation(object):
             self.progress.value = t0 + stop_time
             self.progress.description = "100% done "
 
-        if mp.cvar.verbosity > 0:
+        if verbosity > 0:
             print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
 
@@ -4051,7 +4053,7 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
             closure['cur_max'] = 0
             closure['t0'] = sim.round_time()
             closure['max_abs'] = max(closure['max_abs'], old_cur)
-            if closure['max_abs'] != 0 and mp.cvar.verbosity > 0:
+            if closure['max_abs'] != 0 and verbosity > 0:
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
@@ -4169,7 +4171,7 @@ def display_progress(t0, t, dt):
                 sim.progress.value = val1
                 sim.progress.description = "{}% done ".format(int(val2))
 
-            if mp.cvar.verbosity > 0:
+            if verbosity > 0:
                 print(msg_fmt.format(val1, t, val2, val3, val4))
             closure['tlast'] = t1
 
@@ -4885,17 +4887,8 @@ def quiet(quietval=True):
     output can be enabled again by passing `False`. This sets a global variable, so the
     value will persist across runs within the same script.
     """
-    mp.cvar.verbosity = int(not quietval)
+    verbosity(int(not quietval))
 
-def verbosity(level=1):
-    """
-    Given a number `level`, specify the degree of Meep's output: `0` is quiet mode, `1` (the
-    default) is ordinary output, `2` is extra debugging output, and `3` is all debugging
-    output. Returns the prior setting.
-    """
-    old = mp.cvar.verbosity
-    mp.cvar.verbosity = level
-    return old
 
 def get_num_groups():
     # Lazy import
