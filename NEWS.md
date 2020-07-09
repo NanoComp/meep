@@ -1,8 +1,13 @@
 # Meep Release Notes
 
-## Meep 1.15.0-alpha
+## Meep 1.15.0
 
 * Minimum-lengthscale filters for adjoint optimization (#1205).
+
+* Python API documentation in docstrings (#1240).
+
+* `MaterialGrid` material type in Python to interpolate an array of material
+  values as the "material" of an object, especially for topology optimization (#1242).
 
 * `merge_subgroup_data` Python function for coordinating parallel
   computations (#1192).
