@@ -68,7 +68,7 @@ If a Lorentzian resonance at ω$_n$ is specified at too high a frequency relativ
 
 Roughly speaking, the $\mathbf{P}_n$ equation becomes unstable for $\omega_n \Delta t / 2 > 1$. Note that, in Meep frequency units, you specify $f_n = \omega_n/2\pi$, so this quantity should be less than $1/\pi \Delta t$.
 
-Finally, overlapping dispersive materials with perfectly-matched layer (PML) absorbing boundaries may produce instabilities. A workaround is to replace the PML with an absorber.
+Finally, overlapping dispersive materials with perfectly matched layer (PML) absorbing boundaries may produce instabilities. A workaround is to replace the PML with an absorber.
 
 Loss and Gain
 -------------
