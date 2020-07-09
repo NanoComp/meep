@@ -41,7 +41,11 @@ sim = mp.Simulation(resolution=resolution,
                     symmetries=symmetries,
                     geometry=geometry)
 
-dft_fields = sim.add_dft_fields([mp.Dz,mp.Ez], fcen, 0, 1, center=mp.Vector3(), size=mp.Vector3(2*r,2*r))
+dft_fields = sim.add_dft_fields([mp.Dz,mp.Ez],
+                                fcen,0,1,
+                                center=mp.Vector3(),
+                                size=mp.Vector3(2*r,2*r),
+                                yee_grid=True)
 
 # closed box surrounding cylinder for computing total incoming flux
 flux_box = sim.add_flux(fcen, 0, 1,
@@ -52,12 +56,12 @@ flux_box = sim.add_flux(fcen, 0, 1,
 
 sim.run(until_after_sources=100)
 
-(x,y,z,w) = sim.get_array_metadata(dft_cell=dft_fields)
 Dz = sim.get_dft_array(dft_fields,mp.Dz,0)
 Ez = sim.get_dft_array(dft_fields,mp.Ez,0)
 absorbed_power_density = 2*np.pi*fcen * np.imag(np.conj(Ez)*Dz)
 
-absorbed_power = np.sum(w*absorbed_power_density)
+dxy = 1/resolution**2
+absorbed_power = np.sum(absorbed_power_density)*dxy
 absorbed_flux = mp.get_fluxes(flux_box)[0]
 err = abs(absorbed_power-absorbed_flux)/absorbed_flux
 print("flux:, {} (dft_fields), {} (dft_flux), {} (error)".format(absorbed_power,absorbed_flux,err))
@@ -67,9 +71,19 @@ sim.plot2D()
 plt.savefig('power_density_cell.png',dpi=150,bbox_inches='tight')
 
 plt.figure()
-plt.pcolormesh(x,y,np.transpose(absorbed_power_density),cmap='inferno_r',shading='gouraud',vmin=0,vmax=np.amax(absorbed_power_density))
+x = np.linspace(-r,r,Dz.shape[0])
+y = np.linspace(-r,r,Dz.shape[1])
+plt.pcolormesh(x,
+               y,
+               np.transpose(absorbed_power_density),
+               cmap='inferno_r',
+               shading='gouraud',
+               vmin=0,
+               vmax=np.amax(absorbed_power_density))
 plt.xlabel("x (μm)")
+plt.xticks(np.linspace(-r,r,5))
 plt.ylabel("y (μm)")
+plt.yticks(np.linspace(-r,r,5))
 plt.gca().set_aspect('equal')
 plt.title("absorbed power density" + "\n" +"SiO2 Labs(λ={} μm) = {:.2f} μm".format(wvl,wvl/np.imag(np.sqrt(SiO2.epsilon(fcen)[0][0]))))
 plt.colorbar()
