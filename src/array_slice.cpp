@@ -323,7 +323,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
         fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
       }
       else if (cS[i] == Dielectric) {
-        complex<double> tr(0.0,0.0);
+        complex<double> tr(0.0, 0.0);
         for (int k = 0; k < data->ninveps; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, frequency) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], frequency) +
@@ -335,7 +335,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
         fields[i] = (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
-        complex<double> tr(0.0,0.0);
+        complex<double> tr(0.0, 0.0);
         for (int k = 0; k < data->ninvmu; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, frequency) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], frequency) +
@@ -568,14 +568,17 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 /* entry points to get_array_slice                             */
 /***************************************************************/
 double *fields::get_array_slice(const volume &where, std::vector<component> components,
-                                field_rfunction rfun, void *fun_data, double *slice, double frequency) {
-  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice, frequency);
+                                field_rfunction rfun, void *fun_data, double *slice,
+                                double frequency) {
+  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice,
+                                      frequency);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
                                          field_function fun, void *fun_data, cdouble *slice,
                                          double frequency) {
-  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice, frequency);
+  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
+                                       frequency);
 }
 
 double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency) {

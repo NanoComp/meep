@@ -32,7 +32,7 @@ const int EHcomp[10] = {0, 1, 0, 1, 2, 3, 4, 3, 4, 5};
 
 int check_cyl(double sr, double sz, double a) {
   const double dpml = 1.0;
-  grid_volume gv = volcyl(sr+dpml, dpml+sz+dpml, a);
+  grid_volume gv = volcyl(sr + dpml, dpml + sz + dpml, a);
   gv.center_origin();
   component c0 = Ep;
   master_printf("TESTING CYLINDRICAL AT RESOLUTION %g FOR %s SOURCE...\n", a, component_name(c0));
@@ -42,7 +42,7 @@ int check_cyl(double sr, double sz, double a) {
   fields f(&s, m);
   double w = 0.5;
   continuous_src_time src(w);
-  vec x0 = veccyl(0.5*sr,0);
+  vec x0 = veccyl(0.5 * sr, 0);
   f.add_point_source(c0, src, x0);
   f.solve_cw(1e-6);
 
@@ -54,10 +54,10 @@ int check_cyl(double sr, double sz, double a) {
   complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
   for (int i = 0; i < N; ++i) {
     double rr = dr * i;
-    vec x = veccyl(rr, 0.5*sz);
+    vec x = veccyl(rr, 0.5 * sz);
     F[i] = f.get_field(c, x) * phase;
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
-    F0[i] = EH[EHcomp[c]] * 2.0*pi*x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
+    F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
     double d = abs(F0[i] - F[i]);
     double f0 = abs(F0[i]);
     diff += d * d;
@@ -70,14 +70,15 @@ int check_cyl(double sr, double sz, double a) {
 
   if (relerr > 0.05 * 30 / a) {
     for (int i = 0; i < N; ++i)
-      master_printf("%g, %g,%g, %g,%g\n", dr * i, real(F[i]), imag(F[i]),
-                    real(F0[i]), imag(F0[i]));
+      master_printf("%g, %g,%g, %g,%g\n", dr * i, real(F[i]), imag(F[i]), real(F0[i]), imag(F0[i]));
     return 0;
   }
 
-  volume_list vl = volume_list(volume(veccyl(0, 0.5*sz), veccyl(sr, 0.5*sz)), Sz, 1.0,
-                               new volume_list(volume(veccyl(sr, 0.5*sz), veccyl(sr, -0.5*sz)), Sr, 1.0,
-                                               new volume_list(volume(veccyl(0, -0.5*sz), veccyl(sr, -0.5*sz)), Sz, -1.0)));
+  volume_list vl = volume_list(
+      volume(veccyl(0, 0.5 * sz), veccyl(sr, 0.5 * sz)), Sz, 1.0,
+      new volume_list(
+          volume(veccyl(sr, 0.5 * sz), veccyl(sr, -0.5 * sz)), Sr, 1.0,
+          new volume_list(volume(veccyl(0, -0.5 * sz), veccyl(sr, -0.5 * sz)), Sz, -1.0)));
 
   dft_near2far n2f = f.add_dft_near2far(&vl, w, w, 1);
   f.update_dfts();
@@ -87,12 +88,12 @@ int check_cyl(double sr, double sz, double a) {
   diff = 0.0, dot0 = 0.0;
   for (int i = 0; i < N; ++i) {
     double rr = dr * i;
-    vec x = veccyl(rr, 10.0/w);
+    vec x = veccyl(rr, 10.0 / w);
     n2f.farfield_lowlevel(EH_, x);
     sum_to_all(EH_, EH, 6);
     F[i] = EH[EHcomp[c]] * phase;
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
-    F0[i] = EH[EHcomp[c]] * 2.0*pi*x0.r();
+    F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r();
     double d = abs(F0[i] - F[i]);
     double f0 = abs(F0[i]);
     diff += d * d;
@@ -105,15 +106,15 @@ int check_cyl(double sr, double sz, double a) {
 
   if (relerr > 0.05 * 30 / a) {
     for (int i = 0; i < N; ++i)
-      master_printf("%g, %g,%g, %g,%g\n", dr * i, real(F[i]), imag(F[i]),
-                    real(F0[i]), imag(F0[i]));
+      master_printf("%g, %g,%g, %g,%g\n", dr * i, real(F[i]), imag(F[i]), real(F0[i]), imag(F0[i]));
     return 0;
   }
 
   return 1;
 }
 
-int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c1 = NO_COMPONENT, bool evenz = true) {
+int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c1 = NO_COMPONENT,
+                bool evenz = true) {
   const double dpml = 1;
   if (dim != D2 && dim != D3) abort("2d or 3d required");
   grid_volume gv = dim == D2 ? vol2d(xmax + 2 * dpml, xmax + 2 * dpml, a)
@@ -127,8 +128,8 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
   if (c1 != NO_COMPONENT) master_printf("   (and %s SOURCE)\n", component_name(c1));
 
   // HACK: to speed up tests, we assume c0 and c1 have these symmetries
-  symmetry S = dim == D3 ? (evenz ? mirror(Z, gv) - mirror(X, gv) : mirror(X, gv) - mirror(Z, gv)) :
-                           (evenz ? -mirror(X, gv) : mirror(X, gv)); // 2d
+  symmetry S = dim == D3 ? (evenz ? mirror(Z, gv) - mirror(X, gv) : mirror(X, gv) - mirror(Z, gv))
+                         : (evenz ? -mirror(X, gv) : mirror(X, gv)); // 2d
 
   structure s(gv, two, pml(dpml), S);
   fields f(&s);

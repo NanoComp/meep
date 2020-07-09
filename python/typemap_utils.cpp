@@ -431,48 +431,60 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 }
 
 static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
-  //po must be a python MaterialGrid object
+  // po must be a python MaterialGrid object
 
   // specify the type of material grid
   long gt_enum = PyInt_AsLong(PyObject_GetAttrString(po, "grid_type"));
   switch (gt_enum) {
-    case 0: md->material_grid_kinds=material_data::U_MIN; break;
-    case 1: md->material_grid_kinds=material_data::U_PROD; break;
-    case 2: md->material_grid_kinds=material_data::U_SUM; break;
-    case 3: md->material_grid_kinds=material_data::U_DEFAULT; break;
-    default: meep::abort("Invalid material grid enumeration code: %d.\n",gt_enum);
+    case 0: md->material_grid_kinds = material_data::U_MIN; break;
+    case 1: md->material_grid_kinds = material_data::U_PROD; break;
+    case 2: md->material_grid_kinds = material_data::U_SUM; break;
+    case 3: md->material_grid_kinds = material_data::U_DEFAULT; break;
+    default: meep::abort("Invalid material grid enumeration code: %d.\n", gt_enum);
   }
-  
+
   // initialize grid size
-  if (!get_attr_v3(po, &md->grid_size, "grid_size")) { meep::abort("MaterialGrid grid_size failed to init.");}
+  if (!get_attr_v3(po, &md->grid_size, "grid_size")) {
+    meep::abort("MaterialGrid grid_size failed to init.");
+  }
 
   // initialize user specified materials
   PyObject *po_medium1 = PyObject_GetAttrString(po, "medium1");
-  if (!pymedium_to_medium(po_medium1, &md->medium_1)) { meep::abort("MaterialGrid medium1 failed to init."); }
+  if (!pymedium_to_medium(po_medium1, &md->medium_1)) {
+    meep::abort("MaterialGrid medium1 failed to init.");
+  }
   PyObject *po_medium2 = PyObject_GetAttrString(po, "medium2");
-  if (!pymedium_to_medium(po_medium2, &md->medium_2)) { meep::abort("MaterialGrid medium2 failed to init."); }
+  if (!pymedium_to_medium(po_medium2, &md->medium_2)) {
+    meep::abort("MaterialGrid medium2 failed to init.");
+  }
 
   // Initialize design parameters
   PyObject *po_dp = PyObject_GetAttrString(po, "design_parameters");
   PyArrayObject *pao = (PyArrayObject *)po_dp;
-  if (!PyArray_Check(pao)) { meep::abort("MaterialGrid design_parameters failed to init.");}
-  if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array design_parameters must be C-style contiguous."); }
+  if (!PyArray_Check(pao)) { meep::abort("MaterialGrid design_parameters failed to init."); }
+  if (!PyArray_ISCARRAY(pao)) {
+    meep::abort("Numpy array design_parameters must be C-style contiguous.");
+  }
   md->design_parameters = new realnum[PyArray_SIZE(pao)];
   memcpy(md->design_parameters, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
-  
+
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");
   PyObject *py_e_sus_m2 = PyObject_GetAttrString(po_medium2, "E_susceptibilities");
-  if (!py_e_sus_m1 || !py_e_sus_m2) { return 0;}
-  
-  PyObject* py_sus = PyList_New(0);
-  for (int i=0; i<PyList_Size(py_e_sus_m1);i++) {
-    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m1, i)) != 0) meep::abort("unable to merge e sus lists.\n");}
-  for (int i=0; i<PyList_Size(py_e_sus_m2);i++) {
-    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m2, i)) != 0) meep::abort("unable to merge e sus lists.\n");}
-  
-  if (!py_list_to_susceptibility_list(py_sus, &md->medium.E_susceptibilities)) {return 0;}
-  
+  if (!py_e_sus_m1 || !py_e_sus_m2) { return 0; }
+
+  PyObject *py_sus = PyList_New(0);
+  for (int i = 0; i < PyList_Size(py_e_sus_m1); i++) {
+    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m1, i)) != 0)
+      meep::abort("unable to merge e sus lists.\n");
+  }
+  for (int i = 0; i < PyList_Size(py_e_sus_m2); i++) {
+    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m2, i)) != 0)
+      meep::abort("unable to merge e sus lists.\n");
+  }
+
+  if (!py_list_to_susceptibility_list(py_sus, &md->medium.E_susceptibilities)) { return 0; }
+
   return 1;
 }
 
@@ -848,7 +860,8 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
     vertices[i] = v3;
   }
 
-#if defined(LIBCTL_MAJOR_VERSION) && (LIBCTL_MAJOR_VERSION > 4 || (LIBCTL_MAJOR_VERSION == 4 && LIBCTL_MINOR_VERSION >= 5))
+#if defined(LIBCTL_MAJOR_VERSION) &&                                                               \
+    (LIBCTL_MAJOR_VERSION > 4 || (LIBCTL_MAJOR_VERSION == 4 && LIBCTL_MINOR_VERSION >= 5))
   *p = make_slanted_prism(material, vertices, num_vertices, height, axis, sidewall_angle);
 #else
   if (sidewall_angle != 0) { meep::abort("slanted prisms require libctl 4.5 or later\n"); }

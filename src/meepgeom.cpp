@@ -71,13 +71,12 @@ bool material_grid_equal(const material_data *m1, const material_data *m2) {
   n1 = m1->grid_size.x * m1->grid_size.y * m1->grid_size.z;
   n2 = m2->grid_size.x * m2->grid_size.y * m2->grid_size.z;
   if (n1 != n2) return false;
-  for (int i = 0; i < n1; i++) 
-    if (m1->epsilon_data[i] != m2->epsilon_data[i]) return false; 
-  
+  for (int i = 0; i < n1; i++)
+    if (m1->epsilon_data[i] != m2->epsilon_data[i]) return false;
+
   return (medium_struct_equal(&(m1->medium), &(m2->medium)) &&
-  medium_struct_equal(&(m1->medium_1), &(m2->medium_1)) &&
-  medium_struct_equal(&(m1->medium_2), &(m2->medium_2))
-  );
+          medium_struct_equal(&(m1->medium_1), &(m2->medium_1)) &&
+          medium_struct_equal(&(m1->medium_2), &(m2->medium_2)));
 }
 
 // garbage collection for susceptibility_list structures.
@@ -94,7 +93,7 @@ static void susceptibility_list_gc(susceptibility_list *sl) {
 
 // garbage collection for material structures: called to deallocate memory
 // allocated for susceptibilities in user-defined materials.
-//TODO
+// TODO
 void material_gc(material_type m) {
   if (!m || m->which_subclass != material_data::MATERIAL_USER) return;
   susceptibility_list_gc(&(m->medium.E_susceptibilities));
@@ -263,10 +262,15 @@ geom_box gv2box(const meep::volume &v) {
   return box;
 }
 
-bool is_material_grid(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_GRID); }
+bool is_material_grid(material_type mt) {
+  return (mt->which_subclass == material_data::MATERIAL_GRID);
+}
 bool is_material_grid(void *md) { return is_material_grid((material_type)md); }
 
-bool is_variable(material_type mt) { return (mt->which_subclass == material_data::MATERIAL_USER) || (mt->which_subclass == material_data::MATERIAL_GRID); }
+bool is_variable(material_type mt) {
+  return (mt->which_subclass == material_data::MATERIAL_USER) ||
+         (mt->which_subclass == material_data::MATERIAL_GRID);
+}
 bool is_variable(void *md) { return is_variable((material_type)md); }
 
 bool is_file(material_type md) { return (md->which_subclass == material_data::MATERIAL_FILE); }
@@ -306,66 +310,78 @@ bool is_metal(meep::field_type ft, const material_type *material) {
 meep::realnum material_grid_val(vector3 p, material_data *md) {
   // given the relative location, p, interpolate the material grid point.
 
-  if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n");}
+  if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
   meep::realnum u;
-  u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,md->grid_size.y, md->grid_size.z, 1);
+  u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,
+                               md->grid_size.y, md->grid_size.z, 1);
   return u;
 }
- 
-meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md)
-{
+
+meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   meep::realnum uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
   int matgrid_val_count = 0;
-  
+
   // iterate through object tree at current point
   if (tp) {
     do {
-        u = material_grid_val(to_geom_box_coords(p, &tp->objects[oi]),(material_data *)tp->objects[oi].o->material);
-        if (matgrid_val_count == 0) udefault = u;
-        if (u < umin) umin = u;
-        uprod *= u;
-        usum += u; ++matgrid_val_count;
-        tp = geom_tree_search_next(p, tp, &oi);
-      } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
+      u = material_grid_val(to_geom_box_coords(p, &tp->objects[oi]),
+                            (material_data *)tp->objects[oi].o->material);
+      if (matgrid_val_count == 0) udefault = u;
+      if (u < umin) umin = u;
+      uprod *= u;
+      usum += u;
+      ++matgrid_val_count;
+      tp = geom_tree_search_next(p, tp, &oi);
+    } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
   // perhaps there is not object tree and the default material is a material grid
   if (!tp && is_material_grid(&default_material)) {
-    p.x = geometry_lattice.size.x == 0 ? 0 : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
-    p.y = geometry_lattice.size.y == 0 ? 0 : 0.5 + (p.y - geometry_center.y) / geometry_lattice.size.y;
-    p.z = geometry_lattice.size.z == 0 ? 0 : 0.5 + (p.z - geometry_center.z) / geometry_lattice.size.z;
-    u = material_grid_val(p,(material_data *)default_material);
+    p.x = geometry_lattice.size.x == 0 ? 0
+                                       : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
+    p.y = geometry_lattice.size.y == 0 ? 0
+                                       : 0.5 + (p.y - geometry_center.y) / geometry_lattice.size.y;
+    p.z = geometry_lattice.size.z == 0 ? 0
+                                       : 0.5 + (p.z - geometry_center.z) / geometry_lattice.size.z;
+    u = material_grid_val(p, (material_data *)default_material);
     if (matgrid_val_count == 0) udefault = u;
     if (u < umin) umin = u;
     uprod *= u;
-    usum += u; ++matgrid_val_count;
+    usum += u;
+    ++matgrid_val_count;
   }
 
-  return (md->material_grid_kinds == material_data::U_MIN ? umin
-      : (md->material_grid_kinds == material_data::U_PROD ? uprod
-       : (md->material_grid_kinds == material_data::U_SUM ? usum / matgrid_val_count
-       : udefault)));
+  return (md->material_grid_kinds == material_data::U_MIN
+              ? umin
+              : (md->material_grid_kinds == material_data::U_PROD
+                     ? uprod
+                     : (md->material_grid_kinds == material_data::U_SUM ? usum / matgrid_val_count
+                                                                        : udefault)));
 }
-static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2, cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out, double u){
+static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2,
+                            cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out,
+                            double u) {
   /* convenience routine to interpolate material tensors with real and imaginary components */
-  diag_out->x = diag_in_1.x + u*(diag_in_2.x - diag_in_1.x);
-  diag_out->y = diag_in_1.y + u*(diag_in_2.y - diag_in_1.y);
-  diag_out->z = diag_in_1.z + u*(diag_in_2.z - diag_in_1.z);
-  offdiag_out->x.re = offdiag_in_1.x.re + u*(offdiag_in_2.x.re - offdiag_in_1.x.re);
-  offdiag_out->x.im = offdiag_in_1.x.im + u*(offdiag_in_2.x.im - offdiag_in_1.x.im);
-  offdiag_out->y.re = offdiag_in_1.y.re + u*(offdiag_in_2.y.re - offdiag_in_1.y.re);
-  offdiag_out->y.im = offdiag_in_1.y.im + u*(offdiag_in_2.y.im - offdiag_in_1.y.im);
-  offdiag_out->z.re = offdiag_in_1.z.re + u*(offdiag_in_2.z.re - offdiag_in_1.z.re);
-  offdiag_out->z.im = offdiag_in_1.z.im + u*(offdiag_in_2.z.im - offdiag_in_1.z.im);
+  diag_out->x = diag_in_1.x + u * (diag_in_2.x - diag_in_1.x);
+  diag_out->y = diag_in_1.y + u * (diag_in_2.y - diag_in_1.y);
+  diag_out->z = diag_in_1.z + u * (diag_in_2.z - diag_in_1.z);
+  offdiag_out->x.re = offdiag_in_1.x.re + u * (offdiag_in_2.x.re - offdiag_in_1.x.re);
+  offdiag_out->x.im = offdiag_in_1.x.im + u * (offdiag_in_2.x.im - offdiag_in_1.x.im);
+  offdiag_out->y.re = offdiag_in_1.y.re + u * (offdiag_in_2.y.re - offdiag_in_1.y.re);
+  offdiag_out->y.im = offdiag_in_1.y.im + u * (offdiag_in_2.y.im - offdiag_in_1.y.im);
+  offdiag_out->z.re = offdiag_in_1.z.re + u * (offdiag_in_2.z.re - offdiag_in_1.z.re);
+  offdiag_out->z.im = offdiag_in_1.z.im + u * (offdiag_in_2.z.im - offdiag_in_1.z.im);
 }
 
-static void interp_tensors(vector3 diag_in_1, vector3 offdiag_in_1, vector3 diag_in_2, vector3 offdiag_in_2, vector3 *diag_out, vector3 *offdiag_out, double u){
+static void interp_tensors(vector3 diag_in_1, vector3 offdiag_in_1, vector3 diag_in_2,
+                           vector3 offdiag_in_2, vector3 *diag_out, vector3 *offdiag_out,
+                           double u) {
   /* convenience routine to interpolate material tensors with all real components */
-  diag_out->x = diag_in_1.x + u*(diag_in_2.x - diag_in_1.x);
-  diag_out->y = diag_in_1.y + u*(diag_in_2.y - diag_in_1.y);
-  diag_out->z = diag_in_1.z + u*(diag_in_2.z - diag_in_1.z);
-  offdiag_out->x = offdiag_in_1.x + u*(offdiag_in_2.x - offdiag_in_1.x);
-  offdiag_out->y = offdiag_in_1.y + u*(offdiag_in_2.y - offdiag_in_1.y);
-  offdiag_out->z = offdiag_in_1.z + u*(offdiag_in_2.z - offdiag_in_1.z);
+  diag_out->x = diag_in_1.x + u * (diag_in_2.x - diag_in_1.x);
+  diag_out->y = diag_in_1.y + u * (diag_in_2.y - diag_in_1.y);
+  diag_out->z = diag_in_1.z + u * (diag_in_2.z - diag_in_1.z);
+  offdiag_out->x = offdiag_in_1.x + u * (offdiag_in_2.x - offdiag_in_1.x);
+  offdiag_out->y = offdiag_in_1.y + u * (offdiag_in_2.y - offdiag_in_1.y);
+  offdiag_out->z = offdiag_in_1.z + u * (offdiag_in_2.z - offdiag_in_1.z);
 }
 // return material of the point p from the material grid
 void epsilon_material_grid(material_data *md, meep::realnum u) {
@@ -376,41 +392,52 @@ void epsilon_material_grid(material_data *md, meep::realnum u) {
   medium_struct *mm = &(md->medium);
   medium_struct *m1 = &(md->medium_1);
   medium_struct *m2 = &(md->medium_2);
-  
-  // Linearly interpolate dc epsilon values
-  cinterp_tensors(m1->epsilon_diag, m1->epsilon_offdiag, m2->epsilon_diag, m2->epsilon_offdiag, &mm->epsilon_diag, &mm->epsilon_offdiag, u);
 
-  //Interpolate resonant strength from d.p.
+  // Linearly interpolate dc epsilon values
+  cinterp_tensors(m1->epsilon_diag, m1->epsilon_offdiag, m2->epsilon_diag, m2->epsilon_offdiag,
+                  &mm->epsilon_diag, &mm->epsilon_offdiag, u);
+
+  // Interpolate resonant strength from d.p.
   vector3 zero_vec;
   zero_vec.x = zero_vec.y = zero_vec.z = 0;
   for (int i = 0; i < m1->E_susceptibilities.num_items; i++) {
     // iterate through medium1 sus list first
-    interp_tensors(zero_vec, zero_vec, m1->E_susceptibilities.items[i].sigma_diag, m1->E_susceptibilities.items[i].sigma_offdiag, 
-    &mm->E_susceptibilities.items[i].sigma_diag, &mm->E_susceptibilities.items[i].sigma_offdiag, (1-u));
+    interp_tensors(zero_vec, zero_vec, m1->E_susceptibilities.items[i].sigma_diag,
+                   m1->E_susceptibilities.items[i].sigma_offdiag,
+                   &mm->E_susceptibilities.items[i].sigma_diag,
+                   &mm->E_susceptibilities.items[i].sigma_offdiag, (1 - u));
   }
   for (int i = 0; i < m2->E_susceptibilities.num_items; i++) {
     // iterate through medium2 sus list next
     int j = i + m1->E_susceptibilities.num_items;
-    interp_tensors(zero_vec, zero_vec, m2->E_susceptibilities.items[i].sigma_diag, m2->E_susceptibilities.items[i].sigma_offdiag, 
-    &mm->E_susceptibilities.items[j].sigma_diag, &mm->E_susceptibilities.items[j].sigma_offdiag, u);  
+    interp_tensors(zero_vec, zero_vec, m2->E_susceptibilities.items[i].sigma_diag,
+                   m2->E_susceptibilities.items[i].sigma_offdiag,
+                   &mm->E_susceptibilities.items[j].sigma_diag,
+                   &mm->E_susceptibilities.items[j].sigma_offdiag, u);
   }
-  
+
   // Linearly interpolate electric conductivity
   vector3 zero_offdiag;
-  interp_tensors(m1->D_conductivity_diag,zero_vec,m2->D_conductivity_diag,zero_vec,&mm->D_conductivity_diag,&zero_offdiag,u);
+  interp_tensors(m1->D_conductivity_diag, zero_vec, m2->D_conductivity_diag, zero_vec,
+                 &mm->D_conductivity_diag, &zero_offdiag, u);
 
   // Add damping factor if we have dispersion.
   // This prevents instabilities when interpolating between sus. profiles.
   if ((m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items) > 0.0) {
     // calculate mean harmonic frequency
     double omega_mean = 0;
-    for (int i = 0; i < m1->E_susceptibilities.num_items; i++) { omega_mean += m1->E_susceptibilities.items[i].frequency;}
-    for (int i = 0; i < m2->E_susceptibilities.num_items; i++) { omega_mean += m2->E_susceptibilities.items[i].frequency;}
+    for (int i = 0; i < m1->E_susceptibilities.num_items; i++) {
+      omega_mean += m1->E_susceptibilities.items[i].frequency;
+    }
+    for (int i = 0; i < m2->E_susceptibilities.num_items; i++) {
+      omega_mean += m2->E_susceptibilities.items[i].frequency;
+    }
     omega_mean = omega_mean / (m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items);
 
     // assign interpolated, nondimensionalized conductivity term
     // TODO: dampen the lorentzians to improve stability
-    //mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) * omega_mean;
+    // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
+    // omega_mean;
   }
 }
 
@@ -665,14 +692,14 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
   switch (md->which_subclass) {
     // material grid: interpolate onto user specified material grid to get properties at r
     case material_data::MATERIAL_GRID:
-      meep::realnum u; 
+      meep::realnum u;
       int oi;
       geom_box_tree tp;
 
       tp = geom_tree_search(p, restricted_tree, &oi);
       u = matgrid_val(p, tp, oi, md); // interpolate onto material grid
-      epsilon_material_grid(md, u); // interpolate material from material grid point
-      
+      epsilon_material_grid(md, u);   // interpolate material from material grid point
+
       return;
     // material read from file: interpolate to get properties at r
     case material_data::MATERIAL_FILE:
@@ -1288,7 +1315,7 @@ bool geom_epsilon::has_conductivity(meep::component c) {
 }
 
 static meep::vec geometry_edge; // geometry_lattice.size / 2
-//TODO
+// TODO
 double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_type material;
   get_material_pt(material, r);
@@ -1370,13 +1397,13 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
   }
 
   if (mat->which_subclass == material_data::MATERIAL_GRID) {
-    meep::realnum u; 
+    meep::realnum u;
     int oi;
     geom_box_tree tp;
 
     tp = geom_tree_search(p, restricted_tree, &oi);
     u = matgrid_val(p, tp, oi, mat); // interpolate onto material grid
-    epsilon_material_grid(mat, u); // interpolate material from material grid point
+    epsilon_material_grid(mat, u);   // interpolate material from material grid point
     check_offdiag(&mat->medium);
   }
 
@@ -1777,8 +1804,8 @@ material_type make_material_grid() {
   return md;
 }
 
-void update_design_parameters(material_type matgrid, double* design_parameters){
-  int N = matgrid->grid_size.x*matgrid->grid_size.y*matgrid->grid_size.z;
+void update_design_parameters(material_type matgrid, double *design_parameters) {
+  int N = matgrid->grid_size.x * matgrid->grid_size.y * matgrid->grid_size.z;
   memcpy(matgrid->design_parameters, design_parameters, N * sizeof(meep::realnum));
 }
 
@@ -1872,8 +1899,8 @@ fragment_stats compute_fragment_stats(
     material_type default_mat, std::vector<dft_data> dft_data_list_,
     std::vector<meep::volume> pml_1d_vols_, std::vector<meep::volume> pml_2d_vols_,
     std::vector<meep::volume> pml_3d_vols_, std::vector<meep::volume> absorber_vols_,
-    material_type_list extra_materials_, double tol,
-    int maxeval, bool ensure_per, bool eps_averaging) {
+    material_type_list extra_materials_, double tol, int maxeval, bool ensure_per,
+    bool eps_averaging) {
 
   fragment_stats::geom = geom_;
   fragment_stats::dft_data_list = dft_data_list_;
@@ -1948,7 +1975,8 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
           susceptibility_pixels_extmat_already_added = count_susceptibility_pixels(med, pixels);
         }
         if (!nonzero_conductivity_pixels_extmat_already_added) {
-          nonzero_conductivity_pixels_extmat_already_added = count_nonzero_conductivity_pixels(med, pixels);
+          nonzero_conductivity_pixels_extmat_already_added =
+              count_nonzero_conductivity_pixels(med, pixels);
         }
         break;
       }
@@ -2152,38 +2180,40 @@ dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
 // Gradient calculation routines needed for material grid
 /***************************************************************/
 
-geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g){
+geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g) {
   geom_fix_object_list(g);
   geom_box box = gv2box(v);
   geom_box_tree geometry_tree = create_geom_box_tree0(g, box);
   return geometry_tree;
 }
 
-static void print_tensor(std::complex<double> *in)
-{
-  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n",in[0].real(),in[0].imag(),in[1].real(),in[1].imag(),in[2].real(),in[2].imag());
-  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n",in[3].real(),in[3].imag(),in[4].real(),in[4].imag(),in[5].real(),in[5].imag());
-  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n",in[6].real(),in[6].imag(),in[7].real(),in[7].imag(),in[8].real(),in[8].imag());
+static void print_tensor(std::complex<double> *in) {
+  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n", in[0].real(), in[0].imag(), in[1].real(),
+                in[1].imag(), in[2].real(), in[2].imag());
+  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n", in[3].real(), in[3].imag(), in[4].real(),
+                in[4].imag(), in[5].real(), in[5].imag());
+  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n", in[6].real(), in[6].imag(), in[7].real(),
+                in[7].imag(), in[8].real(), in[8].imag());
 }
 
 /* convenience routine to get element of material tensors */
-static std::complex<double> cvec_to_value(vector3 diag,cvector3 offdiag, int idx){
-  switch (idx){
-    case 0: return std::complex<double>(diag.x,0);
-    case 1: return std::complex<double>(offdiag.x.re,offdiag.x.im);
-    case 2: return std::complex<double>(offdiag.y.re,offdiag.y.im);
-    case 3: return std::complex<double>(offdiag.x.re,-offdiag.x.im);
-    case 4: return std::complex<double>(diag.y,0);
-    case 5: return std::complex<double>(offdiag.z.re,offdiag.z.im);
-    case 6: return std::complex<double>(offdiag.y.re,-offdiag.y.im);
-    case 7: return std::complex<double>(offdiag.z.re,-offdiag.z.im);
-    case 8: return std::complex<double>(diag.z,0);
+static std::complex<double> cvec_to_value(vector3 diag, cvector3 offdiag, int idx) {
+  switch (idx) {
+    case 0: return std::complex<double>(diag.x, 0);
+    case 1: return std::complex<double>(offdiag.x.re, offdiag.x.im);
+    case 2: return std::complex<double>(offdiag.y.re, offdiag.y.im);
+    case 3: return std::complex<double>(offdiag.x.re, -offdiag.x.im);
+    case 4: return std::complex<double>(diag.y, 0);
+    case 5: return std::complex<double>(offdiag.z.re, offdiag.z.im);
+    case 6: return std::complex<double>(offdiag.y.re, -offdiag.y.im);
+    case 7: return std::complex<double>(offdiag.z.re, -offdiag.z.im);
+    case 8: return std::complex<double>(diag.z, 0);
   }
 }
 
 /* convenience routine to get element of material tensors */
-double vec_to_value(vector3 diag,vector3 offdiag, int idx){
-  switch (idx){
+double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
+  switch (idx) {
     case 0: return diag.x;
     case 1: return offdiag.x;
     case 2: return offdiag.y;
@@ -2196,22 +2226,27 @@ double vec_to_value(vector3 diag,vector3 offdiag, int idx){
   }
 }
 
-void get_material_tensor(const medium_struct *mm, meep::realnum freq, std::complex<double> *tensor) {
-  
+void get_material_tensor(const medium_struct *mm, meep::realnum freq,
+                         std::complex<double> *tensor) {
+
   for (int i = 0; i < 9; i++) {
     std::complex<double> a = std::complex<double>(1, 0);
     std::complex<double> b = std::complex<double>(0, 0);
     // compute first part containing conductivity
-    vector3 dummy; dummy.x = dummy.y = dummy.z = 0.0;
+    vector3 dummy;
+    dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
     a += std::complex<double>(0.0, conductivityCur / freq);
 
     // compute lorentzian component
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
-    for (int nl = 0; nl < mm->E_susceptibilities.num_items; ++nl){
-      meep::lorentzian_susceptibility sus = meep::lorentzian_susceptibility(mm->E_susceptibilities.items[nl].frequency, mm->E_susceptibilities.items[nl].gamma, mm->E_susceptibilities.items[nl].drude);
-      double sigma = vec_to_value(mm->E_susceptibilities.items[nl].sigma_diag, mm->E_susceptibilities.items[nl].sigma_offdiag, i);
-      b+= sus.chi1(freq, sigma);
+    for (int nl = 0; nl < mm->E_susceptibilities.num_items; ++nl) {
+      meep::lorentzian_susceptibility sus = meep::lorentzian_susceptibility(
+          mm->E_susceptibilities.items[nl].frequency, mm->E_susceptibilities.items[nl].gamma,
+          mm->E_susceptibilities.items[nl].drude);
+      double sigma = vec_to_value(mm->E_susceptibilities.items[nl].sigma_diag,
+                                  mm->E_susceptibilities.items[nl].sigma_offdiag, i);
+      b += sus.chi1(freq, sigma);
     }
 
     // elementwise multiply
@@ -2220,41 +2255,38 @@ void get_material_tensor(const medium_struct *mm, meep::realnum freq, std::compl
 }
 
 meep::realnum get_material_gradient(
-  meep::realnum u,                // material parameter at current point
-  std::complex<double> *fields_a, // adjoint field vector at current point (3 elements)
-  std::complex<double> *fields_f, // forward field vector at current point (3 elements)
-  meep::realnum freq,             // frequency
-  material_data *md,        // material
-  meep::realnum du
-  ){
+    meep::realnum u,                // material parameter at current point
+    std::complex<double> *fields_a, // adjoint field vector at current point (3 elements)
+    std::complex<double> *fields_f, // forward field vector at current point (3 elements)
+    meep::realnum freq,             // frequency
+    material_data *md,              // material
+    meep::realnum du) {
   const medium_struct *mm = &(md->medium);
   const medium_struct *m1 = &(md->medium_1);
   const medium_struct *m2 = &(md->medium_2);
 
-  
   // trivial case
-  if ((mm->E_susceptibilities.num_items == 0) && 
-      mm->D_conductivity_diag.x == 0 && 
-      mm->D_conductivity_diag.y == 0 &&
-      mm->D_conductivity_diag.z == 0)
-  {
-   return 2 * (m2->epsilon_diag.x - m1->epsilon_diag.x) * (
-     (fields_a[0]*fields_f[0]).real() + (fields_a[1]*fields_f[1]).real() + (fields_a[2]*fields_f[2]).real());
+  if ((mm->E_susceptibilities.num_items == 0) && mm->D_conductivity_diag.x == 0 &&
+      mm->D_conductivity_diag.y == 0 && mm->D_conductivity_diag.z == 0) {
+    return 2 * (m2->epsilon_diag.x - m1->epsilon_diag.x) *
+           ((fields_a[0] * fields_f[0]).real() + (fields_a[1] * fields_f[1]).real() +
+            (fields_a[2] * fields_f[2]).real());
   }
-  
-  std::complex<double> dA_du_0[9] = {std::complex<double>(0,0)};
-  epsilon_material_grid(md, u-du);
+
+  std::complex<double> dA_du_0[9] = {std::complex<double>(0, 0)};
+  epsilon_material_grid(md, u - du);
   get_material_tensor(mm, freq, dA_du_0);
 
-  std::complex<double> dA_du_1[9] = {std::complex<double>(0,0)};
-  epsilon_material_grid(md, u+du);
+  std::complex<double> dA_du_1[9] = {std::complex<double>(0, 0)};
+  epsilon_material_grid(md, u + du);
   get_material_tensor(mm, freq, dA_du_1);
 
-  std::complex<double> dA_du[9] = {std::complex<double>(0,0)};
-  for (int i=0; i<9; i++) dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2*du);
-  
+  std::complex<double> dA_du[9] = {std::complex<double>(0, 0)};
+  for (int i = 0; i < 9; i++)
+    dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2 * du);
+
   /*Calculate the vector-matrix-vector product conj(v1) A v2.*/
-  std::complex<double> dummy[3] = {std::complex<double>(0,0)};
+  std::complex<double> dummy[3] = {std::complex<double>(0, 0)};
   // first matrix-vector product
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -2262,26 +2294,24 @@ meep::realnum get_material_gradient(
       dummy[i] += dA_du[idx] * fields_f[j];
     }
   }
-  
+
   // inner product
-  std::complex<double> result = dummy[0] * fields_a[0] + dummy[1] * fields_a[1]  + dummy[2] * fields_a[2];
-  return 2*result.real();
+  std::complex<double> result =
+      dummy[0] * fields_a[0] + dummy[1] * fields_a[1] + dummy[2] * fields_a[2];
+  return 2 * result.real();
 }
 
 /* implement mirror boundary conditions for i outside 0..n-1: */
-static int mirrorindex(int i, int n) { return i >= n ? 2*n-1-i : (i < 0 ? -1-i : i); }
+static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
 
 /* add the weights from linear_interpolate (see the linear_interpolate
    function in fields.cpp) to data ... this has to be changed if
    linear_interpolate is changed!! ...also multiply by scaleby
    etc. for different gradient types */
-   
-void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz, meep::realnum *data,
-				    int nx, int ny, int nz, int stride,
-				    double scaleby,
-				    const meep::realnum *udata,
-				    int ukind, double uval)
-{
+
+void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz,
+                             meep::realnum *data, int nx, int ny, int nz, int stride,
+                             double scaleby, const meep::realnum *udata, int ukind, double uval) {
   int x, y, z, x2, y2, z2;
   meep::realnum dx, dy, dz, u;
 
@@ -2310,49 +2340,53 @@ void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum r
   dy = fabs(dy);
   dz = fabs(dz);
 
-  /* define a macro to give us data(x,y,z) on the grid,
-  in row-major order (the order used by HDF5): */
-  #define D(x,y,z) (data[(((x)*ny + (y))*nz + (z)) * stride])
-  #define U(x,y,z) (udata[(((x)*ny + (y))*nz + (z)) * stride])
-  
-  u = (((U(x,y,z)*(1.0-dx) + U(x2,y,z)*dx) * (1.0-dy) +
-  (U(x,y2,z)*(1.0-dx) + U(x2,y2,z)*dx) * dy) * (1.0-dz) +
-  ((U(x,y,z2)*(1.0-dx) + U(x2,y,z2)*dx) * (1.0-dy) +
-  (U(x,y2,z2)*(1.0-dx) + U(x2,y2,z2)*dx) * dy) * dz);
-  
-  if (ukind == material_data::U_MIN && u != uval) return; //TODO look into this
+/* define a macro to give us data(x,y,z) on the grid,
+in row-major order (the order used by HDF5): */
+#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
+#define U(x, y, z) (udata[(((x)*ny + (y)) * nz + (z)) * stride])
+
+  u = (((U(x, y, z) * (1.0 - dx) + U(x2, y, z) * dx) * (1.0 - dy) +
+        (U(x, y2, z) * (1.0 - dx) + U(x2, y2, z) * dx) * dy) *
+           (1.0 - dz) +
+       ((U(x, y, z2) * (1.0 - dx) + U(x2, y, z2) * dx) * (1.0 - dy) +
+        (U(x, y2, z2) * (1.0 - dx) + U(x2, y2, z2) * dx) * dy) *
+           dz);
+
+  if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
   if (ukind == material_data::U_PROD) scaleby *= uval / u;
 
-  D(x,y,z) += (1.0-dx) * (1.0-dy) * (1.0-dz) * scaleby;
-  D(x2,y,z) += dx * (1.0-dy) * (1.0-dz) * scaleby;
-  D(x,y2,z) += (1.0-dx) * dy * (1.0-dz) * scaleby;
-  D(x2,y2,z) += dx * dy * (1.0-dz) * scaleby;
-  D(x,y,z2) += (1.0-dx) * (1.0-dy) * dz * scaleby;
-  D(x2,y,z2) += dx * (1.0-dy) * dz * scaleby;
-  D(x,y2,z2) += (1.0-dx) * dy * dz * scaleby;
-  D(x2,y2,z2) += dx * dy * dz * scaleby;
+  D(x, y, z) += (1.0 - dx) * (1.0 - dy) * (1.0 - dz) * scaleby;
+  D(x2, y, z) += dx * (1.0 - dy) * (1.0 - dz) * scaleby;
+  D(x, y2, z) += (1.0 - dx) * dy * (1.0 - dz) * scaleby;
+  D(x2, y2, z) += dx * dy * (1.0 - dz) * scaleby;
+  D(x, y, z2) += (1.0 - dx) * (1.0 - dy) * dz * scaleby;
+  D(x2, y, z2) += dx * (1.0 - dy) * dz * scaleby;
+  D(x, y2, z2) += (1.0 - dx) * dy * dz * scaleby;
+  D(x2, y2, z2) += dx * dy * dz * scaleby;
 
-  #undef D
-  #undef U
+#undef D
+#undef U
 }
 
-void material_grids_addgradient_point(meep::realnum *v,std::complex<double> *fields_a, std::complex<double> *fields_f,
- vector3 p, meep::realnum scalegrad, meep::realnum freq, geom_box_tree geometry_tree)
-{
+void material_grids_addgradient_point(meep::realnum *v, std::complex<double> *fields_a,
+                                      std::complex<double> *fields_f, vector3 p,
+                                      meep::realnum scalegrad, meep::realnum freq,
+                                      geom_box_tree geometry_tree) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
   meep::realnum uval;
   int kind;
   tp = geom_tree_search(p, geometry_tree, &oi);
-  
-  if (tp && ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
+
+  if (tp &&
+      ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
     mg = (material_data *)tp->objects[oi].o->material;
   else if (!tp && ((material_type)default_material)->which_subclass == material_data::MATERIAL_GRID)
     mg = (material_data *)default_material;
   else
     return; /* no material grids at this point */
-  
+
   // Calculate the number of material grids if we are averaging values
   if ((kind = mg->material_grid_kinds) == material_data::U_SUM) {
     int matgrid_val_count = 0;
@@ -2363,9 +2397,9 @@ void material_grids_addgradient_point(meep::realnum *v,std::complex<double> *fie
       tp_sum = geom_tree_search_next(p, tp_sum, &ois);
       ++matgrid_val_count;
       if (tp_sum) mg_sum = (material_data *)tp_sum->objects[ois].o->material;
-    }while(tp_sum && is_material_grid(mg_sum));
+    } while (tp_sum && is_material_grid(mg_sum));
     scalegrad /= matgrid_val_count;
-  } 
+  }
 
   // Iterate through grids and add weights as needed
   if (tp) {
@@ -2376,22 +2410,23 @@ void material_grids_addgradient_point(meep::realnum *v,std::complex<double> *fie
 
     For now, it's actually easier just to assign each "unique" material grid its
     own design region. Unlike MPB, we are only iterating over the grid points inside
-    that design region. Note that we can still have multiple copies of 
-    the same design grid (i.e. for symmetries). Thats why we are looping in this 
+    that design region. Note that we can still have multiple copies of
+    the same design grid (i.e. for symmetries). Thats why we are looping in this
     fashion. Since we aren't checking if each design grid is unique, however,
     it's up to the user to only have one unique design grid in this volume.*/
     vector3 sz = mg->grid_size;
-    meep::realnum *vcur = v, *ucur; 
+    meep::realnum *vcur = v, *ucur;
     ucur = mg->design_parameters;
     uval = matgrid_val(p, tp, oi, mg);
-	  do {
+    do {
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
-	    add_interpolate_weights(pb.x, pb.y, pb.z,
-				       vcur, sz.x, sz.y, sz.z, 1, get_material_gradient(uval, fields_a, fields_f, freq, mg,1e-6)*scalegrad,
-				       ucur, kind, uval);
-	    if (kind == material_data::U_DEFAULT) break;
+      add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
+                              get_material_gradient(uval, fields_a, fields_f, freq, mg, 1e-6) *
+                                  scalegrad,
+                              ucur, kind, uval);
+      if (kind == material_data::U_DEFAULT) break;
       tp = geom_tree_search_next(p, tp, &oi);
-	  } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
+    } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
   // no object tree -- the whole domain is the material grid
   if (!tp && is_material_grid(&default_material)) {
@@ -2400,22 +2435,25 @@ void material_grids_addgradient_point(meep::realnum *v,std::complex<double> *fie
     meep::realnum *vcur = v, *ucur;
     ucur = mg->design_parameters;
     uval = matgrid_val(p, tp, oi, mg);
-	  add_interpolate_weights(pb.x, pb.y, pb.z,
-		       vcur, sz.x, sz.y, sz.z, 1, get_material_gradient(uval, fields_a, fields_f, freq, mg)*scalegrad,
-		       ucur, kind, uval);
-	  tp = geom_tree_search_next(p, tp, &oi);
-
+    add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
+                            get_material_gradient(uval, fields_a, fields_f, freq, mg) * scalegrad,
+                            ucur, kind, uval);
+    tp = geom_tree_search_next(p, tp, &oi);
   }
 }
 
-void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a, std::complex<double> *fields_f, meep::realnum *frequencies, int *fdims, 
-meep::realnum scalegrad, const meep::volume &where, geom_box_tree geometry_tree, meep::fields *f)
-{
+void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a,
+                                std::complex<double> *fields_f, meep::realnum *frequencies,
+                                int *fdims, meep::realnum scalegrad, const meep::volume &where,
+                                geom_box_tree geometry_tree, meep::fields *f) {
   int n1, n2, n3, n4;
   meep::realnum s1, s2, s3, c1, c2, c3;
   vector3 p;
 
-  n1 = fdims[0]; n2 = fdims[1]; n3 = fdims[2];n4 = fdims[3];
+  n1 = fdims[0];
+  n2 = fdims[1];
+  n3 = fdims[2];
+  n4 = fdims[3];
 
   // calculate cell dimensions
   size_t dims[3];
@@ -2423,30 +2461,33 @@ meep::realnum scalegrad, const meep::volume &where, geom_box_tree geometry_tree,
   meep::vec min_max_loc[2]; // extremal points in subgrid
   bool collapse = false, snap = false;
   f->get_array_slice_dimensions(where, dims, dirs, collapse, snap, min_max_loc);
-  
+
   // size indices
-  vector3 max_corner = vec_to_vector3(where.get_max_corner()); 
+  vector3 max_corner = vec_to_vector3(where.get_max_corner());
   vector3 min_corner = vec_to_vector3(where.get_min_corner());
-  s1 = (vec_to_vector3(min_max_loc[1]).x-vec_to_vector3(min_max_loc[0]).x) / n1;
-  s2 = (vec_to_vector3(min_max_loc[1]).y-vec_to_vector3(min_max_loc[0]).y) / n2;
-  s3 = (vec_to_vector3(min_max_loc[1]).z-vec_to_vector3(min_max_loc[0]).z) / n3;
+  s1 = (vec_to_vector3(min_max_loc[1]).x - vec_to_vector3(min_max_loc[0]).x) / n1;
+  s2 = (vec_to_vector3(min_max_loc[1]).y - vec_to_vector3(min_max_loc[0]).y) / n2;
+  s3 = (vec_to_vector3(min_max_loc[1]).z - vec_to_vector3(min_max_loc[0]).z) / n3;
   // starting point
   c1 = n1 <= 1 ? 0 : vec_to_vector3(min_max_loc[0]).x;
   c2 = n2 <= 1 ? 0 : vec_to_vector3(min_max_loc[0]).y;
   c3 = n3 <= 1 ? 0 : vec_to_vector3(min_max_loc[0]).z;
-  
+
   // Loop over x,y,z and frequency dimensions
   // TODO speed up with MPI (if needed)
-  for (int i1 = 0; i1 < n1; ++i1){
-    for (int i2 = 0; i2 < n2; ++i2){
-      for (int i3 = 0; i3 < n3; ++i3){
-        for (int i4 = 0; i4 < n4; ++i4){
+  for (int i1 = 0; i1 < n1; ++i1) {
+    for (int i2 = 0; i2 < n2; ++i2) {
+      for (int i3 = 0; i3 < n3; ++i3) {
+        for (int i4 = 0; i4 < n4; ++i4) {
           int xyz_index = (((i1 * n2 + i2) * n3 + i3) * n4 + i4) * 3;
           std::complex<double> *fields_a_cur, *fields_f_cur;
           fields_a_cur = &fields_a[xyz_index];
           fields_f_cur = &fields_f[xyz_index];
-          p.x = i1 * s1 + c1; p.y = i2 * s2 + c2; p.z = i3 * s3 + c3;
-          material_grids_addgradient_point(v, fields_a_cur, fields_f_cur, p, scalegrad, frequencies[i4], geometry_tree);
+          p.x = i1 * s1 + c1;
+          p.y = i2 * s2 + c2;
+          p.z = i3 * s3 + c3;
+          material_grids_addgradient_point(v, fields_a_cur, fields_f_cur, p, scalegrad,
+                                           frequencies[i4], geometry_tree);
         }
       }
     }
