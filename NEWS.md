@@ -1,6 +1,10 @@
 # Meep Release Notes
 
+## Meep 1.16.0-alpha
+
 ## Meep 1.15.0
+
+7/8/2020
 
 * Minimum-lengthscale filters for adjoint optimization (#1205).
 
