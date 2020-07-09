@@ -76,8 +76,9 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dV = 1/self.sim.resolution * 1/self.sim.resolution
         else:
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
-        da_dE = 0.5*(dV * self.cscale)
-        scale = da_dE * dJ * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
+        da_dE = 0.5 * self.cscale
+        iomega = ((1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt))
+        scale = da_dE * dV * dJ * iomega / np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             src = self.time_src
