@@ -2507,7 +2507,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
         }
       }
     }
-    c_offset += dims[c*3] * dims[c*3+1] * dims[c*3+2];
+    c_offset += dims[c * 3] * dims[c * 3 + 1] * dims[c * 3 + 2];
   }
 }
 
