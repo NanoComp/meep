@@ -188,7 +188,7 @@ $$f_m(x) = \sqrt{\frac{c_m}{L}} \cos \left(\frac{m\pi x}{L}\right), ~m = 0,1,\ld
 
 where $c_m = 1$ if $m=0$ and $c_m=2$ otherwise, $L$ is the length of the line source.
 
-As a demonstration of Method 3 and to compare with Method 2, a similar 2d LED-like periodic structure with a 1d light-emitting layer is used (the geometric parameters are slightly different). As before, results for the radiated flux of the textured surface are normalized using the flat surface so that the two methods can be directly compared without any additional post processing.
+As a demonstration of Method 3 and to compare with Method 2, a similar 2d LED-like periodic structure with a 1d light-emitting layer is used. (The geometric parameters are slightly different than the first example comparing Method 1 and 2 in order to produce a different flux spectrum.) As before, results for the radiated flux of the textured surface are normalized using the flat surface so that the two methods can be directly compared without any additional post processing.
 
 The simulation script is in [examples/stochastic_emitter_line.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter_line.py).
 
@@ -302,7 +302,7 @@ if mp.am_master():
         np.savez(f,freqs=freqs,fluxes=fluxes)
 ```
 
-There are three items to note in this script. (1) The line source spans the entire length of the cell in the *x* direction (i.e., $L$ is `sx`). (2) The number of point dipoles in Method 2 is `sx*resolution`, one per pixel. (3) The source amplitude function in Method 3 is specified by the `amp_func` property of the [`Source`](../Python_User_Interface.md#source) object. In the case of a Fourier cosine series as conventionally written, $\cos (m\pi x)/L$ is defined over the interval $x=[0,L]$ such that $x=0$ corresponds to the *edge* of the source, not the center. Since the source region in this example is defined in $[-L/2,+L/2]$, the amplitude function must shift its $x$ coordinate argument by $+L/2$ or `0.5*sx`.
+There are three items to note in this script. (1) The line source spans the entire length of the cell in the $x$ direction (i.e., $L$ is `sx`). (2) The number of point dipoles in Method 2 is `sx*resolution`, one per pixel. (3) The source amplitude function in Method 3 is specified by the `amp_func` property of the [`Source`](../Python_User_Interface.md#source) object. In the case of a Fourier cosine series as conventionally written, $\cos (m\pi x)/L$ is defined over the interval $x=[0,L]$ such that $x=0$ corresponds to the *edge* of the source, not the center. Since the source region in this example is defined in $[-L/2,+L/2]$, the amplitude function must shift its $x$ coordinate argument by $+L/2$ or `0.5*sx`.
 
 Method 3 requires a convergence check in which $M$ (`nsrc`) is repeatedly doubled until the change in the results are within a desired tolerance of e.g., < 1%. For this example, $M=15$ was found to be sufficient.
 
