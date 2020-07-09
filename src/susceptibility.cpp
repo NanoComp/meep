@@ -603,9 +603,9 @@ void gyrotropic_susceptibility::subtract_P(field_type ft,
 
 int gyrotropic_susceptibility::num_cinternal_notowned_needed(component c,
                                                              void *P_internal_data) const {
-    (void)c;
-    (void)P_internal_data;
-    return 0;
+  (void)c;
+  (void)P_internal_data;
+  return 0;
 }
 
 realnum *gyrotropic_susceptibility::cinternal_notowned_ptr(int inotowned, component c, int cmp,

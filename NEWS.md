@@ -1,5 +1,26 @@
 # Meep Release Notes
 
+## Meep 1.16.0-alpha
+
+## Meep 1.15.0
+
+7/8/2020
+
+* Minimum-lengthscale filters for adjoint optimization (#1205).
+
+* Python API documentation in docstrings (#1240).
+
+* `MaterialGrid` material type in Python to interpolate an array of material
+  values as the "material" of an object, especially for topology optimization (#1242).
+
+* `merge_subgroup_data` Python function for coordinating parallel
+  computations (#1192).
+
+* Eigenmode sources now ensure that the source has the same
+  frequency as the mode (#1218).
+
+* Performance improvements to eigenmode sources (#1233, #1244, #1257).
+
 ## Meep 1.14.0
 
 4/17/2020

@@ -45,51 +45,56 @@ typedef struct {
 
   /* for parallel efficiency, we first cache the epsinv data from each process, then
      sum_to_all to synchonize, and then re-run set_maxwell_dielectric with the cached data */
-  double *cache; // array of 6*ncache eps_inv matrix entries in the order that they are needed
-  size_t ncache; // allocated size of the cache
-  size_t icache; // current position in the cache
+  double *cache;  // array of 6*ncache eps_inv matrix entries in the order that they are needed
+  size_t ncache;  // allocated size of the cache
+  size_t icache;  // current position in the cache
   bool use_cache; // whether we are using the cache
 } meep_mpb_eps_data;
 
-static int  meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv,
-                         mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
-                         const mpb_real r[3],
-                         void *eps_data_) {
+static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_real n[3],
+                        mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3],
+                        void *eps_data_) {
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   size_t i = eps_data->icache;
 
-  (void) n; (void) d1; (void) d2; (void) d3; (void) tol;  // unused
+  (void)n;
+  (void)d1;
+  (void)d2;
+  (void)d3;
+  (void)tol; // unused
 
   if (eps_data->use_cache) {
     const double *cache = eps_data->cache;
-    eps_inv->m00 = cache[6*i];
-    eps_inv->m11 = cache[6*i+1];
-    eps_inv->m22 = cache[6*i+2];
-    ASSIGN_ESCALAR(eps_inv->m01, cache[6*i+3], 0);
-    ASSIGN_ESCALAR(eps_inv->m02, cache[6*i+4], 0);
-    ASSIGN_ESCALAR(eps_inv->m12, cache[6*i+5], 0);
+    eps_inv->m00 = cache[6 * i];
+    eps_inv->m11 = cache[6 * i + 1];
+    eps_inv->m22 = cache[6 * i + 2];
+    ASSIGN_ESCALAR(eps_inv->m01, cache[6 * i + 3], 0);
+    ASSIGN_ESCALAR(eps_inv->m02, cache[6 * i + 4], 0);
+    ASSIGN_ESCALAR(eps_inv->m12, cache[6 * i + 5], 0);
     maxwell_sym_matrix_invert(eps, eps_inv);
   }
   else {
     // get cache pointer, doubling cache size as needed:
-    double *cache = i < eps_data->ncache ? eps_data->cache :
-        (eps_data->cache = (double*) realloc(eps_data->cache, sizeof(double) * 6 * (eps_data->ncache *= 2)));
+    double *cache = i < eps_data->ncache
+                        ? eps_data->cache
+                        : (eps_data->cache = (double *)realloc(
+                               eps_data->cache, sizeof(double) * 6 * (eps_data->ncache *= 2)));
 
     const double *s = eps_data->s;
     const double *o = eps_data->o;
     double frequency = eps_data->frequency;
     vec p(eps_data->dim == D3 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2])
                               : (eps_data->dim == D2 ? vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
-                                                    /* D1 */ vec(o[2] + r[2] * s[2])));
+                                                     /* D1 */ vec(o[2] + r[2] * s[2])));
     const fields *f = eps_data->f;
 
     // call get_chi1inv with parallel=false to get only local epsilon data
-    cache[6*i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
-    cache[6*i+1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
-    cache[6*i+2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
-    cache[6*i+3] = real(f->get_chi1inv(Ex, Y, p, frequency, false));
-    cache[6*i+4] = real(f->get_chi1inv(Ex, Z, p, frequency, false));
-    cache[6*i+5] = real(f->get_chi1inv(Ey, Z, p, frequency, false));
+    cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
+    cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
+    cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
+    cache[6 * i + 3] = real(f->get_chi1inv(Ex, Y, p, frequency, false));
+    cache[6 * i + 4] = real(f->get_chi1inv(Ex, Z, p, frequency, false));
+    cache[6 * i + 5] = real(f->get_chi1inv(Ey, Z, p, frequency, false));
 
     // return a dummy value epsilon = 1 while we are building up the cache
     eps->m00 = eps->m11 = eps->m22 = eps_inv->m00 = eps_inv->m11 = eps_inv->m22 = 1;
@@ -137,6 +142,13 @@ typedef struct eigenmode_data {
 } eigenmode_data;
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
+
+// utility routine for modular arithmetic that always returns a nonnegative integer
+static int pmod(int n, int modulus) {
+  n = n % modulus;
+  if (n < 0) n += modulus;
+  return n;
+}
 
 /*******************************************************************/
 /* compute position-dependent amplitude for eigenmode source       */
@@ -268,9 +280,12 @@ static double dot_product(const mpb_real a[3], const mpb_real b[3]) {
 static int nextpow2357(int n) {
   while (1) {
     int m = n;
-    while (m % 3 == 0) m /= 3;
-    while (m % 5 == 0) m /= 5;
-    while (m % 7 == 0) m /= 7;
+    while (m % 3 == 0)
+      m /= 3;
+    while (m % 5 == 0)
+      m /= 5;
+    while (m % 7 == 0)
+      m /= 7;
     if ((m & (m - 1)) == 0) // if m is a power of 2
       return n;
     n += 1;
@@ -412,7 +427,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     eps_data.dim = gv.dim;
     eps_data.f = this;
     eps_data.frequency = frequency;
-    eps_data.cache = (double *) malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
+    eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
 
     // first, build up a cache of the local epsilon data (while returning dummy values to MPB)
     eps_data.use_cache = false;
@@ -421,8 +436,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
     // then, synchronize the data
     eps_data.ncache = eps_data.icache; // actual amount of cached data
-    double *summed_cache = (double *) malloc(sizeof(double) * 6 * eps_data.ncache);
-    sum_to_all(eps_data.cache, summed_cache, eps_data.ncache*6);
+    double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
+    sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
     free(eps_data.cache);
     eps_data.cache = summed_cache;
 
@@ -849,8 +864,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
       am_now_working_on(MPBTime);
       void *mode_data =
-          get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency, parity,
-                        eig_resolution, eigensolver_tol, kdom, (void **)&mdata);
+          get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
+                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
@@ -868,10 +883,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 
       /* in the common case of k aligned along a cartesian direction, update
          our k-point guess based on the current k point plus a correction from the group velocity */
-      if (match_frequency &&  nf+1 < num_freqs && abs(kfound) > 0 &&
+      if (match_frequency && nf + 1 < num_freqs && abs(kfound) > 0 &&
           ((kfound.x() == 0 && (kfound.y() == 0 || kfound.z() == 0)) ||
-          (kfound.y() == 0 && kfound.z() == 0)))
-        kpoint = kfound + kfound * ((flux.freq[nf+1]-flux.freq[nf]) / (vg * abs(kfound)));
+           (kfound.y() == 0 && kfound.z() == 0)))
+        kpoint = kfound + kfound * ((flux.freq[nf + 1] - flux.freq[nf]) / (vg * abs(kfound)));
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -887,7 +902,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]);
       if (normfac == 0.0) normfac = 1.0;
       double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
-      if (cscale) cscale[nb * num_freqs + nf] = csc; // return real part of coefficient scalar for adjoint calculations
+      if (cscale)
+        cscale[nb * num_freqs + nf] =
+            csc; // return real part of coefficient scalar for adjoint calculations
       coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 0 : 1)] = cplus * csc;
       coeffs[2 * nb * num_freqs + 2 * nf + (vg > 0.0 ? 1 : 0)] = cminus * csc;
       destroy_eigenmode_data((void *)mode_data, false);
@@ -946,7 +963,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        double *cscale,direction d) {
+                                        double *cscale, direction d) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -995,7 +1012,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         int num_bands, int parity, double eig_resolution,
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
-                                        void *user_kpoint_data, vec *kpoints, vec *kdom, double *cscale) {
+                                        void *user_kpoint_data, vec *kpoints, vec *kdom,
+                                        double *cscale) {
   get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                              eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
                              kpoints, kdom, cscale, flux.normal_direction);

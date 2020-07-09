@@ -45,6 +45,7 @@ gen-ctl-io
 ctl-io.c
 ctl-io.h
 *.coverage
+doc/site
 scheme/ctl-io.cpp
 scheme/ctl-io.i
 scheme/geom.cpp
@@ -88,6 +89,7 @@ tests/cyl-ellipsoid-ll
 tests/cylindrical
 tests/dft-fields
 tests/flux
+tests/gdsII-3d
 tests/h5test
 tests/harmonics
 tests/integrate

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from collections import namedtuple
 from collections import OrderedDict
 from collections import Sequence
@@ -702,8 +703,74 @@ def visualize_chunks(sim):
 #                       to pass to plot2D()
 
 class Animate2D(object):
-    def __init__(self,sim,fields,f=None,realtime=False,normalize=False,
-    plot_modifiers=None,**customization_args):
+    """
+    A class used to record the fields during timestepping (i.e., a [`run`](#run-functions)
+    function). The object is initialized prior to timestepping by specifying the
+    simulation object and the field component. The object can then be passed to any
+    [step-function modifier](#step-function-modifiers). For example, one can record the
+    E<sub>z</sub> fields at every one time unit using:
+
+    ```py
+    animate = mp.Animate2D(sim,
+                           fields=mp.Ez,
+                           realtime=True,
+                           field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
+                           boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
+
+    sim.run(mp.at_every(1,animate),until=25)
+    ```
+
+    By default, the object saves each frame as a PNG image into memory (not disk). This is
+    typically more memory efficient than storing the actual fields. If the user sets the
+    `normalize` argument, then the object will save the actual field information as a
+    NumPy array to be normalized for post processing. The fields of a figure can also be
+    updated in realtime by setting the `realtime` flag. This does not work for
+    IPython/Jupyter notebooks, however.
+
+    Once the simulation is run, the animation can be output as an interactive JSHTML
+    object, an mp4, or a GIF.
+
+    Multiple `Animate2D` objects can be initialized and passed to the run function to
+    track different volume locations (using `mp.in_volume`) or field components.
+    """
+    def __init__(self, sim, fields, f=None, realtime=False, normalize=False,
+                 plot_modifiers=None, **customization_args):
+        """
+        Construct an `Animate2D` object.
+
+        + **`sim`** — Simulation object.
+
+        + **`fields`** — Field component to record at each time instant.
+
+        + **`f=None`** — Optional `matplotlib` figure object that the routine will update
+          on each call. If not supplied, then a new one will be created upon
+          initialization.
+
+        + **`realtime=False`** — Whether or not to update a figure window in realtime as
+          the simulation progresses. Disabled by default. Not compatible with
+          IPython/Jupyter notebooks.
+
+        + **`normalize=False`** — Records fields at each time step in memory in a NumPy
+          array and then normalizes the result by dividing by the maximum field value at a
+          single point in the cell over all the time snapshots.
+
+        + **`plot_modifiers=None`** — A list of functions that can modify the figure's
+          `axis` object. Each function modifier accepts a single argument, an `axis`
+          object, and must return that same axis object. The following modifier changes
+          the `xlabel`:
+
+          ```py
+          def mod1(ax):
+              ax.set_xlabel('Testing')
+              return ax
+
+          plot_modifiers = [mod1]
+          ```
+
+        + **`**customization_args`** — Customization keyword arguments passed to
+          `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
+        """
+
         self.fields = fields
 
         if f:
@@ -816,6 +883,11 @@ class Animate2D(object):
             for i, frame_data in enumerate(frame_list))
 
     def to_jshtml(self,fps):
+        """
+        Outputs an interactable JSHTML animation object that is embeddable in Jupyter
+        notebooks. The object is packaged with controls to manipulate the video's
+        playback. User must specify a frame rate `fps` in frames per second.
+        """
         # Exports a javascript enabled html object that is
         # ready for jupyter notebook embedding.
         # modified from matplotlib/animation.py code.
@@ -853,6 +925,13 @@ class Animate2D(object):
             return JS_Animation(html_string)
 
     def to_gif(self,fps,filename):
+        """
+        Generates and outputs a GIF file of the animation with the filename, `filename`,
+        and the frame rate, `fps`. Note that GIFs are significantly larger than mp4 videos
+        since they don't use any compression. Artifacts are also common because the GIF
+        format only supports 256 colors from a _predefined_ color palette. Requires
+        `ffmpeg`.
+        """
         # Exports a gif of the recorded animation
         # requires ffmpeg to be installed
         # modified from the matplotlib library
@@ -883,6 +962,11 @@ class Animate2D(object):
         return
 
     def to_mp4(self,fps,filename):
+        """
+        Generates and outputs an mp4 video file of the animation with the filename,
+        `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p
+        format. Requires `ffmpeg`.
+        """
         # Exports an mp4 of the recorded animation
         # requires ffmpeg to be installed
         # modified from the matplotlib library

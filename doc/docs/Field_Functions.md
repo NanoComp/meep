@@ -139,6 +139,8 @@ meep.Simulation.run(meep.synchronized_magnetic(meep.at_every(1,my_weird_output))
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
 
+For more information, see [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).
+
 Coordinates of the Yee Grid
 ---------------------------
 
@@ -163,5 +165,3 @@ meep.Simulation.integrate_field_function([mp.Ex],f)
 ```
 
 This function prints the $(x,y,z)$ Yee grid coordinates of all $E_x$ fields and returns a value of 0 which is never used. In contrast, the output functions `output_field_function` (Python) or `output-field-function` (Scheme) (as well as `output-real-field-function`) interpolate *all* fields onto the center of each grid point.
-
-For more information, see [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).

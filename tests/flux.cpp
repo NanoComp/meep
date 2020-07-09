@@ -183,7 +183,7 @@ int flux_2d(const double xmax, const double ymax, double eps(const vec &)) {
   int Nfreq = 10;
   double freq_array[] = {0.230, 0.232, 0.238, 0.241, 0.248, 0.254, 0.256, 0.265, 0.269, 0.270};
   // workaround for C++98 which does not support list initialization
-  const std::vector<double> freq(freq_array, freq_array + sizeof(freq_array)/sizeof(double));
+  const std::vector<double> freq(freq_array, freq_array + sizeof(freq_array) / sizeof(double));
   dft_flux flux1 = f.add_dft_flux_box(box1, freq);
   dft_flux flux2 = f.add_dft_flux_box(box2, freq);
 

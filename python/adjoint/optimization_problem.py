@@ -6,6 +6,28 @@ from collections import namedtuple
 
 Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
 
+class DesignRegion(object):
+    def __init__(self,design_parameters,volume=None, size=None, center=mp.Vector3()):
+        self.volume = volume if volume else mp.Volume(center=center,size=size)
+        self.size=self.volume.size
+        self.center=self.volume.center
+        self.design_parameters=design_parameters
+        self.num_design_params=design_parameters.num_params
+    def update_design_parameters(self,design_parameters):
+        self.design_parameters.update_parameters(design_parameters)
+    def get_gradient(self,fields_a,fields_f,frequencies,geom_list,f):
+        # sanitize the input
+        if (fields_a.ndim < 5) or (fields_f.ndim < 5):
+            raise ValueError("Fields arrays must have 5 dimensions (x,y,z,frequency,component)")
+        num_freqs = np.array(frequencies).size
+
+        grad = np.zeros((self.num_design_params*num_freqs,)) # preallocate
+
+        # compute the gradient
+        mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f) 
+
+        return np.squeeze(grad.reshape(self.num_design_params,num_freqs,order='F'))
+
 class OptimizationProblem(object):
     """Top-level class in the MEEP adjoint module.
 
@@ -24,7 +46,7 @@ class OptimizationProblem(object):
                 simulation,
                 objective_functions,
                 objective_arguments,
-                design_variables,
+                design_regions,
                 frequencies=None,
                 fcen=None,
                 df=None,
@@ -44,13 +66,12 @@ class OptimizationProblem(object):
         self.objective_arguments = objective_arguments
         self.f_bank = [] # objective function evaluation history
 
-        if isinstance(design_variables, list):
-            self.design_variables = design_variables
+        if isinstance(design_regions, list):
+            self.design_regions = design_regions
         else:
-            self.design_variables = [design_variables]
+            self.design_regions = [design_regions]
         
-        self.num_design_params = [ni.num_design_params for ni in self.design_variables]
-        self.design_regions = [dr.volume for dr in self.design_variables]
+        self.num_design_params = [ni.num_design_params for ni in self.design_regions]
         self.num_design_regions = len(self.design_regions)
 
         # TODO typecheck frequency choices
@@ -119,11 +140,8 @@ class OptimizationProblem(object):
                 self.calculate_gradient()
             else:
                 raise ValueError("Incorrect solver state detected: {}".format(self.current_state))
-        
-        # clean up design grid list object
-        dg = self.design_grids[0] if len(self.design_grids) == 1 else self.design_grids
 
-        return self.f0, self.gradient, dg
+        return self.f0, self.gradient
 
     def get_fdf_funcs(self):
         """construct callable functions for objective function value and gradient
@@ -158,7 +176,7 @@ class OptimizationProblem(object):
             self.forward_monitors.append(m.register_monitors(self.frequencies))
 
         # register design region
-        self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr,yee_grid=False) for dr in self.design_regions]
+        self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=False) for dr in self.design_regions]
 
         # store design region voxel parameters
         self.design_grids = [Grid(*self.sim.get_array_metadata(dft_cell=drm)) for drm in self.design_region_monitors]
@@ -181,11 +199,11 @@ class OptimizationProblem(object):
             self.f0 = self.f0[0]
 
         # Store forward fields for each set of design variables in array (x,y,z,field_components,frequencies)
-        self.d_E = [np.zeros((len(dg.x),len(dg.y),len(dg.z),3,self.nf),dtype=np.complex128) for dg in self.design_grids]
+        self.d_E = [np.zeros((len(dg.x),len(dg.y),len(dg.z),self.nf,3),dtype=np.complex128) for dg in self.design_grids]
         for nb, dgm in enumerate(self.design_region_monitors):
             for f in range(self.nf):
                 for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
-                    self.d_E[nb][:,:,:,ic,f] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+                    self.d_E[nb][:,:,:,f,ic] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
@@ -209,24 +227,24 @@ class OptimizationProblem(object):
 
         # register design flux
         # TODO use yee grid directly 
-        self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr,yee_grid=False) for dr in self.design_regions]
+        self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=False) for dr in self.design_regions]
 
         # Adjoint run
         self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, self.minimum_run_time))
 
         # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
-        self.a_E.append([np.zeros((len(dg.x),len(dg.y),len(dg.z),3,self.nf),dtype=np.complex128) for dg in self.design_grids])
+        self.a_E.append([np.zeros((len(dg.x),len(dg.y),len(dg.z),self.nf,3),dtype=np.complex128) for dg in self.design_grids])
         for nb, dgm in enumerate(self.design_region_monitors):
             for f in range(self.nf):
                 for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
-                    self.a_E[objective_idx][nb][:,:,:,ic,f] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+                    self.a_E[objective_idx][nb][:,:,:,f,ic] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # update optimizer's state
         self.current_state = "ADJ"
 
     def calculate_gradient(self):
-        # Iterate through all design region bases and store gradient w.r.t. permittivity
-        self.gradient = [[2*np.sum(np.real(self.a_E[ar][nb]*self.d_E[nb]),axis=(3)) for nb in range(self.num_design_regions)] for ar in range(len(self.objective_functions))]
+        # Iterate through all design regions and calculate gradient
+        self.gradient = [[dr.get_gradient(self.a_E[ar][dri],self.d_E[dri],self.frequencies,self.sim.geometry,self.sim.fields) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
         
         # Cleanup list of lists
         if len(self.gradient) == 1:
@@ -276,7 +294,7 @@ class OptimizationProblem(object):
         for k in fd_gradient_idx:
             
             b0 = np.ones((self.num_design_params[design_variables_idx],))
-            b0[:] = (self.design_variables[design_variables_idx].rho_vector)
+            b0[:] = (self.design_regions[design_variables_idx].design_parameters.design_parameters)
             # -------------------------------------------- #
             # left function evaluation
             # -------------------------------------------- #
@@ -284,7 +302,7 @@ class OptimizationProblem(object):
             
             # assign new design vector
             b0[k] -= db
-            self.design_variables[design_variables_idx].set_rho_vector(b0)
+            self.design_regions[design_variables_idx].update_design_parameters(b0)
             
             # initialize design monitors
             self.forward_monitors = []
@@ -306,7 +324,7 @@ class OptimizationProblem(object):
 
             # assign new design vector
             b0[k] += 2*db # central difference rule...
-            self.design_variables[design_variables_idx].set_rho_vector(b0)
+            self.design_regions[design_variables_idx].update_design_parameters(b0)
 
             # initialize design monitors
             self.forward_monitors = []
@@ -338,10 +356,10 @@ class OptimizationProblem(object):
 
         rho_vector ....... a list of numpy arrays that maps to each design region
         """
-        for bi, b in enumerate(self.design_variables):
+        for bi, b in enumerate(self.design_regions):
             if np.array(rho_vector[bi]).ndim > 1:
                 raise ValueError("Each vector of design variables must contain only one dimension.")
-            b.set_rho_vector(rho_vector[bi])
+            b.update_design_parameters(rho_vector[bi])
         
         self.sim.reset_meep()
         self.current_state = "INIT"

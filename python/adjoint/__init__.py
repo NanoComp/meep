@@ -10,7 +10,7 @@ from .objective import EigenmodeCoefficient
 
 from .basis import BilinearInterpolationBasis
 
-from .optimization_problem import (OptimizationProblem, Grid)
+from .optimization_problem import (OptimizationProblem, Grid, DesignRegion)
 
 from .filter_source import FilteredSource
 

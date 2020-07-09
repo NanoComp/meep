@@ -1007,7 +1007,8 @@ void mode_solver::solve_kpoint(vector3 kvector) {
     meep::master_printf("%sfreqs:, k index, k1, k2, k3, kmag/2pi", parity_string(mdata));
 
     for (int i = 0; i < num_bands; ++i) {
-      meep::master_printf(", %s%sband %d", parity_string(mdata), mdata->parity == NO_PARITY ? "" : " ", i + 1);
+      meep::master_printf(", %s%sband %d", parity_string(mdata),
+                          mdata->parity == NO_PARITY ? "" : " ", i + 1);
     }
     meep::master_printf("\n");
   }

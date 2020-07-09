@@ -144,8 +144,8 @@ void dft_ldos::update(fields &f) {
       }
     }
   for (size_t i = 0; i < freq.size(); ++i) {
-    complex<double> Ephase = polar(1.0, 2*pi * freq[i] * f.time()) * scale;
-    complex<double> Hphase = polar(1.0, 2*pi * freq[i] * (f.time() - f.dt / 2)) * scale;
+    complex<double> Ephase = polar(1.0, 2 * pi * freq[i] * f.time()) * scale;
+    complex<double> Hphase = polar(1.0, 2 * pi * freq[i] * (f.time() - f.dt / 2)) * scale;
     Fdft[i] += Ephase * EJ + Hphase * HJ;
 
     // NOTE: take only 1st time dependence: assumes all sources have same J(t)

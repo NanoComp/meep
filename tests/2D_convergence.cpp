@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
   verbosity = 0;
 #ifdef HAVE_HARMINV
   master_printf("Running holes square-lattice resolution convergence test.\n");
-  check_convergence(Ey, 0.179944, 0);  // from MPB; correct to >= 4 dec. places
+  check_convergence(Ey, 0.179944, 0); // from MPB; correct to >= 4 dec. places
   // check_convergence(Ez, 0.166998, 0);  // from MPB; correct to >= 4 dec. places
   check_convergence(Ez, 0.173605, .1); // from MPB; correct to >= 4 dec. places
 #endif

@@ -125,8 +125,7 @@ compute_fragment_stats(geometric_object_list geom, meep::grid_volume *gv, vector
                        std::vector<dft_data> dft_data_list, std::vector<meep::volume> pml_1d_vols,
                        std::vector<meep::volume> pml_2d_vols, std::vector<meep::volume> pml_3d_vols,
                        std::vector<meep::volume> absorber_vols, material_type_list extra_materials,
-                       double tol, int maxeval,
-                       bool ensure_per, bool eps_averaging);
+                       double tol, int maxeval, bool ensure_per, bool eps_averaging);
 
 /***************************************************************/
 /* these routines create and append absorbing layers to an     */
@@ -175,16 +174,20 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
 material_type make_file_material(const char *eps_input_file);
+material_type make_material_grid();
 
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
+void epsilon_material_grid(material_data *md, meep::realnum u);
 void epsilon_file_material(material_data *md, vector3 p);
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2);
 bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2);
 void material_gc(material_type m);
 bool material_type_equal(const material_type m1, const material_type m2);
+bool is_material_grid(material_type mt);
+bool is_material_grid(void *md);
 bool is_variable(material_type mt);
 bool is_variable(void *md);
 bool is_file(material_type md);
@@ -194,6 +197,29 @@ bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
 void check_offdiag(medium_struct *m);
 geom_box gv2box(const meep::volume &v);
+
+/***************************************************************/
+// material grid functions
+/***************************************************************/
+void update_design_parameters(material_type matgrid, double *design_parameters);
+meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
+meep::realnum material_grid_val(vector3 p, material_data *md);
+geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
+void get_material_tensor(const medium_struct *mm, meep::realnum freq, std::complex<double> *tensor);
+meep::realnum get_material_gradient(meep::realnum u, std::complex<double> *fields_a,
+                                    std::complex<double> *fields_f, meep::realnum freq,
+                                    material_data *md, meep::realnum du = 1.0e-3);
+void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz,
+                             meep::realnum *data, int nx, int ny, int nz, int stride,
+                             double scaleby, const meep::realnum *udata, int ukind, double uval);
+void material_grids_addgradient_point(meep::realnum *v, std::complex<double> *fields_a,
+                                      std::complex<double> *fields_f, vector3 p,
+                                      meep::realnum scalegrad, meep::realnum freq,
+                                      geom_box_tree geometry_tree);
+void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a,
+                                std::complex<double> *fields_f, meep::realnum *frequencies,
+                                int *fdims, meep::realnum scalegrad, const meep::volume &where,
+                                geom_box_tree geometry_tree, meep::fields *f);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/
