@@ -31,7 +31,7 @@ class DesignRegion(object):
         f = sim.fields
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
-        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),geom_list,f) 
+        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),geom_list,f)
 
         return np.squeeze(grad).T
 
@@ -229,10 +229,10 @@ class OptimizationProblem(object):
             dJ = jacobian(self.objective_functions[objective_idx],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
             if np.any(dJ):
                 self.adjoint_sources += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
-        
+
         # Reset the fields
         self.sim.reset_meep()
-        
+
         # Update the sources
         self.sim.change_sources(self.adjoint_sources)
 
@@ -259,7 +259,7 @@ class OptimizationProblem(object):
     def calculate_gradient(self):
         # Iterate through all design regions and calculate gradient
         self.gradient = [[dr.get_gradient(self.sim,self.a_E[ar][dri],self.d_E[dri],self.frequencies) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
-        
+
         # Cleanup list of lists
         if len(self.gradient) == 1:
             self.gradient = self.gradient[0] # only one objective function
@@ -322,9 +322,9 @@ class OptimizationProblem(object):
             self.forward_monitors = []
             for m in self.objective_arguments:
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
-            
+
             self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
-            
+
             # record final objective function value
             results_list = []
             for m in self.objective_arguments:
@@ -347,7 +347,7 @@ class OptimizationProblem(object):
 
             # add monitor used to track dft convergence
             self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
-            
+
             # record final objective function value
             results_list = []
             for m in self.objective_arguments:
@@ -410,7 +410,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
             comp = ci if yee_grid else mp.Dielectric
             ci_dims += [simob.get_array_slice_dimensions(comp,vol=m.where)[0]]
         dims.append(ci_dims)
-    
+
     # Record data in closure so that we can persitently edit
     closure = {
         'previous_fields': [[np.ones(di,dtype=np.complex128) for di in d] for d in dims],
