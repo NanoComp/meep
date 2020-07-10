@@ -359,6 +359,9 @@ LIBS="$GUILE_LIBS $LIBS"
 CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
 
 AC_MSG_CHECKING([for libctl dir])
+if test x != x"$LIBCTL_DIR" -a -r "$LIBCTL_DIR/share/libctl/base/ctl.scm"; then
+￼	LIBCTL_DIR="$LIBCTL_DIR/share/libctl"
+fi
 if test x != x"$LIBCTL_DIR" -a ! -r "$LIBCTL_DIR/base/ctl.scm"; then
 	LIBCTL_DIR=""
 fi
