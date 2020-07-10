@@ -2198,7 +2198,10 @@ def mean_time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return the mean time spent by all processes for a type of work `time_sink` which
-can be one of nine integer values `0`-`8` as described above.
+can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time
+stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`)
+Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`)
+other.
 
 </div>
 
@@ -2942,7 +2945,7 @@ class Medium(object):
 
 This class is used to specify the materials that geometric objects are made of. It
 represents an electromagnetic medium which is possibly nonlinear and/or dispersive.
-See also [Materials](Materials.md). To model a perfectly-conducting metal, use the
+See also [Materials](Materials.md). To model a perfectly conducting metal, use the
 predefined `metal` object, above. To model imperfect conductors, use a dispersive
 dielectric material. See also the [Predefined Variables](#predefined-variables):
 `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
@@ -8150,7 +8153,6 @@ plt.show()
 
 #### Source Slices
 
-* *get_source_slice(component, vol=None, center=None, size=None)* — Deprecated. Use `get_source` below.
 * [Simulation.get_source(component, vol=None, center=None, size=None)](#Simulation.get_source)
 
 

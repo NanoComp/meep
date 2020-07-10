@@ -610,8 +610,10 @@ public:
 
   // monitor.cpp
   std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0) const;
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0) const;
-  std::complex<double> get_inveps(component c, direction d, const ivec &iloc, double frequency = 0) const {
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
+                                   double frequency = 0) const;
+  std::complex<double> get_inveps(component c, direction d, const ivec &iloc,
+                                  double frequency = 0) const {
     return get_chi1inv(c, d, iloc, frequency);
   }
   double max_eps() const;
@@ -778,10 +780,12 @@ public:
                                    bool parallel = true) const;
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
                                    bool parallel = true) const;
-  std::complex<double> get_inveps(component c, direction d, const ivec &origloc, double frequency = 0) const {
+  std::complex<double> get_inveps(component c, direction d, const ivec &origloc,
+                                  double frequency = 0) const {
     return get_chi1inv(c, d, origloc, frequency);
   }
-  std::complex<double> get_inveps(component c, direction d, const vec &loc, double frequency = 0) const {
+  std::complex<double> get_inveps(component c, direction d, const vec &loc,
+                                  double frequency = 0) const {
     return get_chi1inv(c, d, loc, frequency);
   }
   std::complex<double> get_eps(const vec &loc, double frequency = 0) const;
@@ -1081,8 +1085,8 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
 public:
-  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
-           double fmin, double fmax, int Nf, const volume &where_, direction normal_direction_,
+  dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_, double fmin,
+           double fmax, int Nf, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
   dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
            const std::vector<double> freq_, const volume &where_, direction normal_direction_,
@@ -1120,12 +1124,12 @@ public:
 // dft.cpp (normally created with fields::add_dft_energy)
 class dft_energy {
 public:
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double freq_min, double freq_max,
-             int Nf, const volume &where_);
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, const std::vector<double> freq_,
-             const volume &where_);
-  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, const double *freq_, size_t Nfreq,
-             const volume &where_);
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double freq_min,
+             double freq_max, int Nf, const volume &where_);
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
+             const std::vector<double> freq_, const volume &where_);
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, const double *freq_,
+             size_t Nfreq, const volume &where_);
   dft_energy(const dft_energy &f);
 
   double *electric();
@@ -1159,10 +1163,10 @@ class dft_force {
 public:
   dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, double fmin, double fmax,
             int Nf, const volume &where_);
-  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, const std::vector<double> freq_,
-            const volume &where_);
-  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, const double *freq_, size_t Nfreq,
-            const volume &where_);
+  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
+            const std::vector<double> freq_, const volume &where_);
+  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_, const double *freq_,
+            size_t Nfreq, const volume &where_);
   dft_force(const dft_force &f);
 
   double *force();
@@ -1363,7 +1367,8 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
+                                   double frequency = 0) const;
 
   void backup_component(component c);
   void average_with_backup(component c);
@@ -1614,16 +1619,19 @@ public:
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 std::vector<component> components,
                                                 field_function fun, void *fun_data,
-                                                std::complex<double> *slice = 0, double frequency = 0);
+                                                std::complex<double> *slice = 0,
+                                                double frequency = 0);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
   // derived component.)
-  double *get_array_slice(const volume &where, component c, double *slice = 0, double frequency = 0);
+  double *get_array_slice(const volume &where, component c, double *slice = 0,
+                          double frequency = 0);
   double *get_array_slice(const volume &where, derived_component c, double *slice = 0,
                           double frequency = 0);
   std::complex<double> *get_complex_array_slice(const volume &where, component c,
-                                                std::complex<double> *slice = 0, double frequency = 0);
+                                                std::complex<double> *slice = 0,
+                                                double frequency = 0);
 
   // like get_array_slice, but for *sources* instead of fields
   std::complex<double> *get_source_slice(const volume &where, component source_slice_component,
@@ -1652,8 +1660,10 @@ public:
   inline double time() const { return t * dt; };
 
   // cw_fields.cpp:
-  bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L = 2, std::complex<double> *eigfreq = NULL, double eigtol = 1e-8, int eigiters = 20);
-  bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L = 2, std::complex<double> *eigfreq = NULL, double eigtol = 1e-8, int eigiters = 20);
+  bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L = 2,
+                std::complex<double> *eigfreq = NULL, double eigtol = 1e-8, int eigiters = 20);
+  bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L = 2,
+                std::complex<double> *eigfreq = NULL, double eigtol = 1e-8, int eigiters = 20);
 
   // sources.cpp:
   double last_source_time();
@@ -1763,7 +1773,8 @@ public:
     return add_dft(c, where, freq.data(), freq.size(), include_dV_and_interp_weights, stored_weight,
                    chunk_next, sqrt_dV_and_interp_weights, extra_weight, use_centered_grid, vc);
   }
-  dft_chunk *add_dft_pt(component c, const vec &where, double freq_min, double freq_max, int Nfreq) {
+  dft_chunk *add_dft_pt(component c, const vec &where, double freq_min, double freq_max,
+                        int Nfreq) {
     return add_dft(c, where, linspace(freq_min, freq_max, Nfreq), false);
   }
   dft_chunk *add_dft_pt(component c, const vec &where, const std::vector<double> freq) {
@@ -1812,17 +1823,18 @@ public:
   dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq);
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            double freq_min, double freq_max, int Nfreq, bool use_centered_grid=true) {
-    return add_dft_fields(components, num_components, where,
-                          linspace(freq_min, freq_max, Nfreq), use_centered_grid);
+                            double freq_min, double freq_max, int Nfreq,
+                            bool use_centered_grid = true) {
+    return add_dft_fields(components, num_components, where, linspace(freq_min, freq_max, Nfreq),
+                          use_centered_grid);
   }
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            const std::vector<double> freq, bool use_centered_grid=true) {
-    return add_dft_fields(components, num_components, where,
-                          freq.data(), freq.size(), use_centered_grid);
+                            const std::vector<double> freq, bool use_centered_grid = true) {
+    return add_dft_fields(components, num_components, where, freq.data(), freq.size(),
+                          use_centered_grid);
   }
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
-                            const double *freq, size_t Nfreq, bool use_centered_grid=true);
+                            const double *freq, size_t Nfreq, bool use_centered_grid = true);
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */
@@ -1899,7 +1911,8 @@ public:
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
                                    bool parallel = true) const;
-  std::complex<double> get_inveps(component c, direction d, const vec &loc, double frequency = 0) const {
+  std::complex<double> get_inveps(component c, direction d, const vec &loc,
+                                  double frequency = 0) const {
     return get_chi1inv(c, d, loc, frequency);
   }
   std::complex<double> get_eps(const vec &loc, double frequency = 0) const;
