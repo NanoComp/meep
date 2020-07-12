@@ -5,7 +5,6 @@ resolution = 50 # pixels/um
 
 sx = 1.5
 sy = 6.0
-
 cell_size = mp.Vector3(sx,sy)
 
 dpml = 1.0
