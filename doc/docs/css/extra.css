@@ -40,8 +40,14 @@
 
 
 /* Turn off the ugly boxes around inline code in paragraphs and in list items */
-p code, li code {
+p code, li code, .rst-content code {
     border:  none;
-    font-size: 80%;
+    font-size: 75%;
     padding: 0 2px;
+}
+
+/* Turn the border back on for code blocks */
+pre code.python {
+    border: solid 1px #e1e4e5;
+    font-size: 70%;
 }
