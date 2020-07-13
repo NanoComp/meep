@@ -43,8 +43,6 @@ get this prefix by calling `get_filename_prefix`.
 
 <a id="Simulation.__init__"></a>
 
-**Simulation.\_\_init\_\_**
-
 ```python
 def __init__(self,
              cell_size,
@@ -315,8 +313,6 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 
 <a id="Simulation.add_dft_fields"></a>
 
-**Simulation.add\_dft\_fields**
-
 ```python
 def add_dft_fields(self, *args, **kwargs):
 ```
@@ -337,8 +333,6 @@ fields evaluated at each corresponding Yee grid point is available by setting
 
 <a id="Simulation.add_eigenmode"></a>
 
-**Simulation.add\_eigenmode**
-
 ```python
 def add_eigenmode(self, *args):
 ```
@@ -350,8 +344,6 @@ def add_eigenmode(self, *args):
 </div>
 
 <a id="Simulation.add_energy"></a>
-
-**Simulation.add\_energy**
 
 ```python
 def add_energy(self, *args):
@@ -370,8 +362,6 @@ below to get the energy spectrum, etcetera.
 
 <a id="Simulation.add_flux"></a>
 
-**Simulation.add\_flux**
-
 ```python
 def add_flux(self, *args):
 ```
@@ -388,8 +378,6 @@ below to get the flux spectrum, etcetera.
 </div>
 
 <a id="Simulation.add_force"></a>
-
-**Simulation.add\_force**
 
 ```python
 def add_force(self, *args):
@@ -408,8 +396,6 @@ below to get the force spectrum, etcetera.
 
 <a id="Simulation.add_mode_monitor"></a>
 
-**Simulation.add\_mode\_monitor**
-
 ```python
 def add_mode_monitor(self, *args):
 ```
@@ -421,8 +407,6 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 </div>
 
 <a id="Simulation.add_near2far"></a>
-
-**Simulation.add\_near2far**
 
 ```python
 def add_near2far(self, *args, **kwargs):
@@ -443,8 +427,6 @@ to the functions below to get the far fields.
 
 <a id="Simulation.add_source"></a>
 
-**Simulation.add\_source**
-
 ```python
 def add_source(self, src):
 ```
@@ -457,8 +439,6 @@ def add_source(self, src):
 
 <a id="Simulation.change_k_point"></a>
 
-**Simulation.change\_k\_point**
-
 ```python
 def change_k_point(self, k):
 ```
@@ -470,8 +450,6 @@ Change the `k_point` (the Bloch periodicity).
 </div>
 
 <a id="Simulation.change_sources"></a>
-
-**Simulation.change\_sources**
 
 ```python
 def change_sources(self, new_sources):
@@ -486,8 +464,6 @@ the sources used for the current simulation. `new_sources` must be a list of
 </div>
 
 <a id="Simulation.display_electric_energy"></a>
-
-**Simulation.display\_electric\_energy**
 
 ```python
 def display_electric_energy(self, *energys):
@@ -505,8 +481,6 @@ column are the frequencies, and subsequent columns are the energy density spectr
 
 <a id="Simulation.display_fluxes"></a>
 
-**Simulation.display\_fluxes**
-
 ```python
 def display_fluxes(self, *fluxes):
 ```
@@ -522,8 +496,6 @@ subsequent columns are the flux spectra.
 </div>
 
 <a id="Simulation.display_forces"></a>
-
-**Simulation.display\_forces**
 
 ```python
 def display_forces(self, *forces):
@@ -541,8 +513,6 @@ subsequent columns are the force spectra.
 
 <a id="Simulation.display_magnetic_energy"></a>
 
-**Simulation.display\_magnetic\_energy**
-
 ```python
 def display_magnetic_energy(self, *energys):
 ```
@@ -558,8 +528,6 @@ column are the frequencies, and subsequent columns are the energy density spectr
 </div>
 
 <a id="Simulation.display_total_energy"></a>
-
-**Simulation.display\_total\_energy**
 
 ```python
 def display_total_energy(self, *energys):
@@ -577,8 +545,6 @@ frequencies, and subsequent columns are the energy density spectra.
 
 <a id="Simulation.dump_chunk_layout"></a>
 
-**Simulation.dump\_chunk\_layout**
-
 ```python
 def dump_chunk_layout(self, fname):
 ```
@@ -591,8 +557,6 @@ Dumps the chunk layout to file `fname`.
 
 <a id="Simulation.dump_structure"></a>
 
-**Simulation.dump\_structure**
-
 ```python
 def dump_structure(self, fname):
 ```
@@ -604,8 +568,6 @@ Dumps the structure to the file `fname`.
 </div>
 
 <a id="Simulation.electric_energy_in_box"></a>
-
-**Simulation.electric\_energy\_in\_box**
 
 ```python
 def electric_energy_in_box(self, box=None, center=None, size=None):
@@ -627,8 +589,6 @@ volume.
 
 <a id="Simulation.field_energy_in_box"></a>
 
-**Simulation.field\_energy\_in\_box**
-
 ```python
 def field_energy_in_box(self, box=None, center=None, size=None):
 ```
@@ -649,8 +609,6 @@ volume.
 
 <a id="Simulation.flux_in_box"></a>
 
-**Simulation.flux\_in\_box**
-
 ```python
 def flux_in_box(self, d, box=None, center=None, size=None):
 ```
@@ -667,8 +625,6 @@ construct the appropriate volume for you.
 </div>
 
 <a id="Simulation.get_array"></a>
-
-**Simulation.get\_array**
 
 ```python
 def get_array(self,
@@ -737,8 +693,6 @@ arrays; rather, you should simply rely on Meep's output.
 
 <a id="Simulation.get_array_metadata"></a>
 
-**Simulation.get\_array\_metadata**
-
 ```python
 def get_array_metadata(self,
                        vol=None,
@@ -782,8 +736,6 @@ then the entire cell is used.
 
 <a id="Simulation.get_avg_chunk_communication_area"></a>
 
-**Simulation.get\_avg\_chunk\_communication\_area**
-
 ```python
 def get_avg_chunk_communication_area(self):
 ```
@@ -795,8 +747,6 @@ def get_avg_chunk_communication_area(self):
 </div>
 
 <a id="Simulation.get_bfield"></a>
-
-**Simulation.get\_bfield**
 
 ```python
 def get_bfield(self):
@@ -810,8 +760,6 @@ def get_bfield(self):
 
 <a id="Simulation.get_bfield_p"></a>
 
-**Simulation.get\_bfield\_p**
-
 ```python
 def get_bfield_p(self):
 ```
@@ -823,8 +771,6 @@ def get_bfield_p(self):
 </div>
 
 <a id="Simulation.get_bfield_r"></a>
-
-**Simulation.get\_bfield\_r**
 
 ```python
 def get_bfield_r(self):
@@ -838,8 +784,6 @@ def get_bfield_r(self):
 
 <a id="Simulation.get_bfield_x"></a>
 
-**Simulation.get\_bfield\_x**
-
 ```python
 def get_bfield_x(self):
 ```
@@ -851,8 +795,6 @@ def get_bfield_x(self):
 </div>
 
 <a id="Simulation.get_bfield_y"></a>
-
-**Simulation.get\_bfield\_y**
 
 ```python
 def get_bfield_y(self):
@@ -866,8 +808,6 @@ def get_bfield_y(self):
 
 <a id="Simulation.get_bfield_z"></a>
 
-**Simulation.get\_bfield\_z**
-
 ```python
 def get_bfield_z(self):
 ```
@@ -879,8 +819,6 @@ def get_bfield_z(self):
 </div>
 
 <a id="Simulation.get_dfield"></a>
-
-**Simulation.get\_dfield**
 
 ```python
 def get_dfield(self):
@@ -894,8 +832,6 @@ def get_dfield(self):
 
 <a id="Simulation.get_dfield_p"></a>
 
-**Simulation.get\_dfield\_p**
-
 ```python
 def get_dfield_p(self):
 ```
@@ -907,8 +843,6 @@ def get_dfield_p(self):
 </div>
 
 <a id="Simulation.get_dfield_r"></a>
-
-**Simulation.get\_dfield\_r**
 
 ```python
 def get_dfield_r(self):
@@ -922,8 +856,6 @@ def get_dfield_r(self):
 
 <a id="Simulation.get_dfield_x"></a>
 
-**Simulation.get\_dfield\_x**
-
 ```python
 def get_dfield_x(self):
 ```
@@ -935,8 +867,6 @@ def get_dfield_x(self):
 </div>
 
 <a id="Simulation.get_dfield_y"></a>
-
-**Simulation.get\_dfield\_y**
 
 ```python
 def get_dfield_y(self):
@@ -950,8 +880,6 @@ def get_dfield_y(self):
 
 <a id="Simulation.get_dfield_z"></a>
 
-**Simulation.get\_dfield\_z**
-
 ```python
 def get_dfield_z(self):
 ```
@@ -963,8 +891,6 @@ def get_dfield_z(self):
 </div>
 
 <a id="Simulation.get_dft_array"></a>
-
-**Simulation.get\_dft\_array**
 
 ```python
 def get_dft_array(self, dft_obj, component, num_freq):
@@ -989,8 +915,6 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 <a id="Simulation.get_dft_array_metadata"></a>
 
-**Simulation.get\_dft\_array\_metadata**
-
 ```python
 def get_dft_array_metadata(self,
                            dft_cell=None,
@@ -1007,8 +931,6 @@ def get_dft_array_metadata(self,
 
 <a id="Simulation.get_dft_data"></a>
 
-**Simulation.get\_dft\_data**
-
 ```python
 def get_dft_data(self, dft_chunk):
 ```
@@ -1020,8 +942,6 @@ def get_dft_data(self, dft_chunk):
 </div>
 
 <a id="Simulation.get_dpwr"></a>
-
-**Simulation.get\_dpwr**
 
 ```python
 def get_dpwr(self):
@@ -1035,8 +955,6 @@ def get_dpwr(self):
 
 <a id="Simulation.get_efield"></a>
 
-**Simulation.get\_efield**
-
 ```python
 def get_efield(self):
 ```
@@ -1048,8 +966,6 @@ def get_efield(self):
 </div>
 
 <a id="Simulation.get_efield_p"></a>
-
-**Simulation.get\_efield\_p**
 
 ```python
 def get_efield_p(self):
@@ -1063,8 +979,6 @@ def get_efield_p(self):
 
 <a id="Simulation.get_efield_r"></a>
 
-**Simulation.get\_efield\_r**
-
 ```python
 def get_efield_r(self):
 ```
@@ -1076,8 +990,6 @@ def get_efield_r(self):
 </div>
 
 <a id="Simulation.get_efield_x"></a>
-
-**Simulation.get\_efield\_x**
 
 ```python
 def get_efield_x(self):
@@ -1091,8 +1003,6 @@ def get_efield_x(self):
 
 <a id="Simulation.get_efield_y"></a>
 
-**Simulation.get\_efield\_y**
-
 ```python
 def get_efield_y(self):
 ```
@@ -1105,8 +1015,6 @@ def get_efield_y(self):
 
 <a id="Simulation.get_efield_z"></a>
 
-**Simulation.get\_efield\_z**
-
 ```python
 def get_efield_z(self):
 ```
@@ -1118,8 +1026,6 @@ def get_efield_z(self):
 </div>
 
 <a id="Simulation.get_eigenmode"></a>
-
-**Simulation.get\_eigenmode**
 
 ```python
 def get_eigenmode(self,
@@ -1160,8 +1066,6 @@ If `match_frequency=False` or `kpoint` is not zero in the given `direction`, the
 
 <a id="Simulation.get_eigenmode_coefficients"></a>
 
-**Simulation.get\_eigenmode\_coefficients**
-
 ```python
 def get_eigenmode_coefficients(self,
                                flux,
@@ -1194,8 +1098,6 @@ See [Mode Decomposition](#mode-decomposition)
 
 <a id="Simulation.get_epsilon"></a>
 
-**Simulation.get\_epsilon**
-
 ```python
 def get_epsilon(self, frequency=0, omega=0):
 ```
@@ -1207,8 +1109,6 @@ def get_epsilon(self, frequency=0, omega=0):
 </div>
 
 <a id="Simulation.get_epsilon_point"></a>
-
-**Simulation.get\_epsilon\_point**
 
 ```python
 def get_epsilon_point(self, pt, frequency=0, omega=0):
@@ -1225,8 +1125,6 @@ frequency-independent part of ε (the $\omega    o\infty$ limit).
 
 <a id="Simulation.get_estimated_costs"></a>
 
-**Simulation.get\_estimated\_costs**
-
 ```python
 def get_estimated_costs(self):
 ```
@@ -1239,8 +1137,6 @@ def get_estimated_costs(self):
 
 <a id="Simulation.get_estimated_memory_usage"></a>
 
-**Simulation.get\_estimated\_memory\_usage**
-
 ```python
 def get_estimated_memory_usage(self):
 ```
@@ -1252,8 +1148,6 @@ def get_estimated_memory_usage(self):
 </div>
 
 <a id="Simulation.get_farfield"></a>
-
-**Simulation.get\_farfield**
 
 ```python
 def get_farfield(self, near2far, x):
@@ -1271,8 +1165,6 @@ for the frequencies 1,2,…,`nfreq`.
 </div>
 
 <a id="Simulation.get_farfields"></a>
-
-**Simulation.get\_farfields**
 
 ```python
 def get_farfields(self,
@@ -1299,8 +1191,6 @@ far fields in one region vs. another region.
 
 <a id="Simulation.get_field_point"></a>
 
-**Simulation.get\_field\_point**
-
 ```python
 def get_field_point(self, c, pt):
 ```
@@ -1313,8 +1203,6 @@ returns the value of that component at that point.
 </div>
 
 <a id="Simulation.get_filename_prefix"></a>
-
-**Simulation.get\_filename\_prefix**
 
 ```python
 def get_filename_prefix(self):
@@ -1335,8 +1223,6 @@ by calling `Simulation.use_output_directory([dirname])`
 
 <a id="Simulation.get_flux_data"></a>
 
-**Simulation.get\_flux\_data**
-
 ```python
 def get_flux_data(self, flux):
 ```
@@ -1350,8 +1236,6 @@ only useful for passing to `load_flux_data` below and should be considered opaqu
 </div>
 
 <a id="Simulation.get_force_data"></a>
-
-**Simulation.get\_force\_data**
 
 ```python
 def get_force_data(self, force):
@@ -1368,8 +1252,6 @@ opaque.
 
 <a id="Simulation.get_hfield"></a>
 
-**Simulation.get\_hfield**
-
 ```python
 def get_hfield(self):
 ```
@@ -1381,8 +1263,6 @@ def get_hfield(self):
 </div>
 
 <a id="Simulation.get_hfield_p"></a>
-
-**Simulation.get\_hfield\_p**
 
 ```python
 def get_hfield_p(self):
@@ -1396,8 +1276,6 @@ def get_hfield_p(self):
 
 <a id="Simulation.get_hfield_r"></a>
 
-**Simulation.get\_hfield\_r**
-
 ```python
 def get_hfield_r(self):
 ```
@@ -1409,8 +1287,6 @@ def get_hfield_r(self):
 </div>
 
 <a id="Simulation.get_hfield_x"></a>
-
-**Simulation.get\_hfield\_x**
 
 ```python
 def get_hfield_x(self):
@@ -1424,8 +1300,6 @@ def get_hfield_x(self):
 
 <a id="Simulation.get_hfield_y"></a>
 
-**Simulation.get\_hfield\_y**
-
 ```python
 def get_hfield_y(self):
 ```
@@ -1437,8 +1311,6 @@ def get_hfield_y(self):
 </div>
 
 <a id="Simulation.get_hfield_z"></a>
-
-**Simulation.get\_hfield\_z**
 
 ```python
 def get_hfield_z(self):
@@ -1452,8 +1324,6 @@ def get_hfield_z(self):
 
 <a id="Simulation.get_hpwr"></a>
 
-**Simulation.get\_hpwr**
-
 ```python
 def get_hpwr(self):
 ```
@@ -1466,8 +1336,6 @@ def get_hpwr(self):
 
 <a id="Simulation.get_max_chunk_communication_area"></a>
 
-**Simulation.get\_max\_chunk\_communication\_area**
-
 ```python
 def get_max_chunk_communication_area(self):
 ```
@@ -1479,8 +1347,6 @@ def get_max_chunk_communication_area(self):
 </div>
 
 <a id="Simulation.get_mode_data"></a>
-
-**Simulation.get\_mode\_data**
 
 ```python
 def get_mode_data(self, flux):
@@ -1496,8 +1362,6 @@ only useful for passing to `load_flux_data` below and should be considered opaqu
 
 <a id="Simulation.get_mu"></a>
 
-**Simulation.get\_mu**
-
 ```python
 def get_mu(self):
 ```
@@ -1509,8 +1373,6 @@ def get_mu(self):
 </div>
 
 <a id="Simulation.get_near2far_data"></a>
-
-**Simulation.get\_near2far\_data**
 
 ```python
 def get_near2far_data(self, near2far):
@@ -1527,8 +1389,6 @@ considered opaque.
 
 <a id="Simulation.get_sfield"></a>
 
-**Simulation.get\_sfield**
-
 ```python
 def get_sfield(self):
 ```
@@ -1540,8 +1400,6 @@ def get_sfield(self):
 </div>
 
 <a id="Simulation.get_sfield_p"></a>
-
-**Simulation.get\_sfield\_p**
 
 ```python
 def get_sfield_p(self):
@@ -1555,8 +1413,6 @@ def get_sfield_p(self):
 
 <a id="Simulation.get_sfield_r"></a>
 
-**Simulation.get\_sfield\_r**
-
 ```python
 def get_sfield_r(self):
 ```
@@ -1568,8 +1424,6 @@ def get_sfield_r(self):
 </div>
 
 <a id="Simulation.get_sfield_x"></a>
-
-**Simulation.get\_sfield\_x**
 
 ```python
 def get_sfield_x(self):
@@ -1583,8 +1437,6 @@ def get_sfield_x(self):
 
 <a id="Simulation.get_sfield_y"></a>
 
-**Simulation.get\_sfield\_y**
-
 ```python
 def get_sfield_y(self):
 ```
@@ -1597,8 +1449,6 @@ def get_sfield_y(self):
 
 <a id="Simulation.get_sfield_z"></a>
 
-**Simulation.get\_sfield\_z**
-
 ```python
 def get_sfield_z(self):
 ```
@@ -1610,8 +1460,6 @@ def get_sfield_z(self):
 </div>
 
 <a id="Simulation.get_source"></a>
-
-**Simulation.get\_source**
 
 ```python
 def get_source(self,
@@ -1631,8 +1479,6 @@ dimensions as that returned by [`get_array`](#array-slices).
 
 <a id="Simulation.get_tot_pwr"></a>
 
-**Simulation.get\_tot\_pwr**
-
 ```python
 def get_tot_pwr(self):
 ```
@@ -1644,8 +1490,6 @@ def get_tot_pwr(self):
 </div>
 
 <a id="Simulation.h5topng"></a>
-
-**Simulation.h5topng**
 
 ```python
 def h5topng(self, rm_h5, option, *step_funcs):
@@ -1659,8 +1503,6 @@ def h5topng(self, rm_h5, option, *step_funcs):
 
 <a id="Simulation.has_mu"></a>
 
-**Simulation.has\_mu**
-
 ```python
 def has_mu(self):
 ```
@@ -1672,8 +1514,6 @@ def has_mu(self):
 </div>
 
 <a id="Simulation.init_fields"></a>
-
-**Simulation.init\_fields**
 
 ```python
 def init_fields(self):
@@ -1687,8 +1527,6 @@ def init_fields(self):
 
 <a id="Simulation.init_sim"></a>
 
-**Simulation.init\_sim**
-
 ```python
 def init_sim(self):
 ```
@@ -1700,8 +1538,6 @@ def init_sim(self):
 </div>
 
 <a id="Simulation.initialize_field"></a>
-
-**Simulation.initialize\_field**
 
 ```python
 def initialize_field(self, cmpnt, amp_func):
@@ -1716,8 +1552,6 @@ of the field at that point.
 </div>
 
 <a id="Simulation.integrate2_field_function"></a>
-
-**Simulation.integrate2\_field\_function**
 
 ```python
 def integrate2_field_function(self,
@@ -1764,8 +1598,6 @@ this requires you to call much lower-level functions like `fields_step()`.
 
 <a id="Simulation.integrate_field_function"></a>
 
-**Simulation.integrate\_field\_function**
-
 ```python
 def integrate_field_function(self,
                              cs,
@@ -1796,8 +1628,6 @@ volume.
 
 <a id="Simulation.load_chunk_layout"></a>
 
-**Simulation.load\_chunk\_layout**
-
 ```python
 def load_chunk_layout(self, br, source):
 ```
@@ -1809,8 +1639,6 @@ def load_chunk_layout(self, br, source):
 </div>
 
 <a id="Simulation.load_energy"></a>
-
-**Simulation.load\_energy**
 
 ```python
 def load_energy(self, fname, energy):
@@ -1829,8 +1657,6 @@ processors.
 
 <a id="Simulation.load_flux"></a>
 
-**Simulation.load\_flux**
-
 ```python
 def load_flux(self, fname, flux):
 ```
@@ -1848,8 +1674,6 @@ processors.
 
 <a id="Simulation.load_flux_data"></a>
 
-**Simulation.load\_flux\_data**
-
 ```python
 def load_flux_data(self, flux, fdata):
 ```
@@ -1864,8 +1688,6 @@ object that was created by `get_flux_data` in a simulation of the same dimension
 </div>
 
 <a id="Simulation.load_force"></a>
-
-**Simulation.load\_force**
 
 ```python
 def load_force(self, fname, force):
@@ -1884,8 +1706,6 @@ processors.
 
 <a id="Simulation.load_force_data"></a>
 
-**Simulation.load\_force\_data**
-
 ```python
 def load_force_data(self, force, fdata):
 ```
@@ -1901,8 +1721,6 @@ object that was created by `get_force_data` in a simulation of the same dimensio
 
 <a id="Simulation.load_minus_energy"></a>
 
-**Simulation.load\_minus\_energy**
-
 ```python
 def load_minus_energy(self, fname, energy):
 ```
@@ -1916,8 +1734,6 @@ transforms that are accumulated.
 </div>
 
 <a id="Simulation.load_minus_flux"></a>
-
-**Simulation.load\_minus\_flux**
 
 ```python
 def load_minus_flux(self, fname, flux):
@@ -1933,8 +1749,6 @@ that are accumulated.
 
 <a id="Simulation.load_minus_flux_data"></a>
 
-**Simulation.load\_minus\_flux\_data**
-
 ```python
 def load_minus_flux_data(self, flux, fdata):
 ```
@@ -1948,8 +1762,6 @@ transforms that are accumulated.
 </div>
 
 <a id="Simulation.load_minus_force"></a>
-
-**Simulation.load\_minus\_force**
 
 ```python
 def load_minus_force(self, fname, force):
@@ -1965,8 +1777,6 @@ that are accumulated.
 
 <a id="Simulation.load_minus_force_data"></a>
 
-**Simulation.load\_minus\_force\_data**
-
 ```python
 def load_minus_force_data(self, force, fdata):
 ```
@@ -1980,8 +1790,6 @@ transforms that are accumulated.
 </div>
 
 <a id="Simulation.load_minus_mode"></a>
-
-**Simulation.load\_minus\_mode**
 
 ```python
 def load_minus_mode(self, fname, flux):
@@ -1997,8 +1805,6 @@ that are accumulated.
 
 <a id="Simulation.load_minus_mode_data"></a>
 
-**Simulation.load\_minus\_mode\_data**
-
 ```python
 def load_minus_mode_data(self, flux, fdata):
 ```
@@ -2012,8 +1818,6 @@ transforms that are accumulated.
 </div>
 
 <a id="Simulation.load_minus_near2far"></a>
-
-**Simulation.load\_minus\_near2far**
 
 ```python
 def load_minus_near2far(self, fname, near2far):
@@ -2029,8 +1833,6 @@ transforms that are accumulated.
 
 <a id="Simulation.load_minus_near2far_data"></a>
 
-**Simulation.load\_minus\_near2far\_data**
-
 ```python
 def load_minus_near2far_data(self, near2far, n2fdata):
 ```
@@ -2044,8 +1846,6 @@ transforms that are accumulated.
 </div>
 
 <a id="Simulation.load_mode"></a>
-
-**Simulation.load\_mode**
 
 ```python
 def load_mode(self, fname, flux):
@@ -2064,8 +1864,6 @@ processors.
 
 <a id="Simulation.load_mode_data"></a>
 
-**Simulation.load\_mode\_data**
-
 ```python
 def load_mode_data(self, flux, fdata):
 ```
@@ -2080,8 +1878,6 @@ object that was created by `get_flux_data` in a simulation of the same dimension
 </div>
 
 <a id="Simulation.load_near2far"></a>
-
-**Simulation.load\_near2far**
 
 ```python
 def load_near2far(self, fname, near2far):
@@ -2100,8 +1896,6 @@ processors.
 
 <a id="Simulation.load_near2far_data"></a>
 
-**Simulation.load\_near2far\_data**
-
 ```python
 def load_near2far_data(self, near2far, n2fdata):
 ```
@@ -2118,8 +1912,6 @@ processors.
 
 <a id="Simulation.load_structure"></a>
 
-**Simulation.load\_structure**
-
 ```python
 def load_structure(self, fname):
 ```
@@ -2132,8 +1924,6 @@ the `Simulation` constructor via the `load_structure` keyword argument.
 </div>
 
 <a id="Simulation.magnetic_energy_in_box"></a>
-
-**Simulation.magnetic\_energy\_in\_box**
 
 ```python
 def magnetic_energy_in_box(self, box=None, center=None, size=None):
@@ -2154,8 +1944,6 @@ volume.
 </div>
 
 <a id="Simulation.max_abs_field_function"></a>
-
-**Simulation.max\_abs\_field\_function**
 
 ```python
 def max_abs_field_function(self,
@@ -2189,8 +1977,6 @@ and the same PML layers (if any).
 
 <a id="Simulation.mean_time_spent_on"></a>
 
-**Simulation.mean\_time\_spent\_on**
-
 ```python
 def mean_time_spent_on(self, time_sink):
 ```
@@ -2206,8 +1992,6 @@ other.
 </div>
 
 <a id="Simulation.meep_time"></a>
-
-**Simulation.meep\_time**
 
 ```python
 def meep_time(self):
@@ -2228,8 +2012,6 @@ rounded to single precision.
 </div>
 
 <a id="Simulation.modal_volume_in_box"></a>
-
-**Simulation.modal\_volume\_in\_box**
 
 ```python
 def modal_volume_in_box(self, box=None, center=None, size=None):
@@ -2262,8 +2044,6 @@ via the functions:
 
 <a id="Simulation.output_component"></a>
 
-**Simulation.output\_component**
-
 ```python
 def output_component(self, c, h5file=None, frequency=0, omega=0):
 ```
@@ -2276,8 +2056,6 @@ def output_component(self, c, h5file=None, frequency=0, omega=0):
 
 <a id="Simulation.output_components"></a>
 
-**Simulation.output\_components**
-
 ```python
 def output_components(self, fname, *components):
 ```
@@ -2289,8 +2067,6 @@ def output_components(self, fname, *components):
 </div>
 
 <a id="Simulation.output_dft"></a>
-
-**Simulation.output\_dft**
 
 ```python
 def output_dft(self, dft_fields, fname):
@@ -2305,8 +2081,6 @@ suffix).
 </div>
 
 <a id="Simulation.output_farfields"></a>
-
-**Simulation.output\_farfields**
 
 ```python
 def output_farfields(self,
@@ -2335,8 +2109,6 @@ that =1 are omitted. The volume can optionally be specified via `center` and
 
 <a id="Simulation.output_field_function"></a>
 
-**Simulation.output\_field\_function**
-
 ```python
 def output_field_function(self,
                           name,
@@ -2357,8 +2129,6 @@ field components corresponding to `cs`: a list of `component` constants. If
 </div>
 
 <a id="Simulation.phase_in_material"></a>
-
-**Simulation.phase\_in\_material**
 
 ```python
 def phase_in_material(self, structure, time):
@@ -2383,8 +2153,6 @@ simulation script is in
 </div>
 
 <a id="Simulation.plot2D"></a>
-
-**Simulation.plot2D**
 
 ```python
 def plot2D(self,
@@ -2487,8 +2255,6 @@ plt.savefig('sim_domain.png')
 
 <a id="Simulation.plot3D"></a>
 
-**Simulation.plot3D**
-
 ```python
 def plot3D(self):
 ```
@@ -2502,8 +2268,6 @@ Can also be embedded in Jupyter notebooks.
 
 <a id="Simulation.plot_fields"></a>
 
-**Simulation.plot\_fields**
-
 ```python
 def plot_fields(self, **kwargs):
 ```
@@ -2515,8 +2279,6 @@ def plot_fields(self, **kwargs):
 </div>
 
 <a id="Simulation.print_times"></a>
-
-**Simulation.print\_times**
 
 ```python
 def print_times(self):
@@ -2541,8 +2303,6 @@ Field time usage:
 
 <a id="Simulation.require_dimensions"></a>
 
-**Simulation.require\_dimensions**
-
 ```python
 def require_dimensions(self):
 ```
@@ -2554,8 +2314,6 @@ def require_dimensions(self):
 </div>
 
 <a id="Simulation.reset_meep"></a>
-
-**Simulation.reset\_meep**
 
 ```python
 def reset_meep(self):
@@ -2570,8 +2328,6 @@ memory as if you had not run any computations.
 
 <a id="Simulation.restart_fields"></a>
 
-**Simulation.restart\_fields**
-
 ```python
 def restart_fields(self):
 ```
@@ -2585,8 +2341,6 @@ transforms of the flux planes, which continue to be accumulated.
 
 <a id="Simulation.round_time"></a>
 
-**Simulation.round\_time**
-
 ```python
 def round_time(self):
 ```
@@ -2598,8 +2352,6 @@ def round_time(self):
 </div>
 
 <a id="Simulation.run"></a>
-
-**Simulation.run**
 
 ```python
 def run(self, *step_funcs, **kwargs):
@@ -2613,8 +2365,6 @@ def run(self, *step_funcs, **kwargs):
 
 <a id="Simulation.run_k_point"></a>
 
-**Simulation.run\_k\_point**
-
 ```python
 def run_k_point(self, t, k):
 ```
@@ -2626,8 +2376,6 @@ def run_k_point(self, t, k):
 </div>
 
 <a id="Simulation.run_k_points"></a>
-
-**Simulation.run\_k\_points**
 
 ```python
 def run_k_points(self, t, k_points):
@@ -2652,8 +2400,6 @@ Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.m
 
 <a id="Simulation.save_energy"></a>
 
-**Simulation.save\_energy**
-
 ```python
 def save_energy(self, fname, energy):
 ```
@@ -2667,8 +2413,6 @@ filename-prefix is prepended automatically).
 </div>
 
 <a id="Simulation.save_flux"></a>
-
-**Simulation.save\_flux**
 
 ```python
 def save_flux(self, fname, flux):
@@ -2684,8 +2428,6 @@ filename-prefix is prepended automatically).
 
 <a id="Simulation.save_force"></a>
 
-**Simulation.save\_force**
-
 ```python
 def save_force(self, fname, force):
 ```
@@ -2699,8 +2441,6 @@ filename-prefix is prepended automatically).
 </div>
 
 <a id="Simulation.save_mode"></a>
-
-**Simulation.save\_mode**
 
 ```python
 def save_mode(self, fname, flux):
@@ -2716,8 +2456,6 @@ filename-prefix is prepended automatically).
 
 <a id="Simulation.save_near2far"></a>
 
-**Simulation.save\_near2far**
-
 ```python
 def save_near2far(self, fname, near2far):
 ```
@@ -2731,8 +2469,6 @@ filename-prefix is prepended automatically.
 </div>
 
 <a id="Simulation.set_boundary"></a>
-
-**Simulation.set\_boundary**
 
 ```python
 def set_boundary(self, side, direction, condition):
@@ -2748,8 +2484,6 @@ section for valid `side`, `direction`, and `boundary_condition` values.
 
 <a id="Simulation.set_epsilon"></a>
 
-**Simulation.set\_epsilon**
-
 ```python
 def set_epsilon(self, eps):
 ```
@@ -2761,8 +2495,6 @@ def set_epsilon(self, eps):
 </div>
 
 <a id="Simulation.set_materials"></a>
-
-**Simulation.set\_materials**
 
 ```python
 def set_materials(self, geometry=None, default_material=None):
@@ -2776,8 +2508,6 @@ This can be called in a step function, and is useful for changing the geometry o
 
 <a id="Simulation.solve_cw"></a>
 
-**Simulation.solve\_cw**
-
 ```python
 def solve_cw(self, tol=1e-08, maxiters=10000, L=2):
 ```
@@ -2789,8 +2519,6 @@ def solve_cw(self, tol=1e-08, maxiters=10000, L=2):
 </div>
 
 <a id="Simulation.solve_eigfreq"></a>
-
-**Simulation.solve\_eigfreq**
 
 ```python
 def solve_eigfreq(self,
@@ -2810,8 +2538,6 @@ def solve_eigfreq(self,
 
 <a id="Simulation.time_spent_on"></a>
 
-**Simulation.time\_spent\_on**
-
 ```python
 def time_spent_on(self, time_sink):
 ```
@@ -2828,8 +2554,6 @@ other.
 
 <a id="Simulation.use_output_directory"></a>
 
-**Simulation.use\_output\_directory**
-
 ```python
 def use_output_directory(self, dname=''):
 ```
@@ -2844,8 +2568,6 @@ e.g. `test.py` implies a directory of `"test-out"`.
 </div>
 
 <a id="Simulation.visualize_chunks"></a>
-
-**Simulation.visualize\_chunks**
 
 ```python
 def visualize_chunks(self):
@@ -2945,7 +2667,7 @@ class Medium(object):
 
 This class is used to specify the materials that geometric objects are made of. It
 represents an electromagnetic medium which is possibly nonlinear and/or dispersive.
-See also [Materials](Materials.md). To model a perfectly conducting metal, use the
+See also [Materials](Materials.md). To model a perfectly-conducting metal, use the
 predefined `metal` object, above. To model imperfect conductors, use a dispersive
 dielectric material. See also the [Predefined Variables](#predefined-variables):
 `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor`.
@@ -2995,8 +2717,6 @@ objects that are subclasses of type `Susceptibility`.
 
 
 <a id="Medium.__init__"></a>
-
-**Medium.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -3087,8 +2807,6 @@ Creates a `Medium` object.
 
 <a id="Medium.__repr__"></a>
 
-**Medium.\_\_repr\_\_**
-
 ```python
 def __repr__(self):
 ```
@@ -3100,8 +2818,6 @@ Return repr(self).
 </div>
 
 <a id="Medium.epsilon"></a>
-
-**Medium.epsilon**
 
 ```python
 def epsilon(self, freq):
@@ -3117,8 +2833,6 @@ of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
 <a id="Medium.mu"></a>
 
-**Medium.mu**
-
 ```python
 def mu(self, freq):
 ```
@@ -3133,8 +2847,6 @@ of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
 <a id="Medium.rotate"></a>
 
-**Medium.rotate**
-
 ```python
 def rotate(self, axis, theta):
 ```
@@ -3146,8 +2858,6 @@ def rotate(self, axis, theta):
 </div>
 
 <a id="Medium.transform"></a>
-
-**Medium.transform**
 
 ```python
 def transform(self, m):
@@ -3191,8 +2901,6 @@ anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-disper
 
 <a id="Susceptibility.__init__"></a>
 
-**Susceptibility.\_\_init\_\_**
-
 ```python
 def __init__(self,
              sigma_diag=Vector3<0.0, 0.0, 0.0>,
@@ -3215,8 +2923,6 @@ corresponds to a σ tensor
 </div>
 
 <a id="Susceptibility.transform"></a>
-
-**Susceptibility.transform**
 
 ```python
 def transform(self, m):
@@ -3252,8 +2958,6 @@ the parameters (in addition to σ):
 
 <a id="LorentzianSusceptibility.__init__"></a>
 
-**LorentzianSusceptibility.\_\_init\_\_**
-
 ```python
 def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 ```
@@ -3271,8 +2975,6 @@ preliminary simulation info output.
 </div>
 
 <a id="LorentzianSusceptibility.eval_susceptibility"></a>
-
-**LorentzianSusceptibility.eval\_susceptibility**
 
 ```python
 def eval_susceptibility(self, freq):
@@ -3307,8 +3009,6 @@ Dispersion](Materials.md#material-dispersion), with the parameters (in addition 
 
 <a id="DrudeSusceptibility.__init__"></a>
 
-**DrudeSusceptibility.\_\_init\_\_**
-
 ```python
 def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 ```
@@ -3323,8 +3023,6 @@ def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 </div>
 
 <a id="DrudeSusceptibility.eval_susceptibility"></a>
-
-**DrudeSusceptibility.eval\_susceptibility**
 
 ```python
 def eval_susceptibility(self, freq):
@@ -3362,8 +3060,6 @@ Absorption](Materials.md#saturable-gain-and-absorption).
 
 
 <a id="MultilevelAtom.__init__"></a>
-
-**MultilevelAtom.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -3407,8 +3103,6 @@ A `Transition` is... (TODO)
 
 
 <a id="Transition.__init__"></a>
-
-**Transition.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -3468,8 +3162,6 @@ space and time, zero mean) added to the **P** damped-oscillator equation.
 
 <a id="NoisyLorentzianSusceptibility.__init__"></a>
 
-**NoisyLorentzianSusceptibility.\_\_init\_\_**
-
 ```python
 def __init__(self, noise_amp=0.0, **kwargs):
 ```
@@ -3519,8 +3211,6 @@ space and time, zero mean) added to the **P** damped-oscillator equation.
 
 
 <a id="NoisyDrudeSusceptibility.__init__"></a>
-
-**NoisyDrudeSusceptibility.\_\_init\_\_**
 
 ```python
 def __init__(self, noise_amp=0.0, **kwargs):
@@ -3572,8 +3262,6 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 
 <a id="GyrotropicLorentzianSusceptibility.__init__"></a>
 
-**GyrotropicLorentzianSusceptibility.\_\_init\_\_**
-
 ```python
 def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs):
 ```
@@ -3611,8 +3299,6 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 
 
 <a id="GyrotropicDrudeSusceptibility.__init__"></a>
-
-**GyrotropicDrudeSusceptibility.\_\_init\_\_**
 
 ```python
 def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs):
@@ -3653,8 +3339,6 @@ parameter and an `alpha` parameter:
 
 
 <a id="GyrotropicSaturatedSusceptibility.__init__"></a>
-
-**GyrotropicSaturatedSusceptibility.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -3717,8 +3401,6 @@ iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
 
 <a id="Vector3.__init__"></a>
 
-**Vector3.\_\_init\_\_**
-
 ```python
 def __init__(self, x=0.0, y=0.0, z=0.0):
 ```
@@ -3731,8 +3413,6 @@ zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
 </div>
 
 <a id="Vector3.__add__"></a>
-
-**Vector3.\_\_add\_\_**
 
 ```python
 def __add__(self, other):
@@ -3750,8 +3430,6 @@ v3 = v1 + v2
 
 <a id="Vector3.__array__"></a>
 
-**Vector3.\_\_array\_\_**
-
 ```python
 def __array__(self):
 ```
@@ -3763,8 +3441,6 @@ def __array__(self):
 </div>
 
 <a id="Vector3.__eq__"></a>
-
-**Vector3.\_\_eq\_\_**
 
 ```python
 def __eq__(self, other):
@@ -3784,8 +3460,6 @@ v1 == v2
 
 <a id="Vector3.__getitem__"></a>
 
-**Vector3.\_\_getitem\_\_**
-
 ```python
 def __getitem__(self, i):
 ```
@@ -3797,8 +3471,6 @@ def __getitem__(self, i):
 </div>
 
 <a id="Vector3.__mul__"></a>
-
-**Vector3.\_\_mul\_\_**
 
 ```python
 def __mul__(self, other):
@@ -3816,8 +3488,6 @@ c = v1 * other
 </div>
 
 <a id="Vector3.__ne__"></a>
-
-**Vector3.\_\_ne\_\_**
 
 ```python
 def __ne__(self, other):
@@ -3837,8 +3507,6 @@ v1 != v2
 
 <a id="Vector3.__repr__"></a>
 
-**Vector3.\_\_repr\_\_**
-
 ```python
 def __repr__(self):
 ```
@@ -3850,8 +3518,6 @@ Return repr(self).
 </div>
 
 <a id="Vector3.__rmul__"></a>
-
-**Vector3.\_\_rmul\_\_**
 
 ```python
 def __rmul__(self, other):
@@ -3870,8 +3536,6 @@ c = other * v1
 
 <a id="Vector3.__sub__"></a>
 
-**Vector3.\_\_sub\_\_**
-
 ```python
 def __sub__(self, other):
 ```
@@ -3888,8 +3552,6 @@ v3 = v1 - v2
 
 <a id="Vector3.__truediv__"></a>
 
-**Vector3.\_\_truediv\_\_**
-
 ```python
 def __truediv__(self, other):
 ```
@@ -3902,8 +3564,6 @@ def __truediv__(self, other):
 
 <a id="Vector3.cdot"></a>
 
-**Vector3.cdot**
-
 ```python
 def cdot(self, v):
 ```
@@ -3915,8 +3575,6 @@ Returns the conjugated dot product: *self*\* dot *v*.
 </div>
 
 <a id="Vector3.close"></a>
-
-**Vector3.close**
 
 ```python
 def close(self, v, tol=1e-07):
@@ -3935,8 +3593,6 @@ v1.close(v2, [tol])
 
 <a id="Vector3.conj"></a>
 
-**Vector3.conj**
-
 ```python
 def conj(self):
 ```
@@ -3948,8 +3604,6 @@ def conj(self):
 </div>
 
 <a id="Vector3.cross"></a>
-
-**Vector3.cross**
 
 ```python
 def cross(self, v):
@@ -3967,8 +3621,6 @@ v3 = v1.cross(v2)
 
 <a id="Vector3.dot"></a>
 
-**Vector3.dot**
-
 ```python
 def dot(self, v):
 ```
@@ -3985,8 +3637,6 @@ v3 = v1.dot(v2)
 
 <a id="Vector3.norm"></a>
 
-**Vector3.norm**
-
 ```python
 def norm(self):
 ```
@@ -4002,8 +3652,6 @@ v2 = v1.norm()
 </div>
 
 <a id="Vector3.rotate"></a>
-
-**Vector3.rotate**
 
 ```python
 def rotate(self, axis, theta):
@@ -4024,8 +3672,6 @@ v2 = v1.rotate(axis, theta)
 
 <a id="Vector3.rotate_lattice"></a>
 
-**Vector3.rotate\_lattice**
-
 ```python
 def rotate_lattice(self, axis, theta, lat):
 ```
@@ -4037,8 +3683,6 @@ def rotate_lattice(self, axis, theta, lat):
 </div>
 
 <a id="Vector3.rotate_reciprocal"></a>
-
-**Vector3.rotate\_reciprocal**
 
 ```python
 def rotate_reciprocal(self, axis, theta, lat):
@@ -4052,8 +3696,6 @@ def rotate_reciprocal(self, axis, theta, lat):
 
 <a id="Vector3.scale"></a>
 
-**Vector3.scale**
-
 ```python
 def scale(self, s):
 ```
@@ -4065,8 +3707,6 @@ def scale(self, s):
 </div>
 
 <a id="Vector3.unit"></a>
-
-**Vector3.unit**
 
 ```python
 def unit(self):
@@ -4153,8 +3793,6 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 
 <a id="GeometricObject.__init__"></a>
 
-**GeometricObject.\_\_init\_\_**
-
 ```python
 def __init__(self,
              material=Medium(),
@@ -4186,8 +3824,6 @@ constructor via keyword arguments.
 
 <a id="GeometricObject.__add__"></a>
 
-**GeometricObject.\_\_add\_\_**
-
 ```python
 def __add__(self, vec):
 ```
@@ -4199,8 +3835,6 @@ def __add__(self, vec):
 </div>
 
 <a id="GeometricObject.__contains__"></a>
-
-**GeometricObject.\_\_contains\_\_**
 
 ```python
 def __contains__(self, point):
@@ -4214,8 +3848,6 @@ def __contains__(self, point):
 
 <a id="GeometricObject.__iadd__"></a>
 
-**GeometricObject.\_\_iadd\_\_**
-
 ```python
 def __iadd__(self, vec):
 ```
@@ -4227,8 +3859,6 @@ def __iadd__(self, vec):
 </div>
 
 <a id="GeometricObject.__radd__"></a>
-
-**GeometricObject.\_\_radd\_\_**
 
 ```python
 def __radd__(self, vec):
@@ -4242,8 +3872,6 @@ def __radd__(self, vec):
 
 <a id="GeometricObject.info"></a>
 
-**GeometricObject.info**
-
 ```python
 def info(self, indent_by=0):
 ```
@@ -4256,8 +3884,6 @@ Displays all properties and current values of a `GeometricObject`, indented by
 </div>
 
 <a id="GeometricObject.shift"></a>
-
-**GeometricObject.shift**
 
 ```python
 def shift(self, vec):
@@ -4302,8 +3928,6 @@ Represents a sphere.
 
 <a id="Sphere.__init__"></a>
 
-**Sphere.\_\_init\_\_**
-
 ```python
 def __init__(self, radius, **kwargs):
 ```
@@ -4345,8 +3969,6 @@ A cylinder, with circular cross-section and finite height.
 
 <a id="Cylinder.__init__"></a>
 
-**Cylinder.\_\_init\_\_**
-
 ```python
 def __init__(self,
              radius,
@@ -4382,8 +4004,6 @@ Represents a cylindrical wedge.
 
 
 <a id="Wedge.__init__"></a>
-
-**Wedge.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -4425,8 +4045,6 @@ is halfway between the two circular ends.
 
 <a id="Cone.__init__"></a>
 
-**Cone.\_\_init\_\_**
-
 ```python
 def __init__(self, radius, radius2=0, **kwargs):
 ```
@@ -4462,8 +4080,6 @@ A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
 
 
 <a id="Block.__init__"></a>
-
-**Block.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -4511,8 +4127,6 @@ properties, but defines an ellipsoid inscribed inside the block.
 
 <a id="Ellipsoid.__init__"></a>
 
-**Ellipsoid.\_\_init\_\_**
-
 ```python
 def __init__(self, **kwargs):
 ```
@@ -4544,8 +4158,6 @@ Polygonal prism type.
 
 
 <a id="Prism.__init__"></a>
-
-**Prism.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -4637,8 +4249,6 @@ Scales the matrix `m` by the number `s`.
 
 <a id="Matrix.__init__"></a>
 
-**Matrix.\_\_init\_\_**
-
 ```python
 def __init__(self,
              c1=Vector3<0.0, 0.0, 0.0>,
@@ -4656,8 +4266,6 @@ Constructs a `Matrix`.
 
 <a id="Matrix.__add__"></a>
 
-**Matrix.\_\_add\_\_**
-
 ```python
 def __add__(self, m):
 ```
@@ -4669,8 +4277,6 @@ def __add__(self, m):
 </div>
 
 <a id="Matrix.__array__"></a>
-
-**Matrix.\_\_array\_\_**
 
 ```python
 def __array__(self):
@@ -4684,8 +4290,6 @@ def __array__(self):
 
 <a id="Matrix.__getitem__"></a>
 
-**Matrix.\_\_getitem\_\_**
-
 ```python
 def __getitem__(self, i):
 ```
@@ -4697,8 +4301,6 @@ def __getitem__(self, i):
 </div>
 
 <a id="Matrix.__mul__"></a>
-
-**Matrix.\_\_mul\_\_**
 
 ```python
 def __mul__(self, m):
@@ -4712,8 +4314,6 @@ def __mul__(self, m):
 
 <a id="Matrix.__repr__"></a>
 
-**Matrix.\_\_repr\_\_**
-
 ```python
 def __repr__(self):
 ```
@@ -4725,8 +4325,6 @@ Return repr(self).
 </div>
 
 <a id="Matrix.__rmul__"></a>
-
-**Matrix.\_\_rmul\_\_**
 
 ```python
 def __rmul__(self, left_arg):
@@ -4740,8 +4338,6 @@ def __rmul__(self, left_arg):
 
 <a id="Matrix.__sub__"></a>
 
-**Matrix.\_\_sub\_\_**
-
 ```python
 def __sub__(self, m):
 ```
@@ -4753,8 +4349,6 @@ def __sub__(self, m):
 </div>
 
 <a id="Matrix.__truediv__"></a>
-
-**Matrix.\_\_truediv\_\_**
 
 ```python
 def __truediv__(self, scalar):
@@ -4768,8 +4362,6 @@ def __truediv__(self, scalar):
 
 <a id="Matrix.conj"></a>
 
-**Matrix.conj**
-
 ```python
 def conj(self):
 ```
@@ -4781,8 +4373,6 @@ def conj(self):
 </div>
 
 <a id="Matrix.determinant"></a>
-
-**Matrix.determinant**
 
 ```python
 def determinant(self):
@@ -4796,8 +4386,6 @@ def determinant(self):
 
 <a id="Matrix.getH"></a>
 
-**Matrix.getH**
-
 ```python
 def getH(self):
 ```
@@ -4809,8 +4397,6 @@ def getH(self):
 </div>
 
 <a id="Matrix.inverse"></a>
-
-**Matrix.inverse**
 
 ```python
 def inverse(self):
@@ -4824,8 +4410,6 @@ def inverse(self):
 
 <a id="Matrix.mm_mult"></a>
 
-**Matrix.mm\_mult**
-
 ```python
 def mm_mult(self, m):
 ```
@@ -4837,8 +4421,6 @@ def mm_mult(self, m):
 </div>
 
 <a id="Matrix.mv_mult"></a>
-
-**Matrix.mv\_mult**
 
 ```python
 def mv_mult(self, v):
@@ -4852,8 +4434,6 @@ def mv_mult(self, v):
 
 <a id="Matrix.row"></a>
 
-**Matrix.row**
-
 ```python
 def row(self, i):
 ```
@@ -4866,8 +4446,6 @@ def row(self, i):
 
 <a id="Matrix.scale"></a>
 
-**Matrix.scale**
-
 ```python
 def scale(self, s):
 ```
@@ -4879,8 +4457,6 @@ def scale(self, s):
 </div>
 
 <a id="Matrix.transpose"></a>
-
-**Matrix.transpose**
 
 ```python
 def transpose(self):
@@ -4897,8 +4473,6 @@ def transpose(self):
 **Related function:**
 
 <a id="get_rotation_matrix"></a>
-
-**meep.get\_rotation\_matrix function**
 
 ```python
 def get_rotation_matrix(axis, theta):
@@ -4953,8 +4527,6 @@ the axis of the rotation.
 
 
 <a id="Symmetry.__init__"></a>
-
-**Symmetry.\_\_init\_\_**
 
 ```python
 def __init__(self, direction, phase=1):
@@ -5090,8 +4662,6 @@ properties.
 
 <a id="PML.__init__"></a>
 
-**PML.\_\_init\_\_**
-
 ```python
 def __init__(self,
              thickness,
@@ -5099,7 +4669,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7f9960b058c0>):
+             pml_profile=<function PML.<lambda> at 0x7fe669109b00>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5227,8 +4797,6 @@ Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynami
 
 <a id="Source.__init__"></a>
 
-**Source.\_\_init\_\_**
-
 ```python
 def __init__(self,
              src,
@@ -5326,8 +4894,6 @@ TODO:
 
 <a id="SourceTime.__init__"></a>
 
-**SourceTime.\_\_init\_\_**
-
 ```python
 def __init__(self, is_integrated=False):
 ```
@@ -5407,8 +4973,6 @@ source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
 
 
 <a id="EigenModeSource.__init__"></a>
-
-**EigenModeSource.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -5512,8 +5076,6 @@ Construct an `EigenModeSource`.
 
 <a id="EigenModeSource.eig_power"></a>
 
-**EigenModeSource.eig\_power**
-
 ```python
 def eig_power(self, freq):
 ```
@@ -5548,8 +5110,6 @@ response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-singl
 
 
 <a id="ContinuousSource.__init__"></a>
-
-**ContinuousSource.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -5626,8 +5186,6 @@ irrelevant.
 
 <a id="GaussianSource.__init__"></a>
 
-**GaussianSource.\_\_init\_\_**
-
 ```python
 def __init__(self,
              frequency=None,
@@ -5687,8 +5245,6 @@ Construct a `GaussianSource`.
 
 <a id="GaussianSource.fourier_transform"></a>
 
-**GaussianSource.fourier\_transform**
-
 ```python
 def fourier_transform(self, freq):
 ```
@@ -5728,8 +5284,6 @@ demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse
 
 
 <a id="CustomSource.__init__"></a>
-
-**CustomSource.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -5801,8 +5355,6 @@ the box add instead of subtract.
 
 
 <a id="FluxRegion.__init__"></a>
-
-**FluxRegion.\_\_init\_\_**
 
 ```python
 def __init__(self,
@@ -5939,8 +5491,6 @@ specify a list of `Vector3` vertices using the `vertices` parameter. The `center
 
 <a id="Volume.__init__"></a>
 
-**Volume.\_\_init\_\_**
-
 ```python
 def __init__(self,
              center=Vector3<0.0, 0.0, 0.0>,
@@ -5958,8 +5508,6 @@ Construct a Volume.
 
 <a id="Volume.get_edges"></a>
 
-**Volume.get\_edges**
-
 ```python
 def get_edges(self):
 ```
@@ -5972,8 +5520,6 @@ def get_edges(self):
 
 <a id="Volume.get_vertices"></a>
 
-**Volume.get\_vertices**
-
 ```python
 def get_vertices(self):
 ```
@@ -5985,8 +5531,6 @@ def get_vertices(self):
 </div>
 
 <a id="Volume.pt_in_volume"></a>
-
-**Volume.pt\_in\_volume**
 
 ```python
 def pt_in_volume(self, pt):
@@ -6003,8 +5547,6 @@ def pt_in_volume(self, pt):
 ** Related function:**
 
 <a id="get_center_and_size"></a>
-
-**meep.get\_center\_and\_size function**
 
 ```python
 def get_center_and_size(vol):
@@ -6057,8 +5599,6 @@ swigobj_attr and return the property they requested.
 
 <a id="DftObj.__init__"></a>
 
-**DftObj.\_\_init\_\_**
-
 ```python
 def __init__(self, func, args):
 ```
@@ -6070,8 +5610,6 @@ Initialize self.  See help(type(self)) for accurate signature.
 </div>
 
 <a id="DftObj.swigobj_attr"></a>
-
-**DftObj.swigobj\_attr**
 
 ```python
 def swigobj_attr(self, attr):
@@ -6104,8 +5642,6 @@ class DftFlux(DftObj):
 
 <a id="DftFlux.__init__"></a>
 
-**DftFlux.\_\_init\_\_**
-
 ```python
 def __init__(self, func, args):
 ```
@@ -6136,8 +5672,6 @@ class DftForce(DftObj):
 
 
 <a id="DftForce.__init__"></a>
-
-**DftForce.\_\_init\_\_**
 
 ```python
 def __init__(self, func, args):
@@ -6170,8 +5704,6 @@ class DftNear2Far(DftObj):
 
 <a id="DftNear2Far.__init__"></a>
 
-**DftNear2Far.\_\_init\_\_**
-
 ```python
 def __init__(self, func, args):
 ```
@@ -6183,8 +5715,6 @@ Initialize self.  See help(type(self)) for accurate signature.
 </div>
 
 <a id="DftNear2Far.flux"></a>
-
-**DftNear2Far.flux**
 
 ```python
 def flux(self, direction, where, resolution):
@@ -6221,8 +5751,6 @@ class DftEnergy(DftObj):
 
 <a id="DftEnergy.__init__"></a>
 
-**DftEnergy.\_\_init\_\_**
-
 ```python
 def __init__(self, func, args):
 ```
@@ -6253,8 +5781,6 @@ class DftFields(DftObj):
 
 
 <a id="DftFields.__init__"></a>
-
-**DftFields.\_\_init\_\_**
 
 ```python
 def __init__(self, func, args):
@@ -6315,8 +5841,6 @@ track different volume locations (using `mp.in_volume`) or field components.
 
 <a id="Animate2D.__init__"></a>
 
-**Animate2D.\_\_init\_\_**
-
 ```python
 def __init__(self,
              sim,
@@ -6368,8 +5892,6 @@ Construct an `Animate2D` object.
 
 <a id="Animate2D.__call__"></a>
 
-**Animate2D.\_\_call\_\_**
-
 ```python
 def __call__(self, sim, todo):
 ```
@@ -6381,8 +5903,6 @@ Call self as a function.
 </div>
 
 <a id="Animate2D.grab_frame"></a>
-
-**Animate2D.grab\_frame**
 
 ```python
 def grab_frame(self):
@@ -6396,8 +5916,6 @@ def grab_frame(self):
 
 <a id="Animate2D.reset"></a>
 
-**Animate2D.reset**
-
 ```python
 def reset(self):
 ```
@@ -6410,8 +5928,6 @@ def reset(self):
 
 <a id="Animate2D.set_figure"></a>
 
-**Animate2D.set\_figure**
-
 ```python
 def set_figure(self, f):
 ```
@@ -6423,8 +5939,6 @@ def set_figure(self, f):
 </div>
 
 <a id="Animate2D.to_gif"></a>
-
-**Animate2D.to\_gif**
 
 ```python
 def to_gif(self, fps, filename):
@@ -6442,8 +5956,6 @@ format only supports 256 colors from a _predefined_ color palette. Requires
 
 <a id="Animate2D.to_jshtml"></a>
 
-**Animate2D.to\_jshtml**
-
 ```python
 def to_jshtml(self, fps):
 ```
@@ -6457,8 +5969,6 @@ playback. User must specify a frame rate `fps` in frames per second.
 </div>
 
 <a id="Animate2D.to_mp4"></a>
-
-**Animate2D.to\_mp4**
 
 ```python
 def to_mp4(self, fps, filename):
@@ -6537,8 +6047,6 @@ sim.run(mp.after_sources(h))
 
 <a id="Harminv.__init__"></a>
 
-**Harminv.\_\_init\_\_**
-
 ```python
 def __init__(self, c, pt, fcen, df, mxbands=None):
 ```
@@ -6559,8 +6067,6 @@ search for. Defaults to 100.
 
 <a id="Harminv.__call__"></a>
 
-**Harminv.\_\_call\_\_**
-
 ```python
 def __call__(self, sim, todo):
 ```
@@ -6580,8 +6086,6 @@ Miscellaneous Functions
 
 <a id="quiet"></a>
 
-**meep.quiet function**
-
 ```python
 def quiet(quietval=True):
 ```
@@ -6598,8 +6102,6 @@ value will persist across runs within the same script.
 
 <a id="verbosity"></a>
 
-**meep.verbosity function**
-
 ```python
 def verbosity(v=1):
 ```
@@ -6614,8 +6116,6 @@ output.
 
 
 <a id="interpolate"></a>
-
-**meep.interpolate function**
 
 ```python
 def interpolate(n, nums):
@@ -6634,8 +6134,6 @@ original list.
 
 <a id="get_flux_freqs"></a>
 
-**meep.get\_flux\_freqs function**
-
 ```python
 def get_flux_freqs(f):
 ```
@@ -6649,8 +6147,6 @@ spectrum for.
 
 
 <a id="get_fluxes"></a>
-
-**meep.get\_fluxes function**
 
 ```python
 def get_fluxes(f):
@@ -6666,8 +6162,6 @@ accumulated.
 
 <a id="scale_flux_fields"></a>
 
-**meep.scale\_flux\_fields function**
-
 ```python
 def scale_flux_fields(s, flux):
 ```
@@ -6682,8 +6176,6 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g.
 
 
 <a id="get_eigenmode_freqs"></a>
-
-**meep.get\_eigenmode\_freqs function**
 
 ```python
 def get_eigenmode_freqs(f):
@@ -6702,8 +6194,6 @@ spectrum for.
 
 <a id="get_energy_freqs"></a>
 
-**meep.get\_energy\_freqs function**
-
 ```python
 def get_energy_freqs(f):
 ```
@@ -6716,8 +6206,6 @@ spectrum for.
 </div>
 
 <a id="get_electric_energy"></a>
-
-**meep.get\_electric\_energy function**
 
 ```python
 def get_electric_energy(f):
@@ -6732,8 +6220,6 @@ electric fields that it has accumulated.
 
 <a id="get_magnetic_energy"></a>
 
-**meep.get\_magnetic\_energy function**
-
 ```python
 def get_magnetic_energy(f):
 ```
@@ -6746,8 +6232,6 @@ magnetic fields that it has accumulated.
 </div>
 
 <a id="get_total_energy"></a>
-
-**meep.get\_total\_energy function**
 
 ```python
 def get_total_energy(f):
@@ -6766,8 +6250,6 @@ total fields that it has accumulated.
 
 <a id="get_force_freqs"></a>
 
-**meep.get\_force\_freqs function**
-
 ```python
 def get_force_freqs(f):
 ```
@@ -6780,8 +6262,6 @@ spectrum for.
 </div>
 
 <a id="get_forces"></a>
-
-**meep.get\_forces function**
 
 ```python
 def get_forces(f):
@@ -6800,8 +6280,6 @@ accumulated.
 
 <a id="Ldos"></a>
 
-**meep.Ldos function**
-
 ```python
 def Ldos(*args):
 ```
@@ -6819,8 +6297,6 @@ argument.
 
 <a id="get_ldos_freqs"></a>
 
-**meep.get\_ldos\_freqs function**
-
 ```python
 def get_ldos_freqs(l):
 ```
@@ -6833,8 +6309,6 @@ spectrum for.
 </div>
 
 <a id="dft_ldos"></a>
-
-**meep.dft\_ldos function**
 
 ```python
 def dft_ldos(*args, **kwargs):
@@ -6862,8 +6336,6 @@ is complete.
 
 <a id="get_near2far_freqs"></a>
 
-**meep.get\_near2far\_freqs function**
-
 ```python
 def get_near2far_freqs(f):
 ```
@@ -6876,8 +6348,6 @@ spectrum for.
 </div>
 
 <a id="scale_near2far_fields"></a>
-
-**meep.scale\_near2far\_fields function**
 
 ```python
 def scale_near2far_fields(s, near2far):
@@ -6897,8 +6367,6 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 <a id="GDSII_layers"></a>
 
-**meep.GDSII\_layers function**
-
 ```python
 def GDSII_layers(fname):
 ```
@@ -6917,8 +6385,6 @@ Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 
 <a id="GDSII_prisms"></a>
 
-**meep.GDSII\_prisms function**
-
 ```python
 def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0):
 ```
@@ -6931,8 +6397,6 @@ Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer numb
 </div>
 
 <a id="GDSII_vol"></a>
-
-**meep.GDSII\_vol function**
 
 ```python
 def GDSII_vol(fname, layer, zmin, zmax):
@@ -6955,8 +6419,6 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 
 
 <a id="stop_when_fields_decayed"></a>
-
-**meep.stop\_when\_fields\_decayed function**
 
 ```python
 def stop_when_fields_decayed(dt, c, pt, decay_by):
@@ -6982,8 +6444,6 @@ slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.m
 
 <a id="stop_after_walltime"></a>
 
-**meep.stop\_after\_walltime function**
-
 ```python
 def stop_after_walltime(t):
 ```
@@ -6996,8 +6456,6 @@ parameter. Stops the simulation after `t` seconds of wall time have passed.
 </div>
 
 <a id="stop_on_interrupt"></a>
-
-**meep.stop\_on\_interrupt function**
 
 ```python
 def stop_on_interrupt():
@@ -7018,8 +6476,6 @@ follows the `run` function (e.g., outputting fields).
 
 <a id="output_epsilon"></a>
 
-**meep.output\_epsilon function**
-
 ```python
 def output_epsilon(sim, *step_func_args, **kwargs):
 ```
@@ -7035,8 +6491,6 @@ frequency-independent part of ε (the $\omega        o\infty$ limit).
 </div>
 
 <a id="output_mu"></a>
-
-**meep.output\_mu function**
 
 ```python
 def output_mu(sim, *step_func_args, **kwargs):
@@ -7054,8 +6508,6 @@ frequency-independent part of μ (the $\omega        o\infty$ limit).
 
 <a id="output_poynting"></a>
 
-**meep.output\_poynting function**
-
 ```python
 def output_poynting(sim):
 ```
@@ -7071,8 +6523,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 <a id="output_hpwr"></a>
 
-**meep.output\_hpwr function**
-
 ```python
 def output_hpwr(sim):
 ```
@@ -7085,8 +6535,6 @@ Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 
 <a id="output_dpwr"></a>
 
-**meep.output\_dpwr function**
-
 ```python
 def output_dpwr(sim):
 ```
@@ -7098,8 +6546,6 @@ Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 </div>
 
 <a id="output_tot_pwr"></a>
-
-**meep.output\_tot\_pwr function**
 
 ```python
 def output_tot_pwr(sim):
@@ -7115,8 +6561,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 <a id="output_png"></a>
-
-**meep.output\_png function**
 
 ```python
 def output_png(compnt, options, rm_h5=True):
@@ -7148,8 +6592,6 @@ file requires `output_png(component, h5topng_options, rm_h5=False)`.
 
 <a id="output_hfield"></a>
 
-**meep.output\_hfield function**
-
 ```python
 def output_hfield(sim):
 ```
@@ -7162,8 +6604,6 @@ the different components are stored as different datasets within the *same* file
 </div>
 
 <a id="output_hfield_x"></a>
-
-**meep.output\_hfield\_x function**
 
 ```python
 def output_hfield_x(sim):
@@ -7179,8 +6619,6 @@ imaginary parts, respectively.
 
 <a id="output_hfield_y"></a>
 
-**meep.output\_hfield\_y function**
-
 ```python
 def output_hfield_y(sim):
 ```
@@ -7194,8 +6632,6 @@ imaginary parts, respectively.
 </div>
 
 <a id="output_hfield_z"></a>
-
-**meep.output\_hfield\_z function**
 
 ```python
 def output_hfield_z(sim):
@@ -7211,8 +6647,6 @@ imaginary parts, respectively.
 
 <a id="output_hfield_r"></a>
 
-**meep.output\_hfield\_r function**
-
 ```python
 def output_hfield_r(sim):
 ```
@@ -7226,8 +6660,6 @@ imaginary parts, respectively.
 </div>
 
 <a id="output_hfield_p"></a>
-
-**meep.output\_hfield\_p function**
 
 ```python
 def output_hfield_p(sim):
@@ -7244,8 +6676,6 @@ and imaginary parts, respectively.
 
 <a id="output_bfield"></a>
 
-**meep.output\_bfield function**
-
 ```python
 def output_bfield(sim):
 ```
@@ -7258,8 +6688,6 @@ the different components are stored as different datasets within the *same* file
 </div>
 
 <a id="output_bfield_x"></a>
-
-**meep.output\_bfield\_x function**
 
 ```python
 def output_bfield_x(sim):
@@ -7275,8 +6703,6 @@ imaginary parts, respectively.
 
 <a id="output_bfield_y"></a>
 
-**meep.output\_bfield\_y function**
-
 ```python
 def output_bfield_y(sim):
 ```
@@ -7290,8 +6716,6 @@ imaginary parts, respectively.
 </div>
 
 <a id="output_bfield_z"></a>
-
-**meep.output\_bfield\_z function**
 
 ```python
 def output_bfield_z(sim):
@@ -7307,8 +6731,6 @@ imaginary parts, respectively.
 
 <a id="output_bfield_r"></a>
 
-**meep.output\_bfield\_r function**
-
 ```python
 def output_bfield_r(sim):
 ```
@@ -7322,8 +6744,6 @@ imaginary parts, respectively.
 </div>
 
 <a id="output_bfield_p"></a>
-
-**meep.output\_bfield\_p function**
 
 ```python
 def output_bfield_p(sim):
@@ -7343,8 +6763,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 <a id="output_efield"></a>
 
-**meep.output\_efield function**
-
 ```python
 def output_efield(sim):
 ```
@@ -7357,8 +6775,6 @@ the different components are stored as different datasets within the *same* file
 </div>
 
 <a id="output_efield_x"></a>
-
-**meep.output\_efield\_x function**
 
 ```python
 def output_efield_x(sim):
@@ -7374,8 +6790,6 @@ imaginary parts, respectively.
 
 <a id="output_efield_y"></a>
 
-**meep.output\_efield\_y function**
-
 ```python
 def output_efield_y(sim):
 ```
@@ -7389,8 +6803,6 @@ imaginary parts, respectively.
 </div>
 
 <a id="output_efield_z"></a>
-
-**meep.output\_efield\_z function**
 
 ```python
 def output_efield_z(sim):
@@ -7406,8 +6818,6 @@ imaginary parts, respectively.
 
 <a id="output_efield_r"></a>
 
-**meep.output\_efield\_r function**
-
 ```python
 def output_efield_r(sim):
 ```
@@ -7421,8 +6831,6 @@ imaginary parts, respectively.
 </div>
 
 <a id="output_efield_p"></a>
-
-**meep.output\_efield\_p function**
 
 ```python
 def output_efield_p(sim):
@@ -7442,8 +6850,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 <a id="output_dfield"></a>
 
-**meep.output\_dfield function**
-
 ```python
 def output_dfield(sim):
 ```
@@ -7456,8 +6862,6 @@ is, the different components are stored as different datasets within the *same* 
 </div>
 
 <a id="output_dfield_x"></a>
-
-**meep.output\_dfield\_x function**
 
 ```python
 def output_dfield_x(sim):
@@ -7473,8 +6877,6 @@ and imaginary parts, respectively.
 
 <a id="output_dfield_y"></a>
 
-**meep.output\_dfield\_y function**
-
 ```python
 def output_dfield_y(sim):
 ```
@@ -7488,8 +6890,6 @@ and imaginary parts, respectively.
 </div>
 
 <a id="output_dfield_z"></a>
-
-**meep.output\_dfield\_z function**
 
 ```python
 def output_dfield_z(sim):
@@ -7505,8 +6905,6 @@ and imaginary parts, respectively.
 
 <a id="output_dfield_r"></a>
 
-**meep.output\_dfield\_r function**
-
 ```python
 def output_dfield_r(sim):
 ```
@@ -7520,8 +6918,6 @@ and imaginary parts, respectively.
 </div>
 
 <a id="output_dfield_p"></a>
-
-**meep.output\_dfield\_p function**
 
 ```python
 def output_dfield_p(sim):
@@ -7541,8 +6937,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 <a id="output_sfield"></a>
 
-**meep.output\_sfield function**
-
 ```python
 def output_sfield(sim):
 ```
@@ -7559,8 +6953,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 <a id="output_sfield_x"></a>
 
-**meep.output\_sfield\_x function**
-
 ```python
 def output_sfield_x(sim):
 ```
@@ -7574,8 +6966,6 @@ and imaginary parts, respectively.
 </div>
 
 <a id="output_sfield_y"></a>
-
-**meep.output\_sfield\_y function**
 
 ```python
 def output_sfield_y(sim):
@@ -7591,8 +6981,6 @@ and imaginary parts, respectively.
 
 <a id="output_sfield_z"></a>
 
-**meep.output\_sfield\_z function**
-
 ```python
 def output_sfield_z(sim):
 ```
@@ -7607,8 +6995,6 @@ and imaginary parts, respectively.
 
 <a id="output_sfield_r"></a>
 
-**meep.output\_sfield\_r function**
-
 ```python
 def output_sfield_r(sim):
 ```
@@ -7622,8 +7008,6 @@ and imaginary parts, respectively.
 </div>
 
 <a id="output_sfield_p"></a>
-
-**meep.output\_sfield\_p function**
 
 ```python
 def output_sfield_p(sim):
@@ -8153,6 +7537,7 @@ plt.show()
 
 #### Source Slices
 
+* *get_source_slice(component, vol=None, center=None, size=None)* — Deprecated. Use `get_source` below.
 * [Simulation.get_source(component, vol=None, center=None, size=None)](#Simulation.get_source)
 
 
@@ -8174,8 +7559,6 @@ See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 <a id="combine_step_funcs"></a>
 
-**meep.combine\_step\_funcs function**
-
 ```python
 def combine_step_funcs(*step_funcs):
 ```
@@ -8188,8 +7571,6 @@ all of the passed step functions.
 </div>
 
 <a id="synchronized_magnetic"></a>
-
-**meep.synchronized\_magnetic function**
 
 ```python
 def synchronized_magnetic(*step_funcs):
@@ -8210,8 +7591,6 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 <a id="when_true"></a>
 
-**meep.when\_true function**
-
 ```python
 def when_true(cond, *step_funcs):
 ```
@@ -8224,8 +7603,6 @@ no arguments), evaluate the step functions whenever `condition` returns `True`.
 </div>
 
 <a id="when_false"></a>
-
-**meep.when\_false function**
 
 ```python
 def when_false(cond, *step_funcs):
@@ -8240,8 +7617,6 @@ no arguments), evaluate the step functions whenever `condition` returns `False`.
 
 <a id="at_every"></a>
 
-**meep.at\_every function**
-
 ```python
 def at_every(dt, *step_funcs):
 ```
@@ -8254,8 +7629,6 @@ Given zero or more step functions, evaluates them at every time interval of $dT$
 </div>
 
 <a id="after_time"></a>
-
-**meep.after\_time function**
 
 ```python
 def after_time(t, *step_funcs):
@@ -8270,8 +7643,6 @@ units have elapsed from the start of the run.
 
 <a id="before_time"></a>
 
-**meep.before\_time function**
-
 ```python
 def before_time(t, *step_funcs):
 ```
@@ -8284,8 +7655,6 @@ units have elapsed from the start of the run.
 </div>
 
 <a id="at_time"></a>
-
-**meep.at\_time function**
 
 ```python
 def at_time(t, *step_funcs):
@@ -8300,8 +7669,6 @@ have elapsed from the start of the run.
 
 <a id="after_sources"></a>
 
-**meep.after\_sources function**
-
 ```python
 def after_sources(*step_funcs):
 ```
@@ -8314,8 +7681,6 @@ sources have turned off.
 </div>
 
 <a id="after_sources_and_time"></a>
-
-**meep.after\_sources\_and\_time function**
 
 ```python
 def after_sources_and_time(t, *step_funcs):
@@ -8330,8 +7695,6 @@ sources have turned off, plus an additional $T$ time units have elapsed.
 
 <a id="during_sources"></a>
 
-**meep.during\_sources function**
-
 ```python
 def during_sources(*step_funcs):
 ```
@@ -8345,8 +7708,6 @@ sources have turned off.
 
 <a id="at_beginning"></a>
 
-**meep.at\_beginning function**
-
 ```python
 def at_beginning(*step_funcs):
 ```
@@ -8359,8 +7720,6 @@ run.
 </div>
 
 <a id="at_end"></a>
-
-**meep.at\_end function**
 
 ```python
 def at_end(*step_funcs):
@@ -8378,8 +7737,6 @@ Given zero or more step functions, evaluates them only once, at the end of the r
 
 <a id="in_volume"></a>
 
-**meep.in\_volume function**
-
 ```python
 def in_volume(v, *step_funcs):
 ```
@@ -8394,8 +7751,6 @@ output a subset (or a superset) of the cell, corresponding to the `meep::volume*
 
 <a id="in_point"></a>
 
-**meep.in\_point function**
-
 ```python
 def in_point(pt, *step_funcs):
 ```
@@ -8408,8 +7763,6 @@ output a single *point* of data, at `pt` (a `Vector3`).
 </div>
 
 <a id="to_appended"></a>
-
-**meep.to\_appended function**
 
 ```python
 def to_appended(fname, *step_funcs):
@@ -8425,8 +7778,6 @@ dimension* to their datasets, corresponding to time.
 </div>
 
 <a id="with_prefix"></a>
-
-**meep.with\_prefix function**
 
 ```python
 def with_prefix(pre, *step_funcs):
