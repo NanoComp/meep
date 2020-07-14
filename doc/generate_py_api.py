@@ -117,11 +117,13 @@ class MethodItem(FunctionItem):
     def __init__(self, name, obj, klass):
         super(MethodItem, self).__init__(name, obj)
         self.klass = klass
+        self.method_name = name
+        self.name = '{}.{}'.format(klass.name, name)
 
     def create_markdown(self):
         # pull relevant attributes into local variables
         class_name = self.klass.name
-        method_name = self.name
+        method_name = self.method_name
         method_name_escaped = method_name.replace('_', '\_')
         docstring = self.docstring if self.docstring else ''
         parameters = self.get_parameters(4 + len(method_name) + 1)
@@ -162,25 +164,25 @@ class ClassItem(Item):
         base_classes = [base.__name__ for base in self.obj.__bases__]
         base_classes = ', '.join(base_classes)
 
-        method_docs = []
-        if self.methods:
-            # reorder self.methods so __init__ comes first, if it isn't already
-            methods = self.methods[:]
-            for idx, meth in enumerate(self.methods):
-                if meth.name == '__init__':
-                    if idx != 0:
-                        methods.remove(meth)
-                        methods.insert(0, meth)
-                    break
+        # method_docs = []
+        # if self.methods:
+        #     # reorder self.methods so __init__ comes first, if it isn't already
+        #     methods = self.methods[:]
+        #     for idx, meth in enumerate(self.methods):
+        #         if meth.name == '__init__':
+        #             if idx != 0:
+        #                 methods.remove(meth)
+        #                 methods.insert(0, meth)
+        #             break
 
-            for item in methods:
-                if not check_excluded(item.name) and \
-                   not check_excluded('{}.{}'.format(self.name, item.name)):
-                     doc = item.create_markdown()
-                     method_docs.append(doc)
+        #     for item in methods:
+        #         if not check_excluded(item.name) and \
+        #            not check_excluded('{}.{}'.format(self.name, item.name)):
+        #              doc = item.create_markdown()
+        #              method_docs.append(doc)
 
-        # join the methods into a single string
-        method_docs = '\n'.join(method_docs)
+        # # join the methods into a single string
+        # method_docs = '\n'.join(method_docs)
 
         # Substitute values into the template
         doc = self.template.format(**locals())
@@ -206,7 +208,9 @@ def load_module(module):
 
     for name, member in members:
         if inspect.isclass(member):
-            items.append(ClassItem(name, member))
+            item = ClassItem(name, member)
+            items.append(item)
+            items += item.methods
         if inspect.isfunction(member):
             items.append(FunctionItem(name, member))
 
