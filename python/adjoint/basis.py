@@ -114,7 +114,7 @@ class BilinearInterpolationBasis(Basis):
         dJ_dp = np.zeros((Nx * Ny,Nf))
         for fi in range(Nf):
             for zi in range(Nz):
-                dJ_dp[:,fi] += dJ_deps[:,:,zi,fi].reshape(dg_Nx * dg_Ny,order='C') @ A
+                dJ_dp[:,fi] += np.matmul(dJ_deps[:,:,zi,fi].reshape(dg_Nx * dg_Ny,order='C'), A)
         return dJ_dp
     
     def get_bilinear_coefficients(self,x,x1,x2,y,y1,y2):

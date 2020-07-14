@@ -1,0 +1,47 @@
+/* Some custom CSS for Simpetus docs */
+
+/* Indent the class docstring */
+.class_docstring {
+    margin-left: 25px;
+}
+
+/* And the members of the class (the methods) */
+.class_members {
+    margin-left: 25px;
+}
+
+/* Tweak the style of the code blocks inside of class docstrings */
+.class_docstring code.python.hljs {
+    border: none;
+    background-color: #f0f0f8;
+}
+
+
+/* Indent the method docstrings a little more */
+.method_docstring {
+    margin-left: 35px;
+}
+
+/* code blocks inside of method docstrings */
+.method_docstring code.python.hljs {
+    border: none;
+    background-color: #f0f0f8;
+}
+
+
+/* And similar settings for top-level functions */
+.function_docstring {
+    margin-left: 35px;
+}
+.function_docstring code.python.hljs {
+    border: none;
+    background-color: #f0f0f8;
+}
+
+
+/* Turn off the ugly boxes around inline code in paragraphs and in list items */
+p code, li code {
+    border:  none;
+    font-size: 80%;
+    padding: 0 2px;
+}

@@ -9,7 +9,9 @@ docs_dir: 'doc/docs'
 site_dir: 'doc/site'
 
 theme:
-   name: readthedocs
+    name: readthedocs
+
+extra_css: [css/extra.css]
 
 markdown_extensions:
     - wikilinks
@@ -17,6 +19,7 @@ markdown_extensions:
         title: Table of Contents
     - attr_list
     - fenced_code
+    - md_in_html
     - mdx_math:
         enable_dollar_delimiter: True
 

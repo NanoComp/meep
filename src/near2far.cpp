@@ -57,8 +57,8 @@ dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double> freq_, doubl
   }
 }
 
-dft_near2far::dft_near2far(dft_chunk *F_, const double *freq_, size_t Nfreq, double eps_, double mu_,
-                           const volume &where_, const direction periodic_d_[2],
+dft_near2far::dft_near2far(dft_chunk *F_, const double *freq_, size_t Nfreq, double eps_,
+                           double mu_, const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
     : F(F_), eps(eps_), mu(mu_), where(where_) {
@@ -73,8 +73,7 @@ dft_near2far::dft_near2far(dft_chunk *F_, const double *freq_, size_t Nfreq, dou
   }
 }
 
-dft_near2far::dft_near2far(const dft_near2far &f)
-    : F(f.F), eps(f.eps), mu(f.mu), where(f.where) {
+dft_near2far::dft_near2far(const dft_near2far &f) : F(f.F), eps(f.eps), mu(f.mu), where(f.where) {
   freq = f.freq;
   for (int i = 0; i < 2; ++i) {
     periodic_d[i] = f.periodic_d[i];
@@ -294,7 +293,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
     dphi *= 0.5; // delta phi is halved because N doubles
-    double dphi2pi = dphi * 2*pi;
+    double dphi2pi = dphi * 2 * pi;
     for (int j = 0; j < 6; ++j)
       EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points (with halved dphi)
     /* N-point quadrature points i = 0..N-1.  After the first iteration (N==N0), we
@@ -373,7 +372,8 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
             double phase = phase0 + i1 * periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
             if (x.dim == Dcyl)
-              greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m, 1e-3);
+              greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m,
+                       1e-3);
             else
               green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j)
@@ -555,7 +555,6 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
-
 dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
                                       int Nperiods) {
   dft_chunk *F = 0; /* E and H chunks*/
@@ -636,8 +635,8 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
     }
   }
 
-  return dft_near2far(F, freq, Nfreq, eps, mu, everywhere, periodic_d, periodic_n,
-                      periodic_k, period);
+  return dft_near2far(F, freq, Nfreq, eps, mu, everywhere, periodic_d, periodic_n, periodic_k,
+                      period);
 }
 
 } // namespace meep

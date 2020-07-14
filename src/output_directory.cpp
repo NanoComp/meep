@@ -151,7 +151,7 @@ got_tmpdir:
   strcat(strcpy(outdirname, tmpdir), meeptemplate);
 
   if (am_master() && !mkdtemp(outdirname)) {
-      abort("failed to create temporary output directory \"%s\"", outdirname);
+    abort("failed to create temporary output directory \"%s\"", outdirname);
   }
   broadcast(0, outdirname, len);
   return outdirname;
@@ -162,15 +162,16 @@ void trash_output_directory(const char *dirname) {
 }
 
 static int rmpath(const char *path, const struct stat *s, int t, struct FTW *ftw) {
-  (void) s; (void) t; (void) ftw; // unused
+  (void)s;
+  (void)t;
+  (void)ftw; // unused
   return remove(path);
 }
 
 // equivalent to rm -rf path
 void delete_directory(const char *path) {
   all_wait(); // make sure all processes are done writing to this directory
-  if (am_master())
-    nftw(path, rmpath, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
+  if (am_master()) nftw(path, rmpath, 10, FTW_DEPTH | FTW_MOUNT | FTW_PHYS);
 }
 
 } // namespace meep

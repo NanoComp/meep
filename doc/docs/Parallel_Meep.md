@@ -97,9 +97,9 @@ For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)`
 Runtime Scaling on MPI Clusters
 -------------------------------
 
-The following are benchmarking results of the total runtime vs. number of processors/chunks for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for MPI clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances on the [Google Cloud Platform](https://cloud.google.com/). Hyperthreading is disabled and one slot on each instance/node is reserved for kernel tasks leaving 7 slots/node. [elasticluster](https://elasticluster.readthedocs.io/en/latest/) is used for the cluster management and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. Even chunk splitting is used (`split_chunks_evenly=True`). The size of the clusters ranges from 2 to 14 nodes (14 to 98 processors).
+The following are benchmarking results of the total runtime vs. number of processors for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for [MPICH](https://www.mpich.org/) clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances (8 single-threaded cores) on the [Google Cloud Platform](https://cloud.google.com/) (GCP). One slot on each node is reserved for kernel tasks leaving 7 slots per node. The software stack includes Ubuntu 16.04, the Meep [nightly build Conda package](Installation.md#nightly-builds), [elasticluster](https://elasticluster.readthedocs.io/en/latest/) for the cluster management, and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. In order to reduce [cache contention](https://en.wikipedia.org/wiki/Resource_contention), process affinity is used via the `mpirun` option `-bind-to core`. Meep's simulation domain is split into equal-sized [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (`split_chunks_evenly=True`). There are 13 clusters ranging in size from 2 to 14 nodes (14 to 98 processors).
 
-As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the time spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one corresponds well to the minimum runtime of the first figure.
+As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the mean time spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). (Timing metrics were obtained using [`Simulation.mean_time_spent_on`](Python_User_Interface.md#simulation-time).) This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one — the regime in which the simulation is constrained by the network bandwidth rather than the CPU clock speed — corresponds well to the minimum runtime of the first figure.
 
 <center>
 ![](images/parallel_benchmark_runtime_vs_nprocs.png)
@@ -109,4 +109,22 @@ As shown in the first figure below, the runtime reaches a minimum at 77 processo
 ![](images/parallel_benchmark_commcomp_vs_nprocs.png)
 </center>
 
-The results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the *x* axis to along the *y* axis).
+These results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the $x$ axis to along the $y$ axis) which significantly affects the runtime performance.
+
+For a given cluster, we can also analyze the time spent by each processor on time-stepping, MPI/synchronization, and DFT. This is shown in the next figure for the case of a cluster with 35 processors (5 nodes). Because the simulation is not properly load balanced due to the equal-sized chunks, there is a large variation in the timings for different processors particularly for the DFT where there are several idle processors (i.e., chunks which do not contain any DFT pixels).
+
+<center>
+![](images/parallel_benchmark_barplot.png)
+</center>
+
+Based on these results, we plot the average of the *inverse* of the timings (proportional to the number of cycles per second; a "rate" quantity which can demonstrate linear scaling) for the time-stepping and DFT over the full range of cluster sizes. The time-stepping results demonstrate (approximately) linear scaling.  The size of the error bars increases with the number of cluster nodes mainly due to pronounced variations in the network bandwidth; the N1 instances do *not* support colocation via a [compact placement policy](https://cloud.google.com/solutions/best-practices-for-using-mpi-on-compute-engine). The DFT results (which excludes those processors without any DFT pixels) seem to be oscillating around a constant. This is not surprising because the processor(s) which takes the longest time to update its DFT pixels sets an upper bound on how fast the DFT calculation for all processors can proceed. It is the presence of this unique upper bound for each cluster which is revealed by the scaling plot.
+
+See also [FAQ/Should I expect linear speedup from the parlalel Meep](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep)?
+
+<center>
+![](images/parallel_benchmark_timestep.png)
+</center>
+
+<center>
+![](images/parallel_benchmark_DFT.png)
+</center>

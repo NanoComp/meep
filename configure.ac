@@ -1,12 +1,12 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.14)
+AC_INIT(meep, 1.16.0-alpha)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="19:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="20:0:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -359,6 +359,9 @@ LIBS="$GUILE_LIBS $LIBS"
 CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
 
 AC_MSG_CHECKING([for libctl dir])
+if test x != x"$LIBCTL_DIR" -a -r "$LIBCTL_DIR/share/libctl/base/ctl.scm"; then
+￼	LIBCTL_DIR="$LIBCTL_DIR/share/libctl"
+fi
 if test x != x"$LIBCTL_DIR" -a ! -r "$LIBCTL_DIR/base/ctl.scm"; then
 	LIBCTL_DIR=""
 fi

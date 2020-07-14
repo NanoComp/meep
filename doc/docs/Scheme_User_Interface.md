@@ -245,7 +245,7 @@ List of dispersive susceptibilities (see below) added to the permeability μ in 
 
 **`perfect-metal`**
 
-A perfectly-conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor`.
+A perfectly conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [Predefined Variables](#predefined-variables): `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor`.
 
 #### material function
 
@@ -874,7 +874,7 @@ Given a list of field components `cs`, compute the Fourier transform of these fi
 
 **`(flux-in-box dir box)`**
 —
-Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box `X (volume (center 0) (size 0 1 1)))`.
+Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box X (volume (center 0) (size 0 1 1)))`.
 
 **`(electric-energy-in-box box)`**
 —

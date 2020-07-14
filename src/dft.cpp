@@ -37,7 +37,7 @@ std::vector<double> linspace(double freq_min, double freq_max, size_t Nfreq) {
     freq[0] = (freq_min + freq_max) * 0.5;
   else
     for (size_t i = 0; i < Nfreq; ++i)
-      freq[i] = freq_min + i*dfreq;
+      freq[i] = freq_min + i * dfreq;
 
   return freq;
 }
@@ -156,10 +156,9 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
 }
 
 dft_chunk *fields::add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
-                           bool include_dV_and_interp_weights,
-                           complex<double> stored_weight, dft_chunk *chunk_next,
-                           bool sqrt_dV_and_interp_weights, complex<double> extra_weight,
-                           bool use_centered_grid, int vc) {
+                           bool include_dV_and_interp_weights, complex<double> stored_weight,
+                           dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
+                           complex<double> extra_weight, bool use_centered_grid, int vc) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -176,7 +175,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   data.vc = vc;
   data.omega.resize(Nfreq);
   for (size_t i = 0; i < Nfreq; ++i)
-    data.omega[i] = 2*pi*freq[i];
+    data.omega[i] = 2 * pi * freq[i];
   data.stored_weight = stored_weight;
   data.extra_weight = extra_weight;
   data.dt_factor = dt / sqrt(2.0 * pi);
@@ -191,20 +190,18 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   return data.dft_chunks;
 }
 
-
 dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> freq,
                            bool include_dV_and_interp_weights) {
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) abort("derived_component invalid for dft");
     cdouble stored_weight = where->weight;
-    chunks = add_dft(component(where->c), where->v, freq,
-                     include_dV_and_interp_weights, stored_weight, chunks);
+    chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
+                     stored_weight, chunks);
     where = where->next;
   }
   return chunks;
 }
-
 
 void fields::update_dfts() {
   am_now_working_on(FourierTransforming);
@@ -458,8 +455,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
     }
 
     for (int i = 0; i < 2; ++i) {
-      E = add_dft(cE[i], where->v, freq, Nfreq, true,
-                  where->weight * double(1 - 2 * i), E);
+      E = add_dft(cE[i], where->v, freq, Nfreq, true, where->weight * double(1 - 2 * i), E);
       H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H);
     }
 
@@ -473,8 +469,8 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
   return dft_flux(cE[0], cH[0], E, H, freq, Nfreq, firstvol, flux_dir, use_symmetry);
 }
 
-dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
-                       double fmin, double fmax, int Nf, const volume &where_)
+dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_, double fmin,
+                       double fmax, int Nf, const volume &where_)
     : E(E_), H(H_), D(D_), B(B_), where(where_) {
   freq = meep::linspace(fmin, fmax, Nf);
 }
@@ -543,7 +539,6 @@ double *dft_energy::total() {
   delete[] Fm;
   return F;
 }
-
 
 dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq) {
 
@@ -641,8 +636,8 @@ direction fields::normal_direction(const volume &where) const {
         where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
     }
     d = where_pad.normal_direction();
-    if (d == NO_DIRECTION && gv.dim == D2 && beta != 0 &&
-        where_pad.in_direction(X) > 0 && where_pad.in_direction(Y) > 0)
+    if (d == NO_DIRECTION && gv.dim == D2 && beta != 0 && where_pad.in_direction(X) > 0 &&
+        where_pad.in_direction(Y) > 0)
       d = Z;
     if (d == NO_DIRECTION) abort("Could not determine normal direction for given grid_volume.");
   }
@@ -658,12 +653,13 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, const double *fr
   return flux;
 }
 
-
-dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq) {
+dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq,
+                                  size_t Nfreq) {
   return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false);
 }
 
-dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq) {
+dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max,
+                                  int Nfreq) {
   return add_dft_flux_box(where, meep::linspace(freq_min, freq_max, Nfreq));
 }
 
@@ -686,7 +682,8 @@ dft_flux fields::add_dft_flux_box(const volume &where, const std::vector<double>
   return flux;
 }
 
-dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq) {
+dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double freq_max,
+                                    int Nfreq) {
   return add_dft_flux_plane(where, meep::linspace(freq_min, freq_max, Nfreq));
 }
 
@@ -694,7 +691,8 @@ dft_flux fields::add_dft_flux_plane(const volume &where, const std::vector<doubl
   return add_dft_flux(NO_DIRECTION, where, freq);
 }
 
-dft_fields::dft_fields(dft_chunk *chunks_, double freq_min, double freq_max, int Nf, const volume &where_)
+dft_fields::dft_fields(dft_chunk *chunks_, double freq_min, double freq_max, int Nf,
+                       const volume &where_)
     : where(where_) {
   chunks = chunks_;
   freq = meep::linspace(freq_min, freq_max, Nf);
@@ -723,7 +721,6 @@ void dft_fields::remove() {
   }
 }
 
-
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
                                   const double *freq, size_t Nfreq, bool use_centered_grid) {
   bool include_dV_and_interp_weights = false;
@@ -732,9 +729,9 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
   cdouble stored_weight = 1.0;
   dft_chunk *chunks = 0;
   for (int nc = 0; nc < num_components; nc++)
-    chunks = add_dft(components[nc], where, freq, Nfreq,
-                     include_dV_and_interp_weights, stored_weight, chunks,
-                     sqrt_dV_and_interp_weights,extra_weight,use_centered_grid);
+    chunks =
+        add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights, stored_weight,
+                chunks, sqrt_dV_and_interp_weights, extra_weight, use_centered_grid);
 
   return dft_fields(chunks, freq, Nfreq, where);
 }
@@ -811,13 +808,14 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
     double interp_w = retain_interp_weights ? IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) : 1.0;
 
-    cdouble dft_val = (c_conjugate == NO_COMPONENT
-                           ? w
-                           : c_conjugate == Dielectric
-                                 ? parent->get_eps(loc)
-                                 : c_conjugate == Permeability
-                                       ? parent->get_mu(loc)
-                                       : dft[omega.size() * (chunk_idx++) + num_freq] / stored_weight);
+    cdouble dft_val =
+        (c_conjugate == NO_COMPONENT
+             ? w
+             : c_conjugate == Dielectric
+                   ? parent->get_eps(loc)
+                   : c_conjugate == Permeability
+                         ? parent->get_mu(loc)
+                         : dft[omega.size() * (chunk_idx++) + num_freq] / stored_weight);
     if (include_dV_and_interp_weights) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
     cdouble mode1val = 0.0, mode2val = 0.0;

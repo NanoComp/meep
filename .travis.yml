@@ -24,7 +24,7 @@ addons:
 ##################################################
 env:
   global:
-  - CPPFLAGS=-I${HOME}/local/include 
+  - CPPFLAGS=-I${HOME}/local/include
   - LDFLAGS=-L${HOME}/local/lib
   - HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5
   - HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial
@@ -59,6 +59,7 @@ matrix:
       - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
       - BUILD_WITHOUT_MPB="1"
+      - SKIP_BUILD_DOCS="1"
     addons:
       apt:
         packages:
@@ -74,6 +75,7 @@ matrix:
       - CXX=mpic++
       - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - SKIP_BUILD_DOCS="1"
     addons:
       apt:
         packages:
@@ -90,6 +92,7 @@ matrix:
       - CXX=mpic++
       - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
       - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+      - SKIP_BUILD_DOCS="1"
     virtualenv:
       system_site_packages: true
     addons:
@@ -113,7 +116,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py coverage==4.5.4 coveralls matplotlib
+      - pip install numpy mpi4py scipy h5py coverage==4.5.4 coveralls matplotlib mkdocs==0.17.5 python-markdown-math mkdocs-material
   - python: "3.7"
     env:
       - MPICONF="--with-mpi"
@@ -128,7 +131,7 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py matplotlib
+      - pip install numpy mpi4py scipy h5py matplotlib mkdocs==0.17.5 python-markdown-math mkdocs-material
   - python: "3.5"
     env:
       - MPICONF="--with-mpi"
@@ -147,7 +150,7 @@ matrix:
           - libhdf5-openmpi-dev
           - python3-h5py
     install:
-      - pip install numpy mpi4py scipy matplotlib ipython
+      - pip install numpy mpi4py scipy matplotlib ipython mkdocs==0.17.5 python-markdown-math mkdocs-material
 
 
 ##################################################
