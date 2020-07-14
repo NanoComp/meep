@@ -17,6 +17,16 @@ In order to keep the noise in the module to a minimum, some markdown
 snippets/templates used in the generation of the API documentation files can be
 found in {project_folder}/doc/_api_snippets, and will be loaded as needed while
 processing the docstrings.
+
+The folling tag patterns are used to indicate where in the input template that docstrings
+will be inserted:
+
+  - @@ top_level_function_name @@
+  - @@ ClassName @@
+  - @@ ClassName.method_name @@
+  - @@ ClassName[all-methods] @@
+  - @@ ClassName[methods-with-docstrings] @@
+
 """
 
 import sys
