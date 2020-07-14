@@ -3,7 +3,7 @@
 /* Indent the class docstring */
 .class_docstring {
     /* margin-left: 25px; */
-    margin-left: 0px;
+    margin-left: 25px;
 }
 
 /* And the members of the class (the methods) */
@@ -22,7 +22,7 @@
 /* Indent the method docstrings a little more */
 .method_docstring {
     /* margin-left: 35px; */
-    margin-left: 0px;
+    margin-left: 25px;
 }
 
 /* code blocks inside of method docstrings */
@@ -35,7 +35,7 @@
 /* And similar settings for top-level functions */
 .function_docstring {
     /* margin-left: 35px; */
-    margin-left: 0px;
+    margin-left: 25px;
 }
 .function_docstring code.python.hljs {
     border: none;
