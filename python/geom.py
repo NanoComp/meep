@@ -539,7 +539,7 @@ class MaterialGrid(object):
         if grid_type not in grid_type_dict:
             raise ValueError("Invalid grid_type: {}. Must be either U_MIN, U_PROD, U_SUM, or U_DEFAULT".format(grid_type_dict))
         self.grid_type = grid_type_dict[grid_type]
-        
+
         self.swigobj = None
     def update_parameters(self,x):
         if x.size != self.num_params:
@@ -779,7 +779,6 @@ class MultilevelAtom(Susceptibility):
 
 class Transition(object):
     """
-    A `Transition` is... (TODO)
     """
 
     def __init__(self,
