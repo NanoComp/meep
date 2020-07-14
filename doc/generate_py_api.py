@@ -164,29 +164,40 @@ class ClassItem(Item):
         base_classes = [base.__name__ for base in self.obj.__bases__]
         base_classes = ', '.join(base_classes)
 
-        # method_docs = []
-        # if self.methods:
-        #     # reorder self.methods so __init__ comes first, if it isn't already
-        #     methods = self.methods[:]
-        #     for idx, meth in enumerate(self.methods):
-        #         if meth.name == '__init__':
-        #             if idx != 0:
-        #                 methods.remove(meth)
-        #                 methods.insert(0, meth)
-        #             break
-
-        #     for item in methods:
-        #         if not check_excluded(item.name) and \
-        #            not check_excluded('{}.{}'.format(self.name, item.name)):
-        #              doc = item.create_markdown()
-        #              method_docs.append(doc)
-
-        # # join the methods into a single string
-        # method_docs = '\n'.join(method_docs)
-
         # Substitute values into the template
-        doc = self.template.format(**locals())
-        return doc
+        docs = dict()
+        class_doc = self.template.format(**locals())
+        docs[class_name] = class_doc
+        docs[class_name+'[all-methods]'] = self.create_method_markdown(False)
+        docs[class_name+'[methods-with-docstrings]'] = self.create_method_markdown(True)
+
+        return docs
+
+
+    def create_method_markdown(self, only_with_docstrings=True):
+        method_docs = []
+        if self.methods:
+            # reorder self.methods so __init__ comes first, if it isn't already
+            methods = self.methods[:]
+            for idx, meth in enumerate(self.methods):
+                if meth.name == '__init__':
+                    if idx != 0:
+                        methods.remove(meth)
+                        methods.insert(0, meth)
+                    break
+
+            for item in methods:
+                if only_with_docstrings and not item.docstring:
+                    continue
+                if not check_excluded(item.name) and \
+                   not check_excluded('{}.{}'.format(self.name, item.name)):
+                     doc = item.create_markdown()
+                     method_docs.append(doc)
+
+        # join the methods into a single string
+        method_docs = '\n'.join(method_docs)
+        return method_docs
+
 
 #----------------------------------------------------------------------------
 
@@ -226,7 +237,12 @@ def generate_docs(items):
     for item in items:
         if not check_excluded(item.name):
             doc = item.create_markdown()
-            docs[item.name] = doc
+            if isinstance(doc, str):
+                docs[item.name] = doc
+            elif isinstance(doc, dict):
+                docs.update(doc)
+            else:
+                raise RuntimeError("unknown type for doc")
     return docs
 
 
