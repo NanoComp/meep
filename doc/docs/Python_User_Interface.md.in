@@ -65,6 +65,7 @@ The `Simulation` class is the primary abstraction of the high-level interface. M
 
 @@ Simulation @@
    @@ Simulation.__init__ @@
+   @@ Simulation.run @@
 
 
 ### Output File Names

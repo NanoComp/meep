@@ -362,6 +362,39 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 </div>
 
 </div>
+   
+<a id="Simulation.run"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def run(self, *step_funcs, **kwargs):
+```
+
+<div class="method_docstring" markdown="1">
+
+`run(step_functions..., until=condition/time)`
+
+Run the simulation until a certain time or condition, calling the given step
+functions (if any) at each timestep. The keyword argument `until` is *either* a
+number, in which case it is an additional time (in Meep units) to run for, *or* it
+is a function (of no arguments) which returns `True` when the simulation should
+stop. `until` can also be a list of stopping conditions which may include a number
+and additional functions.
+
+`run(step_functions..., until_after_sources=condition/time)`
+
+Run the simulation until all sources have turned off, calling the given step
+functions (if any) at each timestep. The keyword argument `until_after_sources` is
+either a number, in which case it is an *additional* time (in Meep units) to run
+for after the sources are off, *or* it is a function (of no arguments). In the
+latter case, the simulation runs until the sources are off *and* `condition`
+returns `True`. Like `until` above, `until_after_sources` can take a list of
+stopping conditions.
+
+</div>
+
+</div>
 
 
 ### Output File Names
@@ -4140,7 +4173,7 @@ class Transition(object):
 
 <div class="class_docstring" markdown="1">
 
-A `Transition` is... (TODO)
+
 
 </div>
 
@@ -5464,7 +5497,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7fa29002fdd0>):
+             pml_profile=<function PML.<lambda> at 0x7f9aa8547dd0>):
 ```
 
 <div class="method_docstring" markdown="1">
