@@ -1731,7 +1731,8 @@ class Simulation(object):
 
     def set_materials(self, geometry=None, default_material=None):
         """
-        This can be called in a step function, and is useful for changing the geometry or default material as a function of time.
+        This can be called in a step function, and is useful for changing the geometry or
+        default material as a function of time.
         """
         if self.fields:
             self.fields.remove_susceptibilities()
@@ -1963,9 +1964,7 @@ class Simulation(object):
         simulation script is in
         [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
-        <center>
         ![](images/phase-in-material.png)
-        </center>
         """
         if self.fields is None:
             self.init_sim()
@@ -2338,6 +2337,8 @@ class Simulation(object):
 
     def add_energy(self, *args):
         """
+        add_energy(fcen, df, nfreq, freq, EnergyRegions...)
+
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
@@ -2550,6 +2551,8 @@ class Simulation(object):
 
     def add_force(self, *args):
         """
+        add_force(fcen, df, nfreq, freq, ForceRegions...)
+
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
@@ -3405,6 +3408,26 @@ class Simulation(object):
             self.init_sim()
 
     def run(self, *step_funcs, **kwargs):
+        """
+        `run(step_functions..., until=condition/time)`
+
+        Run the simulation until a certain time or condition, calling the given step
+        functions (if any) at each timestep. The keyword argument `until` is *either* a
+        number, in which case it is an additional time (in Meep units) to run for, *or* it
+        is a function (of no arguments) which returns `True` when the simulation should
+        stop. `until` can also be a list of stopping conditions which may include a number
+        and additional functions.
+
+        `run(step_functions..., until_after_sources=condition/time)`
+
+        Run the simulation until all sources have turned off, calling the given step
+        functions (if any) at each timestep. The keyword argument `until_after_sources` is
+        either a number, in which case it is an *additional* time (in Meep units) to run
+        for after the sources are off, *or* it is a function (of no arguments). In the
+        latter case, the simulation runs until the sources are off *and* `condition`
+        returns `True`. Like `until` above, `until_after_sources` can take a list of
+        stopping conditions.
+        """
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
 
