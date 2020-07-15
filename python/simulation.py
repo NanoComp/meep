@@ -2132,6 +2132,11 @@ class Simulation(object):
         self._run_sources_until(self, 0, step_funcs)
 
     def run_k_point(self, t, k):
+        """
+        Lower level function called by `run_k_points` that runs a simulation for a single
+        *k* point `k_point` and returns a `Harminv` instance. Useful when you need to
+        access more `Harminv` data than just the frequencies.
+        """
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
@@ -2337,7 +2342,7 @@ class Simulation(object):
 
     def add_energy(self, *args):
         """
-        add_energy(fcen, df, nfreq, freq, EnergyRegions...)
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`
 
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2551,7 +2556,7 @@ class Simulation(object):
 
     def add_force(self, *args):
         """
-        add_force(fcen, df, nfreq, freq, ForceRegions...)
+        `add_force(fcen, df, nfreq, freq, ForceRegions...)`
 
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -4614,7 +4619,7 @@ def output_sfield_p(sim):
 
 def Ldos(*args):
     """
-    Ldos(fcen, df, nfreq, freq)
+    `Ldos(fcen, df, nfreq, freq)`
 
     Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and
     `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced
@@ -4629,7 +4634,7 @@ def Ldos(*args):
 
 def dft_ldos(*args, **kwargs):
     """
-    dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)
+    `dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`
 
     Compute the power spectrum of the sources (usually a single point dipole source),
     normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at
