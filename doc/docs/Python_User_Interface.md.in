@@ -449,10 +449,10 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 @@ stop_on_interrupt @@
 
 
-Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these top-level functions:
+Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these `Simulation` methods:
 
-@@ meep.run_k_points @@
-@@ meep.run_k_point @@
+@@ Simulation.run_k_points @@
+@@ Simulation.run_k_point @@
 
 
 ### Predefined Step Functions
