@@ -346,7 +346,9 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
 
 %apply double { number };
 
+%rename(verbosity) mpb_verbosity;
 %include "pympb.hpp"
+
 
 %pythoncode %{
     from .solver import (
@@ -393,4 +395,5 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
 
     from meep.verbosity_mgr import Verbosity
     verbosity = Verbosity(_mpb.cvar, 2)
+
 %}

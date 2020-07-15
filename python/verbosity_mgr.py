@@ -13,7 +13,7 @@ class Verbosity(object):
         2: a lot (default)
         3: debugging
     """
-    def __init__(self, cvar=None, initial_level=1):
+    def __init__(self, cvar=None, initial_level=None):
         """
         Initialize the Verbosity manager. `cvar` should be some object that has
         a `verbosity` attribute, such as meep.cvar or mpb.cvar.
@@ -22,9 +22,10 @@ class Verbosity(object):
         self.cvar = cvar
         if cvar is None:
             class _dummy():
-                verbosity = 2
+                verbosity = 1
             self.cvar = _dummy()
-        self.set(initial_level)
+        if initial_level is not None:
+            self.set(initial_level)
 
     def get(self):
         """

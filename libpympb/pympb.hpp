@@ -14,7 +14,9 @@ namespace py_mpb {
 //    1: a little
 //    2: a lot (default)
 //    3: debugging
-extern int verbosity;
+//
+// This is redeclared here so SWIG will see it.
+extern "C" int mpb_verbosity;
 
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
