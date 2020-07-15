@@ -1374,7 +1374,7 @@ def add_energy(self, *args):
 
 <div class="method_docstring" markdown="1">
 
-add_energy(fcen, df, nfreq, freq, EnergyRegions...)
+`add_energy(fcen, df, nfreq, freq, EnergyRegions...)`
 
 Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
 if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -1600,7 +1600,7 @@ def add_force(self, *args):
 
 <div class="method_docstring" markdown="1">
 
-add_force(fcen, df, nfreq, freq, ForceRegions...)
+`add_force(fcen, df, nfreq, freq, ForceRegions...)`
 
 Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
 if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -1807,7 +1807,7 @@ def Ldos(*args):
 
 <div class="function_docstring" markdown="1">
 
-Ldos(fcen, df, nfreq, freq)
+`Ldos(fcen, df, nfreq, freq)`
 
 Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and
 `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced
@@ -1837,7 +1837,7 @@ def dft_ldos(*args, **kwargs):
 
 <div class="function_docstring" markdown="1">
 
-dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)
+`dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`
 
 Compute the power spectrum of the sources (usually a single point dipole source),
 normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at
@@ -2577,10 +2577,53 @@ follows the `run` function (e.g., outputting fields).
 </div>
 
 
-Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these top-level functions:
+Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these `Simulation` methods:
 
-@@ meep.run_k_points @@
-@@ meep.run_k_point @@
+
+<a id="Simulation.run_k_points"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def run_k_points(self, t, k_points):
+```
+
+<div class="method_docstring" markdown="1">
+
+Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each
+*k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the
+eigen-frequencies, and returns a list of the complex frequencies. In particular,
+you should have specified one or more Gaussian sources. It will run the simulation
+until the sources are turned off plus an additional $t$ time units. It will run
+[Harminv](#harminv) at the same point/component as the first Gaussian source and
+look for modes in the union of the frequency ranges for all sources. Returns a
+list of lists of frequencies (one list of frequencies for each *k*). Also prints
+out a comma-delimited list of frequencies, prefixed by `freqs:`, and their
+imaginary parts, prefixed by `freqs-im:`. See [Tutorial/Resonant Modes and
+Transmission in a Waveguide
+Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md).
+
+</div>
+
+</div>
+
+<a id="Simulation.run_k_point"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def run_k_point(self, t, k):
+```
+
+<div class="method_docstring" markdown="1">
+
+Lower level function called by `run_k_points` that runs a simulation for a single
+*k* point `k_point` and returns a `Harminv` instance. Useful when you need to
+access more `Harminv` data than just the frequencies.
+
+</div>
+
+</div>
 
 
 ### Predefined Step Functions
@@ -5497,7 +5540,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7f9aa8547dd0>):
+             pml_profile=<function PML.<lambda> at 0x7ff729b8fdd0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7057,7 +7100,7 @@ def Ldos(*args):
 
 <div class="function_docstring" markdown="1">
 
-Ldos(fcen, df, nfreq, freq)
+`Ldos(fcen, df, nfreq, freq)`
 
 Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and
 `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced
@@ -7087,7 +7130,7 @@ def dft_ldos(*args, **kwargs):
 
 <div class="function_docstring" markdown="1">
 
-dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)
+`dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`
 
 Compute the power spectrum of the sources (usually a single point dipole source),
 normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at
