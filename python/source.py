@@ -18,8 +18,8 @@ class Source(object):
     """
     The `Source` class is used to specify the current sources via the `Simulation.sources`
     attribute. Note that all sources in Meep are separable in time and space, i.e. of the
-    form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions
-    $\mathbf{A}$ and $f$. Non-separable sources can be simulated, however, by modifying
+    form $\\mathbf{J}(\\mathbf{x},t) = \\mathbf{A}(\\mathbf{x}) \\cdot f(t)$ for some functions
+    $\\mathbf{A}$ and $f$. Non-separable sources can be simulated, however, by modifying
     the sources after each time step. When real fields are being used (which is the
     default in many cases; see `Simulation.force_complex_fields`), only the real part of
     the current source is used.
@@ -126,7 +126,7 @@ class SourceTime(object):
 
 class ContinuousSource(SourceTime):
     """
-    A continuous-wave (CW) source is proportional to $\exp(-i\omega t)$, possibly with a
+    A continuous-wave (CW) source is proportional to $\\exp(-i\\omega t)$, possibly with a
     smooth (exponential/tanh) turn-on/turn-off. In practice, the CW source [never produces
     an exact single-frequency
     response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
@@ -185,9 +185,9 @@ class ContinuousSource(SourceTime):
 
 class GaussianSource(SourceTime):
     """
-    A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$.
+    A Gaussian-pulse source roughly proportional to $\\exp(-i\\omega t - (t-t_0)^2/2w^2)$.
     Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a
-    Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t -
+    Gaussian, i.e. they are $(-i\\omega)^{-1} \\frac{\\partial}{\\partial t} \\exp(-i\\omega t -
     (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually
     irrelevant.
     """
@@ -226,13 +226,13 @@ class GaussianSource(SourceTime):
         + **`fourier_transform(f)`** — Returns the Fourier transform of the current
           evaluated at frequency `f` (`ω=2πf`) given by:
           $$
-          \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
-          \int e^{i\omega t}G(t)\,dt \equiv
-          \frac{1}{\Delta f}
-          e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
+          \\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}}
+          \\int e^{i\\omega t}G(t)\\,dt \\equiv
+          \\frac{1}{\\Delta f}
+          e^{i\\omega t_0 -\\frac{(\\omega-\\omega_0)^2}{2\\Delta f^2}}
           $$
-          where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
-          is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and
+          where $G(t)$ is the current (not the dipole moment). In this formula, $\\Delta f$
+          is the `fwidth` of the source, $\\omega_0$ is $2\\pi$ times its `frequency,` and
           $t_0$ is the peak time discussed above. Note that this does not include any
           `amplitude` or `amp_func` factor that you specified for the source.
         """
@@ -275,7 +275,7 @@ class CustomSource(SourceTime):
           complex number.
 
         + **`start_time` [`number`]** — The starting time for the source. Default is
-          -10<sup>20</sup>: turn on at $t=-\infty$. Note, however, that the simulation
+          -10<sup>20</sup>: turn on at $t=-\\infty$. Note, however, that the simulation
           normally starts at $t=0$ with zero fields as the initial condition, so there is
           implicitly a sharp turn-on at $t=0$ whether you specify it or not.
 
@@ -308,7 +308,7 @@ class EigenModeSource(Source):
     This is a subclass of `Source` and has **all of the properties** of `Source` above.
     However, you normally do not specify a `component`. Instead of `component`, the
     current source components and amplitude profile are computed by calling MPB to compute
-    the modes, $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r}) e^{i \mathbf{k} \cdot \mathbf{r}}$,
+    the modes, $\\mathbf{u}_{n,\\mathbf{k}}(\\mathbf{r}) e^{i \\mathbf{k} \\cdot \\mathbf{r}}$,
     of the dielectric profile in the region given by the `size` and `center` of the
     source, with the modes computed as if the *source region were repeated periodically in
     all directions*. If an `amplitude` and/or `amp_func` are supplied, they are
@@ -316,7 +316,7 @@ class EigenModeSource(Source):
     specified by the properties shown in `__init__`.
 
     Eigenmode sources are normalized so that in the case of a time-harmonic simulation
-    with all sources and fields having monochromatic time dependence $e^{-i 2\pi f_m t}$
+    with all sources and fields having monochromatic time dependence $e^{-i 2\\pi f_m t}$
     where $f_m$ is the frequency of the eigenmode, the total time-average power of the
     fields — the integral of the normal Poynting vector over the entire cross-sectional
     line or plane — is equal to 1. This convention has two use cases:
@@ -327,15 +327,15 @@ class EigenModeSource(Source):
 
     + For time-domain calculations involving a time dependence $W(t)$ which is typically a
       [Gaussian](#gaussiansource), the amplitude of the fields at frequency $f$ will be
-      multiplied by $\widetilde W(f)$, the Fourier transform of $W(t)$, while
+      multiplied by $\\widetilde W(f)$, the Fourier transform of $W(t)$, while
       field-bilinear quantities like the [Poynting flux](#flux-spectra) and [energy
-      density](#energy-density-spectra) are multiplied by $|\widetilde W(f)|^2$. For the
+      density](#energy-density-spectra) are multiplied by $|\\widetilde W(f)|^2$. For the
       particular case of a Gaussian time dependence, the Fourier transform at $f$ can be
       obtained via the `fourier_transform` class method.
 
     In either case, the `eig_power` method returns the total power at frequency `f`.
     However, for a user-defined [`CustomSource`](#customsource), `eig_power` will *not*
-    include the $|\widetilde W(f)|^2$ factor since Meep does not know the Fourier
+    include the $|\\widetilde W(f)|^2$ factor since Meep does not know the Fourier
     transform of your source function $W(t)$. You will have to multiply by this yourself
     if you need it.
 
@@ -402,8 +402,8 @@ class EigenModeSource(Source):
           regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or
           specified by `eig_kpoint`, the field profile used to create the current sources
           corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave),
-          $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate
-          exponential factor, $e^{i \mathbf{k} \cdot \mathbf{r}}$.
+          $\\mathbf{u}_{n,\\mathbf{k}}(\\mathbf{r})$, multiplied by the appropriate
+          exponential factor, $e^{i \\mathbf{k} \\cdot \\mathbf{r}}$.
 
         + **`eig_parity` [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`,
           `mp.ODD_Y`]** — The parity (= polarization in 2d) of the mode to calculate,

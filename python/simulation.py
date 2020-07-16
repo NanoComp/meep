@@ -120,7 +120,7 @@ class PML(object):
 
         + **`direction` [`direction` constant ]** — Specify the direction of the
           boundaries to put the PML layers next to. e.g. if `X`, then specifies PML on the
-          $\pm x$ boundaries (depending on the value of `side`, below). Default is the
+          $\\pm x$ boundaries (depending on the value of `side`, below). Default is the
           special value `ALL`, which puts PML layers on the boundaries in all directions.
 
         + **`side` [`side` constant ]** — Specify which side, `Low` or `High` of the
@@ -718,7 +718,7 @@ class Harminv(object):
     In particular, Harminv takes the time series $f(t)$ corresponding to the given field
     component as a function of time and decomposes it (within the specified bandwidth) as:
 
-    $$f(t) = \sum_n a_n e^{-i\omega_n t}$$
+    $$f(t) = \\sum_n a_n e^{-i\\omega_n t}$$
 
     The results are stored in the list `Harminv.modes`, which is a list of tuples holding
     the frequency, amplitude, and error of the modes. Given one of these tuples (e.g.,
@@ -729,7 +729,7 @@ class Harminv(object):
     + **`decay`** — The imaginary part of the frequency ω.
 
     + **`Q`** — The dimensionless lifetime, or quality factor defined as
-      $-\mathrm{Re}\,\omega / 2 \mathrm{Im}\,\omega$.
+      $-\\mathrm{Re}\\,\\omega / 2 \\mathrm{Im}\\,\\omega$.
 
     + **`amp`** — The complex amplitude $a$.
 
@@ -973,13 +973,13 @@ class Simulation(object):
           permitted. If `dimensions` is 2, then the cell must be in the $xy$ plane.
 
         + **`m` [`number`]** — For `CYLINDRICAL` simulations, specifies that the angular
-          $\phi$ dependence of the fields is of the form $e^{im\phi}$ (default is `m=0`).
+          $\\phi$ dependence of the fields is of the form $e^{im\\phi}$ (default is `m=0`).
           If the simulation cell includes the origin $r=0$, then `m` must be an integer.
 
         + **`accurate_fields_near_cylorigin` [`boolean`]** — For `CYLINDRICAL` simulations
           with |*m*| &gt; 1, compute more accurate fields near the origin $r=0$ at the
           expense of requiring a smaller Courant factor. Empirically, when this option is
-          set to `True`, a Courant factor of roughly $\min[0.5, 1 / (|m| + 0.5)]$ or
+          set to `True`, a Courant factor of roughly $\\min[0.5, 1 / (|m| + 0.5)]$ or
           smaller seems to be needed. Default is `False`, in which case the $D_r$, $D_z$,
           and $B_r$ fields within |*m*| pixels of the origin are forced to zero, which
           usually ensures stability with the default Courant factor of 0.5, at the expense
@@ -991,8 +991,8 @@ class Simulation(object):
         + **`k_point` [`False` or `Vector3`]** — If `False` (the default), then the
           boundaries are perfect metallic (zero electric field). If a `Vector3`, then the
           boundaries are Bloch-periodic: the fields at one side are
-          $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated
-          by the lattice vector $\mathbf{R}$. A non-zero `Vector3` will produce complex
+          $\\exp(i\\mathbf{k}\\cdot\\mathbf{R})$ times the fields at the other side, separated
+          by the lattice vector $\\mathbf{R}$. A non-zero `Vector3` will produce complex
           fields. The `k_point` vector is specified in Cartesian coordinates in units of
           2π/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io),
           equivalent to taking MPB's `k_points` through its function
@@ -1056,7 +1056,7 @@ class Simulation(object):
           [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition)
           $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$.
           Default is 0.5. For numerical stability, the Courant factor must be *at
-          most* $n_\\textrm{min}/\sqrt{\\textrm{# dimensions}}$, where $n_\\textrm{min}$ is
+          most* $n_\\textrm{min}/\\sqrt{\\textrm{# dimensions}}$, where $n_\\textrm{min}$ is
           the minimum refractive index (usually 1), and in practice $S$ should be slightly
           smaller.
 
@@ -1995,7 +1995,7 @@ class Simulation(object):
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permittivity tensor at that location and frequency. If `frequency` is
         non-zero, the result is complex valued; otherwise it is the real,
-        frequency-independent part of ε (the $\omega\to\infty$ limit).
+        frequency-independent part of ε (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         if omega != 0:
@@ -2787,9 +2787,11 @@ class Simulation(object):
     def flux_in_box(self, d, box=None, center=None, size=None):
         """
         Given a `direction` constant, and a `mp.Volume`, returns the flux (the integral of
-        $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify
+        $\\Re [\\mathbf{E}^* \\times \\mathbf{H}]$) in that volume. Most commonly, you specify
         a volume that is a plane or a line, and a direction perpendicular to it, e.g.
-        `flux_in_box(d=mp.X,mp.Volume(center=mp.Vector3(0,0,0),size=mp.Vector3(0,1,1)))`.
+
+        `flux_in_box(d=mp.X,mp.Volume(center=mp.Vector3(0,0,0),size=mp.Vector3(0,1,1)))`
+
         If the `center` and `size` arguments are provided instead of `box`, Meep will
         construct the appropriate volume for you.
         """
@@ -2803,13 +2805,13 @@ class Simulation(object):
     def electric_energy_in_box(self, box=None, center=None, size=None):
         """
         Given a `mp.Volume`, returns the integral of the electric-field energy
-        $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. If the volume has zero size
+        $\\mathbf{E}^* \\cdot \\mathbf{D}/2$ in the given volume. If the volume has zero size
         along a dimension, a lower-dimensional integral is used. If the `center` and
         `size` arguments are provided instead of `box`, Meep will construct the
-        appropriate volume for you. Note: in cylindrical coordinates $(r,\phi,z)$, the
+        appropriate volume for you. Note: in cylindrical coordinates $(r,\\phi,z)$, the
         integrand is
         [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements)
-        by the circumference $2\pi r$, or equivalently the integral is over an annular
+        by the circumference $2\\pi r$, or equivalently the integral is over an annular
         volume.
         """
         if self.fields is None:
@@ -2822,13 +2824,13 @@ class Simulation(object):
     def magnetic_energy_in_box(self, box=None, center=None, size=None):
         """
         Given a `mp.Volume`, returns the integral of the magnetic-field energy
-        $\mathbf{H}^* \cdot \mathbf{B}/2$ in the given volume. If the volume has zero size
+        $\\mathbf{H}^* \\cdot \\mathbf{B}/2$ in the given volume. If the volume has zero size
         along a dimension, a lower-dimensional integral is used. If the `center` and
         `size` arguments are provided instead of `box`, Meep will construct the
-        appropriate volume for you. Note: in cylindrical coordinates $(r,\phi,z)$, the
+        appropriate volume for you. Note: in cylindrical coordinates $(r,\\phi,z)$, the
         integrand is
         [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements)
-        by the circumference $2\pi r$, or equivalently the integral is over an annular
+        by the circumference $2\\pi r$, or equivalently the integral is over an annular
         volume.
         """
         if self.fields is None:
@@ -2841,13 +2843,13 @@ class Simulation(object):
     def field_energy_in_box(self, box=None, center=None, size=None):
         """
         Given a `mp.Volume`, returns the integral of the electric- and magnetic-field
-        energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$ in the
+        energy $\\mathbf{E}^* \\cdot \\mathbf{D}/2 + \\mathbf{H}^* \\cdot \\mathbf{B}/2$ in the
         given volume. If the volume has zero size along a dimension, a lower-dimensional
         integral is used. If the `center` and `size` arguments are provided instead of
         `box`, Meep will construct the appropriate volume for you. Note: in cylindrical
-        coordinates $(r,\phi,z)$, the integrand is
+        coordinates $(r,\\phi,z)$, the integrand is
         [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements)
-        by the circumference $2\pi r$, or equivalently the integral is over an annular
+        by the circumference $2\\pi r$, or equivalently the integral is over an annular
         volume.
         """
         if self.fields is None:
@@ -2875,8 +2877,8 @@ class Simulation(object):
         `Simulation.total_volume()`.
 
         One versatile feature is that you can supply an arbitrary function
-        $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field
-        components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its
+        $f(\\mathbf{x},c_1,c_2,\\ldots)$ of position $\\mathbf{x}$ and various field
+        components $c_1,\\ldots$ and ask Meep to integrate it over a given volume, find its
         maximum, or output it (via `output_field_function`, described later). This is done
         via the functions:
         """
@@ -3127,14 +3129,14 @@ class Simulation(object):
         + `w` is an array of the same dimensions as the array returned by
           `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule
           for integrating over the spatial region (with the points in the cubature rule
-          being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is
+          being just the grid points contained in the region). Thus, if $Q(\\mathbf{x})$ is
           some spatially-varying quantity whose value at the $n$th grid point is $Q_n$,
           the integral of $Q$ over the region may be approximated by the sum:
 
-        $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
+        $$ \\int_{\\mathcal V} Q(\\mathbf{x})d\\mathbf{x} \\approx \\sum_{n} w_n Q_n.$$
 
         This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions
-        in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an
+        in which $\\mathcal{V}$ has zero extent. If the $\\{Q_n\\}$ samples are stored in an
         array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is
         just one line: `np.sum(w*Q).`
 
@@ -3298,9 +3300,9 @@ class Simulation(object):
         If any dimension of `where` is zero, that dimension is not integrated over. In
         this way you can specify 1d, 2d, or 3d integrals.
 
-        Note: in cylindrical coordinates $(r,\phi,z)$, the integrand is
+        Note: in cylindrical coordinates $(r,\\phi,z)$, the integrand is
         [multiplied](https://en.wikipedia.org/wiki/Cylindrical_coordinate_system#Line_and_volume_elements)
-        by the circumference $2\pi r$, or equivalently the integral is over an annular
+        by the circumference $2\\pi r$, or equivalently the integral is over an annular
         volume.
         """
         where = self._get_field_function_volume(where, center, size)
@@ -3719,7 +3721,7 @@ class Simulation(object):
             - `post_process=np.real`: post processing function to apply to fields (must be
               a function object)
         * `frequency`: for materials with a [frequency-dependent
-          permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
+          permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
           frequency $f$ (in Meep units) of the real part of the permittivity to use in the
           plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
@@ -4256,7 +4258,7 @@ def output_epsilon(sim,*step_func_args,**kwargs):
     permittivity); for an anisotropic ε tensor the output is the [harmonic
     mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
-    frequency-independent part of ε (the $\omega\to\infty$ limit).
+    frequency-independent part of ε (the $\\omega\\to\\infty$ limit).
     """
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
@@ -4272,7 +4274,7 @@ def output_mu(sim,*step_func_args,**kwargs):
     permeability); for an anisotropic μ tensor the output is the [harmonic
     mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
-    frequency-independent part of μ (the $\omega\to\infty$ limit).
+    frequency-independent part of μ (the $\\omega\\to\\infty$ limit).
     """
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
@@ -4284,14 +4286,14 @@ def output_mu(sim,*step_func_args,**kwargs):
 
 def output_hpwr(sim):
     """
-    Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
+    Output the magnetic-field energy density $\\mathbf{H}^* \\cdot \\mathbf{B} / 2$
     """
     sim.output_component(mp.H_EnergyDensity)
 
 
 def output_dpwr(sim):
     """
-    Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
+    Output the electric-field energy density $\\mathbf{E}^* \\cdot \\mathbf{D} / 2$
     """
     sim.output_component(mp.D_EnergyDensity)
 
@@ -4352,7 +4354,7 @@ def output_hfield_r(sim):
 
 def output_hfield_p(sim):
     """
-    Output the $\phi$ component of the field *h* (magnetic). If the field is complex,
+    Output the $\\phi$ component of the field *h* (magnetic). If the field is complex,
     outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real
     and imaginary parts, respectively.
     """
@@ -4405,7 +4407,7 @@ def output_bfield_r(sim):
 
 def output_bfield_p(sim):
     """
-    Output the $\phi$ component of the field *b* (magnetic). If the field is complex,
+    Output the $\\phi$ component of the field *b* (magnetic). If the field is complex,
     outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real
     and imaginary parts, respectively. Note that for outputting the Poynting flux, you
     might want to wrap the step function in `synchronized_magnetic` to compute it more
@@ -4461,7 +4463,7 @@ def output_efield_r(sim):
 
 def output_efield_p(sim):
     """
-    Output the $\phi$ component of the field *e* (electric). If the field is complex,
+    Output the $\\phi$ component of the field *e* (electric). If the field is complex,
     outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real
     and imaginary parts, respectively. Note that for outputting the Poynting flux, you
     might want to wrap the step function in `synchronized_magnetic` to compute it more
@@ -4517,7 +4519,7 @@ def output_dfield_r(sim):
 
 def output_dfield_p(sim):
     """
-    Output the $\phi$ component of the field *d* (displacement). If the field is complex,
+    Output the $\\phi$ component of the field *d* (displacement). If the field is complex,
     outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real
     and imaginary parts, respectively. Note that for outputting the Poynting flux, you
     might want to wrap the step function in `synchronized_magnetic` to compute it more
@@ -4530,7 +4532,7 @@ def output_dfield_p(sim):
 # MPB compatibility
 def output_poynting(sim):
     """
-    Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
+    Output the Poynting flux $\\mathrm{Re}\\{\\mathbf{E}^*\\times\\mathbf{H}\\}$. Note that you
     might want to wrap this step function in `synchronized_magnetic` to compute it more
     accurately. See [Synchronizing the Magnetic and Electric
     Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
@@ -4607,7 +4609,7 @@ def output_sfield_r(sim):
 
 def output_sfield_p(sim):
     """
-    Output the $\phi$ component of the field *s* (poynting flux). If the field is complex,
+    Output the $\\phi$ component of the field *s* (poynting flux). If the field is complex,
     outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real
     and imaginary parts, respectively. Note that for outputting the Poynting flux, you
     might want to wrap the step function in `synchronized_magnetic` to compute it more
