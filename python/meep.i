@@ -508,13 +508,24 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 }
 
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, meep::component cgrid = Centered) {
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, 
+                                      meep::component cgrid = Centered, PyObject *min_max_loc = NULL) {
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
-    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions, NULL, 0, cgrid);
+
+    meep::vec min_max_loc_vec[2];
+    meep::vec* min_max_loc_vec_ptr = min_max_loc_vec;
+    if (!min_max_loc) min_max_loc_vec_ptr = NULL;
+    
+    int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions, min_max_loc_vec_ptr, 0, cgrid);
 
     PyObject *py_dirs = PyList_New(3);
     for (Py_ssize_t i = 0; i < 3; ++i) {
         PyList_SetItem(py_dirs, i, PyInteger_FromLong(static_cast<int>(dirs[i])));
+    }
+
+    if (min_max_loc){
+        PyList_Append(min_max_loc, vec2py(min_max_loc_vec[0],true));
+        PyList_Append(min_max_loc, vec2py(min_max_loc_vec[1],true));
     }
 
     return Py_BuildValue("(iO)", rank, py_dirs);
@@ -992,6 +1003,10 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     Py_XDECREF(py_amp_func);
 }
 
+%typecheck(SWIG_TYPECHECK_POINTER) PyObject *min_max_loc {
+    $1 = PyList_Check($input);
+}
+
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
@@ -1439,7 +1454,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
                                                    meep::kpoint_func user_kpoint_func, void *user_kpoint_data,
                                                    double *cscale, meep::direction d);
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, meep::component cgrid = Centered);
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions,
+                                      meep::component cgrid = Centered, PyObject *min_max_loc = NULL);
 
 %ignore eps_func;
 %ignore inveps_func;
