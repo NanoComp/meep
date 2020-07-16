@@ -2459,21 +2459,14 @@ void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a
 
     int rank = f->get_array_slice_dimensions(where, &dims[3 * c], dirs, collapse, snap, min_max_loc,
                                              0, field_dir[c]);
-    vector3 max_corner = vec_to_vector3(where.get_max_corner());
+    
+    vector3 max_corner = vec_to_vector3(min_max_loc[1]);
     meep::realnum max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
-    vector3 min_corner = vec_to_vector3(where.get_min_corner());
+    vector3 min_corner = vec_to_vector3(min_max_loc[0]);
     meep::realnum min_c_array[3] = {min_corner.x, min_corner.y, min_corner.z};
     for (int ci = 0; ci < 3; ci++) {
-
-      s[c][ci] = max_c_array[ci] - min_c_array[ci];
-      cen[c][ci] = min_c_array[ci];
-      if ((c == ci) && (s[c][ci] > 0)) {
-        s[c][ci] += 1 / f->gv.a;
-        cen[c][ci] -= (1 / f->gv.a) / 2;
-      }
-      s[c][ci] =
-          s[c][ci] == 0 ? 0 : s[c][ci] / (dims[3 * c + ci] - 1); // normalize the size of the domain
-      cen[c][ci] = dims[3 * c + ci] <= 1 ? 0 : cen[c][ci];
+      s[c][ci] = (max_c_array[ci] - min_c_array[ci]) == 0 ? 0 : (max_c_array[ci] - min_c_array[ci]) / (dims[3 * c + ci] - 1);
+      cen[c][ci] = dims[3 * c + ci] <= 1 ? 0 : min_c_array[ci];
     }
   }
 
