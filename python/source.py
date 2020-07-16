@@ -117,12 +117,10 @@ class Source(object):
 
 class SourceTime(object):
     """
-    TODO:
+    This is the parent for classes describing the time dependence of sources; it should
+    not be instantiated directly.
     """
     def __init__(self, is_integrated=False):
-        """
-        TODO:
-        """
         self.is_integrated = is_integrated
 
 
