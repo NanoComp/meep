@@ -4,6 +4,19 @@ from abc import ABC, abstractmethod
 import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
+from .optimization_problem import YeeDims, atleast_3d
+
+# ---------------------------------------------- #
+# general-purpose constants and utility routines
+# ---------------------------------------------- #
+ORIGIN           = np.zeros(3)
+XHAT, YHAT, ZHAT = [ mp.Vector3(a) for a in [[1.,0,0], [0,1.,0], [0,0,1.]] ]
+E_CPTS           = [mp.Ex, mp.Ey, mp.Ez]
+H_CPTS           = [mp.Hx, mp.Hy, mp.Hz]
+EH_CPTS          = E_CPTS + H_CPTS
+EH_TRANSVERSE    = [ [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
+                     [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
+                     [mp.Ex, mp.Ey, mp.Hx, mp.Hy] ]
 
 class ObjectiveQuantitiy(ABC):
     @abstractmethod
@@ -30,7 +43,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         self.volume=volume
         self.mode=mode
         self.forward = 0 if forward else 1
-        self.normal_direction = None
+        self.normal_direction = self.volume.swigobj.normal_direction()
         self.kpoint_func = kpoint_func
         self.eval = None
         self.EigenMode_kwargs = kwargs
@@ -125,7 +138,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling
         self.cscale = ob.cscale # pull scaling factor
 
-        return self.eval
+        return self.eval / self.dx
     def get_evaluation(self):
         '''Returns the requested eigenmode coefficient.
         '''
