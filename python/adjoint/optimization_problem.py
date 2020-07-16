@@ -236,16 +236,6 @@ class OptimizationProblem(object):
         self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
 
         # Adjoint run
-        '''from matplotlib import pyplot as plt
-        self.sim.run(until=5)
-        plt.figure(figsize=(10,10))
-        for i,(c,t) in enumerate(zip([mp.Ez,mp.Ex,mp.Hz,mp.Hx],['Ez','Ex','Hz','Hx'])):
-            print(c)
-            plt.subplot(2,2,i+1)
-            self.sim.plot2D(fields=c)
-            plt.title(t)
-        plt.show()
-        quit()'''
         self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
 
         # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
@@ -434,7 +424,6 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
                     if isinstance(m,mp.DftFlux):
                         current_fields[mi][ic][:,:,:] = atleast_3d(mp.get_fluxes(m)[fcen_idx])
                     elif isinstance(m,mp.DftFields):
-                        print(current_fields[mi][ic].shape)
                         current_fields[mi][ic][:,:,:] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
                     else:
                         raise TypeError("Monitor of type {} not supported".format(type(m)))
