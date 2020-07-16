@@ -5542,7 +5542,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7fc5a1075440>):
+             pml_profile=<function PML.<lambda> at 0x7fbde152c440>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6849,7 +6849,7 @@ def __call__(self, sim, todo):
 
 <div class="method_docstring" markdown="1">
 
-Allows a Haminv instance to be used as astep function.
+Allows a Haminv instance to be used as a step function.
 
 </div>
 
