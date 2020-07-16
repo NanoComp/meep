@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.15.0-alpha)
+AC_INIT(meep, 1.16.0-alpha)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
@@ -359,6 +359,9 @@ LIBS="$GUILE_LIBS $LIBS"
 CPPFLAGS="$CPPFLAGS $GUILE_CPPFLAGS"
 
 AC_MSG_CHECKING([for libctl dir])
+if test x != x"$LIBCTL_DIR" -a -r "$LIBCTL_DIR/share/libctl/base/ctl.scm"; then
+￼	LIBCTL_DIR="$LIBCTL_DIR/share/libctl"
+fi
 if test x != x"$LIBCTL_DIR" -a ! -r "$LIBCTL_DIR/base/ctl.scm"; then
 	LIBCTL_DIR=""
 fi

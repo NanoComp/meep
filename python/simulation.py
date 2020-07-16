@@ -3167,9 +3167,12 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, False, component)
+        corners = []
+        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, False, component,corners)
         dim_sizes[dim_sizes==0] = 1
-        return dim_sizes
+        min_corner = corners[0]
+        max_corner = corners[1]
+        return dim_sizes, min_corner, max_corner
     
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
@@ -3455,7 +3458,10 @@ class Simulation(object):
     def mean_time_spent_on(self, time_sink):
         """
         Return the mean time spent by all processes for a type of work `time_sink` which
-        can be one of nine integer values `0`-`8` as described above.
+        can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time
+        stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`)
+        Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`)
+        other.
         """
         return self.fields.mean_time_spent_on(time_sink)
 

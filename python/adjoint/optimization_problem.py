@@ -184,7 +184,7 @@ class OptimizationProblem(object):
         # store design region voxel parameters
         self.design_grids = []
         for drm in self.design_region_monitors:
-            s = [self.sim.get_array_slice_dimensions(c,vol=drm.where) for c in [mp.Ex,mp.Ey,mp.Ez]]
+            s = [self.sim.get_array_slice_dimensions(c,vol=drm.where)[0] for c in [mp.Ex,mp.Ey,mp.Ez]]
             self.design_grids += [YeeDims(*s)]
 
     def forward_run(self):
@@ -192,7 +192,7 @@ class OptimizationProblem(object):
         self.prepare_forward_run()
 
         # Forward run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, False, self.minimum_run_time))
+        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
 
         # record objective quantities from user specified monitors
         self.results_list = []
@@ -228,7 +228,7 @@ class OptimizationProblem(object):
         self.adjoint_sources = []
         for mi, m in enumerate(self.objective_arguments):
             dJ = jacobian(self.objective_functions[objective_idx],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
-            self.adjoint_sources.append(m.place_adjoint_source(dJ,self.dt)) # place the appropriate adjoint sources
+            self.adjoint_sources += m.place_adjoint_source(dJ,self.dt) # place the appropriate adjoint sources
         self.sim.change_sources(self.adjoint_sources)
 
         # register design flux
@@ -236,6 +236,16 @@ class OptimizationProblem(object):
         self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
 
         # Adjoint run
+        '''from matplotlib import pyplot as plt
+        self.sim.run(until=5)
+        plt.figure(figsize=(10,10))
+        for i,(c,t) in enumerate(zip([mp.Ez,mp.Ex,mp.Hz,mp.Hx],['Ez','Ex','Hz','Hx'])):
+            print(c)
+            plt.subplot(2,2,i+1)
+            self.sim.plot2D(fields=c)
+            plt.title(t)
+        plt.show()
+        quit()'''
         self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
 
         # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
@@ -315,7 +325,7 @@ class OptimizationProblem(object):
             for m in self.objective_arguments:
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
             
-            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, False, self.minimum_run_time))
+            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
             
             # record final objective function value
             results_list = []
@@ -338,7 +348,7 @@ class OptimizationProblem(object):
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
             
             # add monitor used to track dft convergence
-            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, False, self.minimum_run_time))
+            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
             
             # record final objective function value
             results_list = []
@@ -400,7 +410,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
         ci_dims = []
         for ci in c:
             comp = ci if yee_grid else mp.Dielectric
-            ci_dims += [simob.get_array_slice_dimensions(comp,vol=m.where)]
+            ci_dims += [simob.get_array_slice_dimensions(comp,vol=m.where)[0]]
         dims.append(ci_dims)
     
     # Record data in closure so that we can persitently edit
@@ -424,6 +434,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
                     if isinstance(m,mp.DftFlux):
                         current_fields[mi][ic][:,:,:] = atleast_3d(mp.get_fluxes(m)[fcen_idx])
                     elif isinstance(m,mp.DftFields):
+                        print(current_fields[mi][ic].shape)
                         current_fields[mi][ic][:,:,:] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
                     else:
                         raise TypeError("Monitor of type {} not supported".format(type(m)))

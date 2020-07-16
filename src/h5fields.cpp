@@ -173,7 +173,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
 
     for (int i = 0; i < data->num_fields; ++i) {
       if (cS[i] == Dielectric) {
-        complex<double> tr(0.0,0.0);
+        complex<double> tr(0.0, 0.0);
         for (int k = 0; k < data->ninveps; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx, frequency) +
                  fc->s->get_chi1inv_at_pt(iecs[k], ieds[k], idx + ieos[2 * k], frequency) +
@@ -185,7 +185,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
         fields[i] = (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
-        complex<double> tr(0.0,0.0);
+        complex<double> tr(0.0, 0.0);
         for (int k = 0; k < data->ninvmu; ++k) {
           tr += (fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx, frequency) +
                  fc->s->get_chi1inv_at_pt(imcs[k], imds[k], idx + imos[2 * k], frequency) +
@@ -381,7 +381,8 @@ static complex<double> component_fun(const complex<double> *fields, const vec &l
 void fields::output_hdf5(component c, const volume &where, h5file *file, bool append_data,
                          bool single_precision, const char *prefix, double frequency) {
   if (is_derived(int(c))) {
-    output_hdf5(derived_component(c), where, file, append_data, single_precision, prefix, frequency);
+    output_hdf5(derived_component(c), where, file, append_data, single_precision, prefix,
+                frequency);
     return;
   }
 

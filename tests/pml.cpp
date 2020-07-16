@@ -322,7 +322,8 @@ int main(int argc, char **argv) {
   master_printf("Running PML tests...\n");
   // if (check_pml1d(one, 0)) abort("not a pml in 1d.");
   if (check_pml1d(one, 10.0)) abort("not a pml in 1d + conductivity.");
-  if (check_pml2d(one, Hz, 1, true, 0.5)) abort("not a pml in 2d TE + conduct. + dispersion + offdiag");
+  if (check_pml2d(one, Hz, 1, true, 0.5))
+    abort("not a pml in 2d TE + conduct. + dispersion + offdiag");
   // if (check_pml2d(one, Ez, 0, false, 0)) abort("not a pml in 2d TM.");
   // if (check_pml2d(one,Ez,1,false,0)) abort("not a pml in 2d TM + conduct.");
   // if (check_pml2d(one,Hz,0,false,0)) abort("not a pml in 2d TE.");

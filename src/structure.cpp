@@ -180,8 +180,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i)
     adjusted_num_chunks *= prime_factors[i];
 
-  int my_num_chunks = meep_geom::fragment_stats::split_chunks_evenly ?
-    desired_num_chunks : adjusted_num_chunks;
+  int my_num_chunks =
+      meep_geom::fragment_stats::split_chunks_evenly ? desired_num_chunks : adjusted_num_chunks;
 
   // Finally, create the chunks:
   num_chunks = 0;
