@@ -2,13 +2,12 @@ This is the documentation tree for MEEP.
 
 markdown (.md) files are in the `doc/docs` folder.
 
-To build and visualize the HTML documentation locally using the
-mkdocs package (useful for verifying changes on your local machine
-before committing), first install `mkdocs` (version 0.17.5) as
-well as two auxiliary packages via e.g.:
+To build and visualize the HTML documentation locally using the mkdocs package
+(useful for verifying changes on your local machine before committing), first
+install `mkdocs` as well as two auxiliary packages via e.g.:
 
 ```
-% pip3 install --user mkdocs==0.17.5 python-markdown-math mkdocs-material
+% pip3 install --user mkdocs python-markdown-math mkdocs-material
 ```
 
 To (re)generate the Python API documentation (extracted from the docstrings)
