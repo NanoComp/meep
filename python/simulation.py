@@ -780,7 +780,7 @@ class Harminv(object):
 
     def __call__(self, sim, todo):
         """
-        Allows a Haminv instance to be used as astep function.
+        Allows a Haminv instance to be used as a step function.
         """
         self.step_func(sim, todo)
 
