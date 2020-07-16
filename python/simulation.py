@@ -1731,7 +1731,8 @@ class Simulation(object):
 
     def set_materials(self, geometry=None, default_material=None):
         """
-        This can be called in a step function, and is useful for changing the geometry or default material as a function of time.
+        This can be called in a step function, and is useful for changing the geometry or
+        default material as a function of time.
         """
         if self.fields:
             self.fields.remove_susceptibilities()
@@ -1963,9 +1964,7 @@ class Simulation(object):
         simulation script is in
         [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
-        <center>
         ![](images/phase-in-material.png)
-        </center>
         """
         if self.fields is None:
             self.init_sim()
@@ -2133,6 +2132,11 @@ class Simulation(object):
         self._run_sources_until(self, 0, step_funcs)
 
     def run_k_point(self, t, k):
+        """
+        Lower level function called by `run_k_points` that runs a simulation for a single
+        *k* point `k_point` and returns a `Harminv` instance. Useful when you need to
+        access more `Harminv` data than just the frequencies.
+        """
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
@@ -2338,6 +2342,8 @@ class Simulation(object):
 
     def add_energy(self, *args):
         """
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`
+
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
@@ -2550,6 +2556,8 @@ class Simulation(object):
 
     def add_force(self, *args):
         """
+        `add_force(fcen, df, nfreq, freq, ForceRegions...)`
+
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
@@ -3415,6 +3423,26 @@ class Simulation(object):
             self.init_sim()
 
     def run(self, *step_funcs, **kwargs):
+        """
+        `run(step_functions..., until=condition/time)`
+
+        Run the simulation until a certain time or condition, calling the given step
+        functions (if any) at each timestep. The keyword argument `until` is *either* a
+        number, in which case it is an additional time (in Meep units) to run for, *or* it
+        is a function (of no arguments) which returns `True` when the simulation should
+        stop. `until` can also be a list of stopping conditions which may include a number
+        and additional functions.
+
+        `run(step_functions..., until_after_sources=condition/time)`
+
+        Run the simulation until all sources have turned off, calling the given step
+        functions (if any) at each timestep. The keyword argument `until_after_sources` is
+        either a number, in which case it is an *additional* time (in Meep units) to run
+        for after the sources are off, *or* it is a function (of no arguments). In the
+        latter case, the simulation runs until the sources are off *and* `condition`
+        returns `True`. Like `until` above, `until_after_sources` can take a list of
+        stopping conditions.
+        """
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
 
@@ -4601,7 +4629,7 @@ def output_sfield_p(sim):
 
 def Ldos(*args):
     """
-    Ldos(fcen, df, nfreq, freq)
+    `Ldos(fcen, df, nfreq, freq)`
 
     Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and
     `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced
@@ -4616,7 +4644,7 @@ def Ldos(*args):
 
 def dft_ldos(*args, **kwargs):
     """
-    dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)
+    `dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`
 
     Compute the power spectrum of the sources (usually a single point dipole source),
     normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at

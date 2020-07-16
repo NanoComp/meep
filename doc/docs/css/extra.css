@@ -2,12 +2,14 @@
 
 /* Indent the class docstring */
 .class_docstring {
+    /* margin-left: 25px; */
     margin-left: 25px;
 }
 
 /* And the members of the class (the methods) */
 .class_members {
-    margin-left: 25px;
+    /* margin-left: 25px; */
+    margin-left: 0px;
 }
 
 /* Tweak the style of the code blocks inside of class docstrings */
@@ -19,7 +21,8 @@
 
 /* Indent the method docstrings a little more */
 .method_docstring {
-    margin-left: 35px;
+    /* margin-left: 35px; */
+    margin-left: 25px;
 }
 
 /* code blocks inside of method docstrings */
@@ -31,7 +34,8 @@
 
 /* And similar settings for top-level functions */
 .function_docstring {
-    margin-left: 35px;
+    /* margin-left: 35px; */
+    margin-left: 25px;
 }
 .function_docstring code.python.hljs {
     border: none;
@@ -40,8 +44,14 @@
 
 
 /* Turn off the ugly boxes around inline code in paragraphs and in list items */
-p code, li code {
+p code, li code, .rst-content code {
     border:  none;
-    font-size: 80%;
+    font-size: 75%;
     padding: 0 2px;
+}
+
+/* Turn the border back on for code blocks */
+pre code.python {
+    border: solid 1px #e1e4e5;
+    font-size: 70%;
 }

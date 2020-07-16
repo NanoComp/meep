@@ -17,6 +17,16 @@ In order to keep the noise in the module to a minimum, some markdown
 snippets/templates used in the generation of the API documentation files can be
 found in {project_folder}/doc/_api_snippets, and will be loaded as needed while
 processing the docstrings.
+
+The folling tag patterns are used to indicate where in the input template that docstrings
+will be inserted:
+
+  - @@ top_level_function_name @@
+  - @@ ClassName @@
+  - @@ ClassName.method_name @@
+  - @@ ClassName[all-methods] @@
+  - @@ ClassName[methods-with-docstrings] @@
+
 """
 
 import sys
@@ -117,11 +127,13 @@ class MethodItem(FunctionItem):
     def __init__(self, name, obj, klass):
         super(MethodItem, self).__init__(name, obj)
         self.klass = klass
+        self.method_name = name
+        self.name = '{}.{}'.format(klass.name, name)
 
     def create_markdown(self):
         # pull relevant attributes into local variables
         class_name = self.klass.name
-        method_name = self.name
+        method_name = self.method_name
         method_name_escaped = method_name.replace('_', '\_')
         docstring = self.docstring if self.docstring else ''
         parameters = self.get_parameters(4 + len(method_name) + 1)
@@ -162,6 +174,17 @@ class ClassItem(Item):
         base_classes = [base.__name__ for base in self.obj.__bases__]
         base_classes = ', '.join(base_classes)
 
+        # Substitute values into the template
+        docs = dict()
+        class_doc = self.template.format(**locals())
+        docs[class_name] = class_doc
+        docs[class_name+'[all-methods]'] = self.create_method_markdown(False)
+        docs[class_name+'[methods-with-docstrings]'] = self.create_method_markdown(True)
+
+        return docs
+
+
+    def create_method_markdown(self, only_with_docstrings=True):
         method_docs = []
         if self.methods:
             # reorder self.methods so __init__ comes first, if it isn't already
@@ -174,6 +197,8 @@ class ClassItem(Item):
                     break
 
             for item in methods:
+                if only_with_docstrings and not item.docstring:
+                    continue
                 if not check_excluded(item.name) and \
                    not check_excluded('{}.{}'.format(self.name, item.name)):
                      doc = item.create_markdown()
@@ -181,10 +206,8 @@ class ClassItem(Item):
 
         # join the methods into a single string
         method_docs = '\n'.join(method_docs)
+        return method_docs
 
-        # Substitute values into the template
-        doc = self.template.format(**locals())
-        return doc
 
 #----------------------------------------------------------------------------
 
@@ -206,7 +229,9 @@ def load_module(module):
 
     for name, member in members:
         if inspect.isclass(member):
-            items.append(ClassItem(name, member))
+            item = ClassItem(name, member)
+            items.append(item)
+            items += item.methods
         if inspect.isfunction(member):
             items.append(FunctionItem(name, member))
 
@@ -222,7 +247,12 @@ def generate_docs(items):
     for item in items:
         if not check_excluded(item.name):
             doc = item.create_markdown()
-            docs[item.name] = doc
+            if isinstance(doc, str):
+                docs[item.name] = doc
+            elif isinstance(doc, dict):
+                docs.update(doc)
+            else:
+                raise RuntimeError("unknown type for doc")
     return docs
 
 
