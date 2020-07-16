@@ -625,7 +625,7 @@ def get_epsilon_point(self, pt, frequency=0, omega=0):
 Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
 of the permittivity tensor at that location and frequency. If `frequency` is
 non-zero, the result is complex valued; otherwise it is the real,
-frequency-independent part of ε (the $\omega    o\infty$ limit).
+frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -684,9 +684,11 @@ def flux_in_box(self, d, box=None, center=None, size=None):
 <div class="method_docstring" markdown="1">
 
 Given a `direction` constant, and a `mp.Volume`, returns the flux (the integral of
-$\Re [\mathbf{E}^*      imes \mathbf{H}]$) in that volume. Most commonly, you specify
+$\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify
 a volume that is a plane or a line, and a direction perpendicular to it, e.g.
-`flux_in_box(d=mp.X,mp.Volume(center=mp.Vector3(0,0,0),size=mp.Vector3(0,1,1)))`.
+
+`flux_in_box(d=mp.X,mp.Volume(center=mp.Vector3(0,0,0),size=mp.Vector3(0,1,1)))`
+
 If the `center` and `size` arguments are provided instead of `box`, Meep will
 construct the appropriate volume for you.
 
@@ -2433,7 +2435,7 @@ plt.savefig('sim_domain.png')
     - `post_process=np.real`: post processing function to apply to fields (must be
       a function object)
 * `frequency`: for materials with a [frequency-dependent
-  permittivity](Materials.md#material-dispersion) $arepsilon(f)$, specifies the
+  permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
   frequency $f$ (in Meep units) of the real part of the permittivity to use in the
   plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
@@ -2669,7 +2671,7 @@ Given a frequency `frequency`, (provided as a keyword argument) output ε (relat
 permittivity); for an anisotropic ε tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of ε (the $\omega        o\infty$ limit).
+frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -2685,7 +2687,7 @@ Given a frequency `frequency`, (provided as a keyword argument) output μ (relat
 permeability); for an anisotropic μ tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of μ (the $\omega        o\infty$ limit).
+frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -2697,7 +2699,7 @@ def output_poynting(sim):
 
 <div class="function_docstring" markdown="1">
 
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^* imes\mathbf{H}\}$. Note that you
+Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
 might want to wrap this step function in `synchronized_magnetic` to compute it more
 accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
@@ -3376,7 +3378,7 @@ or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
   some spatially-varying quantity whose value at the $n$th grid point is $Q_n$,
   the integral of $Q$ over the region may be approximated by the sum:
 
-$$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} pprox \sum_{n} w_n Q_n.$$
+$$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
 
 This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions
 in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an
@@ -3904,7 +3906,7 @@ Creates a `Medium` object.
 + **`epsilon` [`number`]** The frequency-independent isotropic relative
   permittivity or dielectric constant. Default is 1. You can also use `index=n` as
   a synonym for `epsilon=n*n`; note that this is not really the refractive index
-  if you also specify μ, since the true index is $\sqrt{\muarepsilon}$. Using
+  if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$. Using
   `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
 
 + **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]** — These properties allow
@@ -4291,7 +4293,7 @@ def __init__(self, noise_amp=0.0, **kwargs):
 
 <div class="method_docstring" markdown="1">
 
-+ **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $     imes$
++ **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\times$
   `noise_amp`.
 
 This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a
@@ -4342,7 +4344,7 @@ def __init__(self, noise_amp=0.0, **kwargs):
 
 <div class="method_docstring" markdown="1">
 
-+ **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $     imes$
++ **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\times$
   `noise_amp`.
 
 This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a
@@ -4490,7 +4492,7 @@ def __init__(self,
 + **`gamma` [`number`]** — The loss rate $\gamma_n / 2\pi$ in the off-diagonal
   response.
 
-+ **`alpha` [`number`]** — The loss factor $lpha_n$ in the diagonal response.
++ **`alpha` [`number`]** — The loss factor $\alpha_n$ in the diagonal response.
   Note that this parameter is dimensionless and contains no 2π factor.
 
 + **`bias` [`Vector3`]** — Vector specifying the orientation of the gyrotropic
@@ -5540,7 +5542,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7ff729b8fdd0>):
+             pml_profile=<function PML.<lambda> at 0x7fbde152c440>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5754,27 +5756,12 @@ class SourceTime(object):
 
 <div class="class_docstring" markdown="1">
 
-TODO:
+This is the parent for classes describing the time dependence of sources; it should
+not be instantiated directly.
 
 </div>
 
 
-
-<a id="SourceTime.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, is_integrated=False):
-```
-
-<div class="method_docstring" markdown="1">
-
-TODO:
-
-</div>
-
-</div>
 
 ---
 <a id="EigenModeSource"></a>
@@ -6051,7 +6038,7 @@ class GaussianSource(SourceTime):
 
 A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^2)$.
 Technically, the "Gaussian" sources in Meep are the (discrete-time) derivative of a
-Gaussian, i.e. they are $(-i\omega)^{-1} rac{\partial}{\partial t} \exp(-i\omega t -
+Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\omega t -
 (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually
 irrelevant.
 
@@ -6108,10 +6095,10 @@ Construct a `GaussianSource`.
 + **`fourier_transform(f)`** — Returns the Fourier transform of the current
   evaluated at frequency `f` (`ω=2πf`) given by:
   $$
-  \widetilde G(\omega) \equiv rac{1}{\sqrt{2\pi}}
+  \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
   \int e^{i\omega t}G(t)\,dt \equiv
-  rac{1}{\Delta f}
-  e^{i\omega t_0 -rac{(\omega-\omega_0)^2}{2\Delta f^2}}
+  \frac{1}{\Delta f}
+  e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
   $$
   where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
   is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and
@@ -6862,7 +6849,7 @@ def __call__(self, sim, todo):
 
 <div class="method_docstring" markdown="1">
 
-Allows a Haminv instance to be used as astep function.
+Allows a Haminv instance to be used as a step function.
 
 </div>
 
@@ -7300,7 +7287,7 @@ Given a frequency `frequency`, (provided as a keyword argument) output ε (relat
 permittivity); for an anisotropic ε tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of ε (the $\omega        o\infty$ limit).
+frequency-independent part of ε (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -7316,7 +7303,7 @@ Given a frequency `frequency`, (provided as a keyword argument) output μ (relat
 permeability); for an anisotropic μ tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of μ (the $\omega        o\infty$ limit).
+frequency-independent part of μ (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -7328,7 +7315,7 @@ def output_poynting(sim):
 
 <div class="function_docstring" markdown="1">
 
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^* imes\mathbf{H}\}$. Note that you
+Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
 might want to wrap this step function in `synchronized_magnetic` to compute it more
 accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
