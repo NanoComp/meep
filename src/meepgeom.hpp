@@ -208,17 +208,18 @@ geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
 void get_material_tensor(const medium_struct *mm, meep::realnum freq, std::complex<double> *tensor);
 meep::realnum get_material_gradient(meep::realnum u, std::complex<double> *fields_a,
                                     std::complex<double> *fields_f, meep::realnum freq,
-                                    material_data *md, meep::realnum du = 1.0e-3);
+                                    material_data *md, meep::component field_dir,
+                                    meep::realnum du = 1.0e-3);
 void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz,
                              meep::realnum *data, int nx, int ny, int nz, int stride,
                              double scaleby, const meep::realnum *udata, int ukind, double uval);
 void material_grids_addgradient_point(meep::realnum *v, std::complex<double> *fields_a,
-                                      std::complex<double> *fields_f, vector3 p,
-                                      meep::realnum scalegrad, meep::realnum freq,
+                                      std::complex<double> *fields_f, meep::component field_dir,
+                                      vector3 p, meep::realnum scalegrad, meep::realnum freq,
                                       geom_box_tree geometry_tree);
 void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, meep::realnum *frequencies,
-                                int *fdims, meep::realnum scalegrad, const meep::volume &where,
+                                size_t nf, meep::realnum scalegrad, const meep::volume &where,
                                 geom_box_tree geometry_tree, meep::fields *f);
 
 /***************************************************************/

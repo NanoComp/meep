@@ -1788,25 +1788,25 @@ public:
                      bool include_dV = true);
   void update_dfts();
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
-                        bool use_symmetry = true);
+                        bool use_symmetry = true, bool centered_grid = true);
   dft_flux add_dft_flux(const volume_list *where, const std::vector<double> freq,
-                        bool use_symmetry = true) {
-    return add_dft_flux(where, freq.data(), freq.size(), use_symmetry);
+                        bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(where, freq.data(), freq.size(), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                        bool use_symmetry = true) {
-    return add_dft_flux(where, linspace(freq_min, freq_max, Nfreq), use_symmetry);
+                        bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
-                        int Nfreq, bool use_symmetry = true) {
-    return add_dft_flux(d, where, linspace(freq_min, freq_max, Nfreq), use_symmetry);
+                        int Nfreq, bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(d, where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(direction d, const volume &where, const std::vector<double> freq,
-                        bool use_symmetry = true) {
-    return add_dft_flux(d, where, freq.data(), freq.size(), use_symmetry);
+                        bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(d, where, freq.data(), freq.size(), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
-                        bool use_symmetry = true);
+                        bool use_symmetry = true, bool centered_grid = true);
   dft_flux add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux_box(const volume &where, const std::vector<double> freq);
   dft_flux add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);

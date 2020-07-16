@@ -42,13 +42,16 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
     
-    def place_adjoint_source(self,dJ,dt):
+    def place_adjoint_source(self,dJ):
         '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the 
         correct scaling/time profile.
 
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
         dt ........ the timestep size from sim.fields.dt of the forward sim
         '''
+        dt = self.sim.fields.dt
+        T = self.sim.meep_time()
+
         dJ = np.atleast_1d(dJ)
         # determine starting kpoint for reverse mode eigenmode source
         direction_scalar = 1 if self.forward else -1
@@ -76,8 +79,15 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dV = 1/self.sim.resolution * 1/self.sim.resolution
         else:
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
-        da_dE = 0.5*(dV * self.cscale)
-        scale = da_dE * dJ * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
+        
+        # an ugly way to calcuate the scaled dtft of the forward source
+        signal_t = np.array([self.time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+        signal_dtft = np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(0,signal_t.size)[np.newaxis,:]*dt)@signal_t # vectorize dtft for speed 
+        source_amp = np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) * np.exp(2*1j*np.angle(signal_dtft)) # note the fudge factor of 2 in the phase...
+        
+        da_dE = 0.5 * self.cscale
+        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt)
+        scale = da_dE * dV * dJ * iomega / source_amp #np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             src = self.time_src
@@ -89,7 +99,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src) # generate source from broadband response
             amp = 1
         # generate source object
-        self.source = mp.EigenModeSource(src,
+        self.source = [mp.EigenModeSource(src,
                     eig_band=self.mode,
                     direction=mp.NO_DIRECTION,
                     eig_kpoint=k0,
@@ -97,7 +107,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                     eig_match_freq=True,
                     size=self.volume.size,
                     center=self.volume.center,
-                    **self.EigenMode_kwargs)
+                    **self.EigenMode_kwargs)]
         
         return self.source
 
