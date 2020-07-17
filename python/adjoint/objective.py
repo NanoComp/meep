@@ -38,7 +38,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
     
     def register_monitors(self,frequencies):
         self.frequencies = np.asarray(frequencies)
-        self.monitor = self.sim.add_mode_monitor(frequencies,mp.FluxRegion(center=self.volume.center,size=self.volume.size))
+        self.monitor = self.sim.add_mode_monitor(frequencies,mp.FluxRegion(center=self.volume.center,size=self.volume.size),yee_grid=True)
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
     

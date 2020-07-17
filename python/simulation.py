@@ -311,7 +311,7 @@ class Volume(object):
             z_size = 0 if z_list.size == 1 else np.abs(np.diff(z_list)[0])
 
             self.size = Vector3(x_size,y_size,z_size)
-
+    
         self.dims = dims
 
         v1 = self.center - self.size.scale(0.5)
@@ -2672,18 +2672,18 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
 
-    def add_mode_monitor(self, *args):
+    def add_mode_monitor(self, *args, yee_grid=False):
         """
         Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
-        flux = DftFlux(self._add_mode_monitor, [freq, fluxes])
+        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, freq, fluxes):
+    def _add_mode_monitor(self, freq, fluxes, yee_grid):
         if self.fields is None:
             self.init_sim()
 
@@ -2691,11 +2691,12 @@ class Simulation(object):
             raise ValueError("add_mode_monitor expected just one ModeRegion. Got {}".format(len(fluxes)))
 
         region = fluxes[0]
+        centered_grid = not yee_grid
         v = mp.Volume(region.center, region.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
         d0 = region.direction
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
-        return self.fields.add_mode_monitor(d, v.swigobj, freq)
+        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
 
     def add_eigenmode(self, *args):
         warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)

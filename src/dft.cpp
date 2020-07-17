@@ -655,8 +655,8 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, const double *fr
 }
 
 
-dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq) {
-  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, /*bool centered_grid=*/false);
+dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid) {
+  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid);
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max,

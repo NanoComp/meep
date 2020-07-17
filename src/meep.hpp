@@ -1814,13 +1814,13 @@ public:
 
   // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
   dft_flux add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
-                            int Nfreq) {
-    return add_mode_monitor(d, where, linspace(freq_min, freq_max, Nfreq));
+                            int Nfreq, bool centered_grid = true) {
+    return add_mode_monitor(d, where, linspace(freq_min, freq_max, Nfreq), centered_grid);
   }
-  dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> freq) {
-    return add_mode_monitor(d, where, freq.data(), freq.size());
+  dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> freq, bool centered_grid = true) {
+    return add_mode_monitor(d, where, freq.data(), freq.size(), centered_grid);
   }
-  dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq);
+  dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid = true);
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             double freq_min, double freq_max, int Nfreq,
