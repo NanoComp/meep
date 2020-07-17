@@ -10,6 +10,17 @@ install `mkdocs` as well as two auxiliary packages via e.g.:
 % pip3 install --user mkdocs python-markdown-math mkdocs-material
 ```
 
+The main Python API document (`Python_User_Interface.md`) is generated from a
+template file (named the same, with a `.in` extension), and the docstrings
+located in the Python source code. Changes or additions for any text that is not
+part of a docstring should be added or edited in the
+`Python_User_Interface.md.in` file. Anything that is specifically about a
+function, class or method should be documented in the docstring for that
+function, class or method. The docstrings are expected to use MarkDown
+formatting. To control where the docstrings are inserted into the documentation
+a simple tagging system is used. See the documentation in the
+`doc/generate_py_api.py` file for details.
+
 To (re)generate the Python API documentation (extracted from the docstrings)
 run the following command in the project root folder. Note that this requires
 that the Python extension for the meep library has been built:
@@ -18,10 +29,12 @@ that the Python extension for the meep library has been built:
 % PYTHONPATH=./python python doc/generate_py_api.py
 ```
 
-Rerun this after making any changes to the docstrings in the source and
-rebuilding the project, in order to update the documentation.
+Note that this command should be rerun after making any changes to main template
+file or the docstrings in the source, and rebuilding the project, in order to
+update the documentation.
 
-Next, run the following command from the top-level MEEP repository tree:
+The view an auto-updating version of the documentation, run the following
+command from the top-level MEEP repository tree:
 
 ```
 % mkdocs serve
@@ -36,7 +49,7 @@ rebuilding the documentation tree automatically whenever any .md file is
 modified. This enables viewing the HTML documentation in real time as the
 source files are edited.
 
-To build the HTML version of the documentation, run:
+To build the static HTML version of the documentation, run:
 
 ```
 % mkdocs build
