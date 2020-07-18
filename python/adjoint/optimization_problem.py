@@ -24,12 +24,12 @@ class DesignRegion(object):
         fields_f = np.concatenate(fields_f)
         num_freqs = np.array(frequencies).size
 
-        grad = np.zeros((self.num_design_params*num_freqs,)) # preallocate
+        grad = np.zeros((num_freqs,self.num_design_params)) # preallocate
 
         # compute the gradient
         mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f) 
 
-        return np.squeeze(grad.reshape(self.num_design_params,num_freqs,order='F'))
+        return np.squeeze(grad).T
 
 class OptimizationProblem(object):
     """Top-level class in the MEEP adjoint module.
@@ -192,7 +192,7 @@ class OptimizationProblem(object):
         self.prepare_forward_run()
 
         # Forward run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
+        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
 
         # record objective quantities from user specified monitors
         self.results_list = []
@@ -205,11 +205,11 @@ class OptimizationProblem(object):
             self.f0 = self.f0[0]
 
         # Store forward fields for each set of design variables in array (x,y,z,field_components,frequencies)
-        self.d_E = [[np.zeros((c[0],c[1],c[2],self.nf),dtype=np.complex128) for c in dg] for dg in self.design_grids]
+        self.d_E = [[np.zeros((self.nf,c[0],c[1],c[2]),dtype=np.complex128) for c in dg] for dg in self.design_grids]
         for nb, dgm in enumerate(self.design_region_monitors):
             for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
                 for f in range(self.nf):
-                    self.d_E[nb][ic][:,:,:,f] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+                    self.d_E[nb][ic][f,:,:,:] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
@@ -237,11 +237,11 @@ class OptimizationProblem(object):
         self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
 
         # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
-        self.a_E.append([[np.zeros((c[0],c[1],c[2],self.nf),dtype=np.complex128) for c in dg] for dg in self.design_grids])
+        self.a_E.append([[np.zeros((self.nf,c[0],c[1],c[2]),dtype=np.complex128) for c in dg] for dg in self.design_grids])
         for nb, dgm in enumerate(self.design_region_monitors):
             for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
                 for f in range(self.nf):
-                    self.a_E[objective_idx][nb][ic][:,:,:,f] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+                    self.a_E[objective_idx][nb][ic][f,:,:,:] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # update optimizer's state
         self.current_state = "ADJ"
@@ -416,13 +416,13 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
 
             # Pull all the relevant frequency and spatial dft points
             relative_change = []
-            current_fields = [[np.zeros(di,dtype=np.complex128) for di in d] for d in dims]
+            current_fields = [[0 for di in d] for d in dims]
             for mi, m in enumerate(mon):
                 for ic, cc in enumerate(c):
                     if isinstance(m,mp.DftFlux):
-                        current_fields[mi][ic][:,:,:] = atleast_3d(mp.get_fluxes(m)[fcen_idx])
+                        current_fields[mi][ic] = mp.get_fluxes(m)[fcen_idx]
                     elif isinstance(m,mp.DftFields):
-                        current_fields[mi][ic][:,:,:] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
+                        current_fields[mi][ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
                     else:
                         raise TypeError("Monitor of type {} not supported".format(type(m)))
                     relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])

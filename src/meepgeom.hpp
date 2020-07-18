@@ -217,7 +217,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> *fi
                                       std::complex<double> *fields_f, meep::component field_dir,
                                       vector3 p, meep::realnum scalegrad, meep::realnum freq,
                                       geom_box_tree geometry_tree);
-void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a,
+void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, meep::realnum *frequencies,
                                 size_t nf, meep::realnum scalegrad, const meep::volume &where,
                                 geom_box_tree geometry_tree, meep::fields *f);

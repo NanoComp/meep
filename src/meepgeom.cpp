@@ -2441,11 +2441,11 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> *fi
   }
 }
 
-void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a,
+void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, meep::realnum *frequencies,
                                 size_t nf, meep::realnum scalegrad, const meep::volume &where,
                                 geom_box_tree geometry_tree, meep::fields *f) {
-  int n1, n2, n3;
+  int n2, n3, n4;
   meep::realnum s[3][3], cen[3][3], c1, c2, c3, s1, s2, s3;
   vector3 p;
 
@@ -2474,34 +2474,26 @@ void material_grids_addgradient(meep::realnum *v, std::complex<double> *fields_a
   // TODO speed up with MPI (if needed)
   size_t c_offset = 0;
   for (int c = 0; c < 3; c++) { // component
-    n1 = dims[c * 3];
-    n2 = dims[c * 3 + 1];
-    n3 = dims[c * 3 + 2];
-    c1 = cen[c][0];
-    c2 = cen[c][1];
-    c3 = cen[c][2];
-    s1 = s[c][0];
-    s2 = s[c][1];
-    s3 = s[c][2];
+    n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
+    c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
+    s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
 
-    for (int i1 = 0; i1 < n1; ++i1) {       // x
-      for (int i2 = 0; i2 < n2; ++i2) {     // y
-        for (int i3 = 0; i3 < n3; ++i3) {   // z
-          for (int i4 = 0; i4 < nf; ++i4) { // freq
-            int xyz_index = c_offset + (((i1 * n2 + i2) * n3 + i3) * nf + i4);
+    for (int i1 = 0; i1 < nf; ++i1) {       // freq
+      meep::realnum *v_cur = &v[ng * i1];
+      for (int i2 = 0; i2 < n2; ++i2) {     // x
+        for (int i3 = 0; i3 < n3; ++i3) {   // y
+          for (int i4 = 0; i4 < n4; ++i4) { // z
+            int xyz_index = c_offset + (((i1 * n2 + i2) * n3 + i3) * n4 + i4);
             std::complex<double> *fields_a_cur, *fields_f_cur;
-            fields_a_cur = &fields_a[xyz_index];
-            fields_f_cur = &fields_f[xyz_index];
-            p.x = i1 * s1 + c1;
-            p.y = i2 * s2 + c2;
-            p.z = i3 * s3 + c3;
-            material_grids_addgradient_point(v, fields_a_cur, fields_f_cur, field_dir[c], p,
-                                             scalegrad, frequencies[i4], geometry_tree);
+            fields_a_cur = &fields_a[xyz_index]; fields_f_cur = &fields_f[xyz_index];
+            p.x = i2 * s1 + c1; p.y = i3 * s2 + c2; p.z = i4 * s3 + c3;
+            material_grids_addgradient_point(v_cur, fields_a_cur, fields_f_cur, field_dir[c], p,
+                                             scalegrad, frequencies[i1], geometry_tree);
           }
         }
       }
     }
-    c_offset += dims[c * 3] * dims[c * 3 + 1] * dims[c * 3 + 2];
+    c_offset += dims[c * 3] * dims[c * 3 + 1] * dims[c * 3 + 2] * nf;
   }
 }
 

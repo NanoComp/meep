@@ -776,6 +776,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
     meep::realnum * grad_c = (meep::realnum *)PyArray_DATA(pao_grad);
+    int ng = PyArray_DIMS(pao_grad)[1];
 
     // clean the adjoint fields array
     PyArrayObject *pao_fields_a = (PyArrayObject *)fields_a;
@@ -805,6 +806,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
     meep::realnum* frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
     int nf = PyArray_DIMS(pao_freqs)[0];
+    master_printf("my nf %d\n",nf);
 
     // prepare a geometry_tree
     //TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
@@ -819,7 +821,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     meep::fields* f_c = (meep::fields *)f_v;
 
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c);
+    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c);
     
     destroy_geom_box_tree(geometry_tree);
     delete[] l;

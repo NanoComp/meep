@@ -81,21 +81,18 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
         
         # an ugly way to calcuate the scaled dtft of the forward source
-        signal_t = np.array([self.time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
-        signal_dtft = np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(0,signal_t.size)[np.newaxis,:]*dt)@signal_t # vectorize dtft for speed 
-        source_amp = np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) * np.exp(2*1j*np.angle(signal_dtft)) # note the fudge factor of 2 in the phase...
+        y = np.array([self.time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+        signal_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)
+        source_amp = np.abs([self.time_src.fourier_transform(f) for f in self.frequencies]) * np.exp(2*1j*np.angle(signal_dtft)) # note the fudge factor of 2 in the phase...
         
         da_dE = 0.5 * self.cscale
         iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt)
-        scale = da_dE * dV * dJ * iomega / source_amp #np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             src = self.time_src
-            amp = scale
+            amp = da_dE * dV * dJ * iomega / source_amp #np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
         else:
-            # TODO: In theory we should be able drive the source without normalizing out the time profile.
-            # But for some reason, there is a frequency dependent scaling discrepency. It works now for 
-            # multiple monitors and multiple sources, but we should figure out why this is.
+            scale = da_dE * dV * dJ * iomega / (np.abs([self.time_src.fourier_transform(f) for f in self.frequencies]) * np.exp(1*1j*np.angle(signal_dtft)))# final scale factor
             src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src) # generate source from broadband response
             amp = 1
         # generate source object
