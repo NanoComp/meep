@@ -806,7 +806,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
     meep::realnum* frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
     int nf = PyArray_DIMS(pao_freqs)[0];
-    master_printf("my nf %d\n",nf);
 
     // prepare a geometry_tree
     //TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here

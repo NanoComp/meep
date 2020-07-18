@@ -2672,13 +2672,14 @@ class Simulation(object):
             self.init_sim()
         return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
 
-    def add_mode_monitor(self, *args, yee_grid=False):
+    def add_mode_monitor(self, *args, **kwargs):
         """
         Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
+        yee_grid = kwargs.get("yee_grid", False)
         flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid])
         self.dft_objects.append(flux)
         return flux
