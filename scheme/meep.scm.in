@@ -777,10 +777,12 @@
 ; ****************************************************************
 ; dft fields
 
-(define (add-dft-fields components freq_min freq_max nfreq . where)
+(define* (add-dft-fields components freq_min freq_max nfreq #:key (yee-grid false) . where)
   (if (null? fields) (init-fields))
-  (let ((vol (if (null? where) (meep-fields-total-volume fields) (car where))))
-    (meep-fields-add-dft-fields fields components vol freq_min freq_max nfreq)))
+  (let ((num-components (length components))
+        (where-only (delq #:yee-grid (delq yee-grid where))))
+    (let ((vol (if (null? where-only) (meep-fields-total-volume fields) (car where-only))))
+      (meep-fields-add-dft-fields fields components vol freq_min freq_max nfreq (not yee-grid)))))
 
 (define (output-dft dft_fields fname)
   (if (null? fields) (init-fields))

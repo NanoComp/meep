@@ -903,7 +903,7 @@ The `dft_flux` routines (`add_flux`) described in the previous examples compute 
 
 This tutorial example involves computing the absorbed power density for a two-dimensional cylinder (radius: 1 μm) of silicon dioxide (SiO<sub>2</sub>, from the [materials library](../Materials.md#materials-library)) at a wavelength of 1 μm given an incident $E_z$-polarized planewave. (The [attenuation length](https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index) of SiO<sub>2</sub> at this wavelength is $\lambda/\mathrm{Im}\, \sqrt{\varepsilon}$ = ~3000 μm.) We will also verify that the total power absorbed by the cylinder obtained by integrating the absorbed power density over the entire cylinder is equivalent to the same quantity computed using the alternative method involving a closed, four-sided `dft_flux` box (Poynting's theorem).
 
-The simulation script is in [examples/absorbed_power_density.py](https://github.com/NanoComp/meep/blob/master/python/examples/absorbed_power_density.py).
+The simulation script is in [examples/absorbed_power_density.py](https://github.com/NanoComp/meep/blob/master/python/examples/absorbed_power_density.py). The notebook is [examples/absorbed_power_density.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/absorbed_power_density.ipynb).
 
 ```py
 import numpy as np
