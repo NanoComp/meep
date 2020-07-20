@@ -21,9 +21,30 @@ formatting. To control where the docstrings are inserted into the documentation
 a simple tagging system is used. See the documentation in the
 `doc/generate_py_api.py` file for details.
 
+If a docstring contains an "alternate function signature", usually to make
+functions that accept a variety of positional or keyword arguments more clear to
+the reader. Functions that fall into this category typically use Python's `*` or
+`**` syntax. These lines can be tagged to indicate to the tool that they should
+be moved or copied to the code block in the documentation where they function
+signature is declared.  For example:
+
+```python
+    def add_flux(self, *args):
+        """
+        `add_flux(fcen, df, nfreq, freq, FluxRegions...)` ##sig
+
+        ...
+        """
+```
+
+Notice the use of  the `##sig` tag at the end of the line. If the alternate
+signature is located in the middle of the docstring, and needs to remain there,
+then the `##sig-keep` tag can be used instead. For an example of this usage, see
+the `Simulation.run` method.
+
 To (re)generate the Python API documentation (extracted from the docstrings)
 run the following command in the project root folder. Note that this requires
-that the Python extension for the meep library has been built:
+that the Python extension for the meep library has been built and is importable:
 
 ```
 % PYTHONPATH=./python python doc/generate_py_api.py
