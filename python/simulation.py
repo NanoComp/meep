@@ -2344,7 +2344,7 @@ class Simulation(object):
 
     def add_energy(self, *args):
         """
-        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`  #sig
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`  ##sig
 
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2558,7 +2558,7 @@ class Simulation(object):
 
     def add_force(self, *args):
         """
-        `add_force(fcen, df, nfreq, freq, ForceRegions...)`  #sig
+        `add_force(fcen, df, nfreq, freq, ForceRegions...)`  ##sig
 
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -4627,7 +4627,7 @@ def output_sfield_p(sim):
 
 def Ldos(*args):
     """
-    `Ldos(fcen, df, nfreq, freq)`
+    `Ldos(fcen, df, nfreq, freq)`  ##sig
 
     Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and
     `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced
@@ -4642,7 +4642,7 @@ def Ldos(*args):
 
 def dft_ldos(*args, **kwargs):
     """
-    `dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`
+    `dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`   ##sig
 
     Compute the power spectrum of the sources (usually a single point dipole source),
     normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at
