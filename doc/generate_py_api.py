@@ -217,8 +217,8 @@ class ClassItem(Item):
         docs = dict()
         class_doc = self.template.format(**locals())
         docs[class_name] = class_doc
-        docs[class_name+'[all-methods]'] = self.create_method_markdown(False)
-        docs[class_name+'[methods-with-docstrings]'] = self.create_method_markdown(True)
+        docs[class_name+'[all-methods]'] = class_doc + '\n' + self.create_method_markdown(False)
+        docs[class_name+'[methods-with-docstrings]'] = class_doc + '\n' + self.create_method_markdown(True)
 
         return docs
 
@@ -240,8 +240,8 @@ class ClassItem(Item):
                     continue
                 if not check_excluded(item.name) and \
                    not check_excluded('{}.{}'.format(self.name, item.name)):
-                     doc = item.create_markdown()
-                     method_docs.append(doc)
+                        doc = item.create_markdown()
+                        method_docs.append(doc)
 
         # join the methods into a single string
         method_docs = '\n'.join(method_docs)
