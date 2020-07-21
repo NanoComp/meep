@@ -1000,7 +1000,7 @@ plt.savefig('power_density_map.png',dpi=150,bbox_inches='tight')
 
 There is one important item to note: in order to eliminate discretization artifacts when computing the $\mathbf{E}^* \cdot \mathbf{D}$ dot-product, the `add_dft_fields` definition includes `yee_grid=True` which ensures that the $E_z$ and $D_z$ fields are computed on the Yee grid rather than interpolated to the centered grid. As a corollary, we cannot use [`get_array_metadata`](../Python_User_Interface.md#array-metadata) to obtain the coordinates of the `dft_fields` region or its interpolation weights because this involves the centered grid.
 
-A schematic of the simulation layout generated using [`plot2D`](Python_User_Interface.md#data-visualization) shows the line source (red), PMLs (green hatch region), `dft_flux` box (solid blue contour line), and `dft_fields` surface (blue hatch region).
+A schematic of the simulation layout generated using [`plot2D`](../Python_User_Interface.md#data-visualization) shows the line source (red), PMLs (green hatch region), `dft_flux` box (solid blue contour line), and `dft_fields` surface (blue hatch region).
 
 <center>
 ![](../images/power_density_cell.png)
