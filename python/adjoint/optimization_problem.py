@@ -111,6 +111,8 @@ class OptimizationProblem(object):
         #    ADJ  - The optimizer has already run an adjoint simulation (but not yet calculated the gradient)
         self.current_state = "INIT"
 
+        self.gradient = []
+
     def __call__(self, rho_vector=None, need_value=True, need_gradient=True):
         """Evaluate value and/or gradient of objective function.
         """
@@ -216,8 +218,7 @@ class OptimizationProblem(object):
 
         # update solver's current state
         self.current_state = "FWD"
-
-    def adjoint_run(self,objective_idx=0):
+    def prepare_adjoint_run(self,objective_idx):
         # Compute adjoint sources
         self.adjoint_sources = []
         for mi, m in enumerate(self.objective_arguments):
@@ -232,6 +233,10 @@ class OptimizationProblem(object):
 
         # register design flux
         self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
+
+    def adjoint_run(self,objective_idx=0):
+        # set up adjoint sources and monitors
+        self.prepare_adjoint_run(objective_idx)
 
         # Adjoint run
         self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))

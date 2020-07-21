@@ -82,19 +82,25 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         
         # an ugly way to calcuate the scaled dtft of the forward source
         y = np.array([self.time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
-        signal_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)
-        source_amp = np.abs([self.time_src.fourier_transform(f) for f in self.frequencies]) * np.exp(2*1j*np.angle(signal_dtft)) # note the fudge factor of 2 in the phase...
+        signal_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y) # dtft
+        fwd_src_phase = np.exp(1.0*1j*np.angle(signal_dtft)) # phase component of dtft
+        fwd_src_amp = np.abs([self.time_src.fourier_transform(f) for f in self.frequencies]) # amplitude of source
         
-        da_dE = 0.5 * self.cscale
-        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt)
+        da_dE = 0.5 * self.cscale # scalar popping out of derivative
+        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix
+
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             src = self.time_src
-            amp = da_dE * dV * dJ * iomega / source_amp #np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
+            src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([self.time_src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)
+            adj_src_phase = np.exp(1.0*1j*np.angle(src_center_dtft))
+            amp = da_dE * dV * dJ * iomega / fwd_src_amp / fwd_src_phase / adj_src_phase # final scale factor
         else:
-            scale = da_dE * dV * dJ * iomega / (np.abs([self.time_src.fourier_transform(f) for f in self.frequencies]) * np.exp(1*1j*np.angle(signal_dtft)))# final scale factor
+            # multi frequency simulations
+            scale = da_dE * dV * dJ * iomega / fwd_src_amp / fwd_src_phase # final scale factor
             src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src) # generate source from broadband response
             amp = 1
+        
         # generate source object
         self.source = [mp.EigenModeSource(src,
                     eig_band=self.mode,
