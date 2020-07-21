@@ -2488,6 +2488,7 @@ Requires [matplotlib](https://matplotlib.org).
 
 An animated visualization is also possible via the [Animate2D](#Animate2D) class.
 
+<a id="run-functions"></a>
 
 ### Run and Step Functions
 
@@ -5552,7 +5553,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7fde513557a0>): 
+             pml_profile=<function PML.<lambda> at 0x7fc840abd7a0>): 
 ```
 
 <div class="method_docstring" markdown="1">
