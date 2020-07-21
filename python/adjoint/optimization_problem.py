@@ -8,15 +8,16 @@ Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
 YeeDims = namedtuple('YeeDims', ['Ex','Ey','Ez'])
 
 class DesignRegion(object):
-    def __init__(self,design_parameters,volume=None, size=None, center=mp.Vector3()):
+    def __init__(self,design_parameters,volume=None, size=None, center=mp.Vector3(), MaterialGrid=None):
         self.volume = volume if volume else mp.Volume(center=center,size=size)
         self.size=self.volume.size
         self.center=self.volume.center
         self.design_parameters=design_parameters
         self.num_design_params=design_parameters.num_params
+        self.MaterialGrid=MaterialGrid
     def update_design_parameters(self,design_parameters):
         self.design_parameters.update_parameters(design_parameters)
-    def get_gradient(self,fields_a,fields_f,frequencies,geom_list,f):
+    def get_gradient(self,sim,fields_a,fields_f,frequencies):
         for c in range(3):
             fields_a[c] = fields_a[c].flatten(order='C')
             fields_f[c] = fields_f[c].flatten(order='C')
@@ -26,8 +27,11 @@ class DesignRegion(object):
 
         grad = np.zeros((num_freqs,self.num_design_params)) # preallocate
 
+        geom_list = sim.geometry
+        f = sim.fields
+        vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
-        mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f) 
+        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),geom_list,f) 
 
         return np.squeeze(grad).T
 
@@ -253,7 +257,7 @@ class OptimizationProblem(object):
 
     def calculate_gradient(self):
         # Iterate through all design regions and calculate gradient
-        self.gradient = [[dr.get_gradient(self.a_E[ar][dri],self.d_E[dri],self.frequencies,self.sim.geometry,self.sim.fields) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
+        self.gradient = [[dr.get_gradient(self.sim,self.a_E[ar][dri],self.d_E[dri],self.frequencies) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
         
         # Cleanup list of lists
         if len(self.gradient) == 1:

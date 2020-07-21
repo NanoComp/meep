@@ -512,7 +512,7 @@ class Medium(object):
 
 class MaterialGrid(object):
     def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT"):
-        self.grid_size = grid_size
+        self.grid_size = mp.Vector3(*grid_size)
         self.medium1 = medium1
         self.medium2 = medium2
         def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
