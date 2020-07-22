@@ -418,7 +418,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
     int rank;
-    size_t dims[3] = {1,1,1};
+    size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
     if (rank==0 || dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
@@ -1395,6 +1395,13 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+
+%include "typemaps.i"
+%template(near_fds_data) std::vector<meep::near_data>;
+%template(inner_matrix_elts) std::vector<std::complex<double> >;
+%template(matrix_elts) std::vector<std::vector<std::complex<double> > >;
+
+
 
 struct vector3 {
     double x;

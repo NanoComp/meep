@@ -335,3 +335,95 @@ def atleast_3d(*arys):
         return res[0]
     else:
         return res
+
+
+
+
+
+class Far_Coefficients(ObjectiveQuantitiy):
+    def __init__(self,sim,Near2FarRegions, far_pt):
+        '''
+        '''
+        self.sim = sim
+        self.Near2FarRegions=Near2FarRegions
+        self.eval = None
+        #self.component_idx = component_idx
+        all_components = [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]
+        #,self.component = all_compoents[component_idx]
+        self.far_pt = far_pt
+        return
+
+    def register_monitors(self,frequencies):
+        self.frequencies = np.asarray(frequencies)
+        self.num_freq = len(self.frequencies)
+        self.monitor = self.sim.add_near2far(self.frequencies, *self.Near2FarRegions)        
+        return self.monitor
+
+    def place_adjoint_source(self,dJ,dt):
+
+        if self.sim.cell_size.y == 0:
+            dV = 1/self.sim.resolution
+        elif self.sim.cell_size.z == 0:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution
+        else:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
+
+        self.sources = []
+
+
+        freq_scale = dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
+        #freq_scale = 1
+
+        #TODO far_pts in 3d or cylindrical
+        self.all_near_data = self.monitor.swigobj.near_fds(mp.vec(self.far_pt.x, self.far_pt.y))
+
+        count = 0
+
+
+        for near_data in self.all_near_data:
+            
+
+            near_pt = near_data.near_x
+            near_pt = mp.Vector3(near_pt.x(), near_pt.y())
+            cur_comp = near_data.near_fd_comp
+            cur_green_matrix = np.array(near_data.matrix_elt)
+            
+            
+            if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
+                scale = -5*freq_scale * np.sum((dJ*cur_green_matrix), axis=1)
+            else: 
+                scale = 5*freq_scale * np.sum((dJ*cur_green_matrix), axis=1)
+            
+
+
+            if self.num_freq == 1:
+                self.sources += [mp.Source(self.time_src, component=cur_comp, amplitude=scale[0], center=near_pt)]
+            else:
+                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+                self.sources += [mp.Source(src, component=cur_comp, amplitude=1, center=near_pt)]
+
+
+
+
+
+        return self.sources
+
+    def __call__(self):
+        self.time_src = self.sim.sources[0].src
+
+        #self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
+        #self.near_fd = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
+        
+        self.eval = np.array(self.sim.get_farfield(self.monitor, self.far_pt))
+        self.eval = self.eval.reshape((self.num_freq, 6))
+        return self.eval
+
+    def get_evaluation(self):
+        '''Returns the requested eigenmode coefficient.
+        '''
+        try:
+            return self.eval
+        except AttributeError:
+            raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+
+

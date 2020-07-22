@@ -1188,6 +1188,17 @@ public:
   volume where;
 };
 
+
+
+struct near_data{
+  vec near_x;
+  component near_fd_comp;
+  std::vector<std::vector<std::complex<double> > > matrix_elt;
+};
+
+
+
+
 // near2far.cpp (normally created with fields::add_dft_near2far)
 class dft_near2far {
 public:
@@ -1243,6 +1254,9 @@ public:
   direction periodic_d[2];
   int periodic_n[2];
   double periodic_k[2], period[2];
+
+
+  std::vector<near_data> near_fds(const vec &x);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
