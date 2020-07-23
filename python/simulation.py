@@ -2261,6 +2261,8 @@ class Simulation(object):
 
     def add_dft_fields(self, *args, **kwargs):
         """
+        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False)` ##sig
+
         Given a list of field components `cs`, compute the Fourier transform of these
         fields for `nfreq` equally spaced frequencies covering the frequency range
         `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced
@@ -2318,7 +2320,7 @@ class Simulation(object):
 
     def add_near2far(self, *args, **kwargs):
         """
-        add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1)
+        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1)`  ##sig
 
         Add a bunch of `Near2FarRegion`s to the current simulation (initializing the
         fields if they have not yet been initialized), telling Meep to accumulate the
@@ -2342,7 +2344,7 @@ class Simulation(object):
 
     def add_energy(self, *args):
         """
-        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`  ##sig
 
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2556,7 +2558,7 @@ class Simulation(object):
 
     def add_force(self, *args):
         """
-        `add_force(fcen, df, nfreq, freq, ForceRegions...)`
+        `add_force(fcen, df, nfreq, freq, ForceRegions...)`  ##sig
 
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2653,6 +2655,8 @@ class Simulation(object):
 
     def add_flux(self, *args):
         """
+        `add_flux(fcen, df, nfreq, freq, FluxRegions...)` ##sig
+
         Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if
         they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
@@ -2674,6 +2678,8 @@ class Simulation(object):
 
     def add_mode_monitor(self, *args):
         """
+        `add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...)`  ##sig
+
         Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
         """
         args = fix_dft_args(args, 0)
@@ -3416,7 +3422,7 @@ class Simulation(object):
 
     def run(self, *step_funcs, **kwargs):
         """
-        `run(step_functions..., until=condition/time)`
+        `run(step_functions..., until=condition/time)`  ##sig-keep
 
         Run the simulation until a certain time or condition, calling the given step
         functions (if any) at each timestep. The keyword argument `until` is *either* a
@@ -3425,7 +3431,7 @@ class Simulation(object):
         stop. `until` can also be a list of stopping conditions which may include a number
         and additional functions.
 
-        `run(step_functions..., until_after_sources=condition/time)`
+        `run(step_functions..., until_after_sources=condition/time)`  ##sig-keep
 
         Run the simulation until all sources have turned off, calling the given step
         functions (if any) at each timestep. The keyword argument `until_after_sources` is
@@ -4621,7 +4627,7 @@ def output_sfield_p(sim):
 
 def Ldos(*args):
     """
-    `Ldos(fcen, df, nfreq, freq)`
+    `Ldos(fcen, df, nfreq, freq)`  ##sig
 
     Create an LDOS object with either frequency bandwidth `df` centered at `fcen` and
     `nfreq` equally spaced frequency points or an array/list `freq` for arbitrarily spaced
@@ -4636,7 +4642,7 @@ def Ldos(*args):
 
 def dft_ldos(*args, **kwargs):
     """
-    `dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`
+    `dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None)`   ##sig
 
     Compute the power spectrum of the sources (usually a single point dipole source),
     normalized to correspond to the LDOS, in either a frequency bandwidth `df` centered at

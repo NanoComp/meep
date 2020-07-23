@@ -431,6 +431,7 @@ This module provides basic visualization functionality for the simulation domain
 
 An animated visualization is also possible via the [Animate2D](#Animate2D) class.
 
+<a id="run-functions"></a>
 
 ### Run and Step Functions
 
@@ -711,148 +712,103 @@ More information, including their property types and default values, is availabl
 The following classes are available directly via the `meep` package.
 
 
-@@ Medium @@
 @@ Medium[methods-with-docstrings] @@
 
-@@ Susceptibility @@
 @@ Susceptibility[methods-with-docstrings] @@
 
-@@ LorentzianSusceptibility @@
 @@ LorentzianSusceptibility[methods-with-docstrings] @@
 
-@@ DrudeSusceptibility @@
 @@ DrudeSusceptibility[methods-with-docstrings] @@
 
-@@ MultilevelAtom @@
 @@ MultilevelAtom[methods-with-docstrings] @@
 
-@@ Transition @@
 @@ Transition[methods-with-docstrings] @@
 
-@@ NoisyLorentzianSusceptibility @@
 @@ NoisyLorentzianSusceptibility[methods-with-docstrings] @@
 
-@@ NoisyDrudeSusceptibility @@
 @@ NoisyDrudeSusceptibility[methods-with-docstrings] @@
 
-@@ GyrotropicLorentzianSusceptibility @@
 @@ GyrotropicLorentzianSusceptibility[methods-with-docstrings] @@
 
-@@ GyrotropicDrudeSusceptibility @@
 @@ GyrotropicDrudeSusceptibility[methods-with-docstrings] @@
 
-@@ GyrotropicSaturatedSusceptibility @@
 @@ GyrotropicSaturatedSusceptibility[methods-with-docstrings] @@
 
-@@ Vector3 @@
 @@ Vector3[methods-with-docstrings] @@
 
-@@ GeometricObject @@
 @@ GeometricObject[methods-with-docstrings] @@
 
-@@ Sphere @@
 @@ Sphere[methods-with-docstrings] @@
 
-@@ Cylinder @@
 @@ Cylinder[methods-with-docstrings] @@
 
-@@ Wedge @@
 @@ Wedge[methods-with-docstrings] @@
 
-@@ Cone @@
 @@ Cone[methods-with-docstrings] @@
 
-@@ Block @@
 @@ Block[methods-with-docstrings] @@
 
-@@ Ellipsoid @@
 @@ Ellipsoid[methods-with-docstrings] @@
 
-@@ Prism @@
 @@ Prism[methods-with-docstrings] @@
 
-@@ Matrix @@
 @@ Matrix[methods-with-docstrings] @@
 
 **Related function:**
 @@ get_rotation_matrix @@
 
 
-@@ Symmetry @@
 @@ Symmetry[methods-with-docstrings] @@
 
-@@ Rotate2 @@
 @@ Rotate2[methods-with-docstrings] @@
 
-@@ Rotate4 @@
 @@ Rotate4[methods-with-docstrings] @@
 
-@@ Mirror @@
 @@ Mirror[methods-with-docstrings] @@
 
-@@ Identity @@
 @@ Identity[methods-with-docstrings] @@
 
-@@ PML @@
 @@ PML[methods-with-docstrings] @@
 
-@@ Absorber @@
 @@ Absorber[methods-with-docstrings] @@
 
-@@ Source @@
 @@ Source[methods-with-docstrings] @@
 
 @@ SourceTime @@
 
-@@ EigenModeSource @@
 @@ EigenModeSource[methods-with-docstrings] @@
 
-@@ ContinuousSource @@
 @@ ContinuousSource[methods-with-docstrings] @@
 
-@@ GaussianSource @@
 @@ GaussianSource[methods-with-docstrings] @@
 
-@@ CustomSource @@
 @@ CustomSource[methods-with-docstrings] @@
 
-@@ FluxRegion @@
 @@ FluxRegion[methods-with-docstrings] @@
 
-@@ EnergyRegion @@
 @@ EnergyRegion[methods-with-docstrings] @@
 
-@@ ForceRegion @@
 @@ ForceRegion[methods-with-docstrings] @@
 
-@@ Volume @@
 @@ Volume[methods-with-docstrings] @@
 
 ** Related function:**
 @@ get_center_and_size @@
 
-@@ DftObj @@
 @@ DftObj[methods-with-docstrings] @@
 
-@@ DftFlux @@
 @@ DftFlux[methods-with-docstrings] @@
 
-@@ DftForce @@
 @@ DftForce[methods-with-docstrings] @@
 
-@@ DftNear2Far @@
 @@ DftNear2Far[methods-with-docstrings] @@
 
-@@ DftEnergy @@
 @@ DftEnergy[methods-with-docstrings] @@
 
-@@ DftFields @@
 @@ DftFields[methods-with-docstrings] @@
 
-@@ Animate2D @@
 @@ Animate2D[methods-with-docstrings] @@
 
-@@ Harminv @@
 @@ Harminv[methods-with-docstrings] @@
 
 
