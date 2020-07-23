@@ -883,6 +883,113 @@ For `resolution` of 25, the error decreases (as expected) to 1.5%.
 scatt:, 8.2215436693775636
 ```
 
+Absorbed Power Density Map of a Lossy Cylinder
+----------------------------------------------
+
+The `dft-flux` routines (`add-flux`) described in the previous examples compute the *total* power in a given region (`flux-region`). It is also possible to compute the *local* (i.e., position-dependent) absorbed power density in a dispersive (lossy) material. This quantity is useful for obtaining a spatial map of the photon absorption. The absorbed power density is defined as $$\mathrm{Re}\, \left[ {\mathbf{E}^* \cdot \frac{d\mathbf{P}}{dt}} \right]$$ where $\mathbf{P}$ is the total polarization field. In the Fourier (frequency) domain with time-harmonic fields, this expression is $$\mathrm{Re}\, \left[ {\mathbf{E}^* \cdot (-i \omega \mathbf{P})} \right] = \omega\, \mathrm{Im}\, \left[ {\mathbf{E}^* \cdot \mathbf{P}} \right]$$ where $\mathbf{E}^* \cdot \mathbf{P}$ denotes the dot product of the complex conjugate of $\mathbf{E}$ with $\mathbf{P}$. However, since $\mathbf{D}=\mathbf{E}+\mathbf{P}$, this is equivalent to $$ \omega\, \mathrm{Im}\, \left[ {\mathbf{E}^* \cdot (\mathbf{D}-\mathbf{E})} \right] = \omega\, \mathrm{Im}\, \left[ {\mathbf{E}^* \cdot \mathbf{D}} \right]$$ since $\mathbf{E}^* \cdot \mathbf{E} = |\mathbf{E}|^2$ is purely real. Calculating this quantity involves two steps: (1) compute the Fourier-transformed $\mathbf{E}$ and $\mathbf{D}$ fields in a region via the `dft-fields` feature and (2) in post processing, compute $\omega\, \mathrm{Im}\, \left[ {\mathbf{E}^* \cdot \mathbf{D}} \right]$.
+
+This tutorial example involves computing the absorbed power density for a two-dimensional cylinder (radius: 1 μm) of silicon dioxide (SiO<sub>2</sub>, from the [materials library](../Materials.md#materials-library)) at a wavelength of 1 μm given an incident $E_z$-polarized planewave. (The [attenuation length](https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index) of SiO<sub>2</sub> at this wavelength is $\lambda/\mathrm{Im}\, \sqrt{\varepsilon}$ = ~3000 μm.) We will also verify that the total power absorbed by the cylinder obtained by integrating the absorbed power density over the entire cylinder is equivalent to the same quantity computed using the alternative method involving a closed, four-sided `dft-flux` box (Poynting's theorem).
+
+The simulation script is in [examples/absorbed-power-density.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/absorbed-power-density.ctl).
+
+```scm
+(set-param! resolution 100) ;; pixels/um
+
+(define-param dpml 1.0)
+(set! pml-layers (list (make pml (thickness dpml))))
+
+(define-param r 1.0)    ;; radius of cylinder
+(define-param dair 2.0) ;; air padding thickness
+
+(define s (* 2 (+ dpml dair r)))
+(set! geometry-lattice (make lattice (size s s no-size)))
+
+(define-param wvl 1.0)
+(define fcen (/ wvl))
+
+;; (is-integrated? true) necessary for any planewave source extending into PML
+(set! sources (list (make source
+                      (src (make gaussian-src (frequency fcen) (fwidth (* 0.1 fcen)) (is-integrated? true)))
+                      (center (+ (* -0.5 s) dpml) 0)
+                      (size 0 s)
+                      (component Ez))))
+
+(set! symmetries (list (make mirror-sym (direction Y))))
+
+(set! geometry (list (make cylinder
+                       (material SiO2)
+                       (center 0 0)
+                       (radius r)
+                       (height infinity))))
+
+(set! k-point (vector3 0 0 0))
+
+(define dft-fields (add-dft-fields (list Dz Ez) fcen fcen 1 #:yee-grid true (volume (center 0 0 0) (size (* 2 r) (* 2 r)))))
+
+(define flux-box (add-flux fcen 0 1
+                           (make flux-region (center (- r) 0) (size 0 (* 2 r)) (weight +1))
+                           (make flux-region (center (+ r) 0) (size 0 (* 2 r)) (weight -1))
+                           (make flux-region (center 0 (+ r)) (size (* 2 r) 0) (weight -1))
+                           (make flux-region (center 0 (- r)) (size (* 2 r) 0) (weight +1))))
+
+(run-sources+ 100)
+
+(output-dft dft-fields "dft-fields-cylinder")
+
+(display-fluxes flux-box)
+```
+
+There is one important item to note: in order to eliminate discretization artifacts when computing the $\mathbf{E}^* \cdot \mathbf{D}$ dot-product, the `add-dft-fields` definition includes `#:yee-grid true` which ensures that the $E_z$ and $D_z$ fields are computed on the Yee grid rather than interpolated to the centered grid. The DFT fields are output to an HDF5 file (`dft-fields-cylinder.h5`) at the end of the simulation.
+
+A schematic of the simulation layout shows the line source (red), PMLs (green hatch region), `dft-flux` box (solid blue contour line), and `dft-fields` surface (blue hatch region).
+
+<center>
+![](../images/power_density_cell.png)
+</center>
+
+The spatial map of the absorbed power density is generated from the DFT fields in `dft-fields-cylinder.h5` using the Octave/Matlab script below. The figures shows that most of the absorption occurs in a small region near the back surface of the cylinder (i.e., on the opposite side of the incident planewave).
+
+```matlab
+load('dft-fields-cylinder.h5');
+Dz = dz_0_r + 1j*dz_0_i;
+Ez = ez_0_r + 1j*ez_0_i;
+
+wvl = 1.0;
+fcen = 1/wvl;
+
+absorbed_power_density = 2*pi*fcen*imag(conj(Ez).*Dz);
+
+resolution = 100;
+dxy = 1/resolution^2;
+absorbed_power = sum(sum(absorbed_power_density)) * dxy;
+disp(sprintf("flux:, %0.16f (dft-fields)",absorbed_power));
+
+r = 1.0;
+x = linspace(-r,r,size(Dz,1));
+y = linspace(-r,r,size(Dz,1));
+
+pcolor(x,y,absorbed_power_density);
+colormap(flipud(colormap("summer")));
+shading interp;
+colorbar;
+
+axis equal;
+axis tight;
+xlabel("x (um)");
+ylabel("y (um)");
+title("absorbed power density");
+
+print -dpng 'power_density_map.png';
+```
+
+<center>
+![](../images/power_density_map.png)
+</center>
+
+Finally, the two values for the total absorbed power are nearly equivalent: 0.13120421825956843 (`dft-fields`) vs. 0.13249534167200672 (`dft-flux`). The relative error between the two methods is ~1.0%.
+
+*Note on units:* The absorbed power density computed in this tutorial example has units of (Meep power)/(unit length)<sup>2</sup> where (unit length) is 1 μm. To convert this quantity to a physical power for a given input power, you would multiply by (acutal power)/(Meep power flux) where (actual power) is the known physical input power and (Meep power flux) is the corresponding power meausured in Meep. For example, if you plan to have an incident planewave with a power of (actual power) = 1 mW incident on the cylinder cross-section, then you would first compute (Meep power flux) in a separate normalization run with just vacuum, measuring the DFT flux on a line segement corresponding to the cylinder diameter.
+
 Modes of a Ring Resonator
 -------------------------
 

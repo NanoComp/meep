@@ -868,9 +868,9 @@ Given a `component` or `derived-component` constant `c` and a `vector3` `pt`, re
 —
 Equivalent to `(get-field-point Dielectric pt)`.
 
-**`(add-dft-fields cs freq-min freq-max nfreq [where])`**
+**`(add-dft-fields cs freq-min freq-max nfreq yee-grid [where])`**
 —
-Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire cell).
+Given a list of field components `cs`, compute the Fourier transform of these fields for `nfreq` equally spaced frequencies covering the frequency range `freq-min` to `freq-max` over the `volume` specified by `where` (default to the entire cell). The default routine interpolates the Fourier transformed fields at the center of each voxel within the specified volume. Alternatively, the exact Fourier transformed fields evaluated at each corresponding Yee grid point is available by setting the keyword `#:yee_grid true`.
 
 **`(flux-in-box dir box)`**
 —
