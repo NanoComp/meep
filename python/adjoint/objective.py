@@ -80,25 +80,26 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         else:
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
         
-        # an ugly way to calcuate the scaled dtft of the forward source
-        y = np.array([self.time_src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
-        signal_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y) # dtft
-        fwd_src_phase = np.exp(1.0*1j*np.angle(signal_dtft)) # phase component of dtft
-        fwd_src_amp = np.abs([self.time_src.fourier_transform(f) for f in self.frequencies]) # amplitude of source
-        
         da_dE = 0.5 * self.cscale # scalar popping out of derivative
         iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix
 
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             src = self.time_src
-            src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([self.time_src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)
-            adj_src_phase = np.exp(1.0*1j*np.angle(src_center_dtft))
-            amp = da_dE * dV * dJ * iomega / fwd_src_amp / fwd_src_phase / adj_src_phase # final scale factor
+            
+            # an ugly way to calcuate the scaled dtft of the forward source
+            y = np.array([src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+            fwd_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi) # dtft
+            
+            # we need to compensate for the phase added by the time envelope at our freq of interest
+            src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi)
+            adj_src_phase = np.exp(1j*np.angle(src_center_dtft))
+            
+            amp = da_dE * dV * dJ * iomega / fwd_dtft / adj_src_phase # final scale factor
         else:
             # multi frequency simulations
-            scale = da_dE * dV * dJ * iomega / fwd_src_amp / fwd_src_phase # final scale factor
-            src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src) # generate source from broadband response
+            scale = da_dE * dV * dJ * iomega # final scale factor
+            src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt) # generate source from broadband response
             amp = 1
         
         # generate source object
@@ -121,7 +122,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         # Eigenmode data
         direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
         ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],direction=direction,kpoint_func=self.kpoint_func,**self.EigenMode_kwargs)
-        self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling   
+        self.eval = np.squeeze(ob.alpha[0,:,self.forward]) # record eigenmode coefficients for scaling 
         self.cscale = ob.cscale # pull scaling factor
 
         return self.eval

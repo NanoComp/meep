@@ -784,14 +784,16 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     // clean the adjoint fields array
     PyArrayObject *pao_fields_a = (PyArrayObject *)fields_a;
-    if (!PyArray_Check(pao_fields_a)) meep::abort("fields parameter must be numpy array.");
-    if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy fields array must be C-style contiguous.");
+    if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
+    if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
     std::complex<double> * fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
 
     // clean the forward fields array
     PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
-    if (!PyArray_Check(pao_fields_f)) meep::abort("fields parameter must be numpy array.");
-    if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy fields array must be C-style contiguous.");
+    if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
+    if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
     std::complex<double> * fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
 
     // scalegrad not currently used

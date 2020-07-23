@@ -66,12 +66,12 @@ class FilteredSource(CustomSource):
         a = [0.355768, 0.4873960, 0.144232, 0.012604]
         return self.cos_window_fd(a,f,f0)
     def dtft(self,y,f):
-        return np.matmul(np.exp(1j*2*np.pi*f[:,np.newaxis]*np.arange(y.size)*self.dt), y)
+        return np.matmul(np.exp(1j*2*np.pi*f[:,np.newaxis]*np.arange(y.size)*self.dt), y)*self.dt/np.sqrt(2*np.pi)
     
     def __call__(self,t):
         if t > self.T:
             return 0
-        vec = self.nuttall(t,self.center_frequencies)
+        vec = self.nuttall(t,self.center_frequencies) / (self.dt/np.sqrt(2*np.pi)) # compensate for meep dtft
         return np.inner(vec,self.nodes)
     
     def func(self):
