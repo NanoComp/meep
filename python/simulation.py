@@ -3172,6 +3172,15 @@ class Simulation(object):
                                        center=center, size=size, collapse=True)
     
     def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
+        """
+        Computes the dimensions of a dft array for a particular `component` (`mp.Ez`, `mp.Ey`, etc.).
+
+        Accepts either a volume object (`vol`), or a `center` and `size` `Vector3` pair. 
+
+        Returns a tuple containing the dimensions (`dim_sizes`), a `Vector3` object
+        corresponding to the minimum corner of the volume DFT volume object (`min_corner`),
+        and a `Vector3` object corresponding to the maximum corner (`max_corner`).
+        """
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:

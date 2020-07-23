@@ -227,7 +227,8 @@ class OptimizationProblem(object):
         self.adjoint_sources = []
         for mi, m in enumerate(self.objective_arguments):
             dJ = jacobian(self.objective_functions[objective_idx],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
-            self.adjoint_sources += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
+            if np.any(dJ):
+                self.adjoint_sources += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
         
         # Reset the fields
         self.sim.reset_meep()
