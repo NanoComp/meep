@@ -2468,11 +2468,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   // calculate cell dimensions
   meep::direction dirs[3];
   meep::vec min_max_loc[2] = {meep::vec(0,0,0),meep::vec(0,0,0)}; // extremal points in subgrid
-<<<<<<< HEAD
   bool collapse = false, snap = false;
-=======
-  bool collapse = false, snap = true;
->>>>>>> mpi memory fixes
   meep::component field_dir[3] = {meep::Ex, meep::Ey, meep::Ez};
   size_t dims[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (int c = 0; c < 3; c++) {
@@ -2492,11 +2488,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
 
   // Loop over component, x, y, z, and frequency dimensions
   // TODO speed up with MPI (if needed)
-<<<<<<< HEAD
   int xyz_index = 0;
-=======
-  size_t c_offset = 0;
->>>>>>> mpi memory fixes
   for (int c = 0; c < 3; c++) {             // component
     n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
     c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
