@@ -279,7 +279,7 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution,symmetries=[]):
     kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
     
     # Filter the response
-    y = mpa.simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
+    y = simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
     
     return y
 
