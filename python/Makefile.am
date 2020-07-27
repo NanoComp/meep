@@ -225,24 +225,11 @@ meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
 if WITH_MPB
 	mkdir -p meep/mpb
 	cp .libs/_mpb.so meep/mpb
+	cp $(MPB_PY_PATH) meep/mpb/__init__.py
+	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py meep/mpb
 endif
 
-if WITH_MPB
-meep/mpb/__init__.py: $(MPB_PY_PATH)
-	cp $< $@
-
-meep/mpb/solver.py: $(srcdir)/solver.py
-	cp $< $@
-
-meep/mpb/mpb_data.py: $(srcdir)/mpb_data.py
-	cp $< $@
-endif
-
-if WITH_MPB
-all-local: meep meep/mpb/__init__.py meep/mpb/solver.py meep/mpb/mpb_data.py
-else
 all-local: meep
-endif
 
 clean-local:
 	rm -rf meep __init__.py.bak
