@@ -2,9 +2,9 @@
 # Materials
 ---
 
-The material structure in Maxwell's equations is determined by the relative permittivity ε(**r**) and permeability μ(**r**).
+The material structure in Maxwell's equations is determined by the relative permittivity $\varepsilon(\mathbf{r})$ and permeability $\mu(\mathbf{r})$.
 
-However, ε is not only a function of position. In general, it also depends on frequency (material dispersion) and on the electric field **E** itself (nonlinearity) or an applied magnetic field **H** (gyrotropy). It may also depend on the orientation of the field (anisotropy). Material dispersion, in turn, is generally associated with absorption loss in the material, or possibly gain. All of these effects can be simulated in Meep, with certain restrictions. Similarly for the relative permeability μ(**r**), for which dispersion, nonlinearity, and anisotropy are all supported as well.
+However, $\varepsilon$ is not only a function of position. In general, it also depends on frequency (material dispersion) and on the electric field $\mathbf{E}$ itself (nonlinearity) or an applied magnetic field $\mathbf{H}$ (gyrotropy). It may also depend on the orientation of the field (anisotropy). Material dispersion, in turn, is generally associated with absorption loss in the material, or possibly gain. All of these effects can be simulated in Meep, with certain restrictions. Similarly for the relative permeability $\mu(\mathbf{r})$, for which dispersion, nonlinearity, and anisotropy are all supported as well.
 
 In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified in the simulation is described in [Python User Interface](Python_User_Interface.md). 
 
@@ -13,13 +13,13 @@ In this section, we describe the form of the equations and material properties t
 Material Dispersion
 -------------------
 
-Physically, material dispersion arises because the polarization of the material does not respond instantaneously to an applied field **E**, and this is essentially the way that it is implemented in FDTD. In particular, $\mathbf{D} = \varepsilon\mathbf{E}$ is expanded to:
+Physically, material dispersion arises because the polarization of the material does not respond instantaneously to an applied field $\vec{E}$, and this is essentially the way that it is implemented in FDTD. In particular, $\mathbf{D} = \varepsilon\mathbf{E}$ is expanded to:
 
 $$\mathbf{D} = \varepsilon_\infty \mathbf{E} + \mathbf{P}$$
 
-where ε$_\infty$, which [must be positive](FAQ.md#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω).
+where $\varepsilon_\infty$, which [must be positive](FAQ.md#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω).
 
-**Note:** Meep's definition of ω uses a sign convention $\exp(-i\omega t)$ for the time dependence; ε formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of γ and ω as-is for loss; don't be confused by the difference in ω sign convention and flip the sign of the parameters.
+**Note:** Meep's definition of $\omega$ uses a sign convention $\exp(-i\omega t)$ for the time dependence; ε formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of $\gamma$ and $\omega$ as-is for loss; don't be confused by the difference in $\omega$ sign convention and flip the sign of the parameters.
 
 Meep supports a Lorentzian susceptibility profile which consists of a sum of harmonic resonances plus a term for the frequency-independent electric conductivity:
 
@@ -31,25 +31,25 @@ $= \left( 1 + \frac{i \cdot \sigma_D(\mathbf{x})}{2\pi f}  \right) \left[ \varep
 
 </center>
 
-where σ$_D$ is the electric conductivity, ω$_n$ and γ$_n$ are user-specified constants. Actually, the numbers that one specifies are f$_n$ = ω$_n$/2π and γ$_n$/2π. The  σ$_n(\mathbf{x})$ is a user-specified function of position giving the strength of the *n*-th resonance. The σ parameters can be anisotropic (real-symmetric) tensors, while the frequency-independent term ε$_\infty$ can be an arbitrary real-symmetric tensor as well. This corresponds to evolving **P** via the equations:
+where $\sigma_D$ is the electric conductivity, $\omega_n$ and $\gamma_n$ are user-specified constants. Actually, the numbers that one specifies are $f_n = \omega_n/2\pi$ and $\gamma_n/2\pi$. The $\sigma_n(\mathbf{x})$ is a user-specified function of position giving the strength of the $n$-th resonance. The $\sigma$ parameters can be anisotropic (real-symmetric) tensors, while the frequency-independent term $\varepsilon_\infty$ can be an arbitrary real-symmetric tensor as well. This corresponds to evolving $\mathbf{P}$ via the equations:
 
 $$\mathbf{P} = \sum_n \mathbf{P}_n$$
 
 $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} +  \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
 
-That is, we must store and evolve a set of auxiliary fields $\mathbf{P}_n$ along with the electric field in order to keep track of the polarization **P**. Essentially any ε(ω) could be modeled by including enough of these polarization fields &mdash; Meep allows you to specify any number of these, limited only by computer memory and time which increases with the number of polarization terms you require.
+That is, we must store and evolve a set of auxiliary fields $\mathbf{P}_n$ along with the electric field in order to keep track of the polarization $\mathbf{P}$. Essentially any ε(ω) could be modeled by including enough of these polarization fields &mdash; Meep allows you to specify any number of these, limited only by computer memory and time which increases with the number of polarization terms you require.
 
-Note that the conductivity σ$_D$ corresponds to an imaginary part of ε given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying *f* without the 2π, so the imaginary part of ε is $i \varepsilon_\infty \sigma_D / 2\pi f$.
+Note that the conductivity $\sigma_D$ corresponds to an imaginary part of $\varepsilon$ given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying $f$ without the $2\pi$, so the imaginary part of $\varepsilon$ is $i \varepsilon_\infty \sigma_D / 2\pi f$.
 
 Meep also supports polarizations of the [Drude](https://en.wikipedia.org/wiki/Drude_model) form, typically used for metals:
 
 $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
 
-which corresponds to a term of the following form in ε's $\Sigma$<sub>*n*</sub> summation:
+which corresponds to a term of the following form in $\varepsilon$'s $\Sigma_n$ summation:
 
 $$\frac{i \sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega (\gamma_n - i\omega)}$$
 
-which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, ω$_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
+which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, $\omega_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
 
 ### Sellmeier Coefficients
 
@@ -57,7 +57,7 @@ For a wavelength-dependent, purely-real permittivity (i.e., with no loss) which 
 
 $$\varepsilon(\lambda) = 1 + \sum_n \frac{B_n \lambda^2}{\lambda^2 - C_n}$$
 
-where λ is the vacuum wavelength, each term containing two coefficients (B<sub>n</sub> and C<sub>n</sub>) can be directly transferred to a Lorentzian polarization field using a simple substitution of variables: ω<sub>n</sub>=1/$\sqrt{C_n}$, γ<sub>n</sub>=0, and σ<sub>n</sub>=B<sub>n</sub>. Several examples of importing Sellmeier coefficients from published fitting data including [germanium](https://github.com/NanoComp/meep/blob/master/python/materials.py#L884-L901) (Ge) and [gallium nitride](https://github.com/NanoComp/meep/blob/master/python/materials.py#L1162-L1188) (GaN) are provided in the [Materials Library](#materials-library).
+where $\lambda$ is the vacuum wavelength, each term containing two coefficients ($B_n$ and $C_n$) can be directly transferred to a Lorentzian polarization field using a simple substitution of variables: $\omega_n=1/\sqrt{C_n}$, $\gamma_n=0$, and $\sigma_n=B_n$. Several examples of importing Sellmeier coefficients from published fitting data including [germanium](https://github.com/NanoComp/meep/blob/master/python/materials.py#L884-L901) (Ge) and [gallium nitride](https://github.com/NanoComp/meep/blob/master/python/materials.py#L1162-L1188) (GaN) are provided in the [Materials Library](#materials-library).
 
 Numerical Stability
 -------------------

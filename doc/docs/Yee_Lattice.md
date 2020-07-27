@@ -8,7 +8,7 @@
 
 In order to discretize Maxwell's equations with [second-order accuracy](https://en.wikipedia.org/wiki/Finite_difference_method#Accuracy_and_order) for homogeneous regions where there are no discontinuous material boundaries, FDTD methods *store different field components for different grid locations*. This discretization is known as a **Yee lattice**.
 
-The form of the Yee lattice in 3d is shown in the schematic above for a single cubic grid voxel with dimensions $\Delta x \times \Delta x \times \Delta x$. The three components of **E** are stored on the *edges* of the cube in the corresponding directions, while the components of **H** are stored on the cube *faces*.
+The form of the Yee lattice in 3d is shown in the schematic above for a single cubic grid voxel with dimensions $\Delta x \times \Delta x \times \Delta x$. The three components of $\mathbf{E}$ are stored on the *edges* of the cube in the corresponding directions, while the components of $\mathbf{H}$ are stored on the cube *faces*.
 
 More precisely, let a coordinate $(i,j,k)$ in the grid correspond to:
 
@@ -22,7 +22,7 @@ The $\ell$<sup>th</sup> component of $\mathbf{H}$, on the other hand, is stored 
 
 $$(i+\frac{1}{2},j+\frac{1}{2},k+\frac{1}{2})-\frac{1}{2} \hat{\mathbf{e}}_\ell  \Delta x$$
 
-In two dimensions, the arrangement is similar except that we set $\hat{\mathbf{e}}_3=0$. The 2d Yee lattice for the <i>P</i>-polarization (**E** in the *xy* plane and **H** in the *z* direction) is shown in the figure below.  
+In two dimensions, the arrangement is similar except that we set $\hat{\mathbf{e}}_3=0$. The 2d Yee lattice for the $H_z$-polarization ($\mathbf{E}$ in the $xy$ plane and $\mathbf{H}$ in the $z$ direction) is shown in the figure below.
 
 <center>
 ![](images/Yee-te.png)

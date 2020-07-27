@@ -6428,7 +6428,7 @@ def __init__(self, func, args):
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See help(type(self)) for accurate signature.
+Initialize self.  See `help(type(self))` for accurate signature.
 
 </div>
 
@@ -6461,7 +6461,7 @@ def __init__(self, func, args):
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See help(type(self)) for accurate signature.
+Initialize self.  See `help(type(self))` for accurate signature.
 
 </div>
 
@@ -6494,7 +6494,7 @@ def __init__(self, func, args):
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See help(type(self)) for accurate signature.
+Initialize self.  See `help(type(self))` for accurate signature.
 
 </div>
 
@@ -6527,7 +6527,7 @@ def __init__(self, func, args):
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See help(type(self)) for accurate signature.
+Initialize self.  See `help(type(self))` for accurate signature.
 
 </div>
 
@@ -6580,7 +6580,7 @@ def __init__(self, func, args):
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See help(type(self)) for accurate signature.
+Initialize self.  See `help(type(self))` for accurate signature.
 
 </div>
 
@@ -6613,7 +6613,7 @@ def __init__(self, func, args):
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See help(type(self)) for accurate signature.
+Initialize self.  See `help(type(self))` for accurate signature.
 
 </div>
 

@@ -95,7 +95,7 @@ The results are shown in the figure below. The error in the fields decreases mon
 ![](../images/CWsolver-python.png)
 </center>
 
-As a further validation of the frequency-domain solver, we will compare its fields with those computed using time-stepping. This involves taking the Fourier transform of E<sub>z</sub> via the `add_dft_fields` routine. After the time stepping, the frequency-domain fields are accessed using [`get_dft_array`](../Python_User_Interface.md#array-slices).
+As a further validation of the frequency-domain solver, we will compare its fields with those computed using time-stepping. This involves taking the Fourier transform of $E_z$ via the `add_dft_fields` routine. After the time stepping, the frequency-domain fields are accessed using [`get_dft_array`](../Python_User_Interface.md#array-slices).
 
 ```py
 sim.reset_meep()
@@ -129,4 +129,4 @@ plt.axis('off')
 plt.show()
 ```
 
-The left inset of the figure above shows the real part of the scalar E<sub>z</sub> field, computed using the frequency-domain solver with a tolerance of `1e-12`, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. There is a phase difference in the field profiles which are otherwise qualitatively similar.
+The left inset of the figure above shows the real part of the scalar $E_z$ field, computed using the frequency-domain solver with a tolerance of `1e-12`, superimposed on the ring-resonator geometry. Note the three-fold mirror symmetry of the field pattern (fundamental mode) and faint presence of the point source. The right inset is for the Fourier-transformed fields of the time-domain calculation. There is a phase difference in the field profiles which are otherwise qualitatively similar.
