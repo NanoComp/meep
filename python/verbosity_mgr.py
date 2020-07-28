@@ -20,7 +20,10 @@ class Verbosity(object):
         """
         super(Verbosity, self).__init__()
         self.cvar = cvar
-        if cvar is None:
+        if cvar is None or not hasattr(cvar, 'verbosity'):
+            # If we're not given a module.cvar (e.g., while testing) or if the
+            # cvar does not have a verbosity member (the lib hasn't been updated
+            # yet) then use a dummy object so things can still run without it.
             class _dummy():
                 verbosity = 1
             self.cvar = _dummy()
