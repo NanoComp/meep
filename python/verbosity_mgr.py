@@ -83,19 +83,19 @@ class Verbosity(object):
 def main():
     # simple test code
     verbosity = Verbosity()
-    print(f'initial value: {verbosity.get()}')
+    print('initial value: {}'.format(verbosity.get()))
 
-    print(f'v==1: {verbosity == 1}')
-    print(f'v==2: {verbosity == 2}')
+    print('v==1: {}'.format(verbosity == 1))
+    print('v==2: {}'.format(verbosity == 2))
 
-    print(f'v>1: {verbosity > 1}')
-    print(f'v<3: {verbosity < 3}')
-    print(f'v>=2: {verbosity >= 2}')
-    print(f'v<=1: {verbosity <= 1}')
+    print('v>1: {}'.format(verbosity > 1))
+    print('v<3: {}'.format(verbosity < 3))
+    print('v>=2: {}'.format(verbosity >= 2))
+    print('v<=1: {}'.format(verbosity <= 1))
 
     verbosity(1)
-    print(f'v==1: {verbosity == 1}')
-    print(f'v==2: {verbosity == 2}')
+    print('v==1: {}'.format(verbosity == 1))
+    print('v==2: {}'.format(verbosity == 2))
 
     # should raise ValueError
     verbosity(5)
