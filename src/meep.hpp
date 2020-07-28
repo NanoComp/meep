@@ -1682,6 +1682,9 @@ public:
   void add_volume_source(component c, const src_time &src, const volume &,
                          std::complex<double> amp = 1.0);
   void require_component(component c);
+  void gaussianbeam_3d(std::complex<double> *EH, const vec &x0, const vec &x,
+                       const vec &kdir, double w0, double freq, double eps,
+                       double mu, const vec &E0);
 
   // mpb.cpp
 

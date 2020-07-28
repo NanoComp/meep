@@ -436,4 +436,102 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   require_component(c);
 }
 
+/* Given the field-strength vector E0 for a Gaussian beam centered at x0 with beam waist w0 and propagation direction kdir,
+   compute the E/H fields EH[6] (6 components) at x for a frequency freq in the homogeneous 3d medium eps and mu.
+
+   Adapted from code by M. T. Homer Reid in his SCUFF-EM package
+   (file scuff-em/src/libs/libIncField/GaussianBeam.cc), which is GPL v2+. */
+
+void fields::gaussianbeam_3d(std::complex<double> *EH, const vec &x0, const vec &x,
+                             const vec &kdir, double w0, double freq, double eps,
+                             double mu, const vec &E0) {
+  if (x0.dim == Dcyl) abort("wrong dimensionality in gaussianbeam_3d");
+
+  double n = sqrt(eps * mu);
+  double k = 2 * pi * freq * n;
+  double impedance = 1/sqrt(eps);
+  double zR = k * w0 * w0 / 2; // Rayleigh range
+  double kzR = k*zR;
+
+  vec xrel = x0 - x;
+
+  vec zhat = kdir / abs(kdir);
+
+  double rho = abs(vec(zhat.y()*xrel.z()-zhat.z()*xrel.y(),
+                       zhat.z()*xrel.x()-zhat.x()*xrel.z(),
+                       zhat.x()*xrel.y()-zhat.y()*xrel.x()));
+  double zhatdotxrel = zhat & xrel;
+
+  bool UseRescaledFG = false;
+
+  complex<double> zc = complex<double>(zhatdotxrel,-zR);
+  complex<double> Rsq = rho*rho + zc*zc;
+  complex<double> R = sqrt(Rsq);
+  complex<double> kR = k*R, kR2 = kR*kR, kR3 = kR2*kR;
+
+  complex<double> f,g,fmgbRsq;
+  if (abs(kR) > 1e-4) {
+    complex<double> coskR, sinkR;
+    if (fabs(imag(kR)) > 30.0) {
+      UseRescaledFG = true;
+      complex<double> ExpI = exp(complex<double>(0,1.0)*real(kR));
+      complex<double> ExpPlus = exp(imag(kR)-kzR); // should imag(kR) + kzR ?
+      complex<double> ExpMinus = exp(-(imag(kR)+kzR));
+      coskR = 0.5*(ExpI*ExpMinus + conj(ExpI)*ExpPlus);
+      sinkR = -0.5*complex<double>(0,1.0)*(ExpI*ExpMinus - conj(ExpI)*ExpPlus);
+    } else {
+      coskR = cos(kR);
+      sinkR = sin(kR);
+    }
+    f = -3.0 * (coskR/kR2 - sinkR/kR3);
+    g = 1.5 * (sinkR/kR + coskR/kR2 - sinkR/kR3);
+    fmgbRsq = (f-g)/Rsq;
+  } else {
+    complex<double> kR4 = kR2*kR2;
+    // Taylor series expansion for small R
+    f = kR4/280.0 - kR2/10.0 + 1.0;
+    g = 3.0*kR4/280.0 - kR2/5.0 + 1.0;
+    fmgbRsq = (kR4/5040.0 - kR2/140.0 + 0.1)*(k*k);
+  }
+  complex<double> i2fk = 0.5*complex<double>(0,1)*f*k;
+
+  double rnorm = abs(E0);
+  vec xhat = E0 / rnorm;
+  vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
+                 zhat.z()*xhat.x()-zhat.x()*xhat.z(),
+                 zhat.x()*xhat.y()-zhat.y()*xhat.x());
+  double xhatdotxrel = xhat & xrel;
+  double yhatdotxrel = yhat & xrel;
+
+  complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
+  complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
+  complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
+  complex<double> gb_Hx = EH[1];
+  complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
+  complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
+
+  vec E_real = (vec(xhatdotxrel,0,0)*real(gb_Ex) + vec(0,yhatdotxrel,0)*real(gb_Ey) + vec(0,0,zhatdotxrel)*real(gb_Ez))*rnorm;
+  vec H_real = (vec(xhatdotxrel,0,0)*real(gb_Hx) + vec(0,yhatdotxrel,0)*real(gb_Hy) + vec(0,0,zhatdotxrel)*real(gb_Hz))*rnorm;
+
+  vec E_imag = (vec(xhatdotxrel,0,0)*imag(gb_Ex) + vec(0,yhatdotxrel,0)*imag(gb_Ey) + vec(0,0,zhatdotxrel)*imag(gb_Ez))*rnorm;
+  vec H_imag = (vec(xhatdotxrel,0,0)*imag(gb_Hx) + vec(0,yhatdotxrel,0)*imag(gb_Hy) + vec(0,0,zhatdotxrel)*imag(gb_Hz))*rnorm;
+
+  double Eorig;
+  if (UseRescaledFG)
+    Eorig = 3/(2*kzR*kzR*kzR) * (kzR*(kzR-1) + 0.5*(1.0-exp(-2.0*kzR)));
+  else
+    Eorig = 3/(2*kzR*kzR*kzR) * (exp(kzR)*kzR*(kzR-1) + sinh(kzR));
+
+  E_real = E_real / Eorig;
+  E_imag = E_imag / Eorig;
+  EH[0] = complex<double>(E_real.x(),E_imag.x());
+  EH[1] = complex<double>(E_real.y(),E_imag.y());
+  EH[2] = complex<double>(E_real.z(),E_imag.z());
+  H_real = H_real / (Eorig*impedance);
+  H_imag = H_imag / (Eorig*impedance);
+  EH[3] = complex<double>(H_real.x(),H_imag.x());
+  EH[4] = complex<double>(H_real.y(),H_imag.y());
+  EH[5] = complex<double>(H_real.z(),H_imag.z());
+}
+
 } // namespace meep
