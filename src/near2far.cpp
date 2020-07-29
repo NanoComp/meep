@@ -690,9 +690,9 @@ std::vector<struct near_data> dft_near2far::near_fds(const vec &x) {
             double phase = phase0 + i1 * periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
             if (x.dim == Dcyl)
-              greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m, 1e-3);
+              greencyl(EH6, x, freq[i], eps, mu, xs, c0, 1, f->fc->m, 1e-3);
             else
-              green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
+              green(EH6, x, freq[i], eps, mu, xs, c0, 1);
             for (int j = 0; j < 6; ++j)
               (*(temp.end()-1)).matrix_elt[i][j] += EH6[j] * cphase * (f->stored_weight);
           }
