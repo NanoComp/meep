@@ -390,9 +390,9 @@ class Far_Coefficients(ObjectiveQuantitiy):
             
             
             if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
-                scale = -freq_scale * np.sum((dJ*cur_green_matrix/(self.sim.resolution))), axis=1)
+                scale = -freq_scale * np.sum((dJ*cur_green_matrix/(self.sim.resolution)), axis=1)
             else: 
-                scale = freq_scale * np.sum((dJ*cur_green_matrix/(2*self.sim.resolution))), axis=1)
+                scale = freq_scale * np.sum((dJ*cur_green_matrix/(2*self.sim.resolution)), axis=1)
             
 
 
