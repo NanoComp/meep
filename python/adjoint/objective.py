@@ -47,6 +47,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
         '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
         correct scaling/time profile.
+
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
         dt ........ the timestep size from sim.fields.dt of the forward sim
         '''
@@ -135,6 +136,8 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         except AttributeError:
             raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
 
+
+
 class E_Coefficients(ObjectiveQuantitiy):
     def __init__(self,sim,volume, component):
         '''
@@ -148,11 +151,11 @@ class E_Coefficients(ObjectiveQuantitiy):
     def register_monitors(self,frequencies):
         self.frequencies = np.asarray(frequencies)
         self.num_freq = len(self.frequencies)
-        self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=False)
+        self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=True)
 
         return self.monitor
 
-    def place_adjoint_source(self,dJ,dt):
+    def place_adjoint_source(self,dJ):
         '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
         correct scaling/time profile.
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
@@ -226,11 +229,11 @@ class H_Coefficients(ObjectiveQuantitiy):
     def register_monitors(self,frequencies):
         self.frequencies = np.asarray(frequencies)
         self.num_freq = len(self.frequencies)
-        self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=False)
+        self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=True)
 
         return self.monitor
 
-    def place_adjoint_source(self,dJ,dt):
+    def place_adjoint_source(self,dJ):
         '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
         correct scaling/time profile.
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
@@ -356,10 +359,12 @@ class Far_Coefficients(ObjectiveQuantitiy):
     def register_monitors(self,frequencies):
         self.frequencies = np.asarray(frequencies)
         self.num_freq = len(self.frequencies)
-        self.monitor = self.sim.add_near2far(self.frequencies, *self.Near2FarRegions)        
+        self.monitor = self.sim.add_near2far(self.frequencies, *self.Near2FarRegions, yee_grid=True)
         return self.monitor
 
-    def place_adjoint_source(self,dJ,dt):
+    def place_adjoint_source(self,dJ):
+
+        dt = self.sim.fields.dt
 
         if self.sim.cell_size.y == 0:
             dV = 1/self.sim.resolution
@@ -372,29 +377,23 @@ class Far_Coefficients(ObjectiveQuantitiy):
 
 
         freq_scale = dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
-        #freq_scale = 1
 
         #TODO far_pts in 3d or cylindrical
         self.all_near_data = self.monitor.swigobj.near_fds(mp.vec(self.far_pt.x, self.far_pt.y))
 
-        count = 0
-
 
         for near_data in self.all_near_data:
-            
-
             near_pt = near_data.near_x
-            near_pt = mp.Vector3(near_pt.x(), near_pt.y())
+            near_pt = mp.Vector3(near_pt.x(), near_pt.y(), near_pt.z())
             cur_comp = near_data.near_fd_comp
             cur_green_matrix = np.array(near_data.matrix_elt)
-            
-            
-            if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
-                scale = -freq_scale * np.sum((dJ*cur_green_matrix/(self.sim.resolution)), axis=1)
-            else: 
-                scale = freq_scale * np.sum((dJ*cur_green_matrix/(2*self.sim.resolution)), axis=1)
-            
+            #print(near_pt, cur_comp)
 
+
+            if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
+                scale = -freq_scale * np.sum((dJ*cur_green_matrix/(self.sim.resolution)), axis=1)#
+            else:
+                scale = freq_scale * np.sum((dJ*cur_green_matrix/(2*self.sim.resolution)), axis=1)#
 
             if self.num_freq == 1:
                 self.sources += [mp.Source(self.time_src, component=cur_comp, amplitude=scale[0], center=near_pt)]
@@ -413,7 +412,7 @@ class Far_Coefficients(ObjectiveQuantitiy):
 
         #self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
         #self.near_fd = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
-        
+
         self.eval = np.array(self.sim.get_farfield(self.monitor, self.far_pt))
         self.eval = self.eval.reshape((self.num_freq, 6))
         return self.eval
@@ -425,5 +424,3 @@ class Far_Coefficients(ObjectiveQuantitiy):
             return self.eval
         except AttributeError:
             raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
-
-

@@ -306,6 +306,7 @@ class OptimizationProblem(object):
         fd_gradient_idx = np.random.choice(self.num_design_params[design_variables_idx],num_gradients,replace=False)
 
         for k in fd_gradient_idx:
+
             b0 = np.ones((self.num_design_params[design_variables_idx],))
             b0[:] = (self.design_regions[design_variables_idx].design_parameters.design_parameters)
             # -------------------------------------------- #
@@ -431,9 +432,10 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
                     if isinstance(m,mp.DftFlux):
                         current_fields[mi][ic] = mp.get_fluxes(m)[fcen_idx]
                     elif isinstance(m,mp.DftFields):
-                        current_fields[mi][:,:,:,ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
+                        current_fields[mi][ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
+
                     elif isinstance(m, mp.simulation.DftNear2Far):
-                        current_fields[mi][:,:,:,ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
+                        current_fields[mi][ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
 
 
                     else:
