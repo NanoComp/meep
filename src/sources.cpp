@@ -436,27 +436,77 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   require_component(c);
 }
 
-/* Given the field-strength vector E0 for a Gaussian beam centered at x0 with beam waist w0 and propagation direction kdir,
-   compute the E/H fields EH[6] (6 components) at x for a frequency freq in the homogeneous 3d medium eps and mu.
+static gaussianbeam *global_gaussianbeam_object = 0;
+static component global_gaussianbeam_component;
+
+static complex<double> gaussianbeam_ampfunc(const vec &p) {
+  std::complex<double> EH[6];
+  global_gaussianbeam_object->get_fields(EH, p);
+  switch (global_gaussianbeam_component) {
+  case Ex: return EH[0];
+  case Ey: return EH[1];
+  case Ez: return EH[2];
+  case Hx: return EH[3];
+  case Hy: return EH[4];
+  case Hz: return EH[5];
+  default: abort("invalid component in gaussianbeam_ampfunc");
+  }
+}
+
+void fields::add_volume_source(const src_time &src, direction d, const volume &where, gaussianbeam beam) {
+  global_gaussianbeam_object = &beam;
+  component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
+  int n = (d == X ? 0 : (d == Y ? 1 : 2));
+  if (d == NO_DIRECTION) {
+    n = where.in_direction(X) == 0
+            ? 0
+            : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
+    if (n == -1)
+      abort(
+          "can't determine source direction for non-empty source volume with NO_DIRECTION source");
+  }
+  int np1 = (n + 1) % 3;
+  int np2 = (n + 2) % 3;
+  // Kx = -Hy, Ky = Hx   (for d==Z)
+  global_gaussianbeam_component = cH[np1];
+  add_volume_source(cE[np2], src, where, gaussianbeam_ampfunc, +1.0);
+  global_gaussianbeam_component = cH[np2];
+  add_volume_source(cE[np1], src, where, gaussianbeam_ampfunc, -1.0);
+  // Nx = +Ey, Ny = -Ex  (for d==Z)
+  global_gaussianbeam_component = cE[np1];
+  add_volume_source(cH[np2], src, where, gaussianbeam_ampfunc, -1.0);
+  global_gaussianbeam_component = cE[np2];
+  add_volume_source(cH[np1], src, where, gaussianbeam_ampfunc, +1.0);
+}
+
+gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
+                           double eps_, double mu_, std::complex<double> E0_[3]) {
+  if (x0.dim == Dcyl) abort("wrong dimensionality in gaussianbeam");
+
+  x0 = x0_;
+  kdir = kdir_;
+  w0 = w0_;
+  freq = freq_;
+  eps = eps_;
+  mu = mu_;
+  for (int j=0; j<3; ++j)
+    E0[j] = E0_[j];
+}
+
+/* Compute the E/H fields EH[6] (6 components) at point x in 3d.
 
    Adapted from code by M. T. Homer Reid in his SCUFF-EM package
    (file scuff-em/src/libs/libIncField/GaussianBeam.cc), which is GPL v2+. */
 
-void fields::gaussianbeam_3d(std::complex<double> *EH, const vec &x0, const vec &x,
-                             const vec &kdir, double w0, double freq, double eps,
-                             double mu, const vec &E0) {
-  if (x0.dim == Dcyl) abort("wrong dimensionality in gaussianbeam_3d");
-
+void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) {
   double n = sqrt(eps * mu);
   double k = 2 * pi * freq * n;
-  double impedance = 1/sqrt(eps);
-  double zR = k * w0 * w0 / 2; // Rayleigh range
-  double kzR = k*zR;
-
-  vec xrel = x0 - x;
+  double impedance = sqrt(mu/eps);
+  double z0 = k * w0 * w0 / 2; // Rayleigh range
+  double kz0 = k*z0;
+  vec xrel = x - x0;
 
   vec zhat = kdir / abs(kdir);
-
   double rho = abs(vec(zhat.y()*xrel.z()-zhat.z()*xrel.y(),
                        zhat.z()*xrel.x()-zhat.x()*xrel.z(),
                        zhat.x()*xrel.y()-zhat.y()*xrel.x()));
@@ -464,19 +514,18 @@ void fields::gaussianbeam_3d(std::complex<double> *EH, const vec &x0, const vec 
 
   bool UseRescaledFG = false;
 
-  complex<double> zc = complex<double>(zhatdotxrel,-zR);
+  complex<double> zc = complex<double>(zhatdotxrel,-z0);
   complex<double> Rsq = rho*rho + zc*zc;
   complex<double> R = sqrt(Rsq);
   complex<double> kR = k*R, kR2 = kR*kR, kR3 = kR2*kR;
-
   complex<double> f,g,fmgbRsq;
   if (abs(kR) > 1e-4) {
     complex<double> coskR, sinkR;
     if (fabs(imag(kR)) > 30.0) {
       UseRescaledFG = true;
       complex<double> ExpI = exp(complex<double>(0,1.0)*real(kR));
-      complex<double> ExpPlus = exp(imag(kR)-kzR); // should imag(kR) + kzR ?
-      complex<double> ExpMinus = exp(-(imag(kR)+kzR));
+      complex<double> ExpPlus = exp(imag(kR)-kz0);
+      complex<double> ExpMinus = exp(-(imag(kR)+kz0));
       coskR = 0.5*(ExpI*ExpMinus + conj(ExpI)*ExpPlus);
       sinkR = -0.5*complex<double>(0,1.0)*(ExpI*ExpMinus - conj(ExpI)*ExpPlus);
     } else {
@@ -495,43 +544,72 @@ void fields::gaussianbeam_3d(std::complex<double> *EH, const vec &x0, const vec 
   }
   complex<double> i2fk = 0.5*complex<double>(0,1)*f*k;
 
-  double rnorm = abs(E0);
-  vec xhat = E0 / rnorm;
-  vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
-                 zhat.z()*xhat.x()-zhat.x()*xhat.z(),
-                 zhat.x()*xhat.y()-zhat.y()*xhat.x());
-  double xhatdotxrel = xhat & xrel;
-  double yhatdotxrel = yhat & xrel;
+  complex<double> E[3], H[3];
+  for (int j=0; j<3; ++j) {
+    E[j] = complex<double>(0,0);
+    H[j] = complex<double>(0,0);
+  }
 
-  complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
-  complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
-  complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
-  complex<double> gb_Hx = EH[1];
-  complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
-  complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
+  double rnorm = sqrt(real(E0[0])*real(E0[0])+real(E0[1])*real(E0[1])+real(E0[2])*real(E0[2]));
+  if (rnorm > 1e-13) {
+    vec xhat = vec(real(E0[0]),real(E0[1]),real(E0[2])) / rnorm;
+    vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
+                   zhat.z()*xhat.x()-zhat.x()*xhat.z(),
+                   zhat.x()*xhat.y()-zhat.y()*xhat.x());
+    double xhatdotxrel = xhat & xrel;
+    double yhatdotxrel = yhat & xrel;
 
-  vec E_real = (vec(xhatdotxrel,0,0)*real(gb_Ex) + vec(0,yhatdotxrel,0)*real(gb_Ey) + vec(0,0,zhatdotxrel)*real(gb_Ez))*rnorm;
-  vec H_real = (vec(xhatdotxrel,0,0)*real(gb_Hx) + vec(0,yhatdotxrel,0)*real(gb_Hy) + vec(0,0,zhatdotxrel)*real(gb_Hz))*rnorm;
+    complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
+    complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
+    complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
+    complex<double> gb_Hx = EH[1];
+    complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
+    complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
 
-  vec E_imag = (vec(xhatdotxrel,0,0)*imag(gb_Ex) + vec(0,yhatdotxrel,0)*imag(gb_Ey) + vec(0,0,zhatdotxrel)*imag(gb_Ez))*rnorm;
-  vec H_imag = (vec(xhatdotxrel,0,0)*imag(gb_Hx) + vec(0,yhatdotxrel,0)*imag(gb_Hy) + vec(0,0,zhatdotxrel)*imag(gb_Hz))*rnorm;
+    E[0] += rnorm * (gb_Ex * xhat.x() + gb_Ey * yhat.x() + gb_Ez * zhat.x());
+    E[1] += rnorm * (gb_Ex * xhat.y() + gb_Ey * yhat.y() + gb_Ez * zhat.y());
+    E[2] += rnorm * (gb_Ex * xhat.z() + gb_Ey * yhat.z() + gb_Ez * zhat.z());
+    H[0] += rnorm * (gb_Hx * xhat.x() + gb_Hy * yhat.x() + gb_Hz * zhat.x());
+    H[1] += rnorm * (gb_Hx * xhat.y() + gb_Hy * yhat.y() + gb_Hz * zhat.y());
+    H[2] += rnorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
+  }
+
+  double inorm = sqrt(imag(E0[0])*imag(E0[0])+imag(E0[1])*imag(E0[1])+imag(E0[2])*imag(E0[2]));
+  if (inorm > 1e-13) {
+    vec xhat = vec(imag(E0[0]),imag(E0[1]),imag(E0[2])) / inorm;
+    vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
+                   zhat.z()*xhat.x()-zhat.x()*xhat.z(),
+                   zhat.x()*xhat.y()-zhat.y()*xhat.x());
+    double xhatdotxrel = xhat & xrel;
+    double yhatdotxrel = yhat & xrel;
+
+    complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
+    complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
+    complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
+    complex<double> gb_Hx = EH[1];
+    complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
+    complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
+
+    E[0] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.x() + gb_Ey * yhat.x() + gb_Ez * zhat.x());
+    E[1] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.y() + gb_Ey * yhat.y() + gb_Ez * zhat.y());
+    E[2] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.z() + gb_Ey * yhat.z() + gb_Ez * zhat.z());
+    H[0] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.x() + gb_Hy * yhat.x() + gb_Hz * zhat.x());
+    H[1] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.y() + gb_Hy * yhat.y() + gb_Hz * zhat.y());
+    H[2] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
+  }
 
   double Eorig;
   if (UseRescaledFG)
-    Eorig = 3/(2*kzR*kzR*kzR) * (kzR*(kzR-1) + 0.5*(1.0-exp(-2.0*kzR)));
+    Eorig = 3/(2*kz0*kz0*kz0) * (kz0*(kz0-1) + 0.5*(1.0-exp(-2.0*kz0)));
   else
-    Eorig = 3/(2*kzR*kzR*kzR) * (exp(kzR)*kzR*(kzR-1) + sinh(kzR));
+    Eorig = 3/(2*kz0*kz0*kz0) * (exp(kz0)*kz0*(kz0-1) + sinh(kz0));
 
-  E_real = E_real / Eorig;
-  E_imag = E_imag / Eorig;
-  EH[0] = complex<double>(E_real.x(),E_imag.x());
-  EH[1] = complex<double>(E_real.y(),E_imag.y());
-  EH[2] = complex<double>(E_real.z(),E_imag.z());
-  H_real = H_real / (Eorig*impedance);
-  H_imag = H_imag / (Eorig*impedance);
-  EH[3] = complex<double>(H_real.x(),H_imag.x());
-  EH[4] = complex<double>(H_real.y(),H_imag.y());
-  EH[5] = complex<double>(H_real.z(),H_imag.z());
+  EH[0] = E[0] / Eorig;
+  EH[1] = E[1] / Eorig;
+  EH[2] = E[2] / Eorig;
+  EH[3] = H[0] / (Eorig*impedance);
+  EH[4] = H[1] / (Eorig*impedance);
+  EH[5] = H[2] / (Eorig*impedance);
 }
 
 } // namespace meep
