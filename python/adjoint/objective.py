@@ -140,8 +140,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
 
 class E_Coefficients(ObjectiveQuantitiy):
     def __init__(self,sim,volume, component):
-        '''
-        '''
+
         self.sim = sim
         self.volume=volume
         self.eval = None
@@ -156,11 +155,6 @@ class E_Coefficients(ObjectiveQuantitiy):
         return self.monitor
 
     def place_adjoint_source(self,dJ):
-        '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
-        correct scaling/time profile.
-        dJ ........ the user needs to pass the dJ/dMonitor evaluation
-        dt ........ the timestep size from sim.fields.dt of the forward sim
-        '''
 
         if self.sim.cell_size.y == 0:
             dV = 1/self.sim.resolution
@@ -170,15 +164,6 @@ class E_Coefficients(ObjectiveQuantitiy):
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
 
         self.sources = []
-
-        '''
-        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
-        for freq_i in range(self.num_freq):
-            self.src = mp.GaussianSource(self.frequencies[freq_i], fwidth=0.02)
-            scale = dV * 1j * 2 * np.pi * self.frequencies[freq_i] / self.src.fourier_transform(self.frequencies[freq_i])
-            amp = -atleast_3d(dJ[freq_i]) * scale
-        '''
-
 
         if self.num_freq == 1:
             scale = dV * 1j * 2 * np.pi * self.frequencies[0] / self.time_src.fourier_transform(self.frequencies[0])
@@ -209,17 +194,15 @@ class E_Coefficients(ObjectiveQuantitiy):
         return self.eval
 
     def get_evaluation(self):
-        '''Returns the requested eigenmode coefficient.
-        '''
+
         try:
             return self.eval
         except AttributeError:
-            raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+            raise RuntimeError("You must first run a forward simulation.")
 
 class H_Coefficients(ObjectiveQuantitiy):
     def __init__(self,sim,volume, component):
-        '''
-        '''
+
         self.sim = sim
         self.volume=volume
         self.eval = None
@@ -234,11 +217,6 @@ class H_Coefficients(ObjectiveQuantitiy):
         return self.monitor
 
     def place_adjoint_source(self,dJ):
-        '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
-        correct scaling/time profile.
-        dJ ........ the user needs to pass the dJ/dMonitor evaluation
-        dt ........ the timestep size from sim.fields.dt of the forward sim
-        '''
 
         if self.sim.cell_size.y == 0:
             dV = 1/self.sim.resolution
@@ -249,13 +227,6 @@ class H_Coefficients(ObjectiveQuantitiy):
 
         self.sources = []
 
-        '''
-        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
-        for freq_i in range(self.num_freq):
-            self.src = mp.GaussianSource(self.frequencies[freq_i], fwidth=0.02)
-            scale = dV * 1j * 2 * np.pi * self.frequencies[freq_i] / self.src.fourier_transform(self.frequencies[freq_i])
-            amp = -atleast_3d(dJ[freq_i]) * scale
-        '''
 
 
         if self.num_freq == 1:
@@ -287,12 +258,11 @@ class H_Coefficients(ObjectiveQuantitiy):
         return self.eval
 
     def get_evaluation(self):
-        '''Returns the requested eigenmode coefficient.
-        '''
+
         try:
             return self.eval
         except AttributeError:
-            raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+            raise RuntimeError("You must first run a forward simulation.")
 
 
 Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
@@ -345,14 +315,9 @@ def atleast_3d(*arys):
 
 class Far_Coefficients(ObjectiveQuantitiy):
     def __init__(self,sim,Near2FarRegions, far_pt):
-        '''
-        '''
         self.sim = sim
         self.Near2FarRegions=Near2FarRegions
         self.eval = None
-        #self.component_idx = component_idx
-        all_components = [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]
-        #,self.component = all_compoents[component_idx]
         self.far_pt = far_pt
         return
 
@@ -378,7 +343,7 @@ class Far_Coefficients(ObjectiveQuantitiy):
 
         freq_scale = dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
 
-        #TODO far_pts in 3d or cylindrical
+        #TODO far_pts in 3d or cylindrical, perhaps py_v3_to_vec from simulation.py
         self.all_near_data = self.monitor.swigobj.near_fds(mp.vec(self.far_pt.x, self.far_pt.y))
 
 
@@ -387,8 +352,6 @@ class Far_Coefficients(ObjectiveQuantitiy):
             near_pt = mp.Vector3(near_pt.x(), near_pt.y(), near_pt.z())
             cur_comp = near_data.near_fd_comp
             cur_green_matrix = np.array(near_data.matrix_elt)
-            #print(near_pt, cur_comp)
-
 
             if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
                 scale = -freq_scale * np.sum(dJ*cur_green_matrix, axis=1)
@@ -401,26 +364,16 @@ class Far_Coefficients(ObjectiveQuantitiy):
                 src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
                 self.sources += [mp.Source(src, component=cur_comp, amplitude=1, center=near_pt)]
 
-
-
-
-
         return self.sources
 
     def __call__(self):
         self.time_src = self.sim.sources[0].src
-
-        #self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
-        #self.near_fd = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
-
         self.eval = np.array(self.sim.get_farfield(self.monitor, self.far_pt))
         self.eval = self.eval.reshape((self.num_freq, 6))
         return self.eval
 
     def get_evaluation(self):
-        '''Returns the requested eigenmode coefficient.
-        '''
         try:
             return self.eval
         except AttributeError:
-            raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
+            raise RuntimeError("You must first run a forward simulation.")
