@@ -8,6 +8,14 @@
 #include "pympb.hpp"
 #include "meep/mympi.hpp"
 
+// If the MPB lib is not new enough to have the mpb_verbosity global then make
+// one here to give the swig wrapper something to link with.
+#if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 11)
+// do nothing, libmpb should have the mpb_verbosity symbol
+#else
+extern "C" int mpb_verbosity = 2;
+#endif
+
 // xyz_loop.h
 #ifndef HAVE_MPI
 #define LOOP_XYZ(md)                                                                               \
