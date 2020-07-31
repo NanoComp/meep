@@ -78,6 +78,7 @@ class OptimizationProblem(object):
         else:
             self.design_regions = [design_regions]
 
+
         self.num_design_params = [ni.num_design_params for ni in self.design_regions]
         self.num_design_regions = len(self.design_regions)
 
@@ -325,6 +326,7 @@ class OptimizationProblem(object):
 
             self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
 
+
             # record final objective function value
             results_list = []
             for m in self.objective_arguments:
@@ -375,6 +377,7 @@ class OptimizationProblem(object):
                 raise ValueError("Each vector of design variables must contain only one dimension.")
             b.update_design_parameters(rho_vector[bi])
 
+
         self.sim.reset_meep()
         self.current_state = "INIT"
     def get_objective_arguments(self):
@@ -410,6 +413,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
             comp = ci if yee_grid else mp.Dielectric
             ci_dims += [simob.get_array_slice_dimensions(comp,vol=m.where)[0]]
         dims.append(ci_dims)
+
 
     # Record data in closure so that we can persitently edit
     closure = {
