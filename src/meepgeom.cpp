@@ -2468,7 +2468,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   // calculate cell dimensions
   meep::direction dirs[3];
   meep::vec min_max_loc[2] = {meep::vec(0,0,0),meep::vec(0,0,0)}; // extremal points in subgrid
-  bool collapse = false, snap = true;
+  bool collapse = false, snap = false;
   meep::component field_dir[3] = {meep::Ex, meep::Ey, meep::Ez};
   size_t dims[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (int c = 0; c < 3; c++) {
@@ -2488,7 +2488,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
 
   // Loop over component, x, y, z, and frequency dimensions
   // TODO speed up with MPI (if needed)
-  size_t c_offset = 0;
+  int xyz_index = 0;
   for (int c = 0; c < 3; c++) {             // component
     n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
     c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
@@ -2499,15 +2499,14 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
       for (int i2 = 0; i2 < n2; ++i2) {     // x
         for (int i3 = 0; i3 < n3; ++i3) {   // y
           for (int i4 = 0; i4 < n4; ++i4) { // z
-            int xyz_index = c_offset + (((i1 * n2 + i2) * n3 + i3) * n4 + i4);
             p.x = i2 * s1 + c1; p.y = i3 * s2 + c2; p.z = i4 * s3 + c3;
-            material_grids_addgradient_point(v_cur, fields_a[xyz_index], fields_f[xyz_index], field_dir[c], p,
+            material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index], fields_f[xyz_index], field_dir[c], p,
                                              scalegrad, frequencies[i1], geometry_tree);
+            xyz_index++;
           }
         }
       }
     }
-    c_offset += dims[c * 3] * dims[c * 3 + 1] * dims[c * 3 + 2] * nf;
   }
 }
 
