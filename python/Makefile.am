@@ -197,7 +197,9 @@ HL_IFACE =                  \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
     $(srcdir)/visualization.py  \
-    $(srcdir)/materials.py
+    $(srcdir)/materials.py  \
+    $(srcdir)/verbosity_mgr.py
+
 
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
 

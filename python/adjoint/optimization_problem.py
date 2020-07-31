@@ -24,7 +24,7 @@ class DesignRegion(object):
         grad = np.zeros((self.num_design_params*num_freqs,)) # preallocate
 
         # compute the gradient
-        mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f) 
+        mp._get_gradient(grad,fields_a,fields_f,self.volume,np.array(frequencies),geom_list,f)
 
         return np.squeeze(grad.reshape(self.num_design_params,num_freqs,order='F'))
 
@@ -42,7 +42,7 @@ class OptimizationProblem(object):
 
     """
 
-    def __init__(self, 
+    def __init__(self,
                 simulation,
                 objective_functions,
                 objective_arguments,
@@ -70,7 +70,7 @@ class OptimizationProblem(object):
             self.design_regions = design_regions
         else:
             self.design_regions = [design_regions]
-        
+
         self.num_design_params = [ni.num_design_params for ni in self.design_regions]
         self.num_design_regions = len(self.design_regions)
 
@@ -83,7 +83,7 @@ class OptimizationProblem(object):
                 self.nf = nf
                 self.frequencies = [fcen]
             else:
-                fmax = fcen+0.5*df 
+                fmax = fcen+0.5*df
                 fmin = fcen-0.5*df
                 dfreq = (fmax-fmin)/(nf-1)
                 self.frequencies = np.linspace(fmin, fmin+dfreq*nf, num=nf, endpoint=False)
@@ -98,7 +98,7 @@ class OptimizationProblem(object):
         self.decay_fields=decay_fields
         self.decay_dt=decay_dt
         self.minimum_run_time=minimum_run_time
-        
+
         # store sources for finite difference estimations
         self.forward_sources = self.sim.sources
 
@@ -115,7 +115,7 @@ class OptimizationProblem(object):
             self.update_design(rho_vector=rho_vector)
 
         # Run forward run if requested
-        if need_value and self.current_state == "INIT": 
+        if need_value and self.current_state == "INIT":
             print("Starting forward run...")
             self.forward_run()
 
@@ -162,7 +162,7 @@ class OptimizationProblem(object):
             return df
 
         return _f, _df
-    
+
     def prepare_forward_run(self):
         # prepare forward run
         self.sim.reset_meep()
@@ -226,7 +226,7 @@ class OptimizationProblem(object):
         self.sim.change_sources(self.adjoint_sources)
 
         # register design flux
-        # TODO use yee grid directly 
+        # TODO use yee grid directly
         self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=False) for dr in self.design_regions]
 
         # Adjoint run
@@ -245,7 +245,7 @@ class OptimizationProblem(object):
     def calculate_gradient(self):
         # Iterate through all design regions and calculate gradient
         self.gradient = [[dr.get_gradient(self.a_E[ar][dri],self.d_E[dri],self.frequencies,self.sim.geometry,self.sim.fields) for dri, dr in enumerate(self.design_regions)] for ar in range(len(self.objective_functions))]
-        
+
         # Cleanup list of lists
         if len(self.gradient) == 1:
             self.gradient = self.gradient[0] # only one objective function
@@ -256,7 +256,7 @@ class OptimizationProblem(object):
                 self.gradient = [g[0] for g in self.gradient] # multiple objective functions bu one design region
         # Return optimizer's state to initialization
         self.current_state = "INIT"
-    
+
     def calculate_fd_gradient(self,num_gradients=1,db=1e-4,design_variables_idx=0,filter=None):
         '''
         Estimate central difference gradients.
@@ -272,7 +272,7 @@ class OptimizationProblem(object):
 
         Returns
         -----------
-        fd_gradient ... : lists 
+        fd_gradient ... : lists
             [number of objective functions][number of gradients]
 
         '''
@@ -292,25 +292,25 @@ class OptimizationProblem(object):
         fd_gradient_idx = np.random.choice(self.num_design_params[design_variables_idx],num_gradients,replace=False)
 
         for k in fd_gradient_idx:
-            
+
             b0 = np.ones((self.num_design_params[design_variables_idx],))
             b0[:] = (self.design_regions[design_variables_idx].design_parameters.design_parameters)
             # -------------------------------------------- #
             # left function evaluation
             # -------------------------------------------- #
             self.sim.reset_meep()
-            
+
             # assign new design vector
             b0[k] -= db
             self.design_regions[design_variables_idx].update_design_parameters(b0)
-            
+
             # initialize design monitors
             self.forward_monitors = []
             for m in self.objective_arguments:
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
-            
+
             self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, self.minimum_run_time))
-            
+
             # record final objective function value
             results_list = []
             for m in self.objective_arguments:
@@ -330,10 +330,10 @@ class OptimizationProblem(object):
             self.forward_monitors = []
             for m in self.objective_arguments:
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
-            
+
             # add monitor used to track dft convergence
             self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, self.minimum_run_time))
-            
+
             # record final objective function value
             results_list = []
             for m in self.objective_arguments:
@@ -344,13 +344,13 @@ class OptimizationProblem(object):
             # estimate derivative
             # -------------------------------------------- #
             fd_gradient.append( [np.squeeze((fp[fi] - fm[fi]) / (2*db)) for fi in range(len(self.objective_functions))] )
-        
+
         # Cleanup singleton dimensions
         if len(fd_gradient) == 1:
             fd_gradient = fd_gradient[0]
 
         return fd_gradient, fd_gradient_idx
-    
+
     def update_design(self, rho_vector):
         """Update the design permittivity function.
 
@@ -360,7 +360,7 @@ class OptimizationProblem(object):
             if np.array(rho_vector[bi]).ndim > 1:
                 raise ValueError("Each vector of design variables must contain only one dimension.")
             b.update_design_parameters(rho_vector[bi])
-        
+
         self.sim.reset_meep()
         self.current_state = "INIT"
     def get_objective_arguments(self):
@@ -368,7 +368,7 @@ class OptimizationProblem(object):
         '''
         objective_args_evaluation = [m.get_evaluation() for m in self.objective_arguments]
         return objective_args_evaluation
-        
+
     def plot2D(self,init_opt=False, **kwargs):
         """Produce a graphical visualization of the geometry and/or fields,
            as appropriately autodetermined based on the current state of
@@ -397,7 +397,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, minimum_run_tim
         x.append(len(xi))
         y.append(len(yi))
         z.append(len(zi))
-    
+
     # Record data in closure so that we can persitently edit
     closure = {
         'previous_fields': [np.ones((x[mi],y[mi],z[mi],len(c)),dtype=np.complex128) for mi, m in enumerate(mon)],
@@ -405,7 +405,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, minimum_run_tim
     }
 
     def _stop(sim):
-        
+
         if sim.round_time() <= dt + closure['t0']:
             return False
         else:
@@ -427,11 +427,11 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, minimum_run_tim
             relative_change = np.mean(relative_change) # average across monitors
             closure['previous_fields'] = current_fields
             closure['t0'] = sim.round_time()
-            
-            if mp.cvar.verbosity > 0:
+
+            if mp.verbosity > 0:
                 fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
                 print(fmt.format(sim.meep_time(), np.real(relative_change)))
-            return relative_change <= decay_by and sim.round_time() >= minimum_run_time 
+            return relative_change <= decay_by and sim.round_time() >= minimum_run_time
     return _stop
 
 
@@ -440,7 +440,7 @@ def atleast_3d(*arys):
     '''
     Modified version of numpy's `atleast_3d`
 
-    Keeps one dimensional array data in first dimension, as 
+    Keeps one dimensional array data in first dimension, as
     opposed to moving it to the second dimension as numpy's
     version does. Keeps the meep dimensionality convention.
 

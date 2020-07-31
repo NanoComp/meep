@@ -12,7 +12,7 @@ import time
 import h5py
 import numpy as np
 import meep as mp
-from . import mode_solver, with_hermitian_epsilon
+from . import mode_solver, with_hermitian_epsilon, verbosity
 from meep.geom import init_do_averaging
 from meep.simulation import get_num_args
 try:
@@ -510,12 +510,13 @@ class ModeSolver(object):
         return update_brd(brd, freqs, [])
 
     def output_band_range_data(self, br_data):
-        for tup, band in zip(br_data, range(1, len(br_data) + 1)):
-            fmt = "Band {} range: {} at {} to {} at {}"
-            min_band, max_band = tup
-            min_freq, min_kpoint = min_band
-            max_freq, max_kpoint = max_band
-            print(fmt.format(band, min_freq, min_kpoint, max_freq, max_kpoint))
+        if verbosity >= 2:
+            for tup, band in zip(br_data, range(1, len(br_data) + 1)):
+                fmt = "Band {} range: {} at {} to {} at {}"
+                min_band, max_band = tup
+                min_freq, min_kpoint = min_band
+                max_freq, max_kpoint = max_band
+                print(fmt.format(band, min_freq, min_kpoint, max_freq, max_kpoint))
 
     # Output any gaps in the given band ranges, and return a list of the gaps as
     # a list of (percent, freq-min, freq-max) tuples.
@@ -536,8 +537,9 @@ class ModeSolver(object):
                 else:
                     gap_size = ((200 * (br_rest_min_f - br_cur_max_f)) /
                                 (br_rest_min_f + br_cur_max_f))
-                    fmt = "Gap from band {} ({}) to band {} ({}), {}%"
-                    print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
+                    if verbosity >= 2:
+                        fmt = "Gap from band {} ({}) to band {} ({}), {}%"
+                        print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
                     return ogaps(br_rest[0], br_rest[1:], i + 1,
                                  [gap_size, br_cur_max_f, br_rest_min_f] + gaps)
         if not br_data:
@@ -640,7 +642,8 @@ class ModeSolver(object):
             self.freqs[curfield_band - 1]
         )
         fname = self._create_fname(fname, fname_prefix, True)
-        print("Outputting complex scalar field to {}...".format(fname))
+        if verbosity >= 2:
+            print("Outputting complex scalar field to {}...".format(fname))
 
         with h5py.File(fname, 'w') as f:
             f['description'] = description.encode()
@@ -673,7 +676,8 @@ class ModeSolver(object):
         )
 
         fname = self._create_fname(fname, fname_prefix, True)
-        print("Outputting fields to {}...".format(fname))
+        if verbosity >= 2:
+            print("Outputting fields to {}...".format(fname))
 
         with h5py.File(fname, 'w') as f:
             f['description'] = description.encode()
@@ -717,7 +721,8 @@ class ModeSolver(object):
 
         parity_suffix = False if curfield_type in 'mn' else True
         fname = self._create_fname(fname, fname_prefix, parity_suffix)
-        print("Outputting {}...".format(fname))
+        if verbosity >= 2:
+            print("Outputting {}...".format(fname))
 
         with h5py.File(fname, 'w') as f:
             f['description'] = description.encode()
@@ -805,11 +810,12 @@ class ModeSolver(object):
 
     def display_kpoint_data(self, name, data):
         k_index = self.mode_solver.get_kpoint_index()
-        print("{}{}:, {}".format(self.parity, name, k_index), end='')
+        if verbosity >= 2:
+            print("{}{}:, {}".format(self.parity, name, k_index), end='')
 
-        for d in data:
-            print(", {}".format(d), end='')
-        print()
+            for d in data:
+                print(", {}".format(d), end='')
+            print()
 
     def display_eigensolver_stats(self):
         num_runs = len(self.eigensolver_iters)
@@ -820,20 +826,24 @@ class ModeSolver(object):
         min_iters = min(self.eigensolver_iters)
         max_iters = max(self.eigensolver_iters)
         mean_iters = np.mean(self.eigensolver_iters)
-        fmt = "eigensolver iterations for {} kpoints: {}-{}, mean = {}"
-        print(fmt.format(num_runs, min_iters, max_iters, mean_iters), end='')
+        if verbosity >= 2:
+            fmt = "eigensolver iterations for {} kpoints: {}-{}, mean = {}"
+            print(fmt.format(num_runs, min_iters, max_iters, mean_iters), end='')
 
         sorted_iters = sorted(self.eigensolver_iters)
         idx1 = num_runs // 2
         idx2 = ((num_runs + 1) // 2) - 1
         median_iters = 0.5 * (sorted_iters[idx1] + sorted_iters[idx2])
-        print(", median = {}".format(median_iters))
+        if verbosity >= 2:
+            print(", median = {}".format(median_iters))
 
         mean_flops = self.eigensolver_flops / (num_runs * mean_iters)
-        print("mean flops per iteration = {}".format(mean_flops))
+        if verbosity >= 2:
+            print("mean flops per iteration = {}".format(mean_flops))
 
         mean_time = self.total_run_time / (mean_iters * num_runs)
-        print("mean time per iteration = {} s".format(mean_time))
+        if verbosity >= 2:
+            print("mean time per iteration = {} s".format(mean_time))
 
     def _get_grid_size(self):
         grid_size = mp.Vector3(self.resolution[0] * self.geometry_lattice.size.x,
@@ -886,20 +896,22 @@ class ModeSolver(object):
 
         init_time = time.time()
 
-        print("Initializing eigensolver data")
-        print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
+        if verbosity >= 2:
+            print("Initializing eigensolver data")
+            print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
 
         self.init_params(p, reset_fields)
 
         if isinstance(reset_fields, basestring):
             self.load_eigenvectors(reset_fields)
 
-        print("{} k-points".format(len(self.k_points)))
+        if verbosity >= 2:
+            print("{} k-points".format(len(self.k_points)))
 
-        for kp in self.k_points:
-            print("  {}".format(kp))
+            for kp in self.k_points:
+                print("  {}".format(kp))
 
-        print("elapsed time for initialization: {}".format(time.time() - init_time))
+            print("elapsed time for initialization: {}".format(time.time() - init_time))
 
         # TODO: Split over multiple processes
         # k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)
@@ -912,7 +924,8 @@ class ModeSolver(object):
                 solve_kpoint_time = time.time()
                 self.mode_solver.solve_kpoint(k)
                 self.iterations = self.mode_solver.get_iterations()
-                print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
+                if verbosity >= 2:
+                    print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
                 self.freqs = self.get_freqs()
                 self.all_freqs[i, :] = np.array(self.freqs)
                 self.band_range_data = self.update_band_range_data(self.band_range_data,
@@ -939,11 +952,13 @@ class ModeSolver(object):
                 self.gap_list = []
 
         end = time.time() - start
-        print("total elapsed time for run: {}".format(end))
+        if verbosity >= 2:
+            print("total elapsed time for run: {}".format(end))
         self.total_run_time += end
         self.eigensolver_flops = self.mode_solver.get_eigensolver_flops()
         self.parity = self.mode_solver.get_parity_string()
-        print("done")
+        if verbosity >= 2:
+            print("done")
 
     def run(self, *band_functions):
         self.run_parity(mp.NO_PARITY, True, *band_functions)
@@ -1009,7 +1024,8 @@ class ModeSolver(object):
                 # First, look in the cached table
                 tab_val = bktab.get((b, k), None)
                 if tab_val:
-                    print("find-k {} at {}: {} (cached)".format(b, k, tab_val[0]))
+                    if verbosity >= 2:
+                        print("find-k {} at {}: {} (cached)".format(b, k, tab_val[0]))
                     return tab_val
                 # Otherwise, compute bands and cache results
                 else:
@@ -1030,7 +1046,8 @@ class ModeSolver(object):
                         bktab[(_b, k)] = (_f - omega, _v)
 
                     fun = self.freqs[-1] - omega
-                    print("find-k {} at {}: {}".format(b, k, fun))
+                    if verbosity >= 2:
+                        print("find-k {} at {}: {}".format(b, k, fun))
                     return (fun, v[-1])
 
             return _rootfun
@@ -1058,14 +1075,15 @@ class ModeSolver(object):
         self.num_bands = num_bands_save
         self.k_points = kpoints_save
         ks = list(reversed(ks))
-        print("{}kvals:, {}, {}, {}".format(self.parity, omega, band_min, band_max), end='')
-        for k in korig:
-            print(", {}".format(k), end='')
-        for k in kdir1:
-            print(", {}".format(k), end='')
-        for k in ks:
-            print(", {}".format(k), end='')
-        print()
+        if verbosity >= 2:
+            print("{}kvals:, {}, {}, {}".format(self.parity, omega, band_min, band_max), end='')
+            for k in korig:
+                print(", {}".format(k), end='')
+            for k in kdir1:
+                print(", {}".format(k), end='')
+            for k in ks:
+                print(", {}".format(k), end='')
+            print()
 
         return ks
 
@@ -1221,8 +1239,9 @@ def output_dpwr_in_objects(output_func, min_energy, objects=[]):
         ms.get_dfield(which_band, False)
         ms.compute_field_energy()
         energy = ms.compute_energy_in_objects(objects)
-        fmt = "dpwr:, {}, {}, {} "
-        print(fmt.format(which_band, ms.freqs[which_band - 1], energy))
+        if verbosity >= 2:
+            fmt = "dpwr:, {}, {}, {} "
+            print(fmt.format(which_band, ms.freqs[which_band - 1], energy))
         if energy >= min_energy:
             apply_band_func(ms, output_func, which_band)
 
