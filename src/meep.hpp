@@ -1697,7 +1697,7 @@ public:
                          std::complex<double> A(const vec &), std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src, const volume &,
                          std::complex<double> amp = 1.0);
-  void add_volume_source(const src_time &src, direction d, const volume &, gaussianbeam beam);
+  void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
 
   // mpb.cpp

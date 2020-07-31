@@ -439,7 +439,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 static gaussianbeam *global_gaussianbeam_object = 0;
 static component global_gaussianbeam_component;
 
-static complex<double> gaussianbeam_ampfunc(const vec &p) {
+static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
   std::complex<double> EH[6];
   global_gaussianbeam_object->get_fields(EH, p);
   switch (global_gaussianbeam_component) {
@@ -453,8 +453,9 @@ static complex<double> gaussianbeam_ampfunc(const vec &p) {
   }
 }
 
-void fields::add_volume_source(const src_time &src, direction d, const volume &where, gaussianbeam beam) {
+void fields::add_volume_source(const src_time &src, const volume &where, gaussianbeam beam) {
   global_gaussianbeam_object = &beam;
+  direction d = normal_direction(where);
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
   int n = (d == X ? 0 : (d == Y ? 1 : 2));
   if (d == NO_DIRECTION) {
@@ -600,9 +601,9 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) {
 
   double Eorig;
   if (UseRescaledFG)
-    Eorig = 3/(2*kz0*kz0*kz0) * (kz0*(kz0-1) + 0.5*(1.0-exp(-2.0*kz0)));
+    Eorig = 3.0/(2*kz0*kz0*kz0) * (kz0*(kz0-1) + 0.5*(1.0-exp(-2.0*kz0)));
   else
-    Eorig = 3/(2*kz0*kz0*kz0) * (exp(kz0)*kz0*(kz0-1) + sinh(kz0));
+    Eorig = 3.0/(2*kz0*kz0*kz0) * (exp(kz0)*kz0*(kz0-1) + sinh(kz0));
 
   EH[0] = E[0] / Eorig;
   EH[1] = E[1] / Eorig;
