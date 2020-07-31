@@ -391,9 +391,9 @@ class Far_Coefficients(ObjectiveQuantitiy):
 
 
             if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
-                scale = -freq_scale * np.sum((dJ*cur_green_matrix/(self.sim.resolution)), axis=1)#
+                scale = -freq_scale * np.sum(dJ*cur_green_matrix, axis=1)
             else:
-                scale = freq_scale * np.sum((dJ*cur_green_matrix/(2*self.sim.resolution)), axis=1)#
+                scale = freq_scale * np.sum(dJ*cur_green_matrix, axis=1)
 
             if self.num_freq == 1:
                 self.sources += [mp.Source(self.time_src, component=cur_comp, amplitude=scale[0], center=near_pt)]

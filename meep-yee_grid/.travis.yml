@@ -1,0 +1,195 @@
+language: python
+dist: xenial
+sudo: required
+
+##################################################
+# required linux packages and python packages
+##################################################
+addons:
+  apt:
+    packages: &common_deps
+    - guile-2.0-dev
+    - libgsl0-dev
+    - libfftw3-dev
+    - gfortran
+    - liblapack-dev
+    - swig
+    - libopenmpi-dev
+    - mpi-default-bin
+    - openmpi-bin
+    - ffmpeg
+
+##################################################
+# environment variables applied to all build cases
+##################################################
+env:
+  global:
+  - CPPFLAGS=-I${HOME}/local/include
+  - LDFLAGS=-L${HOME}/local/lib
+  - HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5
+  - HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial
+  - HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi
+  - HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5
+  - HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial
+  - HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi
+  - GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io
+
+##################################################
+# common installations performed before all build cases
+##################################################
+before_script:
+  - git clone https://github.com/NanoComp/libctl libctl-src
+  - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
+  - git clone https://github.com/stevengj/harminv
+  - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
+  - git clone https://github.com/NanoComp/mpb
+  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
+  - git clone https://github.com/HomerReid/libGDSII
+  - (cd libGDSII && git checkout master && sh autogen.sh --prefix=$HOME/local && make install)
+
+##################################################
+# build matrix:
+##################################################
+matrix:
+  include:
+  - python: "2.7"
+    env:
+      - MPICONF="--without-mpi"
+      - MKCHECKFLAGS="-j 2"
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - BUILD_WITHOUT_MPB="1"
+      - SKIP_BUILD_DOCS="1"
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-serial-dev
+    install:
+      - pip install numpy mpi4py scipy h5py matplotlib
+  - python: "2.7"
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - SKIP_BUILD_DOCS="1"
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-serial-dev
+    install:
+      - pip install numpy mpi4py scipy h5py matplotlib
+  - python: "2.7"
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - HDF5_MPI="ON"
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+      - SKIP_BUILD_DOCS="1"
+    virtualenv:
+      system_site_packages: true
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-openmpi-dev
+          - python-h5py
+    install:
+      - pip install numpy mpi4py scipy matplotlib
+  - python: "3.7"
+    env:
+      - MPICONF="--without-mpi"
+      - MKCHECKFLAGS="-j 2"
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+      - RUN_COVERAGE="1"
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-serial-dev
+    install:
+      - pip install numpy mpi4py scipy h5py coverage==4.5.4 coveralls matplotlib mkdocs==0.17.5 python-markdown-math mkdocs-material
+  - python: "3.7"
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-serial-dev
+    install:
+      - pip install numpy mpi4py scipy h5py matplotlib mkdocs==0.17.5 python-markdown-math mkdocs-material
+  - python: "3.5"
+    env:
+      - MPICONF="--with-mpi"
+      - MKCHECKFLAGS=""
+      - HDF5_MPI="ON"
+      - CC=mpicc
+      - CXX=mpic++
+      - CPPFLAGS="${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
+      - LDFLAGS="${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+    virtualenv:
+      system_site_packages: true
+    addons:
+      apt:
+        packages:
+          - *common_deps
+          - libhdf5-openmpi-dev
+          - python3-h5py
+    install:
+      - pip install numpy mpi4py scipy matplotlib ipython mkdocs==0.17.5 python-markdown-math mkdocs-material
+
+
+##################################################
+# build/test instructions
+##################################################
+script:
+  - autoreconf --verbose --install --symlink --force
+  - export MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
+  - mkdir -p build && pushd build
+  - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
+  # Output something every 9 minutes so travis doesn't kill the job
+  - while sleep 540; do echo "still running"; done &
+  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" && export MAKE_DISTCHECK_EXIT_CODE=0
+  - >
+    if [[ "${RUN_COVERAGE}" = "1" ]] && [[ "${MAKE_DISTCHECK_EXIT_CODE}" = "0" ]]; then
+      make ${MKCHECKFLAGS} &&
+      pushd python &&
+      echo "[run]" > .coveragerc &&
+      echo "data_file = ${TRAVIS_BUILD_DIR}/.coverage" >> .coveragerc &&
+      make ${MKCHECKFLAGS} check &&
+      popd;
+    fi
+  - >
+    if [[ "${BUILD_WITHOUT_MPB}" = "1" ]] && [[ "${MAKE_DISTCHECK_EXIT_CODE}" = "0" ]]; then
+      ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF} ac_cv_header_mpb_h=no &&
+      make clean &&
+      make;
+    fi
+  # Kill background sleep loop
+  - kill %1
+
+after_success:
+  - if [[ "${RUN_COVERAGE}" = "1" ]]; then cd ${TRAVIS_BUILD_DIR} && coveralls; fi
+
+after_script:
+  - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build/sub
+  - MEEP_LOG=${BUILD_PREFIX}/tests/test-suite.log
+  - if [[ -e ${MEEP_LOG} ]]; then cat ${MEEP_LOG}; fi
+  - PYMPB_LOG=${BUILD_PREFIX}/libpympb/tests/test-suite.log
+  - if [[ -e ${PYMPB_LOG} ]]; then cat ${PYMPB_LOG}; fi
+  - PYTHON_LOG=${BUILD_PREFIX}/python/test-suite.log
+  - if [[ -e ${PYTHON_LOG} ]]; then cat ${PYTHON_LOG}; fi

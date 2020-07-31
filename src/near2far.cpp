@@ -671,6 +671,9 @@ std::vector<struct near_data> dft_near2far::near_fds(const vec &x) {
         x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
 
+        double w;
+        w = IVEC_LOOP_WEIGHT(f->s0, f->s1, f->e0, f->e1, f->dV0 + f->dV1 * loop_i2);
+
 
         near_data temp_struct = {xs, component(f->c), EH0};
 
@@ -690,9 +693,9 @@ std::vector<struct near_data> dft_near2far::near_fds(const vec &x) {
             double phase = phase0 + i1 * periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
             if (x.dim == Dcyl)
-              greencyl(EH6, x, freq[i], eps, mu, xs, c0, 1, f->fc->m, 1e-3);
+              greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
             else
-              green(EH6, x, freq[i], eps, mu, xs, c0, 1);
+              green(EH6, x, freq[i], eps, mu, xs, c0, w);
             for (int j = 0; j < 6; ++j)
               (*(temp.end()-1)).matrix_elt[i][j] += EH6[j] * cphase * (f->stored_weight);
           }

@@ -1,0 +1,92 @@
+site_name: MEEP Documentation
+site_author: MEEP Developers
+repo_url: https://github.com/NanoComp/meep/
+edit_uri: edit/master/doc/docs
+
+use_directory_urls: True
+
+docs_dir: 'doc/docs'
+site_dir: 'doc/site'
+
+theme:
+    name: readthedocs
+
+extra_css: [css/extra.css]
+
+markdown_extensions:
+    - wikilinks
+    - toc:
+        title: Table of Contents
+    - attr_list
+    - fenced_code
+    - md_in_html
+    - mdx_math:
+        enable_dollar_delimiter: True
+
+extra_javascript:
+ - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
+
+pages:
+- 'Manual': 'index.md'
+- 'Introduction': 'Introduction.md'
+- 'Download': 'Download.md'
+- 'FAQ': 'FAQ.md'
+- 'Installation': 'Installation.md'
+- 'Build From Source': 'Build_From_Source.md'
+- 'Acknowledgements': 'Acknowledgements.md'
+- 'License and Copyright': 'License_and_Copyright.md'
+- 'Features':
+    - 'Materials': 'Materials.md'
+    - 'Subpixel Smoothing': 'Subpixel_Smoothing.md'
+    - 'Exploiting Symmetry': 'Exploiting_Symmetry.md'
+    - 'Perfectly Matched Layers': 'Perfectly_Matched_Layer.md'
+    - 'Parallel Meep': 'Parallel_Meep.md'
+    - 'Synchronizing the Magnetic and Electric Fields': 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
+    - 'Mode Decomposition': 'Mode_Decomposition.md'
+    - 'Field Functions': 'Field_Functions.md'
+    - 'The Run Function is Not a Loop': 'The_Run_Function_Is_Not_A_Loop.md'
+    - 'Yee Lattice': 'Yee_Lattice.md'
+    - 'Units and Nonlinearity': 'Units_and_Nonlinearity.md'
+    - '2d Cell with Out-of-Plane Wavevector': '2d_Cell_Special_kz.md'
+    - 'Frequency-Domain Eigensolver': 'Eigensolver_Math.md'
+- 'Python Interface':
+    - 'User Interface': 'Python_User_Interface.md'
+    - 'Developer Information': 'Python_Developer_Information.md'
+    - 'Tutorial/Basics': 'Python_Tutorials/Basics.md'
+    - 'Tutorial/Cylindrical Coordinates': 'Python_Tutorials/Cylindrical_Coordinates.md'
+    - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
+    - 'Tutorial/Material Dispersion': 'Python_Tutorials/Material_Dispersion.md'
+    - 'Tutorial/Third Harmonic Generation': 'Python_Tutorials/Third_Harmonic_Generation.md'
+    - 'Tutorial/Near-to-Far Field Spectra': 'Python_Tutorials/Near_to_Far_Field_Spectra.md'
+    - 'Tutorial/Local Density of States': 'Python_Tutorials/Local_Density_of_States.md'
+    - 'Tutorial/Optical Forces': 'Python_Tutorials/Optical_Forces.md'
+    - 'Tutorial/Gyrotropic Media': 'Python_Tutorials/Gyrotropic_Media.md'
+    - 'Tutorial/Multilevel Atomic Susceptibility': 'Python_Tutorials/Multilevel_Atomic_Susceptibility.md'
+    - 'Tutorial/Frequency-Domain Solver': 'Python_Tutorials/Frequency_Domain_Solver.md'
+    - 'Tutorial/Eigenmode Source': 'Python_Tutorials/Eigenmode_Source.md'
+    - 'Tutorial/Custom Source': 'Python_Tutorials/Custom_Source.md'
+    - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
+    - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
+    - 'Tutorial/Adjoint Solver': 'Python_Tutorials/AdjointSolver.md'
+- 'Scheme Interface':
+    - 'User Interface': 'Scheme_User_Interface.md'
+    - 'Tutorial/Basics': 'Scheme_Tutorials/Basics.md'
+    - 'Tutorial/Cylindrical Coordinates': 'Scheme_Tutorials/Cylindrical_Coordinates.md'
+    - 'Tutorial/Resonant Modes and Transmission in a Waveguide Cavity': 'Scheme_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
+    - 'Tutorial/Material Dispersion': 'Scheme_Tutorials/Material_Dispersion.md'
+    - 'Tutorial/Third Harmonic Generation': 'Scheme_Tutorials/Third_Harmonic_Generation.md'
+    - 'Tutorial/Near-to-Far Field Spectra': 'Scheme_Tutorials/Near_to_Far_Field_Spectra.md'
+    - 'Tutorial/Local Density of States': 'Scheme_Tutorials/Local_Density_of_States.md'
+    - 'Tutorial/Optical Forces': 'Scheme_Tutorials/Optical_Forces.md'
+    - 'Tutorial/Gyrotropic Media': 'Scheme_Tutorials/Gyrotropic_Media.md'
+    - 'Tutorial/Multilevel Atomic Susceptibility': 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
+    - 'Tutorial/Frequency-Domain Solver': 'Scheme_Tutorials/Frequency_Domain_Solver.md'
+    - 'Tutorial/Eigenmode Source': 'Scheme_Tutorials/Eigenmode_Source.md'
+    - 'Tutorial/Custom Source': 'Scheme_Tutorials/Custom_Source.md'
+    - 'Tutorial/Mode Decomposition': 'Scheme_Tutorials/Mode_Decomposition.md'
+    - 'Tutorial/Casimir Forces': 'Scheme_Tutorials/Casimir_Forces.md'
+    - 'Guile and Scheme Information': 'Guile_and_Scheme_Information.md'
+- 'C++ Interface':
+    - 'Developer Information': 'C++_Developer_Information.md'
+    - 'Chunks and Symmetry': 'Chunks_and_Symmetry.md'
+    - 'Tutorial/Basics': 'C++_Tutorial.md'

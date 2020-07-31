@@ -1,0 +1,43 @@
+Skewed bloch periodic boundary conditions for non-orthogonal unit cells
+
+Discrete rotational symmetry in cylindrical coordinates.
+
+Second-order accurate subpixel smoothing scheme for
+dispersive materials with complex permittivity.
+
+Support 3d (r,phi,z) cell, where m is "Bloch wavenumber"
+      -- gives 6-fold (and n-fold) symmetry as side effect
+      -- allows computation of bent photonic-crystal waveguides
+
+Implement transparent boundary conditions to back PML layers, so that
+glancing-angle waves can be absorbed.
+
+Re-entrant functions: foo(vec&) arguments should be foo(vec&, void*)
+where the second argument can be used to pass state (instead of global
+vars).
+
+Use proper PML for cylindrical coordinates, rather than quasi-PML.
+
+Use more-stable algorithm for dispersive media.
+
+Make sure epsilon and other material properties respect symmetry,
+periodic boundaries, etc.?
+
+Remove monitor point class (redundant with HDF5 output, DFT volumes?).
+
+Rename fields::initialize to fields::add_to_fields or something like that,
+and allow specifying a geometric_volume.
+
+Support Pade approximates (libpadespectrum) for Fourier and modal analysis.
+
+Check sensitivity to rounding error and if there is a better way to handle:
+      structure.cpp:555 (PML region boundaries)
+      vec.cpp:560 (interpolation weights)
+      anisotropic_averaging: 79 (magnitude of normal vector)
+
+-------------------------
+Python & Scheme Interface
+
+Need a way to reset epsilon when restarting, and also phasing support.
+
+Support arbitrary-shaped sources.
