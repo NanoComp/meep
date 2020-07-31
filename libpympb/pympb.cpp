@@ -13,7 +13,7 @@
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 11)
 // do nothing, libmpb should have the mpb_verbosity symbol
 #else
-extern "C" int mpb_verbosity = 1;
+extern "C" int mpb_verbosity = 2;
 #endif
 
 // xyz_loop.h
