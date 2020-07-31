@@ -11,8 +11,8 @@ namespace py_mpb {
 
 // A global "verbosity" level.
 //    0: minimal output
-//    1: a little
-//    2: a lot (default)
+//    1: a little (default)
+//    2: a lot
 //    3: debugging
 //
 // This is redeclared here so SWIG will see it.

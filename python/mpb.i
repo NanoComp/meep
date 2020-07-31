@@ -352,7 +352,7 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
 
 %pythoncode %{
     from meep.verbosity_mgr import Verbosity
-    verbosity = Verbosity(_mpb.cvar, 2)
+    verbosity = Verbosity(_mpb.cvar, 1)
 
     from .solver import (
         MPBArray,
