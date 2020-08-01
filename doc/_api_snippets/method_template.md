@@ -4,7 +4,7 @@
 <div class="class_members" markdown="1">
 
 ```python
-def {method_name}{parameters}:
+def {method_name}{parameters}: {other_signatures}
 ```
 
 <div class="method_docstring" markdown="1">

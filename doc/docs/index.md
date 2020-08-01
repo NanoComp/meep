@@ -41,14 +41,14 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The [source repository](https://github.com/NanoComp/meep) is hosted on GitHub. Gzipped tarballs of stable versions are in [Releases](https://github.com/NanoComp/meep/releases). The release history is in [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
+The [source repository](https://github.com/NanoComp/meep) is hosted on GitHub. Gzipped tarballs of tagged versions are in [Releases](https://github.com/NanoComp/meep/releases). The release history is in [NEWS](https://github.com/NanoComp/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------
 
 For a list of topics, see the left navigation sidebar. For new users, the most important items to review are the [Introduction](Introduction.md), [Tutorial/Basics](Python_Tutorials/Basics.md), and [FAQ](FAQ.md).
 
-This documentation is for the master branch of the [source repository](Download.md#github-source-repository).
+This documentation is for the master branch of the [source repository](Download.md#github-source-repository). Note that certain features described in this documentation may therefore be *unavailable* if you are using a [tagged release](https://github.com/NanoComp/meep/releases).
 
 ### Mailing Lists
 

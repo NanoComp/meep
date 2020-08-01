@@ -1119,7 +1119,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
 
   bool first_component = true;
   for (int num_freq = 0; num_freq < NumFreqs; num_freq++)
-    FOR_E_AND_H(c) {
+    FOR_COMPONENTS(c) {
       if (!have_empty_dims) {
         process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0,
                               0, Ex, &first_component);

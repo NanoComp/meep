@@ -9,6 +9,16 @@
 
 namespace py_mpb {
 
+// A global "verbosity" level.
+//    0: minimal output
+//    1: a little (default)
+//    2: a lot
+//    3: debugging
+//
+// This is redeclared here so SWIG will see it.
+extern "C" int mpb_verbosity;
+
+
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
 void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_im, int n_in[3],

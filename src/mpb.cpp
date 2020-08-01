@@ -511,9 +511,11 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   /* initialize H to pseudorandom values on the master process; on other
      processes we get the value via broadcast() below */
   if (am_master())
+    set_random_seed(314159);
     for (int i = 0; i < H.n * H.p; ++i) {
-      ASSIGN_SCALAR(H.data[i], rand() * 1.0 / RAND_MAX, rand() * 1.0 / RAND_MAX);
+      ASSIGN_SCALAR(H.data[i], uniform_random(-1,1), uniform_random(-1,1));
     }
+    restore_random_seed();
 
   mpb_real *eigvals = new mpb_real[band_num];
   int num_iters;

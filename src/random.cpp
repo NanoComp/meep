@@ -39,6 +39,11 @@ void set_random_seed(unsigned long seed) {
   meep_mt_init_genrand(seed);
 }
 
+void restore_random_seed() {
+  init_rand();
+  meep_mt_restore_genrand();
+}
+
 int random_int(int a, int b) {
   init_rand();
   return a + meep_mt_genrand_int32() % (b - a + 1);

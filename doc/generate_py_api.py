@@ -18,8 +18,8 @@ snippets/templates used in the generation of the API documentation files can be
 found in {project_folder}/doc/_api_snippets, and will be loaded as needed while
 processing the docstrings.
 
-The folling tag patterns are used to indicate where in the input template that docstrings
-will be inserted:
+The following tag patterns are used to indicate where in the input template that
+docstrings will be inserted:
 
   - @@ top_level_function_name @@
   - @@ ClassName @@
@@ -27,6 +27,13 @@ will be inserted:
   - @@ ClassName[all-methods] @@
   - @@ ClassName[methods-with-docstrings] @@
 
+If a docstring containes text that should be treated as an alternate function
+signature, then those lines can be marked with tags like `##sig` (to move the
+line to the header) or `##sig-keep` to copy the line, but not remove it from the
+docstring, keeping it in place.
+
+    NOTE: Currently the signature tags functionality assumes that the signature
+          does not span more than one line.
 """
 
 import sys
@@ -106,12 +113,43 @@ class FunctionItem(Item):
             param_str += ')'
         return param_str
 
+    def check_other_signatures(self, docstring):
+        """ Search for alternate function signatures in the docstring """
+        SIG = '##sig'
+        SIG_KEEP = '##sig-keep'
+        other_signatures = ''
+
+        if SIG in docstring or SIG_KEEP in docstring:
+            other_sigs = []
+            docstring_lines = []
+            for line in docstring.split('\n'):
+                if line.endswith(SIG):
+                    line = line.replace(SIG, '')
+                    line = line.strip()
+                    line = line.replace('`', '')
+                    other_sigs.append(line)
+
+                elif line.endswith(SIG_KEEP):
+                    line = line.replace(SIG_KEEP, '')
+                    line = line.strip()
+                    docstring_lines.append(line)
+                    line = line.replace('`', '')
+                    other_sigs.append(line)
+
+                else:
+                    docstring_lines.append(line)
+
+            docstring = '\n'.join(docstring_lines)
+            other_signatures = ''.join(['\ndef {}:'.format(item) for item in other_sigs])
+        return docstring, other_signatures
+
     def create_markdown(self):
         # pull relevant attributes into local variables
         function_name = self.name
-        function_name_escaped = function_name.replace('_', '\_')
+        function_name_escaped = function_name.replace('_', '\\_')
         docstring = self.docstring if self.docstring else ''
         parameters = self.get_parameters(len(function_name) + 1)
+        docstring, other_signatures = self.check_other_signatures(docstring)
 
         # Substitute values into the template
         return self.template.format(**locals())
@@ -134,9 +172,10 @@ class MethodItem(FunctionItem):
         # pull relevant attributes into local variables
         class_name = self.klass.name
         method_name = self.method_name
-        method_name_escaped = method_name.replace('_', '\_')
+        method_name_escaped = method_name.replace('_', '\\_')
         docstring = self.docstring if self.docstring else ''
         parameters = self.get_parameters(4 + len(method_name) + 1)
+        docstring, other_signatures = self.check_other_signatures(docstring)
 
         # Substitute values into the template
         return self.template.format(**locals())
@@ -178,8 +217,8 @@ class ClassItem(Item):
         docs = dict()
         class_doc = self.template.format(**locals())
         docs[class_name] = class_doc
-        docs[class_name+'[all-methods]'] = self.create_method_markdown(False)
-        docs[class_name+'[methods-with-docstrings]'] = self.create_method_markdown(True)
+        docs[class_name+'[all-methods]'] = class_doc + '\n' + self.create_method_markdown(False)
+        docs[class_name+'[methods-with-docstrings]'] = class_doc + '\n' + self.create_method_markdown(True)
 
         return docs
 
@@ -201,8 +240,8 @@ class ClassItem(Item):
                     continue
                 if not check_excluded(item.name) and \
                    not check_excluded('{}.{}'.format(self.name, item.name)):
-                     doc = item.create_markdown()
-                     method_docs.append(doc)
+                        doc = item.create_markdown()
+                        method_docs.append(doc)
 
         # join the methods into a single string
         method_docs = '\n'.join(method_docs)

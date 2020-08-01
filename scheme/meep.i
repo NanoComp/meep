@@ -190,6 +190,23 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
   }
 }
 
+// add_dft_fields
+
+%typemap(in) (component *components, int num_components) {
+  $2 = list_length($input);
+  $1 = new meep::component[$2];
+
+  for (int i = 0; i < $2; ++i) {
+    $1[i] = integer_list_ref($input, i);
+  }
+}
+
+%typemap(freearg) (component *components, int num_components) {
+  if ($1) {
+    delete[] $1;
+  }
+}
+
 // do_get_eigenmode_coefficients
 
 %typemap(in) (int *bands, int num_bands) {

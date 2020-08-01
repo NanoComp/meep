@@ -176,7 +176,7 @@ class Vector3(object):
         return self.x * v.x + self.y * v.y + self.z * v.z
 
     def cdot(self, v):
-        """Returns the conjugated dot product: *self*\* dot *v*."""
+        """Returns the conjugated dot product: *self*\\* dot *v*."""
         return self.conj().dot(v)
 
     def cross(self, v):
@@ -337,7 +337,7 @@ class Medium(object):
         + **`epsilon` [`number`]** The frequency-independent isotropic relative
           permittivity or dielectric constant. Default is 1. You can also use `index=n` as
           a synonym for `epsilon=n*n`; note that this is not really the refractive index
-          if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$. Using
+          if you also specify μ, since the true index is $\\sqrt{\\mu\\varepsilon}$. Using
           `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
 
         + **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]** — These properties allow
@@ -356,23 +356,23 @@ class Medium(object):
           offdiagonal parts exactly as for ε above. Default is the identity matrix.
 
         + **`D_conductivity` [`number`]** — The frequency-independent electric
-          conductivity $\sigma_D$. Default is 0. You can also specify a diagonal
+          conductivity $\\sigma_D$. Default is 0. You can also specify a diagonal
           anisotropic conductivity tensor by using the property `D_conductivity_diag`
-          which takes a `Vector3` to give the $\sigma_D$ tensor diagonal. See also
+          which takes a `Vector3` to give the $\\sigma_D$ tensor diagonal. See also
           [Conductivity](Materials.md#conductivity-and-complex).
 
         + **`B_conductivity` [`number`]** — The frequency-independent magnetic
-          conductivity $\sigma_B$. Default is 0. You can also specify a diagonal
+          conductivity $\\sigma_B$. Default is 0. You can also specify a diagonal
           anisotropic conductivity tensor by using the property `B_conductivity_diag`
-          which takes a `Vector3` to give the $\sigma_B$ tensor diagonal. See also
+          which takes a `Vector3` to give the $\\sigma_B$ tensor diagonal. See also
           [Conductivity](Materials.md#conductivity-and-complex).
 
         + **`chi2` [`number`]** — The nonlinear
           [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility
-          $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+          $\\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
         + **`chi3` [`number`]** — The nonlinear
-          [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$.
+          [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\\chi^{(3)}$.
           Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
 
         + **`E_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
@@ -583,9 +583,9 @@ class LorentzianSusceptibility(Susceptibility):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
-        + **`frequency` [`number`]** — The resonance frequency $f_n = \omega_n / 2\pi$.
+        + **`frequency` [`number`]** — The resonance frequency $f_n = \\omega_n / 2\\pi$.
 
-        + **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\pi$.
+        + **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\\pi$.
 
         Note: multiple objects with identical values for the `frequency` and `gamma` but
         different `sigma` will appear as a *single* Lorentzian susceptibility term in the
@@ -610,10 +610,10 @@ class DrudeSusceptibility(Susceptibility):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
-        + **`frequency` [`number`]** — The frequency scale factor $f_n = \omega_n / 2\pi$
+        + **`frequency` [`number`]** — The frequency scale factor $f_n = \\omega_n / 2\\pi$
           which multiplies σ (not a resonance frequency).
 
-        + **`gamma` [`number`]** — The loss rate $γ_n / 2\pi$.
+        + **`gamma` [`number`]** — The loss rate $γ_n / 2\\pi$.
         """
         super(DrudeSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
@@ -637,7 +637,7 @@ class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
     """
     def __init__(self, noise_amp=0.0, **kwargs):
         """
-        + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\times$
+        + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\\times$
           `noise_amp`.
 
         This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a
@@ -667,7 +667,7 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
     """
     def __init__(self, noise_amp=0.0, **kwargs):
         """
-        + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\times$
+        + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\\times$
           `noise_amp`.
 
         This is a somewhat unusual polarizable medium, a Lorentzian susceptibility with a
@@ -699,7 +699,7 @@ class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
         """
         + **`bias` [`Vector3`]** — The gyrotropy vector.  Its direction determines the
           orientation of the gyrotropic response, and the magnitude is the precession
-          frequency $|\mathbf{b}_n|/2\pi$.
+          frequency $|\\mathbf{b}_n|/2\\pi$.
         """
         super(GyrotropicLorentzianSusceptibility, self).__init__(**kwargs)
         self.bias = bias
@@ -717,7 +717,7 @@ class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
         """
         + **`bias` [`Vector3`]** — The gyrotropy vector.  Its direction determines the
           orientation of the gyrotropic response, and the magnitude is the precession
-          frequency $|\mathbf{b}_n|/2\pi$.
+          frequency $|\\mathbf{b}_n|/2\\pi$.
         """
         super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
         self.bias = bias
@@ -735,19 +735,19 @@ class GyrotropicSaturatedSusceptibility(Susceptibility):
     """
     def __init__(self, bias=Vector3(), frequency=0.0, gamma=0.0, alpha=0.0, **kwargs):
         """
-        + **`sigma` [`number`]** — The coupling factor $\sigma_n / 2\pi$ between the
+        + **`sigma` [`number`]** — The coupling factor $\\sigma_n / 2\\pi$ between the
           polarization and the driving field. In [magnetic
           ferrites](https://en.wikipedia.org/wiki/Ferrite_(magnet)), this is the Larmor
           precession frequency at the saturation field.
 
         + **`frequency` [`number`]** — The [Larmor
           precession](https://en.wikipedia.org/wiki/Larmor_precession) frequency,
-          $f_n = \omega_n / 2\pi$.
+          $f_n = \\omega_n / 2\\pi$.
 
-        + **`gamma` [`number`]** — The loss rate $\gamma_n / 2\pi$ in the off-diagonal
+        + **`gamma` [`number`]** — The loss rate $\\gamma_n / 2\\pi$ in the off-diagonal
           response.
 
-        + **`alpha` [`number`]** — The loss factor $\alpha_n$ in the diagonal response.
+        + **`alpha` [`number`]** — The loss factor $\\alpha_n$ in the diagonal response.
           Note that this parameter is dimensionless and contains no 2π factor.
 
         + **`bias` [`Vector3`]** — Vector specifying the orientation of the gyrotropic
@@ -794,20 +794,20 @@ class Transition(object):
         """
         Construct a `Transition`.
 
-        + **`frequency` [`number`]** — The radiative transition frequency $f = \omega / 2\pi$.
+        + **`frequency` [`number`]** — The radiative transition frequency $f = \\omega / 2\\pi$.
 
-        + **`gamma` [`number`]** — The loss rate $\gamma = \gamma / 2\pi$.
+        + **`gamma` [`number`]** — The loss rate $\\gamma = \\gamma / 2\\pi$.
 
-        + **`sigma_diag` [`Vector3`]** — The per-polarization coupling strength $\sigma$.
+        + **`sigma_diag` [`Vector3`]** — The per-polarization coupling strength $\\sigma$.
 
         + **`from_level` [`number`]** — The atomic level from which the transition occurs.
 
         + **`to_level` [`number`]** — The atomic level to which the transition occurs.
 
         + **`transition_rate` [`number`]** — The non-radiative transition rate
-          $f = \omega / 2\pi$. Default is 0.
+          $f = \\omega / 2\\pi$. Default is 0.
 
-        + **`pumping_rate` [`number`]** — The pumping rate $f = \omega / 2\pi$. Default is 0.
+        + **`pumping_rate` [`number`]** — The pumping rate $f = \\omega / 2\\pi$. Default is 0.
         """
         self.from_level = check_nonnegative('from_level', from_level)
         self.to_level = check_nonnegative('to_level', to_level)
