@@ -732,18 +732,18 @@ vec get_k(void *vedata) {
 /* helper routine for add_eigenmode_source that calls          */
 /* add_volume_source only if certain conditions are met        */
 /***************************************************************/
-void add_volume_source_check(component c, const src_time &src, const volume &where,
-                             cdouble A(const vec &), cdouble amp, fields *f, component c0,
-                             direction d, int parity) {
-  if (!f->gv.has_field(c)) return;
+void fields::add_volume_source_check(component c, const src_time &src, const volume &where,
+                                     cdouble A(const vec &), cdouble amp, component c0,
+                                     direction d, int has_tm, int has_te) {
+  if (!gv.has_field(c)) return;
   if (c0 != Centered && c0 != c) return;
   if (component_direction(c) == d) return;
-  if (f->gv.dim == D2) // parity checks
+  if (gv.dim == D2) // parity checks
   {
-    if ((parity & EVEN_Z_PARITY) && is_tm(c)) return;
-    if ((parity & ODD_Z_PARITY) && !is_tm(c)) return;
+    if (has_te && is_tm(c)) return;
+    if (has_tm && !is_tm(c)) return;
   };
-  f->add_volume_source(c, src, where, A, amp);
+  add_volume_source(c, src, where, A, amp);
 }
 
 /***************************************************************/
@@ -803,14 +803,18 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   int np2 = (n + 2) % 3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
   global_eigenmode_component = cH[np1];
-  add_volume_source_check(cE[np2], *src_mpb, where, meep_mpb_A, +1.0 * amp, this, c0, d, parity);
+  add_volume_source_check(cE[np2], *src_mpb, where, meep_mpb_A, +1.0 * amp, c0, d,
+                          parity & ODD_Z_PARITY, parity & EVEN_Z_PARITY);
   global_eigenmode_component = cH[np2];
-  add_volume_source_check(cE[np1], *src_mpb, where, meep_mpb_A, -1.0 * amp, this, c0, d, parity);
+  add_volume_source_check(cE[np1], *src_mpb, where, meep_mpb_A, -1.0 * amp, c0, d,
+                          parity & ODD_Z_PARITY, parity & EVEN_Z_PARITY);
   // Nx = +Ey, Ny = -Ex  (for d==Z)
   global_eigenmode_component = cE[np1];
-  add_volume_source_check(cH[np2], *src_mpb, where, meep_mpb_A, -1.0 * amp, this, c0, d, parity);
+  add_volume_source_check(cH[np2], *src_mpb, where, meep_mpb_A, -1.0 * amp, c0, d,
+                          parity & ODD_Z_PARITY, parity & EVEN_Z_PARITY);
   global_eigenmode_component = cE[np2];
-  add_volume_source_check(cH[np1], *src_mpb, where, meep_mpb_A, +1.0 * amp, this, c0, d, parity);
+  add_volume_source_check(cH[np1], *src_mpb, where, meep_mpb_A, +1.0 * amp, c0, d,
+                          parity & ODD_Z_PARITY, parity & EVEN_Z_PARITY);
 
   delete src_mpb;
   destroy_eigenmode_data((void *)global_eigenmode_data);

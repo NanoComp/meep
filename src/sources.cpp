@@ -453,6 +453,14 @@ static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
   }
 }
 
+static int gaussianbeam_has_tm() {
+  return abs(global_gaussianbeam_object->get_E0(2)) > 0;
+}
+
+static int gaussianbeam_has_te() {
+  return abs(global_gaussianbeam_object->get_E0(0)) > 0 || abs(global_gaussianbeam_object->get_E0(1)) > 0;
+}
+
 void fields::add_volume_source(const src_time &src, const volume &where, gaussianbeam beam) {
   global_gaussianbeam_object = &beam;
   direction d = normal_direction(where);
@@ -470,14 +478,18 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
   int np2 = (n + 2) % 3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
   global_gaussianbeam_component = cH[np1];
-  add_volume_source(cE[np2], src, where, gaussianbeam_ampfunc, +1.0);
+  add_volume_source_check(cE[np2], src, where, gaussianbeam_ampfunc, +1.0, cE[np2], d,
+                          gaussianbeam_has_tm(), gaussianbeam_has_te());
   global_gaussianbeam_component = cH[np2];
-  add_volume_source(cE[np1], src, where, gaussianbeam_ampfunc, -1.0);
+  add_volume_source_check(cE[np1], src, where, gaussianbeam_ampfunc, -1.0, cE[np1], d,
+                          gaussianbeam_has_tm(), gaussianbeam_has_te());
   // Nx = +Ey, Ny = -Ex  (for d==Z)
   global_gaussianbeam_component = cE[np1];
-  add_volume_source(cH[np2], src, where, gaussianbeam_ampfunc, -1.0);
+  add_volume_source_check(cH[np2], src, where, gaussianbeam_ampfunc, -1.0, cH[np2], d,
+                          gaussianbeam_has_tm(), gaussianbeam_has_te());
   global_gaussianbeam_component = cE[np2];
-  add_volume_source(cH[np1], src, where, gaussianbeam_ampfunc, +1.0);
+  add_volume_source_check(cH[np1], src, where, gaussianbeam_ampfunc, +1.0, cH[np1], d,
+                          gaussianbeam_has_tm(), gaussianbeam_has_te());
 }
 
 gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,

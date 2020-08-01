@@ -1490,6 +1490,7 @@ public:
   gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq,
                double eps, double mu, std::complex<double> EO[3]);
   void get_fields(std::complex<double> *EH, const vec &x);
+  std::complex<double> get_E0(int n) { return E0[n]; };
 
 private:
   vec x0;           // beam center
@@ -2009,6 +2010,10 @@ private:
   void step_source(field_type ft, bool including_integrated = false);
   void update_pols(field_type ft);
   void calc_sources(double tim);
+  // mpb.cpp
+  void add_volume_source_check(component c, const src_time &src, const volume &where,
+                               std::complex<double> A(const vec &), std::complex<double> amp,
+                               component c0, direction d, int has_tm, int has_te);
 
 public:
   // monitor.cpp
