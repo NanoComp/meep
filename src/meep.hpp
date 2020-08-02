@@ -2010,7 +2010,7 @@ private:
   void step_source(field_type ft, bool including_integrated = false);
   void update_pols(field_type ft);
   void calc_sources(double tim);
-  // mpb.cpp
+  // sources.cpp
   void add_volume_source_check(component c, const src_time &src, const volume &where,
                                std::complex<double> A(const vec &), std::complex<double> amp,
                                component c0, direction d, int has_tm, int has_te);

@@ -729,24 +729,6 @@ vec get_k(void *vedata) {
 }
 
 /***************************************************************/
-/* helper routine for add_eigenmode_source that calls          */
-/* add_volume_source only if certain conditions are met        */
-/***************************************************************/
-void fields::add_volume_source_check(component c, const src_time &src, const volume &where,
-                                     cdouble A(const vec &), cdouble amp, component c0,
-                                     direction d, int has_tm, int has_te) {
-  if (!gv.has_field(c)) return;
-  if (c0 != Centered && c0 != c) return;
-  if (component_direction(c) == d) return;
-  if (gv.dim == D2) // parity checks
-  {
-    if (has_te && is_tm(c)) return;
-    if (has_tm && !is_tm(c)) return;
-  };
-  add_volume_source(c, src, where, A, amp);
-}
-
-/***************************************************************/
 /* call get_eigenmode() to solve for the specified eigenmode,  */
 /* then call add_volume_source() to add current sources whose  */
 /* radiated fields reproduce the eigenmode fields              */
