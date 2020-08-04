@@ -471,14 +471,6 @@ static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
   }
 }
 
-static int gaussianbeam_has_tm() {
-  return abs(global_gaussianbeam_object->get_E0(2)) > 0;
-}
-
-static int gaussianbeam_has_te() {
-  return abs(global_gaussianbeam_object->get_E0(0)) > 0 || abs(global_gaussianbeam_object->get_E0(1)) > 0;
-}
-
 void fields::add_volume_source(const src_time &src, const volume &where, gaussianbeam beam) {
   global_gaussianbeam_object = &beam;
   direction d = normal_direction(where);
@@ -492,22 +484,24 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
       abort(
           "can't determine source direction for non-empty source volume with NO_DIRECTION source");
   }
+  bool has_tm = abs(beam.get_E0(2)) > 0;
+  bool has_te = abs(beam.get_E0(0)) > 0 || abs(beam.get_E0(1)) > 0;
   int np1 = (n + 1) % 3;
   int np2 = (n + 2) % 3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
   global_gaussianbeam_component = cH[np1];
   add_volume_source_check(cE[np2], src, where, gaussianbeam_ampfunc, +1.0, cE[np2], d,
-                          gaussianbeam_has_tm(), gaussianbeam_has_te());
+                          has_tm, has_te);
   global_gaussianbeam_component = cH[np2];
   add_volume_source_check(cE[np1], src, where, gaussianbeam_ampfunc, -1.0, cE[np1], d,
-                          gaussianbeam_has_tm(), gaussianbeam_has_te());
+                          has_tm, has_te);
   // Nx = +Ey, Ny = -Ex  (for d==Z)
   global_gaussianbeam_component = cE[np1];
   add_volume_source_check(cH[np2], src, where, gaussianbeam_ampfunc, -1.0, cH[np2], d,
-                          gaussianbeam_has_tm(), gaussianbeam_has_te());
+                          has_tm, has_te);
   global_gaussianbeam_component = cE[np2];
   add_volume_source_check(cH[np1], src, where, gaussianbeam_ampfunc, +1.0, cH[np1], d,
-                          gaussianbeam_has_tm(), gaussianbeam_has_te());
+                          has_tm, has_te);
 }
 
 gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
@@ -520,20 +514,65 @@ gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double 
   freq = freq_;
   eps = eps_;
   mu = mu_;
-  for (int j=0; j<3; ++j)
+  for (int j = 0; j < 3; ++j)
     E0[j] = E0_[j];
 }
 
 /* Compute the E/H fields EH[6] (6 components) at point x in 3d.
 
-   Adapted from code by M. T. Homer Reid in his SCUFF-EM package
-   (file scuff-em/src/libs/libIncField/GaussianBeam.cc), which is GPL v2+. */
+   Adapted from code by M. T. Homer Reid in his SCUFF-EM package:
+   https://github.com/HomerReid/scuff-em/blob/master/libs/libIncField/GaussianBeam.cc
+*/
 
-void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) {
+/* Copyright (C) 2005-2011 M. T. Homer Reid
+ *
+ * This file is part of SCUFF-EM.
+ *
+ * SCUFF-EM is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * SCUFF-EM is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+/*
+ * GaussianBeam.cc -- routine for computing the electric and magnetic
+ *                    fields of a focused gaussian beam
+ *
+ * homer reid        -- 4/2011
+ *
+ * new approach:
+ * johannes feist    -- 11/2011
+ *
+ * note: this calculation follows CJR Sheppard & S Saghafi, J Opt Soc Am A 16, 1381,
+ * approximating a Gaussian beam as the field of the sum of an
+ * x-polarized electric and y-polarized magnetic dipole, but located at
+ * the _complex_ source point X = (0,0,i z0).
+ * This produces a field that looks like a Gaussian beam in paraxial approximation
+ * and exactly solves the field-free Maxwell equations everywhere in (real) space.
+ *
+ * note that the core of the calculation is carried out in a coordinate
+ * system in which the beam propagates in the +z direction and is
+ * polarized such that the E-field is (mostly) in the +x direction. after
+ * carrying out the computation described in the memo to obtain the field
+ * components in this coordinate system, we then rotate the field components
+ * as appropriate for the user's specified propagation and polarization
+ * vectors.
+ */
+
+void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
   double n = sqrt(eps * mu);
   double k = 2 * pi * freq * n;
-  double impedance = sqrt(mu/eps);
-  double z0 = k * w0 * w0 / 2; // Rayleigh range
+  double ZR = sqrt(mu/eps);
+  double z0 = k * w0 * w0 / 2;
   double kz0 = k*z0;
   vec xrel = x - x0;
 
@@ -638,9 +677,9 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) {
   EH[0] = E[0] / Eorig;
   EH[1] = E[1] / Eorig;
   EH[2] = E[2] / Eorig;
-  EH[3] = H[0] / (Eorig*impedance);
-  EH[4] = H[1] / (Eorig*impedance);
-  EH[5] = H[2] / (Eorig*impedance);
+  EH[3] = H[0] / (Eorig*ZR);
+  EH[4] = H[1] / (Eorig*ZR);
+  EH[5] = H[2] / (Eorig*ZR);
 }
 
 } // namespace meep

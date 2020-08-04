@@ -1489,8 +1489,8 @@ class gaussianbeam {
 public:
   gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq,
                double eps, double mu, std::complex<double> EO[3]);
-  void get_fields(std::complex<double> *EH, const vec &x);
-  std::complex<double> get_E0(int n) { return E0[n]; };
+  void get_fields(std::complex<double> *EH, const vec &x) const;
+  std::complex<double> get_E0(int n) const { return E0[n]; };
 
 private:
   vec x0;           // beam center
@@ -1498,7 +1498,7 @@ private:
   double w0;        // beam waist radius
   double freq;      // beam frequency
   double eps, mu;   // permittivity/permeability of homogeneous medium
-  std::complex<double> E0[3]; // electric field-strength vector
+  std::complex<double> E0[3]; // polarization vector
 };
 
 /***************************************************************/
