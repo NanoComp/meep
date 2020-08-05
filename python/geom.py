@@ -512,21 +512,23 @@ class Medium(object):
 
 class MaterialGrid(object):
     def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT"):
-        self.grid_size = grid_size
+        self.grid_size = mp.Vector3(*grid_size)
         self.medium1 = medium1
         self.medium2 = medium2
-        if self.grid_size.x == 0:
+        def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+            return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+        if isclose(self.grid_size.x,0):
             self.grid_size.x = 1
-        elif self.grid_size.y == 0:
+        if isclose(self.grid_size.y,0):
             self.grid_size.y = 1
-        elif self.grid_size.z == 0:
+        if isclose(self.grid_size.z,0):
             self.grid_size.z = 1
         self.num_params=int(self.grid_size.x*self.grid_size.y*self.grid_size.z)
 
         if design_parameters is None:
             self.design_parameters = np.zeros((self.num_params,))
         elif design_parameters.size != self.num_params:
-            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,grid_size))
+            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,self.grid_size))
         else:
             self.design_parameters = design_parameters.flatten().astype(np.float64)
 
@@ -543,7 +545,7 @@ class MaterialGrid(object):
         self.swigobj = None
     def update_parameters(self,x):
         if x.size != self.num_params:
-            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(design_parameters.size,grid_size))
+            raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(self.design_parameters.size,self.grid_size))
         self.design_parameters[:]=x.flatten().astype(np.float64)
 
 class Susceptibility(object):

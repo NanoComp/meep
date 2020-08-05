@@ -1600,7 +1600,7 @@ public:
   int get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
                                  bool collapse_empty_dimensions = false,
                                  bool snap_empty_dimensions = false, vec *min_max_loc = NULL,
-                                 void *data = 0);
+                                 void *data = 0, component cgrid = Centered);
 
   int get_dft_array_dimensions(const volume &where, size_t dims[3], direction dirs[3]) {
     return get_array_slice_dimensions(where, dims, dirs, true);
@@ -1788,25 +1788,25 @@ public:
                      bool include_dV = true);
   void update_dfts();
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
-                        bool use_symmetry = true);
+                        bool use_symmetry = true, bool centered_grid = true);
   dft_flux add_dft_flux(const volume_list *where, const std::vector<double> freq,
-                        bool use_symmetry = true) {
-    return add_dft_flux(where, freq.data(), freq.size(), use_symmetry);
+                        bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(where, freq.data(), freq.size(), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                        bool use_symmetry = true) {
-    return add_dft_flux(where, linspace(freq_min, freq_max, Nfreq), use_symmetry);
+                        bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
-                        int Nfreq, bool use_symmetry = true) {
-    return add_dft_flux(d, where, linspace(freq_min, freq_max, Nfreq), use_symmetry);
+                        int Nfreq, bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(d, where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(direction d, const volume &where, const std::vector<double> freq,
-                        bool use_symmetry = true) {
-    return add_dft_flux(d, where, freq.data(), freq.size(), use_symmetry);
+                        bool use_symmetry = true, bool centered_grid = true) {
+    return add_dft_flux(d, where, freq.data(), freq.size(), use_symmetry, centered_grid);
   }
   dft_flux add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
-                        bool use_symmetry = true);
+                        bool use_symmetry = true, bool centered_grid = true);
   dft_flux add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux_box(const volume &where, const std::vector<double> freq);
   dft_flux add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);
@@ -1814,13 +1814,13 @@ public:
 
   // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
   dft_flux add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
-                            int Nfreq) {
-    return add_mode_monitor(d, where, linspace(freq_min, freq_max, Nfreq));
+                            int Nfreq, bool centered_grid = true) {
+    return add_mode_monitor(d, where, linspace(freq_min, freq_max, Nfreq), centered_grid);
   }
-  dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> freq) {
-    return add_mode_monitor(d, where, freq.data(), freq.size());
+  dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> freq, bool centered_grid = true) {
+    return add_mode_monitor(d, where, freq.data(), freq.size(), centered_grid);
   }
-  dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq);
+  dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid = true);
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             double freq_min, double freq_max, int Nfreq,

@@ -38,17 +38,20 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
     
     def register_monitors(self,frequencies):
         self.frequencies = np.asarray(frequencies)
-        self.monitor = self.sim.add_mode_monitor(frequencies,mp.FluxRegion(center=self.volume.center,size=self.volume.size))
+        self.monitor = self.sim.add_mode_monitor(frequencies,mp.FluxRegion(center=self.volume.center,size=self.volume.size),yee_grid=True)
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
     
-    def place_adjoint_source(self,dJ,dt):
+    def place_adjoint_source(self,dJ):
         '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the 
         correct scaling/time profile.
 
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
         dt ........ the timestep size from sim.fields.dt of the forward sim
         '''
+        dt = self.sim.fields.dt
+        T = self.sim.meep_time()
+
         dJ = np.atleast_1d(dJ)
         # determine starting kpoint for reverse mode eigenmode source
         direction_scalar = 1 if self.forward else -1
@@ -76,20 +79,31 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dV = 1/self.sim.resolution * 1/self.sim.resolution
         else:
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
-        da_dE = 0.5*(dV * self.cscale)
-        scale = da_dE * dJ * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies]) # final scale factor
+        
+        da_dE = 0.5 * self.cscale # scalar popping out of derivative
+        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix
+
+        src = self.time_src
+        
+        # an ugly way to calcuate the scaled dtft of the forward source
+        y = np.array([src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+        fwd_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi) # dtft
+        
+        # we need to compensate for the phase added by the time envelope at our freq of interest
+        src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi)
+        adj_src_phase = np.exp(1j*np.angle(src_center_dtft))
+
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
-            src = self.time_src
-            amp = scale
+            amp = da_dE * dV * dJ * iomega / fwd_dtft / adj_src_phase # final scale factor
         else:
-            # TODO: In theory we should be able drive the source without normalizing out the time profile.
-            # But for some reason, there is a frequency dependent scaling discrepency. It works now for 
-            # multiple monitors and multiple sources, but we should figure out why this is.
-            src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src) # generate source from broadband response
+            # multi frequency simulations
+            scale = da_dE * dV * dJ * iomega / adj_src_phase
+            src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt) # generate source from broadband response
             amp = 1
+        
         # generate source object
-        self.source = mp.EigenModeSource(src,
+        self.source = [mp.EigenModeSource(src,
                     eig_band=self.mode,
                     direction=mp.NO_DIRECTION,
                     eig_kpoint=k0,
@@ -97,7 +111,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                     eig_match_freq=True,
                     size=self.volume.size,
                     center=self.volume.center,
-                    **self.EigenMode_kwargs)
+                    **self.EigenMode_kwargs)]
         
         return self.source
 
@@ -108,7 +122,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         # Eigenmode data
         direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
         ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],direction=direction,kpoint_func=self.kpoint_func,**self.EigenMode_kwargs)
-        self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling   
+        self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling 
         self.cscale = ob.cscale # pull scaling factor
 
         return self.eval
