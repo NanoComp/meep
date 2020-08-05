@@ -436,4 +436,250 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   require_component(c);
 }
 
+/***************************************************************/
+/* helper routine for add_eigenmode_source that calls          */
+/* add_volume_source only if certain conditions are met        */
+/***************************************************************/
+void fields::add_volume_source_check(component c, const src_time &src, const volume &where,
+                                     complex<double> A(const vec &), complex<double> amp, component c0,
+                                     direction d, int has_tm, int has_te) {
+  if (!gv.has_field(c)) return;
+  if (c0 != Centered && c0 != c) return;
+  if (component_direction(c) == d) return;
+  if (gv.dim == D2) // parity checks
+  {
+    if (has_te && is_tm(c)) return;
+    if (has_tm && !is_tm(c)) return;
+  };
+  add_volume_source(c, src, where, A, amp);
+}
+
+static gaussianbeam *global_gaussianbeam_object = 0;
+static component global_gaussianbeam_component;
+
+static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
+  std::complex<double> EH[6];
+  global_gaussianbeam_object->get_fields(EH, p);
+  switch (global_gaussianbeam_component) {
+  case Ex: return EH[0];
+  case Ey: return EH[1];
+  case Ez: return EH[2];
+  case Hx: return EH[3];
+  case Hy: return EH[4];
+  case Hz: return EH[5];
+  default: abort("invalid component in gaussianbeam_ampfunc");
+  }
+}
+
+void fields::add_volume_source(const src_time &src, const volume &where, gaussianbeam beam) {
+  global_gaussianbeam_object = &beam;
+  direction d = normal_direction(where);
+  component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
+  int n = (d == X ? 0 : (d == Y ? 1 : 2));
+  if (d == NO_DIRECTION) {
+    n = where.in_direction(X) == 0
+            ? 0
+            : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
+    if (n == -1)
+      abort(
+          "can't determine source direction for non-empty source volume with NO_DIRECTION source");
+  }
+  bool has_tm = abs(beam.get_E0(2)) > 0;
+  bool has_te = abs(beam.get_E0(0)) > 0 || abs(beam.get_E0(1)) > 0;
+  int np1 = (n + 1) % 3;
+  int np2 = (n + 2) % 3;
+  // Kx = -Hy, Ky = Hx   (for d==Z)
+  global_gaussianbeam_component = cH[np1];
+  add_volume_source_check(cE[np2], src, where, gaussianbeam_ampfunc, +1.0, cE[np2], d,
+                          has_tm, has_te);
+  global_gaussianbeam_component = cH[np2];
+  add_volume_source_check(cE[np1], src, where, gaussianbeam_ampfunc, -1.0, cE[np1], d,
+                          has_tm, has_te);
+  // Nx = +Ey, Ny = -Ex  (for d==Z)
+  global_gaussianbeam_component = cE[np1];
+  add_volume_source_check(cH[np2], src, where, gaussianbeam_ampfunc, -1.0, cH[np2], d,
+                          has_tm, has_te);
+  global_gaussianbeam_component = cE[np2];
+  add_volume_source_check(cH[np1], src, where, gaussianbeam_ampfunc, +1.0, cH[np1], d,
+                          has_tm, has_te);
+}
+
+gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
+                           double eps_, double mu_, std::complex<double> E0_[3]) {
+  if (x0.dim == Dcyl) abort("wrong dimensionality in gaussianbeam");
+
+  x0 = x0_;
+  kdir = kdir_;
+  w0 = w0_;
+  freq = freq_;
+  eps = eps_;
+  mu = mu_;
+  for (int j = 0; j < 3; ++j)
+    E0[j] = E0_[j];
+}
+
+/* Compute the E/H fields EH[6] (6 components) at point x in 3d.
+
+   Adapted from code by M. T. Homer Reid in his SCUFF-EM package:
+   https://github.com/HomerReid/scuff-em/blob/master/libs/libIncField/GaussianBeam.cc
+*/
+
+/* Copyright (C) 2005-2011 M. T. Homer Reid
+ *
+ * This file is part of SCUFF-EM.
+ *
+ * SCUFF-EM is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * SCUFF-EM is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+/*
+ * GaussianBeam.cc -- routine for computing the electric and magnetic
+ *                    fields of a focused gaussian beam
+ *
+ * homer reid        -- 4/2011
+ *
+ * new approach:
+ * johannes feist    -- 11/2011
+ *
+ * note: this calculation follows CJR Sheppard & S Saghafi, J Opt Soc Am A 16, 1381,
+ * approximating a Gaussian beam as the field of the sum of an
+ * x-polarized electric and y-polarized magnetic dipole, but located at
+ * the _complex_ source point X = (0,0,i z0).
+ * This produces a field that looks like a Gaussian beam in paraxial approximation
+ * and exactly solves the field-free Maxwell equations everywhere in (real) space.
+ *
+ * note that the core of the calculation is carried out in a coordinate
+ * system in which the beam propagates in the +z direction and is
+ * polarized such that the E-field is (mostly) in the +x direction. after
+ * carrying out the computation described in the memo to obtain the field
+ * components in this coordinate system, we then rotate the field components
+ * as appropriate for the user's specified propagation and polarization
+ * vectors.
+ */
+
+void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
+  double n = sqrt(eps * mu);
+  double k = 2 * pi * freq * n;
+  double ZR = sqrt(mu/eps);
+  double z0 = k * w0 * w0 / 2;
+  double kz0 = k*z0;
+  vec xrel = x - x0;
+
+  vec zhat = kdir / abs(kdir);
+  double rho = abs(vec(zhat.y()*xrel.z()-zhat.z()*xrel.y(),
+                       zhat.z()*xrel.x()-zhat.x()*xrel.z(),
+                       zhat.x()*xrel.y()-zhat.y()*xrel.x()));
+  double zhatdotxrel = zhat & xrel;
+
+  bool UseRescaledFG = false;
+
+  complex<double> zc = complex<double>(zhatdotxrel,-z0);
+  complex<double> Rsq = rho*rho + zc*zc;
+  complex<double> R = sqrt(Rsq);
+  complex<double> kR = k*R, kR2 = kR*kR, kR3 = kR2*kR;
+  complex<double> f,g,fmgbRsq;
+  if (abs(kR) > 1e-4) {
+    complex<double> coskR, sinkR;
+    if (fabs(imag(kR)) > 30.0) {
+      UseRescaledFG = true;
+      complex<double> ExpI = exp(complex<double>(0,1.0)*real(kR));
+      complex<double> ExpPlus = exp(imag(kR)-kz0);
+      complex<double> ExpMinus = exp(-(imag(kR)+kz0));
+      coskR = 0.5*(ExpI*ExpMinus + conj(ExpI)*ExpPlus);
+      sinkR = -0.5*complex<double>(0,1.0)*(ExpI*ExpMinus - conj(ExpI)*ExpPlus);
+    } else {
+      coskR = cos(kR);
+      sinkR = sin(kR);
+    }
+    f = -3.0 * (coskR/kR2 - sinkR/kR3);
+    g = 1.5 * (sinkR/kR + coskR/kR2 - sinkR/kR3);
+    fmgbRsq = (f-g)/Rsq;
+  } else {
+    complex<double> kR4 = kR2*kR2;
+    // Taylor series expansion for small R
+    f = kR4/280.0 - kR2/10.0 + 1.0;
+    g = 3.0*kR4/280.0 - kR2/5.0 + 1.0;
+    fmgbRsq = (kR4/5040.0 - kR2/140.0 + 0.1)*(k*k);
+  }
+  complex<double> i2fk = 0.5*complex<double>(0,1)*f*k;
+
+  complex<double> E[3], H[3];
+  for (int j=0; j<3; ++j) {
+    E[j] = complex<double>(0,0);
+    H[j] = complex<double>(0,0);
+  }
+
+  double rnorm = sqrt(real(E0[0])*real(E0[0])+real(E0[1])*real(E0[1])+real(E0[2])*real(E0[2]));
+  if (rnorm > 1e-13) {
+    vec xhat = vec(real(E0[0]),real(E0[1]),real(E0[2])) / rnorm;
+    vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
+                   zhat.z()*xhat.x()-zhat.x()*xhat.z(),
+                   zhat.x()*xhat.y()-zhat.y()*xhat.x());
+    double xhatdotxrel = xhat & xrel;
+    double yhatdotxrel = yhat & xrel;
+
+    complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
+    complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
+    complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
+    complex<double> gb_Hx = EH[1];
+    complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
+    complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
+
+    E[0] += rnorm * (gb_Ex * xhat.x() + gb_Ey * yhat.x() + gb_Ez * zhat.x());
+    E[1] += rnorm * (gb_Ex * xhat.y() + gb_Ey * yhat.y() + gb_Ez * zhat.y());
+    E[2] += rnorm * (gb_Ex * xhat.z() + gb_Ey * yhat.z() + gb_Ez * zhat.z());
+    H[0] += rnorm * (gb_Hx * xhat.x() + gb_Hy * yhat.x() + gb_Hz * zhat.x());
+    H[1] += rnorm * (gb_Hx * xhat.y() + gb_Hy * yhat.y() + gb_Hz * zhat.y());
+    H[2] += rnorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
+  }
+
+  double inorm = sqrt(imag(E0[0])*imag(E0[0])+imag(E0[1])*imag(E0[1])+imag(E0[2])*imag(E0[2]));
+  if (inorm > 1e-13) {
+    vec xhat = vec(imag(E0[0]),imag(E0[1]),imag(E0[2])) / inorm;
+    vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
+                   zhat.z()*xhat.x()-zhat.x()*xhat.z(),
+                   zhat.x()*xhat.y()-zhat.y()*xhat.x());
+    double xhatdotxrel = xhat & xrel;
+    double yhatdotxrel = yhat & xrel;
+
+    complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
+    complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
+    complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
+    complex<double> gb_Hx = EH[1];
+    complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
+    complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
+
+    E[0] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.x() + gb_Ey * yhat.x() + gb_Ez * zhat.x());
+    E[1] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.y() + gb_Ey * yhat.y() + gb_Ez * zhat.y());
+    E[2] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.z() + gb_Ey * yhat.z() + gb_Ez * zhat.z());
+    H[0] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.x() + gb_Hy * yhat.x() + gb_Hz * zhat.x());
+    H[1] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.y() + gb_Hy * yhat.y() + gb_Hz * zhat.y());
+    H[2] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
+  }
+
+  double Eorig;
+  if (UseRescaledFG)
+    Eorig = 3.0/(2*kz0*kz0*kz0) * (kz0*(kz0-1) + 0.5*(1.0-exp(-2.0*kz0)));
+  else
+    Eorig = 3.0/(2*kz0*kz0*kz0) * (exp(kz0)*kz0*(kz0-1) + sinh(kz0));
+
+  EH[0] = E[0] / Eorig;
+  EH[1] = E[1] / Eorig;
+  EH[2] = E[2] / Eorig;
+  EH[3] = H[0] / (Eorig*ZR);
+  EH[4] = H[1] / (Eorig*ZR);
+  EH[5] = H[2] / (Eorig*ZR);
+}
+
 } // namespace meep

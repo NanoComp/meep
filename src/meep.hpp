@@ -1484,6 +1484,23 @@ public:
   std::vector<std::complex<double> > values; // updated by update_values(idx)
 };
 
+class gaussianbeam {
+
+public:
+  gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq,
+               double eps, double mu, std::complex<double> EO[3]);
+  void get_fields(std::complex<double> *EH, const vec &x) const;
+  std::complex<double> get_E0(int n) const { return E0[n]; };
+
+private:
+  vec x0;           // beam center
+  vec kdir;         // beam propagation direction
+  double w0;        // beam waist radius
+  double freq;      // beam frequency
+  double eps, mu;   // permittivity/permeability of homogeneous medium
+  std::complex<double> E0[3]; // polarization vector
+};
+
 /***************************************************************/
 /* prototype for optional user-supplied function to provide an */
 /* initial estimate of the wavevector of mode #mode at         */
@@ -1681,6 +1698,7 @@ public:
                          std::complex<double> A(const vec &), std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src, const volume &,
                          std::complex<double> amp = 1.0);
+  void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
 
   // mpb.cpp
@@ -1992,6 +2010,10 @@ private:
   void step_source(field_type ft, bool including_integrated = false);
   void update_pols(field_type ft);
   void calc_sources(double tim);
+  // sources.cpp
+  void add_volume_source_check(component c, const src_time &src, const volume &where,
+                               std::complex<double> A(const vec &), std::complex<double> amp,
+                               component c0, direction d, int has_tm, int has_te);
 
 public:
   // monitor.cpp
