@@ -416,8 +416,15 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
 
 
     # Record data in closure so that we can persitently edit
+    '''
     closure = {
         'previous_fields': [[np.ones(di,dtype=np.complex128) for di in d] for d in dims],
+        't0': 0
+    }
+    '''
+
+    closure = {
+        'previous_fields': [[None for di in d] for d in dims],
         't0': 0
     }
 
@@ -440,12 +447,19 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
 
                     elif isinstance(m, mp.simulation.DftNear2Far):
                         current_fields[mi][ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
-
-
                     else:
                         raise TypeError("Monitor of type {} not supported".format(type(m)))
-                    relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])
-                    relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
+
+                    #relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])
+                    #relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
+
+                    if previous_fields[mi][ic] is not None:
+                        relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])
+                        relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
+                    else:
+                        relative_change.append(1)
+
+
             relative_change = np.mean(relative_change) # average across monitors
             closure['previous_fields'] = current_fields
             closure['t0'] = sim.round_time()
