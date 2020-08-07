@@ -660,10 +660,6 @@ std::vector<struct near_data> dft_near2far::near_fds(const vec &x) {
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-
       std::complex<double> EH6[6];
       size_t idx_dft = 0;
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
