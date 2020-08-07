@@ -125,7 +125,3 @@ scheme/examples/*.h5
 scheme/examples/*.png
 python/examples/*.h5
 python/examples/*.png
-
-
-.ipynb_checkpoints
-.DS_Store
