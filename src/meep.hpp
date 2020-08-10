@@ -1488,7 +1488,7 @@ class gaussianbeam {
 
 public:
   gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq,
-               double eps, double mu, std::complex<double> EO[3]);
+               double eps, double mu, std::complex<double> E0[3]);
   void get_fields(std::complex<double> *EH, const vec &x) const;
   std::complex<double> get_E0(int n) const { return E0[n]; };
 

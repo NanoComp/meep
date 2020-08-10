@@ -2257,8 +2257,8 @@ class Simulation(object):
                 self.fields.get_mu(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
                 [src.beam_E0.x, src.beam_E0.y, src.beam_E0.z]
             ]
-            gaussianbeam = functools.partial(mp.gaussianbeam, *gaussianbeam_args)
-            add_vol_src_args = [src.src.swigobj, where, gaussianbeam()]
+            gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
+            add_vol_src_args = [src.src.swigobj, where, gaussianbeam]
             add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)
             add_vol_src()
         else:

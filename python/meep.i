@@ -1028,7 +1028,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     $1 = (std::complex<double> *)array_data($input);
 }
 
-
 // typemaps for gaussianbeam
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double> E0[3] {
