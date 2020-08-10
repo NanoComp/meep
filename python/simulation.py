@@ -2255,7 +2255,7 @@ class Simulation(object):
                 src.src.swigobj.frequency().real,
                 self.fields.get_eps(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
                 self.fields.get_mu(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
-                [src.beam_E0.x, src.beam_E0.y, src.beam_E0.z]
+                np.array([src.beam_E0.x, src.beam_E0.y, src.beam_E0.z], dtype=np.complex128)
             ]
             gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
             add_vol_src_args = [src.src.swigobj, where, gaussianbeam]
