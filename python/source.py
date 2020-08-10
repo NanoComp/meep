@@ -542,10 +542,10 @@ class GaussianBeamSource(Source):
                  **kwargs):
 
         super(GaussianBeamSource, self).__init__(src, component, center, volume, **kwargs)
-        self.beam_x0 = beam_x0
-        self.beam_kdir = beam_kdir
-        self.beam_w0 = beam_w0
-        self.beam_E0 = beam_E0
+        self._beam_x0 = beam_x0
+        self._beam_kdir = beam_kdir
+        self._beam_w0 = beam_w0
+        self._beam_E0 = beam_E0
 
     @property
     def beam_x0(self):
@@ -560,5 +560,5 @@ class GaussianBeamSource(Source):
         return self._beam_w0
 
     @property
-    def E0(self):
-        return Vector3(self._beam_E0[0],self._beam_E0[1],self._beam_E0[2])
+    def beam_E0(self):
+        return self._beam_E0
