@@ -526,3 +526,39 @@ class EigenModeSource(Source):
         if callable(getattr(self.src, "fourier_transform", None)):
            amp *= self.src.fourier_transform(freq)
         return abs(amp)**2
+
+
+class GaussianBeamSource(Source):
+
+    def __init__(self,
+                 src,
+                 center=None,
+                 volume=None,
+                 component=mp.ALL_COMPONENTS,
+                 beam_x0=Vector3(),
+                 beam_kdir=Vector3(),
+                 beam_w0=None,
+                 beam_E0=Vector3(),
+                 **kwargs):
+
+        super(GaussianBeamSource, self).__init__(src, component, center, volume, **kwargs)
+        self.beam_x0 = beam_x0
+        self.beam_kdir = beam_kdir
+        self.beam_w0 = beam_w0
+        self.beam_E0 = beam_E0
+
+    @property
+    def beam_x0(self):
+        return self._beam_x0
+
+    @property
+    def beam_kdir(self):
+        return self._beam_kdir
+
+    @property
+    def beam_w0(self):
+        return self._beam_w0
+
+    @property
+    def E0(self):
+        return Vector3(self._beam_E0[0],self._beam_E0[1],self._beam_E0[2])

@@ -1029,6 +1029,17 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 }
 
 
+// typemaps for gaussianbeam
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double> beam_E0[3] {
+    $1 = is_array($input);
+}
+
+%typemap(in) std::complex<double> beam_E0[3] {
+    std::complex<double> *pyE0  = (std::complex<double> *)array_data($input);
+    $1[0] = pyE0[0]; $1[1] = pyE0[1]; $1[2] = pyE0[2];
+}
+
 //--------------------------------------------------
 // typemaps needed for get_eigenmode_coefficients
 //--------------------------------------------------
@@ -1648,6 +1659,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Source,
         SourceTime,
         check_positive,
+        GaussianBeamSource,
     )
     from .visualization import (
         plot2D,
