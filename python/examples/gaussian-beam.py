@@ -1,48 +1,42 @@
-## generate a titled Gaussian beam profile by defining the amplitude function of the source
+## launch a Gaussian beam
 
 import meep as mp
 import math
-import cmath
-import numpy as np
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
-resolution = 40 # pixels/μm
+s = 14
+resolution = 50
+dpml = 2
 
-cell_size = mp.Vector3(20,10,0)
+cell_size = mp.Vector3(s,s)
 
-pml_layers = [mp.PML(thickness=1.0,direction=mp.Y)]
+boundary_layers = [mp.PML(thickness=dpml)]
 
-fcen = 1.0 # center frequency of CW source (wavelength is 1 μm)
+beam_x0 = mp.Vector3(0,3.0)    # beam focus (relative to source center)
+rot_angle = 0  # CCW rotation angle about z axis (0: +y axis)
+beam_kdir = mp.Vector3(0,1,0).rotate(mp.Vector3(0,0,1),math.radians(rot_angle))  # beam propagation direction
+beam_w0 = 0.8  # beam waist radius
+beam_E0 = mp.Vector3(0,0,1)
+fcen = 1
+sources = [mp.GaussianBeamSource(src=mp.ContinuousSource(fcen),
+                                 center=mp.Vector3(0,-0.5*s+dpml+1.0),
+                                 size=mp.Vector3(s),
+                                 beam_x0=beam_x0,
+                                 beam_kdir=beam_kdir,
+                                 beam_w0=beam_w0,
+                                 beam_E0=beam_E0)]
 
-tilt_angle = math.radians(-10) # angle of tilted beam
-k = mp.Vector3(y=1).rotate(mp.Vector3(z=1),tilt_angle).scale(fcen)
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    boundary_layers=boundary_layers,
+                    sources=sources)
 
-sigma = 1.5 # beam width
+sim.run(until=20)
 
-def gaussian_beam(sigma, k, x0):
-    def _gaussian_beam(x):
-        return cmath.exp(1j*2*math.pi*k.dot(x-x0)-(x-x0).dot(x-x0)/(2*sigma**2))
-    return _gaussian_beam
+sim.plot2D(fields=mp.Ez,
+           output_plane=mp.Volume(center=mp.Vector3(),
+                                  size=mp.Vector3(s-2*dpml,s-2*dpml)))
 
-src_pt = mp.Vector3(y=4)
-sources = [mp.Source(src=mp.ContinuousSource(fcen, fwidth=0.2*fcen),
-                     component=mp.Ez,
-                     center=src_pt,
-                     size=mp.Vector3(20),
-                     amp_func=gaussian_beam(sigma,k,src_pt))]
-
-sim = mp.Simulation(cell_size=cell_size,
-                    sources=sources,
-                    k_point=k,
-                    boundary_layers=pml_layers,
-                    resolution=resolution)
-
-non_pml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(20,8,0))
-sim.run(until=50)
-
-ez_data = sim.get_array(vol=non_pml_vol, component=mp.Ez)
-
-plt.figure()
-plt.imshow(np.flipud(np.transpose(np.real(ez_data))), interpolation='spline36', cmap='RdBu')
-plt.axis('off')
-plt.show()
+plt.savefig('Ez_angle{}.png'.format(rot_angle),bbox_inches='tight',pad_inches=0)

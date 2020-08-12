@@ -5832,7 +5832,7 @@ it does support anisotropic ε. Any nonlinearities, magnetic responses μ,
 conductivities σ, or dispersive polarizations in your materials will be *ignored* when
 computing the eigenmode source. PML will also be ignored.
 
-The `src_time` object (`Source.src`), which specifies the time dependence of the
+The `SourceTime` object (`Source.src`), which specifies the time dependence of the
 source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
 
 </div>
@@ -5956,6 +5956,57 @@ def eig_power(self, freq):
 <div class="method_docstring" markdown="1">
 
 Returns the total power of the fields from the eigenmode source at frequency `freq`.
+
+</div>
+
+</div>
+
+
+---
+<a id="GaussianBeamSource"></a>
+
+### GaussianBeamSource
+
+```python
+class GaussianBeamSource(Source):
+```
+
+<div class="class_docstring" markdown="1">
+
+This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\mathbf{E}(r,z)=E_0\hat{x}\frac{w_0}{w(z)}\exp\left(\frac{-r^2}{w(z)^2}\right)\exp\left(-i\left(kz + k\frac{r^2}{2R(z)}\right)\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\pi n/\lambda$ is the wavenumber (for a free-space wavelength $\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
+
+The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, can be one of `ContinuousSource` or `GaussianSource`.
+
+</div>
+
+<a id="GaussianBeamSource.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(self,
+             src,
+             center=None,
+             volume=None,
+             component=mp.ALL_COMPONENTS,
+             beam_x0=Vector3(),
+             beam_kdir=Vector3(),
+             beam_w0=None,
+             beam_E0=Vector3(),
+             **kwargs):
+```
+
+<div class="method_docstring" markdown="1">
+
+Construct a `GaussianBeamSource`.
+
++ **`beam_x0` [`Vector3`]** — The location of the beam focus *relative* to the center of the source. This does *not* need to lie within the source region (i.e., the beam focus can be anywhere, inside or outside the cell, independent of position of the source).
+
++ **`beam_kdir` [`Vector3`]** — The propagation direction of the beam. The length is *ignored*. The wavelength of the beam is determined by the center frequency of the `Source.src` object and the refractive index of the homogeneous medium by its value at the center of the source region.
+
++ **`beam_w0` [`number`]** — The beam waist radius.
+
++ **`beam_E0` [`Vector3`]** — The polarization vector of the beam. Elements can be complex valued (i.e., for circular polarization). The polarization vector must be *parallel* to the source region in order to generate a transverse mode.
 
 </div>
 
