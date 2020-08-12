@@ -18,7 +18,7 @@ import numpy as np
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
-from meep.source import EigenModeSource, check_positive
+from meep.source import EigenModeSource, GaussianBeamSource, check_positive
 import meep.visualization as vis
 from meep.verbosity_mgr import Verbosity
 
@@ -1997,13 +1997,26 @@ class Simulation(object):
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permittivity tensor at that location and frequency. If `frequency` is
         non-zero, the result is complex valued; otherwise it is the real,
-        frequency-independent part of ε (the $\\omega\\to\\infty$ limit).
+        frequency-independent part of $\\varepsilon$ (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         if omega != 0:
             frequency = omega
             warnings.warn("get_epsilon_point: omega has been deprecated; use frequency instead", RuntimeWarning)
         return self.fields.get_eps(v3,frequency)
+
+    def get_mu_point(self, pt, frequency=0, omega=0):
+        """
+        Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
+        of the permeability tensor at that location and frequency. If `frequency` is
+        non-zero, the result is complex valued; otherwise it is the real,
+        frequency-independent part of $\\mu$ (the $\\omega\\to\\infty$ limit).
+        """
+        v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
+        if omega != 0:
+            frequency = omega
+            warnings.warn("get_mu_point: omega has been deprecated; use frequency instead", RuntimeWarning)
+        return self.fields.get_mu(v3,frequency)
 
     def get_filename_prefix(self):
         """
@@ -2234,6 +2247,20 @@ class Simulation(object):
                 add_eig_src()
             else:
                 add_eig_src(src.amp_func)
+        elif isinstance (src, GaussianBeamSource):
+            gaussianbeam_args = [
+                py_v3_to_vec(self.dimensions, src.beam_x0, is_cylindrical=self.is_cylindrical),
+                py_v3_to_vec(self.dimensions, src.beam_kdir, is_cylindrical=self.is_cylindrical),
+                src.beam_w0,
+                src.src.swigobj.frequency().real,
+                self.fields.get_eps(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
+                self.fields.get_mu(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
+                np.array([src.beam_E0.x, src.beam_E0.y, src.beam_E0.z], dtype=np.complex128)
+            ]
+            gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
+            add_vol_src_args = [src.src.swigobj, where, gaussianbeam]
+            add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)
+            add_vol_src()
         else:
             add_vol_src_args = [src.component, src.src.swigobj, where]
             add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)

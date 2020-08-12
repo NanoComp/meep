@@ -142,15 +142,13 @@ For an example of the second approach, see [Tutorial/Eigenmode Source/Planewaves
 
 ### How do I create a focused beam with a Gaussian envelope?
 
-A focused beam with a Gaussian envelope can be created using the amplitude function (`amp_func`) of the [`Source`](Python_User_Interface.md#source) object. Examples are provided for [Python](https://github.com/NanoComp/meep/blob/master/python/examples/gaussian-beam.py) and [Scheme](https://github.com/NanoComp/meep/blob/master/scheme/examples/gaussian-beam.ctl). Four snapshots of the resulting field profile generated using this script for different values of the beam width (`sigma`) and rotation angle (`tilt_angle`) are shown in the following image:
+A focused beam with a Gaussian envelope can be created using the [`GaussianBeamSource`](Python_User_Interface.md#gaussianbeamsource) as demonstrated in this [script](https://github.com/NanoComp/meep/blob/master/python/examples/gaussian-beam.py). The following are four snapshots of the resulting field profile generated using a line source (red line) in 2d for different values of the beam waist radius/width $w_0$ (`beam_w0`), propagation direction $\vec{k}$ (`beam_kdir`), and focus (`beam_x0`):
 
 <center>
 ![](images/gaussian_beam.png)
 </center>
 
-Beams in a homogeneous material do not have a fixed width in Maxwell's equations; they always spread out during propagation. The [numerical aperture (NA)](https://en.wikipedia.org/wiki/Gaussian_beam#Beam_divergence) of a Gaussian beam of width w (2*`sigma` from the example script) and vacuum wavelength $\lambda$ in a medium of index $n$ is $n\sin(\lambda/(\pi nw))$.
-
-Note: in this example, the beam waist is at the source position (i.e., top center of the cell). If you want the beam waist to be at a position other than the position of the source, you need to adjust the *phase* of the beam accordingly. If you assume you have a Gaussian beam profile with zero phase at some plane $y=y_0$, then you can work out the beam profile (including phase) at any other plane $y=y_1$ by taking the Fourier transform and looking at the propagation of each planewave component, and then inverse Fourier transforming. In this way, you can work out the desired source profile at any plane $y=y_1$ to get a Gaussian beam waist at $y=y_0$.
+Note: beams in a homogeneous material do *not* have a fixed width in Maxwell's equations; they always spread out during propagation (i.e., diffraction). The [numerical aperture (NA)](https://en.wikipedia.org/wiki/Gaussian_beam#Beam_divergence) of a Gaussian beam with waist radius $w$ and vacuum wavelength $\lambda$ within a medium of index $n$ is $n\sin(\lambda/(\pi nw))$.
 
 ### How do I create a circularly polarized planewave source in cylindrical coordinates?
 

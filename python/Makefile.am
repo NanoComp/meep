@@ -52,6 +52,7 @@ TESTS =                                   \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
     $(TEST_DIR)/fragment_stats.py         \
+    $(TEST_DIR)/gaussianbeam.py           \
     $(TEST_DIR)/geom.py                   \
     $(TEST_DIR)/get_point.py              \
     $(TEST_DIR)/holey_wvg_bands.py        \
