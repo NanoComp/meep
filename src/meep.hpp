@@ -1196,6 +1196,14 @@ struct near_data{
   std::vector<std::vector<std::complex<double> > > matrix_elt;
 };
 
+struct sourcedata{
+  component near_fd_comp;
+  std::vector<ptrdiff_t> idx_arr;
+  dft_chunk *F;
+  std::vector<std::vector<std::vector<std::complex<double> > > > matrix_elt_arr;
+
+};
+
 
 
 
@@ -1257,6 +1265,8 @@ public:
 
 
   std::vector<near_data> near_fds(const vec &x);
+
+  std::vector<sourcedata> near_sourcedata(const vec &x)
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum

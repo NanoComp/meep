@@ -11,7 +11,7 @@ class FilteredSource(CustomSource):
         self.center_frequencies = frequencies
 
         # For now, the basis functions cannot overlap much in the frequency domain. Otherwise, the
-        # resulting nodes are wildly large and induce numerical precision errors. We can always 
+        # resulting nodes are wildly large and induce numerical precision errors. We can always
         # produce a safe simulation by forcing the length of each basis function to meet the minimum
         # frequency requirements. This method still minimizes storage requirements.
         self.T = np.max(np.abs(1/np.diff(frequencies)))
@@ -19,14 +19,14 @@ class FilteredSource(CustomSource):
         self.t = np.arange(0,dt*(self.N),dt)
         self.n = np.arange(self.N)
         f = self.func()
-        
+
         if time_src:
             # get the cutoff of the input signal
             signal_t = np.array([time_src.swigobj.current(ti,dt) for ti in self.t]) # time domain signal
-            signal_dtft = self.dtft(signal_t,self.frequencies)       
+            signal_dtft = self.dtft(signal_t,self.frequencies)
         else:
             signal_dtft = 1
-        
+
         # multiply sampled dft of input signal with filter transfer function
         H = signal_dtft * frequency_response
 
@@ -67,18 +67,18 @@ class FilteredSource(CustomSource):
         return self.cos_window_fd(a,f,f0)
     def dtft(self,y,f):
         return np.matmul(np.exp(1j*2*np.pi*f[:,np.newaxis]*np.arange(y.size)*self.dt), y)*self.dt/np.sqrt(2*np.pi)
-    
+
     def __call__(self,t):
         if t > self.T:
             return 0
-        vec = self.nuttall(t,self.center_frequencies) / (self.dt/np.sqrt(2*np.pi)) # compensate for meep dtft
-        return np.inner(vec,self.nodes)
-    
+        self.vec = self.nuttall(t,self.center_frequencies) / (self.dt/np.sqrt(2*np.pi)) # compensate for meep dtft
+        return np.inner(self.vec,self.nodes)
+
     def func(self):
-        def _f(t): 
+        def _f(t):
             return self(t)
         return _f
-    
+
     def estimate_impulse_response(self,H):
         # Use vandermonde matrix to calculate weights of each gaussian. Each window is centered at each frequency point.
         # TODO: come up with a more sophisticated way to choose temporal window size and basis locations
@@ -86,5 +86,5 @@ class FilteredSource(CustomSource):
         vandermonde = self.nuttall_dtft(self.frequencies[:,np.newaxis],self.center_frequencies[np.newaxis,:])
         nodes = np.matmul(linalg.pinv(vandermonde), H)
         H_hat = np.matmul(vandermonde, nodes)
-        l2_err = np.sum(np.abs(H-H_hat)**2/np.abs(H)**2)        
+        l2_err = np.sum(np.abs(H-H_hat)**2/np.abs(H)**2)
         return nodes, l2_err

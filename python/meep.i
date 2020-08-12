@@ -1398,6 +1398,8 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %include "typemaps.i"
 %template(near_fds_data) std::vector<meep::near_data>;
+%template(near_src_data) std::vector<meep::sourcedata>;
+
 %template(inner_matrix_elts) std::vector<std::complex<double> >;
 %template(matrix_elts) std::vector<std::vector<std::complex<double> > >;
 

@@ -319,3 +319,71 @@ class Far_Coefficients(ObjectiveQuantitiy):
             return self.eval
         except AttributeError:
             raise RuntimeError("You must first run a forward simulation.")
+
+
+class Far_Coefficients_src(ObjectiveQuantitiy):
+    def __init__(self,sim,Near2FarRegions, far_pt):
+        self.sim = sim
+        self.Near2FarRegions=Near2FarRegions
+        self.eval = None
+        self.far_pt = far_pt
+        return
+
+    def register_monitors(self,frequencies):
+        self.frequencies = np.asarray(frequencies)
+        self.num_freq = len(self.frequencies)
+        self.monitor = self.sim.add_near2far(self.frequencies, *self.Near2FarRegions, yee_grid=True)
+        return self.monitor
+
+    def place_adjoint_source(self,dJ):
+
+        dt = self.sim.fields.dt
+
+        if self.sim.cell_size.y == 0:
+            dV = 1/self.sim.resolution
+        elif self.sim.cell_size.z == 0:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution
+        else:
+            dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
+
+        self.sources = []
+
+
+        freq_scale = dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
+
+        #TODO far_pts in 3d or cylindrical, perhaps py_v3_to_vec from simulation.py
+        self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(mp.vec(self.far_pt.x, self.far_pt.y))
+
+
+        for near_data in self.all_nearsrcdata:
+            dft_chunk = near_data.F
+            cur_comp = near_data.near_fd_comp
+            cur_green_matrix = np.array(near_data.matrix_elt_arr)
+
+            if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
+                scale = -freq_scale * np.sum(dJ*cur_green_matrix, axis=2) #pts * nfreq
+            else:
+                scale = freq_scale * np.sum(dJ*cur_green_matrix, axis=2)
+
+            if self.num_freq == 1:
+                ##TODO
+                self.sources += [mp.Source(self.time_src, component=cur_comp, amplitude=scale[0], center=near_pt)]
+            else:
+                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+                lincoeff = src.nodes
+                basis_func = src.vec
+                self.sources += [mp.Source(src, component=cur_comp, amplitude=1, center=near_pt)]
+
+        return self.sources
+
+    def __call__(self):
+        self.time_src = self.sim.sources[0].src
+        self.eval = np.array(self.sim.get_farfield(self.monitor, self.far_pt))
+        self.eval = self.eval.reshape((self.num_freq, 6))
+        return self.eval
+
+    def get_evaluation(self):
+        try:
+            return self.eval
+        except AttributeError:
+            raise RuntimeError("You must first run a forward simulation.")
