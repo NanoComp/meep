@@ -5,7 +5,7 @@ import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
 
-from collections import namedtuple
+from .optimization_problem import atleast_3d, Grid
 
 class ObjectiveQuantitiy(ABC):
     @abstractmethod
@@ -205,53 +205,6 @@ class Fourier_Coefficients(ObjectiveQuantitiy):
             return self.eval
         except AttributeError:
             raise RuntimeError("You must first run a forward simulation.")
-
-
-Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
-
-def atleast_3d(*arys):
-    from numpy import array, asanyarray, newaxis
-    '''
-    Modified version of numpy's `atleast_3d`
-
-    Keeps one dimensional array data in first dimension, as
-    opposed to moving it to the second dimension as numpy's
-    version does. Keeps the meep dimensionality convention.
-
-    View inputs as arrays with at least three dimensions.
-    Parameters
-    ----------
-    arys1, arys2, ... : array_like
-        One or more array-like sequences.  Non-array inputs are converted to
-        arrays.  Arrays that already have three or more dimensions are
-        preserved.
-    Returns
-    -------
-    res1, res2, ... : ndarray
-        An array, or list of arrays, each with ``a.ndim >= 3``.  Copies are
-        avoided where possible, and views with three or more dimensions are
-        returned.  For example, a 1-D array of shape ``(N,)`` becomes a view
-        of shape ``(N, 1, 1)``, and a 2-D array of shape ``(M, N)`` becomes a
-        view of shape ``(M, N, 1)``.
-    '''
-    res = []
-    for ary in arys:
-        ary = asanyarray(ary)
-        if ary.ndim == 0:
-            result = ary.reshape(1, 1, 1)
-        elif ary.ndim == 1:
-            result = ary[:, newaxis, newaxis]
-        elif ary.ndim == 2:
-            result = ary[:, :, newaxis]
-        else:
-            result = ary
-        res.append(result)
-    if len(res) == 1:
-        return res[0]
-    else:
-        return res
-
-
 
 
 
