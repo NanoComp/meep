@@ -627,7 +627,26 @@ def get_epsilon_point(self, pt, frequency=0, omega=0):
 Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
 of the permittivity tensor at that location and frequency. If `frequency` is
 non-zero, the result is complex valued; otherwise it is the real,
-frequency-independent part of ε (the $\omega\to\infty$ limit).
+frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
+
+</div>
+
+</div>
+
+<a id="Simulation.get_mu_point"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_mu_point(self, pt, frequency=0, omega=0):
+```
+
+<div class="method_docstring" markdown="1">
+
+Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
+of the permeability tensor at that location and frequency. If `frequency` is
+non-zero, the result is complex valued; otherwise it is the real,
+frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -1288,7 +1307,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 <div class="class_members" markdown="1">
 
 ```python
-def add_mode_monitor(self, *args): 
+def add_mode_monitor(self, *args, **kwargs):
 def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...):
 ```
 
@@ -5553,7 +5572,7 @@ def __init__(self,
              side=-1,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7fc840abd7a0>): 
+             pml_profile=lambda u: u * u):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5961,7 +5980,6 @@ Returns the total power of the fields from the eigenmode source at frequency `fr
 
 </div>
 
-
 ---
 <a id="GaussianBeamSource"></a>
 
@@ -5981,6 +5999,8 @@ The `SourceTime` object (`Source.src`), which specifies the time dependence of t
 
 </div>
 
+
+
 <a id="GaussianBeamSource.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -5990,11 +6010,11 @@ def __init__(self,
              src,
              center=None,
              volume=None,
-             component=mp.ALL_COMPONENTS,
-             beam_x0=Vector3(),
-             beam_kdir=Vector3(),
+             component=20,
+             beam_x0=Vector3<0.0, 0.0, 0.0>,
+             beam_kdir=Vector3<0.0, 0.0, 0.0>,
              beam_w0=None,
-             beam_E0=Vector3(),
+             beam_E0=Vector3<0.0, 0.0, 0.0>,
              **kwargs):
 ```
 
@@ -6002,9 +6022,9 @@ def __init__(self,
 
 Construct a `GaussianBeamSource`.
 
-+ **`beam_x0` [`Vector3`]** — The location of the beam focus *relative* to the center of the source. This does *not* need to lie within the source region (i.e., the beam focus can be anywhere, inside or outside the cell, independent of position of the source).
++ **`beam_x0` [`Vector3`]** — The location of the beam focus *relative* to the center of the source. The beam focus does *not* need to lie within the source region (i.e., the beam focus can be anywhere, inside or outside the cell, independent of the position of the source).
 
-+ **`beam_kdir` [`Vector3`]** — The propagation direction of the beam. The length is *ignored*. The wavelength of the beam is determined by the center frequency of the `Source.src` object and the refractive index of the homogeneous medium by its value at the center of the source region.
++ **`beam_kdir` [`Vector3`]** — The propagation direction of the beam. The length is *ignored*. The wavelength of the beam is determined by the center frequency of the `Source.src` object and the refractive index (real part only) at the center of the source region.
 
 + **`beam_w0` [`number`]** — The beam waist radius.
 
