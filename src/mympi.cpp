@@ -588,39 +588,34 @@ meep_printf_callback_func set_meep_printf_stderr_callback(meep_printf_callback_f
   return old_func;
 }
 
-void master_printf(const char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
+static void _do_master_printf(FILE* output, meep_printf_callback_func callback,
+                              const char *fmt, va_list ap) {
   if (am_really_master()) {
-    if (master_printf_callback) {
+    if (callback) {
       char *s;
       vasprintf(&s, fmt, ap);
-      master_printf_callback(s);
+      callback(s);
       free(s);
     }
     else {
-      vprintf(fmt, ap);
-      fflush(stdout);
+      vfprintf(output, fmt, ap);
+      fflush(output);
     }
   }
+  va_end(ap);
+}
+
+void master_printf(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  _do_master_printf(stdout, master_printf_callback, fmt, ap);
   va_end(ap);
 }
 
 void master_printf_stderr(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  if (am_really_master()) {
-    if (master_printf_stderr_callback) {
-      char *s;
-      vasprintf(&s, fmt, ap);
-      master_printf_stderr_callback(s);
-      free(s);
-    }
-    else {
-      vfprintf(stderr, fmt, ap);
-      fflush(stderr);
-    }
-  }
+  _do_master_printf(stderr, master_printf_stderr_callback, fmt, ap);
   va_end(ap);
 }
 

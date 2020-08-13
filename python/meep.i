@@ -199,24 +199,22 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
     return result;
 }
 
-void py_master_printf_wrap(const char *s) {
-    PySys_WriteStdout("%s", s);
-    static PyObject *py_stdout = NULL;
-    if (py_stdout == NULL) {
-      py_stdout = PySys_GetObject("stdout");
-    }
-    PyObject *result = PyObject_CallMethod(py_stdout, "flush", NULL);
+static void _do_master_printf(const char* stream_name, const char* text) {
+    PyObject* py_stream = PySys_GetObject(stream_name);
+    PyObject* result;
+
+    result = PyObject_CallMethod(py_stream, "write", "(s)", text);
+    Py_XDECREF(result);
+    result = PyObject_CallMethod(py_stream, "flush", NULL);
     Py_XDECREF(result);
 }
 
+void py_master_printf_wrap(const char *s) {
+    _do_master_printf("stdout", s);
+}
+
 void py_master_printf_stderr_wrap(const char *s) {
-    PySys_WriteStderr("%s", s);
-    static PyObject *py_stderr = NULL;
-    if (py_stderr == NULL) {
-      py_stderr = PySys_GetObject("stderr");
-    }
-    PyObject *result = PyObject_CallMethod(py_stderr, "flush", NULL);
-    Py_XDECREF(result);
+    _do_master_printf("stderr", s);
 }
 
 void set_ctl_printf_callback(void (*callback)(const char *s)) {
