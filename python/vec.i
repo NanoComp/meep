@@ -70,23 +70,6 @@
 %rename(vec_dim_val) meep::vec::vec(ndim, double);
 %rename(vec_dim) meep::vec::vec(ndim);
 
-// Inject some code to give warnings about non-whole numbers
-%pythoncode {
-    import sys
-    def _check_wholenumbers(*args):
-        for arg in args:
-            if not float(arg).is_integer():
-                sys.stderr.write(
-                    "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
-                break
-}
-%pythonprepend volcyl { _check_wholenumbers(rsize, zsize, a) }
-%pythonprepend volone { _check_wholenumbers(zsize, a) }
-%pythonprepend vol1d  { _check_wholenumbers(zsize, a) }
-%pythonprepend voltwo { _check_wholenumbers(xsize, ysize, a) }
-%pythonprepend vol2d  { _check_wholenumbers(xsize, ysize, a) }
-%pythonprepend vol3d  { _check_wholenumbers(xsize, ysize, zsize, a) }
-
 
 // Include the C++ class declarations
 %include "meep/vec.hpp"
