@@ -72,17 +72,12 @@
 
 // Inject some code to give warnings about non-whole numbers
 %pythoncode {
-    import warnings
-
-    class GridVolumeWarning(UserWarning):
-        pass
-
+    import sys
     def _check_wholenumbers(*args):
         for arg in args:
             if not float(arg).is_integer():
-                warnings.warn(
-                    "Creating a grid_volume with non-whole numbers may result in rounding errors.",
-                    GridVolumeWarning, stacklevel=3)
+                sys.stderr.write(
+                    "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
                 break
 }
 %pythonprepend volcyl { _check_wholenumbers(rsize, zsize, a) }
