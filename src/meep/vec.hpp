@@ -869,6 +869,8 @@ public:
   vec get_max_corner() const { return max_corner; };
   direction normal_direction() const;
 
+  const char *str(char *buffer = 0, size_t buflen = 0);
+
 private:
   vec min_corner, max_corner;
 };
@@ -1025,6 +1027,8 @@ public:
   double origin_x() const { return origin.x(); }
   double origin_y() const { return origin.y(); }
   double origin_z() const { return origin.z(); }
+
+  const char *str(char *buffer = 0, size_t buflen = 0);
 
 private:
   std::complex<double> get_split_costs(direction d, int split_point) const;

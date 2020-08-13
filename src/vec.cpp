@@ -1659,6 +1659,42 @@ const char *vec::str(char *buffer, size_t buflen) {
   return buffer;
 }
 
+const char *volume::str(char *buffer, size_t buflen) {
+  static char sbuf[1024]; // TODO: Use a bufring like the above?
+  if (buffer == 0) {
+    buffer = sbuf;
+    buflen = sizeof(sbuf);
+  }
+  snprintf(buffer, buflen, "min_corner:%s, max_corner:%s",
+           min_corner.str(), max_corner.str());
+  return buffer;
+}
+
+const char *grid_volume::str(char *buffer, size_t buflen) {
+  static char sbuf[1024]; // TODO: is this big enough?
+  int written = 0;
+  if (buffer == 0) {
+    buffer = sbuf;
+    buflen = sizeof(sbuf);
+  }
+
+  written += snprintf(buffer+written, buflen-written,
+                      "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
+                      dimension_name(dim), a, inva, num[0], num[1], num[2]);
+
+  // Adapted from the print() method
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    written += snprintf(buffer+written, buflen-written,
+              "  %s =%5g - %5g (%5g) \t", direction_name(d), origin.in_direction(d),
+              origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
+    if (buflen-written <=0)
+        break;
+  }
+  snprintf(buffer+written, buflen-written, "\n}");
+  return buffer;
+}
+
+
 /********************************************************************/
 /********************************************************************/
 /********************************************************************/
