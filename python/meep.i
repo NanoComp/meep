@@ -200,7 +200,7 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
 }
 
 static void _do_master_printf(const char* stream_name, const char* text) {
-    PyObject* py_stream = PySys_GetObject(stream_name);
+    PyObject* py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
     PyObject* result;
 
     result = PyObject_CallMethod(py_stream, "write", "(s)", text);
