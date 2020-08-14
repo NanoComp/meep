@@ -901,16 +901,16 @@ vec grid_volume::dz() const {
 }
 
 grid_volume volone(double zsize, double a) {
-  if (!isinteger(zsize))
+  if (!isinteger(zsize * a))
     master_printf_stderr(
-      "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
   return grid_volume(D1, a, 0, 0, (int)(zsize * a + 0.5));
 }
 
 grid_volume voltwo(double xsize, double ysize, double a) {
-  if (!isinteger(xsize) || !isinteger(ysize))
+  if (!isinteger(xsize * a) || !isinteger(ysize * a))
     master_printf_stderr(
-      "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
   return grid_volume(D2, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
                      (ysize == 0) ? 1 : (int)(ysize * a + 0.5), 0);
 }
@@ -920,9 +920,9 @@ grid_volume vol1d(double zsize, double a) { return volone(zsize, a); }
 grid_volume vol2d(double xsize, double ysize, double a) { return voltwo(xsize, ysize, a); }
 
 grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
-  if (!isinteger(xsize) || !isinteger(ysize) || !isinteger(zsize))
+  if (!isinteger(xsize * a) || !isinteger(ysize * a) || !isinteger(zsize * a))
     master_printf_stderr(
-      "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
   return grid_volume(D3, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
                      (ysize == 0) ? 1 : (int)(ysize * a + 0.5),
                      (zsize == 0) ? 1 : (int)(zsize * a + 0.5));
@@ -931,7 +931,7 @@ grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
 grid_volume volcyl(double rsize, double zsize, double a) {
   if (!isinteger(rsize) || !isinteger(zsize))
     master_printf_stderr(
-      "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
 
   if (zsize == 0.0)
     return grid_volume(Dcyl, a, (int)(rsize * a + 0.5), 0, 1);
