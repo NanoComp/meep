@@ -199,14 +199,19 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
     return result;
 }
 
+static void _do_master_printf(const char* stream_name, const char* text) {
+    PyObject* py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
+
+    Py_XDECREF(PyObject_CallMethod(py_stream, "write", "(s)", text));
+    Py_XDECREF(PyObject_CallMethod(py_stream, "flush", NULL));
+}
+
 void py_master_printf_wrap(const char *s) {
-    PySys_WriteStdout("%s", s);
-    static PyObject *py_stdout = NULL;
-    if (py_stdout == NULL) {
-      py_stdout = PySys_GetObject("stdout");
-    }
-    PyObject *result = PyObject_CallMethod(py_stdout, "flush", NULL);
-    Py_XDECREF(result);
+    _do_master_printf("stdout", s);
+}
+
+void py_master_printf_stderr_wrap(const char *s) {
+    _do_master_printf("stderr", s);
 }
 
 void set_ctl_printf_callback(void (*callback)(const char *s)) {
@@ -508,14 +513,14 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 }
 
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
-                                      bool collapse_empty_dimensions, bool snap_empty_dimensions, 
+                                      bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL) {
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
 
     meep::vec min_max_loc_vec[2];
     meep::vec* min_max_loc_vec_ptr = min_max_loc_vec;
     if (!min_max_loc) min_max_loc_vec_ptr = NULL;
-    
+
     int rank = f->get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions, snap_empty_dimensions, min_max_loc_vec_ptr, 0, cgrid);
 
     PyObject *py_dirs = PyList_New(3);
@@ -583,6 +588,7 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 double py_pml_profile(double u, void *f);
 
 %constant void py_master_printf_wrap(const char *s);
+%constant void py_master_printf_stderr_wrap(const char *s);
 void set_ctl_printf_callback(void (*callback)(const char *s));
 void set_mpb_printf_callback(void (*callback)(const char *s));
 
@@ -801,7 +807,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     // clean the volume object
     void* where;
-    
+
     PyObject* swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
     SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
     const meep::volume* where_vol = (const meep::volume*)where;
@@ -828,7 +834,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     // calculate the gradient
     meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c);
-    
+
     destroy_geom_box_tree(geometry_tree);
     delete[] l;
 

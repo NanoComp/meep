@@ -39,6 +39,7 @@ verbosity = Verbosity(mp.cvar, 1)
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
 mp.set_meep_printf_callback(mp.py_master_printf_wrap)
+mp.set_meep_printf_stderr_callback(mp.py_master_printf_stderr_wrap)
 mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
 mp.set_mpb_printf_callback(mp.py_master_printf_wrap)
 
@@ -313,7 +314,7 @@ class Volume(object):
             z_size = 0 if z_list.size == 1 else np.abs(np.diff(z_list)[0])
 
             self.size = Vector3(x_size,y_size,z_size)
-    
+
         self.dims = dims
 
         v1 = self.center - self.size.scale(0.5)
@@ -3207,12 +3208,12 @@ class Simulation(object):
                       DeprecationWarning)
         return self.get_array_metadata(vol=dft_cell.where if dft_cell is not None else vol,
                                        center=center, size=size, collapse=True)
-    
+
     def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
         """
         Computes the dimensions of a dft array for a particular `component` (`mp.Ez`, `mp.Ey`, etc.).
 
-        Accepts either a volume object (`vol`), or a `center` and `size` `Vector3` pair. 
+        Accepts either a volume object (`vol`), or a `center` and `size` `Vector3` pair.
 
         Returns a tuple containing the dimensions (`dim_sizes`), a `Vector3` object
         corresponding to the minimum corner of the volume DFT volume object (`min_corner`),
@@ -3229,7 +3230,7 @@ class Simulation(object):
         min_corner = corners[0]
         max_corner = corners[1]
         return dim_sizes, min_corner, max_corner
-    
+
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
         """
