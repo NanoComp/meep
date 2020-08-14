@@ -99,6 +99,32 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
     else:
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
+class DiffractedPlanewave(object):
+    def __init__(self,
+                 g=None,
+                 axis=None,
+                 s=None,
+                 p=None):
+        self._g = g
+        self._axis = axis
+        self._s = s
+        self._p = p
+
+    @property
+    def g(self):
+        return self._g
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @property
+    def s(self):
+        return self._s
+
+    @property
+    def p(self):
+        return self._p
 
 class PML(object):
     """

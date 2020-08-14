@@ -292,6 +292,15 @@ static int nextpow2357(int n) {
   }
 }
 
+diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::complex<double> s_, std::complex<double> p_) {
+  for (int j = 0; j < 3; ++j) {
+    g[j] = g_[j];
+    axis[j] = axis_[j];
+  }
+  s = s_;
+  p = p_;
+};
+
 /****************************************************************/
 /* call MPB to get the band_numth eigenmode at freq frequency.  */
 /*                                                              */
@@ -313,7 +322,7 @@ static int nextpow2357(int n) {
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata) {
+                            void **user_mdata, diffractedplanewave *dp) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -538,7 +547,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   /*- part 2: newton iteration loop with call to MPB on each step */
   /*-         until eigenmode converged to requested tolerance    */
   /*--------------------------------------------------------------*/
-  if (am_master()) do {
+  if (am_master() && !dp) do {
       eigensolver(H, eigvals, maxwell_operator, (void *)mdata,
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 6)
                   NULL, NULL, /* eventually, we can support mu here */
@@ -590,6 +599,28 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       }
     } while (match_frequency &&
              fabs(sqrt(eigvals[band_num - 1]) - frequency) > frequency * match_tol);
+
+  if (am_master() && dp) {
+    scalar_complex s = {real(dp->get_s()),imag(dp->get_s())};
+    scalar_complex p = {real(dp->get_p()),imag(dp->get_p())};
+
+    master_printf("diffracted planewave: k = %g, %g, %g for omega = %g\n", k[0],k[1],k[2], frequency);
+    update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+    maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
+
+    eigvals[band_num - 1] = frequency;
+
+    evectmatrix_resize(&W[0], 1, 0);
+    evectmatrix_resize(&W[1], 1, 0);
+    for (int i = 0; i < H.n; ++i)
+      W[0].data[i] = H.data[H.p - 1 + i * H.p];
+    maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
+    mpb_real vscratch;
+    evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
+    vgrp /= sqrt(eigvals[band_num - 1]);
+
+    master_printf("diffracted planewave: group velocity v=%g\n", vgrp);
+  }
 
   double eigval = eigvals[band_num - 1];
 

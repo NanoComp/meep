@@ -1484,6 +1484,21 @@ public:
   std::vector<std::complex<double> > values; // updated by update_values(idx)
 };
 
+class diffractedplanewave {
+
+public:
+  diffractedplanewave(int g[3], double axis[3], std::complex<double> s, std::complex<double> p);
+  int *get_g() { return g; };
+  double *get_axis() { return axis; }
+  std::complex<double> get_s() const { return s; };
+  std::complex<double> get_p() const { return p; };
+private:
+  int g[3];                // diffraction order
+  double axis[3];          // axis vector
+  std::complex<double> s;  // s polarization amplitude
+  std::complex<double> p;  // p polarization ampiltude
+};
+
 class gaussianbeam {
 
 public:
@@ -1710,7 +1725,7 @@ public:
   void *get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, double *kdom = 0,
-                      void **user_mdata = 0);
+                      void **user_mdata = 0, diffractedplanewave *dp = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
