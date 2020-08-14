@@ -27,11 +27,7 @@ using namespace std;
 
 namespace meep {
 
-static bool _wholenumber(double value) {
-  double intpart;
-  return modf(value, &intpart) == 0.0;
-}
-
+static bool isinteger(double value) { return value == floor(value); }
 
 ivec grid_volume::round_vec(const vec &p) const {
   ivec result(dim);
@@ -905,14 +901,14 @@ vec grid_volume::dz() const {
 }
 
 grid_volume volone(double zsize, double a) {
-  if (!_wholenumber(zsize) || !_wholenumber(a))
+  if (!isinteger(zsize) || !isinteger(a))
     master_printf_stderr(
       "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
   return grid_volume(D1, a, 0, 0, (int)(zsize * a + 0.5));
 }
 
 grid_volume voltwo(double xsize, double ysize, double a) {
-  if (!_wholenumber(xsize) || !_wholenumber(ysize) || !_wholenumber(a))
+  if (!isinteger(xsize) || !isinteger(ysize) || !isinteger(a))
     master_printf_stderr(
       "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
   return grid_volume(D2, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
@@ -924,7 +920,7 @@ grid_volume vol1d(double zsize, double a) { return volone(zsize, a); }
 grid_volume vol2d(double xsize, double ysize, double a) { return voltwo(xsize, ysize, a); }
 
 grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
-  if (!_wholenumber(xsize) || !_wholenumber(ysize) || !_wholenumber(zsize) || !_wholenumber(a))
+  if (!isinteger(xsize) || !isinteger(ysize) || !isinteger(zsize) || !isinteger(a))
     master_printf_stderr(
       "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
   return grid_volume(D3, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
@@ -933,7 +929,7 @@ grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
 }
 
 grid_volume volcyl(double rsize, double zsize, double a) {
-  if (!_wholenumber(rsize) || !_wholenumber(zsize) || !_wholenumber(a))
+  if (!isinteger(rsize) || !isinteger(zsize) || !isinteger(a))
     master_printf_stderr(
       "WARNING: Creating a grid_volume with non-whole numbers may result in rounding errors.\n");
 
