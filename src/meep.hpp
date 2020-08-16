@@ -1492,6 +1492,7 @@ public:
   double *get_axis() { return axis; }
   std::complex<double> get_s() const { return s; };
   std::complex<double> get_p() const { return p; };
+
 private:
   int g[3];                // diffraction order
   double axis[3];          // axis vector
@@ -1737,12 +1738,14 @@ public:
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                  vec *kpoints, vec *kdom, double *cscale, direction d);
+                                  vec *kpoints, vec *kdom, double *cscale, direction d,
+                                  diffractedplanewave *dp = 0);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func = 0, void *user_kpoint_data = 0,
-                                  vec *kpoints = 0, vec *kdom = 0, double *cscale = 0);
+                                  vec *kpoints = 0, vec *kdom = 0, double *cscale = 0,
+                                  diffractedplanewave *dp = 0);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));

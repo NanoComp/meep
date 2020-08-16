@@ -512,6 +512,25 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     return res;
 }
 
+
+kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_flux flux, const meep::volume &eig_vol,
+                                                   meep::diffractedplanewave *dp, int parity, double eig_resolution,
+                                                   double eigensolver_tol, std::complex<double> *coeffs,
+                                                   double *vgrp, meep::kpoint_func user_kpoint_func,
+                                                   void *user_kpoint_data, double *cscale, meep::direction d) {
+
+    size_t num_kpoints = flux.freq.size();
+    meep::vec *kpoints = new meep::vec[num_kpoints];
+    meep::vec *kdom = new meep::vec[num_kpoints];
+
+    f->get_eigenmode_coefficients(flux, eig_vol, NULL, 0, parity, eig_resolution, eigensolver_tol,
+                                  coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, cscale, d, dp);
+
+    kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
+
+    return res;
+}
+
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL) {
@@ -1562,6 +1581,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         DftEnergy,
         DftFields,
         Volume,
+        DiffractedPlanewave,
         after_sources,
         after_sources_and_time,
         after_time,

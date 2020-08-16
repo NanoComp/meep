@@ -859,7 +859,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        double *cscale, direction d) {
+                                        double *cscale, direction d, diffractedplanewave *dp) {
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
 
@@ -884,7 +884,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       am_now_working_on(MPBTime);
       void *mode_data =
           get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
-                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata);
+                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
@@ -1032,10 +1032,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        double *cscale) {
+                                        double *cscale, diffractedplanewave *dp) {
   get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                              eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
-                             kpoints, kdom, cscale, flux.normal_direction);
+                             kpoints, kdom, cscale, flux.normal_direction, dp);
 }
 
 } // namespace meep
