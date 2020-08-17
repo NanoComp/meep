@@ -3304,17 +3304,17 @@ class Simulation(object):
                 direction
             )
         elif isinstance(bands,DiffractedPlanewave):
-            coeffs = np.zeros(2 * flux.freq.size(), dtype=np.complex128)
-            vgrp = np.zeros(flux.freq.size())
-            cscale = np.zeros(flux.freq.size())
-
+            num_bands = 1
+            coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
+            vgrp = np.zeros(num_bands * flux.freq.size())
+            cscale = np.zeros(num_bands * flux.freq.size())
             diffractedplanewave_args = [
                 np.array(bands.g, dtype=np.intc),
-                py_v3_to_vec(self.dimensions, bands.axis, is_cylindrical=self.is_cylindrical),
-                bands.s,
-                bands.p
+                np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64),
+                bands.s * 1.0,
+                bands.p * 1.0
                 ]
-            diffractedplanewave = mp.diffractedplanewave(*diffractedplane_args)
+            diffractedplanewave = mp.diffractedplanewave(*diffractedplanewave_args)
 
             kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
                 self.fields,

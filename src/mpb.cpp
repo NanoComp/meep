@@ -862,7 +862,6 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *cscale, direction d, diffractedplanewave *dp) {
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
-
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
     abort("flux regions for eigenmode projection with symmetry should be created by "
           "add_mode_monitor()");
@@ -878,7 +877,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       /*--------------------------------------------------------------*/
       /*- call mpb to compute the eigenmode --------------------------*/
       /*--------------------------------------------------------------*/
-      int band_num = bands[nb];
+      int band_num = bands ? bands[nb] : 1;
       double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
       am_now_working_on(MPBTime);
