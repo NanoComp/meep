@@ -93,7 +93,7 @@ If you only care about the imaginary part of ε in a narrow bandwidth around som
 
 Meep doesn't implement a frequency-independent complex ε. Not only is this not physical, but it also leads to both exponentially decaying and exponentially growing solutions in Maxwell's equations from positive- and negative-frequency Fourier components, respectively. Thus, it cannot be simulated in the time domain.
 
-### Why does my simulation diverge if $\varepsilon\lt 0$?
+### Why does my simulation diverge if the permittivity is less than 0?
 
 Maxwell's equations have exponentially growing solutions for a frequency-independent negative $\varepsilon$. For any physical medium with negative $\varepsilon$, there must be dispersion, and you must likewise use dispersive materials in Meep to obtain negative $\varepsilon$ at some desired frequency. The requirement of dispersion to obtain negative $\varepsilon$ follows from the [Kramers–Kronig relations](https://en.wikipedia.org/wiki/Kramers%E2%80%93Kronig_relations), and also follows from thermodynamic considerations that the energy in the electric field must be positive. For example, see [Electrodynamics of Continuous Media](https://www.amazon.com/Electrodynamics-Continuous-Media-Second-Theoretical/dp/0750626348) by Landau, Pitaevskii, and Lifshitz. At an even more fundamental level, it can be derived from passivity constraints as shown in [Physical Review A, Vol. 90, 023847, 2014](http://arxiv.org/abs/arXiv:1405.0238).
 
@@ -166,13 +166,13 @@ You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#conti
 
 The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response $\exp(-i\omega t)$ due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
 
-If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
+If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at $(1 + \tanh(-3))/2 = 0.00247$ of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
 
 <center>
 ![](images/cwsrc_turnon.png)
 </center>
 
-Note: even if you have a continuous wave (CW) source at a frequency ω, the time dependence of the electric field after transients have died away won't necessarily be cos(ωt), because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to cos(ωt-φ) for some phase φ which depends on the field component, the source position, and the surrounding geometry.
+Note: even if you have a continuous wave (CW) source at a frequency $\omega$, the time dependence of the electric field after transients have died away won't necessarily be $cos(\omega t)$, because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to $cos(\omega t-\phi)$ for some phase $\phi$ which depends on the field component, the source position, and the surrounding geometry.
 
 ### Why does the amplitude of a point dipole source increase with resolution?
 
@@ -507,3 +507,88 @@ The second approach is based on a full nonlinear simulation of the Raman process
 ### Does Meep support adjoint-based optimization?
 
 Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization with respect to a grid of ε values (also known as "density-based" topology optimization).  (Of course, you can always use finite differences or similar methods to compute sensitivities for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)
+
+### Why do small changes in the resolution sometimes produce large changes in the simulation output?
+
+For certain values of the resolution and cell dimensions, the number of pixels in the grid volume in a given direction may *not* be an integer. In this case, Meep will print a warning `Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.` and *slightly adjust* the cell dimensions to the nearest pixel (the resolution is unchanged). While any difference in the actual cell dimensions compared to the user-supplied values is less than a pixel (i.e., first-order error), the error in the fields can be *significantly* larger.
+
+This can be demonstrated using a 1d line source with a sinusoidal amplitude function in a 2d cell with periodic boundaries. The line source spans the entire length $L$ of the cell in the $x$ direction and is defined using a cosine profile: $\cos(k_x x)$ where $k_x=2\pi m/L$ and $m$ is an integer. The wavevector $k_y$ of the propagating modes can be computed analytically: for a frequency $\omega$ (in $c=1$ units), the propagating modes are the **real** solutions of $\sqrt{\omega^2n^2-k_x^2}$ where $n$ is the refractive index of the propagating medium. (This is analogous to the [diffractions orders of a binary grating](Python_Tutorials/Mode_Decomposition.md#transmittance-spectra-for-planewave-at-normal-incidence).) PMLs surround the cell in the $y$ direction in order to absorb the outgoing flux. In this example, $L=1.5$, $\omega=2\pi$, and $n=3.5$ for a total of $|m|=5$ propagating modes. This can be verified by computing the total flux radiated by the source in the $+y$ direction for the evanescent $m=6$ mode and checking that it is "zero" (i.e., close to [machine precision](https://en.wikipedia.org/wiki/Machine_epsilon)).
+
+```py
+import numpy as np
+import meep as mp
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-res', type=int, default=50, help='resolution (pixels/um)')
+args = parser.parse_args()
+resolution = args.res
+
+sx = 1.5
+sy = 6.0
+cell_size = mp.Vector3(sx,sy)
+
+dpml = 1.0
+pml_layers = [mp.PML(direction=mp.Y,
+                     thickness=dpml)]
+
+fcen = 1.0
+
+def src_amp_func(m):
+    def _src_amp_func(p):
+        return np.cos(2*np.pi*m*(p.x+0.5*sx)/sx)
+    return _src_amp_func
+
+sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                     component=mp.Ez,
+                     center=mp.Vector3(0,-0.5*sy+dpml),
+                     size=mp.Vector3(sx,0),
+                     amp_func=src_amp_func(6))]
+
+sim = mp.Simulation(cell_size=cell_size,
+                    resolution=resolution,
+                    k_point=mp.Vector3(),
+                    boundary_layers=pml_layers,
+                    sources=sources,
+                    default_material=mp.Medium(index=3.5))
+
+flux_mon = sim.add_flux(fcen, 0, 1,
+                        mp.FluxRegion(center=mp.Vector3(0,0.5*sy-dpml),size=mp.Vector3(sx)))
+
+sim.run(until_after_sources=20)
+
+flux = mp.get_fluxes(flux_mon)
+print("flux:, {}".format(flux[0]))
+```
+
+Plotting the radiated flux as a function of the resolution (using a semi-logarithmic scale) reveals an unexpected finding.
+
+<center>
+![](images/radiated_flux_vs_resolution.png)
+</center>
+
+The radiated flux of the evanescent mode varies by nearly twelve orders of magnitude when the resolution changes by just one! Also, the radiated flux is "zero" (the correct/expected result) only when the resolution is an even number. These large variations are due to the cell dimensions in the periodic $x$ direction which are displayed in the simulation output:
+
+```
+Computational cell is 1.5 x 6 x 0 with resolution 50
+flux:, 6.788984186414434e-16
+...
+Computational cell is 1.5098 x 6 x 0 with resolution 51
+flux:, 0.0004094502264147733
+...
+Computational cell is 1.5 x 6 x 0 with resolution 52
+flux:, 5.484924186312514e-16
+...
+Computational cell is 1.50943 x 6 x 0 with resolution 53
+flux:, 0.00035958138720120446
+...
+Computational cell is 1.5 x 6 x 0 with resolution 54
+flux:, 4.543947667089586e-16
+...
+Computational cell is 1.50909 x 6 x 0 with resolution 55
+flux:, 0.00033641577621399885
+```
+
+In this particular example, an even grid resolution results in a cell size in the $x$ direction of 1.5 but something slightly larger whenever the resolution is odd. When the cell size in $x$ is exactly 1.5 (even resolutions), the source does not radiate and the flux is therefore ~10<sup>-16</sup> (i.e., [round-off errors](https://en.wikipedia.org/wiki/Round-off_error)). However, when the cell size in $x$ is not exactly 1.5 (odd resolutions), the source *does* radiate a small but non-trivial amount (~10<sup>-4</sup>) which is only due to the different periodicity. (The same symmetry-breaking errors affect the propagating $|m| \leq 5$ modes though they are less pronounced.)
+
+The key point is that in certain situations, the choice of the resolution and/or the cell dimensions should be chosen carefully. Otherwise, the results may be unpredictable.

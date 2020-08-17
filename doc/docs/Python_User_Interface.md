@@ -1256,7 +1256,7 @@ The `Simulation` class also provides some aliases for the corresponding "flux" m
 
 ### Mode Decomposition
 
-Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
+Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Features/Mode Decomposition](Mode_Decomposition.md).
 
 
 <a id="Simulation.get_eigenmode_coefficients"></a>
@@ -3513,8 +3513,7 @@ The following step function collects field data from a given point and runs [Har
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior.
-See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 
 #### Miscellaneous Step-Function Modifiers
