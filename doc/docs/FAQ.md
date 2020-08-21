@@ -93,7 +93,7 @@ If you only care about the imaginary part of ε in a narrow bandwidth around som
 
 Meep doesn't implement a frequency-independent complex ε. Not only is this not physical, but it also leads to both exponentially decaying and exponentially growing solutions in Maxwell's equations from positive- and negative-frequency Fourier components, respectively. Thus, it cannot be simulated in the time domain.
 
-### Why does my simulation diverge if $\varepsilon\lt 0$?
+### Why does my simulation diverge if the permittivity is less than 0?
 
 Maxwell's equations have exponentially growing solutions for a frequency-independent negative $\varepsilon$. For any physical medium with negative $\varepsilon$, there must be dispersion, and you must likewise use dispersive materials in Meep to obtain negative $\varepsilon$ at some desired frequency. The requirement of dispersion to obtain negative $\varepsilon$ follows from the [Kramers–Kronig relations](https://en.wikipedia.org/wiki/Kramers%E2%80%93Kronig_relations), and also follows from thermodynamic considerations that the energy in the electric field must be positive. For example, see [Electrodynamics of Continuous Media](https://www.amazon.com/Electrodynamics-Continuous-Media-Second-Theoretical/dp/0750626348) by Landau, Pitaevskii, and Lifshitz. At an even more fundamental level, it can be derived from passivity constraints as shown in [Physical Review A, Vol. 90, 023847, 2014](http://arxiv.org/abs/arXiv:1405.0238).
 
@@ -166,13 +166,13 @@ You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#conti
 
 The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produce an exact single-frequency response $\exp(-i\omega t)$ due to its [finite turn-on time](https://github.com/NanoComp/meep/blob/master/src/sources.cpp#L104-L122) which is described by a hyperbolic-tangent function. In the asymptotic limit, the resulting fields are the single-frequency response; it's just that if you Fourier transform the response over the *entire* simulation you will see a finite bandwidth due to the turn-on.
 
-If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at (1 + tanh(-3))/2 = 0.00247 of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
+If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at $(1 + \tanh(-3))/2 = 0.00247$ of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
 
 <center>
 ![](images/cwsrc_turnon.png)
 </center>
 
-Note: even if you have a continuous wave (CW) source at a frequency ω, the time dependence of the electric field after transients have died away won't necessarily be cos(ωt), because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to cos(ωt-φ) for some phase φ which depends on the field component, the source position, and the surrounding geometry.
+Note: even if you have a continuous wave (CW) source at a frequency $\omega$, the time dependence of the electric field after transients have died away won't necessarily be $cos(\omega t)$, because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to $cos(\omega t-\phi)$ for some phase $\phi$ which depends on the field component, the source position, and the surrounding geometry.
 
 ### Why does the amplitude of a point dipole source increase with resolution?
 
@@ -233,13 +233,13 @@ This analysis is only valid if the loss is small, i.e. ω<sub>i</sub> << ω<sub>
 
 ### How do I compute the group velocity of a mode?
 
-There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) ∇<sub>**k**</sub>ω: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) ω(**k**) using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. [ω(**k**+Δ**k**)-ω(**k**-Δ**k**)]/(2|Δ**k**|)), or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
+There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) $\nabla_\textbf{k}\omega$: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) $\omega(\textbf{k})$ using [`Harminv`](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. $[ \omega(\textbf{k} + \Delta \textbf{k}) - \omega(\textbf{k}-\Delta \textbf{k}) ] / (2\|\Delta \textbf{k}\|)$, or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
 
 For eigenmodes obtained using [mode decomposition](Python_User_Interface.md#mode-decomposition), the group velocities are computed automatically along with the mode coefficients.
 
 ### How do I compute the time average of the harmonic fields?
 
-For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity |E|<sup>2</sup>/2 or [Poynting flux](https://en.wikipedia.org/wiki/Poynting_vector#Time-averaged_Poynting_vector) Re[E*xH]/2 is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
+For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#continuoussource) with `force_complex_fields=True` and time-step the fields until all transients have disappeared. Once the fields have reached steady state, the instantaneous intensity $|E|^2 /2$ or [Poynting flux](https://en.wikipedia.org/wiki/Poynting_vector#Time-averaged_Poynting_vector) $\Re{[E^{*}\times H]}/2$ is equivalent to the time average. If you don't use complex fields, then these are just the instantaneous values at a given time, and will oscillate. An alternative to time-stepping is the [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver).
 
 ### Why are the fields not being absorbed by the PML?
 
