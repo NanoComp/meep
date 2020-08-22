@@ -626,8 +626,11 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
           vec cen = eig_vol.center();
           double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
           double k2 = frequency*frequency*nn*nn - k2sum;
-          if (k2 < 0)
+          if (k2 < 0) {
+            master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent!\n",
+                          dp->get_axis()[0],dp->get_axis()[1],dp->get_axis()[2]);
             return NULL;
+          }
           else if (k2 > 0)
             k[dd - X] = sqrt(k2);
         }

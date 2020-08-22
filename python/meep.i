@@ -1053,14 +1053,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 // typemaps for diffractedplanewave
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") int g[3] {
-    $1 = is_array($input);
-}
-
-%typemap(in) int g[3] {
-     $1 = (int *)array_data($input);
-}
-
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double axis[3] {
     $1 = is_array($input);
 }
