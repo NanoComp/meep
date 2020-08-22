@@ -309,7 +309,7 @@ diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::comple
 /* routine to allow it to be followed either by                 */
 /*  (a) add_eigenmode_src()                                     */
 /* or                                                           */
-/*  (b) get_eigenmode_coefficient()                             */
+/*  (b) get_eigenmode_coefficients()                            */
 /*                                                              */
 /* the return value is an opaque pointer to an eigenmode_data   */
 /* structure (needs to be opaque to allow compilation without   */
@@ -986,6 +986,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   (void)eigensolver_tol;
   (void)kdom;
   (void)user_mdata;
+  (voi)dp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
@@ -1015,7 +1016,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        double *cscale, direction d) {
+                                        double *cscale, direction d, diffractedplanewave *dp) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -1031,7 +1032,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)kdom;
   (void)cscale;
   (void)d;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
+  (void)dp;
+  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
 
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
