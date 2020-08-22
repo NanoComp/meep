@@ -1487,7 +1487,7 @@ public:
 class diffractedplanewave {
 
 public:
-  diffractedplanewave(int g[3], double axis[3], std::complex<double> spol, std::complex<double> ppol);
+  diffractedplanewave(int g[3], double axis[3], std::complex<double> s, std::complex<double> p);
   int *get_g() { return g; };
   double *get_axis() { return axis; }
   std::complex<double> get_s() const { return s; };
