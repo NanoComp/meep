@@ -600,26 +600,60 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     } while (match_frequency &&
              fabs(sqrt(eigvals[band_num - 1]) - frequency) > frequency * match_tol);
 
-  if (am_master() && dp) {
+  if (dp) {
     scalar_complex s = {real(dp->get_s()),imag(dp->get_s())};
     scalar_complex p = {real(dp->get_p()),imag(dp->get_p())};
 
-    master_printf("diffracted planewave: k = %g, %g, %g for omega = %g\n", k[0],k[1],k[2], frequency);
-    update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
-    maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
+    // compute sum of (kparallel+G)^2 in all the periodic directions
+    double k2sum = 0;
+    LOOP_OVER_DIRECTIONS(v.dim, dd) {
+      double ktmp = 0;
+      int m = 0;
+      if ((float(eig_vol.in_direction(dd)) == float(v.in_direction(dd))) &&
+          (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)) {
+        m = dp->get_g()[dd - X];
+        ktmp = k[dd - X] + m/v.in_direction(dd);
+        k2sum += ktmp*ktmp;
+      }
+    }
 
-    eigvals[band_num - 1] = frequency;
+    // compute kperp (if it is non evanescent) OR
+    // frequency from kperp^2 and sum of (kparallel+G)^2
+    LOOP_OVER_DIRECTIONS(v.dim, dd) {
+      if ((float(eig_vol.in_direction(dd)) != float(v.in_direction(dd))) &&
+          (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)) {
+        if (match_frequency) {
+          vec cen = eig_vol.center();
+          double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
+          double k2 = frequency*frequency*nn*nn - k2sum;
+          if (k2 < 0)
+            return NULL;
+          else if (k2 > 0)
+            k[dd - X] = sqrt(k2);
+        }
+        else
+          frequency = sqrt(k[dd - X]*k[dd - X] + k2sum);
+      }
+    }
 
-    evectmatrix_resize(&W[0], 1, 0);
-    evectmatrix_resize(&W[1], 1, 0);
-    for (int i = 0; i < H.n; ++i)
-      W[0].data[i] = H.data[H.p - 1 + i * H.p];
-    maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
-    mpb_real vscratch;
-    evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
-    vgrp /= sqrt(eigvals[band_num - 1]);
+    if (am_master()) {
+      master_printf("diffracted planewave: k = %g, %g, %g for omega = %g\n", k[0],k[1],k[2], frequency);
+      update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+      maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
 
-    master_printf("diffracted planewave: group velocity v=%g\n", vgrp);
+      eigvals[band_num - 1] = frequency;
+
+      evectmatrix_resize(&W[0], 1, 0);
+      evectmatrix_resize(&W[1], 1, 0);
+      for (int i = 0; i < H.n; ++i)
+        W[0].data[i] = H.data[H.p - 1 + i * H.p];
+      maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
+      mpb_real vscratch;
+      evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
+      vgrp /= sqrt(eigvals[band_num - 1]);
+
+      master_printf("diffracted planewave: group velocity v=%g\n", vgrp);
+    }
   }
 
   double eigval = eigvals[band_num - 1];
@@ -938,7 +972,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata) {
+                            void **user_mdata, diffractedplanewave *dp) {
 
   (void)frequency;
   (void)d;
