@@ -986,7 +986,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   (void)eigensolver_tol;
   (void)kdom;
   (void)user_mdata;
-  (voi)dp;
+  (void)dp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
