@@ -626,7 +626,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
             k[dd - X] = sqrt(k2);
         }
         else
-          frequency = sqrt(k[dd - X]*k[dd - X] + k2sum);
+          frequency = sqrt(kpoint.in_direction(dd)*kpoint.in_direction(dd) + k2sum);
       }
     }
 
@@ -635,7 +635,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
 
-      eigvals[band_num - 1] = frequency;
+      eigvals[band_num - 1] = frequency*frequency;
 
       evectmatrix_resize(&W[0], 1, 0);
       evectmatrix_resize(&W[1], 1, 0);

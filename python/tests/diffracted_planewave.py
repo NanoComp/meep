@@ -89,22 +89,21 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
     sim.run(until_after_sources=100)
 
-    for band_num,diff_order in zip(bands,orders):
+    for band,order in zip(bands,orders):
       res = sim.get_eigenmode_coefficients(tran_flux,
-                                           [band_num],
+                                           [band],
                                            eig_parity=eig_parity)
-      tran_ref = (0.5 if ((theta_in == 0) and (band_num > 1)) else 1.0)*abs(res.alpha[0,0,0])**2/input_flux[0]
+      tran_ref = (0.5 if ((theta_in == 0) and (band > 1)) else 1.0)*abs(res.alpha[0,0,0])**2/input_flux[0]
 
       res = sim.get_eigenmode_coefficients(tran_flux,
-                                           mp.DiffractedPlanewave((0,diff_order,0),mp.Vector3(1,1,0),1,0),
-                                           eig_parity=eig_parity)
+                                           mp.DiffractedPlanewave((0,order,0),mp.Vector3(1,1,0),1,0))
       if res is not None:
         tran_dp = abs(res.alpha[0,0,0])**2/input_flux[0]
       else:
         tran_dp = 0
 
       err = abs(tran_ref-tran_dp)/tran_ref
-      print("tran:, {} (band_num), {} (diff_order), {:.8f} (eigensolver), {:.8f} (planewave), {:.8f} (error)".format(band_num,diff_order,tran_ref,tran_dp,err))
+      print("tran:, {} (band), {} (order), {:.8f} (eigensolver), {:.8f} (planewave), {:.8f} (error)".format(band,order,tran_ref,tran_dp,err))
 
       self.assertAlmostEqual(tran_ref,tran_dp,places=5)
 
