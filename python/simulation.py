@@ -3283,7 +3283,12 @@ class Simulation(object):
         if direction is None or direction == mp.AUTOMATIC:
             direction = flux.normal_direction
 
-        if isinstance(bands, list):
+        try:
+            bands_list_range = isinstance(bands, (list,range))
+        except TypeError:
+            bands_list_range = isinstance(bands, list)
+
+        if bands_list_range:
             num_bands = len(bands)
             coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
             vgrp = np.zeros(num_bands * flux.freq.size())
