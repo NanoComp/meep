@@ -10,7 +10,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
   def run_binary_grating_diffraction(self, gp, gh, gdc, theta, bands, orders):
 
-    resolution = 25        # pixels/μm
+    resolution = 25        # pixels/um
 
     dpml = 1.0             # PML thickness
     dsub = 3.0             # substrate thickness
@@ -20,7 +20,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
     sy = gp
 
     cell_size = mp.Vector3(sx,sy,0)
-    pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
+    absorber_layers = [mp.Absorber(thickness=dpml,direction=mp.X)]
 
     wvl = 0.5              # center wavelength
     fcen = 1/wvl           # center frequency
@@ -55,7 +55,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
-                        boundary_layers=pml_layers,
+                        boundary_layers=absorber_layers,
                         k_point=k,
                         default_material=glass,
                         sources=sources)
@@ -79,7 +79,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
-                        boundary_layers=pml_layers,
+                        boundary_layers=absorber_layers,
                         geometry=geometry,
                         k_point=k,
                         sources=sources)
