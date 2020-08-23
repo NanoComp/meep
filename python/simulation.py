@@ -3283,7 +3283,7 @@ class Simulation(object):
         if direction is None or direction == mp.AUTOMATIC:
             direction = flux.normal_direction
 
-        if isinstance(bands,(list,range)):
+        if isinstance(bands, list):
             num_bands = len(bands)
             coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
             vgrp = np.zeros(num_bands * flux.freq.size())
@@ -3303,7 +3303,7 @@ class Simulation(object):
                 cscale,
                 direction
             )
-        elif isinstance(bands,DiffractedPlanewave):
+        elif isinstance(bands, DiffractedPlanewave):
             num_bands = 1
             coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
             vgrp = np.zeros(num_bands * flux.freq.size())
