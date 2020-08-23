@@ -603,7 +603,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       if ((float(eig_vol.in_direction(dd)) == float(v.in_direction(dd))) &&
           (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)) {
         m = dp->get_g()[dd - X];
-        ktmp = k[dd - X] + m/v.in_direction(dd);
+        ktmp = kpoint.in_direction(dd) + m/v.in_direction(dd);
         k2sum += ktmp*ktmp;
       }
     }
@@ -619,7 +619,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
           double k2 = frequency*frequency*nn*nn - k2sum;
           if (k2 < 0) {
             master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent!\n",
-                          dp->get_axis()[0],dp->get_axis()[1],dp->get_axis()[2]);
+                          dp->get_g()[0],dp->get_g()[1],dp->get_g()[2]);
             return NULL;
           }
           else if (k2 > 0)
