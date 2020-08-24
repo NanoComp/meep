@@ -32,7 +32,6 @@
 #endif
 
 PyObject *py_callback = NULL;
-PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
 static void abort_with_stack_trace() {
@@ -100,8 +99,8 @@ static PyObject *py_volume_object() {
   return volume_object;
 }
 
-static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
-
+static PyObject *vec2py(const meep::vec &v) {
+  // Return value: New reference
   double x = 0, y = 0, z = 0;
 
   switch (v.dim) {
@@ -121,38 +120,13 @@ static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
       break;
   }
 
-  if (newobj) {
-    PyObject *v3_class = py_vector3_object();
-    PyObject *args = Py_BuildValue("(d,d,d)", x, y, z);
-    PyObject *res = PyObject_Call(v3_class, args, NULL);
+  PyObject *v3_class = py_vector3_object();
+  PyObject *args = Py_BuildValue("(d,d,d)", x, y, z);
+  PyObject *res = PyObject_Call(v3_class, args, NULL);
 
-    Py_DECREF(args);
+  Py_DECREF(args);
 
-    return res;
-  }
-  else {
-    if (py_callback_v3 == NULL) {
-      PyObject *v3_class = py_vector3_object();
-      PyObject *args = PyTuple_New(0);
-      py_callback_v3 = PyObject_Call(v3_class, args, NULL);
-
-      Py_DECREF(args);
-    }
-
-    PyObject *pyx = PyFloat_FromDouble(x);
-    PyObject *pyy = PyFloat_FromDouble(y);
-    PyObject *pyz = PyFloat_FromDouble(z);
-
-    PyObject_SetAttrString(py_callback_v3, "x", pyx);
-    PyObject_SetAttrString(py_callback_v3, "y", pyy);
-    PyObject_SetAttrString(py_callback_v3, "z", pyz);
-
-    Py_DECREF(pyx);
-    Py_DECREF(pyy);
-    Py_DECREF(pyz);
-
-    return py_callback_v3;
-  }
+  return res;
 }
 
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
@@ -164,6 +138,7 @@ static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct
 
   if (!pymedium_to_medium(pyret, medium)) { abort_with_stack_trace(); }
 
+  Py_DECREF(py_vec);
   Py_DECREF(pyret);
 }
 
@@ -180,6 +155,7 @@ static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medi
   medium->epsilon_diag.y = eps;
   medium->epsilon_diag.z = eps;
 
+  Py_DECREF(py_vec);
   Py_DECREF(pyret);
 }
 

@@ -112,6 +112,7 @@ static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
     double ret = PyFloat_AsDouble(pyret);
+    Py_DECREF(pyv);
     Py_XDECREF(pyret);
     return ret;
 }
@@ -122,6 +123,7 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
+    Py_DECREF(pyv);
     Py_DECREF(pyret);
     return ret;
 }
@@ -151,6 +153,7 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
+    Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);
     return ret;
@@ -529,11 +532,12 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     }
 
     if (min_max_loc){
-        PyObject * py_min = vec2py(min_max_loc_vec[0],true);
-        PyObject * py_max = vec2py(min_max_loc_vec[1],true);
+        PyObject * py_min = vec2py(min_max_loc_vec[0]);
+        PyObject * py_max = vec2py(min_max_loc_vec[1]);
         PyList_Append(min_max_loc, py_min);
         PyList_Append(min_max_loc, py_max);
-        Py_DECREF(py_min); Py_DECREF(py_max);
+        Py_DECREF(py_min);
+        Py_DECREF(py_max);
     }
 
     return Py_BuildValue("(iO)", rank, py_dirs);
@@ -618,10 +622,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     PyObject *py_kdom = PyList_New($1.num_bands);
 
     for (size_t i = 0; i < $1.n; ++i) {
-        PyList_SetItem(py_kpoints, i, vec2py($1.kpoints[i], true));
+        // SetItem steals the vec2pyref, so no need to decref
+        PyList_SetItem(py_kpoints, i, vec2py($1.kpoints[i]));
     }
     for (size_t i = 0; i < $1.num_bands; ++i) {
-        PyList_SetItem(py_kdom, i, vec2py($1.kdom[i], true));
+        // SetItem steals the vec2pyref, so no need to decref
+        PyList_SetItem(py_kdom, i, vec2py($1.kdom[i]));
     }
 
     $result = Py_BuildValue("(O,O)", py_kpoints, py_kdom);
