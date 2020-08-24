@@ -89,6 +89,7 @@ typedef struct {
 #include "typemap_utils.cpp"
 
 static PyObject *py_source_time_object() {
+    // Return value: Borrowed reference
     static PyObject *source_time_object = NULL;
     if (source_time_object == NULL) {
         PyObject *source_mod = PyImport_ImportModule("meep.source");
@@ -99,6 +100,7 @@ static PyObject *py_source_time_object() {
 }
 
 static PyObject *py_meep_src_time_object() {
+    // Return value: Borrowed reference
     static PyObject *src_time = NULL;
     if (src_time == NULL) {
         PyObject *meep_mod = PyImport_ImportModule("meep");
@@ -273,6 +275,7 @@ double py_pml_profile(double u, void *f) {
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
                      double spectral_density, double Q_thresh, double rel_err_thresh,
                      double err_thresh, double rel_amp_thresh, double amp_thresh) {
+    // Return value: New reference
 
     std::complex<double> *amp = new std::complex<double>[maxbands];
     double *freq_re = new double[maxbands];
@@ -314,6 +317,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 // Wrapper around meep::dft_near2far::farfield
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
@@ -331,6 +335,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 // Wrapper around meep::dft_near2far::get_farfields_array
  PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
                                 double resolution) {
+    // Return value: New reference
     size_t dims[4] = {1, 1, 1, 1};
     int rank = 0;
     size_t N = 1;
@@ -364,6 +369,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 
 // Wrapper around meep::dft_ldos::ldos
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
@@ -380,6 +386,7 @@ PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
 
 // Wrapper around meep::dft_ldos_F
 PyObject *_dft_ldos_F(meep::dft_ldos *f) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
@@ -396,6 +403,7 @@ PyObject *_dft_ldos_F(meep::dft_ldos *f) {
 
 // Wrapper arond meep::dft_ldos_J
 PyObject *_dft_ldos_J(meep::dft_ldos *f) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
@@ -425,6 +433,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
+    // Return value: New reference
     int rank;
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
@@ -518,6 +527,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL) {
+    // Return value: New reference
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
 
     meep::vec min_max_loc_vec[2];
@@ -555,6 +565,7 @@ meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::di
 }
 
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
+    // Return value: New reference
     PyObject *v3_class = py_vector3_object();
     PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
     PyObject *result = PyObject_Call(v3_class, args, NULL);

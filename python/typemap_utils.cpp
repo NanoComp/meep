@@ -58,12 +58,14 @@ static char *py2_string_as_utf8(PyObject *po) {
 #endif
 
 static PyObject *get_geom_mod() {
+  // Return value: Borrowed reference
   static PyObject *geom_mod = NULL;
   if (geom_mod == NULL) { geom_mod = PyImport_ImportModule("meep.geom"); }
   return geom_mod;
 }
 
 static PyObject *py_material_object() {
+  // Return value; Borrowed reference
   static PyObject *material_object = NULL;
   if (material_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -73,6 +75,7 @@ static PyObject *py_material_object() {
 }
 
 static PyObject *py_material_grid_object() {
+  // Return value: Borrowed reference
   static PyObject *material_object = NULL;
   if (material_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -82,6 +85,7 @@ static PyObject *py_material_grid_object() {
 }
 
 static PyObject *py_vector3_object() {
+  // Return value: Borrowed reference
   static PyObject *vector3_object = NULL;
   if (vector3_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -91,6 +95,7 @@ static PyObject *py_vector3_object() {
 }
 
 static PyObject *py_volume_object() {
+  // Return value: Borrowed reference
   static PyObject *volume_object = NULL;
   if (volume_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -223,6 +228,7 @@ static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
 }
 
 static PyObject *v3_to_pyv3(vector3 *v) {
+  // Return value: New reference
   PyObject *v3_class = py_vector3_object();
   PyObject *args = Py_BuildValue("(ddd)", v->x, v->y, v->z);
   PyObject *py_v = PyObject_Call(v3_class, args, NULL);
@@ -528,6 +534,7 @@ template <class T> static void set_v3_on_pyobj(PyObject *py_obj, T *v3, const ch
 }
 
 static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
+  // Return value: New reference
   PyObject *geom_mod = get_geom_mod();
 
   PyObject *res;
@@ -605,6 +612,7 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
 }
 
 static PyObject *susceptibility_list_to_py_list(susceptibility_list *sl) {
+  // Return value: New reference
   PyObject *res = PyList_New(sl->num_items);
 
   for (Py_ssize_t i = 0; i < sl->num_items; ++i) {
@@ -615,6 +623,7 @@ static PyObject *susceptibility_list_to_py_list(susceptibility_list *sl) {
 }
 
 static PyObject *material_to_py_material(material_type mat) {
+  // Return value: New reference
   switch (mat->which_subclass) {
     case meep_geom::material_data::MEDIUM: {
       PyObject *geom_mod = get_geom_mod();
@@ -899,6 +908,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
 }
 
 static PyObject *gobj_to_py_obj(geometric_object *gobj) {
+  // Return value: New reference
   switch (gobj->which_subclass) {
     case geometric_object::PRISM: {
       PyObject *geom_mod = get_geom_mod();
@@ -943,7 +953,7 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
 }
 
 static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
-
+  // Return value: New reference
   PyObject *py_res = PyList_New(objs->num_items);
 
   for (int i = 0; i < objs->num_items; ++i) {
