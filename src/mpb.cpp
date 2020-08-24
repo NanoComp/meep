@@ -631,12 +631,9 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     }
 
     if (am_master()) {
-      master_printf("diffracted planewave: k = %g, %g, %g for omega = %g\n", k[0],k[1],k[2], frequency);
       update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
-
       eigvals[band_num - 1] = frequency*frequency;
-
       evectmatrix_resize(&W[0], 1, 0);
       evectmatrix_resize(&W[1], 1, 0);
       for (int i = 0; i < H.n; ++i)
@@ -645,8 +642,6 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       mpb_real vscratch;
       evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
       vgrp /= sqrt(eigvals[band_num - 1]);
-
-      master_printf("diffracted planewave: group velocity v=%g\n", vgrp);
     }
   }
 

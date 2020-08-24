@@ -46,7 +46,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
         return cmath.exp(1j*2*math.pi*k.dot(x+x0))
       return _pw_amp
 
-    src_pt = mp.Vector3(-0.5*sx+dpml+0.3*dsub,0,0)
+    src_pt = mp.Vector3(-0.5*sx+dpml,0,0)
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                          component=mp.Ez,
                          center=src_pt,
@@ -60,7 +60,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
                         default_material=glass,
                         sources=sources)
 
-    tran_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
+    tran_pt = mp.Vector3(0.5*sx-dpml,0,0)
     tran_flux = sim.add_flux(fcen, 0, 1,
                              mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
@@ -93,18 +93,25 @@ class TestDiffractedPlanewave(unittest.TestCase):
       res = sim.get_eigenmode_coefficients(tran_flux,
                                            [band],
                                            eig_parity=eig_parity)
-      tran_ref = (0.5 if ((theta_in == 0) and (band > 1)) else 1.0)*abs(res.alpha[0,0,0])**2/input_flux[0]
+      tran_ref = abs(res.alpha[0,0,0])**2/input_flux[0]
+      if (theta_in == 0):
+        tran_ref = 0.5*tran_ref
+      vg_ref = res.vgrp[0]
 
       res = sim.get_eigenmode_coefficients(tran_flux,
-                                           mp.DiffractedPlanewave((0,order,0),mp.Vector3(1,1,0),1,0))
+                                           mp.DiffractedPlanewave((0,order,0),mp.Vector3(0,1,0),1,0))
       if res is not None:
         tran_dp = abs(res.alpha[0,0,0])**2/input_flux[0]
+        if ((theta_in == 0) and (order == 0)):
+          tran_dp = 0.5*tran_dp
       else:
         tran_dp = 0
+      vg_dp = res.vgrp[0]
 
       err = abs(tran_ref-tran_dp)/tran_ref
       print("tran:, {} (band), {} (order), {:.8f} (eigensolver), {:.8f} (planewave), {:.8f} (error)".format(band,order,tran_ref,tran_dp,err))
 
+      self.assertAlmostEqual(vg_ref,vg_dp,places=5)
       self.assertAlmostEqual(tran_ref,tran_dp,places=5)
 
   def test_diffracted_planewave(self):
