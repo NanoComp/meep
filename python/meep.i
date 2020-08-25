@@ -205,7 +205,7 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
 }
 
 static void _do_master_printf(const char* stream_name, const char* text) {
-    PyObject* py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
+    PyObject *py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
 
     Py_XDECREF(PyObject_CallMethod(py_stream, "write", "(s)", text));
     Py_XDECREF(PyObject_CallMethod(py_stream, "flush", NULL));
@@ -550,7 +550,9 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Py_DECREF(py_max);
     }
 
-    return Py_BuildValue("(iO)", rank, py_dirs);
+    PyObject *rval = Py_BuildValue("(iO)", rank, py_dirs);
+    Py_DECREF(py_dirs);
+    return rval;
 }
 
 #ifdef HAVE_MPB
@@ -643,6 +645,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
     $result = Py_BuildValue("(O,O)", py_kpoints, py_kdom);
 
+    Py_DECREF(py_kpoints);
+    Py_DECREF(py_kdom);
     delete[] $1.kpoints;
     delete[] $1.kdom;
 }
@@ -825,7 +829,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     // clean the volume object
     void* where;
 
-    PyObject* swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
+    PyObject *swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
     SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
     const meep::volume* where_vol = (const meep::volume*)where;
 
@@ -854,7 +858,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     destroy_geom_box_tree(geometry_tree);
     delete[] l;
-
+    Py_DECREF(swigobj);
 }
 %}
 //--------------------------------------------------
@@ -1811,4 +1815,15 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     return s;
 }
+%}
+
+
+%inline %{
+
+PyObject *test_vec2py(const meep::vec &v, bool newobj = false) {
+    PyObject * obj;
+    obj = vec2py(v); //, newobj);
+    return obj;
+}
+
 %}
