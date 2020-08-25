@@ -542,8 +542,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     }
 
     if (min_max_loc){
-        PyObject * py_min = vec2py(min_max_loc_vec[0]);
-        PyObject * py_max = vec2py(min_max_loc_vec[1]);
+        PyObject * py_min = vec2py(min_max_loc_vec[0],true);
+        PyObject * py_max = vec2py(min_max_loc_vec[1],true);
         PyList_Append(min_max_loc, py_min);
         PyList_Append(min_max_loc, py_max);
         Py_DECREF(py_min);
@@ -635,12 +635,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     PyObject *py_kdom = PyList_New($1.num_bands);
 
     for (size_t i = 0; i < $1.n; ++i) {
-        // SetItem steals the vec2pyref, so no need to decref
-        PyList_SetItem(py_kpoints, i, vec2py($1.kpoints[i]));
+        PyList_SetItem(py_kpoints, i, vec2py($1.kpoints[i], true));
     }
     for (size_t i = 0; i < $1.num_bands; ++i) {
-        // SetItem steals the vec2pyref, so no need to decref
-        PyList_SetItem(py_kdom, i, vec2py($1.kdom[i]));
+        PyList_SetItem(py_kdom, i, vec2py($1.kdom[i], true));
     }
 
     $result = Py_BuildValue("(O,O)", py_kpoints, py_kdom);
@@ -1822,7 +1820,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
 PyObject *test_vec2py(const meep::vec &v, bool newobj = false) {
     PyObject * obj;
-    obj = vec2py(v); //, newobj);
+    obj = vec2py(v, newobj);
     return obj;
 }
 

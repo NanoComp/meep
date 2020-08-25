@@ -32,6 +32,7 @@
 #endif
 
 PyObject *py_callback = NULL;
+PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
 static void abort_with_stack_trace() {
@@ -104,7 +105,7 @@ static PyObject *py_volume_object() {
   return volume_object;
 }
 
-static PyObject *vec2py(const meep::vec &v) {
+static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
   // Return value: New reference
   double x = 0, y = 0, z = 0;
 
@@ -125,13 +126,39 @@ static PyObject *vec2py(const meep::vec &v) {
       break;
   }
 
-  PyObject *v3_class = py_vector3_object();
-  PyObject *args = Py_BuildValue("(d,d,d)", x, y, z);
-  PyObject *res = PyObject_Call(v3_class, args, NULL);
+  if (newobj) {
+    PyObject *v3_class = py_vector3_object();
+    PyObject *args = Py_BuildValue("(d,d,d)", x, y, z);
+    PyObject *res = PyObject_Call(v3_class, args, NULL);
 
-  Py_DECREF(args);
+    Py_DECREF(args);
 
-  return res;
+    return res;
+  }
+  else {
+    if (py_callback_v3 == NULL) {
+      PyObject *v3_class = py_vector3_object();
+      PyObject *args = PyTuple_New(0);
+      py_callback_v3 = PyObject_Call(v3_class, args, NULL);
+
+      Py_DECREF(args);
+    }
+
+    PyObject *pyx = PyFloat_FromDouble(x);
+    PyObject *pyy = PyFloat_FromDouble(y);
+    PyObject *pyz = PyFloat_FromDouble(z);
+
+    PyObject_SetAttrString(py_callback_v3, "x", pyx);
+    PyObject_SetAttrString(py_callback_v3, "y", pyy);
+    PyObject_SetAttrString(py_callback_v3, "z", pyz);
+
+    Py_DECREF(pyx);
+    Py_DECREF(pyy);
+    Py_DECREF(pyz);
+
+    Py_INCREF(py_callback_v3);
+    return py_callback_v3;
+  }
 }
 
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
