@@ -1816,12 +1816,3 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 %}
 
 
-%inline %{
-
-PyObject *test_vec2py(const meep::vec &v, bool newobj = false) {
-    PyObject * obj;
-    obj = vec2py(v, newobj);
-    return obj;
-}
-
-%}
