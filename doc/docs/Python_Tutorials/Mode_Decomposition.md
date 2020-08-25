@@ -489,6 +489,105 @@ poynting-flux:, 0.061063, 0.938384, 0.999447
 
 The first numerical column is the total reflectance, the second is the total transmittance, and the third is their sum. Results from the mode coefficients agree with the Poynting flux values to three decimal places. Also, the total reflectance and transmittance sum to unity. These results indicate that approximately 6% of the input power is reflected and the remaining 94% is transmitted.
 
+### Specifying Diffracted Planewaves in Homogeneous Media
+
+Rather than specify the diffracted planewave in homogeneous media using a band number, we can specify it directly using a `DiffractedPlanewave` object. This is particularly useful when the incident planewave is oblique (since in this case the band number does not directly relate to the diffraction order, as demonstrated previously) and is the only approach in 3d for specifying *non-degenerate* modes. Diffracted planewaves are generally not symmetric and thus the `DiffractedPlanewave` object does not support symmetries. A `DiffractedPlanewave` object has four input parameters: (1) a list/tuple of integers for the diffraction order, (2) a `Vector3` for the plane of incidence, and the complex amplitude for the (3) $s$ and (4) $p$ polarizations (i.e., electric field perpendicular or parallel to the plane of incidence.)
+
+As a demonstration, the [previous example](#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence) involving a binary grating with an oblique incident planewave is modified to compute the transmitted diffraction orders using two different methods: (1) the eigensolver via the `bands` parameter and (2) `DiffractedPlanewave`. This example verifies that both methods compute the same set of diffracted modes (although the ordering is different when the source is oblique) and that the total power in all the orders is equivalent to the Poynting flux.
+
+Only the relevant section of the simulation involving the computation of the modes and transmittance is shown below. The full simulation script is in [examples/diffracted_planewave.py](https://github.com/NanoComp/meep/blob/master/python/examples/diffracted_planewave.py).
+
+```py
+  # number of transmitted orders
+  nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)
+  if theta_in == 0:
+    nm_t = nm_t/2
+  nm_t = int(nm_t)+1
+
+  bands = range(1,nm_t+1)
+
+  # for oblique incidence, determine range of diffraction orders [-m1,+m2], |m1| != |m2|
+  if theta_in == 0:
+    orders = range(0,nm_t)
+  else:
+    orders = range(int(np.ceil((-fcen-k.y)*gp)),int(np.floor((fcen-k.y)*gp))+1)
+
+  eig_sum = 0
+  dp_sum = 0
+
+  for band,order in zip(bands,orders):
+    res = sim.get_eigenmode_coefficients(tran_flux, [band], eig_parity=eig_parity)
+    if res is not None:
+      tran_eig = abs(res.alpha[0,0,0])**2/input_flux[0]
+      if theta_in == 0:
+        tran_eig = 0.5*tran_eig
+    else:
+      tran_eig = 0
+    eig_sum += tran_eig
+
+    res = sim.get_eigenmode_coefficients(tran_flux,
+                                         mp.DiffractedPlanewave((0,order,0),mp.Vector3(0,1,0),0,1))
+    if res is not None:
+      tran_dp = abs(res.alpha[0,0,0])**2/input_flux[0]
+      if (theta_in == 0) and (order == 0):
+        tran_dp = 0.5*tran_dp
+    else:
+      tran_dp = 0
+    dp_sum += tran_dp
+
+    if theta_in == 0:
+      err = abs(tran_eig-tran_dp)/tran_eig
+      print("tran:, {}, {}, {}, {}, {}".format(band,tran_eig,order,tran_dp,err))
+    else:
+      print("tran:, {}, {}, {}, {}".format(band,tran_eig,order,tran_dp))
+
+  flux = mp.get_fluxes(tran_flux)
+  t_flux = flux[0]/input_flux[0]
+  if (theta_in == 0):
+    t_flux = 0.5*t_flux
+
+  err = abs(dp_sum-t_flux)/t_flux
+  print("flux:, {:7f} (eig), {:7f} (dp), {:7f} (flux), {:7f} (error)".format(eig_sum,
+                                                                             dp_sum,
+                                                                             t_flux,err))
+```
+
+There are four items to note regarding the use of `DiffractedPlanewave`: (1) the diffraction order `(0,order,0)` contains non-zero elements for only the periodic directions (just the $y$ direction in this example), (2) specifying `eig_parity` as part of the call to `get_eigenmode_coefficients` is not necessary (and is ignored), (3) in 2d, the `axis` is chosen as `Vector3(0,1,0)` (the direction parallel to the source) although *any* vector in the $xy$ plane works, and (4) since the source has $H_z$ polarization (not shown), the $s$ polarization amplitude is 0 and the $p$ polarization is 1.
+
+Results of this calculation are shown below for two different grating configurations: (1) `gp`=2.6 μm, `gh`=0.4 μm, `gdc`=0.3 μm, incident angle of 0° and (2) `gp`=3.7 μm, `gh`=0.6 μm, `gdc`=0.4 μm, incident angle of 13.5°.
+
+In the first configuration, the output on each line prefixed by `tran:,` consists of five values: the band index, transmittance of the diffracted planewave obtained using the eigensolver, the diffraction order, transmittance of the diffracted planewave using `DiffractedPlanewave`, and relative error of the transmittance. The last line prefixed by `flux:,` lists the total power obtained using the eigensolver, `DiffractedPlanewave`, Poynting flux, and relative error of the `DiffractedPlanewave` result with respect to the Poynting flux.
+
+```
+tran:, 1, 0.12695972613120796, 0, 0.12696026919671885, 4.277462841505864e-06
+tran:, 2, 0.24552341643320358, 1, 0.24552348023873313, 2.5987553644063895e-07
+tran:, 3, 0.07401462257602207, 2, 0.07401464695294654, 3.293528174645206e-07
+tran:, 4, 0.00793261282375412, 3, 0.007932615525279347, 3.405593195795387e-07
+tran:, 5, 0.010943888173109678, 4, 0.01094389044124607, 2.0725142256273166e-07
+tran:, 6, 0.01361924392154536, 5, 0.01362884892946485, 0.000705252653878541
+flux:, 0.478993 (eig), 0.479004 (dp), 0.478986 (flux), 0.000038 (error)
+```
+
+In the second configuration, the output is similar to the first configuration with the only difference being the lines prefixed by `tran:,` do not include the relative error as the final column. Whereas in the first configuration the transmittance for the two methods is nearly equivalent on each line, this is not the case in the second configuration since the incident planewave is oblique. Although the order of the diffracted modes is different, the total power in all the modes is equivalent for all three methods.
+
+```
+tran:, 1, 0.028794563411705366, -9, 0.005941385353048964
+tran:, 2, 0.0250501294755581, -8, 0.006156784001795077
+tran:, 3, 0.01737487935902417, -7, 0.007095849755420888
+tran:, 4, 0.3242901355827365, -6, 0.011217636211236988
+tran:, 5, 0.009578438359015604, -5, 0.00957870051355941
+tran:, 6, 0.09070055727521781, -4, 0.017374845878567823
+tran:, 7, 0.011216272058735592, -3, 0.028794622228920617
+tran:, 8, 0.295705133217255, -2, 0.025050182200637906
+tran:, 9, 0.00709584008467963, -1, 0.32429003058157074
+tran:, 10, 0.034613139977338475, 0, 0.09070062788257663
+tran:, 11, 0.006156827674891579, 1, 0.2957053048075439
+tran:, 12, 0.028327823589653956, 2, 0.0346131395429565
+tran:, 13, 0.005941286193109612, 3, 0.028327829620818767
+tran:, 14, 0.023460537364700617, 4, 0.02346053974977044
+flux:, 0.908307 (eig), 0.908307 (dp), 0.909116 (flux), 0.000889 (error)
+```
+
 Phase Map of a Subwavelength Binary Grating
 -------------------------------------------
 

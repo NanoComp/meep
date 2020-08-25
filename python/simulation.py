@@ -3234,7 +3234,7 @@ class Simulation(object):
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
         """
-        Given a flux object and list of band indices, return a `namedtuple` with the
+        Given a flux object and list of band indices `bands` or `DiffractedPlanewave`, return a `namedtuple` with the
         following fields:
 
         + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
@@ -3287,7 +3287,7 @@ class Simulation(object):
         object that can be used to inspect the computed mode.  In particular, it returns
         an `EigenmodeData` instance with the following fields:
 
-        + `band_num`: same as the `band_num` parameter
+        + `band_num`: same as a single element of the `bands` parameter
         + `freq`: the computed frequency, same as the `frequency` input parameter if
           `match_frequency=True`
         + `group_velocity`: the group velocity of the mode in `direction`
