@@ -1,9 +1,9 @@
 ### compute the transmitted diffraction orders of a binary grating using mode decomposition
 ### based on two different methods: (1) MPB eigensolver and (2) DiffractedPlanewave object.
-### Also, verify that the total power in all the orders is equivalent to the Poynting flux
+### Also, verify that the total power in all the orders is equivalent to the Poynting flux.
 
-### note: for normal incidence, compute only positive diffraction orders (total transmittance <= 0.50)
-###       for oblique incidence, compute ALL diffraction orders (total transmittance <= 1.00)
+### for normal incidence, compute only positive diff. orders (total transmittance <= 0.50)
+### for oblique incidence, compute ALL diff. orders (total transmittance <= 1.00)
 
 import meep as mp
 import math
@@ -63,12 +63,12 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
                       sources=sources)
 
   tran_pt = mp.Vector3(0.5*sx-dpml,0,0)
-  tran_flux = sim.add_flux(fcen, 0, 1,
-                           mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
+  tran_mon = sim.add_flux(fcen, 0, 1,
+                          mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
   sim.run(until_after_sources=50)
 
-  input_flux = mp.get_fluxes(tran_flux)
+  input_flux = mp.get_fluxes(tran_mon)
 
   sim.reset_meep()
   
@@ -86,12 +86,12 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
                       k_point=k,
                       sources=sources)
 
-  tran_flux = sim.add_mode_monitor(fcen, 0, 1,
-                                   mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
+  tran_mon = sim.add_mode_monitor(fcen, 0, 1,
+                                  mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
 
   sim.run(until_after_sources=100)
 
-  # number of transmitted orders
+  # number of (non-evanescent) transmitted orders
   nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)
   if theta_in == 0:
     nm_t = nm_t/2
@@ -99,7 +99,6 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
 
   bands = range(1,nm_t+1)
 
-  # for oblique incidence, determine range of diffraction orders [-m1,+m2], |m1| != |m2|
   if theta_in == 0:
     orders = range(0,nm_t)
   else:
@@ -109,7 +108,7 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
   dp_sum = 0
 
   for band,order in zip(bands,orders):
-    res = sim.get_eigenmode_coefficients(tran_flux, [band], eig_parity=eig_parity)
+    res = sim.get_eigenmode_coefficients(tran_mon, [band], eig_parity=eig_parity)
     if res is not None:
       tran_eig = abs(res.alpha[0,0,0])**2/input_flux[0]
       if theta_in == 0:
@@ -118,7 +117,7 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
       tran_eig = 0
     eig_sum += tran_eig
 
-    res = sim.get_eigenmode_coefficients(tran_flux, mp.DiffractedPlanewave((0,order,0),mp.Vector3(0,1,0),0,1))
+    res = sim.get_eigenmode_coefficients(tran_mon, mp.DiffractedPlanewave((0,order,0),mp.Vector3(0,1,0),0,1))
     if res is not None:
       tran_dp = abs(res.alpha[0,0,0])**2/input_flux[0]
       if (theta_in == 0) and (order == 0):
@@ -133,17 +132,17 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
     else:
       print("tran:, {}, {}, {}, {}".format(band,tran_eig,order,tran_dp))
 
-  flux = mp.get_fluxes(tran_flux)
+  flux = mp.get_fluxes(tran_mon)
   t_flux = flux[0]/input_flux[0]
   if (theta_in == 0):
     t_flux = 0.5*t_flux
 
   err = abs(dp_sum-t_flux)/t_flux
-  print("flux:, {:7f} (eig), {:7f} (dp), {:7f} (flux), {:7f} (error)".format(eig_sum,
-                                                                             dp_sum,
-                                                                             t_flux,err))
+  print("flux:, {:.8f} (eig), {:.8f} (dp), {:.8f} (flux), {:.8f} (error)".format(eig_sum,
+                                                                                 dp_sum,
+                                                                                 t_flux,
+                                                                                 err))
 
 if __name__ == '__main__':
   binary_grating_diffraction(2.6,0.4,0.3,0)
   binary_grating_diffraction(3.7,0.6,0.4,13.5)
-  
